@@ -174,7 +174,7 @@ describe('Node-runtime routes load as native ESM', () => {
   }
 });
 
-// AGENTS.md: legacy JS entries share code only through `_*.js` helpers or
+// CLAUDE.md: legacy JS entries share code only through `_*.js` helpers or
 // packages. Importing another route entry couples two deployables and bundles
 // the whole sibling handler (#8305 briefly had authorize.js import register.js).
 describe('Legacy JS entries import only _-prefixed relative modules', () => {

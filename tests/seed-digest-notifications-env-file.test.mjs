@@ -1,6 +1,6 @@
 // The digest cron reads UPSTASH_*, CONVEX_* and provider tokens straight from
 // process.env at module scope. Every other scripts/ entry loads .env.local
-// through loadEnvFile() first (AGENTS.md: never add an env parser or read
+// through loadEnvFile() first (CLAUDE.md: never add an env parser or read
 // credentials from $HOME). Dockerfile.digest-notifications keeps a tight COPY
 // list, so the loader has to stay a leaf module or the image loses it.
 import assert from 'node:assert/strict';

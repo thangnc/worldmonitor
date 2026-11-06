@@ -1023,7 +1023,7 @@ function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
   }
   const variantCount = Object.keys(variantLayers).length;
 
-  // ---- Root app directories used by AGENTS.md and CONTRIBUTING.md ----
+  // ---- Root app directories used by CLAUDE.md and CONTRIBUTING.md ----
   const componentTopLevelTsFiles = filesIn('src/components').filter((f) => f.endsWith('.ts')).length;
   const serviceTopLevelEntries = entriesIn('src/services').length;
   const apiEndpointEntries = readdirSync(join(rootOf(), 'api'), { withFileTypes: true }).filter((e) => {
@@ -1212,7 +1212,7 @@ function claims(s) {
   return [
     // The generator version is a toolchain compatibility contract, not an
     // inventory total. Its documented value must stay exact.
-    { file: 'AGENTS.md', re: /requires buf \+ sebuf (v\d+\.\d+\.\d+) plugins/, value: s.sebufVersion },
+    { file: 'CLAUDE.md', re: /requires buf \+ sebuf (v\d+\.\d+\.\d+) plugins/, value: s.sebufVersion },
     { file: 'CONTRIBUTING.md', re: /currently \*\*(v\d+\.\d+\.\d+)\*\*/, value: s.sebufVersion },
   ];
 }

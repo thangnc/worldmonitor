@@ -24,7 +24,7 @@ Preconditions:
 - `wm-verify.sh doctor` reports OK.
 - No profile assumptions beyond `steps/_profile.mjs`, which clears storage and dismisses the first-run overlays.
 
-- **Cold visit.** Navigate to `/dashboard`. Run `wm-verify.sh drive .agents/skills/verify-worldmonitor/steps/dashboard-boot.mjs --name dashboard-boot`. Exit code `0`.
+- **Cold visit.** Navigate to `/dashboard`. Run `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/dashboard-boot.mjs --name dashboard-boot`. Exit code `0`.
 - **Hydration.** The step waits for `html[data-wm-event-handlers-ready="true"]` then `html[data-wm-initial-data-ready="true"]`. Both markers exist only because the instance runs with `VITE_E2E=1`.
 - **Skeleton gone.** `.skeleton-shell` is absent from the DOM. Its presence means the bundle never took over.
 - **Map mounted.** `waitForMap()` resolves to `deckgl`, `globe`, or `svg`, and at least 5 `.layer-toggle[data-layer]` controls exist. The renderer name is logged in the transcript — record which one this run got.

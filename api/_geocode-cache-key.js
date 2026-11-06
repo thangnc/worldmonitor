@@ -2,7 +2,7 @@
  * Edge-safe mirror of shared/geocode-cache-key.js (#7279).
  *
  * api/*.js may only import same-directory _*.js helpers and packages
- * (AGENTS.md). Keep the public shape and function bodies in lockstep with
+ * (CLAUDE.md). Keep the public shape and function bodies in lockstep with
  * the shared helper; tests/reverse-geocode-cache-contract.test.mts fails
  * if they drift.
  */

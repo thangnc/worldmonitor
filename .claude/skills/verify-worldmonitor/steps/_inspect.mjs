@@ -5,7 +5,7 @@ import { seedProfile, waitForBoot, waitForMap } from './_profile.mjs';
  * handles a new drive needs (panel keys, layer keys, header controls) so a
  * step can be written against what the app actually renders today.
  *
- *   wm-verify.sh drive .agents/skills/verify-worldmonitor/steps/_inspect.mjs --name inspect
+ *   wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/_inspect.mjs --name inspect
  */
 export default async function ({ page, base, shot, log }) {
   await seedProfile(page);

@@ -9,7 +9,7 @@ import { parseFrontmatter } from '../scripts/build-agent-skills-index.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SKILL_DIR = 'sentry-triage';
-const SKILL_PATH = join(ROOT, '.agents/skills', SKILL_DIR, 'SKILL.md');
+const SKILL_PATH = join(ROOT, '.claude/skills', SKILL_DIR, 'SKILL.md');
 
 function sectionBetween(markdown, startMarker, endMarker) {
   const start = markdown.indexOf(startMarker);

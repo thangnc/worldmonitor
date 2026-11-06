@@ -61,19 +61,21 @@ secrets/
 .vercel
 api/\[domain\]/v1/\[rpc\].js
 api/\[\[...path\]\].js
-.claude/
-.cursor/
-CLAUDE.md
+# Claude Code: .claude/ (settings, hooks, rules, skills, agents) and CLAUDE.md
+# are tracked. Only per-machine state and run artifacts stay local.
+.claude/settings.local.json
+.claude/worktrees/
+.claude/verify-evidence/
+.claude/verify-steps/
+.claude/memory/
+CLAUDE.local.md
 .env.vercel-backup
 .env.vercel-export
-.agent/
-.factory/
-.windsurf/
 # Root /skills/ is the Agent Plugin skill tree (tracked regular SKILL.md
 # files materialized from public/.well-known/agent-skills/) and the default
 # landing zone for local `npx skills add` installs. Ignore extra install
 # files; keep SKILL.md. Scope to the repo root so api/skills/ and
-# .agents/skills/ stay tracked — a trailing-slash `skills/` rule would hide
+# .claude/skills/ stay tracked — a trailing-slash `skills/` rule would hide
 # those nested trees.
 /skills/**
 !/skills/

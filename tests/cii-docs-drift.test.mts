@@ -501,7 +501,7 @@ describe('CII docs drift guards', () => {
       'public surfaces must not attribute the 196-country CRI universe to CII',
     );
     assert.doesNotMatch(
-      `${llmsFull}\n${communityGuide}\n${readFileSync(resolve(root, 'AGENTS.md'), 'utf8')}`,
+      `${llmsFull}\n${communityGuide}\n${readFileSync(resolve(root, 'CLAUDE.md'), 'utf8')}`,
       /Tri-Variant Build System|Three Variant Dashboards|three specialized variants|tri-variant architecture|three specialized views/i,
     );
   });

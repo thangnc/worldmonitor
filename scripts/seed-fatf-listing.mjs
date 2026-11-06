@@ -198,7 +198,7 @@ async function fetchWaybackJson(cdxUrl, { fetchFn, proxyFetcher, proxyAuth }) {
   try {
     // Note: httpsProxyFetchRaw injects User-Agent: CHROME_UA internally
     // (see scripts/_seed-utils.mjs:httpsProxyFetchRaw) — we don't need to
-    // pass headers here. AGENTS.md UA convention is satisfied on both legs.
+    // pass headers here. CLAUDE.md UA convention is satisfied on both legs.
     const { buffer, headers } = await proxyFetcher(cdxUrl, proxyAuth, {
       accept: 'application/json',
       timeoutMs: WAYBACK_TIMEOUT_MS,

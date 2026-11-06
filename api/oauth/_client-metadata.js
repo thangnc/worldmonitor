@@ -1,5 +1,5 @@
 // OAuth client resolution shared by the consent, Pro grant, and token routes.
-// Route entries import this helper, never each other (AGENTS.md).
+// Route entries import this helper, never each other (CLAUDE.md).
 //
 // A client_id is either a DCR registration (crypto.randomUUID() from
 // register.js, stored at `oauth:client:<id>`) or a Client ID Metadata Document

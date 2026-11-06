@@ -1,5 +1,5 @@
 // OAuth redirect_uri policy shared by the registration, consent, and Pro grant
-// routes. Route entries import this helper, never each other (AGENTS.md).
+// routes. Route entries import this helper, never each other (CLAUDE.md).
 
 // DCR is not open to arbitrary redirect URIs: the registered callback receives
 // the authorization code. Each entry is a vendor-owned MCP client callback,

@@ -1105,7 +1105,7 @@ describe('gdelt materializer freshness constants stay in lockstep (#5864)', () =
 
   it('registers the per-country index as a standalone health dataset at the materializer budget (#7748)', () => {
     // No dashboard consumer reads the index, so it is a STANDALONE health key
-    // (AGENTS.md) with its own seed-meta record; the gate must track the same
+    // (CLAUDE.md) with its own seed-meta record; the gate must track the same
     // 15-minute tick as gdeltIntel, and the 2-day data TTL must outlive it.
     const healthSrc = read('../api/health.js');
     assert.match(healthSrc, /gdeltCountryArticles:\s*'gdelt:bulk:country-articles:v1'/, 'STANDALONE_KEYS must carry the index');

@@ -169,7 +169,7 @@ describe('FRED series-metadata cache', () => {
     }
   });
 
-  it('sends a User-Agent on the cache read — AGENTS.md server-fetch contract', async () => {
+  it('sends a User-Agent on the cache read — CLAUDE.md server-fetch contract', async () => {
     // redisCommand (the write path) already sends CHROME_UA; this raw GET has to set it
     // itself, and a recurring seeder request with only an Authorization header is
     // exactly the unidentifiable traffic that contract exists to prevent.

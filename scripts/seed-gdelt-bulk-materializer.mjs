@@ -125,7 +125,7 @@ const COUNTRY_ARTICLES_TTL = ARTICLES_TTL;
 const POSITIVE_EVENTS_META_KEY = 'seed-meta:positive-events:geo';
 // The index has no dashboard consumer — only the search route's country form
 // and the weekly freeze read it — so it is a standalone health dataset
-// (AGENTS.md): published with its own seed-meta record and gated in
+// (CLAUDE.md): published with its own seed-meta record and gated in
 // api/health.js at the same 45-minute budget as the canonical intel key,
 // or an evicted or stale index would stay invisible until the next Monday's
 // freeze answered `seed-unavailable` and failed its coverage floor.

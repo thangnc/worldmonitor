@@ -414,8 +414,8 @@ describe('fetchViaWayback — Cloudflare-bypass via Wayback Machine', () => {
     );
   });
 
-  it('sends a User-Agent header on BOTH the CDX query and the snapshot fetch (AGENTS.md convention)', async () => {
-    // AGENTS.md mandates "Always include `User-Agent` header in
+  it('sends a User-Agent header on BOTH the CDX query and the snapshot fetch (CLAUDE.md convention)', async () => {
+    // CLAUDE.md mandates "Always include `User-Agent` header in
     // server-side fetch calls". The direct FATF fetch sends CHROME_UA;
     // the Wayback path must match. archive.org doesn't usually block
     // header-less requests, but house-style consistency is the point —

@@ -212,7 +212,7 @@ export async function lookupClerkPlan(userId: string): Promise<ClerkPlanLookupRe
     const resp = await fetch(`https://api.clerk.com/v1/users/${userId}`, {
       headers: {
         Authorization: `Bearer ${CLERK_SECRET_KEY}`,
-        // AGENTS.md: always set User-Agent on server-side fetches. Matches the
+        // CLAUDE.md: always set User-Agent on server-side fetches. Matches the
         // sibling auth lookups (entitlement-check.ts, _shared/user-api-key.ts).
         'User-Agent': 'worldmonitor-gateway/1.0',
       },

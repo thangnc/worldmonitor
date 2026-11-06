@@ -112,7 +112,7 @@ npm run test:e2e:country-brief
 The Country Brief check opens `/dashboard?country=UA` in Chromium and verifies
 prediction records, fallback, empty results, and reload recovery. It needs no API
 keys. Playwright starts and stops Vite on port 4173. See the
-[Country Brief recipe](.agents/skills/verify-worldmonitor/features/country-brief.md)
+[Country Brief recipe](.claude/skills/verify-worldmonitor/features/country-brief.md)
 for evidence files, backend checks, and the limits of this proof.
 
 For interactive development, run the commands below. Install the full toolchain
@@ -273,7 +273,7 @@ before executing reviewed fork code.
 
 ### Verify the changed path
 
-Use the [code and check map](AGENTS.md#find-the-code-and-its-checks) to select the
+Use the [code and check map](CLAUDE.md#find-the-code-and-its-checks) to select the
 required gates. Run focused checks first and heavy checks sequentially. Keep useful
 regression coverage. Remove a check only with evidence that its protection is
 obsolete, redundant, or ineffective.
@@ -293,7 +293,7 @@ proof once before delivery when that boundary changes. See
 [CI test selection and shards](docs/solutions/performance-issues/ci-test-selection-and-shards.md)
 for the commands, full-suite route and timing evidence.
 
-For browser work, use the [verification skill](.agents/skills/verify-worldmonitor/SKILL.md)
+For browser work, use the [verification skill](.claude/skills/verify-worldmonitor/SKILL.md)
 and the relevant feature recipe. Country Brief is a worked example with an existing
 local command and CI coverage. Extend that proof for a changed outcome instead of
 creating a second runner.
@@ -430,9 +430,9 @@ Use a descriptive title that summarizes the change:
 
 ## AI-Assisted Development
 
-We fully embrace AI-assisted development. Many of our own PRs are labeled with the LLM that helped produce them (e.g., `claude`, `codex`, `cursor`), and contributors are welcome to use any AI tools they find helpful.
+This repository is developed with [Claude Code](https://claude.com/claude-code), the only supported coding agent here. [CLAUDE.md](CLAUDE.md) is the canonical agent guide. The project's Claude Code setup is tracked in `.claude/`: path-scoped rules, engineering skills, subagents, and hooks. Personal overrides go in the git-ignored `CLAUDE.local.md` and `.claude/settings.local.json`. Do not add guide files for other agent tools (`AGENTS.md`, `.cursor/`, `.windsurf/` and similar). Put any new convention in `CLAUDE.md`, a `.claude/rules/` file, or this guide.
 
-That said, **all code is held to the same quality bar regardless of how it was written**. AI-generated code will be reviewed with the same scrutiny as human-written code. Contributors are responsible for understanding and being able to explain every line they submit. Blindly pasting LLM output without review is discouraged — treat AI as a collaborator, not a replacement for your own judgement.
+**All code is held to the same quality bar regardless of how it was written**. AI-generated code is reviewed with the same scrutiny as human-written code. The author is responsible for understanding and being able to explain every line they submit.
 
 ## Coding Standards
 

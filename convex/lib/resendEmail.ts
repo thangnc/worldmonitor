@@ -99,7 +99,7 @@ export async function sendResendEmail(
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${input.apiKey}`,
-    // AGENTS.md: every server fetch carries a User-Agent.
+    // CLAUDE.md: every server fetch carries a User-Agent.
     "User-Agent": input.userAgent || DEFAULT_USER_AGENT,
   };
 

@@ -1,7 +1,7 @@
 // DO NOT EDIT DIRECTLY. This file mirrors scripts/_seed-envelope-source.mjs.
 // Parity is enforced by scripts/verify-seed-envelope-parity.mjs.
 //
-// AGENTS.md:80 forbids `api/*.js` from importing `../server/` — this file exists
+// CLAUDE.md forbids `api/*.js` from importing `../server/` — this file exists
 // so edge handlers (api/bootstrap.js, api/health.js, api/mcp.ts, ...) have a
 // same-directory envelope helper.
 

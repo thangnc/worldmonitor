@@ -2,7 +2,7 @@
 /**
  * WorldMonitor verification driver.
  *
- *   node .agents/skills/verify-worldmonitor/scripts/drive.mjs <step.mjs> [--name <label>]
+ *   node .claude/skills/verify-worldmonitor/scripts/drive.mjs <step.mjs> [--name <label>]
  *
  * Opens a Chromium page against the dev instance recorded in
  * .claude/verify-evidence/instance.json, hands it to <step.mjs>, and writes
@@ -21,7 +21,7 @@ import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const SKILL_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-// .agents/skills/verify-worldmonitor -> repo root is three levels up. Fall back
+// .claude/skills/verify-worldmonitor -> repo root is three levels up. Fall back
 // to the cwd when the skill is reached through a symlink or copied elsewhere.
 const SKILL_REPO_ROOT = resolve(SKILL_DIR, '..', '..', '..');
 const REPO_ROOT = existsSync(resolve(SKILL_REPO_ROOT, 'package.json')) ? SKILL_REPO_ROOT : process.cwd();

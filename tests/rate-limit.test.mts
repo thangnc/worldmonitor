@@ -872,7 +872,7 @@ describe('slow-Redis timeout is degraded, not a silent allow (#6412 review)', ()
 
 describe('legacy edge-function rate-limit policy mirrors (#6234)', () => {
   // `api/*.js` edge functions are self-contained JS and cannot import
-  // `../server/` (AGENTS.md, enforced by scripts/lint-boundaries.mjs and the
+  // `../server/` (CLAUDE.md, enforced by scripts/lint-boundaries.mjs and the
   // pre-push esbuild check). So unlike api/mcp-proxy.ts, which reads
   // ENDPOINT_RATE_POLICIES at module load, these handlers duplicate their
   // budget as a literal constant and enforce it via api/_rate-limit.js.

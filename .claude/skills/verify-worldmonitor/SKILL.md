@@ -9,7 +9,7 @@ metadata:
 
 WorldMonitor's primary surface is a browser dashboard: a Vite/TypeScript SPA served at `/dashboard`, with a map, a panel grid, a settings overlay, and a command palette. This skill launches one isolated instance of it, drives a feature the way a user does, and leaves evidence behind.
 
-This skill proves browser behavior. Use the [code and check map](../../../AGENTS.md#find-the-code-and-its-checks) for backend, desktop, worker, or documentation changes.
+This skill proves browser behavior. Use the [code and check map](../../../CLAUDE.md#find-the-code-and-its-checks) for backend, desktop, worker, or documentation changes.
 
 Run everything from the repo root of the worktree under test.
 
@@ -25,7 +25,7 @@ Run everything from the repo root of the worktree under test.
 One long-lived dev server per run; every drive gets a fresh browser context against it.
 
 ```bash
-.agents/skills/verify-worldmonitor/scripts/wm-verify.sh launch
+.claude/skills/verify-worldmonitor/scripts/wm-verify.sh launch
 ```
 
 It picks the first free port in 4480-4487, starts `VITE_E2E=1 VITE_VARIANT=full npm run dev`, waits until `/tests/map-harness.html` answers 200 (the same readiness probe `playwright.config.ts` uses — it forces a real module transform, so 200 means "can serve the app", not just "socket open"), and writes `.claude/verify-evidence/instance.json` with the pid, port and base URL.
@@ -40,7 +40,7 @@ It picks the first free port in 4480-4487, starts `VITE_E2E=1 VITE_VARIANT=full 
 ## Doctor
 
 ```bash
-.agents/skills/verify-worldmonitor/scripts/wm-verify.sh doctor
+.claude/skills/verify-worldmonitor/scripts/wm-verify.sh doctor
 ```
 
 Read-only. Answers "is this instance worth driving?": the recorded pid is alive, the port is held by **our** process tree (walking parents, so vite-under-npm counts), `/dashboard` returns 200 with the app shell, the process is still vite/npm, and the launch recorded `VITE_E2E=1`. It also prints the dev-server log's error-line count and path.
@@ -52,7 +52,7 @@ If doctor cannot see the problem — a wedged page on a healthy server — relau
 ## Drive
 
 ```bash
-.agents/skills/verify-worldmonitor/scripts/wm-verify.sh drive <step.mjs> --name <label>
+.claude/skills/verify-worldmonitor/scripts/wm-verify.sh drive <step.mjs> --name <label>
 ```
 
 A step file default-exports an async function and lives in `steps/`:
@@ -103,7 +103,7 @@ Proof standards for this app:
 ## Cleanup
 
 ```bash
-.agents/skills/verify-worldmonitor/scripts/wm-verify.sh cleanup
+.claude/skills/verify-worldmonitor/scripts/wm-verify.sh cleanup
 ```
 
 Terminates the recorded pid and its children (SIGTERM, then SIGKILL after 10 s) and removes `instance.json`. It kills **only what launch started** — never `pkill vite`, which would take out the user's own dev server and every other worktree's.
@@ -113,7 +113,7 @@ Run it after the last drive of the run, and after any failed iteration, so a bro
 ## Helpers
 
 - `scripts/wm-verify.sh` — `launch [port] | doctor | drive <step.mjs> [--name label] | cleanup`. Executable; invocations above.
-- `scripts/drive.mjs` — the Playwright driver `drive` delegates to. Runnable directly: `node .agents/skills/verify-worldmonitor/scripts/drive.mjs <step.mjs> --name <label>`.
+- `scripts/drive.mjs` — the Playwright driver `drive` delegates to. Runnable directly: `node .claude/skills/verify-worldmonitor/scripts/drive.mjs <step.mjs> --name <label>`.
 - `steps/_profile.mjs` — `seedProfile(page, overrides)`, `waitForBoot(page, {data})`, `waitForMap(page)`.
 
 ## Feature map
@@ -122,17 +122,4 @@ Run it after the last drive of the run, and after any failed iteration, so a bro
 
 ## Registration
 
-The canonical copy is `.agents/skills/verify-worldmonitor/`. Edit that copy. An agent
-can read this file directly even when automatic discovery is unavailable.
-
-For Claude Code discovery, run the following only when
-`.claude/skills/verify-worldmonitor` does not exist. Preserve an existing destination
-and inspect it before making changes. Do not maintain a second copy.
-
-```bash
-mkdir -p .claude/skills
-ln -s ../../.agents/skills/verify-worldmonitor .claude/skills/verify-worldmonitor
-```
-
-If Git ignores a new skill file, inspect `git check-ignore -v <path>` before staging
-that specific file. Ignore rules can differ between clones.
+This skill lives in `.claude/skills/verify-worldmonitor/`, where Claude Code discovers it automatically. Keep one copy there.

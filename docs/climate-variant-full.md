@@ -260,7 +260,7 @@ service ClimateService {
 
 ## Cache Keys to Register
 
-Per AGENTS.md, adding a new seeded key requires changes in **4 files**:
+Per CLAUDE.md, adding a new seeded key requires changes in **4 files**:
 
 1. **`server/_shared/cache-keys.ts`** — add to `BOOTSTRAP_CACHE_KEYS`:
 

@@ -14,11 +14,7 @@ const lintMdScript = packageJson.scripts?.['lint:md'] ?? '';
 describe('markdown lint script scope', () => {
   it('excludes non-product markdown trees from lint target', () => {
     assert.match(lintMdScript, /markdownlint-cli2/);
-    assert.match(lintMdScript, /'!\.agent\/\*\*'/);
-    assert.match(lintMdScript, /'!\.agents\/\*\*'/);
     assert.match(lintMdScript, /'!\.claude\/\*\*'/);
-    assert.match(lintMdScript, /'!\.factory\/\*\*'/);
-    assert.match(lintMdScript, /'!\.windsurf\/\*\*'/);
     assert.match(lintMdScript, /'!skills\/\*\*'/);
     assert.match(lintMdScript, /'!docs\/internal\/\*\*'/);
     assert.match(lintMdScript, /'!docs\/Docs_To_Review\/\*\*'/);
