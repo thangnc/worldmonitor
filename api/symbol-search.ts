@@ -55,7 +55,7 @@ const CACHE_TTL_SECONDS = 600;
 const FINNHUB_429_COOLDOWN_KEY = 'symsearch-cooldown:v1:finnhub-429';
 const FINNHUB_429_DEFAULT_RETRY_AFTER_SECONDS = 60;
 const FINNHUB_429_MAX_RETRY_AFTER_SECONDS = 120;
-// Honest UA identifying ourselves to Finnhub. The AGENTS.md Critical
+// Honest UA identifying ourselves to Finnhub. The CLAUDE.md Critical
 // Conventions section requires UA on server-side fetches; matches the
 // `worldmonitor-edge/1.0` convention used by api/notify.ts and
 // api/notification-channels.ts.

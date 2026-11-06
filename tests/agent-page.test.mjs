@@ -55,10 +55,10 @@ describe('/agent page content', () => {
   });
 
   it('keeps the internal engineering skills out of the skills CLI', () => {
-    for (const name of readdirSync(join(ROOT, '.agents/skills'))) {
-      const path = join(ROOT, '.agents/skills', name, 'SKILL.md');
+    for (const name of readdirSync(join(ROOT, '.claude/skills'))) {
+      const path = join(ROOT, '.claude/skills', name, 'SKILL.md');
       if (!existsSync(path)) continue;
-      assert.match(read(`.agents/skills/${name}/SKILL.md`), /^---\n[\s\S]*?\nmetadata:\n {2}internal: true\n[\s\S]*?---\n/, `${name} must set metadata.internal`);
+      assert.match(read(`.claude/skills/${name}/SKILL.md`), /^---\n[\s\S]*?\nmetadata:\n {2}internal: true\n[\s\S]*?---\n/, `${name} must set metadata.internal`);
     }
   });
 

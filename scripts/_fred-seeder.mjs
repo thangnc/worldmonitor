@@ -122,7 +122,7 @@ export async function readFredSeriesMetaCache() {
   const { restUrl: url, token } = creds;
   try {
     const resp = await fetch(`${url}/get/${encodeURIComponent(FRED_SERIES_META_KEY)}`, {
-      // AGENTS.md: server-side fetches must carry a User-Agent. redisCommand (the write
+      // CLAUDE.md: server-side fetches must carry a User-Agent. redisCommand (the write
       // path) already sends CHROME_UA; this raw GET has to set it itself.
       headers: { Authorization: `Bearer ${token}`, 'User-Agent': CHROME_UA },
       signal: AbortSignal.timeout(5_000),

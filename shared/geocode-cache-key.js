@@ -8,7 +8,7 @@
  * use the same key so empty cells are not 100% provider passthrough.
  *
  * The gateway RPC and the browser memoization import this helper. The legacy
- * Edge route cannot import `../shared/` (AGENTS.md), so `api/_geocode-cache-key.js`
+ * Edge route cannot import `../shared/` (CLAUDE.md), so `api/_geocode-cache-key.js`
  * mirrors it; tests/reverse-geocode-cache-contract.test.mts fails if they drift.
  */
 export const GEOCODE_CACHE_DECIMALS = 3;

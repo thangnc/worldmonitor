@@ -24,7 +24,7 @@ Preconditions:
 - `wm-verify.sh doctor` reports OK.
 - The dashboard has booted; the search index builds during boot.
 
-- **Header entry.** Choose `⌘K Search`. Run `wm-verify.sh drive .agents/skills/verify-worldmonitor/steps/global-search.mjs --name global-search`. `#searchBtn` click makes `.search-modal .search-input` visible.
+- **Header entry.** Choose `⌘K Search`. Run `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/global-search.mjs --name global-search`. `#searchBtn` click makes `.search-modal .search-input` visible.
 - **Empty state.** With no query the results list holds `.search-result-item.tip-item` hint rows (7 on this checkout) and zero real results.
 - **Typed match.** Type `ukraine` with `pressSequentially`. `.search-modal .search-results .search-result-item[data-index]` becomes visible. Observed top results: `🇺🇦 Brief: Ukraine Country`, `⚔️ Ukraine War …`, `📍 Kyiv Conflict Zone Hotspot`, `☢️ South Ukraine Nuclear Power Plant`.
 - **Relevance.** At least one result's text contains the query.

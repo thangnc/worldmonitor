@@ -12,7 +12,7 @@ const workflowPath = resolve(root, '.github/workflows/proto-check.yml');
 const workflowSource = readFileSync(workflowPath, 'utf8');
 const deployGateScript = readFileSync(resolve(root, '.github/scripts/deploy-gate.sh'), 'utf8');
 const contributing = readFileSync(resolve(root, 'CONTRIBUTING.md'), 'utf8');
-const agentInstructions = readFileSync(resolve(root, 'AGENTS.md'), 'utf8');
+const agentInstructions = readFileSync(resolve(root, 'CLAUDE.md'), 'utf8');
 const scorecardMirrorSource = readFileSync(
   resolve(root, 'scripts/generate-scorecard-edge-mirrors.mjs'),
   'utf8',

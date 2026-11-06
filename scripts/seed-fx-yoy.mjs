@@ -71,7 +71,7 @@ const CURRENCY_COUNTRY = {
 };
 
 const FETCH_TIMEOUT_MS = 10_000;
-// AGENTS.md: stagger Yahoo Finance requests by 150 ms. This ran at 120 ms with
+// CLAUDE.md: stagger Yahoo Finance requests by 150 ms. This ran at 120 ms with
 // a bare fetch and no retry, so one 429 in the 60-currency sweep dropped that
 // currency for the run. fetchYahooJson adds the retry/backoff and the curl
 // proxy fallback every other Yahoo seeder already uses.

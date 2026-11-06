@@ -514,7 +514,7 @@ function stableStringify(value) {
   return JSON.stringify(value) ?? 'null';
 }
 
-/** Identifies this caller in Cloudflare's audit log; AGENTS.md requires it on server-side fetches. */
+/** Identifies this caller in Cloudflare's audit log; CLAUDE.md requires it on server-side fetches. */
 const USER_AGENT = 'WorldMonitor Cloudflare Cache Rule/1.0';
 
 /** Matches the ceiling scripts/_kv-storage.mjs uses for its Cloudflare API writes. */

@@ -172,7 +172,7 @@ export function installFetchFailureAttribution(): boolean {
   if (typeof window === 'undefined' || typeof window.fetch !== 'function') return false;
   if (installedWrapper) return true;
 
-  // AGENTS.md bans `fetch.bind(globalThis)` (it freezes a stale reference), and
+  // CLAUDE.md bans `fetch.bind(globalThis)` (it freezes a stale reference), and
   // the prescribed `(...args) => globalThis.fetch(...)` would recurse into the
   // wrapper we are about to install. A plain assignment captures the
   // pre-wrapping value correctly — same reasoning as `wm-session.ts`.

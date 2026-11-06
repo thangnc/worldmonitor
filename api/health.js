@@ -5490,7 +5490,7 @@ function probeRelayGatewayGateApplies() {
 // The default forwards through a wrapper rather than capturing `globalThis.fetch`
 // itself: on Edge runtimes the native implementation requires its global
 // receiver, and a detached call throws — which would have read here as
-// RELAY_GATE_UNREACHABLE on every sweep. AGENTS.md bans `fetch.bind` for the
+// RELAY_GATE_UNREACHABLE on every sweep. CLAUDE.md bans `fetch.bind` for the
 // stale-reference reason; the arrow keeps both the receiver and the current
 // (possibly wrapped) global.
 async function probeRelayGatewayGate({

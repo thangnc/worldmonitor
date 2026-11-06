@@ -840,7 +840,7 @@ export const ENDPOINT_RATE_POLICIES: Record<string, EndpointRatePolicy> = {
   // Legacy `api/*.js` provider proxies (`api/youtube/live.js`,
   // `api/reverse-geocode.js`), both registered in
   // api/api-route-exceptions.json. Neither flows through the gateway, and
-  // AGENTS.md forbids `api/*.js` from importing `../server/`, so unlike
+  // CLAUDE.md forbids `api/*.js` from importing `../server/`, so unlike
   // /api/mcp-proxy they cannot read this registry at runtime: each handler
   // carries the same numbers as literal constants and enforces them with
   // `checkRateLimit` from `api/_rate-limit.js`. The registry stays the single

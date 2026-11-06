@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # WorldMonitor verification harness.
 #
-#   .agents/skills/verify-worldmonitor/scripts/wm-verify.sh launch [port]
-#   .agents/skills/verify-worldmonitor/scripts/wm-verify.sh doctor
-#   .agents/skills/verify-worldmonitor/scripts/wm-verify.sh drive <step.mjs> [--name label]
-#   .agents/skills/verify-worldmonitor/scripts/wm-verify.sh cleanup
+#   .claude/skills/verify-worldmonitor/scripts/wm-verify.sh launch [port]
+#   .claude/skills/verify-worldmonitor/scripts/wm-verify.sh doctor
+#   .claude/skills/verify-worldmonitor/scripts/wm-verify.sh drive <step.mjs> [--name label]
+#   .claude/skills/verify-worldmonitor/scripts/wm-verify.sh cleanup
 #
 # Run from the repo root of the worktree you are verifying.
 set -euo pipefail

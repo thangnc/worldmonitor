@@ -11,7 +11,7 @@ const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org/reverse';
 const CHROME_UA = 'WorldMonitor/2.0 (https://worldmonitor.app)';
 
 // Mirrors ENDPOINT_RATE_POLICIES['/api/reverse-geocode'] in
-// server/_shared/rate-limit.ts. api/*.js cannot import ../server/ (AGENTS.md),
+// server/_shared/rate-limit.ts. api/*.js cannot import ../server/ (CLAUDE.md),
 // so the budget is duplicated here and tests/rate-limit.test.mts fails if the
 // two copies drift. (#6234)
 const RATE_LIMIT_SCOPE = 'reverse-geocode';

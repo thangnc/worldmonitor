@@ -109,7 +109,7 @@ cells are flushed. Animations advance on a ticker (default 20 fps, idle 4 fps
 when no animation is active). Input never blocks rendering. All terminal state
 changes (alt screen, mouse, cursor) are undone in `finally` and on signals.
 
-Boundary rules from `AGENTS.md` hold: `cli/` imports nothing from `src/` or
+Boundary rules from `CLAUDE.md` hold: `cli/` imports nothing from `src/` or
 `server/`; the catalog is generated, not imported.
 
 ## Map engine (`cli/src/tui/map/`)

@@ -98,7 +98,7 @@ describe('symbol-search handler', () => {
     const res = await handler(makeReq('nvidia'));
     assert.equal(res.status, 200);
     assert.match(requestedUrl, /finnhub\.io\/api\/v1\/search\?q=nvidia&token=test-key/);
-    // AGENTS.md Critical Conventions: "Always include User-Agent header in
+    // CLAUDE.md Critical Conventions: "Always include User-Agent header in
     // server-side fetch calls". Reviewer P1 on PR #3698.
     assert.equal(requestedUA, 'worldmonitor-edge/1.0');
     const body = await res.json() as { results: unknown };

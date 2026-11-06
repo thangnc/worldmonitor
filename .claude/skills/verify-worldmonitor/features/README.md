@@ -6,7 +6,7 @@ feature and use its strict test when available. Read the
 
 ## Baseline preconditions
 
-- Launch one instance with `.agents/skills/verify-worldmonitor/scripts/wm-verify.sh launch`. It picks a free port in 4480-4487, starts `VITE_E2E=1 VITE_VARIANT=full vite`, and records the pid, port, and base URL in `.claude/verify-evidence/instance.json`.
+- Launch one instance with `.claude/skills/verify-worldmonitor/scripts/wm-verify.sh launch`. It picks a free port in 4480-4487, starts `VITE_E2E=1 VITE_VARIANT=full vite`, and records the pid, port, and base URL in `.claude/verify-evidence/instance.json`.
 - Run `wm-verify.sh doctor` before the first drive and again after any drive that failed. It refuses an instance whose port is held by someone else's process.
 - Never drive an instance this run did not start. Other worktrees and the user's own `npm run dev` are also vite processes on nearby ports.
 - Every drive gets a fresh browser context and a seeded localStorage profile (`steps/_profile.mjs`), so drives do not inherit each other's state.

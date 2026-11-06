@@ -64,7 +64,7 @@ describe('computeYoy — peak-to-trough drawdown', () => {
 });
 
 describe('Yahoo request path', () => {
-  it('honours the 150 ms Yahoo stagger from AGENTS.md', () => {
+  it('honours the 150 ms Yahoo stagger from CLAUDE.md', () => {
     // Ran at 120 ms until 2026-09: below the repo-wide floor every other Yahoo
     // seeder keeps, on the one seeder that sweeps ~60 symbols back to back.
     assert.ok(PER_CURRENCY_DELAY_MS >= 150, `stagger is ${PER_CURRENCY_DELAY_MS} ms`);

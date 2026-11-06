@@ -9,7 +9,7 @@ import { checkRateLimit } from '../_rate-limit.js';
 export const config = { runtime: 'edge' };
 
 // Mirrors ENDPOINT_RATE_POLICIES['/api/youtube/live'] in
-// server/_shared/rate-limit.ts. api/*.js cannot import ../server/ (AGENTS.md),
+// server/_shared/rate-limit.ts. api/*.js cannot import ../server/ (CLAUDE.md),
 // so the budget is duplicated here and tests/rate-limit.test.mts fails if the
 // two copies drift. (#6234)
 const RATE_LIMIT_SCOPE = 'youtube-live';

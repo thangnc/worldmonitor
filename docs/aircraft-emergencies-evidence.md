@@ -130,7 +130,7 @@ Each source publishes its one ordinary military aircraft and all three emergency
 
 ## Browser proof and live limits
 
-The repeatable browser step is `.agents/skills/verify-worldmonitor/steps/aircraft-emergencies.mjs`.
+The repeatable browser step is `.claude/skills/verify-worldmonitor/steps/aircraft-emergencies.mjs`.
 It controls only the emergency RPC response and browser clock while using real dashboard assets and controls.
 Desktop uses the DeckGL layer control. Mobile uses Search to toggle the layer because the mobile Map tab hides desktop controls.
 The step checks code details, URL/storage state, conflicts, missing positions, feed failure, expiry, empty success, toggle-off, and reload.

@@ -1021,7 +1021,7 @@ export function installWmSessionFetchInterceptor(): void {
   const apiOrigin = (() => {
     try { return new URL(getCanonicalApiOrigin()).origin; } catch { return ''; }
   })();
-  // AGENTS.md bans `fetch.bind(globalThis)` to avoid freezing a stale
+  // CLAUDE.md bans `fetch.bind(globalThis)` to avoid freezing a stale
   // reference. The prescribed alternative `(...args) => globalThis.fetch(...)`
   // would recurse here because the very next line replaces `window.fetch`
   // with our wrapper — re-entering through `globalThis.fetch` would loop

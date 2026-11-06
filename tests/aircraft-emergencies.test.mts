@@ -343,7 +343,7 @@ describe('EMERGENCY_CODES single source', () => {
         else if (/\.(?:[cm]?[jt]s|tsx)$/.test(name) && triple.test(readFileSync(path, 'utf8'))) offenders.push(relative(root, path));
       }
     };
-    for (const dir of ['shared', 'server', 'src', 'scripts', 'api', 'tests', '.agents']) walk(join(root, dir));
+    for (const dir of ['shared', 'server', 'src', 'scripts', 'api', 'tests', '.claude/skills']) walk(join(root, dir));
     assert.deepEqual(offenders, ['shared/aircraft-emergencies.ts']);
   });
 });

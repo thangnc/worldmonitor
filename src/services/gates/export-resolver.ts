@@ -299,7 +299,7 @@ export function isExportGateActive(): boolean {
  * cached, so concurrent callers share one request.
  *
  * `fetch` is called through an arrow wrapper (never `fetch.bind`) so the
- * desktop runtime's patched global is honoured — see AGENTS.md.
+ * desktop runtime's patched global is honoured — see CLAUDE.md.
  */
 export function primeExportGateActivation(fetchImpl?: CatalogFetch): Promise<boolean> {
   if (activationProbe) return activationProbe;

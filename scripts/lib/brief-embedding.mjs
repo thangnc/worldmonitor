@@ -276,7 +276,7 @@ async function embedBatchWithUsage(normalizedTitles, deps, usage) {
 
   // Wrap rather than assign: bare `fetch` captures the current global
   // binding at lookup time, so later monkey-patches (instrumentation,
-  // Edge-runtime shims) don't see the wrapper. See AGENTS.md's
+  // Edge-runtime shims) don't see the wrapper. See CLAUDE.md's
   // "fetch.bind(globalThis) is BANNED" rule — same class of bug.
   const fetchImpl = deps.fetch ?? ((...args) => globalThis.fetch(...args));
   const pipelineImpl = deps.redisPipeline ?? defaultRedisPipeline;

@@ -13,7 +13,7 @@
  * map would leave api/story.js canonicalising at a slug that 404s.
  *
  * `api/*.js` entries are self-contained JavaScript and may import only
- * same-directory `_*.js` helpers, never `scripts/` or `src/` (AGENTS.md
+ * same-directory `_*.js` helpers, never `scripts/` or `src/` (CLAUDE.md
  * "Critical boundaries"). Committing the map is what lets api/story.js
  * canonicalise a share stub onto `/countries/<slug>/` without that import.
  *

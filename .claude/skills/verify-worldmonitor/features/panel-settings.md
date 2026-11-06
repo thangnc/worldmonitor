@@ -25,7 +25,7 @@ Preconditions:
 - The step seeds `worldmonitor-panels` with `threat-timeline` disabled, so enabling it is an observable change.
 - The step seeds `wm-pro-key`. This is the product's own legacy tester-session path, not a test-only bypass: without it the `full` variant already sits at the free-tier cap and the modal answers the toggle with a cap toast instead of enabling the panel.
 
-- **Boot disabled.** Run `wm-verify.sh drive .agents/skills/verify-worldmonitor/steps/panel-settings.mjs --name panel-settings`. The step first asserts `#panelsGrid .panel[data-panel="threat-timeline"]` has count `0` while other panels are mounted.
+- **Boot disabled.** Run `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/panel-settings.mjs --name panel-settings`. The step first asserts `#panelsGrid .panel[data-panel="threat-timeline"]` has count `0` while other panels are mounted.
 - **Open settings.** Choose the gear. `#unifiedSettingsBtn` click makes the overlay's tablist visible.
 - **Panels tab.** Choose `Panels`. `#us-tab-panels` click reveals `#usPanelToggles`.
 - **Toggle.** Choose the `threat-timeline` tile. `#usPanelToggles .panel-toggle-item[data-panel="threat-timeline"]` gains the `active` class.

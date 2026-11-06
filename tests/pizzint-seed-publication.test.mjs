@@ -728,7 +728,7 @@ test('archives the BestTime fallback, including venues with no live reading', as
   assert.equal(byField.find((r) => r.placeId === ids[2]).quality, 'closed');
 });
 
-// The archive dataset has no dashboard or RPC consumer, so AGENTS.md requires it
+// The archive dataset has no dashboard or RPC consumer, so CLAUDE.md requires it
 // be registered as a standalone health key. Drive the REAL classifier over the
 // registered label in each of its three states.
 test('the registered archive health label reports run-then-stopped, not never-run', async () => {

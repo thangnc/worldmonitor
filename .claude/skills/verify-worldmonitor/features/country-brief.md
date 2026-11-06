@@ -28,7 +28,7 @@ Preconditions:
 - `wm-verify.sh doctor` reports OK.
 - No credential is needed; the brief renders from bundled and directly-fetched data.
 
-- **Deep link.** Navigate to `/dashboard?country=UA`. Run `wm-verify.sh drive .agents/skills/verify-worldmonitor/steps/country-brief.mjs --name country-brief`. Exit code `0`.
+- **Deep link.** Navigate to `/dashboard?country=UA`. Run `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/country-brief.mjs --name country-brief`. Exit code `0`.
 - **Open state.** `#country-deep-dive-panel` reaches `aria-hidden="false"` with computed `visibility: visible`. Both matter — the panel is always in the DOM and slides in via transform, so attachment alone proves nothing.
 - **Content.** `#deep-dive-content` holds 200+ characters of text and a heading. A `UA` run on this checkout reports a `Ukraine` heading with ~23 sections and ~2 000 characters.
 - **URL round-trip.** Poll until `?country=UA` is back in `window.location`. Observed value includes the map state too: `?lat=…&lon=…&zoom=…&view=global&timeRange=7d&layers=…&country=UA`.

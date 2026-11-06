@@ -14,7 +14,7 @@ const KALSHI_SETTLEMENT_BASE = 'https://api.elections.kalshi.com/trade-api/v2';
 const SETTLEMENT_TTL_SECONDS = 45 * 24 * 60 * 60;
 const SETTLEMENT_FETCH_CAP_PER_RUN = 10;
 
-// Health-monitoring companion for the settlement feed (AGENTS.md: Redis seed
+// Health-monitoring companion for the settlement feed (CLAUDE.md: Redis seed
 // scripts MUST write seed-meta:<key>). Registered in api/health.js SEED_META.
 export const MARKET_SETTLEMENT_META_KEY = 'seed-meta:prediction:markets-resolution';
 
