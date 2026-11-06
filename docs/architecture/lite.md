@@ -1,6 +1,6 @@
 # World Monitor Lite profile
 
-Status: accepted scope and architecture, 2026-11-07. Phase 0 (repository review) is done; build work starts at Phase 1.
+Status: accepted scope and architecture, 2026-11-07. Phase 0 (repository review) is done. Phase 1 (profile shell) is implemented in code; the access gate is configured at deploy time.
 
 This is the canonical spec for the owner's private, low-noise build of World Monitor. It records the original proposal, what review against the code changed, and the owner's decisions. `CLAUDE.md` holds the always-loaded summary and `.claude/rules/lite-profile.md` holds the file-level rules. Change this document first when scope or architecture changes.
 
@@ -72,7 +72,7 @@ Material capability, policy and business changes, not product marketing. Refresh
 |---|---|---|
 | AI/tech event feed | `ai`, `tech` | Not grouped into events |
 | Model and product tracker | — | New panel and sources needed |
-| Policy and governance | `policy`, `ai-regulation`, `src/config/ai-regulations.ts` | `ai-regulation` missing from `full` |
+| Policy and governance | `policy` (AI Policy & Regulation news), `ai-regulation`, `src/config/ai-regulations.ts` | Both missing from `full`. `full` has `trade-policy`, a different panel |
 | Research radar | research service (`server/worldmonitor/research/v1/`: arXiv, Hacker News, trending repos) | Data exists; no panel on `full` |
 | Infrastructure and business | `hardware`, `tech-readiness`, layer `datacenters`, `src/config/ai-datacenters.ts` | `hardware` missing from `full` |
 
@@ -112,11 +112,15 @@ Enable an optional panel, layer or feed only if it meets at least one test:
 
 ## Profile mechanism
 
-- One build/deploy env flag names the profile (Phase 1 picks the name, following the existing `VITE_ENABLE_*` build flags such as `VITE_ENABLE_AIS`).
+- `VITE_LITE_PROFILE=true` at build time turns the profile on (`LITE_PROFILE_ENABLED` in `src/config/lite-profile.ts`). The module also holds the Lite panel order, the cross-variant panel list, and the desktop and mobile layer sets.
 - Under the flag: Lite panel and layer defaults, the Lite mission preset, the Lite-only panels and features, the source-policy filter, and the Lite seeder allowlist.
 - Without the flag: no behavior change. Lite-only code paths are flag-gated so upstream merges stay cheap.
 - The variant stays `full`. A custom hostname already resolves to `full` (`src/config/variant.ts`), so the owner's domain needs no variant change.
-- Panels taken from the `finance` and `tech` variants (`hardware`, `ai-regulation`, `centralbanks`, `crypto-news`) are added to `FULL_PANELS` with `enabled: false`. Otherwise `applyMissionPresetToState` and `src/app/panel-enablement.ts` silently drop them. Finance and tech map layers (`stockExchanges`, `centralBanks`, `financialCenters`, `techHQs`) need adding to `VARIANT_LAYER_ORDER.full` the same way, or `sanitizeLayersForVariant` strips them.
+- Panels taken from the `finance` variant (`crypto-news`, `centralbanks`) and the `tech` variant (`policy`, `ai-regulation`, `hardware`) join the `full` catalog only under the flag (`buildLitePanelCatalog`), so presets and panel enablement keep them. Their news comes from the other editions' digests. Upstream `full` does not change.
+- Under the flag, the `full` catalog lists the Lite panels first and enabled, and every other `full` panel disabled but still available in Settings. Default map layers are exactly the Lite set (`buildLiteMapLayers`).
+- The `lite-desk` mission preset (Lite Desk) re-applies the layout. It is always in the catalog, so preset ids, analytics and checkout attribution stay in sync, but it is offered only when the flag is on.
+- Lite layers are all allowed on `full`. Finance and tech map layers (`stockExchanges`, `centralBanks`, `financialCenters`, `techHQs`) are not in the profile; adding one later needs `VARIANT_LAYER_ORDER.full`, or `sanitizeLayersForVariant` strips it.
+- No Lite panel is premium on the web build (`cii` and `strategic-risk` are premium only in the desktop app), so Phase 1 needs no premium unlock.
 
 ## Platform map
 
@@ -198,7 +202,7 @@ Each briefing states the development with its timestamp, keeps confirmed informa
 | Phase | Scope | Exit condition |
 |---|---|---|
 | 0. Repository review | This document | Done |
-| 1. Profile shell | Env flag; Lite panel and layer defaults; Lite mission preset; add `hardware`, `ai-regulation`, `centralbanks`, `crypto-news` to `FULL_PANELS`; access gate; decide how premium panels unlock without Convex | The owner's deployment boots into the three-domain layout behind the gate; flag off is unchanged |
+| 1. Profile shell | `VITE_LITE_PROFILE`; Lite panel and layer defaults; Lite Desk preset; the five cross-variant panels; access gate at deploy time | Done in code: the dashboard boots into the Lite layout with the flag on and is unchanged with it off (`tests/lite-profile.test.mts`, `verify-worldmonitor` step `lite-profile.mjs`). The access gate is set up when deploying |
 | 2. Core feeds on the owner's stack | Render services for the seeder allowlist; health key subset; source-policy filter; verify how much general news the `full` digest still carries | Lite panels fresh in `/api/health`; no unlicensed sources |
 | 3. Event intelligence | Event object and timeline, novelty, crypto-risk and AI-event detectors, non-Convex alerts (Supabase gate) | Sampled cluster and alert quality meet agreed targets |
 | 4. Briefings and trends | Lite brief built on the existing citation-checked brief code | Briefing accuracy and usefulness reviewed |

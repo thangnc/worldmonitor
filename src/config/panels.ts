@@ -6,6 +6,13 @@ import { isDesktopRuntime } from '@/services/runtime';
 import { getSecretState } from '@/services/runtime-config';
 // boundary-ignore: isEntitled is a pure state check with no side effects
 import { isEntitled } from '@/services/entitlements';
+import {
+  LITE_MAP_LAYERS,
+  LITE_MOBILE_MAP_LAYERS,
+  LITE_PROFILE_ENABLED,
+  buildLiteMapLayers,
+  buildLitePanelCatalog,
+} from './lite-profile';
 
 const _desktop = isDesktopRuntime();
 
@@ -1156,8 +1163,14 @@ const ENERGY_MOBILE_MAP_LAYERS: MapLayers = {
 
 type PanelVariant = 'full' | 'tech' | 'finance' | 'commodity' | 'energy' | 'happy';
 
+// World Monitor Lite profile (docs/architecture/lite.md): same `full` variant,
+// with Lite panels first and enabled and every other panel disabled.
+const FULL_PANEL_CATALOG: Record<string, PanelConfig> = LITE_PROFILE_ENABLED
+  ? buildLitePanelCatalog(FULL_PANELS, { ...TECH_PANELS, ...FINANCE_PANELS })
+  : FULL_PANELS;
+
 const VARIANT_PANEL_CONFIGS: Record<PanelVariant, Record<string, PanelConfig>> = {
-  full: FULL_PANELS,
+  full: FULL_PANEL_CATALOG,
   tech: TECH_PANELS,
   finance: FINANCE_PANELS,
   commodity: COMMODITY_PANELS,
@@ -1470,7 +1483,9 @@ export const DEFAULT_MAP_LAYERS = SITE_VARIANT === 'happy'
         ? COMMODITY_MAP_LAYERS
         : SITE_VARIANT === 'energy'
           ? ENERGY_MAP_LAYERS
-          : FULL_MAP_LAYERS;
+          : LITE_PROFILE_ENABLED
+            ? buildLiteMapLayers(FULL_MAP_LAYERS, LITE_MAP_LAYERS)
+            : FULL_MAP_LAYERS;
 
 export const MOBILE_DEFAULT_MAP_LAYERS = SITE_VARIANT === 'happy'
   ? HAPPY_MOBILE_MAP_LAYERS
@@ -1482,7 +1497,9 @@ export const MOBILE_DEFAULT_MAP_LAYERS = SITE_VARIANT === 'happy'
         ? COMMODITY_MOBILE_MAP_LAYERS
         : SITE_VARIANT === 'energy'
           ? ENERGY_MOBILE_MAP_LAYERS
-          : FULL_MOBILE_MAP_LAYERS;
+          : LITE_PROFILE_ENABLED
+            ? buildLiteMapLayers(FULL_MOBILE_MAP_LAYERS, LITE_MOBILE_MAP_LAYERS)
+            : FULL_MOBILE_MAP_LAYERS;
 
 /** Maps map-layer toggle keys to their data-freshness source IDs (single source of truth). */
 export const LAYER_TO_SOURCE: Partial<Record<keyof MapLayers, DataSourceId[]>> = {

@@ -657,6 +657,7 @@ describe('mission preset definitions', () => {
         'good-news-explorer',
         'nq-day-trader',
         'country-watcher',
+        'lite-desk',
       ],
     );
   });
