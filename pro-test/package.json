@@ -50,6 +50,10 @@
     "shell-quote": "1.12.0",
     "metro": "0.84.6",
     "brace-expansion@5": "^5.0.12",
-    "stream-json": "$stream-json"
+    "stream-json": "$stream-json",
+    "glob@13": "14.0.2",
+    "minimatch@10": "11.0.1",
+    "uuid@8": "11.1.1",
+    "uuid@11": "11.1.1"
   }
 }

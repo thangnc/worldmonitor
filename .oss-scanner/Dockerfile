@@ -13,12 +13,12 @@
 
 # Base images are pinned to multi-arch index digests, as
 # tests/ci-workflow-coverage.test.mts requires.
-# rust:1-bookworm (Rust 1.99.1) supplies the toolchain, so no installer script
+# rust:1-trixie (Rust 1.99.1) supplies the toolchain, so no installer script
 # is fetched and run unverified.
-FROM rust:1-bookworm@sha256:e12566d5abc17a0da741628782cdb504b68b8961f5bfcf677936bf3e8b32de29 AS rust
+FROM rust:1-trixie@sha256:8a4e90c7946b74626488b1446f712c0fe0ed1a596cbd3d871684bc9c5433ae07 AS rust
 
-# node:24-bookworm
-FROM node:24-bookworm@sha256:7b559cf7f77d837192392499a850abb1a3d1f49fbc2bd0692d54b212c9e38f6d
+# node:24-trixie (Debian 13; Debian 12 bookworm left regular security support on 2026-07-11)
+FROM node:24-trixie@sha256:5c6e2e57d7dd6652ce6f087ba0328312059d7c77f93baa8751865dbf103f1acb
 
 ENV DEBIAN_FRONTEND=noninteractive \
     NODE_OPTIONS=--max-old-space-size=8192 \

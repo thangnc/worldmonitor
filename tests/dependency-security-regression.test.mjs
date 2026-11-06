@@ -66,8 +66,9 @@ it('KaTeX ignores inherited trust while preserving explicit trusted rendering', 
 it('Umami selects only Hono versions with the JSX escaping fix', () => {
   const lock = load(readFileSync(new URL('../docker/umami/runtime/pnpm-lock.yaml', import.meta.url), 'utf8'));
   const versions = Object.keys(lock.packages).filter((key) => key.startsWith('hono@')).map((key) => key.slice(5));
-  assert.ok(versions.length > 0);
-  for (const version of versions) assert.ok(semver.gte(version, '4.13.7'));
+  // @prisma/dev 0.24.17 (November 2026 triage) dropped Hono, so the runtime may
+  // carry none. The `hono` override stays so any future copy is still patched.
+  for (const version of versions) assert.ok(semver.gte(version, '4.13.7'), `hono@${version}`);
 });
 
 function npmLockVersions(path, name) {
@@ -89,7 +90,6 @@ const patchedLocks = [
   ['shell-quote', '1.11.0', npmLockVersions, '../package-lock.json'],
   ['shell-quote', '1.11.0', npmLockVersions, '../pro-test/package-lock.json'],
   ['shell-quote', '1.11.0', pnpmLockVersions, '../docker/umami/runtime/pnpm-lock.yaml'],
-  ['hono', '4.13.11', pnpmLockVersions, '../docker/umami/runtime/pnpm-lock.yaml'],
   ['markdown-it', '14.3.3', npmLockVersions, '../package-lock.json'],
   ['@vitest/mocker', '4.1.12', npmLockVersions, '../package-lock.json'],
   ['@vitest/mocker', '4.1.12', npmLockVersions, '../consumer-prices-core/package-lock.json'],
@@ -116,6 +116,52 @@ for (const [name, patched, versionsOf, path] of patchedLocks) {
     for (const version of versions) assert.ok(semver.gte(version, patched), `${name}@${version}`);
   });
 }
+
+// November 2026 triage (docs/solutions/security-issues/dependabot-triage-2026-11-07.md).
+// These packages keep older majors that were never in the advisory range
+// (glob 7, minimatch 3 and 5), so the check is "no version inside the
+// vulnerable range" rather than "every version >= patched".
+const vulnerableRanges = [
+  ['glob', '>=9.0.0 <=14.0.1', 'GHSA-3g3m-2fjr-6pw4', ['../package-lock.json', '../pro-test/package-lock.json', '../integrations/zapier/package-lock.json']],
+  ['minimatch', '>=7.0.0 <11.0.1', 'GHSA-g3hv-75wg-m249', ['../package-lock.json', '../pro-test/package-lock.json', '../integrations/zapier/package-lock.json']],
+  ['uuid', '<11.1.1 || >=12.0.0 <12.0.1 || >=13.0.0 <13.0.1', 'GHSA-w5hq-g745-h8pq', ['../package-lock.json', '../scripts/package-lock.json', '../pro-test/package-lock.json']],
+];
+
+for (const [name, range, advisory, paths] of vulnerableRanges) {
+  for (const path of paths) {
+    it(`${path.slice(3)} has no ${name} in ${advisory} range ${range}`, () => {
+      const versions = npmLockVersions(path, name);
+      assert.ok(versions.length > 0);
+      for (const version of versions) assert.ok(!semver.satisfies(version, range), `${name}@${version}`);
+    });
+  }
+}
+
+const umamiLock = '../docker/umami/runtime/pnpm-lock.yaml';
+
+it('docker/umami/runtime/pnpm-lock.yaml selects no hono below 4.13.11', () => {
+  // Absence is the expected state since @prisma/dev 0.24.17 dropped Hono.
+  for (const version of pnpmLockVersions(umamiLock, 'hono')) assert.ok(semver.gte(version, '4.13.11'), `hono@${version}`);
+});
+for (const [name, patched] of [['mysql2', '3.24.4'], ['deepmerge-ts', '8.0.2'], ['valibot', '1.4.2']]) {
+  it(`docker/umami/runtime/pnpm-lock.yaml selects only ${name} >= ${patched}`, () => {
+    const versions = pnpmLockVersions(umamiLock, name);
+    assert.ok(versions.length > 0);
+    for (const version of versions) assert.ok(semver.gte(version, patched), `${name}@${version}`);
+  });
+}
+
+it('docker/umami/runtime/pnpm-lock.yaml no longer carries @hono/node-server (GHSA-rmxm-3fg6-px4f)', () => {
+  // @prisma/dev 0.24.17 dropped the local HTTP server dependency entirely.
+  assert.deepEqual(pnpmLockVersions(umamiLock, '@hono/node-server'), []);
+});
+
+it('sdk/rust/Cargo.lock selects rustls-webpki >= 0.103.16 (RUSTSEC-2026-0382)', () => {
+  const lock = readFileSync(new URL('../sdk/rust/Cargo.lock', import.meta.url), 'utf8');
+  const versions = [...lock.matchAll(/name = "rustls-webpki"\nversion = "([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(versions.length > 0);
+  for (const version of versions) assert.ok(semver.gte(version, '0.103.16'), `rustls-webpki@${version}`);
+});
 
 it('shell-quote rejects a line terminator after a comment token', () => {
   const { quote } = require('shell-quote');
