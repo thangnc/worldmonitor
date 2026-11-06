@@ -16,6 +16,17 @@ Claude Code is the only supported coding agent for this repository. This file is
 
 Deeper references: [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIBUTING.md), [CONCEPTS.md](CONCEPTS.md).
 
+## Product direction: World Monitor Lite profile
+
+The owner runs a private, low-noise build of the `full` variant, focused on three domains: geopolitics and conflicts, finance and crypto, and technology and AI. [docs/architecture/lite.md](docs/architecture/lite.md) is the canonical spec: scope by panel ID, owner decisions, platform map, intelligence reuse map, and phase plan. Change it before changing scope or architecture. File-level rules are in `.claude/rules/lite-profile.md`.
+
+- New work serves one of the three domains, or passes the spec's decision rule for optional modules. Say which when proposing it.
+- Lite behavior and custom features sit behind the profile env flag. With the flag off, behavior matches upstream. Do not add a `lite` variant.
+- Reuse the existing `shared/` intelligence modules (story identity, publisher families, credibility, corroboration, keyword spikes, grounded briefs) before writing new scoring, dedup, or brief code.
+- Add no new datastore (Supabase Postgres, R2 raw archive) until its phase gate in the spec is met. Redis stays the store the dashboard reads.
+- Model work at the event level, not the article level. Keep sources, timestamps, confidence, and the distinction between confirmed facts, attributed claims, and model inference visible.
+- The deployment stays private and access-gated under the "World Monitor" name. Opening it to others needs a distinct name first (trademark policy).
+
 ## Own the outcome
 
 - Treat reports of broken behavior and requests to debug, investigate, diagnose, or "figure out" a failure as requests to resolve it. Prove the cause, make a scoped repair when warranted, verify it, and deliver a ready PR. Do not require the user to say "fix" again.
