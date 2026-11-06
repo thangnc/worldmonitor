@@ -7,6 +7,7 @@ import {
   getEffectivePanelConfig,
 } from '@/config/panels';
 import { SITE_VARIANT } from '@/config/variant';
+import { LITE_MAP_LAYERS, LITE_PANEL_ORDER, LITE_PROFILE_ENABLED } from '@/config/lite-profile';
 import { isLayerExecutable, sanitizeLayersForVariant } from '@/config/map-layer-definitions';
 import type { RendererKind, MapVariant } from '@/config/map-layer-definitions';
 import {
@@ -35,6 +36,8 @@ export interface MissionPreset {
   layers: Array<keyof MapLayers>;
   /** When set, the preset is offered and applicable only on these variants. */
   variants?: string[];
+  /** Offered only when this deployment profile is on (src/config/lite-profile.ts). */
+  profile?: 'lite';
   /** Explicit layouts for variants where the base mission has no coherent native intersection. */
   variantOverrides?: Partial<Record<string, Pick<MissionPreset, 'panels' | 'layers'>>>;
 }
@@ -395,6 +398,20 @@ export const MISSION_PRESETS: readonly MissionPreset[] = [
       },
     },
   },
+  {
+    id: 'lite-desk',
+    label: 'Lite Desk',
+    shortLabel: 'Lite',
+    description: 'Geopolitics, markets and crypto, and AI in one low-noise view.',
+    icon: 'L',
+    view: 'global',
+    zoom: 2.2,
+    timeRange: '24h',
+    panels: [...LITE_PANEL_ORDER],
+    layers: [...LITE_MAP_LAYERS],
+    variants: ['full'],
+    profile: 'lite',
+  },
 ];
 
 const DYNAMIC_PANEL_PREFIXES = ['cw-', 'mcp-'];
@@ -432,6 +449,7 @@ export function isMissionPresetAvailableForVariant(
   preset: MissionPreset,
   variant: string,
 ): boolean {
+  if (preset.profile === 'lite' && !LITE_PROFILE_ENABLED) return false;
   if (!preset.variants || preset.variants.length === 0) return true;
   return preset.variants.includes(variant);
 }

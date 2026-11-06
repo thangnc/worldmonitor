@@ -20,9 +20,11 @@ Source of truth: [docs/architecture/lite.md](../../docs/architecture/lite.md). R
 ## Rules
 
 - **No new variant.** Lite is a deployment profile on `full`, switched by one env flag. About 21 `SITE_VARIANT === 'full'` checks gate CII, intelligence and theater loading; a new variant would silently lose that data. See "Rejected alternatives".
-- **Flag-gate every Lite-only change.** With the flag off, panels, layers, feeds and seeders behave exactly as upstream. Follow the existing `VITE_ENABLE_*` build-flag style.
-- **Register before profiling.** A panel from another variant (`hardware`, `ai-regulation`, `centralbanks`, `crypto-news`) must be added to `FULL_PANELS` with `enabled: false` first. Otherwise `applyMissionPresetToState` and `src/app/panel-enablement.ts` drop it silently. A map layer must be in `VARIANT_LAYER_ORDER.full`, or `sanitizeLayersForVariant` strips it.
-- **Defaults reach first visits only.** `FULL_PANELS` defaults do not change saved layouts. Keep the Lite mission preset in step with the profile defaults so the layout can be re-applied.
+- **Flag-gate every Lite-only change** on `LITE_PROFILE_ENABLED` (`VITE_LITE_PROFILE=true`). With the flag off, panels, layers, presets, feeds and seeders behave exactly as upstream. Never optional-chain `import.meta.env`; `tests/browser-bundle-secret-guard.test.mts` rejects it.
+- **One source of truth.** Lite panels, cross-variant panels and layers live in `src/config/lite-profile.ts` (`LITE_PANEL_ORDER`, `LITE_CROSS_VARIANT_PANELS`, `LITE_MAP_LAYERS`). Change them there, then mirror the lists in `.claude/skills/verify-worldmonitor/steps/lite-profile.mjs`.
+- **Cross-variant panels join `full` only under the flag** (`buildLitePanelCatalog` in `src/config/panels.ts`). Never add them to `FULL_PANELS` itself: that changes upstream. Panel keys can mean different panels per variant (`policy` is tech's AI policy news; `full` has `trade-policy`). Check the key's source catalog before adding it.
+- **Layers.** A Lite layer must be allowed on `full` (`getAllowedLayerKeys('full')`), or `sanitizeLayersForVariant` strips it.
+- **Defaults reach first visits only.** Saved layouts keep their panels. The `lite-desk` preset re-applies the profile and reads the same lists, so it stays in step automatically.
 - **Never add long-tail token panels** (`defi-tokens`, `ai-tokens`, `other-tokens`) to `full`. The spec's "Removed or optional" table lists the other off-by-default IDs.
 - **Optional modules** need one of the spec's decision-rule tests. State which test in the PR.
 - **Seeders.** The owner's workers run on Render, not Railway, and only for the Lite seeder allowlist. A new seeder for a Lite panel joins the allowlist and the health key subset, together with the usual `seed-meta` and `api/health.js` registration (`seeders.md`).
@@ -35,7 +37,13 @@ Source of truth: [docs/architecture/lite.md](../../docs/architecture/lite.md). R
 ```bash
 npm run typecheck
 npm run lint:boundaries
-node --import tsx --test tests/mission-presets.test.mts tests/panel-config-guardrails.test.mjs tests/variant-layer-guardrail.test.mjs
+node --import tsx --test tests/lite-profile.test.mts tests/mission-presets.test.mts tests/panel-config-guardrails.test.mjs tests/variant-layer-guardrail.test.mjs
 ```
 
-Check the changed layout with the profile flag on and off, using the `verify-worldmonitor` skill.
+Check the layout with the flag on and off, using the `verify-worldmonitor` skill:
+
+```bash
+VITE_LITE_PROFILE=true .claude/skills/verify-worldmonitor/scripts/wm-verify.sh launch
+WM_VERIFY_EXPECT=lite .claude/skills/verify-worldmonitor/scripts/wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-profile.mjs --name lite-on
+# cleanup, relaunch without the flag, then WM_VERIFY_EXPECT=full ... --name lite-off
+```

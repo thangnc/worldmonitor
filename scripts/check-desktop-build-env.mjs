@@ -58,6 +58,7 @@ export const EXCLUDED_DESKTOP_BUILD_ENV = {
   VITE_QUIET_HOURS_BATCH_ENABLED: 'feature flag with correct default',
   VITE_DIGEST_CRON_ENABLED: 'feature flag with correct default',
   VITE_FOLLOW_COUNTRIES_ENABLED: 'feature flag with correct default',
+  VITE_LITE_PROFILE: 'web-only private deployment profile (docs/architecture/lite.md); desktop builds stay on upstream full defaults',
   VITE_MAP_INTERACTION_MODE: 'optional override; default is correct',
   VITE_HORMUZ_CRISIS_START_DATE: 'editorial re-pin override; default pinned in code',
   VITE_TELEGRAM_BOT_USERNAME: "defaults to 'WorldMonitorBot' in code",
