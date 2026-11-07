@@ -6,10 +6,11 @@ import { Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, 
 import { selectTechDevelopments, useArxiv, useDigest, useHackerNews } from '../data/hooks';
 import { SAMPLE_INFRA_KPIS, SAMPLE_MODELS } from '../data/fixtures';
 import {
+  CORROBORATION_VIEW,
   TECH_FILTER_CATEGORIES,
   byImportance,
-  claimStatus,
   cleanSnippet,
+  corroborationOf,
   digestItems,
   isPrimarySource,
   relativeTime,
@@ -40,11 +41,16 @@ const TYPE_ICON: Record<string, LucideIcon> = {
 };
 
 /** The digest snippet without HTML entities, or nothing when it repeats the title. */
-/** Status pill from the corroboration rule. */
+/**
+ * Status pill from the dashboard's corroboration verdict. A tier-1 outlet
+ * reporting alone reads "Primary source"; tier 1 never upgrades the verdict.
+ */
 function evidencePill(item: LiteItem): { label: string; tone: Tone; Icon: LucideIcon } {
-  if (isPrimarySource(item.source)) return { label: 'Primary source', tone: 'ok', Icon: Check };
-  if (claimStatus(item) !== 'unverified') return { label: 'Corroborated', tone: 'ok', Icon: CheckCheck };
-  return { label: 'Single source', tone: 'high', Icon: Quote };
+  const verdict = corroborationOf(item);
+  if (verdict.state === 'corroborated') return { label: 'Corroborated', tone: 'ok', Icon: CheckCheck };
+  if (verdict.state !== 'tier4-only' && isPrimarySource(item.source)) return { label: 'Primary source', tone: 'ok', Icon: Check };
+  const view = CORROBORATION_VIEW[verdict.state];
+  return { label: view.label, tone: view.tone, Icon: Quote };
 }
 
 /** Topics the owner watches. Counts are title matches in the tech digest. */
@@ -279,7 +285,7 @@ function InfraBusiness({ state }: { state: ReturnType<typeof useDigest> }) {
         deals.map((d) => (
           <a key={d.link} href={d.link} target="_blank" rel="noopener noreferrer" class="flex flex-col gap-[2px] hover:opacity-90">
             <span class="text-[12px] text-ink">{d.title}</span>
-            <span class="text-[11px] text-dim">{relativeTime(d.publishedAt, Date.now())} · {d.source} · {claimStatus(d) === 'unverified' ? 'single source' : 'corroborated'}</span>
+            <span class="text-[11px] text-dim">{relativeTime(d.publishedAt, Date.now())} · {d.source} · {CORROBORATION_VIEW[corroborationOf(d).state].label.toLowerCase()}</span>
           </a>
         ))
       )}

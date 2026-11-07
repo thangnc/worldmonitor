@@ -134,7 +134,11 @@ describe('Lite UI shell', () => {
     const events = [...root.querySelectorAll('[data-event-domain]')];
     expect(events.map((e) => e.getAttribute('data-event-domain'))).toEqual(['geo', 'fin', 'tech']);
     expect(events[0]?.getAttribute('data-expanded')).toBe('true');
-    expect(root.querySelector('[data-testid="event-detail"]')?.textContent).toContain('CONFIRMED');
+    // The detail states the shared corroboration verdict; tier 1 is beside it, never "confirmed".
+    const detail = root.querySelector('[data-testid="event-detail"]')?.textContent ?? '';
+    expect(detail).toContain('3 publishers carry the story');
+    expect(detail).toContain('Reuters reports the headline (tier-1 outlet)');
+    expect(detail).not.toContain('CONFIRMED');
     expect(root.querySelector('[data-testid="priority-events"] [data-derived="true"]')).not.toBeNull();
 
     // The domain filter narrows both the brief and the events.
@@ -173,7 +177,8 @@ describe('Lite UI shell', () => {
     // Real digest data reaches the incidents table.
     const incident = root.querySelector('[data-incident]');
     expect(incident?.textContent).toContain('Naval incident near Bab el-Mandeb');
-    expect(incident?.textContent).toContain('Confirmed');
+    expect(incident?.textContent).toContain('Corroborated');
+    expect(incident?.textContent).toContain('3 · T1');
     // The watchlist has no source yet, so it is badged.
     expect(root.querySelector('[data-testid="watchlist"] [data-sample="true"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="regional-timeline"]')?.textContent).toContain('Naval incident');
@@ -210,7 +215,7 @@ describe('Lite UI shell', () => {
     const development = root.querySelector('[data-development]');
     expect(development?.textContent).toContain('Lab releases open-weights model');
     expect(development?.textContent).toContain('Benchmarks self-reported.');
-    expect(development?.textContent).toContain('Single source');
+    expect(development?.textContent).toContain('Single publisher');
     expect(root.querySelectorAll('[data-testid="model-tracker"] [data-sample-row]')).toHaveLength(4);
     expect(root.querySelector('[data-testid="model-tracker"] [data-sample="true"]')).not.toBeNull();
   });
