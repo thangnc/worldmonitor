@@ -170,3 +170,14 @@ export function ucdpInRange(events: readonly UcdpViolenceEvent[], range: TimeRan
   const span = TIME_RANGE_HOURS[range] * 3_600_000;
   return { events: events.filter((e) => !e.dateStart || newest - e.dateStart < span), newest };
 }
+
+/**
+ * The map subtitle for the UCDP window. UCDP dates events by day (every start
+ * is midnight UTC), so a range shorter than a day can only show its latest day.
+ */
+export function ucdpWindowLabel(range: TimeRange, newest: number): string {
+  const end = day(newest);
+  return TIME_RANGE_HOURS[range] <= 24
+    ? `UCDP events: its latest day, ${end} (UCDP dates events by day, not hour)`
+    : `UCDP events: the last ${range} of UCDP data, to ${end}`;
+}

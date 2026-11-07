@@ -28,7 +28,7 @@ import {
   thresholdState,
   timeBuckets,
 } from '../src/lite/data/transforms.ts';
-import { actorName, eventDates, eventSpan, formatCoordinates, ucdpInRange, ucdpMarkers } from '../src/lite/data/ucdp.ts';
+import { actorName, eventDates, eventSpan, formatCoordinates, ucdpInRange, ucdpMarkers, ucdpWindowLabel } from '../src/lite/data/ucdp.ts';
 import { CONVERGENCE_RADIUS_KM, MILITARY_RADIUS_KM, escalationLevel, scoreHotspots } from '../src/lite/data/escalation.ts';
 import { computeEscalationScore } from '../shared/analysis-hotspot-escalation.ts';
 import { TIME_RANGE_HOURS, inTimeRange } from '../src/lite/data/transforms.ts';
@@ -472,6 +472,11 @@ describe('Lite conflict map', () => {
     assert.deepEqual(week.events.map((e) => e.id), ['0', '5']);
     assert.deepEqual(ucdpInRange(events, '30d').events.map((e) => e.id), ['0', '5', '10']);
     assert.deepEqual(ucdpInRange(events, '1h').events.map((e) => e.id), ['0']);
+    // UCDP dates events by day, so ranges up to a day all show its latest day, and say so.
+    for (const range of ['1h', '6h', '24h'] as const) {
+      assert.equal(ucdpWindowLabel(range, newest), 'UCDP events: its latest day, 2026-09-30 (UCDP dates events by day, not hour)');
+    }
+    assert.equal(ucdpWindowLabel('48h', newest), 'UCDP events: the last 48h of UCDP data, to 2026-09-30');
   });
 
   it('filters UCDP markers by region and keeps every location, deadliest first', () => {

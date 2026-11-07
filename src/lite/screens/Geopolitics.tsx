@@ -17,7 +17,7 @@ import {
   useUnrestEvents,
 } from '../data/hooks';
 import { ESCALATION_REGIONS, leadCountry } from '../data/regions';
-import { ucdpInRange, ucdpMarkers } from '../data/ucdp';
+import { ucdpInRange, ucdpMarkers, ucdpWindowLabel } from '../data/ucdp';
 import { FEED_LABEL, escalationLevel, scoreHotspots } from '../data/escalation';
 import { SAMPLE_WATCHLIST } from '../data/fixtures';
 import {
@@ -209,7 +209,7 @@ function ConflictMap({
       title="Conflict map"
       sub={
         ucdpRange?.newest
-          ? `UCDP events: the last ${range} of UCDP data, to ${new Date(ucdpRange.newest).toISOString().slice(0, 10)} · curated hotspots: live score`
+          ? `${ucdpWindowLabel(range, ucdpRange.newest)} · curated hotspots: live score`
           : 'UCDP events and curated hotspots (live score)'
       }
       testId="conflict-map"
