@@ -1050,16 +1050,15 @@ jobs:
             'Dir::Etc::sourcelist "/etc/apt/sources.list.d/ubuntu.sources";' \
             'Dir::Etc::sourceparts "-";' \
             | sudo tee /etc/apt/apt.conf.d/99-playwright-sources
-      # The dependency restore and the font install run side by side. Neither
-      # reads the other's output.
-      - parallel:
-          - uses: ./.github/actions/install-root-deps
-          - name: Install browser fonts
-            # Fonts change only how non-Latin text renders in the evidence
-            # screenshots, so a failed font install warns instead of failing.
-            uses: ./.github/actions/install-browser-fonts
-            timeout-minutes: 4
-            continue-on-error: true
+      # Sequential, not a `parallel:` group: this fork's account rejects that
+      # syntax with a startup_failure for the whole workflow.
+      - uses: ./.github/actions/install-root-deps
+      - name: Install browser fonts
+        # Fonts change only how non-Latin text renders in the evidence
+        # screenshots, so a failed font install warns instead of failing.
+        uses: ./.github/actions/install-browser-fonts
+        timeout-minutes: 4
+        continue-on-error: true
       - name: Resolve Playwright version
         id: playwright-version
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
@@ -1297,20 +1296,19 @@ jobs:
           done
           sudo dpkg --configure -a || true
           npx playwright install --with-deps chromium
-      # The font install runs beside the /pro build, which takes ~29s of CPU
-      # while the font step mostly waits on the cache or the network.
-      - parallel:
-          - name: Install browser fonts
-            # Fonts change only how non-Latin text renders in the evidence
-            # screenshots, so a failed font install warns instead of failing.
-            uses: ./.github/actions/install-browser-fonts
-            timeout-minutes: 4
-            continue-on-error: true
-          - name: Build /pro artifacts for prehydration browser checks
-            # public/pro/ is built output since #6898. Keep this explicit and
-            # immediately before the focused specs so the browser checks cannot
-            # run against missing or stale bytes from another build.
-            run: npm run build:pro
+      # Sequential, not a `parallel:` group: this fork's account rejects that
+      # syntax with a startup_failure for the whole workflow.
+      - name: Install browser fonts
+        # Fonts change only how non-Latin text renders in the evidence
+        # screenshots, so a failed font install warns instead of failing.
+        uses: ./.github/actions/install-browser-fonts
+        timeout-minutes: 4
+        continue-on-error: true
+      - name: Build /pro artifacts for prehydration browser checks
+        # public/pro/ is built output since #6898. Keep this explicit and
+        # immediately before the focused specs so the browser checks cannot
+        # run against missing or stale bytes from another build.
+        run: npm run build:pro
       - name: Run fail-closed prehydration browser checks
         id: prehydration
         if: matrix.part == 'pro-gates'
