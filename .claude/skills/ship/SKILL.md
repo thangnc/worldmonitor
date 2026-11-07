@@ -73,5 +73,9 @@ Fork facts that override the upstream wording:
    - After the merge, and only when asked:
      - `ExitWorktree` with `action: remove`
        - It warns that it will discard the merged commit because local `main` is behind. First run `git fetch origin main` and `git merge-base --is-ancestor <sha> origin/main`; if the commit is on `main` and `git status` is clean, pass `discard_changes: true`.
-     - delete the remote branch: `git push origin --delete <type>/<slug>`
+     - Retarget stacked children before deleting the branch. A hand delete can make GitHub close them instead of moving them to `main` ([lesson](../../../docs/engineering/solutions/workflow-issues/retarget-stacked-children-before-deleting-the-merged-parent-branch.md)):
+       - List them: `gh pr list --repo thangnc/worldmonitor --base <type>/<slug> --state open`.
+       - Move each: `gh pr edit <child> --repo thangnc/worldmonitor --base main`.
+       - Push a merge of `main` to each child's branch so its CI reruns against `main`. Do not close and reopen a PR to rerun CI ([lesson](../../../docs/engineering/solutions/workflow-issues/restart-ci-on-a-retargeted-pr-with-a-fresh-commit-not-close-reopen.md)).
+     - delete the remote branch only once that list is empty: `git push origin --delete <type>/<slug>`
      - `git pull` in the main checkout
