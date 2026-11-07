@@ -14,7 +14,7 @@ Source of truth: [ARCHITECTURE.md](../../ARCHITECTURE.md), the [verify-worldmoni
 ## Rules
 
 - Imports flow `types -> config -> services -> components -> app -> App.ts`. Logic shared with the server or MCP lives once in top-level `shared/`.
-- No framework and no state library. Shared state lives in `AppContext`, and URL state goes through `src/utils/urlState.ts`.
+- No framework and no state library. Shared state lives in `AppContext`, and URL state goes through `src/utils/urlState.ts`. The one exception is the Lite UI in `src/lite/` (Preact and Tailwind); its rules are in `lite-profile.md`.
 - Panels extend `src/components/Panel.ts` and render only through `setSafeContent` (or `setSafeContentImmediate` after a user action), `setContentNodes`, or `setTrustedContent`. Painting the panel DOM directly leaves the error chip and retry timer latched after one failure.
 - Do not assign `innerHTML`/`outerHTML` or call `insertAdjacentHTML`. Build markup with the `safeHtml` tagged template from `src/utils/sanitize.ts`, which escapes interpolations, or build nodes with `h()`/`fragment()` from `src/utils/dom-utils.ts`. `unsafeRawHtml`/`trustedHtml` require a stated reason.
 - Use the helper in `src/utils/safe-storage.ts` instead of dereferencing `localStorage`. Some Android WebViews expose it as `null`.

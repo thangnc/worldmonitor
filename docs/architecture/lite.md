@@ -24,6 +24,7 @@ Start with a low-noise executive view, keep the existing ingestion architecture,
 | "For me only" | The profile flag plus an access gate in front of the owner's domain. |
 | Hosting | The owner's managed stack (see [Platform map](#platform-map)). The Docker compose stack stays a secondary option with the same flag. |
 | AI models | External APIs allowed, through the existing chain in `server/_shared/llm.ts`. Keys and per-call cost are an operating concern. Local Ollama stays optional. |
+| Front page | A dedicated Lite UI at `/lite`, built from the owner's designs with Preact and Tailwind CSS. With the flag on it is the default page; the full dashboard stays reachable at `/dashboard?full=1`. See [Lite UI](#lite-ui-lite). |
 
 ### Open decisions
 
@@ -122,6 +123,38 @@ Enable an optional panel, layer or feed only if it meets at least one test:
 - Lite layers are all allowed on `full`. Finance and tech map layers (`stockExchanges`, `centralBanks`, `financialCenters`, `techHQs`) are not in the profile; adding one later needs `VARIANT_LAYER_ORDER.full`, or `sanitizeLayersForVariant` strips it.
 - No Lite panel is premium on the web build (`cii` and `strategic-risk` are premium only in the desktop app), so Phase 1 needs no premium unlock.
 
+## Lite UI (`/lite`)
+
+The owner's front page: a sidebar and three screens, Geopolitics & Conflicts (`/lite`), Finance & Crypto (`/lite/finance`) and Technology & AI (`/lite/tech`). The design exports are kept out of the repository; their sample rows live in `src/lite/data/fixtures.ts`.
+
+**Stack exception.** The dashboard has no framework. `src/lite/` alone uses Preact (JSX through `tsconfig.json`'s `jsxImportSource`) and Tailwind CSS 4 (`@tailwindcss/vite`, scoped to `src/lite/lite.css`), with Lucide icons and self-hosted IBM Plex fonts (the CSP allows no font host). `scripts/lint-boundaries.mjs` keeps it separate: `src/lite/` may import `config`, `services`, `utils`, `shared/` and generated clients, never `src/components/`, `src/app/` or `App.ts`, and nothing outside it may import `src/lite/`.
+
+**Routing.**
+
+| Request | Flag on | Flag off |
+|---|---|---|
+| `/` on the owner's host | `middleware.ts` 307s to `/lite` (legacy `/?lat=` map links still go to `/dashboard`) | Unchanged (404 on a custom host) |
+| `/` in dev or Docker, `/dashboard` | The guard at the top of `src/main.ts` replaces the page with `/lite` unless the URL carries dashboard state | Unchanged |
+| `/dashboard?full=1` | The dashboard; remembered for the tab (`sessionStorage` `wm-lite-full`) | The dashboard |
+| `/lite`, `/lite/finance`, `/lite/tech` | The Lite UI | A notice that the profile is off, with a link to `/dashboard` |
+| Installed PWA | Starts on `/lite` | Starts on `/dashboard` |
+
+The rules are in `src/config/lite-route.ts`. `vercel.json`, `docker/nginx.conf*` and a Vite dev middleware serve `lite.html` for the three paths only, and `isKnownPublicPagePath` (`src/config/agent-not-found.ts`) lets exactly those three past the 404 gate. `npm run build:lite` (`vite.lite.config.ts`) builds the page on its own after the main build, so it shares no chunks with the dashboard.
+
+**Data.** `src/lite/data/sources.ts` reads the same sources as the dashboard, without `App`: the bootstrap tiers once, then the generated RPC clients, and the news digest through its public CDN shape. It uses no premium path. Each widget is one of:
+
+- **Real**: rendered from a source. An empty or failed source shows its own state and names its seeder. It never falls back to sample data.
+- **Derived**: computed by a stated rule and tagged DERIVED with the rule in its tooltip.
+- **Sample**: no source exists yet. It renders the design's values with a SAMPLE badge.
+
+| Screen | Real | Derived | Sample |
+|---|---|---|---|
+| Geopolitics | UCDP events and curated hotspots on the dot map; priority incidents (digest, medium threat and up) | Region strip from CII and country history; 72-hour report histogram; timeline tags and incident status from a corroboration rule (corroborated by a tier-1 source = confirmed); evidence mix by source class | Watchlist |
+| Finance | Tickers (DXY from gold drivers); hourly BTC closes; Hyperliquid funding and open interest; spot ETF flow (an estimate); breadth; market-moving stories; macro calendar | Risk alerts (fixed thresholds); 48h realized volatility; 14-day correlation of hourly returns (Oil stands in for DXY, which has no hourly series) | Liquidations; BTC volume bars |
+| Technology & AI | Material developments (tech digest); policy actions (the curated `src/config/ai-regulations.ts` list); arXiv papers; funding and infrastructure stories | Evidence pills; research signal (arXiv plus Hacker News); watched-topic counts | Model and product tracker; infrastructure KPI tiles |
+
+Briefing, Alerts, Watchlists, Sources, Scoring rules, Settings and each screen's primary action are shown and marked SOON. They arrive with the phases that give them data.
+
 ## Platform map
 
 | Upstream | Owner's stack | Notes |
@@ -203,6 +236,7 @@ Each briefing states the development with its timestamp, keeps confirmed informa
 |---|---|---|
 | 0. Repository review | This document | Done |
 | 1. Profile shell | `VITE_LITE_PROFILE`; Lite panel and layer defaults; Lite Desk preset; the five cross-variant panels; access gate at deploy time | Done in code: the dashboard boots into the Lite layout with the flag on and is unchanged with it off (`tests/lite-profile.test.mts`, `verify-worldmonitor` step `lite-profile.mjs`). The access gate is set up when deploying |
+| 1b. Lite UI | `/lite` with three screens, real data where a source exists, labelled samples elsewhere (see [Lite UI](#lite-ui-lite)) | Done in code: `tests/lite-ui.test.mts`, `tests/dom/lite-ui.test.mts`, `verify-worldmonitor` step `lite-ui.mjs` with the flag on and off |
 | 2. Core feeds on the owner's stack | Render services for the seeder allowlist; health key subset; source-policy filter; verify how much general news the `full` digest still carries | Lite panels fresh in `/api/health`; no unlicensed sources |
 | 3. Event intelligence | Event object and timeline, novelty, crypto-risk and AI-event detectors, non-Convex alerts (Supabase gate) | Sampled cluster and alert quality meet agreed targets |
 | 4. Briefings and trends | Lite brief built on the existing citation-checked brief code | Briefing accuracy and usefulness reviewed |

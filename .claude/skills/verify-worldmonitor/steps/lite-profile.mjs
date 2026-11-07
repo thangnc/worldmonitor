@@ -21,7 +21,8 @@ const CROSS_VARIANT = ['crypto-news', 'centralbanks', 'policy', 'ai-regulation',
 export default async function ({ page, base, shot, log, expectVisible }) {
   const expect = process.env.WM_VERIFY_EXPECT ?? 'lite';
   await seedProfile(page);
-  await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
+  // Under the profile, /dashboard opens the Lite UI; ?full=1 is the escape route.
+  await page.goto(`${base}/dashboard${expect === 'lite' ? '?full=1' : ''}`, { waitUntil: 'domcontentloaded' });
   await waitForBoot(page, { data: true });
   const renderer = await waitForMap(page);
   await expectVisible('#panelsGrid .panel');

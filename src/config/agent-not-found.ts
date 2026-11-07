@@ -13,6 +13,7 @@
  * skip the middleware matcher and fall through to public/404.html.
  */
 
+import { LITE_SCREEN_PATHS } from './lite-route';
 import { indexableLandingPassthroughPrefixes } from '../../shared/indexable-landing-locales';
 import { stripTrailingSlashes } from '../../shared/strip-trailing-slashes.js';
 
@@ -260,9 +261,16 @@ export function prefersAgentNotFound(acceptHeader: string | null | undefined): b
   return true;
 }
 
+/**
+ * Pages served at exact paths only, so other paths under them still get the
+ * agent-friendly 404. The World Monitor Lite UI (lite.html) has three screens.
+ */
+const AGENT_NOT_FOUND_PASSTHROUGH_EXACT_PATHS: ReadonlySet<string> = new Set(Object.values(LITE_SCREEN_PATHS));
+
 export function isKnownPublicPagePath(path: string): boolean {
   const normalized = normalizePath(path);
   if (normalized === '/') return true;
+  if (AGENT_NOT_FOUND_PASSTHROUGH_EXACT_PATHS.has(normalized)) return true;
   if (normalized.startsWith('/api/') || normalized === '/api') return true;
   return AGENT_NOT_FOUND_PASSTHROUGH_PREFIXES.some(
     (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`),

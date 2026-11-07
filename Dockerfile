@@ -47,9 +47,14 @@ RUN node docker/build-handlers.mjs
 # build:pro installs pro-test's own lockfile.
 RUN npm run build:pro
 
+# World Monitor Lite deployment profile (docs/architecture/lite.md). Off by default;
+# pass --build-arg VITE_LITE_PROFILE=true to open the image on /lite.
+ARG VITE_LITE_PROFILE=
+ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}
+
 # Build the Vite frontend (outputs to dist/)
 # Skip blog build — blog-site has its own deps not installed here
-RUN npx tsc && npx vite build
+RUN npx tsc && npx vite build && npx vite build --config vite.lite.config.ts
 # Assert the /pro pages survived the public/ -> dist/ copy (#6898). build:pro
 # succeeding proves public/pro/ exists; it does NOT prove Vite copied it, and
 # docker/nginx.conf's SPA fallback would serve the dashboard shell at 200 for a

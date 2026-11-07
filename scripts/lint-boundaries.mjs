@@ -17,7 +17,7 @@
  */
 
 import { readFileSync, readdirSync, statSync } from 'fs';
-import { join, relative } from 'path';
+import { dirname, join, relative, resolve } from 'path';
 
 const SRC = 'src';
 const ROOT = process.cwd();
@@ -162,6 +162,37 @@ for (const file of apiFiles) {
           remedy: 'Legacy Edge Functions must be self-contained. Only same-directory _*.js helpers and npm packages are allowed.',
         });
       }
+    }
+  }
+}
+
+// --- Check 4: src/lite/ (the Lite UI) is a separate surface ---
+// It may import types, config, services, utils and generated clients, but never
+// the dashboard UI (components, app, App.ts). Nothing outside src/lite/ may
+// import it. See .claude/rules/lite-profile.md.
+const LITE_DIR = join(ROOT, SRC, 'lite');
+for (const file of srcFiles) {
+  const inLite = file.startsWith(LITE_DIR + '/') || file.startsWith(LITE_DIR + '\\');
+  const lines = readFileSync(file, 'utf8').split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.includes('boundary-ignore')) continue;
+    if (i > 0 && lines[i - 1].includes('boundary-ignore')) continue;
+    const spec = line.match(/(?:from\s+|import\()['"]([^'"]+)['"]/)?.[1];
+    if (!spec) continue;
+    const target = spec.startsWith('.') ? relative(join(ROOT, SRC), resolve(dirname(file), spec)) : null;
+    const dashboardUi = /^@\/(components|app|App)(\/|$)/.test(spec)
+      || (target != null && /^(components|app|App)(\/|\\|\.|$)/.test(target));
+    if (inLite && dashboardUi) {
+      violations.push({
+        file: relative(ROOT, file), line: i + 1, from: 'lite', to: spec, text: line.trim(),
+        remedy: 'The Lite UI must not import dashboard UI code. Import from services/, config/ or shared/ instead.',
+      });
+    } else if (!inLite && /^@\/lite(\/|$)|\/lite\//.test(spec) && !spec.includes('lite-profile')) {
+      violations.push({
+        file: relative(ROOT, file), line: i + 1, from: 'src', to: spec, text: line.trim(),
+        remedy: 'Only src/lite/ may import the Lite UI.',
+      });
     }
   }
 }

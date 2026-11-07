@@ -9,6 +9,7 @@ import {
   shouldTransformDocsUpstreamHtml,
 } from './src/config/docs-locale-seo';
 import { getRootlessDocsDestination } from './src/config/docs-root-redirects';
+import { shouldRedirectToLite } from './src/config/lite-route';
 import agentRequestPolicy from './shared/agent-request-policy.json';
 import { isMcpAliasRequest, normalizeMcpHost } from './shared/mcp-host-policy';
 import { chokepointStatusViewModel } from './scripts/crawlable-live-tools.mjs';
@@ -273,6 +274,28 @@ export default function middleware(request: Request) {
     const dashboardUrl = url;
     dashboardUrl.pathname = '/dashboard';
     return new Response(null, { status: 308, headers: uaConditionedRedirectHeaders(dashboardUrl) });
+  }
+
+  // World Monitor Lite deployment profile (docs/architecture/lite.md): the
+  // owner's deployment opens on /lite. src/config/lite-route.ts decides, the
+  // same rule the src/main.ts guard applies, so ?full=1 and dashboard-state
+  // links keep the dashboard. /dashboard stays a client decision: only the
+  // browser knows the tab's ?full=1 memory. A 307, not a 308: switching the
+  // profile off must not leave browsers holding a permanent redirect.
+  // Unset upstream.
+  if (
+    path === '/' &&
+    (request.method === 'GET' || request.method === 'HEAD') &&
+    typeof process !== 'undefined' &&
+    process.env.VITE_LITE_PROFILE === 'true' &&
+    shouldRedirectToLite(path, url.search, { enabled: true, fullDashboardInSession: false })
+  ) {
+    const liteUrl = new URL(url);
+    liteUrl.pathname = '/lite';
+    return new Response(null, {
+      status: 307,
+      headers: { Location: liteUrl.toString(), 'Cache-Control': 'private, no-store' },
+    });
   }
 
   const accept = request.headers.get('accept');
