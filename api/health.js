@@ -668,7 +668,7 @@ const STANDALONE_KEYS = {
   newsThreatSummary:        'news:threat:summary:v1',
   climateNews:              'climate:news-intelligence:v1',
   pizzint:                  'intelligence:pizzint:seed:v1',
-  // Retained PizzINT observations (docs/architecture/pizzint-history.md). No
+  // Retained PizzINT observations (docs/engineering/architecture/pizzint-history.md). No
   // browser or RPC consumer, so it is registered here per the standalone-health
   // rule. The watched key is the provider-agnostic heartbeat the archive's Lua
   // advances on every successful write: the daily buckets themselves rotate by

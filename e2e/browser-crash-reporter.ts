@@ -250,7 +250,7 @@ export default class BrowserCrashReporter implements Reporter {
    * `pw:browser` is the cheap tier: measured at roughly 1 MB per shard with no
    * measurable runtime cost, unlike `pw:channel`, which was priced at +75%
    * runtime and dropped for that reason (see
-   * docs/solutions/conventions/a-lost-browser-is-already-legible-in-the-playwright-artifact.md).
+   * docs/engineering/solutions/conventions/a-lost-browser-is-already-legible-in-the-playwright-artifact.md).
    */
   constructor() {
     if (!this.enabled) return;

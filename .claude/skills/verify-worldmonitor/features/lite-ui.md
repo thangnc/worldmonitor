@@ -1,6 +1,6 @@
 # Lite UI
 
-The owner's front page under the World Monitor Lite profile ([spec](../../../../docs/architecture/lite.md#lite-ui-lite)): a sidebar, the cross-domain Briefing home and its three domain screens, built with Preact and Tailwind in `src/lite/`. With `VITE_LITE_PROFILE=true`, `/` and `/dashboard` open it, and `/dashboard?full=1` keeps the full dashboard reachable for the tab. Without the flag, `/lite` shows a notice and nothing else changes.
+The owner's front page under the World Monitor Lite profile ([spec](../../../../docs/engineering/architecture/lite.md#lite-ui-lite)): a sidebar, the cross-domain Briefing home and its three domain screens, built with Preact and Tailwind in `src/lite/`. With `VITE_LITE_PROFILE=true`, `/` and `/dashboard` open it, and `/dashboard?full=1` keeps the full dashboard reachable for the tab. Without the flag, `/lite` shows a notice and nothing else changes.
 
 ## Sub-features
 

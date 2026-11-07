@@ -6,7 +6,7 @@
 // residue). Sibling to classifyOpinion. The brief is event-driven
 // intelligence; a vintage-warplane veterans' reunion in Peru, Illinois
 // (population 9,800) is not an event. See
-// docs/plans/2026-05-17-001-fix-feelgood-lifestyle-filter-plan.md.
+// docs/engineering/plans/2026-05-17-001-fix-feelgood-lifestyle-filter-plan.md.
 //
 // Design notes the test suite is locking in:
 //   - HARD-NEWS VETO (R3a) runs FIRST and overrides every other path

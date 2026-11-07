@@ -158,7 +158,7 @@ export const LAYER_EXPLANATIONS: Partial<Record<keyof MapLayers, LayerExplanatio
   canadaRoads: { key: 'canadaRoads', coverage: 'curated', evidence: ['scripts/seed-provincial-511.mjs', 'scripts/seed-toronto-road-restrictions.mjs', 'scripts/seed-open511.mjs', 'api/health.js', 'src/services/canada-roads.ts'] },
   canadaAlerts: { key: 'canadaAlerts', coverage: 'curated', evidence: ['scripts/seed-alberta-emergency-alert.mjs', 'scripts/seed-bc-emergency-info.mjs', 'scripts/seed-saskalert.mjs', 'api/health.js', 'src/services/canada-alerts.ts'] },
   flights: { key: 'flights', coverage: 'curated', evidence: ['docs/data-sources.mdx', 'docs/architecture.mdx', 'src/services/aviation/index.ts', 'scripts/seed-aviation.mjs', 'scripts/seed-notam-nms.mjs', 'src/services/notam-airspace.ts'] },
-  aircraftEmergencies: { key: 'aircraftEmergencies', coverage: 'curated', evidence: ['docs/aircraft-emergencies-evidence.md'] },
+  aircraftEmergencies: { key: 'aircraftEmergencies', coverage: 'curated', evidence: ['docs/engineering/research/notes/aircraft-emergencies-evidence.md'] },
   ais: { key: 'ais', coverage: 'curated', evidence: ['docs/features.mdx', 'docs/architecture.mdx', 'src/services/maritime/index.ts', 'scripts/ais-relay.cjs'] },
   waterways: { key: 'waterways', coverage: 'curated', evidence: ['docs/architecture.mdx', 'docs/data-sources.mdx', 'src/config/geo.ts', 'server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts'] },
   tradeRoutes: { key: 'tradeRoutes', coverage: 'curated', evidence: ['docs/data-sources.mdx', 'docs/architecture.mdx', 'src/config/trade-routes.ts', 'src/services/supply-chain/index.ts'] },

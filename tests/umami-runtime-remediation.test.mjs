@@ -297,7 +297,7 @@ describe('Umami runtime remediation (#6024)', () => {
         'docker/umami/v320-compat.patch',
       ],
       cronSchedule: null,
-      documentedAt: 'docs/analytics-collector-operations.md#patched-runtime-image',
+      documentedAt: 'docs/engineering/runbooks/analytics-collector-operations.md#patched-runtime-image',
     });
     assert.deepEqual(retention, {
       entry: 'scripts/umami-retention.sql',
@@ -312,7 +312,7 @@ describe('Umami runtime remediation (#6024)', () => {
         'Dockerfile.umami-retention',
       ],
       cronSchedule: '7,22,37,52 * * * *',
-      documentedAt: 'docs/analytics-collector-operations.md#retention-runner',
+      documentedAt: 'docs/engineering/runbooks/analytics-collector-operations.md#retention-runner',
     });
 
     // Four bounded 10k batches/hour can retire 960k event rows/day, safely

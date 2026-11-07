@@ -1,7 +1,7 @@
 import type { ResilienceDimensionId } from './_dimension-scorers';
 import { MACRO_FISCAL_INDICATOR_WEIGHTS } from './_macro-fiscal-weights';
 
-// Phase 2 T2.2a signal tiering. See docs/internal/country-resilience-upgrade-plan.md
+// Phase 2 T2.2a signal tiering. See docs/engineering/research/country-resilience/country-resilience-upgrade-plan.md
 // section "Signal tiering (Core / Enrichment / Experimental)".
 export type IndicatorTier = 'core' | 'enrichment' | 'experimental';
 

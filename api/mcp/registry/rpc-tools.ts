@@ -806,7 +806,7 @@ function addIntelHistoryNumber(query: URLSearchParams, name: string, value: unkn
  *  and these three tools hand it straight to LLM agents, so an instruction-
  *  shaped headline is retrievable long after the live snapshot that carried it
  *  rolled over. The posture is provenance marking, not rewriting — see
- *  docs/architecture/intel-history-untrusted-text.md.
+ *  docs/engineering/architecture/intel-history-untrusted-text.md.
  *
  *  THIS IS NOT THE PRIMARY DELIVERY CHANNEL, and must not be relied on as one.
  *  Many MCP hosts — claude.ai among them, verified against a live session —

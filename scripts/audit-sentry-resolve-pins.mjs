@@ -7,7 +7,7 @@
  * Browser and uploader release alignment addresses that mismatch for new
  * builds, but does not prove deployed Sentry regression handling or migrate
  * old tabs. Keep reporting every pin until the live acceptance procedure in
- * docs/solutions/workflow-issues/sentry-resolve-by-shipping-permanently-mutes-issues.md
+ * docs/engineering/solutions/workflow-issues/sentry-resolve-by-shipping-permanently-mutes-issues.md
  * passes and a compatibility-aware audit replaces this migration gate.
  * A pin is a review candidate, not proof that an issue cannot reopen.
  * Nothing here mutates Sentry or clears valid automatic resolutions.

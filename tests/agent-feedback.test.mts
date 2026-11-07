@@ -1,7 +1,7 @@
 /**
  * Agent feedback channel core (#8721): parsing, sanitization, redaction,
  * hashes, admission buckets, and the shared submit path both doors use.
- * Spec: docs/architecture/agent-feedback-threat-model.md.
+ * Spec: docs/engineering/architecture/agent-feedback-threat-model.md.
  */
 
 import assert from 'node:assert/strict';

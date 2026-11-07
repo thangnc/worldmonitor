@@ -157,7 +157,8 @@ scripts/fixtures/_bundle-fixture-pressure-run.mjs
 # deployment dumps plus its cached growth baseline. Local runs produce them too.
 .cache/
 
-# Local planning documents (not for public repo)
+# Local planning scratch (not for the repo). Tracked engineering records,
+# including plans, live in docs/engineering/ (see docs/engineering/README.md).
 docs/plans/
 docs/brainstorms/
 playground-pricing.html

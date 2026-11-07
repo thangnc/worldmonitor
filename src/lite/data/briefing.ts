@@ -3,7 +3,7 @@
  * tests/lite-ui.test.mts covers them.
  *
  * Every rule here is a stated heuristic. The UI tags what it computes as
- * DERIVED and says how in a tooltip (docs/architecture/lite.md, "Lite UI").
+ * DERIVED and says how in a tooltip (docs/engineering/architecture/lite.md, "Lite UI").
  */
 import type { NewsItem } from '@/generated/client/worldmonitor/news/v1/service_client';
 import { GEO_CATEGORIES, MARKET_CATEGORIES, TECH_CATEGORIES, isPrimarySource, sourceCount, type LiteItem, type Tone } from './transforms';

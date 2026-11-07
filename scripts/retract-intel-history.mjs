@@ -334,7 +334,7 @@ export async function runRetractCli(argv, { env = process.env, fetchImpl } = {})
       'Note: two read caches sit in front of the store — a 30-minute Redis',
       'success cache and, for get-intel-timeline only, a CDN tier up to 1 hour.',
       'Allow ~1 hour before concluding a record is still retrievable. See',
-      'docs/architecture/intel-history-untrusted-text.md § Propagation.',
+      'docs/engineering/architecture/intel-history-untrusted-text.md § Propagation.',
     );
   }
 

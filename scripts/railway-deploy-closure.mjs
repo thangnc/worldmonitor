@@ -23,7 +23,7 @@
 // reports those 57 as false rejections.
 //
 // The full measurement and its methodology live in
-// docs/solutions/integration-issues/railway-seeder-watch-paths-can-skip-deployments.md,
+// docs/engineering/solutions/integration-issues/railway-seeder-watch-paths-can-skip-deployments.md,
 // which is the one place they are maintained.
 //
 // DIRECTION OF FAILURE

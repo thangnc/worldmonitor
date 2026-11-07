@@ -2,7 +2,7 @@
 //
 // Why the route is SELECTED and never cascades: OpenSky's rate limit is per ACCOUNT
 // (4,000 credits/day keyed on OPENSKY_CLIENT_ID — scripts/_opensky-account-cooldown.cjs
-// says so outright, and docs/solutions/integration-issues/
+// says so outright, and docs/engineering/solutions/integration-issues/
 // opensky-bbox-area-billing-flat-top-tier.md measured the exhaustion), NOT per exit IP.
 // A residential exit buys no quota, so an automatic proxy-on-failure fallback would
 // spend a SECOND account credit retrying the one error class a different IP cannot fix.

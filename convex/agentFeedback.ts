@@ -19,7 +19,7 @@ import {
 // sanitizes, redacts, and hashes every report before it reaches this module;
 // the bounds here are a second line, as in contactMessages.ts. Report text is
 // attacker-controlled: it is stored as data and never reaches a log line, an
-// error payload, or an email (docs/architecture/agent-feedback-threat-model.md,
+// error payload, or an email (docs/engineering/architecture/agent-feedback-threat-model.md,
 // Decision 7).
 
 const ADMIN_EMAIL = "elie@worldmonitor.app";

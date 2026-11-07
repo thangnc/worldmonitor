@@ -505,7 +505,7 @@
       "scripts/seed-aaii-sentiment.mjs",
       "scripts/shared/compare-and-delete-script.cjs"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-bundle-static-ref-heavy.mjs",
@@ -557,7 +557,7 @@
       "scripts/shared/supply-vulnerability-score.mjs"
     ],
     "cronSchedule": "0 4 * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-3-heavy-seed-bundle-static-ref-heavy"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-3-heavy-seed-bundle-static-ref-heavy"
   },
   {
     "entry": "scripts/seed-bundle-canada.mjs",
@@ -618,7 +618,7 @@
       "scripts/viarail-live.mjs"
     ],
     "cronSchedule": "*/5 * * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-bundle-climate.mjs",
@@ -662,7 +662,7 @@
       "scripts/data/country-centroids.json",
       "scripts/lib/country-centroid.mjs"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-6-seed-bundle-climate"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-6-seed-bundle-climate"
   },
   {
     "entry": "scripts/seed-bundle-derived-signals.mjs",
@@ -755,7 +755,7 @@
       "shared/iso3-to-iso2.json"
     ],
     "cronSchedule": "*/5 * * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-5-seed-bundle-derived-signals"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-5-seed-bundle-derived-signals"
   },
   {
     "entry": "scripts/seed-bundle-ecb-eu.mjs",
@@ -782,7 +782,7 @@
       "scripts/seed-yield-curve-eu.mjs",
       "scripts/shared/compare-and-delete-script.cjs"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-1-seed-bundle-ecb-eu"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-1-seed-bundle-ecb-eu"
   },
   {
     "entry": "scripts/seed-bundle-energy-sources.mjs",
@@ -849,7 +849,7 @@
       "shared/country-names.json",
       "shared/iso3-to-iso2.json"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-7-seed-bundle-energy-sources"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-7-seed-bundle-energy-sources"
   },
   {
     "entry": "scripts/seed-bundle-regional-energy.mjs",
@@ -909,7 +909,7 @@
       "scripts/shared/compare-and-delete-script.cjs",
       "scripts/shared/regional-energy-feeds.json"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#regional-energy-feeds-seed-bundle-regional-energy"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#regional-energy-feeds-seed-bundle-regional-energy"
   },
   {
     "entry": "scripts/seed-bundle-health.mjs",
@@ -964,7 +964,7 @@
       "scripts/shared/iso3-to-iso2.json",
       "scripts/shared/news-places.json"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-9-seed-bundle-health"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-9-seed-bundle-health"
   },
   {
     "entry": "scripts/seed-bundle-macro.mjs",
@@ -1084,7 +1084,7 @@
       "shared/iso3-to-iso2.json"
     ],
     "cronSchedule": "0 8,9 * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-8-seed-bundle-macro"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-8-seed-bundle-macro"
   },
   {
     "entry": "scripts/seed-bundle-yield-curves.mjs",
@@ -1128,7 +1128,7 @@
       "scripts/seed-yield-curves-shared.mjs",
       "scripts/shared/compare-and-delete-script.cjs"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-12-seed-bundle-yield-curves",
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-12-seed-bundle-yield-curves",
     "cronSchedule": "0 10 * * *"
   },
   {
@@ -1193,7 +1193,7 @@
       "shared/stablecoins.json"
     ],
     "cronSchedule": "*/5 * * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-10-seed-bundle-market-backup"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-10-seed-bundle-market-backup"
   },
   {
     "entry": "scripts/seed-bundle-portwatch.mjs",
@@ -1220,7 +1220,7 @@
       "scripts/shared/compare-and-delete-script.cjs"
     ],
     "cronSchedule": "0 */1 * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-2-seed-bundle-portwatch"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-2-seed-bundle-portwatch"
   },
   {
     "entry": "scripts/seed-bundle-portwatch-port-activity.mjs",
@@ -1344,7 +1344,7 @@
       "scripts/shared/ucdp-candidate.cjs",
       "scripts/shared/world-bank-rpc-cache.js"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-11-seed-bundle-relay-backup"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-11-seed-bundle-relay-backup"
   },
   {
     "entry": "scripts/seed-bundle-resilience.mjs",
@@ -1390,7 +1390,7 @@
       "scripts/scorecard/v1/_source-registry.mts",
       "scripts/scorecard/v1/_types.mts"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-4-seed-bundle-resilience"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-4-seed-bundle-resilience"
   },
   {
     "entry": "scripts/seed-bundle-resilience-energy-v2.mjs",
@@ -1422,7 +1422,7 @@
       "shared/country-names.json",
       "shared/iso3-to-iso2.json"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#seed-bundle-resilience-energy-v2"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#seed-bundle-resilience-energy-v2"
   },
   {
     "entry": "scripts/seed-bundle-resilience-recovery.mjs",
@@ -1461,7 +1461,7 @@
       "scripts/shared/un-to-iso2.json",
       "shared/iso2-to-iso3.json"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#seed-bundle-resilience-recovery"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#seed-bundle-resilience-recovery"
   },
   {
     "entry": "scripts/seed-bundle-resilience-validation.mjs",
@@ -1560,7 +1560,7 @@
       "scripts/shared/un-to-iso2.json"
     ],
     "cronSchedule": "0 3 * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#bundle-3-seed-bundle-static-ref"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#bundle-3-seed-bundle-static-ref"
   },
   {
     "entry": "scripts/seed-hs2-chokepoint-exposure.mjs",
@@ -1583,7 +1583,7 @@
       "scripts/shared/supply-vulnerability-commodities.json",
       "scripts/shared/country-port-clusters.json"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-commodity-quotes.mjs",
@@ -1609,7 +1609,7 @@
       "scripts/shared/yahoo-closed-session.cjs",
       "shared/commodities.json"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-radiation-watch.mjs",
@@ -1701,7 +1701,7 @@
       "scripts/nixpacks.toml"
     ],
     "cronSchedule": "0 6 1 * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-conflict-intel.mjs",
@@ -1751,14 +1751,14 @@
       "shared/iso3-to-iso2.json"
     ],
     "cronSchedule": "*/15 * * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
   },
   {
     "entry": "scripts/seed-crypto-sectors.mjs",
     "deployMode": "nixpacks-root-repo",
     "lifecycle": "planned",
     "service": "seed-crypto-sectors",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-earthquakes.mjs",
@@ -1783,7 +1783,7 @@
       "scripts/shared/compare-and-delete-script.cjs"
     ],
     "cronSchedule": "*/5 * * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
   },
   {
     "entry": "scripts/seed-economy.mjs",
@@ -1805,7 +1805,7 @@
       "scripts/shared/compare-and-delete-script.cjs"
     ],
     "cronSchedule": "*/15 * * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
   },
   {
     "entry": "scripts/seed-fire-detections.mjs",
@@ -1844,7 +1844,7 @@
       "scripts/shared/wildfire-fires-summary.mjs"
     ],
     "cronSchedule": "*/10 * * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
   },
   {
     "entry": "scripts/seed-forecast-resolutions.mjs",
@@ -1979,7 +1979,7 @@
       "scripts/shared/compare-and-delete-script.cjs"
     ],
     "cronSchedule": "0 * * * *",
-    "documentedAt": "docs/market-data-cadence-audit.md"
+    "documentedAt": "docs/engineering/architecture/market-data-cadence-audit.md"
   },
   {
     "entry": "scripts/seed-fx-yoy.mjs",
@@ -2003,7 +2003,7 @@
       "scripts/shared/yahoo-closed-session.cjs",
       "scripts/shared/compare-and-delete-script.cjs"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-gdelt-bulk-materializer.mjs",
@@ -2040,7 +2040,7 @@
       "scripts/shared/compare-and-delete-script.cjs"
     ],
     "cronSchedule": "*/15 * * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
   },
   {
     "entry": "scripts/seed-insights.mjs",
@@ -2113,7 +2113,7 @@
       "scripts/shared/live-video-refresh-channels.generated.json"
     ],
     "cronSchedule": "0 */6 * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-no2-activity.mjs",
@@ -2147,7 +2147,7 @@
       "scripts/shared/no2-regions.generated.mjs"
     ],
     "cronSchedule": "20 6 * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-market-breadth.mjs",
@@ -2170,14 +2170,14 @@
       "scripts/seed-market-breadth.mjs",
       "scripts/shared/compare-and-delete-script.cjs"
     ],
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-market-quotes.mjs",
     "deployMode": "nixpacks-root-repo",
     "lifecycle": "planned",
     "service": "seed-market-quotes",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-country-history.mjs",
@@ -2207,7 +2207,7 @@
       "scripts/shared/sovereign-status.json"
     ],
     "cronSchedule": "30 0 * * *",
-    "documentedAt": "docs/country-history-operations.md"
+    "documentedAt": "docs/engineering/runbooks/country-history-operations.md"
   },
   {
     "entry": "scripts/seed-military-cii.mjs",
@@ -2267,7 +2267,7 @@
       "scripts/shared/country-sanctions-signals.mjs"
     ],
     "cronSchedule": "0 */6 * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
   },
   {
     "entry": "scripts/seed-security-advisories.mjs",
@@ -2305,7 +2305,7 @@
     "deployMode": "nixpacks-root-repo",
     "lifecycle": "planned",
     "service": "seed-service-statuses",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-supply-chain-trade.mjs",
@@ -2333,14 +2333,14 @@
       "shared/un-to-iso2.json"
     ],
     "cronSchedule": "0 */6 * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-43-not-bundled"
   },
   {
     "entry": "scripts/seed-weather-alerts.mjs",
     "deployMode": "nixpacks-root-repo",
     "lifecycle": "planned",
     "service": "seed-weather-alerts",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-imd-cyclone-marine.mjs",
@@ -2370,7 +2370,7 @@
       "scripts/shared/compare-and-delete-script.cjs"
     ],
     "cronSchedule": "*/15 * * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/seed-notam-nms.mjs",
@@ -2401,7 +2401,7 @@
       "scripts/shared/compare-and-delete-script.cjs"
     ],
     "cronSchedule": "*/5 * * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#standalone-seed-crons-added-after-this-snapshot"
   },
   {
     "entry": "scripts/process-simulation-tasks.mjs",
@@ -2478,7 +2478,7 @@
       "docker/umami/v320-compat.patch"
     ],
     "cronSchedule": null,
-    "documentedAt": "docs/analytics-collector-operations.md#patched-runtime-image"
+    "documentedAt": "docs/engineering/runbooks/analytics-collector-operations.md#patched-runtime-image"
   },
   {
     "entry": "scripts/umami-retention.sql",
@@ -2499,7 +2499,7 @@
       "Dockerfile.umami-retention"
     ],
     "cronSchedule": "7,22,37,52 * * * *",
-    "documentedAt": "docs/analytics-collector-operations.md#retention-runner"
+    "documentedAt": "docs/engineering/runbooks/analytics-collector-operations.md#retention-runner"
   },
   {
     "entry": "demos/verification-desk/server.mjs",
@@ -2581,6 +2581,6 @@
       "scripts/shared/compare-and-delete-script.cjs"
     ],
     "cronSchedule": "*/30 * * * *",
-    "documentedAt": "docs/railway-seed-consolidation-runbook.md#ukmto-incidents"
+    "documentedAt": "docs/engineering/runbooks/railway-seed-consolidation-runbook.md#ukmto-incidents"
   }
 ]

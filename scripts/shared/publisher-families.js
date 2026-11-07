@@ -335,7 +335,7 @@ export function publisherFamilyForDomain(hostname) {
  * The value is 2, re-measured for #6428 rather than inherited: two genuinely
  * independent publishers is a stronger bar than the two feed LABELS this used
  * to mean, so the same number rejects more. See
- * docs/solutions/best-practices/corroboration-counts-publisher-families.md for
+ * docs/engineering/solutions/best-practices/corroboration-counts-publisher-families.md for
  * the replay measurement behind it (families >= 2 removes 33.5% of false
  * corroboration for 0.1pp of publication rate; >= 3 buys no headroom and
  * shrinks the eligible pool 3.4x further).

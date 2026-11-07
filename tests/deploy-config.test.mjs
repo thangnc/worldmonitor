@@ -1909,7 +1909,7 @@ describe('welcome landing page routing', () => {
 
   it('starts installed PWAs on /dashboard, not the public welcome page', () => {
     // The only exception is the owner's Lite profile build, which starts on
-    // /lite (docs/architecture/lite.md). Upstream builds leave the flag unset.
+    // /lite (docs/engineering/architecture/lite.md). Upstream builds leave the flag unset.
     assert.match(viteConfigSource, /start_url:\s*env\.VITE_LITE_PROFILE === 'true' \? '\/lite' : '\/dashboard'/);
   });
 

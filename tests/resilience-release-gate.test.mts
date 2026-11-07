@@ -192,9 +192,9 @@ describe('resilience release gate', () => {
   });
 
   // T1.1 regression test (Phase 1 of the country-resilience reference-grade
-  // upgrade plan, docs/internal/country-resilience-upgrade-plan.md).
+  // upgrade plan, docs/engineering/research/country-resilience/country-resilience-upgrade-plan.md).
   //
-  // The origin review document (docs/internal/upgrading-country-resilience.md)
+  // The origin review document (docs/engineering/research/country-resilience/upgrading-country-resilience.md)
   // claims: "Norway and the US both hit 100 under current fixtures, which
   // broke the intended ordering and exposed a ceiling effect at the top end
   // of the ranking."

@@ -1,4 +1,4 @@
-// World Monitor Lite UI (`/lite`, docs/architecture/lite.md "Lite UI").
+// World Monitor Lite UI (`/lite`, docs/engineering/architecture/lite.md "Lite UI").
 // Covers the pure parts: routing, the default-route redirect in middleware.ts
 // and src/main.ts, and the labelled heuristics the widgets display.
 import { afterEach, describe, it } from 'node:test';

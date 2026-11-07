@@ -29,7 +29,7 @@ This repo has the failure mode on record, twice:
 - `financialSystemExposure` shipped on 2026-04-25 with its seeders, bundle
   registration, and health wiring all in place. Its flag still defaults to
   `false`. A fully-built dimension has contributed nothing since.
-- Energy v2 *was* flipped, but `docs/internal/country-resilience-audit-2026-06-04.md`
+- Energy v2 *was* flipped, but `docs/engineering/research/audits/country-resilience-audit-2026-06-04.md`
   records that its acceptance artifacts were never committed. That item is still
   open.
 
@@ -181,7 +181,7 @@ All must be green before flipping:
    ```
    Expect hits in the two methodology `.mdx` cache-key tables and their prose, plus the current finance activation references.
    The historical bump-chain paragraph and
-   `docs/solutions/conventions/verification-grep-must-cover-every-file-type-it-claims.md`
+   `docs/engineering/solutions/conventions/verification-grep-must-cover-every-file-type-it-claims.md`
    deliberately retain OLD generations — they are history, not live references,
    so do not rewrite them.
    **The `.mdx`/`.md` includes are load-bearing — do not drop them.** An earlier

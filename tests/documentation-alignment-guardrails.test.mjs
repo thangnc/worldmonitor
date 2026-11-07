@@ -24,10 +24,10 @@ const REQUIRED_ROLES = [
 ];
 
 describe('documentation alignment audit council protocol', () => {
-  const protocol = readRepo('docs/internal/documentation-alignment-audit-protocol.md');
-  const claimLedger = readRepo('docs/internal/documentation-alignment-claim-ledger.template.md');
-  const roleSignoff = readRepo('docs/internal/documentation-alignment-role-signoff.template.md');
-  const finalReport = readRepo('docs/internal/documentation-alignment-final-report.template.md');
+  const protocol = readRepo('docs/engineering/process/documentation-alignment/documentation-alignment-audit-protocol.md');
+  const claimLedger = readRepo('docs/engineering/process/documentation-alignment/documentation-alignment-claim-ledger.template.md');
+  const roleSignoff = readRepo('docs/engineering/process/documentation-alignment/documentation-alignment-role-signoff.template.md');
+  const finalReport = readRepo('docs/engineering/process/documentation-alignment/documentation-alignment-final-report.template.md');
 
   it('defines every required specialist role and blocks single-reviewer closure', () => {
     for (const role of REQUIRED_ROLES) {
@@ -77,7 +77,7 @@ describe('high-risk Redis documentation guardrails', () => {
 
   it('Fear & Greed history Redis key is documented as planned until a writer exists', () => {
     const seeder = readRepo('scripts/seed-fear-greed.mjs');
-    const doc = readRepo('docs/fear-greed-index-2.0-brief.md');
+    const doc = readRepo('docs/engineering/plans/fear-greed-index-2.0-brief.md');
 
     assert.doesNotMatch(seeder, /market:fear-greed:history:v1/);
     assert.match(doc, /market:fear-greed:history:v1` is a planned sorted set/);

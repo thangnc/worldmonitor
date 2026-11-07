@@ -7,7 +7,7 @@ paths:
 
 # CI workflows and git hooks
 
-Source of truth: [ARCHITECTURE.md "CI/CD"](../../ARCHITECTURE.md#11-cicd), `docs/solutions/workflow-issues/`, `docs/solutions/conventions/a-gate-required-check-must-be-an-if-gated-job-not-a-path-filtered-workflow.md`.
+Source of truth: [ARCHITECTURE.md "CI/CD"](../../ARCHITECTURE.md#11-cicd), `docs/engineering/solutions/workflow-issues/`, `docs/engineering/solutions/conventions/a-gate-required-check-must-be-an-if-gated-job-not-a-path-filtered-workflow.md`.
 
 ## Rules
 

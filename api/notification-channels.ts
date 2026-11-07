@@ -876,7 +876,7 @@ export default async function handler(req: Request, ctx: { waitUntil: (p: Promis
       // race against the cross-field validator.
       // Critical: 400 responses from the relay must pass through with their body
       // intact so the client can render INCOMPATIBLE_DELIVERY helper text.
-      // See docs/archive/plans/forbid-realtime-all-events.md §1f.
+      // See docs/engineering/archive/plans/forbid-realtime-all-events.md §1f.
       if (action === 'set-notification-config') {
         const VALID_SENSITIVITY = new Set(['all', 'high', 'critical']);
         const VALID_DIGEST_MODE = new Set(['realtime', 'daily', 'twice_daily', 'weekly']);

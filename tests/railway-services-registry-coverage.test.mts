@@ -237,7 +237,7 @@ describe('Railway service registry coverage', () => {
   });
 
   it('every runbook Railway command references a registered script', () => {
-    const runbookPath = resolve(repoRoot, 'docs/railway-seed-consolidation-runbook.md');
+    const runbookPath = resolve(repoRoot, 'docs/engineering/runbooks/railway-seed-consolidation-runbook.md');
     const src = readFileSync(runbookPath, 'utf8');
 
     const referenced = new Set<string>();

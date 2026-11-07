@@ -7,7 +7,7 @@
 // origin hit (the bare URL is `no-store` by design, precisely so no shared cache
 // can answer a credentialed request there), and the map embed re-reads this on a
 // poll loop with no tier hydration behind it. That is the origin-miss-rate trap
-// docs/solutions/best-practices/egress-cost-tracks-origin-miss-rate-not-client-count.md
+// docs/engineering/solutions/best-practices/egress-cost-tracks-origin-miss-rate-not-client-count.md
 // is about.
 //
 // The only prior cover was e2e/embed.spec.ts's network-tracking list, which keys

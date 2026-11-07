@@ -514,7 +514,7 @@ print(json.dumps({
 # as unfinished, so with no confirmed run the wait stays.
 #
 # The runs listing can serve a stale snapshot with HTTP 200 (see
-# docs/solutions/integration-issues/convex-deploy-monitor-outvotes-stale-github-run-listing-snapshot.md),
+# docs/engineering/solutions/integration-issues/convex-deploy-monitor-outvotes-stale-github-run-listing-snapshot.md),
 # and a stale "in progress" on the head's last event would skip the only
 # re-poll. So the run whose completion fired this event never counts, and every
 # other candidate must still read as unfinished on its own run record.

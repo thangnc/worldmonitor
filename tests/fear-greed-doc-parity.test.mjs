@@ -103,7 +103,7 @@ function parseRedisKeyBlock(doc) {
 
 describe('Fear & Greed docs match seed-fear-greed source', () => {
   const source = readRepo('scripts/seed-fear-greed.mjs');
-  const doc = readRepo('docs/fear-greed-index-2.0-brief.md');
+  const doc = readRepo('docs/engineering/plans/fear-greed-index-2.0-brief.md');
 
   it('publishes category weights from the seeder WEIGHTS map', () => {
     const sourceWeights = parseWeightMap(source);

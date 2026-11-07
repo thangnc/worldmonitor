@@ -9,7 +9,7 @@
  * selection live in scripts/_weather-alert-select.mjs and are imported and
  * exercised directly here — no re-implementation.
  *
- * See docs/archive/plans/forbid-realtime-all-events.md "Out of scope: Slot B".
+ * See docs/engineering/archive/plans/forbid-realtime-all-events.md "Out of scope: Slot B".
  *
  * Run: node --test tests/notification-relay-coalesce-key.test.mjs
  */

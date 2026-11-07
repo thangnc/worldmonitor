@@ -29,7 +29,7 @@
 //
 // Credentials: CONVEX_URL and CONVEX_DEPLOY_KEY (prod deploy key, used by
 // `npx convex run`) for the queue;
-// AXIOM_QUERY_TOKEN (or AXIOM_API_TOKEN) with query access to wm_api_usage for --join. See docs/operations/agent-feedback-triage.md.
+// AXIOM_QUERY_TOKEN (or AXIOM_API_TOKEN) with query access to wm_api_usage for --join. See docs/engineering/runbooks/agent-feedback-triage.md.
 import { randomBytes } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';

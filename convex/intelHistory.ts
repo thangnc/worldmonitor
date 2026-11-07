@@ -45,7 +45,7 @@ export const INTEL_HISTORY_EMBED_DIMS = 512;
  * row by `append` (#5742). MUST equal `${EMBED_MODEL}@${EMBED_DIMS}` from
  * scripts/lib/brief-dedup-consts.mjs (pinned by
  * tests/intel-history-endpoints.test.mts). A model or dimension change is a
- * table migration (docs/operations/intel-history-embedding-migration-runbook.md);
+ * table migration (docs/engineering/runbooks/intel-history-embedding-migration-runbook.md);
  * the stamp exists so that a row from another space is visible in
  * `embeddingModelInventory` and skipped by `search`, rather than silently
  * ranked against vectors it cannot be compared with.

@@ -205,7 +205,7 @@ function main() {
       + 'the committed capture happens to hold, and the next weekly refresh will fail the same way. Read the value '
       + 'from the capture the build used (clock.livePulse, resolveLatestLivePulseSnapshotPath) or inject '
       + 'tests/fixtures/crawlable-live-pulse-fixture.json through livePulseSnapshotPath. See '
-      + 'docs/solutions/test-failures/tests-pinned-to-the-rolling-pulse-capture-fail-the-weekly-refresh.md.',
+      + 'docs/engineering/solutions/test-failures/tests-pinned-to-the-rolling-pulse-capture-fail-the-weekly-refresh.md.',
     );
     process.exit(1);
   }

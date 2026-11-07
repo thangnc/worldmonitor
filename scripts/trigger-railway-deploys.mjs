@@ -18,7 +18,7 @@
 // behind, and its redness then blocks the fleet from catching up.
 //
 // Full measurement and methodology:
-// docs/solutions/integration-issues/railway-seeder-watch-paths-can-skip-deployments.md
+// docs/engineering/solutions/integration-issues/railway-seeder-watch-paths-can-skip-deployments.md
 //
 // This script replaces that judgement with the repository's own. It runs after
 // the required gates are green and asks, per service, one question: has

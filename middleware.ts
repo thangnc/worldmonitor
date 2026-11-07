@@ -267,7 +267,7 @@ export default function middleware(request: Request) {
   // User-Agent, and a 308 is cacheable by default (RFC 9110 §15.4.9): a shared
   // cache that stored this one without Vary would replay `/dashboard?<map
   // state>` to the crawler the branch above exists to keep off that URL. This
-  // is the rule docs/solutions/integration-issues/mcp-crawler-get-and-method-
+  // is the rule docs/engineering/solutions/integration-issues/mcp-crawler-get-and-method-
   // aware-canonical-redirects.md states: cacheable(response) implies Vary
   // covers every header the branch read.
   if (path === '/' && hasLegacyDashboardRootState(url.searchParams)) {
@@ -276,7 +276,7 @@ export default function middleware(request: Request) {
     return new Response(null, { status: 308, headers: uaConditionedRedirectHeaders(dashboardUrl) });
   }
 
-  // World Monitor Lite deployment profile (docs/architecture/lite.md): the
+  // World Monitor Lite deployment profile (docs/engineering/architecture/lite.md): the
   // owner's deployment opens on /lite. src/config/lite-route.ts decides, the
   // same rule the src/main.ts guard applies, so ?full=1 and dashboard-state
   // links keep the dashboard. /dashboard stays a client decision: only the

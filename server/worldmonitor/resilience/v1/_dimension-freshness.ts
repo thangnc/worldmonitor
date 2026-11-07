@@ -1,5 +1,5 @@
 // T1.5 Phase 1 of the country-resilience reference-grade upgrade plan
-// (docs/internal/country-resilience-upgrade-plan.md).
+// (docs/engineering/research/country-resilience/country-resilience-upgrade-plan.md).
 //
 // Propagation pass: PR #2947 shipped the staleness classifier foundation
 // (classifyStaleness, cadence taxonomy, three staleness levels) and

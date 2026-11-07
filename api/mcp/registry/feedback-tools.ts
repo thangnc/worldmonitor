@@ -2,7 +2,7 @@
 // and the first free-tier tool that writes anything. An agent
 // reports a bug, a missing capability, bad data, or a security concern, and
 // the report is stored for maintainers to triage. Every decision here is
-// settled in docs/architecture/agent-feedback-threat-model.md; read it before
+// settled in docs/engineering/architecture/agent-feedback-threat-model.md; read it before
 // changing limits, identity, or annotations.
 //
 // The write path is shared with REST (`POST /api/feedback/v1/submit-report`):

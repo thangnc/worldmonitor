@@ -25,7 +25,7 @@ export interface SeedMeta {
   // Presence of `maxContentAgeMin` is the opt-in signal. `newestItemAt` /
   // `oldestItemAt` may be explicit `null` when contentMeta returned null
   // (no usable item timestamps), which the health classifier reads as
-  // STALE_CONTENT. See docs/plans/2026-05-04-001-feat-health-readiness-probe-content-age-plan.md
+  // STALE_CONTENT. See docs/engineering/plans/2026-05-04-001-feat-health-readiness-probe-content-age-plan.md
   newestItemAt?: number | null;
   oldestItemAt?: number | null;
   maxContentAgeMin?: number;

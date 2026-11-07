@@ -34,7 +34,7 @@ import { createTempDir } from './helpers/temp-dir.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const reportScript = resolve(root, 'scripts/openapi-capacity-report.mjs');
 const buildScript = resolve(root, 'scripts/build-openapi-json.mjs');
-const planPath = 'docs/perf/openapi-bundle-capacity-2026-08-13.md';
+const planPath = 'docs/engineering/research/perf/openapi-bundle-capacity-2026-08-13.md';
 
 // One build of the real bundle for every test that needs it. The source YAML is
 // 2.6 MB and each build re-walks the whole document; the sibling
@@ -496,7 +496,7 @@ describe('CLI', () => {
     const result = run(['--budget', String(budget)]);
     assert.equal(result.status, 0, 'a breached reserve advises, it does not fail the build');
     assert.match(result.stderr, /::warning::OpenAPI bundle reserve breached/);
-    assert.match(result.stderr, /docs\/perf\/openapi-bundle-capacity-2026-08-13\.md/);
+    assert.match(result.stderr, /docs\/engineering\/research\/perf\/openapi-bundle-capacity-2026-08-13\.md/);
   });
 
   it('exits 2 when --out cannot be written', () => {

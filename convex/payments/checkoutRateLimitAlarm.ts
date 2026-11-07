@@ -23,7 +23,7 @@
  * today's ~0.5/day floor never pages.
  *
  * Thresholds, their false-alarm rates, and the named owner are documented in
- * `docs/payments-checkout-rate-limit-operations.md`. Change them there too.
+ * `docs/engineering/runbooks/payments-checkout-rate-limit-operations.md`. Change them there too.
  *
  * Known bound: recording reads a bounded range of the `by_occurredAt` index in
  * the same transaction as its insert, so two terminal 429s landing at the same
@@ -212,7 +212,7 @@ export const recordCheckoutRateLimited = internalMutation({
           `latestUserId=${args.userId}, latestProductId=${args.productId}). ` +
           `Dodo is limiting the shared DODO_API_KEY past the #6027 bounded ladder; ` +
           `buyers are being told to retry by hand. Runbook: ` +
-          `docs/payments-checkout-rate-limit-operations.md`,
+          `docs/engineering/runbooks/payments-checkout-rate-limit-operations.md`,
       );
     }
 

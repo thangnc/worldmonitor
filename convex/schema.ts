@@ -637,7 +637,7 @@ export default defineSchema({
   // Agent feedback channel (#8721). One row per admitted report; grouping by
   // fingerprint is a read, never a write. Every text field is
   // attacker-controlled and already sanitized and redacted by the edge. See
-  // docs/architecture/agent-feedback-threat-model.md before changing a field.
+  // docs/engineering/architecture/agent-feedback-threat-model.md before changing a field.
   agentFeedback: defineTable({
     kind: agentFeedbackKindValidator,
     surfaceType: v.union(v.literal("mcp_tool"), v.literal("rpc"), v.literal("other")),

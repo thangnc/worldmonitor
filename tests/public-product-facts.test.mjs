@@ -57,25 +57,25 @@ function assertAcquisitionClaimRootClosure(actualRoots) {
 }
 
 const REQUIRED_CURRENT_DOC_EXCLUDES = [
-  'docs/Docs_To_Review/',
   'docs/api/',
-  'docs/archive/',
-  'docs/audits/',
-  'docs/brainstorms/',
+  'docs/engineering/archive/',
+  'docs/engineering/plans/',
+  'docs/engineering/process/',
+  'docs/engineering/research/',
+  'docs/engineering/solutions/',
   'docs/generated/',
+  'docs/brainstorms/',
   'docs/ideation/',
   'docs/internal/',
-  'docs/perf/',
   'docs/plans/',
   'docs/research/',
-  'docs/solutions/',
 ];
 
 function independentlyCollectCurrentDocs() {
   const paths = [];
   const visit = (path) => {
     if (REQUIRED_CURRENT_DOC_EXCLUDES.some((prefix) => path.startsWith(prefix))) return;
-    if (['docs/changelog.mdx', 'docs/desktop-parity-matrix.md', 'docs/railway-seed-consolidation-runbook.md', 'docs/source-attribution.mdx', 'docs/zh/changelog.mdx'].includes(path)) return;
+    if (['docs/changelog.mdx', 'docs/engineering/architecture/desktop-parity-matrix.md', 'docs/engineering/runbooks/railway-seed-consolidation-runbook.md', 'docs/source-attribution.mdx', 'docs/zh/changelog.mdx'].includes(path)) return;
     const stat = statSync(join(ROOT, path));
     if (stat.isDirectory()) {
       for (const entry of readdirSync(join(ROOT, path))) visit(`${path}/${entry}`);
@@ -121,9 +121,10 @@ const ACQUISITION_ROOTS = [
 const ACQUISITION_EXTENSIONS = /\.(?:astro|html|json|md|mdx|mjs|txt)$/;
 const ACQUISITION_EXCLUDES = [
   'blog-site/node_modules/',
-  'docs/Docs_To_Review/',
   'docs/api/',
-  'docs/archive/',
+  'docs/engineering/archive/',
+  'docs/engineering/plans/',
+  'docs/engineering/process/',
   'docs/brainstorms/',
   'docs/ideation/',
   'docs/internal/',

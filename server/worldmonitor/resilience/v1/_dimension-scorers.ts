@@ -185,7 +185,7 @@ function hasFiniteMetricScore(metric: WeightedMetric): metric is WeightedMetric 
 }
 
 // Four-class imputation taxonomy (Phase 1 T1.7 of the country-resilience
-// reference-grade upgrade plan, docs/internal/country-resilience-upgrade-plan.md).
+// reference-grade upgrade plan, docs/engineering/research/country-resilience/country-resilience-upgrade-plan.md).
 //
 // Every absence-based imputation is tagged with one of these classes so
 // downstream consumers (widget confidence bar, benchmark per-family gates,
@@ -3599,7 +3599,7 @@ export async function scoreFiscalSpace(
   }
 
   // Weight rebalance + new indicator (debtSustainabilityGap) per
-  // docs/archive/plans/add-debt-sustainability-gap-indicator.md. The gap (pb − pb*)
+  // docs/engineering/archive/plans/add-debt-sustainability-gap-indicator.md. The gap (pb − pb*)
   // is the most informative single fiscal signal — it integrates pb, r,
   // g, and d with their interaction term — and earns the largest slice.
   // The other three are co-signals confirming the direction.

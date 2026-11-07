@@ -4,7 +4,7 @@
 # being pushed. An absolute/foreign core.hooksPath silently welds every
 # worktree's push to ANOTHER checkout's (possibly ancient) hook file — the
 # 2026-07-24 "pushes take 4 minutes and time out" incident (see
-# docs/solutions/performance-issues/git-push-timeout-stale-core-hookspath.md).
+# docs/engineering/solutions/performance-issues/git-push-timeout-stale-core-hookspath.md).
 # Bootstrap heals this too, but shared config can be poisoned again afterward.
 # At push time, reuse the same policy and hand off to this worktree's hook in
 # the same process. Escape hatch for an intentional central-hook setup:

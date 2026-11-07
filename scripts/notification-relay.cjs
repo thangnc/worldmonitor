@@ -64,7 +64,7 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? '';
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? '';
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL ?? 'WorldMonitor <alerts@worldmonitor.app>';
 // AI impact text is built from one user's profile, so it honours that user's
-// AI routing policy (docs/internal/ai-routing-policy.md).
+// AI routing policy (docs/engineering/architecture/ai-routing-policy.md).
 const resolveAiRoutingPolicy = createAiRoutingPolicyResolver({ siteUrl: CONVEX_SITE_URL, secret: RELAY_SECRET });
 // When QUIET_HOURS_BATCH_ENABLED=0, treat batch_on_wake as critical_only.
 // Useful during relay rollout to disable queued batching before drainBatchOnWake is fully tested.
@@ -293,7 +293,7 @@ async function checkDedup(userId, eventType, title, coalesceKey) {
   // collapses adjacent-zone NWS alerts (same storm system, different counties)
   // into one notification per user — the title-based dedup misses these
   // because each zone produces a slightly different title.
-  // See docs/archive/plans/forbid-realtime-all-events.md "Out of scope: Slot B".
+  // See docs/engineering/archive/plans/forbid-realtime-all-events.md "Out of scope: Slot B".
   const keyMaterial = buildDedupMaterial(eventType, title, coalesceKey);
   const hash = sha256Hex(keyMaterial);
   const key = `wm:notif:dedup:${userId}:${hash}`;
@@ -1331,7 +1331,7 @@ function shouldNotify(rule, event) {
   // Both reads (legacy match below AND the importance threshold lookup) must
   // use the SAME effective value, otherwise the threshold path silently falls
   // through to the looser IMPORTANCE_SCORE_MIN floor.
-  // See docs/archive/plans/forbid-realtime-all-events.md §3.
+  // See docs/engineering/archive/plans/forbid-realtime-all-events.md §3.
   const effectiveDigestMode = rule.digestMode ?? 'realtime';
   const effectiveSensitivity =
     effectiveDigestMode === 'realtime' && (rule.sensitivity === 'all' || rule.sensitivity === 'high')

@@ -117,7 +117,7 @@ for (const [name, patched, versionsOf, path] of patchedLocks) {
   });
 }
 
-// November 2026 triage (docs/solutions/security-issues/dependabot-triage-2026-11-07.md).
+// November 2026 triage (docs/engineering/solutions/security-issues/dependabot-triage-2026-11-07.md).
 // These packages keep older majors that were never in the advisory range
 // (glob 7, minimatch 3 and 5), so the check is "no version inside the
 // vulnerable range" rather than "every version >= patched".

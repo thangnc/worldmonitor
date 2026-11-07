@@ -13,7 +13,7 @@
 // `Access-Control-Allow-Credentials: true`. Moving the source in-repo makes
 // the Worker visible to code review, greptile, and CI guardrails.
 //
-// See: docs/architecture/pro-monetization.md (CORS section)
+// See: docs/engineering/architecture/pro-monetization.md (CORS section)
 //      ~/.claude/skills/worldmonitor-architecture-gotchas/reference/
 //        cloudflare-worker-overrides-vercel-cors-for-preflight.md
 

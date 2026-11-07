@@ -312,7 +312,7 @@ describe('China documentation contract', () => {
   });
 
   it('keeps the Railway runbook synchronized with China bundle membership and proxy order', () => {
-    const runbook = read('docs/railway-seed-consolidation-runbook.md');
+    const runbook = read('docs/engineering/runbooks/railway-seed-consolidation-runbook.md');
     assertIncludesEvery(
       runbook,
       [

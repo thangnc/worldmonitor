@@ -47,7 +47,7 @@ describe('seed fetch-phase deadline & TTL invariants (issue #4864)', () => {
     );
     // #5859 review: the fetch-order read is a SECOND consumer of the same soft
     // budget, bounded to MIN_REQUEST_BUDGET_MS before the first DOC request.
-    // Model the two paths additively (see docs/solutions/design-patterns/
+    // Model the two paths additively (see docs/engineering/solutions/design-patterns/
     // primary-fallback-inversion-budget-transfer.md): even with the ordering
     // read fully spent, the paced sweep must still fit ahead of the final
     // request's response budget.

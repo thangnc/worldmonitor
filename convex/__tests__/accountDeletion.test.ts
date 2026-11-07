@@ -1030,7 +1030,7 @@ describe("account deletion registry is enforced, not documentation", () => {
   test("every Convex table has an erasure decision in the registry", () => {
     // Guard the enumerator itself: if schema.tables ever came back empty, every
     // completeness assertion in this block would pass vacuously and the gate
-    // would silently stop gating (docs/solutions/design-patterns/
+    // would silently stop gating (docs/engineering/solutions/design-patterns/
     // closed-world-classification-gate-for-config-completeness.md).
     expect(schemaTables.length).toBeGreaterThan(20);
     const undecided = schemaTables.filter((name) => !registryTables.has(name));

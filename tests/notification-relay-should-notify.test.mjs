@@ -6,7 +6,7 @@
  * threshold lookup. Realtime is reserved for critical-tier events; the Convex
  * validators forbid the other combinations for new writes, so this is defence
  * in depth for in-flight rows and tooling that bypasses the validators.
- * See docs/archive/plans/forbid-realtime-all-events.md §3.
+ * See docs/engineering/archive/plans/forbid-realtime-all-events.md §3.
  *
  * The relay only starts its poll loop when require.main === module, so
  * requiring it here is side-effect free once the env guard is satisfied.

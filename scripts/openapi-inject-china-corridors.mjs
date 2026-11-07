@@ -570,7 +570,7 @@ function responseExample() {
   // observed structure on every corridor put ~7 KB of escaped payloadJson into
   // public/openapi.json for no extra documentation, and that artifact sits
   // under a 950,000-byte scanner budget
-  // (docs/perf/openapi-bundle-capacity-2026-08-13.md).
+  // (docs/engineering/research/perf/openapi-bundle-capacity-2026-08-13.md).
   const OBSERVED_CORRIDOR_EXAMPLES = 2;
   payload.corridors = corridorExamples.map((definition) => {
     const corridor = structuredClone(payload.corridors[0]);

@@ -62,7 +62,7 @@ function compactComparisonWhitespace(text) {
 }
 
 describe('market and health methodology docs match source contracts', () => {
-  const fearGreedDoc = readRepo('docs/fear-greed-index-2.0-brief.md');
+  const fearGreedDoc = readRepo('docs/engineering/plans/fear-greed-index-2.0-brief.md');
   const fearGreedSeeder = readRepo('scripts/seed-fear-greed.mjs');
   const fearGreedProto = readRepo('proto/worldmonitor/market/v1/get_fear_greed_index.proto');
   const marketOpenApi = readRepo('docs/api/MarketService.openapi.yaml');

@@ -744,7 +744,7 @@ v17.1 在评分时将修复扩展到 `liquidReserveAdequacy`（无种子器变�
 **开放构造间隙和操作注意事项（诚实记录，非静默推迟）：**
 
 - **经济复杂性/工业基础指标。** 指数衡量冲击吸收机制（本文档顶部的构造测试）；它不衡量结构多元化。拥有单一文化出口 + 强中央政府资产负债表的国家可以胜过财政空间较弱的更多元化同行。添加经济复杂性图谱（Hidalgo–Hausmann ECI）或制造业增加值份额将是故意的构造*扩展*，非*修正* — 标记为 v18 计划候选。
-- **`importConcentration` 种子器覆盖率间隙。** UN Comtrade HS2 双边可落入 `curated_list_absent` 插补（50 / 0.3 / unmonitored），适用于数据可用但未进入进口 HHI 缓存的国家。已知报告者代码偏移在共享 Comtrade 报告者覆盖映射中处理，俄罗斯使用仅种子陈旧期回退，因为标准四年窗口当前不返回年度进口行。如果 AE/RU/NO/CH 等有效代码报告者在强制刷新后仍缺失，请将 HTTP 429 和配额耗尽 HTTP 403 首先视为操作 Comtrade 密钥预算问题：加宽 `IMPORT_HHI_PER_KEY_DELAY_MS`、添加 `COMTRADE_API_KEYS` 或按 `docs/railway-seed-consolidation-runbook.md` 降低 `IMPORT_HHI_MAX_CONCURRENCY`。这是种子器覆盖率和新鲜度问题，非评分构造问题。
+- **`importConcentration` 种子器覆盖率间隙。** UN Comtrade HS2 双边可落入 `curated_list_absent` 插补（50 / 0.3 / unmonitored），适用于数据可用但未进入进口 HHI 缓存的国家。已知报告者代码偏移在共享 Comtrade 报告者覆盖映射中处理，俄罗斯使用仅种子陈旧期回退，因为标准四年窗口当前不返回年度进口行。如果 AE/RU/NO/CH 等有效代码报告者在强制刷新后仍缺失，请将 HTTP 429 和配额耗尽 HTTP 403 首先视为操作 Comtrade 密钥预算问题：加宽 `IMPORT_HHI_PER_KEY_DELAY_MS`、添加 `COMTRADE_API_KEYS` 或按 `docs/engineering/runbooks/railway-seed-consolidation-runbook.md` 降低 `IMPORT_HHI_MAX_CONCURRENCY`。这是种子器覆盖率和新鲜度问题，非评分构造问题。
 - **`cyberDigital` 衡量发现率，非活跃存量。** 发现日平滑（v17.8 / #4009，上方机制）限制同日爆发并让持续*新发现*压力达到上限，但因为衰减以 `firstSeenAt` 为键，来自持续基础设施但停止呈现新指标的稳态攻击即使仍活跃也会衰减 — 维度是*新观测*威胁*流*的代理，非活跃威胁*存量*的代理。混合最后活跃近期信号需要 `cyber:threats:v2` 携带稳定的、非获取时间的 `lastSeenAt`，它当前没有。在此之前，此残余限制被接受，非静默推迟。平滑在评分器侧，非单独的韧性所有 EWMA 键。
 
 ### v1.0（2026 年 4 月）
@@ -757,7 +757,7 @@ v17.1 在评分时将修复扩展到 `liquidReserveAdequacy`（无种子器变�
 
 ### v1.1（2026 年 4 月）— Phase 1 参考级升级
 
-**先前发布版本。** 参考级升级计划 Phase 1（`docs/internal/country-resilience-upgrade-plan.md`）。方法论面重新组织以实现完全可复现性，不改变顶层领域权重或评分公式。
+**先前发布版本。** 参考级升级计划 Phase 1（`docs/engineering/research/country-resilience/country-resilience-upgrade-plan.md`）。方法论面重新组织以实现完全可复现性，不改变顶层领域权重或评分公式。
 
 - **T1.1**（#2941）：回归测试在源文档声称 100 分上限未复现后锁定挪威/美国排名顶部排序。先失败后通过测试保护不变量。
 - **T1.2**（#2847、#2858）：2026-04-07 和 2026-04-09 源文档审查的预先存在修复，在 Phase 1 开始时已在 main 中。重新验证无需额外行动。
@@ -788,7 +788,7 @@ v17.1 在评分时将修复扩展到 `liquidReserveAdequacy`（无种子器变�
 
 ### v2.0（2026 年 4 月）— Phase 2 结构重建
 
-**当前发布版本**。参考级升级计划 Phase 2（`docs/internal/country-resilience-upgrade-plan.md`）。响应形状重建已上线：每个响应现在携带真实领域加权、覆盖率缩放的 `pillars[]` 数组，将六个领域重新分组为结构准备度、实时冲击暴露和恢复能力。恢复领域添加六个新维度，验证套件（跨指数基准、结果回测、敏感度分析）门控激活的支柱组合公式。顶层 `overall_score` 现在是部分非补偿支柱组合分数（见下方的**支柱组合分数激活（活动）**小节）；六领域加权聚合在 `RESILIENCE_PILLAR_COMBINE_ENABLED=false` 时仅作为回退路径保留。
+**当前发布版本**。参考级升级计划 Phase 2（`docs/engineering/research/country-resilience/country-resilience-upgrade-plan.md`）。响应形状重建已上线：每个响应现在携带真实领域加权、覆盖率缩放的 `pillars[]` 数组，将六个领域重新分组为结构准备度、实时冲击暴露和恢复能力。恢复领域添加六个新维度，验证套件（跨指数基准、结果回测、敏感度分析）门控激活的支柱组合公式。顶层 `overall_score` 现在是部分非补偿支柱组合分数（见下方的**支柱组合分数激活（活动）**小节）；六领域加权聚合在 `RESILIENCE_PILLAR_COMBINE_ENABLED=false` 时仅作为回退路径保留。
 
 - **T2.1**（#2977）：三支柱模式添加到 proto 和 OpenAPI。引入 `schemaVersion: "2.0"` 特性标志，带向后兼容的 `"1.0"` 回退路径，保留一个发布周期。响应现在在现有 `domains` 旁携带 `pillars` 数组。
 - **T2.2a**（#2979）：信号分层注册表提交。每个指标标记 Core、Enrichment 或 Experimental，含按信号覆盖率百分比和许可审计状态。注册表由 CI linter 强制。

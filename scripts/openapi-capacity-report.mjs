@@ -537,7 +537,7 @@ export function formatMarkdown(report) {
     '',
     '</details>',
     '',
-    'Plan and rationale: `docs/perf/openapi-bundle-capacity-2026-08-13.md`',
+    'Plan and rationale: `docs/engineering/research/perf/openapi-bundle-capacity-2026-08-13.md`',
     '',
   ];
   return lines.join('\n');
@@ -642,7 +642,7 @@ function main() {
     console.warn(
       `::warning::OpenAPI bundle reserve breached — ${headline}. `
         + `Collapsing the repeated structures still inline would return ~${report.repeatedStructures.estimatedRecoverableBytes} bytes; `
-        + 'see docs/perf/openapi-bundle-capacity-2026-08-13.md',
+        + 'see docs/engineering/research/perf/openapi-bundle-capacity-2026-08-13.md',
     );
   } else {
     // stderr, not stdout: under `--json` stdout is the machine-readable report

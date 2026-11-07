@@ -9,7 +9,7 @@ paths:
 
 # Tests
 
-Source of truth: CLAUDE.md test-suite table, [CONTRIBUTING.md "Verify the changed path"](../../CONTRIBUTING.md#verify-the-changed-path), `docs/solutions/test-failures/`, `docs/solutions/best-practices/test-guard-assertions-and-module-state-reset.md`.
+Source of truth: CLAUDE.md test-suite table, [CONTRIBUTING.md "Verify the changed path"](../../CONTRIBUTING.md#verify-the-changed-path), `docs/engineering/solutions/test-failures/`, `docs/engineering/solutions/best-practices/test-guard-assertions-and-module-state-reset.md`.
 
 ## Where a test goes
 

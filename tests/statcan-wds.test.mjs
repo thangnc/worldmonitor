@@ -377,7 +377,7 @@ test('StatCan and BoC keep independent issue ownership and a documented tick', (
   // The 08:00 UTC cron must stay documented — the wrong-tick bug is only
   // avoidable while the runbook says what the tick actually is.
   const healthSrc = readFileSync(resolve(here, '../api/health.js'), 'utf8');
-  const runbook = readFileSync(resolve(here, '../docs/railway-seed-consolidation-runbook.md'), 'utf8');
+  const runbook = readFileSync(resolve(here, '../docs/engineering/runbooks/railway-seed-consolidation-runbook.md'), 'utf8');
 
   assert.match(seederSrc, /Issue #6676\./, 'the StatCan seeder must point to its own tracking issue');
   assert.doesNotMatch(seederSrc, /Issue #6616\./, 'the StatCan seeder must not point to the BoC issue');
@@ -402,7 +402,7 @@ test('STATCAN_MAX_CONTENT_AGE_MIN clears retained healthy cycles, catches a miss
   // peaks at `next release - held refPer + 1`; a one-release miss recovers at
   // `release after next - held refPer + 1`. The +1 accounts for the 08:00 UTC
   // seed preceding StatCan's 08:30 ET release, which makes the new observation
-  // visible on the following day's tick. See docs/solutions/logic-errors/
+  // visible on the following day's tick. See docs/engineering/solutions/logic-errors/
   // a-guard-that-hardcodes-an-external-services-latency-goes-green-when-that-latency-drifts.md
   //
   // Unlike its two siblings in #6831 — China (tests/china-macro-production-

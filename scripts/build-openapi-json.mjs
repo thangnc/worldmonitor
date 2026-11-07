@@ -44,7 +44,7 @@
  *     (openapi-drop-unreachable-schemas.mjs)
  *
  * `scripts/openapi-capacity-report.mjs` measures what is left and ranks what to
- * collapse next; docs/perf/openapi-bundle-capacity-2026-08-13.md is the plan.
+ * collapse next; docs/engineering/research/perf/openapi-bundle-capacity-2026-08-13.md is the plan.
  */
 import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

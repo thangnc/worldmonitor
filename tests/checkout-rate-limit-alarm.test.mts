@@ -24,7 +24,7 @@ import {
 //
 // Observed floor these thresholds are sized against: 7 terminal 429s over
 // 2026-08-01 -> 2026-08-13 (~0.54/day, ~3.8/week) — see
-// docs/payments-checkout-rate-limit-operations.md.
+// docs/engineering/runbooks/payments-checkout-rate-limit-operations.md.
 // ---------------------------------------------------------------------------
 
 const NOW = Date.UTC(2026, 7, 14, 12, 0, 0);

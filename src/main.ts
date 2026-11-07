@@ -657,7 +657,7 @@ requestAnimationFrame(() => {
 // Clear stale settings-open flag (survives ungraceful shutdown)
 safeStorageRemove('wm-settings-open');
 
-// World Monitor Lite profile (docs/architecture/lite.md): `/` and `/dashboard`
+// World Monitor Lite profile (docs/engineering/architecture/lite.md): `/` and `/dashboard`
 // open the Lite UI. `?full=1` opens the dashboard and is remembered for the tab,
 // because urlState rewrites the query after boot. Inert when the flag is off.
 // An arrow const, not a `function` declaration: tests/csp-filter.test.mjs

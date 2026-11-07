@@ -21,7 +21,7 @@ it('current public and translated CII claims use the published formula version',
   const paths = [
     'README.md', 'README.ru.md', 'README.ja-JP.md', 'README.zh-CN.md',
     'public/ai-search.md', 'public/llms.txt', 'public/llms-full.txt',
-    'public/home.md', 'public/agent-view.json', 'docs/PRESS_KIT.md',
+    'public/home.md', 'public/agent-view.json', 'docs/engineering/product/PRESS_KIT.md',
     'docs/health-endpoints.mdx', 'docs/zh/health-endpoints.mdx',
     'docs/zh/algorithms.mdx', 'docs/zh/overview.mdx', 'docs/zh/features.mdx',
     'docs/zh/country-instability-index.mdx', 'docs/zh/strategic-risk.mdx',
@@ -103,10 +103,10 @@ function parseStrategicRiskServerBands(source: string): Array<{ range: string; e
 describe('CII docs drift guards', () => {
   it('internal review docs do not retain stale CII country-count or source-of-truth claims', () => {
     const internalDocPaths = [
-      'docs/Docs_To_Review/todo_docs.md',
-      'docs/Docs_To_Review/todo.md',
-      'docs/Docs_To_Review/TODO_Performance.md',
-      'docs/Docs_To_Review/COMPONENTS.md',
+      'docs/engineering/archive/legacy/todo_docs.md',
+      'docs/engineering/archive/legacy/todo.md',
+      'docs/engineering/archive/legacy/TODO_Performance.md',
+      'docs/engineering/archive/legacy/COMPONENTS.md',
     ];
     const escapedFormulaVersion = CII_FORMULA_VERSION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const staleCiiFormulaVersionClaim = new RegExp(
@@ -421,8 +421,8 @@ describe('CII docs drift guards', () => {
     const surfaces = [
       { label: 'public/llms.txt', text: readFileSync(resolve(root, 'public', 'llms.txt'), 'utf8') },
       { label: 'public/llms-full.txt', text: readFileSync(resolve(root, 'public', 'llms-full.txt'), 'utf8') },
-      { label: 'docs/PRESS_KIT.md', text: readFileSync(resolve(root, 'docs', 'PRESS_KIT.md'), 'utf8') },
-      { label: 'docs/COMMUNITY-PROMOTION-GUIDE.md', text: readFileSync(resolve(root, 'docs', 'COMMUNITY-PROMOTION-GUIDE.md'), 'utf8') },
+      { label: 'docs/engineering/product/PRESS_KIT.md', text: readFileSync(resolve(root, 'docs/engineering/product/PRESS_KIT.md'), 'utf8') },
+      { label: 'docs/engineering/product/COMMUNITY-PROMOTION-GUIDE.md', text: readFileSync(resolve(root, 'docs/engineering/product/COMMUNITY-PROMOTION-GUIDE.md'), 'utf8') },
       { label: 'public/home.md', text: publicHome },
       { label: 'public/agent-view.json', text: agentViewText },
     ];

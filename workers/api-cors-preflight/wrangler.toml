@@ -39,7 +39,7 @@ id = "40d42ec8064b4813ac87e61b43fb697f"
 # BOOTSTRAP_KV_SHADOW to "0".
 #
 # Stage 1 ("off" -> "slow") on 2026-08-02. The U-K3 gate passed on 2026-07-16
-# (docs/solutions/2026-07-16-bootstrap-kv-verify.md); this is the flip it authorised, confirmed
+# (docs/engineering/research/investigations/2026-07-16-bootstrap-kv-verify.md); this is the flip it authorised, confirmed
 # against a fresh 7-day window (2026-07-26..2026-08-02, 1.51M shadow reads):
 #   * 99.945% servable — zero stale, zero miss, zero invalid across both tiers.
 #     The only non-servable outcomes were 830 probe-ceiling timeouts (0.055%) and 3 errors,

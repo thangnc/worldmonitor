@@ -47,7 +47,7 @@
  *       'persist-failed': `discardWaveRun` (transient retry won't help)
  *   - failureSubstatus='empty-pool': terminal no-op; lease auto-cleared
  *
- * See `docs/archive/plans/2026-04-29-post-launch-stabilization.md` for the full
+ * See `docs/engineering/archive/plans/2026-04-29-post-launch-stabilization.md` for the full
  * architecture decisions, codex-approved through round 6.
  */
 

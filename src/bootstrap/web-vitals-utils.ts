@@ -24,7 +24,7 @@ export const roundMs = (n: number | undefined): number | undefined =>
  * improves: a fix pushes moderate interactions across the threshold into `good`,
  * which DELETES them from the sample and leaves the surviving tail worse on
  * average. A real win can read as a flat or rising number. Worked example in
- * docs/perf/reading-field-web-vitals.md.
+ * docs/engineering/research/perf/reading-field-web-vitals.md.
  *
  * The honest Sentry-side series is a RATE, not a percentile: count events with
  * the rating tag `poor`, scale by 1/sampleRate, and divide by a traffic

@@ -10,7 +10,7 @@
  *
  * Usage:
  *   node scripts/profile-news-hybrid-clustering-7782-dashboard.mjs \
- *     docs/perf/news-hybrid-clustering-7782.fixture.json [--samples 3] [--cpu 1,6]
+ *     docs/engineering/research/perf/news-hybrid-clustering-7782.fixture.json [--samples 3] [--cpu 1,6]
  */
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -149,7 +149,7 @@ function makeHighDiversity(count) {
 
 function parseArgs(argv) {
   const args = {
-    fixturePath: 'docs/perf/news-hybrid-clustering-7782.fixture.json',
+    fixturePath: 'docs/engineering/research/perf/news-hybrid-clustering-7782.fixture.json',
     samples: DEFAULT_SAMPLES,
     cpuRates: [...DEFAULT_CPU_RATES],
   };

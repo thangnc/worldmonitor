@@ -395,7 +395,7 @@ export function marketingYearEndMs(label, commoditySlug) {
  * `_world` specifically, and reduced with min:
  *  - min, because six PSD commodity feeds freeze INDEPENDENTLY. A max() lets one
  *    still-updating commodity mask five dead ones — the exact failure
- *    docs/solutions/design-patterns/multi-source-freshness-clock-must-reduce-with-min.md
+ *    docs/engineering/solutions/design-patterns/multi-source-freshness-clock-must-reduce-with-min.md
  *    describes ("which single upstream can stop publishing without changing
  *    newestItemAt?").
  *  - `_world` only, because it is provably PSD-sourced: applyFaostatFoodBalanceFill

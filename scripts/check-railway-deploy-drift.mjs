@@ -314,7 +314,7 @@ export function classifyServiceDeploy({
   // Railway ticks a cron service's serving deployment while a newer build is
   // FAILED or in flight; once that deployment crashes nothing is left to
   // schedule. An always-on service is restarted instead. See
-  // docs/solutions/integration-issues/railway-cron-crash-behind-failed-build-never-self-heals.md.
+  // docs/engineering/solutions/integration-issues/railway-cron-crash-behind-failed-build-never-self-heals.md.
   const servingCrashedBehindBuild = running?.status === 'CRASHED' && Boolean(failedBuild || inFlightForHead);
   const stoppedCron = !servingCrashedBehindBuild
     ? ''

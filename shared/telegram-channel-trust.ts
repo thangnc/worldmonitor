@@ -64,7 +64,7 @@ export const TELEGRAM_CHANNEL_TRUST: readonly TelegramChannelTrustEntry[] = [
     type: 'gov',
     risk: 'medium',
     stateAffiliated: 'Israel',
-    note: 'Official civil-defense warnings and protective instructions; not independent confirmation of military claims. Ownership: IDF social-account disclosure linked in docs/operations/telegram-source-additions-2026-09-15.md',
+    note: 'Official civil-defense warnings and protective instructions; not independent confirmation of military claims. Ownership: IDF social-account disclosure linked in docs/engineering/runbooks/telegram-source-additions-2026-09-15.md',
   },
   {
     handle: 'cnalatest',

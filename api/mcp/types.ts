@@ -156,7 +156,7 @@ export interface BaseToolDef {
   // shared-secret Convex HTTP action. The secret authorizes one append-only
   // write behind fail-closed admission and mints no principal, unlike an
   // HMAC-signed gateway call. The exception is exactly that tool and that
-  // action (docs/architecture/agent-feedback-threat-model.md, "Free-tier
+  // action (docs/engineering/architecture/agent-feedback-threat-model.md, "Free-tier
   // amendment"); tests/mcp-free-tier-subset.test.mjs pins it. It does not
   // extend to any other tool.
   _freeTier?: true;

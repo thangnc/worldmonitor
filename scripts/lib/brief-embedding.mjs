@@ -341,7 +341,7 @@ async function embedBatchWithUsage(normalizedTitles, deps, usage) {
     // succeeds, while a single command carrying a 60MB argument is
     // rejected with HTTP 413. At ~9.4KB per SET no chunk size can trip
     // it here. See
-    // docs/solutions/integration-issues/upstash-max-request-size-counts-one-command-and-answers-http-200.md
+    // docs/engineering/solutions/integration-issues/upstash-max-request-size-counts-one-command-and-answers-http-200.md
     //
     // Outage break: defaultRedisPipeline returns null on HTTP error
     // (does NOT throw), so the try/catch alone won't stop the loop.

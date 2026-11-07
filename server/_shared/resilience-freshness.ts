@@ -1,5 +1,5 @@
 // T1.5 Phase 1 of the country-resilience reference-grade upgrade plan
-// (docs/internal/country-resilience-upgrade-plan.md).
+// (docs/engineering/research/country-resilience/country-resilience-upgrade-plan.md).
 //
 // Foundation-only slice: the staleness classifier. This module defines
 // the cadence taxonomy (Realtime, Daily, Weekly, Monthly, Annual), the

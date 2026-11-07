@@ -1365,7 +1365,7 @@ http.route({
             // default to 'high' only on fresh insert. A blind '?? "all"' fallback
             // here would silently narrow existing daily+all digest users to
             // daily+high whenever a caller omits the field.
-            // See docs/archive/plans/forbid-realtime-all-events.md §1c.
+            // See docs/engineering/archive/plans/forbid-realtime-all-events.md §1c.
             sensitivity: body.sensitivity as "all" | "high" | "critical" | undefined,
             channels: body.channels as Array<"telegram" | "slack" | "email">,
             aiDigestEnabled: typeof body.aiDigestEnabled === "boolean" ? body.aiDigestEnabled : undefined,
@@ -1453,7 +1453,7 @@ http.route({
       // digest-schedule fields. Used by the settings UI's delivery-mode change flow
       // to avoid the two-call race that the legacy set-alert-rules + set-digest-settings
       // pair has against the cross-field validator.
-      // See docs/archive/plans/forbid-realtime-all-events.md §1d, §1f.
+      // See docs/engineering/archive/plans/forbid-realtime-all-events.md §1d, §1f.
       if (action === "set-notification-config") {
         const VALID_SENSITIVITY = new Set(["all", "high", "critical"]);
         const VALID_DIGEST_MODE = new Set(["realtime", "daily", "twice_daily", "weekly"]);

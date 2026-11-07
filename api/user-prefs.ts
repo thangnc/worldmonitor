@@ -252,7 +252,7 @@ export default async function handler(
       // #5753 (17:57Z, `exp`-bounded reuse); the last high-rate event (22:40Z)
       // ran a deploy that already carried both, so it is stale client bundle.
       // Residual ~5 ev/wk is this designed two-verifier baseline. See
-      // docs/solutions/integration-issues/convex-auth-drift-ramp-was-stacked-clerk-token-cache.md.
+      // docs/engineering/solutions/integration-issues/convex-auth-drift-ramp-was-stacked-clerk-token-cache.md.
       //
       // Every other UNAUTHENTICATED here is genuine auth/audience/issuer
       // drift between our Clerk JWKS validation and Convex's auth config (a
@@ -423,7 +423,7 @@ export default async function handler(
       // rate times POST volume, so growing `CLOUD_SYNC_KEYS` raises this
       // bucket with no auth regression at all. That is what the May–July 2026
       // 13.6x ramp was; see
-      // docs/solutions/integration-issues/convex-auth-drift-ramp-was-stacked-clerk-token-cache.md.
+      // docs/engineering/solutions/integration-issues/convex-auth-drift-ramp-was-stacked-clerk-token-cache.md.
       if (isExpectedNearExpiry401(kind, session)) {
         console.warn(
           '[user-prefs] POST 401 for token accepted within edge clock tolerance (expected near-expiry, not drift)',

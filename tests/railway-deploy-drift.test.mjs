@@ -484,7 +484,7 @@ describe('Railway deploy drift against the service closure', () => {
     });
   }
 
-  // seed-fred-rates, 2026-09-05: docs/solutions/integration-issues/railway-cron-crash-behind-failed-build-never-self-heals.md
+  // seed-fred-rates, 2026-09-05: docs/engineering/solutions/integration-issues/railway-cron-crash-behind-failed-build-never-self-heals.md
   it('reports a failed build newer than the serving source even when head was path-skipped since', () => {
     const result = classifyWithClosure([
       deployment('SKIPPED', { at: '2026-09-05T18:44:13Z', sha: HEAD, skippedReason: 'No changes to watched files' }),

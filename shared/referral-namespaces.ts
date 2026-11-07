@@ -6,7 +6,7 @@
  * `affonso_referral`, crediting — and paying — a sharer for the purchase.
  * Internal CTAs are supposed to tag with `utm_*` instead (Umami reads
  * those natively, referral capture ignores them); see
- * docs/solutions/conventions/ref-param-is-affiliate-attribution-use-utm-for-internal-source-tags.md.
+ * docs/engineering/solutions/conventions/ref-param-is-affiliate-attribution-use-utm-for-internal-source-tags.md.
  *
  * The welcome landing page nevertheless shipped `?ref=welcome-*` on its
  * dashboard CTAs for months (#6493), so ordinary internal navigation minted

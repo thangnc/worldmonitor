@@ -19,7 +19,7 @@
  * ORDERING — run this AFTER the fix is live in production. Purging while a
  * pre-fix isolate is still serving just lets it re-poison the key. This is
  * the same "wait for the writer to be current before purging" ordering as
- * docs/solutions/workflow-issues/purging-the-live-product-catalog-three-layer-cache.md.
+ * docs/engineering/solutions/workflow-issues/purging-the-live-product-catalog-three-layer-cache.md.
  *
  * SCOPE — deliberately ONE key. `research:tech-events-bootstrap:v1` is NOT
  * purged: only the seeders ever write it (scripts/ais-relay.cjs writes both

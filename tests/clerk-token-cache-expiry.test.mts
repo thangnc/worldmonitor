@@ -28,7 +28,7 @@
  * failure rate behind the May–July 2026 13.6x `convex_auth_drift` ramp on
  * POST /api/user-prefs — but not the ramp itself, which was that constant
  * rate times a cloud-prefs write path that kept growing. See
- * docs/solutions/integration-issues/convex-auth-drift-ramp-was-stacked-clerk-token-cache.md.
+ * docs/engineering/solutions/integration-issues/convex-auth-drift-ramp-was-stacked-clerk-token-cache.md.
  * `stops reusing a token before it expires` is the QK-prevention case.
  */
 import { afterEach, describe, it } from 'node:test';
