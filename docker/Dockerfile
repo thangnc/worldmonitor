@@ -24,9 +24,12 @@ RUN npm ci --include=dev --ignore-scripts
 # can be added here or via --build-arg for custom builds; see .env.example for the full list.
 ARG VITE_VARIANT=full
 ARG VITE_WS_API_URL=https://api.worldmonitor.app
+# World Monitor Lite deployment profile (docs/architecture/lite.md). Off by default.
+ARG VITE_LITE_PROFILE=
 
 ENV VITE_VARIANT=${VITE_VARIANT}
 ENV VITE_WS_API_URL=${VITE_WS_API_URL}
+ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}
 
 # The crawlable-corpus step runs the source-attribution drift gate. Inventory
 # facts write untracked .js into api/, so the gate must see the pristine
@@ -47,7 +50,7 @@ RUN npm run build:pro
 # tsc + vite build directly like the sidecar image's builder. `npm run build`
 # would chain build:blog (blog-site has its own lockfile, not installed here)
 # and the prebuild openapi/agent-skills generators.
-RUN npx tsc && npx vite build
+RUN npx tsc && npx vite build && npx vite build --config vite.lite.config.ts
 RUN test -s dist/product-facts.json
 # The SPA entry point. vite.config.ts's dashboardHtmlOutputPlugin renames
 # index.html -> dashboard.html, and docker/nginx.conf.template both indexes it

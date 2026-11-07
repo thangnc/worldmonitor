@@ -42,3 +42,4 @@ coverage. Classify errors from the actual response and handler path.
 - [Country brief](./country-brief.md) — the `?country=` deep link opens the country intelligence panel and round-trips through the URL.
 - [Global search](./global-search.md) — the command palette opens from the header and ⌘K, returns ranked matches, and closes.
 - [Map layers](./map-layers.md) — a layer toggle changes the map, the shareable URL, and the persisted preference, in both renderers.
+- [Lite UI](./lite-ui.md) — on a Lite profile build, `/` and `/dashboard` open the three-screen `/lite` page; `/dashboard?full=1` keeps the dashboard reachable.

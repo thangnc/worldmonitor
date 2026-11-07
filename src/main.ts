@@ -1,6 +1,13 @@
 import './styles/base-layer.css';
 import './bootstrap/zod-csp';
 import { SITE_VARIANT } from '@/config/variant';
+import { LITE_PROFILE_ENABLED } from '@/config/lite-profile';
+import {
+  LITE_BASE_PATH,
+  LITE_FULL_DASHBOARD_PARAM,
+  LITE_FULL_DASHBOARD_SESSION_KEY,
+  shouldRedirectToLite,
+} from '@/config/lite-route';
 import { installLcpAttributionDebug } from '@/bootstrap/lcp-attribution';
 import { markLcpDebug } from '@/utils/lcp-debug';
 import { registerWebMcpTools, type WebMcpAppBindings } from '@/services/webmcp';
@@ -650,6 +657,30 @@ requestAnimationFrame(() => {
 // Clear stale settings-open flag (survives ungraceful shutdown)
 safeStorageRemove('wm-settings-open');
 
+// World Monitor Lite profile (docs/architecture/lite.md): `/` and `/dashboard`
+// open the Lite UI. `?full=1` opens the dashboard and is remembered for the tab,
+// because urlState rewrites the query after boot. Inert when the flag is off.
+// An arrow const, not a `function` declaration: tests/csp-filter.test.mjs
+// slices shouldSuppressCspViolation out of this file up to the next
+// top-level `function`.
+const redirectToLiteUi = (): boolean => {
+  if (!LITE_PROFILE_ENABLED) return false;
+  let fullInSession = false;
+  try {
+    if (new URLSearchParams(location.search).get(LITE_FULL_DASHBOARD_PARAM) === '1') {
+      sessionStorage.setItem(LITE_FULL_DASHBOARD_SESSION_KEY, '1');
+    }
+    fullInSession = sessionStorage.getItem(LITE_FULL_DASHBOARD_SESSION_KEY) === '1';
+  } catch {
+    // Storage blocked: fall back to the URL check alone.
+  }
+  if (!shouldRedirectToLite(location.pathname, location.search, { enabled: true, fullDashboardInSession: fullInSession })) {
+    return false;
+  }
+  location.replace(`${LITE_BASE_PATH}${location.hash}`);
+  return true;
+};
+
 // Standalone windows: ?settings=1 = panel display settings, ?live-channels=1 = channel management
 // Both need i18n initialized so t() does not return undefined.
 const urlParams = new URLSearchParams(location.search);
@@ -667,6 +698,8 @@ if (urlParams.get('settings') === '1') {
       m.initLiveChannelsWindow();
     }
   );
+} else if (redirectToLiteUi()) {
+  // World Monitor Lite profile: the dashboard is not the default page.
 } else {
   // Start the first dashboard data now instead of after the App chunk loads.
   primeBootstrapFastTier();

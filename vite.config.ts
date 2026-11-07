@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { VitePWA } from 'vite-plugin-pwa';
+import tailwindcss from '@tailwindcss/vite';
 import { appChunkRuntimeCache, createDashboardPrecache } from './shared/pwa-precache';
 import type { OutputBundle } from 'rollup';
 import { resolve, dirname, extname, basename, posix } from 'path';
@@ -256,7 +257,7 @@ function stripPrivateSourceMapsPlugin(): Plugin {
 // Pages whose title, description and canonical are their own; the dashboard
 // brand meta below would otherwise mark them duplicates of /dashboard, or title
 // the desktop sign-in tab as the dashboard.
-const PAGES_WITH_OWN_HEAD_META = new Set(['verify.html', 'desktop-sign-in.html']);
+const PAGES_WITH_OWN_HEAD_META = new Set(['verify.html', 'desktop-sign-in.html', 'lite.html']); // lite.html: dev server only
 
 function htmlVariantPlugin(activeMeta: VariantMeta, activeVariant: string, isDesktopBuild: boolean): Plugin {
   return {
@@ -468,6 +469,23 @@ function deferDashboardStylesheetLinks(html: string, bundle: OutputBundle): stri
     const deferredTag = tag.replace(/\s*\/?>$/, ' media="print" data-wm-deferred-style="dashboard">');
     return `${deferredTag}\n    <noscript>${tag}</noscript>`;
   });
+}
+
+// Dev parity with the vercel.json rewrite: /lite/<screen> serves lite.html.
+// Vite's own HTML fallback only maps /lite, and sends /lite/finance to index.html.
+function liteDevRoutePlugin(): Plugin {
+  return {
+    name: 'wm-lite-dev-route',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        if (req.url && /^\/lite\/[a-z-]+\/?(?:[?#]|$)/.test(req.url)) {
+          req.url = `/lite.html${req.url.slice(req.url.search(/[?#]|$/))}`;
+        }
+        next();
+      });
+    },
+  };
 }
 
 function polymarketPlugin(): Plugin {
@@ -1061,6 +1079,10 @@ export default defineConfig(({ mode }) => {
       // hostname). Desktop and dedicated VITE_VARIANT builds skip it.
       !isDesktopBuild && activeVariant === 'full' && variantDashboardHtmlPlugin(),
       webMcpDevSecurityHeadersPlugin(),
+      // Dev only: lite.html is built by vite.lite.config.ts (npm run build:lite).
+      // Tailwind only acts on stylesheets that import it (src/lite/lite.css).
+      ...tailwindcss().map((plugin) => ({ ...plugin, apply: 'serve' as const })),
+      liteDevRoutePlugin(),
       polymarketPlugin(),
       rssProxyPlugin(),
       miitNewsPlugin(),
@@ -1087,7 +1109,7 @@ export default defineConfig(({ mode }) => {
           name: `${activeMeta.siteName} - ${activeMeta.subject}`,
           short_name: activeMeta.shortName,
           description: activeMeta.description,
-          start_url: '/dashboard',
+          start_url: env.VITE_LITE_PROFILE === 'true' ? '/lite' : '/dashboard',
           scope: '/',
           display: 'standalone',
           orientation: 'any',

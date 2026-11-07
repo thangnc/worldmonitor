@@ -1,0 +1,48 @@
+/* World Monitor Lite UI. Tailwind is scoped to this page: only lite.html loads
+   this stylesheet, so its preflight never reaches the dashboard. Tokens come
+   from the design exports in design/ (not committed). */
+@import "@fontsource-variable/ibm-plex-sans/wght.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+@import "tailwindcss";
+
+@theme {
+	--color-bg: #0a0c0f;
+	--color-surface: #111419;
+	--color-surface-2: #171b21;
+	--color-line: #222831;
+	--color-track: #2e3540;
+	--color-ink: #e7e9ec;
+	--color-muted: #9aa2ae;
+	--color-dim: #5f6874;
+	--color-grey: #8b93a1;
+	--color-faint: #3a414c;
+	--color-geo: #ff9f43;
+	--color-fin: #4cc3ff;
+	--color-tech: #b18cff;
+	--color-crit: #f2555a;
+	--color-high: #ff9f43;
+	--color-elev: #e8c547;
+	--color-ok: #3dd68c;
+
+	--font-sans: "IBM Plex Sans Variable", "IBM Plex Sans", system-ui, sans-serif;
+	--font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+
+	--breakpoint-wide: 72rem;
+}
+
+@layer base {
+	html,
+	body {
+		background: var(--color-bg);
+		color: var(--color-ink);
+		font-family: var(--font-sans);
+		-webkit-font-smoothing: antialiased;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--color-fin);
+		outline-offset: 2px;
+	}
+}

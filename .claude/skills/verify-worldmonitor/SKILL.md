@@ -82,6 +82,7 @@ Ready-made steps, one per mapped feature:
 | `steps/country-brief.mjs` | [Country brief](features/country-brief.md) |
 | `steps/global-search.mjs` | [Global search](features/global-search.md) |
 | `steps/map-layers.mjs` | [Map layers](features/map-layers.md) |
+| `steps/lite-ui.mjs` | [Lite UI](features/lite-ui.md) at `/lite`; same launch and `WM_VERIFY_EXPECT` switch as `lite-profile.mjs` |
 | `steps/lite-profile.mjs` | Lite deployment profile ([spec](../../../docs/architecture/lite.md)); launch with `VITE_LITE_PROFILE=true` and drive with `WM_VERIFY_EXPECT=lite`, or without the flag and `WM_VERIFY_EXPECT=full` |
 | `steps/_inspect.mjs` | not a feature — dumps live panel keys, layer handles, header ids, and the map renderer when a handle in the map has drifted |
 

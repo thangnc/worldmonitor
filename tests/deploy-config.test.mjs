@@ -108,6 +108,7 @@ const WEBMCP_TOKEN_SHA256_BY_HOST = {
 };
 const GLOBAL_CSP_INLINE_SCRIPT_HTML_FILES = [
   'index.html',
+  'lite.html',
   'settings.html',
   'live-channels.html',
   'mcp-grant.html',
@@ -119,6 +120,7 @@ const GLOBAL_CSP_INLINE_SCRIPT_HTML_FILES = [
 ];
 const GLOBAL_CSP_EXTERNAL_SCRIPT_HTML_FILES = [
   'index.html',
+  'lite.html',
   'settings.html',
   'live-channels.html',
   'mcp-grant.html',
@@ -1906,7 +1908,27 @@ describe('welcome landing page routing', () => {
   });
 
   it('starts installed PWAs on /dashboard, not the public welcome page', () => {
-    assert.match(viteConfigSource, /start_url:\s*'\/dashboard'/);
+    // The only exception is the owner's Lite profile build, which starts on
+    // /lite (docs/architecture/lite.md). Upstream builds leave the flag unset.
+    assert.match(viteConfigSource, /start_url:\s*env\.VITE_LITE_PROFILE === 'true' \? '\/lite' : '\/dashboard'/);
+  });
+
+  it('serves the Lite UI at /lite and its three child screens, and nothing else under it', () => {
+    const rewrites = vercelConfig.rewrites.filter((r) => r.source.startsWith('/lite'));
+    assert.deepEqual(rewrites, [
+      { source: '/lite', destination: '/lite.html' },
+      { source: '/lite/geopolitics', destination: '/lite.html' },
+      { source: '/lite/finance', destination: '/lite.html' },
+      { source: '/lite/tech', destination: '/lite.html' },
+    ]);
+    assert.ok(vercelConfig.redirects.some((r) => r.source === '/lite/' && r.destination === '/lite' && r.permanent === true));
+    // Built on its own (vite.lite.config.ts, npm run build:lite) so it shares
+    // no chunks with the dashboard; build:full runs it after the main build.
+    const liteConfigSource = readFileSync(resolve(__dirname, '../vite.lite.config.ts'), 'utf-8');
+    assert.match(liteConfigSource, /lite: resolve\(__dirname, 'lite\.html'\)/);
+    assert.match(liteConfigSource, /emptyOutDir: false/);
+    assert.doesNotMatch(viteConfigSource, /lite: resolve\(__dirname, 'lite\.html'\)/);
+    assert.match(JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8')).scripts['build:full'], /vite build\\?" && npm run build:lite && npm run build:plugin/);
   });
 
   it('sitemap lists dashboard routes and does not list legacy /welcome', () => {

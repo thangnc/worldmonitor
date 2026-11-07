@@ -137,7 +137,7 @@ describe('check-no-public-source-maps deploy gate', () => {
 describe('bundler configs that ship to production', () => {
   // Every config here was reviewed for source-map output. A new bundler
   // config must follow shared/source-map-policy.ts before it joins this list.
-  const REVIEWED = ['blog-site/astro.config.mjs', 'pro-test/vite.config.ts', 'vite.config.ts', 'vite.plugin.config.ts'];
+  const REVIEWED = ['blog-site/astro.config.mjs', 'pro-test/vite.config.ts', 'vite.config.ts', 'vite.lite.config.ts', 'vite.plugin.config.ts'];
 
   it('has no unreviewed bundler config', () => {
     const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n');
@@ -155,6 +155,10 @@ describe('bundler configs that ship to production', () => {
     assert.match(main, /emitPublicSourceMaps \? \[\] : \[stripPrivateSourceMapsPlugin\(\)\]/);
     assert.match(await read('pro-test/vite.config.ts'), /sourcemap:\s*uploadSourceMapsToSentry \? 'hidden' : false/);
     assert.doesNotMatch(await read('vite.plugin.config.ts'), /sourcemap/i);
+    // The Lite UI (/lite) has no Sentry upload, so it builds no maps at all.
+    const lite = await read('vite.lite.config.ts');
+    assert.equal(lite.match(/sourcemap/gi)?.length, 1, 'vite.lite.config.ts sets sourcemap exactly once');
+    assert.match(lite, /\n\s*sourcemap:\s*false,\n/);
     assert.doesNotMatch(await read('blog-site/astro.config.mjs'), /sourcemap/i);
   });
 });
