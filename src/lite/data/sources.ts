@@ -37,6 +37,7 @@ import { publicRpcFetch } from '@/services/public-rpc-fetch';
 import { toApiUrl } from '@/services/runtime';
 import { ensureHydrated, fetchBootstrapData, getHydratedData, waitForBootstrapSlowTier } from '@/services/bootstrap';
 import { isMarketCorrelationPayload } from '@/services/news-market-correlation';
+import { fetchServerInsights, type ServerInsights } from '@/services/insights-loader';
 
 const options = { fetch: rpcFetch };
 const market = new MarketServiceClient(getRpcBaseUrl(), options);
@@ -87,6 +88,20 @@ export async function loadDigest(edition: DigestEdition): Promise<ListFeedDigest
   return data.categories && Object.keys(data.categories).length > 0 ? data : null;
 }
 
+// ---- AI world brief ---------------------------------------------------------
+
+/**
+ * The hourly AI world brief and its top stories (`insights`, written by
+ * scripts/seed-insights.mjs). The loader returns null for both a failed read
+ * and a missing snapshot, so null is reported as an error, not as "empty".
+ */
+export async function loadInsights(): Promise<ServerInsights | null> {
+  await startBootstrap();
+  const data = await fetchServerInsights(8_000);
+  if (!data) throw new Error('insights snapshot unavailable');
+  return data;
+}
+
 // ---- Geopolitics ------------------------------------------------------------
 
 export async function loadRiskScores(): Promise<GetRiskScoresResponse | null> {
@@ -124,11 +139,14 @@ export async function loadMarketQuotes(): Promise<MarketQuote[] | null> {
   return (await market.listMarketQuotes({ symbols: [...EQUITY_SYMBOLS] })).quotes;
 }
 
+/** Brent and gold futures. */
+export const COMMODITY_SYMBOLS = ['BZ=F', 'GC=F'] as const;
+
 export async function loadCommodityQuotes(): Promise<CommodityQuote[] | null> {
   const boot = await hydrated('commodityQuotes', hasArray('quotes'));
-  const brent = (boot?.quotes as CommodityQuote[] | undefined)?.filter((q) => q.symbol === 'BZ=F');
-  if (brent?.length) return brent;
-  return (await market.listCommodityQuotes({ symbols: ['BZ=F'] })).quotes;
+  const fromBoot = (boot?.quotes as CommodityQuote[] | undefined)?.filter((q) => (COMMODITY_SYMBOLS as readonly string[]).includes(q.symbol));
+  if (fromBoot && fromBoot.length === COMMODITY_SYMBOLS.length) return fromBoot;
+  return (await market.listCommodityQuotes({ symbols: [...COMMODITY_SYMBOLS] })).quotes;
 }
 
 export async function loadGoldIntelligence(): Promise<GetGoldIntelligenceResponse | null> {

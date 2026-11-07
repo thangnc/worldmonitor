@@ -29,7 +29,7 @@ function SoonItem({ icon, label }: { icon: ComponentChildren; label: string }) {
   );
 }
 
-function DomainItem({ screen, active, color, label, count }: { screen: LiteScreen; active: boolean; color: string; label: string; count?: number }) {
+function NavLink({ screen, active, children }: { screen: LiteScreen; active: boolean; children: ComponentChildren }) {
   return (
     <a
       href={LITE_SCREEN_PATHS[screen]}
@@ -45,10 +45,18 @@ function DomainItem({ screen, active, color, label, count }: { screen: LiteScree
         active ? 'bg-surface-2 font-medium text-ink' : 'text-muted hover:bg-surface-2/60 hover:text-ink',
       )}
     >
+      {children}
+    </a>
+  );
+}
+
+function DomainItem({ screen, active, color, label, count }: { screen: LiteScreen; active: boolean; color: string; label: string; count?: number }) {
+  return (
+    <NavLink screen={screen} active={active}>
       <span class={cx('h-[7px] w-[7px] shrink-0 rounded-full', color)} aria-hidden="true" />
       <span>{label}</span>
       {count != null ? <span class="ml-auto font-mono text-[11px] text-dim">{count}</span> : null}
-    </a>
+    </NavLink>
   );
 }
 
@@ -101,11 +109,18 @@ export function Sidebar({ screen }: { screen: LiteScreen }) {
           </span>
         </div>
 
-        <div class="hidden flex-col gap-[2px] wide:flex">
+        <div class="flex flex-col gap-[2px]">
           <SectionLabel>OVERVIEW</SectionLabel>
-          <SoonItem icon={<LayoutDashboard {...ICON} />} label="Briefing" />
-          <SoonItem icon={<Bell {...ICON} />} label="Alerts" />
-          <SoonItem icon={<Star {...ICON} />} label="Watchlists" />
+          <NavLink screen="briefing" active={screen === 'briefing'}>
+            <span class={screen === 'briefing' ? 'text-ink' : 'text-dim'}>
+              <LayoutDashboard {...ICON} />
+            </span>
+            <span>Briefing</span>
+          </NavLink>
+          <div class="hidden flex-col gap-[2px] wide:flex">
+            <SoonItem icon={<Bell {...ICON} />} label="Alerts" />
+            <SoonItem icon={<Star {...ICON} />} label="Watchlists" />
+          </div>
         </div>
 
         <div class="flex flex-col gap-[2px]">

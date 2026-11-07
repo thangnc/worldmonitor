@@ -9,7 +9,7 @@ import {
   TECH_FILTER_CATEGORIES,
   byImportance,
   claimStatus,
-  decodeEntities,
+  cleanSnippet,
   digestItems,
   isPrimarySource,
   relativeTime,
@@ -40,12 +40,6 @@ const TYPE_ICON: Record<string, LucideIcon> = {
 };
 
 /** The digest snippet without HTML entities, or nothing when it repeats the title. */
-function cleanSnippet(item: LiteItem): string {
-  const text = decodeEntities(item.snippet ?? '').replace(/\s+/g, ' ').trim();
-  const title = item.title.trim().toLowerCase();
-  return !text || text.toLowerCase().startsWith(title.slice(0, Math.min(40, title.length))) ? '' : text;
-}
-
 /** Status pill from the corroboration rule. */
 function evidencePill(item: LiteItem): { label: string; tone: Tone; Icon: LucideIcon } {
   if (isPrimarySource(item.source)) return { label: 'Primary source', tone: 'ok', Icon: Check };

@@ -5,13 +5,20 @@
  * lives in `lite-profile.ts`; callers pass it in.
  */
 
-/** The three Lite screens. `/lite` itself is Geopolitics. */
-export type LiteScreen = 'geopolitics' | 'finance' | 'tech';
+/**
+ * The Lite screens. `/lite` is the cross-domain Briefing (home); the three
+ * domain screens are its children.
+ */
+export type LiteScreen = 'briefing' | 'geopolitics' | 'finance' | 'tech';
+
+/** The domain screens the Briefing links to. */
+export type LiteDomainScreen = Exclude<LiteScreen, 'briefing'>;
 
 export const LITE_BASE_PATH = '/lite';
 
 export const LITE_SCREEN_PATHS: Readonly<Record<LiteScreen, string>> = {
-  geopolitics: '/lite',
+  briefing: '/lite',
+  geopolitics: '/lite/geopolitics',
   finance: '/lite/finance',
   tech: '/lite/tech',
 };
@@ -30,12 +37,11 @@ export const LITE_DASHBOARD_STATE_KEYS = [
   'expanded', 'settings', 'live-channels', 'preset', 'mission',
 ] as const;
 
-/** Maps a pathname to a Lite screen. Unknown subpaths fall back to Geopolitics. */
+/** Maps a pathname to a Lite screen. Unknown subpaths fall back to the Briefing. */
 export function parseLiteScreen(pathname: string): LiteScreen {
   const rest = pathname.replace(/\/+$/, '').slice(LITE_BASE_PATH.length).replace(/^\/+/, '');
-  if (rest === 'finance') return 'finance';
-  if (rest === 'tech') return 'tech';
-  return 'geopolitics';
+  if (rest === 'geopolitics' || rest === 'finance' || rest === 'tech') return rest;
+  return 'briefing';
 }
 
 /**

@@ -1913,10 +1913,11 @@ describe('welcome landing page routing', () => {
     assert.match(viteConfigSource, /start_url:\s*env\.VITE_LITE_PROFILE === 'true' \? '\/lite' : '\/dashboard'/);
   });
 
-  it('serves the Lite UI at /lite and its two screens, and nothing else under it', () => {
+  it('serves the Lite UI at /lite and its three child screens, and nothing else under it', () => {
     const rewrites = vercelConfig.rewrites.filter((r) => r.source.startsWith('/lite'));
     assert.deepEqual(rewrites, [
       { source: '/lite', destination: '/lite.html' },
+      { source: '/lite/geopolitics', destination: '/lite.html' },
       { source: '/lite/finance', destination: '/lite.html' },
       { source: '/lite/tech', destination: '/lite.html' },
     ]);

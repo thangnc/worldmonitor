@@ -134,6 +134,7 @@
     { "source": "/desktop-sign-in/", "destination": "/desktop-sign-in", "permanent": true },
     { "source": "/embed/", "destination": "/embed", "permanent": true },
     { "source": "/lite/", "destination": "/lite", "permanent": true },
+    { "source": "/lite/geopolitics/", "destination": "/lite/geopolitics", "permanent": true },
     { "source": "/lite/finance/", "destination": "/lite/finance", "permanent": true },
     { "source": "/lite/tech/", "destination": "/lite/tech", "permanent": true }
   ],
@@ -172,6 +173,7 @@
     { "source": "/.well-known/http-message-signatures-directory", "destination": "/api/http-message-signatures-directory" },
     { "source": "/embed", "destination": "/embed.html" },
     { "source": "/lite", "destination": "/lite.html" },
+    { "source": "/lite/geopolitics", "destination": "/lite.html" },
     { "source": "/lite/finance", "destination": "/lite.html" },
     { "source": "/lite/tech", "destination": "/lite.html" },
     { "source": "/dashboard", "has": [{ "type": "host", "value": "tech.worldmonitor.app" }], "destination": "/dashboard-tech.html" },

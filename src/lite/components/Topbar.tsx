@@ -7,7 +7,7 @@ import { Plus, Search } from 'lucide-preact';
  * that filters the current screen, and the primary action (not built yet).
  */
 export function Topbar({
-  title, subtitle, filter, search, onSearch, searchWidth = 200, actionLabel,
+  title, subtitle, filter, search, onSearch, searchWidth = 200, actionLabel, actionIcon,
 }: {
   title: string;
   subtitle: ComponentChildren;
@@ -16,6 +16,7 @@ export function Topbar({
   onSearch: (value: string) => void;
   searchWidth?: number;
   actionLabel: string;
+  actionIcon?: ComponentChildren;
 }) {
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -31,7 +32,7 @@ export function Topbar({
 
   return (
     <header class="flex flex-wrap items-center gap-4 border-b border-line px-4 py-3 wide:min-h-[68px] wide:flex-nowrap wide:px-7 wide:py-0">
-      <div class="flex min-w-0 flex-1 flex-col gap-[3px]">
+      <div class="flex min-w-0 flex-1 basis-full flex-col gap-[3px] wide:basis-0">
         <h1 class="text-[18px] font-semibold text-ink">{title}</h1>
         <p class="text-[12px] text-dim">{subtitle}</p>
       </div>
@@ -59,7 +60,7 @@ export function Topbar({
         class="flex cursor-not-allowed items-center gap-2 rounded-[7px] bg-ink px-[14px] py-[9px] text-[12.5px] font-semibold text-bg opacity-60"
         data-soon="true"
       >
-        <Plus size={14} strokeWidth={2} />
+        {actionIcon ?? <Plus size={14} strokeWidth={2} />}
         {actionLabel}
         <span class="font-mono text-[9px] font-semibold tracking-[0.6px]">SOON</span>
       </button>

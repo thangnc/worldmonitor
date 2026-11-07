@@ -22,7 +22,7 @@ The owner runs a private, low-noise build of the `full` variant, focused on thre
 
 - New work serves one of the three domains, or passes the spec's decision rule for optional modules. Say which when proposing it.
 - Lite behavior and custom features sit behind the profile env flag. With the flag off, behavior matches upstream. Do not add a `lite` variant.
-- The owner's front page is the Lite UI at `/lite` (`src/lite/`, Preact and Tailwind). Its widgets show real data, a labelled derived rule, or labelled samples, never unlabelled samples.
+- The owner's front page is the Lite UI at `/lite` (`src/lite/`, Preact and Tailwind): the cross-domain Briefing, with the three domain screens as its children. Its widgets show real data, a labelled derived rule, or labelled samples, never unlabelled samples.
 - Reuse the existing `shared/` intelligence modules (story identity, publisher families, credibility, corroboration, keyword spikes, grounded briefs) before writing new scoring, dedup, or brief code.
 - Add no new datastore (Supabase Postgres, R2 raw archive) until its phase gate in the spec is met. Redis stays the store the dashboard reads.
 - Model work at the event level, not the article level. Keep sources, timestamps, confidence, and the distinction between confirmed facts, attributed claims, and model inference visible.

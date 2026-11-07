@@ -96,7 +96,7 @@ export function SourceState({ state, source, pad = true }: { state: ResourceStat
 export function SegmentedControl<T extends string>({
   options, value, onChange, mono = false, label,
 }: {
-  options: ReadonlyArray<{ value: T; label: string; disabled?: boolean; title?: string }>;
+  options: ReadonlyArray<{ value: T; label: ComponentChildren; disabled?: boolean; title?: string }>;
   value: T;
   onChange: (value: T) => void;
   mono?: boolean;
@@ -108,13 +108,14 @@ export function SegmentedControl<T extends string>({
         const active = o.value === value;
         return (
           <button
+            key={o.value}
             type="button"
             aria-pressed={active}
             disabled={o.disabled}
             title={o.title}
             onClick={() => onChange(o.value)}
             class={cx(
-              'rounded-[5px] py-[6px] text-[12px] whitespace-nowrap',
+              'flex items-center gap-[6px] rounded-[5px] py-[6px] text-[12px] whitespace-nowrap',
               mono ? 'px-[10px] font-mono' : 'px-3',
               active ? 'bg-surface-2 font-medium text-ink' : 'text-muted hover:text-ink',
               o.disabled && 'cursor-not-allowed opacity-40 hover:text-muted',

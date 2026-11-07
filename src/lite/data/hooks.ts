@@ -1,3 +1,4 @@
+import { useMemo } from 'preact/hooks';
 import { useResource } from './store';
 import * as src from './sources';
 import {
@@ -10,6 +11,7 @@ import {
   type LiteItem,
 } from './transforms';
 import type { ListFeedDigestResponse } from '@/generated/client/worldmonitor/news/v1/service_client';
+import { rankPriorityEvents, type PriorityEvent } from './briefing';
 
 export const useDigest = (edition: src.DigestEdition) => useResource(`digest:${edition}`, () => src.loadDigest(edition));
 export const useRiskScores = () => useResource('riskScores', src.loadRiskScores);
@@ -28,6 +30,7 @@ export const useCorrelationSeries = () => useResource('correlationSeries', src.l
 export const useArxiv = () => useResource('arxiv', src.loadArxiv);
 export const useHackerNews = () => useResource('hackerNews', src.loadHackerNews);
 export const useHealth = () => useResource('health', src.loadHealth);
+export const useInsights = () => useResource('insights', src.loadInsights);
 
 /** Geopolitics incidents: medium threat or above from the geo buckets, most important first. */
 export function selectIncidents(digest: ListFeedDigestResponse | null): LiteItem[] {
@@ -60,4 +63,28 @@ export function useDomainCounts(): { geopolitics?: number; finance?: number; tec
     finance: finance.status === 'ready' ? selectMarketEvents(finance.data).length : undefined,
     tech: tech.status === 'ready' ? selectTechDevelopments(tech.data).length : undefined,
   };
+}
+
+/**
+ * The Briefing's cross-domain events: each domain screen's main list, merged
+ * and ranked by impact × confidence. `ready` is false until all three digests
+ * have settled.
+ */
+export function usePriorityEvents(): { ready: boolean; failed: boolean; ranked: PriorityEvent[]; below: PriorityEvent[] } {
+  const full = useDigest('full');
+  const finance = useDigest('finance');
+  const tech = useDigest('tech');
+  const states = [full, finance, tech];
+  const ready = states.every((s) => s.status !== 'loading');
+  const failed = states.every((s) => s.status === 'error' || s.status === 'empty');
+  const { ranked, below } = useMemo(
+    () =>
+      rankPriorityEvents([
+        { domain: 'geo', items: full.status === 'ready' ? selectIncidents(full.data) : [] },
+        { domain: 'fin', items: finance.status === 'ready' ? selectMarketEvents(finance.data) : [] },
+        { domain: 'tech', items: tech.status === 'ready' ? selectTechDevelopments(tech.data) : [] },
+      ]),
+    [full, finance, tech],
+  );
+  return { ready, failed, ranked, below };
 }

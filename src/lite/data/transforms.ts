@@ -360,3 +360,10 @@ export function decodeEntities(text: string): string {
 export function topicCounts(topics: readonly { label: string; pattern: RegExp }[], titles: readonly string[]): number[] {
   return topics.map((t) => titles.reduce((n, title) => n + (t.pattern.test(title) ? 1 : 0), 0));
 }
+
+/** The feed snippet as plain text, or '' when it only repeats the headline. */
+export function cleanSnippet(item: Pick<NewsItem, 'snippet' | 'title'>): string {
+  const text = decodeEntities(item.snippet ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const title = item.title.trim().toLowerCase();
+  return !text || text.toLowerCase().startsWith(title.slice(0, Math.min(40, title.length))) ? '' : text;
+}

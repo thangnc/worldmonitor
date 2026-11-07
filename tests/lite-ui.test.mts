@@ -25,6 +25,18 @@ import {
   timeBuckets,
 } from '../src/lite/data/transforms.ts';
 import type { ListFeedDigestResponse, NewsItem } from '../src/generated/client/worldmonitor/news/v1/service_client.ts';
+import {
+  PRIORITY_THRESHOLD,
+  domainOfCategory,
+  evaluateWatchRules,
+  marketRegime,
+  momentum,
+  priorityScore,
+  rankPriorityEvents,
+  sigmaMove,
+  sinceStats,
+  trendLabel,
+} from '../src/lite/data/briefing.ts';
 import middleware from '../middleware.ts';
 
 function item(overrides: Partial<NewsItem> = {}): NewsItem {
@@ -45,12 +57,13 @@ function item(overrides: Partial<NewsItem> = {}): NewsItem {
 }
 
 describe('Lite routes', () => {
-  it('maps paths to the three screens and falls back to Geopolitics', () => {
-    assert.equal(parseLiteScreen('/lite'), 'geopolitics');
-    assert.equal(parseLiteScreen('/lite/'), 'geopolitics');
+  it('maps /lite to the Briefing, its children to the domain screens, and unknown paths to the Briefing', () => {
+    assert.equal(parseLiteScreen('/lite'), 'briefing');
+    assert.equal(parseLiteScreen('/lite/'), 'briefing');
+    assert.equal(parseLiteScreen('/lite/geopolitics'), 'geopolitics');
     assert.equal(parseLiteScreen('/lite/finance'), 'finance');
     assert.equal(parseLiteScreen('/lite/tech/'), 'tech');
-    assert.equal(parseLiteScreen('/lite/unknown'), 'geopolitics');
+    assert.equal(parseLiteScreen('/lite/unknown'), 'briefing');
     for (const [screen, path] of Object.entries(LITE_SCREEN_PATHS)) assert.equal(parseLiteScreen(path), screen);
   });
 });
@@ -119,9 +132,9 @@ describe('Lite default route (middleware.ts)', () => {
     }
   });
 
-  it('lets exactly the three Lite paths through the unknown-page 404 gate', () => {
+  it('lets exactly the four Lite paths through the unknown-page 404 gate', () => {
     delete process.env.VITE_LITE_PROFILE;
-    for (const path of ['/lite', '/lite/', '/lite/finance', '/lite/tech']) {
+    for (const path of ['/lite', '/lite/', '/lite/geopolitics', '/lite/finance', '/lite/tech']) {
       const resp = middleware(request(path)) as Response | undefined;
       assert.notEqual(resp?.status, 404, path);
     }
@@ -207,5 +220,77 @@ describe('Lite transforms', () => {
     assert.equal(relativeTime(now - 38 * 60_000, now), '38m');
     assert.equal(relativeTime(now - 3 * 3_600_000, now), '3h');
     assert.equal(relativeTime(0, now), '—');
+  });
+});
+
+describe('Lite Briefing rules', () => {
+  const lite = (overrides: Partial<NewsItem> & { category?: string } = {}) => ({ category: 'europe', ...item(overrides) });
+
+  it('maps digest and insights buckets to the three domains', () => {
+    assert.equal(domainOfCategory('middleeast'), 'geo');
+    assert.equal(domainOfCategory('crypto'), 'fin');
+    assert.equal(domainOfCategory('finance'), 'fin');
+    assert.equal(domainOfCategory('ai'), 'tech');
+    assert.equal(domainOfCategory('tech'), 'tech');
+    assert.equal(domainOfCategory('something-new'), 'geo');
+  });
+
+  it('ranks by impact × confidence above the threshold and counts the rest', () => {
+    assert.equal(priorityScore({ importanceScore: 80, credibilityScore: 50 }), 40);
+    const { ranked, below } = rankPriorityEvents([
+      { domain: 'geo', items: [lite({ title: 'A', importanceScore: 90, credibilityScore: 30 }), lite({ title: 'B', importanceScore: 60, credibilityScore: 90 })] },
+      { domain: 'fin', items: [lite({ title: 'b', importanceScore: 99, credibilityScore: 99 }), lite({ title: 'C', importanceScore: PRIORITY_THRESHOLD - 1, credibilityScore: 99 })] },
+    ]);
+    assert.deepEqual(ranked.map((e) => [e.title, e.domain, e.priority]), [['B', 'geo', 54], ['A', 'geo', 27]]);
+    assert.deepEqual(below.map((e) => e.title), ['C']);
+  });
+
+  it('reads story phase as momentum and day-over-day change as a trend', () => {
+    assert.equal(momentum('STORY_PHASE_BREAKING').label, 'rising');
+    assert.equal(momentum('STORY_PHASE_FADING').label, 'fading');
+    assert.equal(momentum(undefined).label, 'steady');
+    assert.equal(trendLabel(140)?.label, 'escalating');
+    assert.equal(trendLabel(4)?.label, 'stable');
+    assert.equal(trendLabel(-18)?.label, 'de-escalating');
+    assert.equal(trendLabel(null), null);
+  });
+
+  it('calls a risk-off tilt only with a lead of two signals, and needs three known moves', () => {
+    assert.equal(marketRegime({ oil: 2.9, btc: -4.8, usd: 0.3, spx: -0.4, gold: 0.8 })?.label, 'Risk-off tilt');
+    assert.equal(marketRegime({ oil: 2.9, btc: -4.8, usd: 0.3 })?.why, 'oil ↑, crypto ↓, USD ↑');
+    assert.equal(marketRegime({ btc: 3, usd: -0.5, spx: 1 })?.label, 'Risk-on tilt');
+    assert.equal(marketRegime({ btc: 3, usd: 0.5, spx: 0 })?.label, 'No clear tilt');
+    assert.equal(marketRegime({ btc: -5, oil: 3 }), null);
+  });
+
+  it('measures the last 2h move in sigmas of the series itself', () => {
+    const calm = Array.from({ length: 40 }, (_, i) => 100 + (i % 2 ? 0.1 : -0.1));
+    assert.ok(Math.abs(sigmaMove(calm)?.z ?? 99) < 4);
+    const crash = [...calm, 99.9, 95];
+    const move = sigmaMove(crash);
+    assert.ok((move?.z ?? 0) < -4);
+    assert.ok((move?.movePct ?? 0) < -4);
+    assert.equal(sigmaMove([1, 2, 3]), null);
+  });
+
+  it('fires watch rules only on recent, qualifying input', () => {
+    const now = Date.UTC(2026, 10, 7, 12);
+    const fresh = { storyMeta: { firstSeen: now - 3_600_000, mentionCount: 1, sourceCount: 3, phase: 'STORY_PHASE_BREAKING' as const } };
+    const stale = { storyMeta: { firstSeen: now - 2 * 86_400_000, mentionCount: 1, sourceCount: 3, phase: 'STORY_PHASE_SUSTAINED' as const } };
+    const { ranked } = rankPriorityEvents([
+      { domain: 'geo', items: [
+        lite({ title: 'Strike', importanceScore: 85, credibilityScore: 60, ...fresh }),
+        lite({ title: 'Old', importanceScore: 90, credibilityScore: 90, ...stale }),
+        lite({ title: 'Weak', importanceScore: 85, credibilityScore: 20, ...fresh }),
+      ] },
+    ]);
+    const alerts = evaluateWatchRules({
+      events: ranked,
+      btcCloses: [],
+      techItems: [lite({ title: 'Rule', category: 'policy', source: 'Reuters', ...fresh }), lite({ title: 'Blog', category: 'policy', ...fresh })],
+      now,
+    });
+    assert.deepEqual(alerts.map((a) => a.title).sort(), ['Rule', 'Strike']);
+    assert.deepEqual(sinceStats(ranked, now - 2 * 3_600_000), { fresh: 2, breaking: 2, fading: 0 });
   });
 });

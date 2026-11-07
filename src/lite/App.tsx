@@ -2,12 +2,14 @@ import { useEffect } from 'preact/hooks';
 import { LITE_PROFILE_ENABLED } from '@/config/lite-profile';
 import { useRoute } from './router';
 import { Sidebar } from './components/Sidebar';
+import { Briefing } from './screens/Briefing';
 import { Geopolitics } from './screens/Geopolitics';
 import { Finance } from './screens/Finance';
 import { Tech } from './screens/Tech';
 import { REFRESH_MS, refreshAll } from './data/store';
 
 const TITLES = {
+  briefing: 'Briefing',
   geopolitics: 'Geopolitics & Conflicts',
   finance: 'Finance & Crypto',
   tech: 'Technology & AI',
@@ -33,7 +35,7 @@ export function App() {
         <Sidebar screen={screen} />
       </div>
       <main class="min-w-0 flex-1">
-        {screen === 'finance' ? <Finance /> : screen === 'tech' ? <Tech /> : <Geopolitics />}
+        {screen === 'geopolitics' ? <Geopolitics /> : screen === 'finance' ? <Finance /> : screen === 'tech' ? <Tech /> : <Briefing />}
       </main>
     </div>
   );
