@@ -236,7 +236,9 @@ describe('Lite UI shell', () => {
     expect(root.querySelector('[data-map-popup]')).toBeNull();
     await act(() => (root.querySelector(`[data-marker="${hotspots[1]}"] button`) as HTMLButtonElement).click());
     expect(root.querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe(hotspots[1]);
-    await act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+    await act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
     expect(root.querySelector('[data-map-popup]')).toBeNull();
 
     // The sidebar's Briefing link returns home.
