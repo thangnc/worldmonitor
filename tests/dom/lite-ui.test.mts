@@ -13,8 +13,15 @@ import { act } from 'preact/test-utils';
 vi.mock('maplibre-gl', () => {
   class FakeMap {
     touchZoomRotate = { disableRotation: () => undefined };
+    private handlers = new Map<string, Array<() => void>>();
     constructor(readonly options: { container: HTMLElement }) {}
     getContainer(): HTMLElement { return this.options.container; }
+    on(type: string, fn: () => void): this { this.handlers.set(type, [...(this.handlers.get(type) ?? []), fn]); return this; }
+    off(type: string, fn: () => void): this { this.handlers.set(type, (this.handlers.get(type) ?? []).filter((f) => f !== fn)); return this; }
+    getZoom(): number { return 1; }
+    getBounds() { return { getWest: () => -180, getSouth: () => -85, getEast: () => 180, getNorth: () => 85 }; }
+    project(): { x: number; y: number } { return { x: 0, y: 0 }; }
+    easeTo(): this { return this; }
     fitBounds(): this { return this; }
     zoomIn(): this { return this; }
     zoomOut(): this { return this; }
@@ -26,20 +33,7 @@ vi.mock('maplibre-gl', () => {
     addTo(map: FakeMap): this { map.getContainer().appendChild(this.options.element); return this; }
     remove(): this { this.options.element.remove(); return this; }
   }
-  class FakePopup {
-    private content: HTMLElement | null = null;
-    private map: FakeMap | null = null;
-    private listeners: Array<() => void> = [];
-    on(_type: 'close', fn: () => void): this { this.listeners.push(fn); return this; }
-    setDOMContent(el: HTMLElement): this { this.content = el; return this; }
-    setOffset(): this { return this; }
-    setLngLat(): this { return this; }
-    isOpen(): boolean { return this.map !== null; }
-    addTo(map: FakeMap): this { this.map = map; if (this.content) map.getContainer().appendChild(this.content); return this; }
-    // Like MapLibre: removing a popup fires 'close'.
-    remove(): this { this.content?.remove(); this.map = null; for (const fn of this.listeners) fn(); return this; }
-  }
-  return { Map: FakeMap, Marker: FakeMarker, Popup: FakePopup, setWorkerUrl: () => undefined };
+  return { Map: FakeMap, Marker: FakeMarker, setWorkerUrl: () => undefined };
 });
 vi.mock('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url', () => ({ default: '/maplibre-worker.js' }));
 
@@ -68,6 +62,9 @@ const DIGEST = {
       ],
     },
     markets: { items: [{ source: 'Bloomberg', title: 'Brent rises as carriers reroute', link: 'https://example.com/2', publishedAt: Date.now(), isAlert: false, locationName: '', importanceScore: 60, corroborationCount: 1, snippet: '', tickers: ['BZ=F'], credibilityScore: 60 }] },
+    // A bucket no Lite list reads: it reaches only the hotspots' news input,
+    // where 'houthi' and 'red sea' match the Sana'a and Horn of Africa keywords.
+    shipping: { items: [{ source: 'Reuters', title: 'Houthi forces fire on Red Sea shipping', link: 'https://example.com/4', publishedAt: Date.now() - 1_800_000, isAlert: false, locationName: '', importanceScore: 0, corroborationCount: 1, snippet: '', tickers: [], credibilityScore: 60 }] },
     ai: { items: [{ source: 'Some Lab Blog', title: 'Lab releases open-weights model', link: 'https://example.com/3', publishedAt: Date.now(), isAlert: false, locationName: '', importanceScore: 51, corroborationCount: 1, snippet: 'Benchmarks&nbsp;self-reported.', tickers: [], credibilityScore: 40 }] },
   },
 };
@@ -217,34 +214,56 @@ describe('Lite UI shell', () => {
     // The watchlist has no source yet, so it is badged.
     expect(root.querySelector('[data-testid="watchlist"] [data-sample="true"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="regional-timeline"]')?.textContent).toContain('Naval incident');
-    // The MapLibre map starts, credits its tiles and places one marker per
-    // curated hotspot (UCDP fails here, so only hotspots remain).
+    // The MapLibre map starts, credits its tiles and shows the design's legend.
     const map = root.querySelector('[data-testid="conflict-map"] [data-map-status]');
     expect(map?.getAttribute('data-map-status')).toBe('ready');
     expect(root.querySelector('[data-map-credits]')?.textContent).toContain('OpenStreetMap');
+    const legend = root.querySelector('[data-testid="map-legend"]')?.textContent ?? '';
+    expect(legend).toContain('UCDP events · size = deaths');
+    expect(legend).toContain('Curated hotspot');
+    // Every curated hotspot is drawn, as on the dashboard, coloured by the live
+    // score. Only news and the curated baseline are available here, so only the
+    // two baseline-4 hotspots with a 'red sea' keyword, Sana'a and Horn of
+    // Africa, reach elevated from the one fresh headline, and only they carry a
+    // name; Kyiv (baseline 5, no news) is at watch.
     const { INTEL_HOTSPOTS } = await import('../../src/config/geo');
-    const hotspots = INTEL_HOTSPOTS.filter((h) => (h.escalationScore ?? 0) >= 3).map((h) => `hotspot:${h.id}`);
-    expect(hotspots.length).toBeGreaterThan(1);
-    expect([...root.querySelectorAll('[data-marker]')].map((m) => m.getAttribute('data-marker')).sort()).toEqual(hotspots.sort());
+    const drawn = [...root.querySelectorAll('[data-marker]')].map((m) => m.getAttribute('data-marker'));
+    expect(drawn.sort()).toEqual(INTEL_HOTSPOTS.map((h) => `hotspot:${h.id}`).sort());
+    const named = [...root.querySelectorAll('[data-marker] span.rounded-\\[4px\\]')].map((n) => n.textContent);
+    expect(named.sort()).toEqual(['Horn of Africa', "Sana'a"]);
+    expect(root.querySelector('[data-marker="hotspot:kyiv"] button')?.getAttribute('aria-label')).toContain('live escalation 2.4/5, watch');
+    const diamond = root.querySelector('[data-marker="hotspot:sanaa"] button') as HTMLButtonElement;
+    expect(diamond.getAttribute('aria-label')).toContain('live escalation 2.6/5, elevated');
 
-    // No popup until a marker is clicked; then exactly that marker's details.
+    // No card until the diamond is clicked; then that hotspot's live score.
     expect(root.querySelector('[data-map-popup]')).toBeNull();
-    const first = INTEL_HOTSPOTS.find((h) => `hotspot:${h.id}` === hotspots[0]);
-    await act(() => (root.querySelector(`[data-marker="${hotspots[0]}"] button`) as HTMLButtonElement).click());
-    const popup = root.querySelectorAll('[data-map-popup]');
-    expect(popup.length).toBe(1);
-    expect(popup[0]?.getAttribute('data-map-popup')).toBe(hotspots[0]);
-    expect(popup[0]?.textContent).toContain(first?.name);
-    expect(root.querySelector(`[data-marker="${hotspots[0]}"] button`)?.getAttribute('aria-expanded')).toBe('true');
+    await act(() => diamond.click());
+    const card = root.querySelectorAll('[data-map-popup]');
+    expect(card.length).toBe(1);
+    expect(card[0]?.getAttribute('data-map-popup')).toBe('hotspot:sanaa');
+    expect(card[0]?.textContent).toContain('Curated hotspot');
+    expect(card[0]?.textContent).toContain('2.6/5');
+    expect(card[0]?.textContent).toContain('live score, baseline 4/5');
+    expect(card[0]?.textContent).toContain('Not available: country risk, unrest events, earthquakes, military flights');
+    expect(diamond.getAttribute('aria-expanded')).toBe('true');
     // The close button and Escape both dismiss it.
     await act(() => (root.querySelector('[data-map-popup] button[aria-label="Close"]') as HTMLButtonElement).click());
     expect(root.querySelector('[data-map-popup]')).toBeNull();
-    await act(() => (root.querySelector(`[data-marker="${hotspots[1]}"] button`) as HTMLButtonElement).click());
-    expect(root.querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe(hotspots[1]);
+    await act(() => diamond.click());
+    expect(root.querySelector('[data-map-popup]')).not.toBeNull();
     await act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     });
     expect(root.querySelector('[data-map-popup]')).toBeNull();
+
+    // The time range filters the digest-driven parts: the hour-old incident leaves at 1h.
+    const pick = (range: string) => [...root.querySelectorAll('[data-testid="time-range"] button')].find((b) => b.textContent === range) as HTMLButtonElement;
+    await act(() => pick('1h').click());
+    expect(root.querySelector('h1 + p')?.textContent).toContain('0 active events in 1h');
+    expect(root.querySelector('[data-incident]')).toBeNull();
+    await act(() => pick('7d').click());
+    expect(root.querySelector('h1 + p')?.textContent).toContain('1 active events in 7d');
+    expect(root.querySelector('[data-incident]')?.textContent).toContain('Naval incident near Bab el-Mandeb');
 
     // The sidebar's Briefing link returns home.
     await act(() => (root.querySelector('[data-nav="briefing"]') as HTMLAnchorElement).click());
