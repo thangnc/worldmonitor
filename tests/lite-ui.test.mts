@@ -28,6 +28,8 @@ import {
   thresholdState,
   timeBuckets,
 } from '../src/lite/data/transforms.ts';
+import { OPENFREEMAP_TILEJSON, buildLiteMapStyle } from '../src/lite/map/style.ts';
+import { WORLD_BOUNDS, markerBounds } from '../src/lite/map/view.ts';
 import type { ListFeedDigestResponse, NewsItem } from '../src/generated/client/worldmonitor/news/v1/service_client.ts';
 import {
   PRIORITY_THRESHOLD,
@@ -349,5 +351,31 @@ describe('Lite Briefing rules', () => {
     });
     assert.deepEqual(alerts.map((a) => a.title).sort(), ['Rule', 'Strike']);
     assert.deepEqual(sinceStats(ranked, now - 2 * 3_600_000), { fresh: 2, breaking: 2, fading: 0 });
+  });
+});
+
+describe('Lite conflict map', () => {
+  it('builds a low-noise OpenFreeMap style from the Lite tokens', () => {
+    const tokens = { bg: '#000001', surface: '#000002', track: '#000003', dim: '#000004' };
+    const style = buildLiteMapStyle(tokens);
+    assert.deepEqual(Object.keys(style.sources), ['openmaptiles']);
+    assert.equal((style.sources.openmaptiles as { url: string }).url, OPENFREEMAP_TILEJSON);
+    assert.match(style.glyphs ?? '', /^https:\/\/tiles\.openfreemap\.org\/fonts\//);
+    const byId = new Map(style.layers.map((l) => [l.id, l as { paint?: Record<string, unknown>; 'source-layer'?: string }]));
+    assert.equal(byId.get('land')?.paint?.['background-color'], tokens.surface);
+    assert.equal(byId.get('water')?.paint?.['fill-color'], tokens.bg);
+    assert.equal(byId.get('country-border')?.paint?.['line-color'], tokens.track);
+    assert.equal(byId.get('country-label')?.paint?.['text-color'], tokens.dim);
+    // Land, water, borders and place names only: no roads, buildings or POIs.
+    const sourceLayers = new Set(style.layers.map((l) => (l as { 'source-layer'?: string })['source-layer']).filter(Boolean));
+    assert.deepEqual([...sourceLayers].sort(), ['boundary', 'place', 'water']);
+  });
+
+  it('fits the world, or the markers padded to at least 8°', () => {
+    assert.deepEqual(markerBounds([]), WORLD_BOUNDS);
+    // One point: an 8° box around it.
+    assert.deepEqual(markerBounds([{ lat: 50, lon: 30 }]), [[26, 46], [34, 54]]);
+    // A wide spread: 2° of padding, clamped to the world.
+    assert.deepEqual(markerBounds([{ lat: 10, lon: -178 }, { lat: 60, lon: 40 }]), [[-180, 8], [42, 62]]);
   });
 });

@@ -1,11 +1,11 @@
 import type { ComponentChildren } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
-import { CloudLightning, Crosshair, Flame, Layers, Locate, Minus, Plus, Radio, Ship } from 'lucide-preact';
+import { CloudLightning, Crosshair, Flame, Layers, Radio, Ship } from 'lucide-preact';
 import { INTEL_HOTSPOTS } from '@/config/geo';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { BarStrip, StackedBar } from '../components/charts';
 import { BG, BORDER, Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, Switch, TEXT, cx } from '../components/ui';
-import { DotMap, project, type MapMarker } from '../map/DotMap';
+import { LiteMap, type MapMarker } from '../map/LiteMap';
 import { selectIncidents, useCountryHistory, useDigest, useRiskScores, useUcdpEvents } from '../data/hooks';
 import { ESCALATION_REGIONS, leadCountry } from '../data/regions';
 import { SAMPLE_WATCHLIST } from '../data/fixtures';
@@ -104,11 +104,9 @@ export function Geopolitics() {
 function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflicts: boolean; hotspots: boolean } }) {
   const ucdp = useUcdpEvents();
   const digest = useDigest('full');
-  const [zoom, setZoom] = useState(1);
 
-  const { markers, callouts } = useMemo(() => {
+  const markers = useMemo(() => {
     const out: MapMarker[] = [];
-    const callouts: Array<{ id: string; lat: number; lon: number; name: string; score: number; tone: Tone; detail: string }> = [];
     if (layers.conflicts && ucdp.status === 'ready') {
       // Cluster UCDP events on a 2° grid so dense theatres read as one marker.
       const cells = new Map<string, { lat: number; lon: number; deaths: number; events: number; country: string; latest: number }>();
@@ -126,10 +124,24 @@ function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflict
       const ranked = [...cells.entries()].sort((a, b) => b[1].deaths - a[1].deaths).slice(0, 40);
       for (const [key, c] of ranked) {
         const tone = severityFromDeaths(c.deaths);
-        out.push({ id: `ucdp:${key}`, lat: c.lat, lon: c.lon, tone, radius: 4 + Math.min(8, Math.sqrt(c.deaths)), title: `${c.country}: ${c.deaths} deaths, ${c.events} UCDP events` });
-      }
-      for (const [key, c] of ranked.slice(0, 2)) {
-        callouts.push({ id: `ucdp:${key}`, lat: c.lat, lon: c.lon, name: c.country, score: c.deaths, tone: severityFromDeaths(c.deaths), detail: `UCDP · ${c.events} events · ${c.deaths} deaths` });
+        out.push({
+          id: `ucdp:${key}`,
+          lat: c.lat,
+          lon: c.lon,
+          tone,
+          radius: 4 + Math.min(8, Math.sqrt(c.deaths)),
+          title: `${c.country}: ${c.deaths} deaths, ${c.events} UCDP events`,
+          popup: {
+            kind: 'UCDP conflict events',
+            name: c.country,
+            value: `${c.deaths.toLocaleString('en-US')} deaths`,
+            lines: [
+              // One 2° grid cell; the seeder keeps the 12 months before UCDP's newest event.
+              `${c.events} ${c.events === 1 ? 'event' : 'events'} in this 2° area over UCDP's latest 12 months`,
+              c.latest ? `Latest event ${new Date(c.latest).toISOString().slice(0, 10)}` : '',
+            ].filter(Boolean),
+          },
+        });
       }
     }
     if (layers.hotspots) {
@@ -138,10 +150,23 @@ function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflict
         if (score < 3) continue;
         if (region !== 'all' && regionOfPoint(h.lat, h.lon) !== region) continue;
         const tone: Tone = score >= 5 ? 'crit' : score >= 4 ? 'high' : 'elev';
-        out.push({ id: `hotspot:${h.id}`, lat: h.lat, lon: h.lon, tone, radius: 3 + score, title: `${h.name}: escalation ${score}/5 (curated hotspot)` });
+        out.push({
+          id: `hotspot:${h.id}`,
+          lat: h.lat,
+          lon: h.lon,
+          tone,
+          radius: 3 + score,
+          title: `${h.name}: escalation ${score}/5 (curated hotspot)`,
+          popup: {
+            kind: 'Curated hotspot',
+            name: h.name,
+            value: `${score}/5`,
+            lines: [h.location ?? h.subtext ?? '', h.description ?? ''].filter(Boolean),
+          },
+        });
       }
     }
-    return { markers: out, callouts };
+    return out;
   }, [ucdp, region, layers]);
 
   const scrub = useMemo(() => {
@@ -175,37 +200,14 @@ function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflict
       }
     >
       <div class="relative h-[300px] overflow-hidden bg-bg/40 md:h-[380px]">
-        <DotMap markers={markers} zoom={zoom}>
-          {callouts.map((c) => {
-            const [x, y] = project(c.lat, c.lon);
-            return (
-              <g key={c.id} transform={`translate(${x + 8} ${y + 6})`} class="pointer-events-none">
-                <rect width={112} height={26} rx={4} fill="#111419e6" stroke="var(--color-line)" stroke-width={0.6} />
-                <text x={6} y={11} font-size={7.5} font-weight={600} fill="var(--color-ink)">{c.name}</text>
-                <text x={106} y={11} font-size={7} text-anchor="end" font-family="var(--font-mono)" fill={`var(--color-${c.tone})`}>{c.score}</text>
-                <text x={6} y={21} font-size={6.5} fill="var(--color-dim)">{c.detail}</text>
-              </g>
-            );
-          })}
-        </DotMap>
+        <LiteMap markers={markers} fit={region === 'all' ? 'world' : 'markers'} />
         {ucdp.status !== 'ready' && layers.conflicts ? (
-          <div class="absolute left-14 right-4 top-4 flex justify-end">
+          <div class="absolute left-14 right-14 top-4 flex justify-start">
             <div class="rounded-[6px] border border-line bg-surface/90 px-2">
             <SourceState state={ucdp} source="UCDP events (seed-ucdp-events)" pad={false} />
             </div>
           </div>
         ) : null}
-        <div class="absolute left-4 top-4 flex flex-col overflow-hidden rounded-[6px] border border-line bg-surface">
-          <button type="button" aria-label="Zoom in" class="flex h-7 w-7 items-center justify-center border-b border-line text-muted hover:text-ink" onClick={() => setZoom((z) => Math.min(4, z * 1.5))}>
-            <Plus size={13} strokeWidth={1.5} />
-          </button>
-          <button type="button" aria-label="Zoom out" class="flex h-7 w-7 items-center justify-center border-b border-line text-muted hover:text-ink" onClick={() => setZoom((z) => Math.max(1, z / 1.5))}>
-            <Minus size={13} strokeWidth={1.5} />
-          </button>
-          <button type="button" aria-label="Reset view" class="flex h-7 w-7 items-center justify-center text-muted hover:text-ink" onClick={() => setZoom(1)}>
-            <Locate size={13} strokeWidth={1.5} />
-          </button>
-        </div>
         {scrub ? (
           <div class="absolute bottom-4 left-4 right-4 flex h-8 items-center gap-3 rounded-[6px] border border-line bg-surface/90 px-3" title="Reports per time slice, last 72 hours">
             <span class="font-mono text-[10.5px] text-dim">−72h</span>

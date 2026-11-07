@@ -25,6 +25,17 @@ export default defineConfig({
   // The shared CSP is strict-dynamic plus this nonce (vercel.json, nginx).
   html: { cspNonce: 'wm-static-bootstrap' },
   plugins: [tailwindcss()],
+  // The MapLibre worker (src/lite/map/LiteMap.tsx) stays under assets/lite/ with the rest.
+  worker: {
+    format: 'es',
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/lite/[name]-[hash].js',
+        chunkFileNames: 'assets/lite/[name]-[hash].js',
+        assetFileNames: 'assets/lite/[name]-[hash][extname]',
+      },
+    },
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: false,
