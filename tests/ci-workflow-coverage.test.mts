@@ -174,7 +174,7 @@ describe('root dependency cache (#8710)', () => {
     [testWorkflow, ['docs-stats', 'sidecar', 'convex-tests', 'dom-tests', 'variant-smoke-shards', 'resilience-validation-smoke', 'unit-shards', 'unit-built-output'], undefined],
     [testWorkflow, ['variant-smoke-pro-webmcp'], 'npm'],
     [read(resolve(workflowsDir, 'perf-style-layout-budget.yml')), ['measure'], undefined],
-    [lintCodeWorkflow, ['biome', 'markdown'], undefined],
+    [lintCodeWorkflow, ['biome'], undefined],
     [read(resolve(workflowsDir, 'typecheck.yml')), ['typecheck'], 'npm'],
   ] as const) {
     for (const jobId of jobIds) {
@@ -539,7 +539,6 @@ const REQUIRED_GATE_WORKFLOWS = [
 const REQUIRED_NON_TEST_GATE_CHECKS = [
   'typecheck',
   'biome',
-  'markdown',
   'public-docs',
   'security-audit',
   'stacked-merge-guard',
@@ -2048,70 +2047,20 @@ describe('CI workflow coverage', () => {
     );
   });
 
-  it('lints markdown once, in a gate-required job that skips when no markdown changed (#7772)', () => {
-    const markdownJob = workflowJobBlock(lintCodeWorkflow, 'markdown');
-    assert.match(markdownJob, /\n {4}needs: changes\n/);
-    assert.match(
-      markdownJob,
-      /\n {4}if: \$\{\{ \(needs\.changes\.outputs\.markdown == 'true'\) && \(github\.event_name != 'schedule' \|\| github\.repository == 'koala73\/worldmonitor'\) \}\}\n/,
-      'markdown lint must skip on PRs that touch no markdown; the gate counts skipped as passing',
-    );
-    assert.match(markdownJob, /\n {6}- run: npm run lint:md\n/);
-    assert.doesNotMatch(
-      markdownJob,
-      /continue-on-error/,
-      'a continue-on-error on the lint step would turn the required check green while lint is red',
-    );
-    assert.match(markdownJob, /\n {4}timeout-minutes: \d+\n/, 'a hung npm ci must not hold the deploy gate for the 360-minute default');
-    assert.doesNotMatch(
-      workflowJobBlock(lintCodeWorkflow, 'biome'),
-      /lint:md/,
-      'biome used to lint markdown too, so a code+markdown PR linted it twice',
-    );
-    assert.equal(
-      (workflowText.match(/npm run lint:md(?=\s|$)/g) ?? []).length,
-      1,
-      'exactly one workflow step owns markdown lint',
-    );
+  it('lints markdown only in the pre-push hook, not in CI', () => {
+    // This private fork publishes no docs site, so markdown lint left CI to
+    // free a runner slot. The pre-push hook is now its only owner.
+    assert.equal(YAML.parse(lintCodeWorkflow).jobs.markdown, undefined, 'lint-code.yml must not define a markdown job');
+    assert.doesNotMatch(workflowText, /npm run lint:md(?=\s|$)/, 'no workflow step runs markdown lint');
     assert.ok(
       !existsSync(resolve(workflowsDir, 'lint.yml')),
-      'lint.yml was the second owner; a path-filtered workflow publishes no check run on code PRs, so it can never be gate-required',
+      'lint.yml was a path-filtered markdown lint workflow; it must not come back',
     );
     assert.ok(
-      deployGateRequiredChecks().includes('markdown'),
-      'markdown lint left biome (a branch-protection context), so it must block through the gate instead',
+      !deployGateRequiredChecks().includes('markdown'),
+      'the deploy gate must not wait for a markdown check that no job publishes',
     );
-
-    const parsed = YAML.parse(lintCodeWorkflow) as { jobs: Record<string, { outputs?: Record<string, string> }> };
-    assert.equal(parsed.jobs.changes.outputs?.markdown, '${{ steps.diff.outputs.markdown }}');
-    assert.match(lintCodeWorkflow, /echo "markdown=true" >> "\$GITHUB_OUTPUT"/, 'pushes to main keep markdown coverage');
-
-    // The filter must fire for every lint:md input (the markdown, its config,
-    // and package.json, which holds the command and pins markdownlint-cli2:
-    // LINT_MD_INPUTS from .husky/pre-push plus the lockfile) and stay quiet
-    // for a code-only PR, or the job either never runs or runs on every PR.
-    const filter = lintCodeWorkflow.match(/^ +MARKDOWN=\$\([^\n]*\)\n +echo "markdown=[^\n]*$/m)?.[0];
-    assert.ok(filter, 'lint-code.yml must derive markdown= from the PR file list');
-    const markdownSays = (files: string[]): string => {
-      const fileArgs = files.map((file) => JSON.stringify(file)).join(' ');
-      const body = filter.replace(/>> "\$GITHUB_OUTPUT"/, '');
-      const script = `FILES=$(printf '%s\\n' ${fileArgs})\n${body}`;
-      return execFileSync('bash', ['-euo', 'pipefail', '-c', script], { encoding: 'utf8' }).trim();
-    };
-    assert.equal(markdownSays(['docs/solutions/example.md']), 'markdown=true');
-    assert.equal(markdownSays(['.markdownlint-cli2.jsonc']), 'markdown=true');
-    assert.equal(markdownSays(['.markdownlintignore']), 'markdown=true');
-    assert.equal(markdownSays(['package.json']), 'markdown=true', 'package.json defines lint:md');
-    assert.equal(markdownSays(['package-lock.json']), 'markdown=true', 'the lockfile pins markdownlint-cli2');
-    assert.equal(markdownSays(['src/app/App.ts', 'README.md']), 'markdown=true');
-    assert.equal(markdownSays(['src/app/App.ts', 'api/bootstrap.js']), 'markdown=false');
-    assert.equal(markdownSays(['docs/adding-endpoints.mdx']), 'markdown=false', 'lint:md targets **/*.md only');
-    // The .md-only expectation above is only right while lint:md itself
-    // targets nothing else; widening the script must fail here until the
-    // filter is widened with it, or an mdx-only PR would skip a lint that
-    // covers it and the gate would read the skip as passing.
-    const lintMdGlobs = shellArgvTokens(packageScripts['lint:md'] ?? '').filter((token) => /^'[^!]/.test(token));
-    assert.deepEqual(lintMdGlobs, ["'**/*.md'"], 'the markdown change filter mirrors the positive lint:md glob; widen both together');
+    assert.match(read(resolve(root, '.husky/pre-push')), /\n\s*npm run lint:md \|\| exit 1\n/, 'the pre-push hook still lints markdown');
   });
 
   it('path-filters Test jobs on push to main instead of compiling everything', () => {

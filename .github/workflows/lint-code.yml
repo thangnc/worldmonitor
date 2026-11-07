@@ -27,7 +27,6 @@ jobs:
       pull-requests: read
     outputs:
       code: ${{ steps.diff.outputs.code }}
-      markdown: ${{ steps.diff.outputs.markdown }}
       docs: ${{ steps.diff.outputs.docs }}
     steps:
       - id: diff
@@ -39,7 +38,6 @@ jobs:
 
           emit_all_true() {
             echo "code=true" >> "$GITHUB_OUTPUT"
-            echo "markdown=true" >> "$GITHUB_OUTPUT"
             echo "docs=true" >> "$GITHUB_OUTPUT"
           }
           if [ "${{ github.event_name }}" = "push" ]; then
@@ -77,11 +75,6 @@ jobs:
           fi
           CODE=$(echo "$FILES" | grep -vcE '\.md$|^docs/|^src-tauri/|^CHANGELOG\.md$|^LICENSE$|\.github/workflows/(build-desktop|docker-publish)\.yml$' || echo 0)
           echo "code=$( [ "$CODE" -gt 0 ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          # markdown job: only the lint:md inputs (the markdown, its config, and
-          # package.json, which holds the command and pins markdownlint-cli2), so
-          # a code-only PR skips it. LINT_MD_INPUTS in .husky/pre-push plus the lockfile.
-          MARKDOWN=$(printf '%s\n' "$FILES" | grep -cE '\.md$|^\.markdownlint|^package(-lock)?\.json$' || true)
-          echo "markdown=$( [ "$MARKDOWN" -gt 0 ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
           DOCS=$(printf '%s\n' "$FILES" | grep -cE '^docs/|^scripts/check-doc-anchors\.mjs$|^scripts/_html-entities\.mjs$|^scripts/mint-export-preload\.mjs$|^\.github/workflows/lint-code\.yml$' || true)
           echo "docs=$( [ "$DOCS" -gt 0 ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
 
@@ -109,24 +102,6 @@ jobs:
       - run: npm run security:vite-env-secrets
       - name: Version sync check
         run: npm run version:check
-
-  # One owner for markdown lint (#7772). It used to run inside biome as well
-  # as in a path-filtered lint.yml, so a code+markdown PR linted twice, and
-  # the path filter published no check run on code PRs, so the deploy gate
-  # could never require it. Here it skips when no markdown changed (the gate
-  # counts skipped as passing) and blocks merge through `gate` when it runs.
-  markdown:
-    needs: changes
-    if: ${{ (needs.changes.outputs.markdown == 'true') && (github.event_name != 'schedule' || github.repository == 'koala73/worldmonitor') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24'
-      - uses: ./.github/actions/install-root-deps
-      - run: npm run lint:md
 
   public-docs:
     if: (github.event_name != 'schedule' || github.repository == 'koala73/worldmonitor')
