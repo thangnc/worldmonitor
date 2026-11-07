@@ -7,7 +7,7 @@ Claude Code is the only supported coding agent for this repository. This file is
 | Path | What it does |
 |---|---|
 | `.claude/rules/` | Path-scoped rules. Each loads only when Claude works on matching files: edge API, seeders, proto, browser, tests, CI, Convex, desktop, docs. Keep them short and link to the canonical docs. |
-| `.claude/skills/` | Engineering skills: `verify-worldmonitor` (browser proof) and `sentry-triage`. |
+| `.claude/skills/` | Engineering skills: `verify-worldmonitor` (browser proof), `sentry-triage`, and `ship` (user-invoked `/ship`: deliver a worktree's change as a PR on this fork). |
 | `.claude/agents/` | Subagents: `edge-contract-reviewer` (repo contract review of a diff). |
 | `.claude/hooks/` + `.claude/settings.json` | Block hand edits to `src/generated/` and `package-lock.json`; Biome-lint each edited JS/TS file. |
 | `CLAUDE.local.md`, `.claude/settings.local.json` | Personal overrides. Git ignores them. |
@@ -169,6 +169,7 @@ The browser import direction is `types -> config -> services -> components -> ap
 
 - For browser behavior, invoke the `verify-worldmonitor` skill. Start with an existing strict feature test. Use manual driving for the interaction being changed.
 - For Sentry events, invoke the `sentry-triage` skill. Its default is read-only triage.
+- To deliver a change from a worktree, the user runs `/ship`. It verifies, commits signed, pushes `<type>/<slug>`, opens the PR on `thangnc/worldmonitor`, and watches CI. It never merges or deploys on its own.
 - After changing `api/`, `server/`, `scripts/seed-*`, or `src/services/`, run the `edge-contract-reviewer` subagent on the diff before opening a PR.
 - Read [documented solutions](docs/solutions/) when the affected area has a prior fix — organized by category directory (`security-issues/`, `logic-errors/`, `conventions/`, …) with YAML frontmatter (`module`, `component`, `problem_type`, `tags`) to grep. Use [CONCEPTS.md](CONCEPTS.md) for shared terms and [design philosophy](docs/architecture.mdx) for design decisions.
 - When a session teaches a durable repo convention, record it in `docs/solutions/` or the matching `.claude/rules/` file, not only in personal memory.
