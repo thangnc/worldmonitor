@@ -57,6 +57,7 @@ Fork facts that override the upstream wording:
      - anything deliberately left out
      - the user's notes, if any
    - End the body with the PR attribution lines this session uses.
+   - Write the body to a file in the scratchpad and pass `--body-file <path>`. A worktree-isolated session refuses a heredoc body that names git.
    - Attach the step 3 screenshots: `gh pr edit <n> --repo thangnc/worldmonitor --attach '/abs/path.png#Description, commit <sha>'`. Then check that the images appear in the body.
 7. **Watch CI** until every run for the head commit completes. Report each run, and each failed job.
    - First wait until `gh run list --repo thangnc/worldmonitor --commit <full sha>` lists a run; `gh pr checks --watch` exits early with "no checks reported" if it starts too soon.
