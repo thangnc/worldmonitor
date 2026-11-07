@@ -1,20 +1,8 @@
 ---
-title: "One throwing deck.gl frame stops the render loop for good, so unchecked 2D layers stay drawn"
+title: One throwing deck.gl frame stops the render loop for good, so unchecked 2D layers stay drawn
 date: 2026-10-25
-category: ui-bugs
-module: 2D map (DeckGLMap, deck.gl interleaved overlay) and Sentry error filtering
+area: browser
 problem_type: ui_bug
-component: tooling
-severity: high
-symptoms:
-  - "Desktop v2.11.4 (#9653): red/orange markers stay on the 2D map after every layer checkbox is off, through pans and zooms"
-  - "Only a 2D -> 3D -> 2D renderer switch clears them; the bug is intermittent and survives an app restart"
-  - "Clicking a stranded marker selects the country polygon underneath, because the layer is no longer pickable in deck's own state"
-  - "Console shows one `[DeckGLMap] Render error (non-fatal): ...` line and nothing in Sentry"
-root_cause: async_timing
-resolution_type: code_fix
-related_components:
-  - testing_framework
 tags:
   - deck-gl
   - luma-gl
@@ -23,6 +11,15 @@ tags:
   - stale-layers
   - sentry
   - beforesend
+severity: high
+module: 2D map (DeckGLMap, deck.gl interleaved overlay) and Sentry error filtering
+symptoms:
+  - "Desktop v2.11.4 (#9653): red/orange markers stay on the 2D map after every layer checkbox is off, through pans and zooms"
+  - Only a 2D -> 3D -> 2D renderer switch clears them; the bug is intermittent and survives an app restart
+  - Clicking a stranded marker selects the country polygon underneath, because the layer is no longer pickable in deck's own state
+  - "Console shows one `[DeckGLMap] Render error (non-fatal): ...` line and nothing in Sentry"
+root_cause: async_timing
+resolution_type: code_fix
 ---
 
 # One throwing deck.gl frame stops the render loop for good, so unchecked 2D layers stay drawn

@@ -1,19 +1,25 @@
 ---
-title: "Historical-playback control gated on a Clerk role field that no writer ever populates"
+title: Historical-playback control gated on a Clerk role field that no writer ever populates
 date: 2026-07-29
-category: logic-errors
-module: playback-gate
+area: payments
 problem_type: logic_error
-component: payments
+tags:
+  - entitlements
+  - premium-gating
+  - clerk
+  - convex
+  - fail-closed
+  - playback-control
+  - unwritten-signal
+  - affirmative-denial
 severity: high
+module: playback-gate
 symptoms:
-  - "Historical-playback control was invisible to every user, including paying Pro subscribers, for months, with no bug report and no alarm - the feature simply did not exist from the user's point of view"
-  - "setupPlaybackControl gated the control behind getAuthState().user?.role === 'pro', a field sourced from Clerk publicMetadata that zero code paths ever write, so it read 'free' for every account and the gate could never pass"
-  - "Found incidentally during unrelated work rather than through a support ticket, since a permanently-false gate produces no error, no failed request, and no monitoring signal"
+  - Historical-playback control was invisible to every user, including paying Pro subscribers, for months, with no bug report and no alarm - the feature simply did not exist from the user's point of view
+  - setupPlaybackControl gated the control behind getAuthState().user?.role === 'pro', a field sourced from Clerk publicMetadata that zero code paths ever write, so it read 'free' for every account and the gate could never pass
+  - Found incidentally during unrelated work rather than through a support ticket, since a permanently-false gate produces no error, no failed request, and no monitoring signal
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [authentication, development_workflow]
-tags: [entitlements, premium-gating, clerk, convex, fail-closed, playback-control, unwritten-signal, affirmative-denial]
 ---
 
 # Historical-playback control gated on a Clerk role field that no writer ever populates

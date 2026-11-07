@@ -1,22 +1,24 @@
 ---
-title: "Superseded CI runs burned 59% of gated-workflow runs"
-category: performance-issues
-module: ci-gated-workflows
+title: Superseded CI runs burned 59% of gated-workflow runs
 date: 2026-09-21
+area: ci
 problem_type: performance_issue
-component: development_workflow
+tags:
+  - ci-performance
+  - github-actions
+  - concurrency
+  - runner-contention
+  - deploy-gate
+  - measurement-methodology
 severity: high
+module: ci-gated-workflows
 symptoms:
-  - "Merges felt like they took 25 minutes while every individual job looked fast"
-  - "CI was intermittently slow with no single job getting slower"
-  - "Across the last 300 runs of each gated workflow, 177 (59%) completed on an already-superseded SHA and zero were ever cancelled"
-  - "Per-job queue waits reached 327s against an observed peak of 43 concurrent jobs"
+  - Merges felt like they took 25 minutes while every individual job looked fast
+  - CI was intermittently slow with no single job getting slower
+  - Across the last 300 runs of each gated workflow, 177 (59%) completed on an already-superseded SHA and zero were ever cancelled
+  - Per-job queue waits reached 327s against an observed peak of 43 concurrent jobs
 root_cause: config_error
 resolution_type: config_change
-related_components:
-  - testing_framework
-  - tooling
-tags: [ci-performance, github-actions, concurrency, runner-contention, deploy-gate, measurement-methodology]
 ---
 
 # Superseded CI runs burned 59% of gated-workflow runs

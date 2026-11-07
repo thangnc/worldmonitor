@@ -1,13 +1,19 @@
 ---
-title: "An MCP _freshnessChecks entry for a not-yet-seeded key marks every other dataset in that tool stale"
+title: An MCP _freshnessChecks entry for a not-yet-seeded key marks every other dataset in that tool stale
 date: 2026-08-05
-category: design-patterns
-module: mcp-registry
+area: mcp
 problem_type: design_pattern
-component: tooling
+tags:
+  - mcp
+  - freshness
+  - deployment-order
+  - cache-tools
+  - registry
+  - staleness
+  - get-economic-data
 severity: medium
-applies_when: "Adding a new dataset or cache key to an existing multi-dataset MCP cache tool, before its producer has ever run in production"
-tags: [mcp, freshness, deployment-order, cache-tools, registry, staleness, get-economic-data]
+module: mcp-registry
+applies_when: Adding a new dataset or cache key to an existing multi-dataset MCP cache tool, before its producer has ever run in production
 ---
 
 # An MCP _freshnessChecks entry for a not-yet-seeded key marks every other dataset in that tool stale

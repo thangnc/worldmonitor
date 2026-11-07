@@ -1,17 +1,22 @@
 ---
-title: "apt-get install with cached .deb paths downloads them again from the mirror"
+title: apt-get install with cached .deb paths downloads them again from the mirror
 date: 2026-10-23
-category: performance-issues
-module: CI tests
+area: ci
 problem_type: performance_issue
-component: testing_framework
+tags:
+  - ci-performance
+  - github-actions
+  - apt
+  - dpkg
+  - actions-cache
+  - browser-fonts
+severity: medium
+module: CI tests
 symptoms:
-  - "Install browser fonts took 94-252s in at least one variant-smoke shard in each of 12 consecutive Test runs, against 10-20s in the others"
-  - "The font cache restore reported a hit, then apt logged Get:1..3 from azure.archive.ubuntu.com and Fetched 7659 kB in 3min 4s (41.5 kB/s)"
+  - Install browser fonts took 94-252s in at least one variant-smoke shard in each of 12 consecutive Test runs, against 10-20s in the others
+  - The font cache restore reported a hit, then apt logged Get:1..3 from azure.archive.ubuntu.com and Fetched 7659 kB in 3min 4s (41.5 kB/s)
 root_cause: config_error
 resolution_type: workflow_improvement
-severity: medium
-tags: [ci-performance, github-actions, apt, dpkg, actions-cache, browser-fonts]
 ---
 
 # apt-get install with cached .deb paths downloads them again from the mirror

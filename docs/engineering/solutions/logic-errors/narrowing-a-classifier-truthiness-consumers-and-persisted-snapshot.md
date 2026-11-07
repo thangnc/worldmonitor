@@ -1,33 +1,30 @@
 ---
 title: Narrowing a classifier means checking its truthiness consumers and its persisted snapshot
 date: 2026-09-24
-category: logic-errors
-module: military-vessels
+area: intelligence
 problem_type: logic_error
-component: service_object
+tags:
+  - ais
+  - vessel-classification
+  - sentinel-value
+  - truthiness-gate
+  - persisted-cache
+  - migration-on-read
+  - circuit-breaker
+  - green-seam-not-shipped
 severity: high
-root_cause: logic_error
-resolution_type: code_fix
+module: military-vessels
 symptoms:
-  - "getVesselTypeFromAis(35) returned 'destroyer' for AIS ship type 35, a generic military-ops activity code that establishes no hull class"
+  - getVesselTypeFromAis(35) returned 'destroyer' for AIS ship type 35, a generic military-ops activity code that establishes no hull class
   - "an unidentified type-35 vessel would render as Destroyer across eight surfaces: map popup, cluster list, globe tooltip and marker colour, country-brief timeline, CSV export, PDF report, correlation severity, and the posture destroyer count"
   - "latent, not observed: the relay delivers zero per-vessel military candidates to browsers, so the mislabel had no production reach on web at the time of the fix"
-  - "the obvious narrowing (return undefined) drops the vessel from the feed entirely, because the tracking gate consumes the classifier's return for truthiness rather than value"
-  - "the classifier fix alone stayed invisible to returning users for up to 24h, because the breaker persists snapshots that replay the pre-fix label"
-related_components:
-  - "circuit-breaker"
-  - "usni-fleet"
-tags:
-  - "ais"
-  - "vessel-classification"
-  - "sentinel-value"
-  - "truthiness-gate"
-  - "persisted-cache"
-  - "migration-on-read"
-  - "circuit-breaker"
-  - "green-seam-not-shipped"
+  - the obvious narrowing (return undefined) drops the vessel from the feed entirely, because the tracking gate consumes the classifier's return for truthiness rather than value
+  - the classifier fix alone stayed invisible to returning users for up to 24h, because the breaker persists snapshots that replay the pre-fix label
+root_cause: logic_error
+resolution_type: code_fix
 ---
 
+# Narrowing a classifier means checking its truthiness consumers and its persisted snapshot
 
 ## Problem
 

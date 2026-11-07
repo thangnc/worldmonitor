@@ -1,10 +1,16 @@
 ---
 title: ChatGPT energy observations omit quantities or misstate units
 date: 2026-10-01
-module: MCP energy tools
-component: cache registry and energy seeders
+area: mcp
 problem_type: logic_error
-tags: [mcp, energy, gas-storage, eia, units, chatgpt]
+tags:
+  - mcp
+  - energy
+  - gas-storage
+  - eia
+  - units
+  - chatgpt
+module: MCP energy tools
 ---
 
 # ChatGPT plugin observation audit

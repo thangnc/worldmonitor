@@ -1,19 +1,25 @@
 ---
-title: "An on-load modal masked a stale map-harness golden for months"
+title: An on-load modal masked a stale map-harness golden for months
 date: 2026-10-28
-category: test-failures
-module: map-harness-visual-goldens
+area: tests
 problem_type: test_failure
-component: testing_framework
+tags:
+  - visual-goldens
+  - playwright
+  - tohavescreenshot
+  - map-harness
+  - modal-overlay
+  - maxdiffpixelratio
+  - expect-soft
+  - layer-performance-notice
 severity: medium
+module: map-harness-visual-goldens
 symptoms:
-  - "Removing a modal that opened on page load turned visual-goldens red on a PR that changed no map rendering"
-  - "toHaveScreenshot reports only layer-full-conflicts-z4.png at a 0.14 diff ratio; the remaining scenarios are never compared"
-  - "The actual frame shows the vector basemap and country-shaped conflict zones; the golden shows a blank background and a fixture rectangle"
+  - Removing a modal that opened on page load turned visual-goldens red on a PR that changed no map rendering
+  - toHaveScreenshot reports only layer-full-conflicts-z4.png at a 0.14 diff ratio; the remaining scenarios are never compared
+  - The actual frame shows the vector basemap and country-shaped conflict zones; the golden shows a blank background and a fixture rectangle
 root_cause: test_isolation
 resolution_type: test_fix
-related_components: [development_workflow]
-tags: [visual-goldens, playwright, toHaveScreenshot, map-harness, modal-overlay, maxDiffPixelRatio, expect-soft, layer-performance-notice]
 ---
 
 # An on-load modal masked a stale map-harness golden for months

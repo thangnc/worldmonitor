@@ -1,18 +1,27 @@
 ---
-module: server-rpc-list-handlers
+title: An omitted page_size parses as 0, and clampInt turns 0 into one item
 date: 2026-10-01
+area: edge-api
 problem_type: logic_error
-component: service_object
+tags:
+  - page-size
+  - clampint
+  - resolvepagesize
+  - sebuf
+  - default-value
+  - seeder-ttl
+  - empty-array-fallback
+  - graceful-fail
+  - silent-empty
 severity: medium
+module: server-rpc-list-handlers
 symptoms:
-  - "A list RPC returns exactly 1 item when the caller omits page_size (list-prediction-markets, list-arxiv-papers)"
-  - "The same RPC returns a full page when page_size is sent explicitly"
-  - "Seeded research feeds (Hacker News, trending repos) return an empty list for most of every hour"
-  - "A seeded dataset reports unavailable forever while its seeder exits 0"
+  - A list RPC returns exactly 1 item when the caller omits page_size (list-prediction-markets, list-arxiv-papers)
+  - The same RPC returns a full page when page_size is sent explicitly
+  - Seeded research feeds (Hacker News, trending repos) return an empty list for most of every hour
+  - A seeded dataset reports unavailable forever while its seeder exits 0
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [background_job, testing_framework]
-tags: [page-size, clampint, resolvepagesize, sebuf, default-value, seeder-ttl, empty-array-fallback, graceful-fail, silent-empty]
 ---
 
 # An omitted page_size parses as 0, and clampInt turns 0 into one item

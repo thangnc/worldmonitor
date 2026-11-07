@@ -1,3 +1,10 @@
+---
+title: Forecast membership and domain preservation
+date: 2026-09-13
+status: done
+evidence: "PR #8098 merged 2026-09-13"
+---
+
 # Forecast membership and domain preservation
 
 ## Problem

@@ -1,18 +1,21 @@
 ---
 title: TTL staleness audits must ignore prose comments
 date: 2026-07-14
-category: logic-errors
-module: seeder-health
+area: observability
 problem_type: logic_error
-component: testing_framework
+tags:
+  - seeders
+  - health-monitoring
+  - ttl
+  - staleness
+  - static-analysis
+severity: high
+module: seeder-health
 symptoms:
-  - "The TTL-outlives-staleness fleet guard can silently skip a seeder when a comment mentions maxStaleMin before the runSeed options"
-  - "Existing TTL debt can be omitted from the frozen allowlist while the guard still passes"
+  - The TTL-outlives-staleness fleet guard can silently skip a seeder when a comment mentions maxStaleMin before the runSeed options
+  - Existing TTL debt can be omitted from the frozen allowlist while the guard still passes
 root_cause: missing_validation
 resolution_type: test_fix
-severity: high
-related_components: [background_job, tooling]
-tags: [seeders, health-monitoring, ttl, staleness, static-analysis]
 ---
 
 # TTL staleness audits must ignore prose comments

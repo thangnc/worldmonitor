@@ -1,14 +1,8 @@
 ---
 title: Inverting a primary/fallback order silently transfers the shared time budget to the new primary
-module: seed-conflict-intel
 date: 2026-07-30
+area: seeders
 problem_type: design_pattern
-component: background_job
-severity: high
-applies_when:
-  - "Swapping which of two data sources is primary vs fallback inside a deadline-bounded fetch phase"
-  - "A budget/deadline invariant test models the two paths ADDITIVELY (primary window + fallback worst-case)"
-  - "The demoted path keeps a launch-cutoff computed from an absolute deadline anchored before either path runs"
 tags:
   - fallback-ordering
   - time-budget
@@ -16,8 +10,12 @@ tags:
   - gdelt
   - seeder
   - review-checklist
-related_components:
-  - testing_framework
+severity: high
+module: seed-conflict-intel
+applies_when:
+  - Swapping which of two data sources is primary vs fallback inside a deadline-bounded fetch phase
+  - A budget/deadline invariant test models the two paths ADDITIVELY (primary window + fallback worst-case)
+  - The demoted path keeps a launch-cutoff computed from an absolute deadline anchored before either path runs
 ---
 
 # Inverting a primary/fallback order silently transfers the shared time budget

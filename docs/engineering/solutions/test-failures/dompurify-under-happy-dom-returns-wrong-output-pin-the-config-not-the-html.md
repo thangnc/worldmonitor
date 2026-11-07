@@ -1,18 +1,24 @@
 ---
 title: DOMPurify under happy-dom returns wrong output, so a tests/dom test must pin the purify config, not the sanitized HTML
-module: tests-dom
 date: 2026-10-14
+area: tests
 problem_type: test_failure
-component: testing_framework
+tags:
+  - dompurify
+  - happy-dom
+  - vitest
+  - tests-dom
+  - sanitizer
+  - deduction-panel
+  - green-while-dead
 severity: medium
+module: tests-dom
 symptoms:
-  - "A tests/dom test asserting DOMPurify output fails with 'expected ... not to contain <img' although the config omits img"
+  - A tests/dom test asserting DOMPurify output fails with 'expected ... not to contain <img' although the config omits img
   - "DOMPurify.sanitize('<p class=\"a\" id=\"b\">t<img src=x></p>', { ALLOWED_TAGS: ['p'], ALLOWED_ATTR: ['class'] }) returns 't<img src=\"x\">' under vitest.dom.config.mts"
-  - "DOMPurify.isSupported is true under happy-dom, so nothing warns that the sanitizer is not doing its job"
+  - DOMPurify.isSupported is true under happy-dom, so nothing warns that the sanitizer is not doing its job
 root_cause: wrong_api
 resolution_type: test_fix
-related_components: [tooling, development_workflow]
-tags: [dompurify, happy-dom, vitest, tests-dom, sanitizer, deduction-panel, green-while-dead]
 ---
 
 # DOMPurify under happy-dom returns wrong output, so a tests/dom test must pin the purify config, not the sanitized HTML

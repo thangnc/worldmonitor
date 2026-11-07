@@ -1,20 +1,26 @@
 ---
-title: "One route's 401 declared the whole anonymous session dead — and the 401 never reached our server"
+title: One route's 401 declared the whole anonymous session dead — and the 401 never reached our server
 date: 2026-07-27
-category: logic-errors
-module: wm-session
+area: edge-api
 problem_type: logic_error
-component: authentication
+tags:
+  - wm-session
+  - anonymous-session
+  - sentry
+  - axiom
+  - telemetry-blind-spot
+  - blast-radius
+  - diagnosis-technique
+  - "401"
 severity: high
+module: wm-session
 symptoms:
   - "Sentry WORLDMONITOR-WG (`kind: wm_session_dead`) regrew 34x traffic-normalized in three days after #5516 fixed one contributor, with 97% tagged `retry_401` (mint succeeded, replay still 401'd)"
-  - "Each episode suppressed every anonymous API call for 15 minutes (#5219 cooldown) — a dashboard of blank widgets"
+  - Each episode suppressed every anonymous API call for 15 minutes (#5219 cooldown) — a dashboard of blank widgets
   - "The 401 was invisible in Sentry breadcrumbs: 94 fetch breadcrumbs across 5 sampled events, zero non-2xx"
-  - "Axiom `wm_api_usage` showed ZERO server-side 401s for 11 of 12 sampled affected browsers, while sibling routes returned 200 in the same second the client declared the session dead"
+  - Axiom `wm_api_usage` showed ZERO server-side 401s for 11 of 12 sampled affected browsers, while sibling routes returned 200 in the same second the client declared the session dead
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [tooling, testing_framework]
-tags: [wm-session, anonymous-session, sentry, axiom, telemetry-blind-spot, blast-radius, diagnosis-technique, 401]
 ---
 
 # One route's 401 declared the whole anonymous session dead — and the 401 never reached our server

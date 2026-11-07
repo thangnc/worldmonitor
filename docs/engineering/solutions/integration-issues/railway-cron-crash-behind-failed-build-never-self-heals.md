@@ -1,21 +1,27 @@
 ---
 title: A Railway cron crash behind a FAILED build never self-heals, and the deployments window cannot see it
 date: 2026-09-05
-category: integration-issues
-module: railway-seeders
+area: seeders
 problem_type: integration_issue
-component: development_workflow
+tags:
+  - railway
+  - cron
+  - seeders
+  - deployment
+  - self-heal
+  - health-monitoring
+  - graphql
+  - diagnostics
+severity: high
+module: railway-seeders
 symptoms:
-  - "The fleet diagnostic reported 'No faults needing action' for seed-fred-rates while its active deployment was already CRASHED and no further cron tick would fire"
-  - "railway status --json showed activeDeployments[0].status CRASHED on a deployment id that appeared nowhere in a deployments(first:40) window of SKIPPED pushes and one FAILED build"
-  - "Cron ticks kept running on the old deployment for three hours after the latest deployment went FAILED (a build-only failure that never ran)"
-  - "After the 18:08Z tick ended with '=== Failed gracefully ===', nextCronRunAt kept advancing hour over hour and no tick ever started"
-  - "/api/health flagged seed-meta:economic:fred-rates only when it crossed its 180-minute maxStaleMin, two hours after the cron had already stopped"
+  - The fleet diagnostic reported 'No faults needing action' for seed-fred-rates while its active deployment was already CRASHED and no further cron tick would fire
+  - railway status --json showed activeDeployments[0].status CRASHED on a deployment id that appeared nowhere in a deployments(first:40) window of SKIPPED pushes and one FAILED build
+  - Cron ticks kept running on the old deployment for three hours after the latest deployment went FAILED (a build-only failure that never ran)
+  - After the 18:08Z tick ended with '=== Failed gracefully ===', nextCronRunAt kept advancing hour over hour and no tick ever started
+  - /api/health flagged seed-meta:economic:fred-rates only when it crossed its 180-minute maxStaleMin, two hours after the cron had already stopped
 root_cause: wrong_api
 resolution_type: tooling_addition
-severity: high
-related_components: [background_job, tooling, documentation]
-tags: [railway, cron, seeders, deployment, self-heal, health-monitoring, graphql, diagnostics]
 ---
 
 # A Railway cron crash behind a FAILED build never self-heals, and the deployments window cannot see it

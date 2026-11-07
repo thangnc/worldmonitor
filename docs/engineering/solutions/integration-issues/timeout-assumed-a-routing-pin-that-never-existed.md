@@ -1,19 +1,24 @@
 ---
 title: A timeout that assumed a provider-routing pin the seeder never had
 date: 2026-07-14
-category: integration-issues
-module: seed-forecasts
+area: intelligence
 problem_type: integration_issue
-component: background_job
+tags:
+  - llm
+  - openrouter
+  - deepseek
+  - timeouts
+  - provider-routing
+  - seeders
+  - security-policy
+severity: high
+module: seed-forecasts
 symptoms:
-  - "market_implications wrote errorReason 'llm_no_response' on every hourly run"
-  - "/api/health stuck at SEED_ERROR while the panel served frozen last-good cards"
-  - "The LLM provider answers a trivial prompt instantly, so the model looks healthy"
+  - market_implications wrote errorReason 'llm_no_response' on every hourly run
+  - /api/health stuck at SEED_ERROR while the panel served frozen last-good cards
+  - The LLM provider answers a trivial prompt instantly, so the model looks healthy
 root_cause: config_error
 resolution_type: config_change
-severity: high
-related_components: [service_object, documentation]
-tags: [llm, openrouter, deepseek, timeouts, provider-routing, seeders, security-policy]
 ---
 
 # A timeout that assumed a provider-routing pin the seeder never had

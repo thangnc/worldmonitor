@@ -1,5 +1,8 @@
 ---
+title: WorldMonitor PRO MCP Server
 date: 2026-03-27
+status: done
+evidence: "PR #2382 merged 2026-03-27"
 topic: pro-mcp-server
 ---
 

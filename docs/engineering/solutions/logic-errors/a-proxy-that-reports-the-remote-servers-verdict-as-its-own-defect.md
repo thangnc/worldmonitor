@@ -1,11 +1,22 @@
 ---
 title: A proxy that reports the remote server's verdict as its own defect
 date: 2026-10-14
-last_updated: 2026-10-20
-category: logic-errors
-module: mcp-proxy
+area: mcp
 problem_type: logic_error
-component: service_object
+tags:
+  - sentry
+  - mcp-proxy
+  - upstream-outcome
+  - json-rpc
+  - canary
+  - double-report
+  - exposed-headers
+  - axiom-audit-log
+  - triage
+  - cloudflare-worker
+  - cors-parity
+severity: medium
+module: mcp-proxy
 symptoms:
   - "Sentry WORLDMONITOR-172 `Initialize error: MCP server rejected request` regrew to 226 events / 69 IPs in two weeks after the 401/403 exclusion shipped"
   - "Every event targets one remote host; the Axiom audit log shows one browser IP with `header_names: []` (a panel saved without its key)"
@@ -13,9 +24,7 @@ symptoms:
   - "WORLDMONITOR-17A kept firing from releases that contained the #9140 marker skip; the live `Access-Control-Expose-Headers` on api.worldmonitor.app did not list `X-Wm-Upstream-Timeout`"
 root_cause: logic_error
 resolution_type: code_fix
-severity: medium
-related_components: [tooling]
-tags: [sentry, mcp-proxy, upstream-outcome, json-rpc, canary, double-report, exposed-headers, axiom-audit-log, triage, cloudflare-worker, cors-parity]
+last_updated: 2026-10-20
 ---
 
 # A proxy that reports the remote server's verdict as its own defect

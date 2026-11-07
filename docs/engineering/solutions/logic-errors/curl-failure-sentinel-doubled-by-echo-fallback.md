@@ -1,18 +1,25 @@
 ---
-title: "A curl -w failure sentinel got doubled by an || echo fallback, masking a dead sidecar as ready"
+title: A curl -w failure sentinel got doubled by an || echo fallback, masking a dead sidecar as ready
 date: 2026-07-31
-category: logic-errors
-module: Desktop Canary sidecar readiness probe
+area: desktop
 problem_type: logic_error
-component: testing_framework
+tags:
+  - curl
+  - shell-fallback
+  - readiness-probe
+  - ci-canary
+  - silent-pass-guard
+  - vacuous-guard
+  - mutation-testing
+  - sentinel-duplication
+severity: high
+module: Desktop Canary sidecar readiness probe
 symptoms:
-  - "CODE evaluated to `000000` instead of `000` when curl failed to connect, because curl's `-w '%{http_code}'` already prints `000` on connection failure before `|| echo 000` appended a second sentinel"
-  - "The `[ \"$CODE\" != \"000\" ]` readiness check passed on the doubled `000000` value, so the gate reported a dead/unreachable sidecar as ready"
-  - "The Desktop Canary's sidecar-liveness gate could never fail, even when the bundled local API server never came up on 127.0.0.1:46123"
+  - CODE evaluated to `000000` instead of `000` when curl failed to connect, because curl's `-w '%{http_code}'` already prints `000` on connection failure before `|| echo 000` appended a second sentinel
+  - The `[ "$CODE" != "000" ]` readiness check passed on the doubled `000000` value, so the gate reported a dead/unreachable sidecar as ready
+  - The Desktop Canary's sidecar-liveness gate could never fail, even when the bundled local API server never came up on 127.0.0.1:46123
 root_cause: logic_error
 resolution_type: code_fix
-severity: high
-tags: [curl, shell-fallback, readiness-probe, ci-canary, silent-pass-guard, vacuous-guard, mutation-testing, sentinel-duplication]
 ---
 
 # A curl -w failure sentinel got doubled by an || echo fallback, masking a dead sidecar as ready

@@ -1,21 +1,27 @@
 ---
 title: A repo setting blocked every automated review PR, and the pulse monitor re-alerted on a remedied failure
 date: 2026-09-20
-category: integration-issues
-module: crawlable-pulse-refresh
+area: public-site
 problem_type: integration_issue
-component: development_workflow
+tags:
+  - github-actions
+  - workflow-permissions
+  - crawlable-pulse
+  - freshness-monitor
+  - scheduled-workflow
+  - pull-request-automation
+  - stale-alert
+  - review-pr-token
+severity: high
+module: crawlable-pulse-refresh
 symptoms:
   - "`pull request create failed: GraphQL: GitHub Actions is not permitted to create or approve pull requests (createPullRequest)` on the workflow's final step after a full, passing freeze"
-  - "All four crawlable-pulse-refresh runs between 2026-09-02 and 2026-09-14, three scheduled and one dispatched, failed in the rebuild-and-verify step, skipped the PR step, and kept the capture only as a 14-day artifact"
+  - All four crawlable-pulse-refresh runs between 2026-09-02 and 2026-09-14, three scheduled and one dispatched, failed in the rebuild-and-verify step, skipped the PR step, and kept the capture only as a 14-day artifact
   - "The pulse-freshness monitor opened #8417 with finding refresh-failed the morning after the cited failure was fixed, against a snapshot one day old"
   - "`gh pr list --author app/github-actions` returns nothing; no automation-opened PR has ever existed in this repository"
-  - "The monitor only PATCHes the open issue body and never comments or closes it once the verdict is healthy"
+  - The monitor only PATCHes the open issue body and never comments or closes it once the verdict is healthy
 root_cause: missing_permission
 resolution_type: workflow_improvement
-severity: high
-related_components: [testing_framework, documentation, tooling]
-tags: [github-actions, workflow-permissions, crawlable-pulse, freshness-monitor, scheduled-workflow, pull-request-automation, stale-alert, review-pr-token]
 ---
 
 # A repo setting blocked every automated review PR, and the pulse monitor re-alerted on a remedied failure

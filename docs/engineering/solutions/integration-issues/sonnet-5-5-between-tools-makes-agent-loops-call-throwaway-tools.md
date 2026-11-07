@@ -1,19 +1,25 @@
 ---
-title: "Sonnet 5.5 with thinking off made the widget agent call throwaway tools to get room to plan"
+title: Sonnet 5.5 with thinking off made the widget agent call throwaway tools to get room to plan
 date: 2026-09-30
-category: integration-issues
-module: widget-builder
+area: browser
 problem_type: integration_issue
-component: assistant
+tags:
+  - widget-agent
+  - ais-relay
+  - claude-sonnet-5-5
+  - between-tools
+  - adaptive-thinking
+  - prompt-caching
+  - preserved-thinking
+  - server-side-fallback
 severity: medium
+module: widget-builder
 symptoms:
-  - "Data-only widget requests ran `search_web` with queries like `noop` and `skip`, and `read_page` on `https://skip.dev/`, in 6 of 6 runs"
-  - "The junk search returned results, so a widget built only from WorldMonitor data was marked web-sourced and sent through 1-2 source checks"
-  - "One \"earthquakes above magnitude 5 today\" run ended in \"its sources could not be verified\" instead of a widget"
+  - Data-only widget requests ran `search_web` with queries like `noop` and `skip`, and `read_page` on `https://skip.dev/`, in 6 of 6 runs
+  - The junk search returned results, so a widget built only from WorldMonitor data was marked web-sourced and sent through 1-2 source checks
+  - One "earthquakes above magnitude 5 today" run ended in "its sources could not be verified" instead of a widget
 root_cause: config_error
 resolution_type: config_change
-related_components: [tooling]
-tags: [widget-agent, ais-relay, claude-sonnet-5-5, between-tools, adaptive-thinking, prompt-caching, preserved-thinking, server-side-fallback]
 ---
 
 # Sonnet 5.5 with thinking off made the widget agent call throwaway tools to get room to plan

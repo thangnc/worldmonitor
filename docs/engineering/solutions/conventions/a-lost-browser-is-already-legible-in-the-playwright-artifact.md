@@ -1,18 +1,8 @@
 ---
 title: A lost browser is already legible in the Playwright artifact you upload
 date: 2026-09-08
-category: conventions
-module: e2e, .github/workflows/test.yml
+area: ci
 problem_type: convention
-component: testing_framework
-severity: high
-root_cause: async_timing
-resolution_type: workflow_improvement
-applies_when:
-  - "A Playwright CI failure names no cause — an opaque guid message, or a bare 'Target page, context or browser has been closed'"
-  - "Deciding whether to pay for DEBUG=pw:channel capture to diagnose an e2e flake"
-  - "Judging whether a flake is a product race or an environment-level browser loss"
-  - "Classifying two failure signatures as one event or two"
 tags:
   - playwright
   - e2e
@@ -20,8 +10,15 @@ tags:
   - flaky-tests
   - browser-loss
   - trace-analysis
-related_components:
-  - development_workflow
+severity: high
+module: e2e, .github/workflows/test.yml
+root_cause: async_timing
+resolution_type: workflow_improvement
+applies_when:
+  - A Playwright CI failure names no cause — an opaque guid message, or a bare 'Target page, context or browser has been closed'
+  - Deciding whether to pay for DEBUG=pw:channel capture to diagnose an e2e flake
+  - Judging whether a flake is a product race or an environment-level browser loss
+  - Classifying two failure signatures as one event or two
 ---
 
 # A lost browser is already legible in the Playwright artifact you upload

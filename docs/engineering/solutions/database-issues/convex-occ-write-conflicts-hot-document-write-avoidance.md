@@ -1,22 +1,8 @@
 ---
 title: Convex OCC write conflicts on hot documents fixed by write-avoidance
 date: 2026-08-13
-category: database-issues
-module: convex
+area: convex
 problem_type: database_issue
-component: database
-symptoms:
-  - "Convex Insights shows six 'Retried due to write conflicts' warnings across five functions in the production deployment (processWebhookEvent flagged on two tables)"
-  - "apiKeys:touchKeyLastUsed hit 1,036 OCC conflicts on userApiKeys in 14 days (retry depth up to 3), concentrated on a few hot key documents"
-  - "users:ensureRecord logged 1,618 conflicts in one day as concurrent tabs and auth-refresh storms rewrote the same users doc"
-  - "payments/webhookMutations:processWebhookEvent re-patched the same customers row with identical userId/email during millisecond Dodo webhook bursts (~103 conflicts/14d)"
-root_cause: async_timing
-resolution_type: code_fix
-severity: medium
-related_components:
-  - authentication
-  - payments
-  - background_job
 tags:
   - convex
   - occ
@@ -26,6 +12,15 @@ tags:
   - write-avoidance
   - axiom-convex-logs
   - mutation-retries
+severity: medium
+module: convex
+symptoms:
+  - Convex Insights shows six 'Retried due to write conflicts' warnings across five functions in the production deployment (processWebhookEvent flagged on two tables)
+  - apiKeys:touchKeyLastUsed hit 1,036 OCC conflicts on userApiKeys in 14 days (retry depth up to 3), concentrated on a few hot key documents
+  - users:ensureRecord logged 1,618 conflicts in one day as concurrent tabs and auth-refresh storms rewrote the same users doc
+  - payments/webhookMutations:processWebhookEvent re-patched the same customers row with identical userId/email during millisecond Dodo webhook bursts (~103 conflicts/14d)
+root_cause: async_timing
+resolution_type: code_fix
 ---
 
 # Convex OCC write conflicts on hot documents fixed by write-avoidance

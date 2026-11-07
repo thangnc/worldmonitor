@@ -1,19 +1,26 @@
 ---
 title: "Desktop CLS: immediate-tier panel mounts need deferred shells, not victim fixes"
 date: 2026-07-17
-category: performance-issues
-module: Desktop dashboard panel mount (panel-layout.ts)
+area: desktop
 problem_type: performance_issue
-component: frontend_stimulus
+tags:
+  - cls
+  - core-web-vitals
+  - layout-shift
+  - panel-mount
+  - deferred-shell
+  - sentry-instrumentation
+  - debugbear
+  - desktop-dashboard
 severity: high
+module: Desktop dashboard panel mount (panel-layout.ts)
 symptoms:
   - "Desktop CLS was the only failing Core Web Vital in CrUX (63% good) despite two shift-victim fixes (#5137 banner positioning, #5333 panel height pins) landing with null field effect"
   - "A 2026-07-11 lab reproduction returned a false null: fast anonymous lab loads resolved dynamic imports before the layout-shift window opened, so panel-mount displacement did not reproduce in the lab"
-  - "Existing Sentry CLS reports carried no per-panel attribution, so no fix target could be named from field data alone"
-  - "The first INITIAL_PANEL_MOUNT_BUDGET_DESKTOP=8 desktop 'immediate-tier' panels mounted via async unplaceheld grid insertions (insertInitialPanelByKey -> mountLazyPanel with no placeholder), while only panels 9+ got footprint-preserving shells"
+  - Existing Sentry CLS reports carried no per-panel attribution, so no fix target could be named from field data alone
+  - The first INITIAL_PANEL_MOUNT_BUDGET_DESKTOP=8 desktop 'immediate-tier' panels mounted via async unplaceheld grid insertions (insertInitialPanelByKey -> mountLazyPanel with no placeholder), while only panels 9+ got footprint-preserving shells
 root_cause: async_timing
 resolution_type: code_fix
-tags: [cls, core-web-vitals, layout-shift, panel-mount, deferred-shell, sentry-instrumentation, debugbear, desktop-dashboard]
 ---
 
 # Desktop CLS: immediate-tier panel mounts need deferred shells, not victim fixes

@@ -1,22 +1,25 @@
 ---
 title: Google Flights RPCs now need a BotGuard token; the server-rendered results page still carries the same payload
 date: 2026-10-17
-category: integration-issues
-module: ais-relay google flights
+area: seeders
 problem_type: integration_issue
-component: background_job
+tags:
+  - google-flights
+  - botguard
+  - tfs
+  - protobuf
+  - af-initdatacallback
+  - ais-relay
+  - scraper
+  - mcp
+severity: high
+module: ais-relay google flights
 symptoms:
-  - "search_flights and search_flight_prices_by_date return {\"flights\":[],\"degraded\":true,\"error\":\"relay returned 502\"}"
-  - "GetShoppingResults and GetCalendarGraph answer with RPC status 13 instead of itineraries"
-  - "The Airline Intel prices tab shows no fares for any route"
+  - search_flights and search_flight_prices_by_date return {"flights":[],"degraded":true,"error":"relay returned 502"}
+  - GetShoppingResults and GetCalendarGraph answer with RPC status 13 instead of itineraries
+  - The Airline Intel prices tab shows no fares for any route
 root_cause: wrong_api
 resolution_type: code_fix
-severity: high
-related_components:
-  - mcp search_flights
-  - mcp search_flight_prices_by_date
-  - AirlineIntelPanel
-tags: [google-flights, botguard, tfs, protobuf, af-initdatacallback, ais-relay, scraper, mcp]
 ---
 
 # Google Flights RPCs now need a BotGuard token; the server-rendered results page still carries the same payload

@@ -1,21 +1,25 @@
 ---
-title: "Relay self-request used the configured PORT, not the bound port — silent OpenSky skip under ephemeral binds"
+title: Relay self-request used the configured PORT, not the bound port — silent OpenSky skip under ephemeral binds
 date: 2026-08-03
-category: runtime-errors
-module: scripts/ais-relay.cjs
+area: seeders
 problem_type: runtime_error
-component: background_job
+tags:
+  - ais-relay
+  - self-request
+  - port-binding
+  - ephemeral-port
+  - theater-posture
+  - opensky
+  - railway
+severity: medium
+module: scripts/ais-relay.cjs
 symptoms:
   - "[TheaterPosture] OpenSky failed: fetch failed logged during the theater-posture seed cycle"
-  - "/metrics reports opensky.requests=0 even though the OpenSky tier should have run"
-  - "Theater posture cycle silently falls through to adsb.lol/Wingbits fallbacks with no error surfaced"
-  - "Reproduces only when the relay is spawned with PORT=0 (ephemeral bind); masked in production where PORT is a real fixed value"
+  - /metrics reports opensky.requests=0 even though the OpenSky tier should have run
+  - Theater posture cycle silently falls through to adsb.lol/Wingbits fallbacks with no error surfaced
+  - Reproduces only when the relay is spawned with PORT=0 (ephemeral bind); masked in production where PORT is a real fixed value
 root_cause: config_error
 resolution_type: code_fix
-severity: medium
-related_components:
-  - testing_framework
-tags: [ais-relay, self-request, port-binding, ephemeral-port, theater-posture, opensky, railway]
 ---
 
 # Relay self-request used the configured PORT, not the bound port — silent OpenSky skip under ephemeral binds

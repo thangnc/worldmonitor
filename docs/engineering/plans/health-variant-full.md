@@ -1,3 +1,10 @@
+---
+title: "Health Variant: Full Implementation Plan"
+date: 2026-03-29
+status: abandoned
+evidence: "Doc-only PR #2466; only the shared air-quality layer shipped (#2634); the health variant is outside the Lite scope"
+---
+
 # Health Variant: Full Implementation Plan
 
 ## Current State

@@ -1,9 +1,14 @@
 ---
 title: Diagnose history relay disconnects with HTTP phase timing
+date: 2026-10-24
+area: intelligence
+problem_type: integration_issue
+tags:
+  - convex
+  - axiom
+  - timeout
+  - observability
 module: Intel history
-problem_type: integration-issues
-component: Convex HTTP relay
-tags: [convex, axiom, timeout, observability]
 ---
 
 # History relay phase timing

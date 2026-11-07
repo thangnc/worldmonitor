@@ -1,17 +1,17 @@
 ---
-module: engineering-process
+title: A verification grep that omits a file type is a guard that cannot fire
 date: 2026-08-10
+area: docs
 problem_type: convention
-component: documentation
-severity: high
-category: conventions
-applies_when: "Writing a runbook step, CI check, or migration procedure whose verification is a grep, glob, or find scoped by file type"
 tags:
   - verification
   - runbooks
   - migrations
   - false-negative
   - guard-cannot-fire
+severity: high
+module: engineering-process
+applies_when: Writing a runbook step, CI check, or migration procedure whose verification is a grep, glob, or find scoped by file type
 ---
 
 # A verification grep that omits a file type is a guard that cannot fire

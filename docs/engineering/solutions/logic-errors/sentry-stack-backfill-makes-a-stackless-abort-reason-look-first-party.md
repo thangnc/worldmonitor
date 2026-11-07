@@ -1,23 +1,8 @@
 ---
-title: "Sentry's fetch stack backfill makes a stackless abort reason look first-party — a foreign extension's leaked rejection passed hasFirstParty"
+title: Sentry's fetch stack backfill makes a stackless abort reason look first-party — a foreign extension's leaked rejection passed hasFirstParty
 date: 2026-09-17
-last_updated: 2026-09-17
-category: logic-errors
-module: Sentry error filtering
+area: observability
 problem_type: logic_error
-component: tooling
-severity: medium
-symptoms:
-  - "Sentry WORLDMONITOR-125 (2 events, first 2026-09-09) and WORLDMONITOR-12Z (1 event, 2026-09-16) fired `TimeoutError: signal timed out` via `auto.browser.global_handlers.onunhandledrejection`, handled:no, from Chrome/Edge 151-152 on Windows — ~10 events from >=6 IPs across the WORLDMONITOR-125/12Z/11N family"
-  - "The innermost frames pointed at `insights-loader.ts:190` `await fetch(...)` and `:204` `})();`, even though that call is wrapped in `try { ... } catch { return null; }` — a rejection should never have escaped there"
-  - "The earlier WORLDMONITOR-11N fix (a `.catch` plus `panel_call_rejected` report added to `pending-panel-data.ts` `invokePanelMethod`) was a real bug but not the whole story: 125's captured stack still ran through the now-fixed `invokePanelMethod` frame, and events kept arriving after it shipped"
-  - "The `/signal timed out/` `beforeSend` suppression in `src/bootstrap/sentry-init.ts`, which drops only events with no first-party frames (`!hasFirstParty`), should have dropped these events, but `hasFirstParty` read true because the mutated stack carried first-party frame names"
-  - "Only the JS-built `DOMException` abort reason from `insights-loader.ts` ever surfaced this way; native `AbortSignal.timeout()` leaks through the same foreign fetch hook parsed to zero frames and were silently (and correctly) dropped, which is why just one call site kept generating issues"
-root_cause: logic_error
-resolution_type: code_fix
-related_components:
-  - development_workflow
-  - testing_framework
 tags:
   - sentry
   - before-send
@@ -27,6 +12,17 @@ tags:
   - unhandled-rejection
   - browser-extensions
   - regression-testing
+severity: medium
+module: Sentry error filtering
+symptoms:
+  - "Sentry WORLDMONITOR-125 (2 events, first 2026-09-09) and WORLDMONITOR-12Z (1 event, 2026-09-16) fired `TimeoutError: signal timed out` via `auto.browser.global_handlers.onunhandledrejection`, handled:no, from Chrome/Edge 151-152 on Windows — ~10 events from >=6 IPs across the WORLDMONITOR-125/12Z/11N family"
+  - The innermost frames pointed at `insights-loader.ts:190` `await fetch(...)` and `:204` `})();`, even though that call is wrapped in `try { ... } catch { return null; }` — a rejection should never have escaped there
+  - "The earlier WORLDMONITOR-11N fix (a `.catch` plus `panel_call_rejected` report added to `pending-panel-data.ts` `invokePanelMethod`) was a real bug but not the whole story: 125's captured stack still ran through the now-fixed `invokePanelMethod` frame, and events kept arriving after it shipped"
+  - The `/signal timed out/` `beforeSend` suppression in `src/bootstrap/sentry-init.ts`, which drops only events with no first-party frames (`!hasFirstParty`), should have dropped these events, but `hasFirstParty` read true because the mutated stack carried first-party frame names
+  - Only the JS-built `DOMException` abort reason from `insights-loader.ts` ever surfaced this way; native `AbortSignal.timeout()` leaks through the same foreign fetch hook parsed to zero frames and were silently (and correctly) dropped, which is why just one call site kept generating issues
+root_cause: logic_error
+resolution_type: code_fix
+last_updated: 2026-09-17
 ---
 
 # Sentry's fetch instrumentation backfills a stackless abort reason with the fetch call site, so an extension's leaked rejection read as ours

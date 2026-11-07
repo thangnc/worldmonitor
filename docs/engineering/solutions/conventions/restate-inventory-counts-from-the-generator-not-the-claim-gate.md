@@ -1,19 +1,23 @@
 ---
-title: "Restate inventory counts from the facts generator; the claim gate does not catch every wording"
+title: Restate inventory counts from the facts generator; the claim gate does not catch every wording
 date: 2026-10-24
-category: conventions
-module: "public source-count copy (scripts/generate-public-product-facts.mjs RESTATED_FACT_PHRASES, index.html JSON-LD, consent screens; PR #9622)"
+area: docs
 problem_type: convention
-component: documentation
+tags:
+  - inventory-counts
+  - volatile-inventory-claims
+  - docs-stats
+  - product-facts
+  - json-ld
+  - csp
+  - script-hash
+  - source-attribution
 severity: medium
+module: "public source-count copy (scripts/generate-public-product-facts.mjs RESTATED_FACT_PHRASES, index.html JSON-LD, consent screens; PR #9622)"
 applies_when:
-  - "Adding or editing any public sentence that states how many sources, providers, hosts or feeds World Monitor tracks"
-  - "A generator starts rewriting text inside an inline <script> block of committed HTML"
-  - "Quoting a source total from the get_sources MCP tool in launch copy"
-related_components:
-  - tooling
-  - testing_framework
-tags: [inventory-counts, volatile-inventory-claims, docs-stats, product-facts, json-ld, csp, script-hash, source-attribution]
+  - Adding or editing any public sentence that states how many sources, providers, hosts or feeds World Monitor tracks
+  - A generator starts rewriting text inside an inline <script> block of committed HTML
+  - Quoting a source total from the get_sources MCP tool in launch copy
 ---
 
 # Restate inventory counts from the facts generator; the claim gate does not catch every wording

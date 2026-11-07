@@ -1,19 +1,23 @@
 ---
-title: "A raw test run reads a stale docs date manifest that npm run test:data would have regenerated"
+title: A raw test run reads a stale docs date manifest that npm run test:data would have regenerated
 date: 2026-10-06
-category: test-failures
-module: tests/docs-locale-seo
+area: tests
 problem_type: test_failure
-component: testing_framework
+tags:
+  - docs-page-dates
+  - pretest-hook
+  - false-red
+  - generated-file
+  - node-test
+  - test-data
 severity: low
+module: tests/docs-locale-seo
 symptoms:
-  - "docs-locale-seo fails with 'date manifest must carry datePublished for docs/<page>.mdx, run npm run docs:dates'"
-  - "The failure appears on a clean origin/main checkout with no local edits"
-  - "The same file passes under npm run test:data and in CI"
+  - docs-locale-seo fails with 'date manifest must carry datePublished for docs/<page>.mdx, run npm run docs:dates'
+  - The failure appears on a clean origin/main checkout with no local edits
+  - The same file passes under npm run test:data and in CI
 root_cause: incomplete_setup
 resolution_type: workflow_improvement
-related_components: [documentation, development_workflow]
-tags: [docs-page-dates, pretest-hook, false-red, generated-file, node-test, test-data]
 ---
 
 # A raw test run reads a stale docs date manifest that npm run test:data would have regenerated

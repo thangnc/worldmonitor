@@ -1,17 +1,26 @@
 ---
-module: pre-push-gate
+title: The pre-push green-tree cache attested a tree the gates never ran against
 date: 2026-07-29
+area: ci
 problem_type: logic_error
-component: build_system
+tags:
+  - pre-push
+  - husky
+  - green-while-dead
+  - quotepath
+  - nul-delimited
+  - worktree-drift
+  - attestation
+  - bash
+  - git-diff
 severity: high
+module: pre-push-gate
 symptoms:
-  - "A changed test file is in the pushed commit but never appears in any runner invocation, and the gate exits 0"
-  - "A push whose branch diff contains a unicode or backslash path runs nothing for that path"
-  - "A tree that only ever passed the origin/main-unresolvable fallback later cache-hits and skips every gate"
+  - A changed test file is in the pushed commit but never appears in any runner invocation, and the gate exits 0
+  - A push whose branch diff contains a unicode or backslash path runs nothing for that path
+  - A tree that only ever passed the origin/main-unresolvable fallback later cache-hits and skips every gate
 root_cause: logic_error
 resolution_type: workflow_improvement
-related_components: [development_workflow, tooling, testing_framework]
-tags: [pre-push, husky, green-while-dead, quotepath, nul-delimited, worktree-drift, attestation, bash, git-diff]
 ---
 
 # The pre-push green-tree cache attested a tree the gates never ran against

@@ -1,20 +1,8 @@
 ---
 title: "A unique match is not an identity: verify attribution against an authoritative field"
 date: 2026-07-28
-category: conventions
-module: intelligence company resolution (SEC EDGAR)
+area: intelligence
 problem_type: convention
-component: service_object
-severity: high
-applies_when:
-  - "Re-enabling an endpoint that was disabled because it produced fabricated or misattributed data"
-  - "Resolving a user-supplied identifier (domain, name, slug, email host) to a real-world entity"
-  - "Reviewing code where a lookup falls back from an exact key to a fuzzy or prefix match"
-  - "A resolver returns a single candidate and the caller treats singularity as proof of correctness"
-  - "Deciding what an entity lookup should return when it cannot confirm a match"
-related_components:
-  - service_object
-  - testing_framework
 tags:
   - attribution
   - entity-resolution
@@ -22,6 +10,14 @@ tags:
   - fabricated-data
   - mutation-testing
   - sec-edgar
+severity: high
+module: intelligence company resolution (SEC EDGAR)
+applies_when:
+  - Re-enabling an endpoint that was disabled because it produced fabricated or misattributed data
+  - Resolving a user-supplied identifier (domain, name, slug, email host) to a real-world entity
+  - Reviewing code where a lookup falls back from an exact key to a fuzzy or prefix match
+  - A resolver returns a single candidate and the caller treats singularity as proof of correctness
+  - Deciding what an entity lookup should return when it cannot confirm a match
 ---
 
 # A unique match is not an identity: verify attribution against an authoritative field

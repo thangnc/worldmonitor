@@ -1,19 +1,23 @@
 ---
 title: A prompt-only stitching ban cannot stop "This development comes as"
 date: 2026-09-21
-category: logic-errors
-module: scripts/lib/brief-llm.mjs
+area: intelligence
 problem_type: logic_error
-component: brief_system
+tags:
+  - llm-hallucination
+  - output-validation
+  - prompt-only-fix
+  - brief-digest
+  - stitching-phrase
+  - cache-revalidation
 severity: high
+module: scripts/lib/brief-llm.mjs
 symptoms:
-  - "The 2026-09-20 08:00 brief opened its second lead sentence with \"This development comes as former President Trump returns to the UN\", stapling the Iran peace-terms story to the Trump/UN story"
-  - "24/24 gemini-2.5-flash samples on the production digest prompt used \"This development comes as\" or \"This development occurs as\""
-  - "DIGEST_PROSE_SYSTEM_BASE already banned \"this comes as\", \"this declaration comes as\", and \"this announcement comes as\"; grep found those phrases only inside the prompt string"
+  - The 2026-09-20 08:00 brief opened its second lead sentence with "This development comes as former President Trump returns to the UN", stapling the Iran peace-terms story to the Trump/UN story
+  - 24/24 gemini-2.5-flash samples on the production digest prompt used "This development comes as" or "This development occurs as"
+  - DIGEST_PROSE_SYSTEM_BASE already banned "this comes as", "this declaration comes as", and "this announcement comes as"; grep found those phrases only inside the prompt string
 root_cause: missing_validation
 resolution_type: code_fix
-related_components: [email_processing, background_job, testing_framework]
-tags: [llm-hallucination, output-validation, prompt-only-fix, brief-digest, stitching-phrase, cache-revalidation]
 ---
 
 # A prompt-only stitching ban cannot stop "This development comes as"

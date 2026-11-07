@@ -1,8 +1,15 @@
 ---
+title: Plain language for dashboard labels
+date: 2026-10-08
+area: browser
+problem_type: convention
+tags:
+  - ui
+  - copy
+  - acronyms
+  - china
+  - accessibility
 module: Dashboard presentation
-component: China country snapshot and English UI copy
-problem_type: conventions
-tags: [ui, copy, acronyms, china, accessibility]
 ---
 
 # Plain language for dashboard labels

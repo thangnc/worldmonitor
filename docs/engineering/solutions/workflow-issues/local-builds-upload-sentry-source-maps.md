@@ -1,17 +1,22 @@
 ---
 title: A local build uploads source maps to Sentry under the semver release
 date: 2026-09-28
-category: workflow-issues
-module: pro-test
+area: public-site
 problem_type: workflow_issue
-component: tooling
+tags:
+  - sentry
+  - source-maps
+  - artifact-bundle
+  - debug-id
+  - pro-test
+  - local-build
 severity: medium
+module: pro-test
 symptoms:
-  - "A local npm --prefix pro-test run build uploaded a source-map artifact bundle to Sentry release worldmonitor@2.10.0"
-  - "The uploaded bundle's modified time kept moving after the build, which looked like a later production upload but was other local builds"
+  - A local npm --prefix pro-test run build uploaded a source-map artifact bundle to Sentry release worldmonitor@2.10.0
+  - The uploaded bundle's modified time kept moving after the build, which looked like a later production upload but was other local builds
 root_cause: config_error
 resolution_type: workflow_improvement
-tags: [sentry, source-maps, artifact-bundle, debug-id, pro-test, local-build]
 ---
 
 # A local build uploads source maps to Sentry under the semver release

@@ -1,25 +1,8 @@
 ---
 title: Sentry noise filtering with stack gating and signature matching
-module: Sentry error filtering
 date: 2026-07-17
-last_updated: 2026-09-17
-category: best-practices
+area: observability
 problem_type: best_practice
-component: tooling
-severity: medium
-applies_when:
-  - Triaging third-party SDK, browser-extension, or monkeypatched runtime errors in Sentry
-  - Filtering generic network failures that could also originate in first-party code
-  - Adding or broadening Sentry ignoreErrors or beforeSend suppression rules
-symptoms:
-  - Unresolved Sentry issues are dominated by third-party UI chunk failures or browser-extension fetch wrappers
-  - Generic Failed to fetch rejections cannot be safely suppressed by message alone
-  - Extension stack frames use chained receiver names that narrow function-name regexes miss
-root_cause: logic_error
-resolution_type: workflow_improvement
-related_components:
-  - development_workflow
-  - testing_framework
 tags:
   - sentry
   - error-filtering
@@ -29,6 +12,19 @@ tags:
   - browser-extensions
   - clerk
   - regression-testing
+severity: medium
+module: Sentry error filtering
+symptoms:
+  - Unresolved Sentry issues are dominated by third-party UI chunk failures or browser-extension fetch wrappers
+  - Generic Failed to fetch rejections cannot be safely suppressed by message alone
+  - Extension stack frames use chained receiver names that narrow function-name regexes miss
+root_cause: logic_error
+resolution_type: workflow_improvement
+applies_when:
+  - Triaging third-party SDK, browser-extension, or monkeypatched runtime errors in Sentry
+  - Filtering generic network failures that could also originate in first-party code
+  - Adding or broadening Sentry ignoreErrors or beforeSend suppression rules
+last_updated: 2026-09-17
 ---
 
 # Sentry noise filtering with stack gating and signature matching

@@ -1,14 +1,18 @@
 ---
 title: Give the cold-dashboard first-paint sample its own renderer budget
 date: 2026-09-13
-category: performance-issues
-module: e2e/map-overlay-marker-budget.spec.ts
-problem_type: test_coverage
-component: testing_framework
+area: tests
+problem_type: performance_issue
+tags:
+  - playwright
+  - ci-artifacts
+  - renderer-nodes
+  - cold-load
+  - performance-budget
 severity: medium
+module: e2e/map-overlay-marker-budget.spec.ts
 root_cause: sample_budget_mismatch
 resolution_type: test_fix
-tags: [playwright, ci-artifacts, renderer-nodes, cold-load, performance-budget]
 ---
 
 # Cold-dashboard first-paint renderer budget

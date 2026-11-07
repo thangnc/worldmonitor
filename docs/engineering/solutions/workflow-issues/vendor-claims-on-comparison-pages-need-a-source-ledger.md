@@ -1,21 +1,30 @@
 ---
-module: comparison-pages
+title: Competitor claims on comparison pages need a per-claim source ledger before shipping
 date: 2026-10-16
+area: public-site
 problem_type: workflow_issue
-component: development_workflow
+tags:
+  - comparison-pages
+  - fact-check
+  - vendor-claims
+  - source-ledger
+  - cross-page-drift
+  - crawlable-corpus
+  - shortlist
+  - mcp
+  - review-gap
 severity: high
-applies_when:
-  - "Adding or rewriting a /compare/ page that states facts about a competitor (price, plan, MCP support, latency, licence, coverage)"
-  - "Changing one vendor's cell on any generated comparison matrix or in comparison narratives"
-  - "CI, code review and bot review are green but no step has opened the vendor's own pages"
+module: comparison-pages
 symptoms:
   - "PR #9149 passed CI, a multi-persona code review and two review bots, yet a live-page check of 114 competitor claims found 43 needing correction"
-  - "Compare pages said Recorded Future MCP was unverified while its hosted MCP server was generally available and the repo's own blog guide already documented it"
-  - "After the shortlist was fixed, the same vendor's cells still disagreed across the hub, vs, alternatives, travel and MCP pages"
+  - Compare pages said Recorded Future MCP was unverified while its hosted MCP server was generally available and the repo's own blog guide already documented it
+  - After the shortlist was fixed, the same vendor's cells still disagreed across the hub, vs, alternatives, travel and MCP pages
 root_cause: missing_workflow_step
 resolution_type: workflow_improvement
-related_components: [testing_framework, documentation]
-tags: [comparison-pages, fact-check, vendor-claims, source-ledger, cross-page-drift, crawlable-corpus, shortlist, mcp, review-gap]
+applies_when:
+  - Adding or rewriting a /compare/ page that states facts about a competitor (price, plan, MCP support, latency, licence, coverage)
+  - Changing one vendor's cell on any generated comparison matrix or in comparison narratives
+  - CI, code review and bot review are green but no step has opened the vendor's own pages
 ---
 
 # Competitor claims on comparison pages need a per-claim source ledger before shipping

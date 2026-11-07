@@ -1,22 +1,30 @@
 ---
-title: "A deferred panel mounts AFTER the boot data pass and keeps its constructor's empty state forever — queue the call, and wait for the element"
+title: A deferred panel mounts AFTER the boot data pass and keeps its constructor's empty state forever — queue the call, and wait for the element
 date: 2026-08-13
-category: ui-bugs
-module: src/app/data-loader.ts
+area: browser
 problem_type: ui_bug
-component: frontend_stimulus
+tags:
+  - deferred-panel
+  - lazy-mount
+  - intersectionobserver
+  - callpanel
+  - pending-panel-data
+  - runwhenconnected
+  - isconnected
+  - panel-lifecycle
+  - mobile
+severity: high
+module: src/app/data-loader.ts
 symptoms:
-  - "Threat Timeline sits on its constructor copy 'Waiting for intelligence insight data.' with an UNAVAILABLE badge for the whole session"
-  - "AI Strategic Posture sits on 'Scanning Theaters' with the elapsed counter ticking past 76s and the naval/theater stages never lighting up"
-  - "Reproduces on mobile far more than desktop, and intermittently — the same page load can render one panel and strand the other"
+  - Threat Timeline sits on its constructor copy 'Waiting for intelligence insight data.' with an UNAVAILABLE badge for the whole session
+  - AI Strategic Posture sits on 'Scanning Theaters' with the elapsed counter ticking past 76s and the naval/theater stages never lighting up
+  - Reproduces on mobile far more than desktop, and intermittently — the same page load can render one panel and strand the other
   - "No console error, no failed request, no Sentry event: the data arrived and was discarded in-process"
 root_cause: async_timing
 resolution_type: code_fix
-severity: high
-related_components:
-  - testing_framework
-tags: [deferred-panel, lazy-mount, intersectionobserver, callpanel, pending-panel-data, runwhenconnected, isconnected, panel-lifecycle, mobile]
 ---
+
+# A deferred panel mounts AFTER the boot data pass and keeps its constructor's empty state forever — queue the call, and wait for the element
 
 ## Problem
 

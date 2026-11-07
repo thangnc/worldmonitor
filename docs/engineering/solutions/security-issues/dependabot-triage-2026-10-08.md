@@ -1,8 +1,16 @@
 ---
-module: dependencies
-component: npm and pnpm dependency graphs
+title: Dependabot triage on October 8, 2026
+date: 2026-10-08
+area: tooling
 problem_type: security_issue
-tags: [dependabot, sharp, shell-quote, librsvg, stream-json, sprintf-js]
+tags:
+  - dependabot
+  - sharp
+  - shell-quote
+  - librsvg
+  - stream-json
+  - sprintf-js
+module: dependencies
 ---
 
 # Dependabot triage on October 8, 2026

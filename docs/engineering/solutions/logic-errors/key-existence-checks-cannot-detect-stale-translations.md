@@ -1,24 +1,22 @@
 ---
-module: i18n
+title: Key-existence checks cannot detect stale translations
 date: 2026-07-26
+area: browser
 problem_type: logic_error
-component: tooling
-severity: high
-symptoms:
-  - "/pro pricing page advertised 'No commercial use' in 23 languages beside a tier sold as commercially licensed"
-  - "Translated feature bullets described the wrong feature after an English array had an element inserted"
-  - "Every locale test passed: key counts, schema shape, and completeness checks were all green"
-root_cause: logic_error
-resolution_type: code_fix
-related_components:
-  - documentation
-  - development_workflow
 tags:
   - i18n
   - localization
   - translation-staleness
   - ci-guards
   - unicode
+severity: high
+module: i18n
+symptoms:
+  - /pro pricing page advertised 'No commercial use' in 23 languages beside a tier sold as commercially licensed
+  - Translated feature bullets described the wrong feature after an English array had an element inserted
+  - "Every locale test passed: key counts, schema shape, and completeness checks were all green"
+root_cause: logic_error
+resolution_type: code_fix
 ---
 
 # Key-existence checks cannot detect stale translations

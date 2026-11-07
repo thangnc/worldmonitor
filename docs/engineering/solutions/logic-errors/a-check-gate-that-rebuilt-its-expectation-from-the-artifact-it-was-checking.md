@@ -1,17 +1,25 @@
 ---
-module: source-attribution
+title: A --check gate that rebuilt its expectation from the artifact it was checking
 date: 2026-08-12
+area: docs
 problem_type: logic_error
-component: tooling
+tags:
+  - green-while-dead
+  - generator-gate
+  - fixpoint
+  - idempotence
+  - drift
+  - attribution
+  - compliance-artifact
+  - mutation-testing
 severity: high
+module: source-attribution
 symptoms:
   - "`npm run sources:check` exits 0 on a clean tree while `npm run sources:generate` immediately dirties ~5800 lines"
-  - "A published attribution row cites `file:line` positions that moved commits ago"
-  - "Any PR that legitimately edits the manifest carries thousands of lines of unrelated churn, or hand-splices its own rows"
+  - A published attribution row cites `file:line` positions that moved commits ago
+  - Any PR that legitimately edits the manifest carries thousands of lines of unrelated churn, or hand-splices its own rows
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [documentation, development_workflow]
-tags: [green-while-dead, generator-gate, fixpoint, idempotence, drift, attribution, compliance-artifact, mutation-testing]
 ---
 
 # A --check gate that rebuilt its expectation from the artifact it was checking

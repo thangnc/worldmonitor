@@ -1,18 +1,8 @@
 ---
-title: "BIS WS_LBS_D_PUB does publish bilateral counterparty-country series"
+title: BIS WS_LBS_D_PUB does publish bilateral counterparty-country series
 date: 2026-10-18
-category: integration-issues
-module: scripts/seed-bis-lbs.mjs
+area: seeders
 problem_type: integration_issue
-component: background_job
-severity: medium
-symptoms:
-  - "scripts/seed-bis-lbs.mjs header says WS_LBS_D_PUB only exposes counterparty as the aggregate 5J"
-  - "Bilateral cross-border bank flows (one country's banks vs another country's residents) looked unavailable, pushing work onto WS_CBS_PUB"
-root_cause: inadequate_documentation
-resolution_type: documentation_update
-related_components:
-  - service_object
 tags:
   - bis
   - lbs
@@ -21,6 +11,13 @@ tags:
   - bop
   - capital-flows
   - counterparty
+severity: medium
+module: scripts/seed-bis-lbs.mjs
+symptoms:
+  - scripts/seed-bis-lbs.mjs header says WS_LBS_D_PUB only exposes counterparty as the aggregate 5J
+  - Bilateral cross-border bank flows (one country's banks vs another country's residents) looked unavailable, pushing work onto WS_CBS_PUB
+root_cause: inadequate_documentation
+resolution_type: documentation_update
 ---
 
 # BIS WS_LBS_D_PUB does publish bilateral counterparty-country series

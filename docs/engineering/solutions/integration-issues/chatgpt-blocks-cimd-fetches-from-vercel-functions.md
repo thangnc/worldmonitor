@@ -1,17 +1,25 @@
 ---
-title: "chatgpt.com answers every CIMD fetch from Vercel Functions with a 403 page, so ChatGPT and Codex could not connect"
+title: chatgpt.com answers every CIMD fetch from Vercel Functions with a 403 page, so ChatGPT and Codex could not connect
 date: 2026-10-18
-category: integration-issues
-module: "MCP OAuth 2.1 authorization server (api/oauth)"
-component: authentication
+area: mcp
 problem_type: integration_issue
+tags:
+  - mcp
+  - oauth
+  - cimd
+  - chatgpt
+  - codex
+  - vercel-functions
+  - egress
+  - waf
+  - snapshot-fallback
+severity: high
+module: MCP OAuth 2.1 authorization server (api/oauth)
 symptoms:
   - "After #9280 advertised client_id_metadata_document_supported, every ChatGPT and Codex consent page said 'The client could not be verified right now'"
-  - "The same document URL returned 200 JSON from a laptop and from Vercel Sandbox in iad1 and fra1"
+  - The same document URL returned 200 JSON from a laptop and from Vercel Sandbox in iad1 and fra1
 root_cause: incomplete_setup
 resolution_type: code_fix
-severity: high
-tags: [mcp, oauth, cimd, chatgpt, codex, vercel-functions, egress, waf, snapshot-fallback]
 ---
 
 # chatgpt.com answers every CIMD fetch from Vercel Functions with a 403 page

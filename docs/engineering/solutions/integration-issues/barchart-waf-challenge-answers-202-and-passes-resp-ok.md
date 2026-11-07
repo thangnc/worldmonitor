@@ -1,20 +1,25 @@
 ---
 title: Barchart WAF challenge answers HTTP 202 and passes resp.ok, silently blanking S&P 500 breadth
 date: 2026-09-05
-category: integration-issues
-module: seed-market-breadth
+area: seeders
 problem_type: integration_issue
-component: background_job
+tags:
+  - barchart
+  - aws-waf
+  - http-202
+  - resp-ok
+  - market-breadth
+  - tradingview-scanner
+  - railway-seeder
+  - scraper
+severity: high
+module: seed-market-breadth
 symptoms:
-  - "seed-market-breadth exits 75 on every Railway tick with 'All Barchart breadth fetches failed'"
+  - seed-market-breadth exits 75 on every Railway tick with 'All Barchart breadth fetches failed'
   - "Log shows 'Barchart: 0/3 readings' and '20d=null | 50d=null | 200d=null' with no HTTP status warning before the retries"
-  - "market:breadth-history:v1 stops advancing (last publish 2026-09-02) and seed-fear-greed shows N/A for % above 200 DMA"
+  - market:breadth-history:v1 stops advancing (last publish 2026-09-02) and seed-fear-greed shows N/A for % above 200 DMA
 root_cause: wrong_api
 resolution_type: code_fix
-severity: high
-related_components:
-  - seed-fear-greed
-tags: [barchart, aws-waf, http-202, resp-ok, market-breadth, tradingview-scanner, railway-seeder, scraper]
 ---
 
 # Barchart WAF challenge answers HTTP 202 and passes resp.ok, silently blanking S&P 500 breadth

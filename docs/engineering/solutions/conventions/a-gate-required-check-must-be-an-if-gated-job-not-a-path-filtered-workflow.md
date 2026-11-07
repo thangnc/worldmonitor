@@ -1,24 +1,8 @@
 ---
-title: "A gate-required check must be an if-gated job, not a path-filtered workflow"
+title: A gate-required check must be an if-gated job, not a path-filtered workflow
 date: 2026-09-06
-category: conventions
-module: ci-deploy-gate
+area: ci
 problem_type: convention
-component: development_workflow
-severity: high
-symptoms:
-  - "A lint or verification command blocks merge only because it rides inside a branch-protection job, and moving it into a workflow of its own silently un-enforces it"
-  - "A workflow with a top-level `paths:` filter publishes no check run on non-matching PRs, so its job can never be listed in the deploy gate `required` array"
-  - "A job whose change filter matches only the edited file type skips on PRs that change the command itself or its pinned tool version"
-root_cause: missing_workflow_step
-resolution_type: workflow_improvement
-related_components: [testing_framework, tooling]
-applies_when:
-  - "Adding a CI check that must block merge but is not one of the four branch-protection contexts (biome, typecheck, unit, gate)"
-  - "Moving a lint or verification step out of a branch-protection job into a job of its own"
-  - "Choosing between a top-level `paths:` filter and an `if:`-gated job for a check that should be required"
-  - "Adding a name to the `required` list in .github/scripts/deploy-gate.sh"
-  - "Writing the change filter for a job whose command is defined in package.json or pins a tool in the lockfile"
 tags:
   - ci-gating
   - deploy-gate
@@ -28,6 +12,20 @@ tags:
   - github-actions
   - change-filter
   - markdown-lint
+severity: high
+module: ci-deploy-gate
+symptoms:
+  - A lint or verification command blocks merge only because it rides inside a branch-protection job, and moving it into a workflow of its own silently un-enforces it
+  - A workflow with a top-level `paths:` filter publishes no check run on non-matching PRs, so its job can never be listed in the deploy gate `required` array
+  - A job whose change filter matches only the edited file type skips on PRs that change the command itself or its pinned tool version
+root_cause: missing_workflow_step
+resolution_type: workflow_improvement
+applies_when:
+  - Adding a CI check that must block merge but is not one of the four branch-protection contexts (biome, typecheck, unit, gate)
+  - Moving a lint or verification step out of a branch-protection job into a job of its own
+  - Choosing between a top-level `paths:` filter and an `if:`-gated job for a check that should be required
+  - Adding a name to the `required` list in .github/scripts/deploy-gate.sh
+  - Writing the change filter for a job whose command is defined in package.json or pins a tool in the lockfile
 ---
 
 # A gate-required check must be an if-gated job, not a path-filtered workflow

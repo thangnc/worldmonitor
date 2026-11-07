@@ -1,21 +1,8 @@
 ---
-title: "Hermetic against the env file is not hermetic against the environment"
+title: Hermetic against the env file is not hermetic against the environment
 date: 2026-09-02
-category: conventions
-module: test and CI verification infrastructure
+area: tests
 problem_type: convention
-component: testing_framework
-severity: medium
-applies_when:
-  - "Reasoning about whether a test can reach production credentials or a paid upstream"
-  - "Reading a hermeticity guard's guarantee and inferring what it implies about the wider blast radius"
-  - "Writing a code comment that claims a code path fails closed under a test runtime"
-  - "Adding a test seam whose uninjected fallback leg would reach a real network transport"
-  - "A guard blocks one acquisition path for a secret while another path reads the same value directly"
-related_components:
-  - testing_framework
-  - development_workflow
-  - background_job
 tags:
   - hermeticity
   - test-isolation
@@ -23,7 +10,17 @@ tags:
   - credentials
   - ambient-environment
   - seeder-testing
+severity: medium
+module: test and CI verification infrastructure
+applies_when:
+  - Reasoning about whether a test can reach production credentials or a paid upstream
+  - Reading a hermeticity guard's guarantee and inferring what it implies about the wider blast radius
+  - Writing a code comment that claims a code path fails closed under a test runtime
+  - Adding a test seam whose uninjected fallback leg would reach a real network transport
+  - A guard blocks one acquisition path for a secret while another path reads the same value directly
 ---
+
+# Hermetic against the env file is not hermetic against the environment
 
 ## Context
 

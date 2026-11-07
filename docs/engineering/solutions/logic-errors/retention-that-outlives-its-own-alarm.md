@@ -1,18 +1,24 @@
 ---
 title: Retention that outlives its own alarm decays a warning into silence
 date: 2026-09-07
-category: logic-errors
-module: scripts/seed-internet-outages.mjs
+area: seeders
 problem_type: logic_error
-component: background_job
+tags:
+  - seed-meta
+  - last-good
+  - retention
+  - ttl
+  - freshness-tracking
+  - health
+  - alarm-design
+  - redis
 severity: high
+module: scripts/seed-internet-outages.mjs
 symptoms:
-  - "A sustained upstream outage reported STALE_SEED (warn) for seven days, then flipped back to OK while still serving a week-old frozen payload."
-  - "No health signal distinguished a source that was being actively retained from one that was genuinely fresh."
+  - A sustained upstream outage reported STALE_SEED (warn) for seven days, then flipped back to OK while still serving a week-old frozen payload.
+  - No health signal distinguished a source that was being actively retained from one that was genuinely fresh.
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [api/health.js, scripts/_seed-utils.mjs]
-tags: [seed-meta, last-good, retention, ttl, freshness-tracking, health, alarm-design, redis]
 ---
 
 # Retention that outlives its own alarm decays a warning into silence

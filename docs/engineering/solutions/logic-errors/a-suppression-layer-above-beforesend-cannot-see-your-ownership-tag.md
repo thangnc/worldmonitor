@@ -1,22 +1,8 @@
 ---
-title: "A suppression layer above beforeSend cannot see your ownership tag — zero-frame checkout timeouts were dropped twice over"
+title: A suppression layer above beforeSend cannot see your ownership tag — zero-frame checkout timeouts were dropped twice over
 date: 2026-09-12
-last_updated: 2026-09-17
-category: logic-errors
-module: Sentry error filtering
+area: observability
 problem_type: logic_error
-component: tooling
-severity: high
-symptoms:
-  - "WORLDMONITOR-Q4 (`Checkout error: service_unavailable`) showed 20 lifetime events / 15 users, but the count was an undercount: every checkout TIMEOUT produced no Sentry event at all"
-  - "A 2026-09-12 production breadcrumb logged `[checkout] service_unavailable signal timed out` three minutes before the event that did arrive, and no Sentry issue anywhere held that timeout"
-  - "After tagging the capture and exempting the tag in beforeSend, Safari timeouts were still silently dropped — the fix worked on Chromium only"
-  - "Of the 15 identifiable users who hit a terminal checkout failure, zero are on a paid plan today (checked against Convex entitlements)"
-root_cause: logic_error
-resolution_type: code_fix
-related_components:
-  - development_workflow
-  - testing_framework
 tags:
   - sentry
   - before-send
@@ -27,6 +13,16 @@ tags:
   - payments
   - webkit
   - regression-testing
+severity: high
+module: Sentry error filtering
+symptoms:
+  - "WORLDMONITOR-Q4 (`Checkout error: service_unavailable`) showed 20 lifetime events / 15 users, but the count was an undercount: every checkout TIMEOUT produced no Sentry event at all"
+  - A 2026-09-12 production breadcrumb logged `[checkout] service_unavailable signal timed out` three minutes before the event that did arrive, and no Sentry issue anywhere held that timeout
+  - After tagging the capture and exempting the tag in beforeSend, Safari timeouts were still silently dropped — the fix worked on Chromium only
+  - Of the 15 identifiable users who hit a terminal checkout failure, zero are on a paid plan today (checked against Convex entitlements)
+root_cause: logic_error
+resolution_type: code_fix
+last_updated: 2026-09-17
 ---
 
 # A suppression layer above beforeSend cannot see your ownership tag

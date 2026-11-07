@@ -1,15 +1,8 @@
 ---
 title: A check that can no longer see its target must fail loudly, not go green
 date: 2026-07-28
-category: best-practices
-module: mcp/registry, scripts/docs-stats
+area: mcp
 problem_type: best_practice
-component: testing_framework
-severity: high
-applies_when:
-  - "Writing a contract test that stubs or monkey-patches the unit under test"
-  - "Writing a validator that parses a value out of another file by path or regex"
-  - "Moving a file or symbol that build config, doc validators, or source-text guards point at"
 tags:
   - testing
   - fail-closed
@@ -18,6 +11,12 @@ tags:
   - monkey-patching
   - refactor-safety
   - mcp
+severity: high
+module: mcp/registry, scripts/docs-stats
+applies_when:
+  - Writing a contract test that stubs or monkey-patches the unit under test
+  - Writing a validator that parses a value out of another file by path or regex
+  - Moving a file or symbol that build config, doc validators, or source-text guards point at
 ---
 
 # A check that can no longer see its target must fail loudly, not go green

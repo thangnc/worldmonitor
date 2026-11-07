@@ -1,18 +1,24 @@
 ---
 title: "Linux desktop canary exited 1 after every check passed: identify -verbose omits Colors: above 1024 colors"
 date: 2026-11-02
-category: test-failures
-module: desktop-canary-linux
+area: desktop
 problem_type: test_failure
-component: tooling
+tags:
+  - desktop-canary
+  - imagemagick
+  - identify
+  - pipefail
+  - github-actions
+  - appimage
+  - screenshot-gate
+severity: medium
+module: desktop-canary-linux
 symptoms:
-  - "Desktop Canary (Linux) Smoke-test AppImage step ends with 'Process completed with exit code 1' right after the sidecar ✅ lines"
-  - "No ❌ message and no 'Screenshot unique colors' line is printed before the exit"
-  - "The uploaded linux-smoke-test-screenshot artifact shows a fully rendered dashboard"
+  - Desktop Canary (Linux) Smoke-test AppImage step ends with 'Process completed with exit code 1' right after the sidecar ✅ lines
+  - No ❌ message and no 'Screenshot unique colors' line is printed before the exit
+  - The uploaded linux-smoke-test-screenshot artifact shows a fully rendered dashboard
 root_cause: wrong_api
 resolution_type: code_fix
-severity: medium
-tags: [desktop-canary, imagemagick, identify, pipefail, github-actions, appimage, screenshot-gate]
 ---
 
 # Linux desktop canary exited 1 after every check passed: identify -verbose omits Colors: above 1024 colors

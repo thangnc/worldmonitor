@@ -1,19 +1,25 @@
 ---
 title: "Per-country oil export questions: JODI, PortWatch and Comtrade semantics traps"
 date: 2026-10-18
-category: docs/engineering/solutions/integration-issues/
-module: energy oil trade series
+area: mcp
 problem_type: integration_issue
-component: background_job
+tags:
+  - jodi
+  - comtrade
+  - portwatch
+  - eia-steo
+  - oil
+  - exports
+  - mcp
+severity: high
+module: energy oil trade series
 symptoms:
-  - "MCP could not answer UAE oil exports, last 6 months vs the 6 before"
-  - "Saudi, Kazakh, Nigerian and Venezuelan JODI crude exports were null"
-  - "PortWatch showed Gulf crude terminals at zero calls"
-  - "Comtrade mirror rows all dropped; reporterISO was null"
+  - MCP could not answer UAE oil exports, last 6 months vs the 6 before
+  - Saudi, Kazakh, Nigerian and Venezuelan JODI crude exports were null
+  - PortWatch showed Gulf crude terminals at zero calls
+  - Comtrade mirror rows all dropped; reporterISO was null
 root_cause: wrong_api
 resolution_type: code_fix
-severity: high
-tags: [jodi, comtrade, portwatch, eia-steo, oil, exports, mcp]
 ---
 
 # Per-country oil export questions: JODI, PortWatch and Comtrade semantics traps

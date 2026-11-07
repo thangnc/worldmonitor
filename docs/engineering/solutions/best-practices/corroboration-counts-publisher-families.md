@@ -1,14 +1,18 @@
 ---
-title: "Corroboration counts publisher families, not feed labels"
+title: Corroboration counts publisher families, not feed labels
 date: 2026-08-10
-category: best-practices
-module: "World Brief gates, digest scoring, corroboration badges (#6428)"
+area: intelligence
 problem_type: best_practice
-component: digest_ranking
+tags:
+  - corroboration
+  - syndication
+  - publisher-family
+  - world-brief
+  - ranking
+  - replay-log
 severity: high
-applies_when: "Counting how many independent sources carried a story — a brief gate, a ranking boost, or an N-sources badge"
-status: adopted-publisher-family-counting
-tags: [corroboration, syndication, publisher-family, world-brief, ranking, replay-log]
+module: World Brief gates, digest scoring, corroboration badges (#6428)
+applies_when: Counting how many independent sources carried a story — a brief gate, a ranking boost, or an N-sources badge
 ---
 
 # Corroboration counts publisher families, not feed labels

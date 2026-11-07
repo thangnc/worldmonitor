@@ -1,21 +1,25 @@
 ---
 title: GDACS's F5 bot defense answers browser User-Agents with an HTML challenge, failing every GDACS event type
 date: 2026-11-03
-category: integration-issues
-module: seed-natural-events
+area: seeders
 problem_type: integration_issue
-component: background_job
+tags:
+  - gdacs
+  - f5
+  - bot-defense
+  - user-agent
+  - chrome-ua
+  - html-challenge
+  - seed-natural-events
+severity: high
+module: seed-natural-events
 symptoms:
-  - "naturalEvents health is SEED_ERROR with errorCode GDACS_TYPE_COVERAGE_INCOMPLETE"
-  - "Every seed-natural-events run logs '[GDACS] partial coverage' with 'body INVALID_JSON' for EQ, FL, TC, VO, WF and DR"
-  - "The failing responses are HTTP 200, content-type text/html, about 5-6 KB"
-  - "The map keeps showing GDACS events only while the retained snapshot lasts (9 hours after the last success)"
+  - naturalEvents health is SEED_ERROR with errorCode GDACS_TYPE_COVERAGE_INCOMPLETE
+  - Every seed-natural-events run logs '[GDACS] partial coverage' with 'body INVALID_JSON' for EQ, FL, TC, VO, WF and DR
+  - The failing responses are HTTP 200, content-type text/html, about 5-6 KB
+  - The map keeps showing GDACS events only while the retained snapshot lasts (9 hours after the last success)
 root_cause: wrong_api
 resolution_type: code_fix
-severity: high
-related_components:
-  - natural-events
-tags: [gdacs, f5, bot-defense, user-agent, chrome-ua, html-challenge, seed-natural-events]
 ---
 
 # GDACS's F5 bot defense answers browser User-Agents with an HTML challenge, failing every GDACS event type

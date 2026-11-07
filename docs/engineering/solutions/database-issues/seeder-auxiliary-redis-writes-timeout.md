@@ -1,17 +1,8 @@
 ---
 title: Seeder auxiliary Redis writes crash on a single Upstash timeout
 date: 2026-07-17
-category: database-issues
-module: scripts/_seed-utils.mjs
+area: seeders
 problem_type: database_issue
-component: background_job
-symptoms:
-  - "`FATAL: The operation was aborted due to timeout` after a successful fetch in seed-gdelt-intel"
-  - "Railway badge flips red with PUBLISH_TIMEOUT class; 3 crashes in 25-run window, 0 successes"
-  - "Auxiliary `writeExtraKey` SETs or `extendExistingTtl` EXPIRE pipelines time out, taking the whole run down"
-root_cause: missing_tooling
-resolution_type: code_fix
-severity: medium
 tags:
   - redis
   - upstash
@@ -20,6 +11,14 @@ tags:
   - seed-utils
   - afterpublish
   - timeout
+severity: medium
+module: scripts/_seed-utils.mjs
+symptoms:
+  - "`FATAL: The operation was aborted due to timeout` after a successful fetch in seed-gdelt-intel"
+  - Railway badge flips red with PUBLISH_TIMEOUT class; 3 crashes in 25-run window, 0 successes
+  - Auxiliary `writeExtraKey` SETs or `extendExistingTtl` EXPIRE pipelines time out, taking the whole run down
+root_cause: missing_tooling
+resolution_type: code_fix
 ---
 
 # Seeder auxiliary Redis writes crash on a single Upstash timeout

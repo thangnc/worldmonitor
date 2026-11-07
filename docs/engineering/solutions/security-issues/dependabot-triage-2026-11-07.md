@@ -1,8 +1,23 @@
 ---
-module: dependencies
-component: npm, pnpm and Cargo dependency graphs; container base images
+title: Dependency audit on November 7, 2026
+date: 2026-11-07
+area: tooling
 problem_type: security_issue
-tags: [dependency-audit, glob, minimatch, uuid, prisma, mysql2, deepmerge-ts, valibot, hono, rustls-webpki, debian, eol, vite]
+tags:
+  - dependency-audit
+  - glob
+  - minimatch
+  - uuid
+  - prisma
+  - mysql2
+  - deepmerge-ts
+  - valibot
+  - hono
+  - rustls-webpki
+  - debian
+  - eol
+  - vite
+module: dependencies
 ---
 
 # Dependency audit on November 7, 2026

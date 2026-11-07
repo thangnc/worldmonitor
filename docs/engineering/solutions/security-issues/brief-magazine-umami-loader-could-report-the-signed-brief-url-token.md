@@ -1,20 +1,25 @@
 ---
-title: "Brief magazine Umami loader could report the signed Brief URL token"
+title: Brief magazine Umami loader could report the signed Brief URL token
 date: 2026-09-15
-category: security-issues
-module: server/_shared/brief-render.js
+area: intelligence
 problem_type: security_issue
-component: brief_system
+tags:
+  - brief-hmac-token
+  - umami-analytics
+  - query-string-credential
+  - capability-url
+  - csp-defense-in-depth
+  - data-exclude-search
+  - brief-magazine
 severity: medium
+module: server/_shared/brief-render.js
 symptoms:
-  - "UMAMI_LOADER in server/_shared/brief-render.js emitted the abacus.worldmonitor.app/script.js tag with no query-exclusion attribute, rendered into the page head"
-  - "the loader's own code comment invited the tracker onto the credentialed brief route, naming the hosted magazine and public-share mirror as intended surfaces"
-  - "the only thing blocking the leak was the CSP script-src for /api/brief/(.*) in vercel.json, which omits abacus.worldmonitor.app by accident rather than design"
-  - "a Chromium harness with abacus.worldmonitor.app admitted to the CSP recorded one POST to https://abacus.worldmonitor.app/api/send whose payload url field contained the sentinel reader token, actual 1 expected 0"
+  - UMAMI_LOADER in server/_shared/brief-render.js emitted the abacus.worldmonitor.app/script.js tag with no query-exclusion attribute, rendered into the page head
+  - the loader's own code comment invited the tracker onto the credentialed brief route, naming the hosted magazine and public-share mirror as intended surfaces
+  - the only thing blocking the leak was the CSP script-src for /api/brief/(.*) in vercel.json, which omits abacus.worldmonitor.app by accident rather than design
+  - a Chromium harness with abacus.worldmonitor.app admitted to the CSP recorded one POST to https://abacus.worldmonitor.app/api/send whose payload url field contained the sentinel reader token, actual 1 expected 0
 root_cause: config_error
 resolution_type: code_fix
-related_components: [testing_framework]
-tags: [brief-hmac-token, umami-analytics, query-string-credential, capability-url, csp-defense-in-depth, data-exclude-search, brief-magazine]
 ---
 
 # Brief magazine Umami loader could report the signed Brief URL token

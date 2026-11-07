@@ -1,22 +1,28 @@
 ---
 title: A recall-only grounding gate cannot see an invented status qualifier
 date: 2026-09-21
-last_updated: 2026-09-24
-category: logic-errors
-module: shared/brief-llm-core.js, scripts/lib/brief-llm.mjs
+area: intelligence
 problem_type: logic_error
-component: brief_system
+tags:
+  - llm-hallucination
+  - output-validation
+  - status-qualifier
+  - brief-digest
+  - grounding-precision
+  - regex-case-folding
+  - prompt-only-fix
+  - cache-revalidation
 severity: high
+module: shared/brief-llm-core.js, scripts/lib/brief-llm.mjs
 symptoms:
-  - "The 2026-09-20 08:11 UTC email brief called the sitting US president \"former President Trump\" in the executive-summary lead, a Diplomacy teaser, and the gCaptain story card"
-  - "A subscriber replied to the brief with \"Former President Trump?\"; the source headline said only \"Trump\" and the article body said \"U.S. President Trump\""
+  - The 2026-09-20 08:11 UTC email brief called the sitting US president "former President Trump" in the executive-summary lead, a Diplomacy teaser, and the gCaptain story card
+  - A subscriber replied to the brief with "Former President Trump?"; the source headline said only "Trump" and the article body said "U.S. President Trump"
   - "Repro at the production model/temperature: headline-only prompts produced the qualifier in 6/6 digest and 6/6 description samples, and a real-lede context line only cut it to 3/6 and 5/6"
-  - "Both existing gates passed the string, checkLeadGrounding because \"Trump\" is an anchor and recall-only, validateNoHallucinatedProperNouns because TITLE_PREFIX_STOP consumes \"Former\"/\"President\" and it was never wired into the email brief at all"
+  - Both existing gates passed the string, checkLeadGrounding because "Trump" is an anchor and recall-only, validateNoHallucinatedProperNouns because TITLE_PREFIX_STOP consumes "Former"/"President" and it was never wired into the email brief at all
   - "Prompt-only bans were already proven inert: 24/24 digest samples opened sentence two with a banned stitching phrase variant"
 root_cause: missing_validation
 resolution_type: code_fix
-related_components: [email_processing, background_job, testing_framework]
-tags: [llm-hallucination, output-validation, status-qualifier, brief-digest, grounding-precision, regex-case-folding, prompt-only-fix, cache-revalidation]
+last_updated: 2026-09-24
 ---
 
 # A recall-only grounding gate cannot see an invented status qualifier

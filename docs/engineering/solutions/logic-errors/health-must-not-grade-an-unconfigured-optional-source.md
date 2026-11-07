@@ -1,19 +1,22 @@
 ---
 title: Health must not grade a deliberately-unconfigured optional source
 date: 2026-07-14
-category: logic-errors
-module: api-health
+area: observability
 problem_type: logic_error
-component: service_object
+tags:
+  - health-monitoring
+  - seed-meta
+  - classifier
+  - status-codes
+  - optional-sources
+severity: medium
+module: api-health
 symptoms:
-  - "/api/health reports SEED_ERROR for a source the deployment never supplied a credential for"
-  - "A warn that no operator action can clear except obtaining a third-party API key"
-  - "The producer distinguishes 'unavailable' from 'stale'/'error' but health reports all three identically"
+  - /api/health reports SEED_ERROR for a source the deployment never supplied a credential for
+  - A warn that no operator action can clear except obtaining a third-party API key
+  - The producer distinguishes 'unavailable' from 'stale'/'error' but health reports all three identically
 root_cause: logic_error
 resolution_type: code_fix
-severity: medium
-related_components: [background_job, frontend_stimulus]
-tags: [health-monitoring, seed-meta, classifier, status-codes, optional-sources]
 ---
 
 # Health must not grade a deliberately-unconfigured optional source

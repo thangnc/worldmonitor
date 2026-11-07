@@ -1,8 +1,18 @@
 ---
-module: dependencies
-component: npm and pnpm dependency graphs
+title: Dependabot triage on October 21, 2026
+date: 2026-10-21
+area: tooling
 problem_type: security_issue
-tags: [dependabot, zapier, zapier-platform-cli, simple-git, adm-zip, tar, markdown-it, hono]
+tags:
+  - dependabot
+  - zapier
+  - zapier-platform-cli
+  - simple-git
+  - adm-zip
+  - tar
+  - markdown-it
+  - hono
+module: dependencies
 ---
 
 # Dependabot triage on October 21, 2026

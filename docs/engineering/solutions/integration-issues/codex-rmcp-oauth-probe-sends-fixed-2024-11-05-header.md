@@ -1,20 +1,8 @@
 ---
-title: "Codex's OAuth discovery probe was refused with 400 because rmcp sends a fixed 2024-11-05 MCP-Protocol-Version"
+title: Codex's OAuth discovery probe was refused with 400 because rmcp sends a fixed 2024-11-05 MCP-Protocol-Version
 date: 2026-10-24
-category: integration-issues
-module: "MCP server transport auth (api/mcp/handler.ts)"
+area: mcp
 problem_type: integration_issue
-component: authentication
-severity: medium
-symptoms:
-  - "About 12,000 GET /mcp 400s a day in wm_api_usage, all anonymous codex-mcp-client 0.16x, header MCP-Protocol-Version 2024-11-05"
-  - "Each GET arrived right after the same client's anonymous POST initialize got a 401"
-  - "The 400 began on 2026-10-21 together with a spike of POST refusals, so it looked like part of the protocol-version incident"
-root_cause: logic_error
-resolution_type: code_fix
-related_components:
-  - testing_framework
-  - documentation
 tags:
   - mcp
   - oauth
@@ -23,6 +11,14 @@ tags:
   - rfc-9728
   - mcp-protocol-version
   - www-authenticate
+severity: medium
+module: MCP server transport auth (api/mcp/handler.ts)
+symptoms:
+  - About 12,000 GET /mcp 400s a day in wm_api_usage, all anonymous codex-mcp-client 0.16x, header MCP-Protocol-Version 2024-11-05
+  - Each GET arrived right after the same client's anonymous POST initialize got a 401
+  - The 400 began on 2026-10-21 together with a spike of POST refusals, so it looked like part of the protocol-version incident
+root_cause: logic_error
+resolution_type: code_fix
 ---
 
 # Codex's OAuth discovery probe was refused with 400 because rmcp sends a fixed 2024-11-05 MCP-Protocol-Version

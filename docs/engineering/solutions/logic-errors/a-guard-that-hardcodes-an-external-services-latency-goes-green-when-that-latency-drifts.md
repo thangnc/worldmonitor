@@ -1,18 +1,27 @@
 ---
-module: seed-defense-industrial-suppliers
+title: A guard that hardcodes an external service's measured latency goes green precisely when that latency drifts
 date: 2026-08-18
+area: seeders
 problem_type: logic_error
-component: background_job
+tags:
+  - green-while-dead
+  - hardcoded-constant
+  - external-latency
+  - drifted-measurement
+  - two-sided-assertion
+  - railway-cron
+  - chunked-sweep
+  - sipri
+  - seed-bundle-static-ref-heavy
 severity: high
+module: seed-defense-industrial-suppliers
 symptoms:
   - "`military:arms-suppliers:complete:v1` has never existed, despite the seeder running on every daily tick for months"
   - "Every run logs `FETCH FAILED: fetch phase exceeded 390000ms deadline` then `Failed gracefully (390554ms)` and exits 75"
   - "The guard that exists to prevent exactly this passes green: it asserts `(200 / 8) * 10.6s = 265s < 390s`"
-  - "The 390s failure consumes the bundle budget, so every later section defers — `needs 190s but only 178s left`"
+  - The 390s failure consumes the bundle budget, so every later section defers — `needs 190s but only 178s left`
 root_cause: config_error
 resolution_type: code_fix
-related_components: [testing_framework, tooling]
-tags: [green-while-dead, hardcoded-constant, external-latency, drifted-measurement, two-sided-assertion, railway-cron, chunked-sweep, sipri, seed-bundle-static-ref-heavy]
 ---
 
 # A guard that hardcodes an external service's measured latency goes green precisely when that latency drifts

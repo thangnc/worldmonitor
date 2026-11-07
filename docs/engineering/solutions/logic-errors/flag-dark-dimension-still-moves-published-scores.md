@@ -1,22 +1,22 @@
 ---
-module: resilience-scorer
+title: A flag-dark dimension is not inert — verify every aggregation layer, not the obvious two
 date: 2026-08-10
+area: intelligence
 problem_type: logic_error
-component: service_object
-severity: high
-category: logic-errors
-symptoms:
-  - "A dimension shipped flag-dark (score=0, coverage=0) still changed every country's published overallScore"
-  - "pillars[].coverage moved as a public field despite the dimension contributing nothing"
-  - "The score shift was non-uniform across countries, so ranking positions could reorder"
-root_cause: logic_error
-resolution_type: code_fix
 tags:
   - resilience
   - feature-flag
   - scoring
   - coverage-weighted-mean
   - cache-invalidation
+severity: high
+module: resilience-scorer
+symptoms:
+  - A dimension shipped flag-dark (score=0, coverage=0) still changed every country's published overallScore
+  - pillars[].coverage moved as a public field despite the dimension contributing nothing
+  - The score shift was non-uniform across countries, so ranking positions could reorder
+root_cause: logic_error
+resolution_type: code_fix
 ---
 
 # A flag-dark dimension is not inert — verify every aggregation layer, not the obvious two

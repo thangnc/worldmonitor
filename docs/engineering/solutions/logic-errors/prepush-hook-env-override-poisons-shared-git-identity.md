@@ -1,21 +1,8 @@
 ---
-title: "Git-exported hook env vars override cwd, letting un-isolated test fixtures poison the shared git identity"
+title: Git-exported hook env vars override cwd, letting un-isolated test fixtures poison the shared git identity
 date: 2026-08-30
-category: logic-errors
-module: pre-push-identity-gate
+area: ci
 problem_type: logic_error
-component: development_workflow
-severity: high
-symptoms:
-  - "Commits land on main and PR branches authored/committed as test <test@example.com>, Fixture <fixture@example.invalid>, WorldMonitor Test, or e <e@e.co> -- none of them real contributors"
-  - "git config --global user.name always shows the correct identity while the poisoned value lives in the repo-local SHARED .git/config"
-  - "A commit carries a fixture's fake identity even from a worktree that never ran a git-fixture test (the poison is in config every linked worktree shares)"
-  - "A fixture's cd <tempdir> && git init && git config user.name writes into the real repo whenever it executes as a child of the pre-push hook"
-root_cause: test_isolation
-resolution_type: workflow_improvement
-related_components:
-  - tooling
-  - testing_framework
 tags:
   - pre-push
   - husky
@@ -25,6 +12,15 @@ tags:
   - test-isolation
   - worktree
   - fixture-authorship
+severity: high
+module: pre-push-identity-gate
+symptoms:
+  - Commits land on main and PR branches authored/committed as test <test@example.com>, Fixture <fixture@example.invalid>, WorldMonitor Test, or e <e@e.co> -- none of them real contributors
+  - git config --global user.name always shows the correct identity while the poisoned value lives in the repo-local SHARED .git/config
+  - A commit carries a fixture's fake identity even from a worktree that never ran a git-fixture test (the poison is in config every linked worktree shares)
+  - A fixture's cd <tempdir> && git init && git config user.name writes into the real repo whenever it executes as a child of the pre-push hook
+root_cause: test_isolation
+resolution_type: workflow_improvement
 ---
 
 # Git-exported hook env vars override cwd, letting un-isolated test fixtures poison the shared git identity

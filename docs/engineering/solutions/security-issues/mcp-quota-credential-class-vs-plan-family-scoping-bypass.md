@@ -1,22 +1,27 @@
 ---
-title: "MCP quota scoped by credential class, not plan family, let API-tier subscribers mint pro-tier allowance"
+title: MCP quota scoped by credential class, not plan family, let API-tier subscribers mint pro-tier allowance
 date: 2026-07-26
-category: security-issues
-module: api/mcp/quota.ts
+area: mcp
 problem_type: security_issue
-component: payments
+tags:
+  - mcp-quota
+  - entitlement-bypass
+  - plan-family-scoping
+  - oauth-token-minting
+  - shared-redis-counter
+  - deny-list-pattern
+  - mutation-testing
+  - quota-display-enforcement-parity
 severity: high
+module: api/mcp/quota.ts
 symptoms:
-  - "api_starter/api_business subscribers satisfy the pro OAuth token mint gate (tier>=1 + mcpAccess in api/oauth/authorize-pro.ts) and, once minted, receive the 1000/day MCP catalog allowance instead of their entitled 50/day"
-  - "user_key and pro-OAuth credential classes belonging to the same user increment the same per-user Redis daily quota counter even though the two contexts resolve to different daily limits"
-  - "a user_key request rejected at the hardcoded 50/day cap clamps the shared Redis counter down to 50 (F4 counter-clamp-on-rejection), refunding quota already consumed under the higher-limit pro-OAuth context"
-  - "the Settings page MCP quota display (api/user/mcp-quota.ts) and the enforcement path (api/mcp/auth.ts checkMcpEntitlementGate) could disagree because each independently resolved the daily limit from plan key"
+  - api_starter/api_business subscribers satisfy the pro OAuth token mint gate (tier>=1 + mcpAccess in api/oauth/authorize-pro.ts) and, once minted, receive the 1000/day MCP catalog allowance instead of their entitled 50/day
+  - user_key and pro-OAuth credential classes belonging to the same user increment the same per-user Redis daily quota counter even though the two contexts resolve to different daily limits
+  - a user_key request rejected at the hardcoded 50/day cap clamps the shared Redis counter down to 50 (F4 counter-clamp-on-rejection), refunding quota already consumed under the higher-limit pro-OAuth context
+  - the Settings page MCP quota display (api/user/mcp-quota.ts) and the enforcement path (api/mcp/auth.ts checkMcpEntitlementGate) could disagree because each independently resolved the daily limit from plan key
 root_cause: scope_issue
 resolution_type: code_fix
-related_components: [assistant, testing_framework]
-tags: [mcp-quota, entitlement-bypass, plan-family-scoping, oauth-token-minting, shared-redis-counter, deny-list-pattern, mutation-testing, quota-display-enforcement-parity]
 ---
-
 
 # MCP quota scoped by credential class, not plan family, let API-tier subscribers mint pro-tier allowance
 

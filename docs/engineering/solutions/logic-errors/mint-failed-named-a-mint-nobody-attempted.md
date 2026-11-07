@@ -1,21 +1,28 @@
 ---
-title: "A bare boolean sent the recovery path to ambient state for its diagnosis — and `mint_failed` named a mint nobody attempted"
+title: A bare boolean sent the recovery path to ambient state for its diagnosis — and `mint_failed` named a mint nobody attempted
 date: 2026-08-17
-category: logic-errors
-module: wm-session
+area: edge-api
 problem_type: logic_error
-component: authentication
+tags:
+  - wm-session
+  - anonymous-session
+  - sentry
+  - telemetry-provenance
+  - ambient-state
+  - discriminated-union
+  - blackout-window
+  - mint-cause
+  - mutation-testing
 severity: high
+module: wm-session
 symptoms:
-  - "Two of `ensureWmSession()`'s `false` returns — the already-dead short-circuit, and the `cookie_not_persisted` verdict where the mint had actually SUCCEEDED — were both reported to Sentry as `mint_failed`, the verdict that suppresses every anonymous API call for 15 minutes"
+  - Two of `ensureWmSession()`'s `false` returns — the already-dead short-circuit, and the `cookie_not_persisted` verdict where the mint had actually SUCCEEDED — were both reported to Sentry as `mint_failed`, the verdict that suppresses every anonymous API call for 15 minutes
   - "`markWmSessionDead()` extends `sessionDeadUntil` by a fresh 15 minutes BEFORE its already-dead early return, so every request in flight when a blackout landed silently re-armed it"
-  - "A suppressed call inherited the prior mint's transport cause from the module-scoped `lastMintFailureCause` and was filed as corroborating evidence, striking a bystander route for 15 minutes"
+  - A suppressed call inherited the prior mint's transport cause from the module-scoped `lastMintFailureCause` and was filed as corroborating evidence, striking a bystander route for 15 minutes
   - "`mint_cause` was tagged conditionally, so `no cause for this episode` and `tag dropped by an old client` shared one blank Sentry bucket"
   - "After making the tag unconditional, `mint_cause: none` was still FALSE in the modal burst shape — an all-mints-failed episode reported healthy mints"
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [tooling, testing_framework]
-tags: [wm-session, anonymous-session, sentry, telemetry-provenance, ambient-state, discriminated-union, blackout-window, mint-cause, mutation-testing]
 ---
 
 # A bare boolean sent the recovery path to ambient state for its diagnosis — and `mint_failed` named a mint nobody attempted

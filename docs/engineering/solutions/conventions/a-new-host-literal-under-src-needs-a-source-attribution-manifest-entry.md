@@ -1,15 +1,22 @@
 ---
 title: A new https:// host literal under src/ fails CI docs-stats until the source-attribution manifest knows the host
-module: source-attribution
 date: 2026-10-14
+area: docs
 problem_type: convention
-component: tooling
+tags:
+  - source-attribution
+  - docs-stats
+  - manifest
+  - sentinel-origin
+  - worldmonitor-invalid
+  - ci-only-check
+  - safehtml
 severity: medium
+module: source-attribution
 applies_when:
-  - "Adding any string containing https://<host> under src/, including a sentinel used only to resolve a URL"
-  - "The local pre-push gate was green but the CI docs-stats job is red with 'missing manifest entry for <host>'"
-  - "A URL-resolution helper needs a base origin that is never fetched"
-tags: [source-attribution, docs-stats, manifest, sentinel-origin, worldmonitor-invalid, ci-only-check, safehtml]
+  - Adding any string containing https://<host> under src/, including a sentinel used only to resolve a URL
+  - The local pre-push gate was green but the CI docs-stats job is red with 'missing manifest entry for <host>'
+  - A URL-resolution helper needs a base origin that is never fetched
 ---
 
 # A new https:// host literal under src/ fails CI docs-stats until the source-attribution manifest knows the host

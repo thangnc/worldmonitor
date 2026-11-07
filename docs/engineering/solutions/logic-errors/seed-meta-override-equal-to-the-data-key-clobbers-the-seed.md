@@ -1,20 +1,26 @@
 ---
 title: A seed-meta override that equals the data key clobbers the seed on every write
 date: 2026-09-20
-category: logic-errors
-module: scripts/_seed-utils.mjs
+area: seeders
 problem_type: logic_error
-component: background_job
+tags:
+  - seed-meta
+  - extra-keys
+  - self-clobber
+  - health-blind-spot
+  - upstash
+  - ttl-mismatch
+  - bls-series
+  - res-bytes-audit
 severity: high
+module: scripts/_seed-utils.mjs
 symptoms:
   - "get-bls-series served an empty 200 body for 6 months while /api/health reported HEALTHY; after PR #8360 replaced the handler's swallow-all catch with readRequiredSeed, every dashboard load returned 503 (Sentry WORLDMONITOR-145, about 16,500 origin 503s in 14 h)"
-  - "The per-series key bls:series:USPRIV held a 44-byte {fetchedAt, recordCount} seed-meta record on a 7-day TTL instead of the seeder's 72 h series payload"
-  - "Every 200 for the route in 14 days of Axiom retention had res_bytes = 2, an empty JSON object"
-  - "The canonical bls:series:v1 envelope and seed-meta:economic:bls-series were correct throughout, so the health probe had nothing to report"
+  - The per-series key bls:series:USPRIV held a 44-byte {fetchedAt, recordCount} seed-meta record on a 7-day TTL instead of the seeder's 72 h series payload
+  - Every 200 for the route in 14 days of Axiom retention had res_bytes = 2, an empty JSON object
+  - The canonical bls:series:v1 envelope and seed-meta:economic:bls-series were correct throughout, so the health probe had nothing to report
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [database, testing_framework]
-tags: [seed-meta, extra-keys, self-clobber, health-blind-spot, upstash, ttl-mismatch, bls-series, res-bytes-audit]
 ---
 
 # A seed-meta override that equals the data key clobbers the seed on every write

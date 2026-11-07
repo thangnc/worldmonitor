@@ -1,18 +1,21 @@
 ---
 title: Keep China news coverage projections locale-aware
 date: 2026-07-14
-last_updated: 2026-07-14
-category: logic-errors
-module: News insights seeder and China coverage audit
+area: intelligence
 problem_type: logic_error
-component: background_job
+tags:
+  - china-coverage
+  - news-insights
+  - locale-digest
+  - seed-audit
+severity: high
+module: News insights seeder and China coverage audit
 symptoms:
   - A successful English digest could be mistaken for successful Chinese-source coverage
   - China news audit status could become healthy while MIIT or MOFCOM had not been evaluated
 root_cause: logic_error
 resolution_type: code_fix
-severity: high
-tags: [china-coverage, news-insights, locale-digest, seed-audit]
+last_updated: 2026-07-14
 ---
 
 # Keep China news coverage projections locale-aware

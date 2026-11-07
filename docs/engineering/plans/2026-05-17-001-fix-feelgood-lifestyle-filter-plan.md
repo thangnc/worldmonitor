@@ -1,8 +1,9 @@
 ---
 title: "fix(brief): exclude feel-good / lifestyle pieces from the digest pool"
-type: fix
-status: active
 date: 2026-05-17
+status: done
+evidence: "PR #3748 merged 2026-05-17"
+type: fix
 ---
 
 # fix(brief): exclude feel-good / lifestyle pieces from the digest pool

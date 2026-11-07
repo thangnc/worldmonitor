@@ -1,19 +1,24 @@
 ---
 title: The push-endpoint allow-list checked one URL parser while the relay dialed with another
 date: 2026-11-01
-category: security-issues
-module: notification-channels
+area: seeders
 problem_type: security_issue
-component: background_job
+tags:
+  - ssrf
+  - url-parsing
+  - parser-differential
+  - web-push
+  - allowlist
+  - push-endpoint
+  - chromium
 severity: medium
+module: notification-channels
 symptoms:
   - "Sentry WORLDMONITOR-1B0 and WORLDMONITOR-XR: Pro activation failed with 'Failed to register push subscription (400): endpoint host is not a recognised push service.' for Chrome-labelled browsers on macOS"
-  - "https://localhost%2epush.apple.com/x passed set-web-push as host localhost.push.apple.com, and the relay's web-push connected to localhost:443"
-  - "https://internal.example.com{.push.apple.com/x was canonical WHATWG and passed the suffix check, while url.parse() read the host as internal.example.com"
+  - https://localhost%2epush.apple.com/x passed set-web-push as host localhost.push.apple.com, and the relay's web-push connected to localhost:443
+  - https://internal.example.com{.push.apple.com/x was canonical WHATWG and passed the suffix check, while url.parse() read the host as internal.example.com
 root_cause: missing_validation
 resolution_type: code_fix
-related_components: [notification-relay, pro-activation]
-tags: [ssrf, url-parsing, parser-differential, web-push, allowlist, push-endpoint, chromium]
 ---
 
 # The push-endpoint allow-list checked one URL parser while the relay dialed with another

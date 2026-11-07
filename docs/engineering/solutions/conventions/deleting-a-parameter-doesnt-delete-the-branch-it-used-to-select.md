@@ -1,27 +1,8 @@
 ---
-title: "Deleting a parameter doesn't delete the branch — audit what its absence now selects"
+title: Deleting a parameter doesn't delete the branch — audit what its absence now selects
 date: 2026-08-03
-category: conventions
-module: api/download.js desktop release asset selection
+area: desktop
 problem_type: convention
-component: service_object
-severity: high
-applies_when:
-  - "Removing a parameter, flag, or field from a caller because its value is no longer needed for computing the result"
-  - "The parameter doubles as an implicit switch enabling a filter, guard, or validation branch, not just a data input"
-  - "The caller-side deletion and the callee-side branch it feeds live in different files and get reviewed as separate diffs"
-  - "Auditing an object-keyed lookup or dispatch table for attacker- or user-controlled keys"
-  - "A deletion looks purely subtractive and 'obviously safe' because nothing downstream changed syntactically"
-symptoms:
-  - "A caller stops sending a parameter and its requests silently fall onto an unfiltered or unguarded branch, with no test failure"
-  - "Existing tests stay green because their fixtures still supply the old parameter — the newly-exposed branch has zero coverage"
-  - "A bare object lookup (OBJ[userInput]) treats inherited Object.prototype properties like constructor as present, passing an existence guard"
-  - "A guard's remaining callers can be counted on one hand, and a cleanup removes the last one — the branch was already mostly inert before the change that finished it"
-  - "Reviewers agree on a line, but their briefs named it — directed confirmation reads like independent convergence unless the briefs are re-read"
-related_components:
-  - service_object
-  - testing_framework
-  - development_workflow
 tags:
   - parameter-deletion
   - implicit-branching
@@ -31,6 +12,20 @@ tags:
   - refactor-safety
   - release-asset-selection
   - prototype-pollution
+severity: high
+module: api/download.js desktop release asset selection
+symptoms:
+  - A caller stops sending a parameter and its requests silently fall onto an unfiltered or unguarded branch, with no test failure
+  - Existing tests stay green because their fixtures still supply the old parameter — the newly-exposed branch has zero coverage
+  - A bare object lookup (OBJ[userInput]) treats inherited Object.prototype properties like constructor as present, passing an existence guard
+  - A guard's remaining callers can be counted on one hand, and a cleanup removes the last one — the branch was already mostly inert before the change that finished it
+  - Reviewers agree on a line, but their briefs named it — directed confirmation reads like independent convergence unless the briefs are re-read
+applies_when:
+  - Removing a parameter, flag, or field from a caller because its value is no longer needed for computing the result
+  - The parameter doubles as an implicit switch enabling a filter, guard, or validation branch, not just a data input
+  - The caller-side deletion and the callee-side branch it feeds live in different files and get reviewed as separate diffs
+  - Auditing an object-keyed lookup or dispatch table for attacker- or user-controlled keys
+  - A deletion looks purely subtractive and 'obviously safe' because nothing downstream changed syntactically
 ---
 
 # Deleting a parameter moves callers onto the branch its absence selects

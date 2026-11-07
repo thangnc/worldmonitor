@@ -1,21 +1,29 @@
 ---
-title: "Widget agent data fetches 401'd for months, and the model quietly fell back to web search"
+title: Widget agent data fetches 401'd for months, and the model quietly fell back to web search
 date: 2026-09-29
-last_updated: 2026-09-29
-category: integration-issues
-module: widget-builder
+area: browser
 problem_type: integration_issue
-component: assistant
+tags:
+  - widget-agent
+  - ais-relay
+  - wm-session
+  - anonymous-session
+  - "401"
+  - web-search
+  - llm-tool-routing
+  - relay-key
+  - enterprise-key
+  - axiom
 severity: high
+module: widget-builder
 symptoms:
-  - "\"gold vs silver 30 days chart\" in the Pro Widget Builder showed `Fetching search:gold silver price daily last 30 days 2025…` instead of reading WorldMonitor market data"
+  - '"gold vs silver 30 days chart" in the Pro Widget Builder showed `Fetching search:gold silver price daily last 30 days 2025…` instead of reading WorldMonitor market data'
   - "Axiom `wm_api_usage` rows with `user_agent == 'WorldMonitor-WidgetAgent/1.0'`: 271 of 296 since 2026-06-07 were `401 auth_401`"
-  - "Only `list-acled-events` ever returned 200 to the agent, and it stopped on 2026-09-02"
+  - Only `list-acled-events` ever returned 200 to the agent, and it stopped on 2026-09-02
   - "No error surfaced anywhere: widgets still rendered, built from web snippets"
 root_cause: missing_permission
 resolution_type: code_fix
-related_components: [authentication, testing_framework]
-tags: [widget-agent, ais-relay, wm-session, anonymous-session, 401, web-search, llm-tool-routing, relay-key, enterprise-key, axiom]
+last_updated: 2026-09-29
 ---
 
 # Widget agent data fetches 401'd for months, and the model quietly fell back to web search

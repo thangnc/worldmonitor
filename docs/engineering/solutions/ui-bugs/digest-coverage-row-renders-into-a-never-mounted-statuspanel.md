@@ -1,23 +1,27 @@
 ---
-title: "StatusPanel is a detached data sink — UI appended to it is never mounted"
+title: StatusPanel is a detached data sink — UI appended to it is never mounted
 date: 2026-08-28
-category: ui-bugs
-module: src/components/StatusPanel.ts
+area: browser
 problem_type: ui_bug
-component: frontend_stimulus
+tags:
+  - status-panel
+  - digest-coverage
+  - detached-dom
+  - accessibility
+  - aria-live
+  - mounted-dom-assertion
+  - panel-lifecycle
+  - dead-ui
+severity: medium
+module: src/components/StatusPanel.ts
 symptoms:
-  - "The `digest-coverage-row` div appended by `StatusPanel.updateDigestCoverage()` never appears under `document` — `StatusPanel.init()` replaces the base element with a fresh detached `div.status-panel-container` and nothing ever appends it"
-  - "aria-live text explaining stale or missing digest categories is invisible to sighted users and unreachable by assistive technology, even though the update method runs on every status tick from data-loader.ts"
+  - The `digest-coverage-row` div appended by `StatusPanel.updateDigestCoverage()` never appears under `document` — `StatusPanel.init()` replaces the base element with a fresh detached `div.status-panel-container` and nothing ever appends it
+  - aria-live text explaining stale or missing digest categories is invisible to sighted users and unreachable by assistive technology, even though the update method runs on every status tick from data-loader.ts
   - "`StatusPanel.getElement()` has zero callers anywhere in src/, and the CSS classes `status-panel-container` and `digest-coverage-row` appear nowhere else in src/"
-  - "All component-level contract tests for the coverage row pass, because none of them asserts the element is reachable from `document`"
+  - All component-level contract tests for the coverage row pass, because none of them asserts the element is reachable from `document`
   - "Issue #7085's acceptance criterion ('exposes the same state to assistive technology') is unmet in production even though PR #7090 merged and closed the issue"
 root_cause: incomplete_setup
 resolution_type: code_fix
-severity: medium
-related_components:
-  - testing_framework
-  - development_workflow
-tags: [status-panel, digest-coverage, detached-dom, accessibility, aria-live, mounted-dom-assertion, panel-lifecycle, dead-ui]
 ---
 
 # StatusPanel is a detached data sink — UI appended to it is never mounted

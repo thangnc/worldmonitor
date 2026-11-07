@@ -1,20 +1,25 @@
 ---
-title: "Every quotable homepage answer carries its own build-measured figure"
+title: Every quotable homepage answer carries its own build-measured figure
 date: 2026-10-02
-category: best-practices
-module: "pro-test welcome page GEO citability (en.json, welcome.html, prerender.mjs, depth-stats.json; PR #8784)"
+area: public-site
 problem_type: best_practice
-component: documentation
+tags:
+  - geo
+  - citability
+  - faq-jsonld
+  - i18next-interpolation
+  - depth-stats
+  - volatile-inventory-claims
+  - prerender
+  - translate-locales
+  - bundle-budget
 severity: medium
+module: "pro-test welcome page GEO citability (en.json, welcome.html, prerender.mjs, depth-stats.json; PR #8784)"
 applies_when:
-  - "Editing a question-headed passage (H2 answer paragraph, FAQ answer, CTA) on the pro-test welcome page"
-  - "Acting on a GEO/citability audit row that asks for a specific figure in each section"
-  - "Adding any inventory count (feeds, providers, layers, tools, chokepoints) to marketing copy or llms.txt"
-  - "Changing pro-test/src/locales/en.json strings, which stales the other 27 locales and can move the pro bundle budget"
-related_components:
-  - tooling
-  - testing_framework
-tags: [geo, citability, faq-jsonld, i18next-interpolation, depth-stats, volatile-inventory-claims, prerender, translate-locales, bundle-budget]
+  - Editing a question-headed passage (H2 answer paragraph, FAQ answer, CTA) on the pro-test welcome page
+  - Acting on a GEO/citability audit row that asks for a specific figure in each section
+  - Adding any inventory count (feeds, providers, layers, tools, chokepoints) to marketing copy or llms.txt
+  - Changing pro-test/src/locales/en.json strings, which stales the other 27 locales and can move the pro bundle budget
 ---
 
 # Every quotable homepage answer carries its own build-measured figure

@@ -1,21 +1,28 @@
 ---
 title: A bare ISO alpha-2 token is never a country mention
 date: 2026-09-05
-category: logic-errors
-module: crawlable-corpus
+area: public-site
 problem_type: logic_error
-component: brief_system
+tags:
+  - iso-code-matching
+  - country-grounding
+  - shared-matcher
+  - publisher-families
+  - llm-grounding
+  - prerendered-pages
+  - render-guard
+  - geo
+  - crawlable-corpus
 severity: high
+module: crawlable-corpus
 symptoms:
-  - "Australia's prerendered country page published a brief about Sudan, grounded on \"Sudanese anti-war forces reject AU backing for El Burhan dialogue\""
-  - "Ethiopia's brief opened on an AI outage timed \"2pm ET\"; Bolivia's said \"Peru (BO)\"; Togo's discussed a UN world-map vote"
-  - "Briefs rendered literal ** markdown and headings reading \"WHAT THIS MEANS FOR NO\""
-  - "A GEO audit read the half-enriched corpus as an unrun pipeline and asked to run enrichment across the remaining ~184 pages"
-  - "A brief presenting a 24/48/72h outlook was published off three articles from one newsroom"
+  - Australia's prerendered country page published a brief about Sudan, grounded on "Sudanese anti-war forces reject AU backing for El Burhan dialogue"
+  - Ethiopia's brief opened on an AI outage timed "2pm ET"; Bolivia's said "Peru (BO)"; Togo's discussed a UN world-map vote
+  - Briefs rendered literal ** markdown and headings reading "WHAT THIS MEANS FOR NO"
+  - A GEO audit read the half-enriched corpus as an unrun pipeline and asked to run enrichment across the remaining ~184 pages
+  - A brief presenting a 24/48/72h outlook was published off three articles from one newsroom
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [tooling, documentation]
-tags: [iso-code-matching, country-grounding, shared-matcher, publisher-families, llm-grounding, prerendered-pages, render-guard, geo, crawlable-corpus]
 ---
 
 # A bare ISO alpha-2 token is never a country mention

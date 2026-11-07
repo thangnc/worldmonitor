@@ -1,33 +1,30 @@
 ---
-title: "A normalizer that truncates at a trailing boundary blinds its own test"
+title: A normalizer that truncates at a trailing boundary blinds its own test
 date: 2026-08-20
-category: conventions
-module: test and CI verification infrastructure
+area: tests
 problem_type: convention
-component: testing_framework
-severity: high
-applies_when:
-  - "Writing a test that compares two documents after stripping boilerplate, banners, or a navigation section"
-  - "Adding a guard that normalizes its input by splitting on a marker before asserting equality"
-  - "Locking a generated or archived artifact against the live source it was copied from"
-  - "Reviewing any assertion whose inputs pass through a preprocessing step you wrote in the same commit"
-symptoms:
-  - "A mutation that appends content at end-of-file leaves the comparison test green"
-  - "The guard is green on both the correct tree and the mutated one, and the diff between them is entirely inside the ignored region"
-  - "`split(MARKER)[0]` or `slice(0, indexOf(MARKER))` appears in a test helper whose marker is the document's last section"
-root_cause: test_isolation
-resolution_type: test_fix
-related_components:
-  - documentation
-  - development_workflow
-  - testing_framework
 tags:
   - mutation-testing
   - vacuous-tests
   - normalizers
   - positive-control
   - legal-docs
+severity: high
+module: test and CI verification infrastructure
+symptoms:
+  - A mutation that appends content at end-of-file leaves the comparison test green
+  - The guard is green on both the correct tree and the mutated one, and the diff between them is entirely inside the ignored region
+  - "`split(MARKER)[0]` or `slice(0, indexOf(MARKER))` appears in a test helper whose marker is the document's last section"
+root_cause: test_isolation
+resolution_type: test_fix
+applies_when:
+  - Writing a test that compares two documents after stripping boilerplate, banners, or a navigation section
+  - Adding a guard that normalizes its input by splitting on a marker before asserting equality
+  - Locking a generated or archived artifact against the live source it was copied from
+  - Reviewing any assertion whose inputs pass through a preprocessing step you wrote in the same commit
 ---
+
+# A normalizer that truncates at a trailing boundary blinds its own test
 
 ## Context
 

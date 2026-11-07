@@ -1,11 +1,12 @@
 ---
-title: "Cache sweep and desktop release failures after PRs 7752 and 7754"
+title: Cache sweep and desktop release failures after PRs 7752 and 7754
 date: 2026-09-05
-category: integration-issues
-module: CI and production cache configuration
+area: ci
 problem_type: integration_issue
-component: deploy_config
+tags:
+  - ci
 severity: high
+module: CI and production cache configuration
 ---
 
 # Cache sweep and desktop release failures after PRs 7752 and 7754

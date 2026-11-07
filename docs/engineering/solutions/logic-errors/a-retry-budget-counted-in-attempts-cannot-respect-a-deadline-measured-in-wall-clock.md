@@ -1,9 +1,19 @@
 ---
-module: scripts/_seed-utils, scripts/seed-token-panels, scripts/seed-stablecoin-markets, seed-bundle-runner
+title: A retry budget counted in attempts cannot respect a deadline measured in wall clock
 date: 2026-09-24
+area: seeders
 problem_type: logic_error
-component: background_job
+tags:
+  - retry-semantics
+  - wall-clock-budget
+  - unreachable-fallback
+  - copy-paste-divergence
+  - railway-cron
+  - seed-bundle-runner
+  - prose-comment-does-not-propagate
+  - static-config-gate
 severity: high
+module: scripts/_seed-utils, scripts/seed-token-panels, scripts/seed-stablecoin-markets, seed-bundle-runner
 symptoms:
   - Railway pages "Deploy Crashed!" for all 13 sections of `seed-bundle-market-backup` while no data is lost
   - "`section=Token-Panels status=FAILED elapsed=120.0s reason=timeout after 120s (signal SIGTERM)`"
@@ -12,8 +22,6 @@ symptoms:
   - The crash self-heals on the next tick, so a status-only scan reports the service green
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [tooling, testing_framework]
-tags: [retry-semantics, wall-clock-budget, unreachable-fallback, copy-paste-divergence, railway-cron, seed-bundle-runner, prose-comment-does-not-propagate, static-config-gate]
 ---
 
 # A retry budget counted in attempts cannot respect a deadline measured in wall clock

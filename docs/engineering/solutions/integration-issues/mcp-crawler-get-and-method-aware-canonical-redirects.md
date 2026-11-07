@@ -1,16 +1,8 @@
 ---
-title: "Make MCP endpoints crawler-accessible without letting a CDN replay discovery to transport clients"
+title: Make MCP endpoints crawler-accessible without letting a CDN replay discovery to transport clients
 date: 2026-07-20
-category: integration-issues
-module: "MCP HTTP transport and canonical host routing"
+area: mcp
 problem_type: integration_issue
-component: assistant
-severity: high
-symptoms:
-  - "Google Search Console reported https://www.worldmonitor.app/mcp and the variant-subdomain /mcp URLs as inaccessible because a plain GET returned 405 Method Not Allowed"
-  - "A cacheable discovery 200 on /.well-known/mcp was served by the Vercel edge (x-vercel-cache: HIT) to a GET carrying Accept: text/event-stream, which the MCP transport contract requires to be 405"
-root_cause: wrong_api
-resolution_type: code_fix
 tags:
   - mcp
   - google-search-console
@@ -22,6 +14,13 @@ tags:
   - cache-poisoning
   - http-transport
   - json-rpc
+severity: high
+module: MCP HTTP transport and canonical host routing
+symptoms:
+  - Google Search Console reported https://www.worldmonitor.app/mcp and the variant-subdomain /mcp URLs as inaccessible because a plain GET returned 405 Method Not Allowed
+  - "A cacheable discovery 200 on /.well-known/mcp was served by the Vercel edge (x-vercel-cache: HIT) to a GET carrying Accept: text/event-stream, which the MCP transport contract requires to be 405"
+root_cause: wrong_api
+resolution_type: code_fix
 ---
 
 # Make MCP endpoints crawler-accessible without letting a CDN replay discovery to transport clients

@@ -1,19 +1,8 @@
 ---
 title: A schedule-site staleness gate cannot stop a concurrent Convex touch herd
 date: 2026-10-16
-category: database-issues
-module: Convex key validation routes and lastUsedAt touches
+area: convex
 problem_type: database_issue
-component: database
-symptoms:
-  - "Convex Insights: 560 `OCC Retried` conflicts on `userApiKeys` from `apiKeys:touchKeyLastUsed` and 154 on `mcpProTokens` from `mcpProTokens:touchProMcpTokenLastUsed` in 72h"
-  - "The conflicts continued after an earlier fix that gated scheduling on a stale `lastUsedAt`"
-  - "Prod log pairs of touch runs 5 to 16 ms apart on one document, where `occInfo.writeSource` names the same touch function"
-root_cause: async_timing
-resolution_type: code_fix
-severity: low
-related_components:
-  - authentication
 tags:
   - convex
   - occ
@@ -23,6 +12,14 @@ tags:
   - last-used-at
   - convex-insights
   - local-backend
+severity: low
+module: Convex key validation routes and lastUsedAt touches
+symptoms:
+  - "Convex Insights: 560 `OCC Retried` conflicts on `userApiKeys` from `apiKeys:touchKeyLastUsed` and 154 on `mcpProTokens` from `mcpProTokens:touchProMcpTokenLastUsed` in 72h"
+  - The conflicts continued after an earlier fix that gated scheduling on a stale `lastUsedAt`
+  - Prod log pairs of touch runs 5 to 16 ms apart on one document, where `occInfo.writeSource` names the same touch function
+root_cause: async_timing
+resolution_type: code_fix
 ---
 
 # A schedule-site staleness gate cannot stop a concurrent Convex touch herd

@@ -1,16 +1,24 @@
 ---
 title: "Closed-world classification gate: every mechanically-enumerable config member must be classified, or CI fails"
 date: 2026-07-31
-last_updated: 2026-08-12
-category: design-patterns
-module: desktop build env / CI gates
+area: desktop
 problem_type: design_pattern
+tags:
+  - closed-world
+  - classification-gate
+  - allowlist-rot
+  - env-vars
+  - ci-gates
+  - vacuous-guard
+  - completeness
+  - crawlable-sources
+module: desktop build env / CI gates
 applies_when:
-  - "A consumer (build, deploy, runtime) receives a hand-maintained subset of a mechanically enumerable universe (env vars, routes, feature flags, watch paths, locales)"
+  - A consumer (build, deploy, runtime) receives a hand-maintained subset of a mechanically enumerable universe (env vars, routes, feature flags, watch paths, locales)
   - "A member silently missing from the subset degrades a capability without any error — the #5905 incident class"
-  - "New members are added by many contributors over time, so any opt-in list rots by default"
-  - "A new structured source-attribution provider must land in a marketing catalog domain or `npm run build:full` dies"
-tags: [closed-world, classification-gate, allowlist-rot, env-vars, ci-gates, vacuous-guard, completeness, crawlable-sources]
+  - New members are added by many contributors over time, so any opt-in list rots by default
+  - A new structured source-attribution provider must land in a marketing catalog domain or `npm run build:full` dies
+last_updated: 2026-08-12
 ---
 
 # Closed-world classification gate: every mechanically-enumerable config member must be classified, or CI fails

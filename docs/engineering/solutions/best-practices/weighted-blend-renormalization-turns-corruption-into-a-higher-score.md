@@ -1,23 +1,8 @@
 ---
-title: "Renormalizing a weighted blend on a dropped null slot lets data corruption raise the score"
+title: Renormalizing a weighted blend on a dropped null slot lets data corruption raise the score
 date: 2026-08-12
-category: best-practices
-module: "resilience-scorer"
+area: intelligence
 problem_type: best_practice
-component: service_object
-severity: high
-root_cause: logic_error
-applies_when:
-  - "Auditing any weighted-blend or weighted-average aggregator that drops a null-score component and renormalizes its weight onto the surviving components"
-  - "Reviewing a scoring pipeline where a malformed or partially-parsed upstream field can silently vanish a component instead of erroring"
-  - "Evaluating a candidate fix for a blend-renormalization defect that works by dropping MORE components (coupling sibling slots, widening null propagation)"
-symptoms:
-  - "Albania's financialSystemExposure score reads 75 -> 86 when the BIS parentCount field fails to parse (a stringified count instead of a raw number)"
-  - "A corrupted, missing, or unparseable input component RAISES the published composite score instead of lowering it or leaving it neutral"
-  - "No test caught the regression, because every fixture in the suite was well-formed and none exercised the null-drop path"
-related_components:
-  - "bis-lbs-seeder"
-  - "resilience-index-api"
 tags:
   - resilience-scoring
   - weighted-blend
@@ -26,6 +11,17 @@ tags:
   - data-quality-regression
   - bis-lbs
   - financial-system-exposure
+severity: high
+module: resilience-scorer
+symptoms:
+  - Albania's financialSystemExposure score reads 75 -> 86 when the BIS parentCount field fails to parse (a stringified count instead of a raw number)
+  - A corrupted, missing, or unparseable input component RAISES the published composite score instead of lowering it or leaving it neutral
+  - No test caught the regression, because every fixture in the suite was well-formed and none exercised the null-drop path
+root_cause: logic_error
+applies_when:
+  - Auditing any weighted-blend or weighted-average aggregator that drops a null-score component and renormalizes its weight onto the surviving components
+  - Reviewing a scoring pipeline where a malformed or partially-parsed upstream field can silently vanish a component instead of erroring
+  - Evaluating a candidate fix for a blend-renormalization defect that works by dropping MORE components (coupling sibling slots, widening null propagation)
 ---
 
 # A dropped component slot renormalises onto the survivors — so corruption can read as strength

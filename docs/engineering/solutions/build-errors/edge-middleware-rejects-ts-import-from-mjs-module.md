@@ -1,19 +1,25 @@
 ---
-title: "Vercel refuses the deploy when a .mjs module bundled into middleware.ts imports a .ts file"
+title: Vercel refuses the deploy when a .mjs module bundled into middleware.ts imports a .ts file
 date: 2026-10-24
-category: build-errors
-module: middleware.ts
+area: edge-api
 problem_type: build_error
-component: tooling
+tags:
+  - vercel-edge
+  - middleware
+  - edge-bundler
+  - unsupported-modules
+  - mjs-imports-ts
+  - import-graph-test
+  - dependency-injection
+  - crawlable-corpus
 severity: high
+module: middleware.ts
 symptoms:
-  - "Vercel preview deploy fails with: The Edge Function \"middleware\" is referencing unsupported modules"
+  - 'Vercel preview deploy fails with: The Edge Function "middleware" is referencing unsupported modules'
   - "The error names the offending pair, e.g. scripts/situation-page/sections.mjs: ../../src/config/chokepoint-registry.ts"
-  - "typecheck, typecheck:api, esbuild bundling and every node --import tsx test pass locally"
+  - typecheck, typecheck:api, esbuild bundling and every node --import tsx test pass locally
 root_cause: wrong_api
 resolution_type: code_fix
-related_components: [testing_framework, development_workflow]
-tags: [vercel-edge, middleware, edge-bundler, unsupported-modules, mjs-imports-ts, import-graph-test, dependency-injection, crawlable-corpus]
 ---
 
 # Vercel refuses the deploy when a .mjs module bundled into middleware.ts imports a .ts file

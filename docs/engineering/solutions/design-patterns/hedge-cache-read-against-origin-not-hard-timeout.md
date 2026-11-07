@@ -1,13 +1,21 @@
 ---
-title: "Hedge a cache read against origin instead of hard-timing it out"
+title: Hedge a cache read against origin instead of hard-timing it out
 date: 2026-07-18
-category: design-patterns
-module: "Bootstrap public-tier serving (workers/api-cors-preflight/src/kv-serve.js)"
+area: edge-api
 problem_type: design_pattern
-component: service_object
+tags:
+  - hedge
+  - hedged-request
+  - timeout
+  - cache-fallback
+  - cloudflare-kv
+  - edge-serving
+  - tail-latency
+  - p95
+  - latency-budget
 severity: medium
-applies_when: "A read path has a fast primary (cache/replica/edge store) and a fallback origin, and you are about to pick a timeout value that decides when to abandon the primary"
-tags: [hedge, hedged-request, timeout, cache-fallback, cloudflare-kv, edge-serving, tail-latency, p95, latency-budget]
+module: Bootstrap public-tier serving (workers/api-cors-preflight/src/kv-serve.js)
+applies_when: A read path has a fast primary (cache/replica/edge store) and a fallback origin, and you are about to pick a timeout value that decides when to abandon the primary
 ---
 
 # Hedge a cache read against origin instead of hard-timing it out

@@ -1,15 +1,21 @@
 ---
-module: src/config/trade-routes, server/_shared/chokepoint-registry, scripts/seed-hs2-chokepoint-exposure, scripts/shared/country-port-clusters
+title: A route that crosses a chokepoint must also be in its registry entry
 date: 2026-11-01
+area: intelligence
 problem_type: logic_error
-component: data_model
+tags:
+  - trade-routes
+  - chokepoint-registry
+  - route-explorer
+  - exposure
+  - panama
 severity: medium
-issue: 7990
+module: src/config/trade-routes, server/_shared/chokepoint-registry, scripts/seed-hs2-chokepoint-exposure, scripts/shared/country-port-clusters
 symptoms:
   - The route explorer draws a tanker lane through the Panama Canal and lists no chokepoint for it
   - Supplier route risk names Panama for a pair while the explorer and the seeded exposure ignore it
   - Adding one route to a chokepoint moves the exposure scores of countries that never use that route
-tags: [trade-routes, chokepoint-registry, route-explorer, exposure, panama]
+issue: 7990
 ---
 
 # A route that crosses a chokepoint must also be in its registry entry

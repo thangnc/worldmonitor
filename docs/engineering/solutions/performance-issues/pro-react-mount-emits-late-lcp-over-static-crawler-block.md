@@ -1,21 +1,28 @@
 ---
-title: "/pro LCP landed at React mount because the hero outgrew the static crawler block"
+title: /pro LCP landed at React mount because the hero outgrew the static crawler block
 date: 2026-10-16
-category: performance-issues
-module: pro-test (prerender.mjs, App.tsx)
+area: public-site
 problem_type: performance_issue
-component: frontend_stimulus
+tags:
+  - lcp
+  - largest-contentful-paint
+  - debugbear
+  - rum
+  - prerender
+  - createroot
+  - critical-css
+  - cascade-layers
+  - pro-page
+  - hero
+severity: medium
+module: pro-test (prerender.mjs, App.tsx)
 symptoms:
   - "DebugBear alert: Mobile /pro LCP 656 -> 838 ms (+28%) on 67 page views per window"
-  - "Desktop /pro RUM p75 LCP 1,420 ms against a p75 FCP of 572 ms"
-  - "LCP element `#root h1.text-6xl` on 393 of 708 desktop views, p75 1,724 ms"
-  - "Most other RUM rows report lcpSelector null"
+  - Desktop /pro RUM p75 LCP 1,420 ms against a p75 FCP of 572 ms
+  - LCP element `#root h1.text-6xl` on 393 of 708 desktop views, p75 1,724 ms
+  - Most other RUM rows report lcpSelector null
 root_cause: async_timing
 resolution_type: code_fix
-severity: medium
-related_components:
-  - testing_framework
-tags: [lcp, largest-contentful-paint, debugbear, rum, prerender, createroot, critical-css, cascade-layers, pro-page, hero]
 ---
 
 # /pro LCP landed at React mount because the hero outgrew the static crawler block

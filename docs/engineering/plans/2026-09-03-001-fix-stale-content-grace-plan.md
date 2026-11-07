@@ -1,7 +1,9 @@
 ---
-title: "Stale Content Grace - Plan"
-type: fix
+title: Stale Content Grace - Plan
 date: 2026-09-03
+status: done
+evidence: "PR #7577 merged 2026-09-03"
+type: fix
 ---
 
 # Stale Content Grace - Plan

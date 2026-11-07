@@ -1,11 +1,13 @@
 ---
 title: Disease Outbreak WHO Retry - Plan
-type: fix
 date: 2026-09-03
+status: done
+evidence: "PR #7581 merged 2026-09-03"
+type: fix
 artifact_contract: ce-unified-plan/v1
 artifact_readiness: implementation-ready
-product_contract_source: user-incident-report
 execution: code
+product_contract_source: user-incident-report
 ---
 
 # Disease Outbreak WHO Retry - Plan

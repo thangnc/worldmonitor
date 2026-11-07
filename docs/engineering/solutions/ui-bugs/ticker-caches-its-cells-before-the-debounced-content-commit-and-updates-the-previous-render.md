@@ -1,21 +1,26 @@
 ---
-title: "Bind row handles in the setSafeContent commit callback, not after render() returns, or the Global Debt Clock ticker updates the loading placeholder"
+title: Bind row handles in the setSafeContent commit callback, not after render() returns, or the Global Debt Clock ticker updates the loading placeholder
 date: 2026-09-06
-category: ui-bugs
-module: src/components/NationalDebtPanel.ts
+area: browser
 problem_type: ui_bug
-component: frontend_stimulus
+tags:
+  - debounced-content-commit
+  - setsafecontent
+  - afterupdate-callback
+  - cached-element-handles
+  - ticker-lifecycle
+  - national-debt-panel
+  - panel-lifecycle
+  - happy-dom-regression-test
+severity: medium
+module: src/components/NationalDebtPanel.ts
 symptoms:
-  - "Global Debt Clock figures freeze after the panel's first load. The per-second counters never advance on a panel enabled by default at priority 2"
-  - "Sorting, searching, or clicking load-more makes the numbers start ticking, so the failure reads as intermittent and self-healing rather than as a bug"
-  - "No console error, no failed request, no Sentry event. The 1000 ms setInterval fires on schedule against an empty element cache and writes nothing"
-  - "The suite named after the feature was green throughout. It held local copies of getCurrentDebt and formatDebt and passed with no production file present"
+  - Global Debt Clock figures freeze after the panel's first load. The per-second counters never advance on a panel enabled by default at priority 2
+  - Sorting, searching, or clicking load-more makes the numbers start ticking, so the failure reads as intermittent and self-healing rather than as a bug
+  - No console error, no failed request, no Sentry event. The 1000 ms setInterval fires on schedule against an empty element cache and writes nothing
+  - The suite named after the feature was green throughout. It held local copies of getCurrentDebt and formatDebt and passed with no production file present
 root_cause: async_timing
 resolution_type: code_fix
-severity: medium
-related_components:
-  - testing_framework
-tags: [debounced-content-commit, setsafecontent, afterupdate-callback, cached-element-handles, ticker-lifecycle, national-debt-panel, panel-lifecycle, happy-dom-regression-test]
 ---
 
 # Bind row handles in the setSafeContent commit callback, not after render() returns, or the Global Debt Clock ticker updates the loading placeholder

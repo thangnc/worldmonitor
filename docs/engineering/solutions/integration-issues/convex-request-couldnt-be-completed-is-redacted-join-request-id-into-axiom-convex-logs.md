@@ -1,21 +1,8 @@
 ---
-title: "Convex's \"Your request couldn't be completed\" is redacted on both sides — join the request_id into Axiom convex-logs to tell a platform stall from our own function"
+title: Convex's "Your request couldn't be completed" is redacted on both sides — join the request_id into Axiom convex-logs to tell a platform stall from our own function
 date: 2026-09-17
-category: integration-issues
-module: Convex functions and their Sentry / Axiom telemetry
+area: convex
 problem_type: integration_issue
-component: database
-severity: medium
-symptoms:
-  - "WORLDMONITOR-S5 `Error: Your request couldn't be completed. Try again later.` — 3,781 lifetime events / 198 users since 2026-05-30, no stack, tags only `func`, `request_id`, `user`, `source: convex`"
-  - "WORLDMONITOR-130, the `Uncaught Error: …` variant thrown out of an HTTP action (`convex/http.ts:1150`)"
-  - "Per-user concentration in the issue (91, 79, 63 events on single users) that looks like data-dependent failures in our queries"
-  - "The Convex log line for the same request carries the identical redacted string in `data.error_message`, so the dashboard log does not name a cause either"
-root_cause: inadequate_documentation
-resolution_type: documentation_update
-related_components:
-  - payments
-  - authentication
 tags:
   - convex
   - axiom
@@ -23,6 +10,15 @@ tags:
   - request-id
   - internal-server-error
   - diagnostics
+severity: medium
+module: Convex functions and their Sentry / Axiom telemetry
+symptoms:
+  - "WORLDMONITOR-S5 `Error: Your request couldn't be completed. Try again later.` — 3,781 lifetime events / 198 users since 2026-05-30, no stack, tags only `func`, `request_id`, `user`, `source: convex`"
+  - "WORLDMONITOR-130, the `Uncaught Error: …` variant thrown out of an HTTP action (`convex/http.ts:1150`)"
+  - Per-user concentration in the issue (91, 79, 63 events on single users) that looks like data-dependent failures in our queries
+  - The Convex log line for the same request carries the identical redacted string in `data.error_message`, so the dashboard log does not name a cause either
+root_cause: inadequate_documentation
+resolution_type: documentation_update
 ---
 
 # Convex's "Your request couldn't be completed" is redacted on both sides

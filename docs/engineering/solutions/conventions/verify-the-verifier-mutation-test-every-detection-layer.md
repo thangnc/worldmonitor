@@ -1,27 +1,8 @@
 ---
 title: "Verify the verifier: mutation-test every layer built to catch silent failure"
 date: 2026-07-20
-category: conventions
-module: test and CI verification infrastructure
+area: tests
 problem_type: convention
-component: testing_framework
-severity: high
-applies_when:
-  - "Building or reviewing a test, CI workflow, or security guard whose job is to catch silent failure elsewhere"
-  - "Writing a companion or regression test meant to stop a scan, parser, or normaliser from silently swallowing its input"
-  - "Fixing a vacuous or all-skipped suite by flipping a gate (env var, skip flag) rather than proving the suite now runs and can go red"
-  - "Adding a CI step to detect zero-assertion or all-skipped test runs"
-  - "Claiming a security or correctness fix is covered because a regression test was added"
-symptoms:
-  - "node --test reports tests 0 / pass 0 and still exits 0, because every case sits inside describe(..., { skip: !ENV_VAR_NOBODY_SETS })"
-  - "A CI workflow written to catch all-skipped suites can itself pass with zero tests executed"
-  - "A guard asserts an empty violation list, so any change that shrinks its scanned input is a silent pass rather than a red build"
-  - "A companion test has its own private read-and-match loop instead of calling the real scan, so it can never observe a regression in that path"
-  - "Reverting the fix in the real code path alone leaves every test green"
-related_components:
-  - authentication
-  - development_workflow
-  - testing_framework
 tags:
   - mutation-testing
   - vacuous-tests
@@ -30,6 +11,20 @@ tags:
   - security-testing
   - test-infrastructure
   - guard-coverage
+severity: high
+module: test and CI verification infrastructure
+symptoms:
+  - "node --test reports tests 0 / pass 0 and still exits 0, because every case sits inside describe(..., { skip: !ENV_VAR_NOBODY_SETS })"
+  - A CI workflow written to catch all-skipped suites can itself pass with zero tests executed
+  - A guard asserts an empty violation list, so any change that shrinks its scanned input is a silent pass rather than a red build
+  - A companion test has its own private read-and-match loop instead of calling the real scan, so it can never observe a regression in that path
+  - Reverting the fix in the real code path alone leaves every test green
+applies_when:
+  - Building or reviewing a test, CI workflow, or security guard whose job is to catch silent failure elsewhere
+  - Writing a companion or regression test meant to stop a scan, parser, or normaliser from silently swallowing its input
+  - Fixing a vacuous or all-skipped suite by flipping a gate (env var, skip flag) rather than proving the suite now runs and can go red
+  - Adding a CI step to detect zero-assertion or all-skipped test runs
+  - Claiming a security or correctness fix is covered because a regression test was added
 ---
 
 # Verify the verifier: mutation-test every layer built to catch silent failure

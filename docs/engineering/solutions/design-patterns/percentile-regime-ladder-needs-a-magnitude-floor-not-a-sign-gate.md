@@ -1,27 +1,27 @@
 ---
 title: A percentile regime ladder gated on sign, not magnitude, lets any new window high hit the top tier
 date: 2026-08-30
-category: design-patterns
-module: physical-divergence-regime-scoring
+area: intelligence
 problem_type: design_pattern
-component: service_object
+tags:
+  - percentile
+  - regime-classification
+  - magnitude-floor
+  - statistical-guidance
+  - physical-divergence
+  - scoring
 severity: high
+module: physical-divergence-regime-scoring
+symptoms:
+  - "classifyPhysicalPremiumRegime published regime: extreme, index: 100/100 for a 0.05% gold premium, 20x under the 1% absolute elevated floor"
 root_cause: logic_error
 resolution_type: code_fix
 applies_when:
-  - "Building a percentile or rolling-quantile ladder that classifies severity/regime tiers (elevated, high, extreme) from a rolling reference window"
-  - "The current observation sits inside its own reference window, so percentileRank is self-inclusive and a new high always scores at or near 100"
-  - "Tempted to fix by excluding the current point from the window, or by gating every percentile tier behind the same absolute floor used for the base tier"
-symptoms:
-  - "classifyPhysicalPremiumRegime published regime: extreme, index: 100/100 for a 0.05% gold premium, 20x under the 1% absolute elevated floor"
-tags:
-  - "percentile"
-  - "regime-classification"
-  - "magnitude-floor"
-  - "statistical-guidance"
-  - "physical-divergence"
-  - "scoring"
+  - Building a percentile or rolling-quantile ladder that classifies severity/regime tiers (elevated, high, extreme) from a rolling reference window
+  - The current observation sits inside its own reference window, so percentileRank is self-inclusive and a new high always scores at or near 100
+  - Tempted to fix by excluding the current point from the window, or by gating every percentile tier behind the same absolute floor used for the base tier
 ---
+
 # Gate a relative ladder on magnitude, not on sign
 
 ## Context

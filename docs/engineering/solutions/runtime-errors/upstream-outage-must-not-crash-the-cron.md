@@ -1,18 +1,8 @@
 ---
 title: An upstream outage must not crash the cron; health owns the alarm
-module: seeders
 date: 2026-11-01
+area: seeders
 problem_type: runtime_error
-component: background_job
-severity: medium
-symptoms:
-  - "Railway emails 'Deploy Crashed!' for seed-bundle-portwatch-port-activity every 12h tick"
-  - "Seeder log ends 'COVERAGE GAPS: 164/174 usable' and the member exits 1"
-  - "Ten country panels go blank seven days after ArcGIS starts answering 'Cannot perform query. Invalid query parameters.'"
-root_cause: logic_error
-resolution_type: code_fix
-related_components:
-  - service_object
 tags:
   - portwatch
   - arcgis
@@ -21,6 +11,14 @@ tags:
   - publish-blocked
   - health
   - stale-data
+severity: medium
+module: seeders
+symptoms:
+  - Railway emails 'Deploy Crashed!' for seed-bundle-portwatch-port-activity every 12h tick
+  - "Seeder log ends 'COVERAGE GAPS: 164/174 usable' and the member exits 1"
+  - Ten country panels go blank seven days after ArcGIS starts answering 'Cannot perform query. Invalid query parameters.'
+root_cause: logic_error
+resolution_type: code_fix
 ---
 
 # An upstream outage must not crash the cron; health owns the alarm

@@ -1,8 +1,9 @@
 ---
 title: Gold Layer Enhancements for Commodity Variant
-type: feat
-status: active
 date: 2026-03-29
+status: done
+evidence: "PR #2464 merged 2026-03-29"
+type: feat
 ---
 
 # feat: Gold Layer Enhancements for Commodity Variant

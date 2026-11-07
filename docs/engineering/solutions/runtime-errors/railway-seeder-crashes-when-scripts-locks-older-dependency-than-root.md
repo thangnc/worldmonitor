@@ -1,19 +1,25 @@
 ---
 title: A Railway seeder crashes at import when scripts/ locks an older dependency than the root, while CI stays green
 date: 2026-10-24
-category: runtime-errors
-module: railway-seeders
+area: seeders
 problem_type: runtime_error
-component: background_job
+tags:
+  - railway
+  - seeders
+  - undici
+  - dependabot
+  - lockfile
+  - scripts-package-json
+  - esm-named-exports
+  - ci-guard
+severity: high
+module: railway-seeders
 symptoms:
   - "Every seed-natural-events cron tick crashed at startup with \"SyntaxError: Named export 'Dispatcher1Wrapper' not found. The requested module 'undici' is a CommonJS module\""
-  - "seed-bundle-climate reported section=Natural-Events status=FAILED reason=exit 1 on the same import"
-  - "The PR that introduced the import (#9608, a dependabot npm-security group bump) merged with every CI check green"
+  - seed-bundle-climate reported section=Natural-Events status=FAILED reason=exit 1 on the same import
+  - The PR that introduced the import (#9608, a dependabot npm-security group bump) merged with every CI check green
 root_cause: config_error
 resolution_type: dependency_update
-severity: high
-related_components: [testing_framework, tooling]
-tags: [railway, seeders, undici, dependabot, lockfile, scripts-package-json, esm-named-exports, ci-guard]
 ---
 
 # A Railway seeder crashes at import when scripts/ locks an older dependency than the root, while CI stays green

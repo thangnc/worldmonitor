@@ -1,20 +1,23 @@
 ---
-title: "CodeQL default setup rejects every advanced-workflow upload, so the switch has to happen at the merge"
+title: CodeQL default setup rejects every advanced-workflow upload, so the switch has to happen at the merge
 date: 2026-09-29
-category: integration-issues
-module: codeql
+area: ci
 problem_type: integration_issue
-component: development_workflow
+tags:
+  - codeql
+  - code-scanning
+  - github-actions
+  - default-setup
+  - advanced-setup
+  - ci-performance
 severity: medium
+module: codeql
 symptoms:
-  - "Every `Analyze (<language>)` job on the PR that adds `.github/workflows/codeql.yml` goes red after the analysis itself completes"
+  - Every `Analyze (<language>)` job on the PR that adds `.github/workflows/codeql.yml` goes red after the analysis itself completes
   - "Failure annotation: `Code Scanning could not process the submitted SARIF file: CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled`"
   - "Warning annotation on every Analyze job: `Please specify an on.push hook to analyze and see code scanning alerts from the default branch on the Security tab.`"
 root_cause: incomplete_setup
 resolution_type: config_change
-related_components:
-  - tooling
-tags: [codeql, code-scanning, github-actions, default-setup, advanced-setup, ci-performance]
 ---
 
 # CodeQL default setup rejects every advanced-workflow upload, so the switch has to happen at the merge

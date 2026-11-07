@@ -1,3 +1,10 @@
+---
+title: Natural-event source recovery
+date: 2026-09-17
+status: done
+evidence: "PR #8291 merged 2026-09-17"
+---
+
 # Natural-event source recovery
 
 ## Problem

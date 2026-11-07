@@ -1,20 +1,28 @@
 ---
-title: "tesco.com anti-bot block starves GB consumer-prices coverage — fix the roster, not the configs"
-module: consumer-prices-core ingestion
+title: tesco.com anti-bot block starves GB consumer-prices coverage — fix the roster, not the configs
 date: 2026-08-10
-category: integration-issues
+area: seeders
 problem_type: integration_issue
-component: background_job
+tags:
+  - consumer-prices
+  - retailer-roster
+  - firecrawl
+  - exa
+  - anti-bot
+  - fallback-independence
+  - coverage-degraded
+  - coverage-floor
+  - seed-freshness
+  - gb
 severity: high
+module: consumer-prices-core ingestion
 symptoms:
   - "GB consumer-price coverage dropped to COVERAGE_DEGRADED: tesco_gb read 1/12 pages on 2026-08-09 and 0/12 on 2026-08-10, failure reasons {provider-cooldown: 9, provider-error: 3}"
-  - "Firecrawl /v1/scrape returned HTTP 500 SCRAPE_ALL_ENGINES_FAILED on every engine (index, chrome-cdp, retry, stealth proxy) for tesco.com"
-  - "Exa's crawler stored no page content for tesco.com product URLs — 163-char shells with price null — so the exa extraction fallback was equally dead"
-  - "ocado_gb stayed healthy in the same runs, proving the provider accounts were fine and the blockage was domain-specific to tesco.com"
+  - Firecrawl /v1/scrape returned HTTP 500 SCRAPE_ALL_ENGINES_FAILED on every engine (index, chrome-cdp, retry, stealth proxy) for tesco.com
+  - Exa's crawler stored no page content for tesco.com product URLs — 163-char shells with price null — so the exa extraction fallback was equally dead
+  - ocado_gb stayed healthy in the same runs, proving the provider accounts were fine and the blockage was domain-specific to tesco.com
 root_cause: missing_validation
 resolution_type: seed_data_update
-related_components: [service_object, testing_framework]
-tags: [consumer-prices, retailer-roster, firecrawl, exa, anti-bot, fallback-independence, coverage-degraded, coverage-floor, seed-freshness, gb]
 ---
 
 # tesco.com anti-bot block starves GB consumer-prices coverage — fix the roster, not the configs

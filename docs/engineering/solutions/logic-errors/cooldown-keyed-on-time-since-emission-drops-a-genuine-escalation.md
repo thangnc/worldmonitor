@@ -1,31 +1,30 @@
 ---
 title: A re-emission cooldown keyed on time since last emission drops a genuine escalation instead of deferring it
 date: 2026-08-30
-category: logic-errors
-module: physical-divergence
+area: intelligence
 problem_type: logic_error
-component: service_object
+tags:
+  - cooldown
+  - re-emission
+  - regime-transition
+  - flap-damping
+  - alerting
+  - market-signals
+  - positive-control
+  - state-vs-time
 severity: high
+module: physical-divergence
+symptoms:
+  - normal->elevated emits at T0; elevated->stressed 30h later, still inside the 48h cooldown, is silently suppressed
+  - once the cooldown clears at T0+54h the published snapshot already reads stressed, so previous.regime === next.regime and the escalation never fires -- it is lost, not deferred
+  - the same-regime guard ran before the cooldown check, so the guard only ever saw a genuinely new change and the bug read as correct in code review
+  - a suppression test asserted only that suppression happened, with no positive control at the escalation boundary, so it could not have caught the drop
 root_cause: logic_error
 resolution_type: code_fix
-symptoms:
-  - "normal->elevated emits at T0; elevated->stressed 30h later, still inside the 48h cooldown, is silently suppressed"
-  - "once the cooldown clears at T0+54h the published snapshot already reads stressed, so previous.regime === next.regime and the escalation never fires -- it is lost, not deferred"
-  - "the same-regime guard ran before the cooldown check, so the guard only ever saw a genuinely new change and the bug read as correct in code review"
-  - "a suppression test asserted only that suppression happened, with no positive control at the escalation boundary, so it could not have caught the drop"
-tags:
-  - "cooldown"
-  - "re-emission"
-  - "regime-transition"
-  - "flap-damping"
-  - "alerting"
-  - "market-signals"
-  - "positive-control"
-  - "state-vs-time"
-related_components:
-  - "background_job"
-  - "testing_framework"
 ---
+
+# A re-emission cooldown keyed on time since last emission drops a genuine escalation instead of deferring it
+
 ## Context
 
 A cooldown on an alert or signal emitter is supposed to answer one question: *have we already told

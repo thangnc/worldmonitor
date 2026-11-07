@@ -1,18 +1,25 @@
 ---
-title: "The deployment key prefix is a write-ownership contract — a helper's default silently picks which namespace preview reads"
+title: The deployment key prefix is a write-ownership contract — a helper's default silently picks which namespace preview reads
 date: 2026-09-04
-category: logic-errors
-module: server/_shared/redis.ts
+area: edge-api
 problem_type: logic_error
-component: database
+tags:
+  - redis
+  - key-prefix
+  - vercel-env
+  - preview
+  - upstash-rest
+  - seed-owned-keys
+  - raw-flag
+  - temporal-baselines
 severity: medium
+module: server/_shared/redis.ts
 symptoms:
   - "Preview deployments published an empty temporal-anomalies snapshot: the rebuild's count-source reads silently missed because the read helper prefixed keys nothing ever wrote"
-  - "Nothing failed loudly — no error, no warning; the prefixed read just answered miss, the rebuild saw zero sources, and the route stamped a confidently empty result"
+  - Nothing failed loudly — no error, no warning; the prefixed read just answered miss, the rebuild saw zero sources, and the route stamped a confidently empty result
   - "The inverse had shipped earlier (#7575): a raw MGET helper read production rows while its sibling write helper prefixed, so a preview seeded its own namespace from production statistics and its writes never reached the rows it read"
 root_cause: logic_error
 resolution_type: code_fix
-tags: [redis, key-prefix, vercel-env, preview, upstash-rest, seed-owned-keys, raw-flag, temporal-baselines]
 ---
 
 # The deployment key prefix is a write-ownership contract

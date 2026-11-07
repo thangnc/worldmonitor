@@ -1,17 +1,21 @@
 ---
 title: Bootstrap health reports missing compact projections as EMPTY
 date: 2026-07-14
-category: logic-errors
-module: api/health.js
+area: observability
 problem_type: logic_error
-component: service_object
+tags:
+  - bootstrap-hydration
+  - seed-meta
+  - freshness-tracking
+  - redis
+  - health
 severity: high
+module: api/health.js
 symptoms:
-  - "Fresh seed metadata with a missing compact projection payload reported OK in /api/health."
-  - "Dashboard panels could render blank without an actionable health signal."
+  - Fresh seed metadata with a missing compact projection payload reported OK in /api/health.
+  - Dashboard panels could render blank without an actionable health signal.
 root_cause: logic_error
 resolution_type: code_fix
-tags: [bootstrap-hydration, seed-meta, freshness-tracking, redis, health]
 ---
 
 # Bootstrap health reports missing compact projections as EMPTY

@@ -1,15 +1,8 @@
 ---
 title: Deduping redundant work removes the recovery that redundancy was accidentally providing
-module: data-loader
 date: 2026-07-30
+area: browser
 problem_type: design_pattern
-component: frontend
-severity: high
-applies_when:
-  - "Adding a skip-gate, cache key, or signature so an expensive load stops repeating"
-  - "The work being deduped was previously unconditional, so it re-ran on many unrelated triggers"
-  - "The load has failure modes that produce an EMPTY-but-successful-looking result"
-  - "Consumers of the load can arrive AFTER it completes (lazy mounts, deferred hydration)"
 tags:
   - deduplication
   - idempotence
@@ -17,10 +10,16 @@ tags:
   - silent-skip
   - recovery-path
   - review-checklist
-related_components:
-  - panel_system
-  - testing_framework
+severity: high
+module: data-loader
+applies_when:
+  - Adding a skip-gate, cache key, or signature so an expensive load stops repeating
+  - The work being deduped was previously unconditional, so it re-ran on many unrelated triggers
+  - The load has failure modes that produce an EMPTY-but-successful-looking result
+  - Consumers of the load can arrive AFTER it completes (lazy mounts, deferred hydration)
 ---
+
+# Deduping redundant work removes the recovery that redundancy was accidentally providing
 
 ## Context
 

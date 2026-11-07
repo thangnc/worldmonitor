@@ -1,17 +1,25 @@
 ---
-module: pre-push-gate
+title: Pre-push fed vitest DOM tests to the node:test runner
 date: 2026-07-29
+area: ci
 problem_type: test_failure
-component: testing_framework
+tags:
+  - pre-push
+  - husky
+  - vitest
+  - node-test-runner
+  - happy-dom
+  - ci-gate
+  - green-while-dead
+  - test-routing
 severity: high
+module: pre-push-gate
 symptoms:
-  - "Any push touching tests/dom/*.test.mts fails the gate with a bare 'test failed' and no assertion output"
-  - "The same file passes under npm run test:dom and fails under npx tsx --test"
-  - "The failure reproduces on the unmodified file as first committed, so it is not specific to any change"
+  - Any push touching tests/dom/*.test.mts fails the gate with a bare 'test failed' and no assertion output
+  - The same file passes under npm run test:dom and fails under npx tsx --test
+  - The failure reproduces on the unmodified file as first committed, so it is not specific to any change
 root_cause: config_error
 resolution_type: workflow_improvement
-related_components: [development_workflow, tooling]
-tags: [pre-push, husky, vitest, node-test-runner, happy-dom, ci-gate, green-while-dead, test-routing]
 ---
 
 # Pre-push fed vitest DOM tests to the node:test runner

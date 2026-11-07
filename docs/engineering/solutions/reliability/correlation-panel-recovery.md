@@ -1,3 +1,12 @@
+---
+title: Correlation panels retain valid snapshots during interruption
+date: 2026-09-14
+area: intelligence
+problem_type: reliability_issue
+tags:
+  - intelligence
+---
+
 # Correlation panels retain valid snapshots during interruption
 
 ## Problem and traced path

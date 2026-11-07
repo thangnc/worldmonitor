@@ -1,19 +1,8 @@
 ---
-title: "A render pause written for a modal outlived it and froze the 2D map behind the Country Brief side panel"
+title: A render pause written for a modal outlived it and froze the 2D map behind the Country Brief side panel
 date: 2026-11-03
-category: ui-bugs
-module: 2D map (DeckGLMap) and Country Brief (CountryIntelManager)
+area: browser
 problem_type: ui_bug
-component: tooling
-severity: medium
-symptoms:
-  - "Desktop v2.11.7 (#10066): with a Country Brief open, toggling Pipelines checks the box but draws nothing on the 2D map"
-  - "Closing the brief makes the map catch up at once"
-  - "Data refreshes and marker animations also stop while the brief is open; the 3D globe and the SVG fallback are unaffected"
-root_cause: logic_error
-resolution_type: code_fix
-related_components:
-  - testing_framework
 tags:
   - deck-gl
   - render-paused
@@ -21,6 +10,14 @@ tags:
   - stale-guard
   - headed-drive
   - pixel-diff
+severity: medium
+module: 2D map (DeckGLMap) and Country Brief (CountryIntelManager)
+symptoms:
+  - "Desktop v2.11.7 (#10066): with a Country Brief open, toggling Pipelines checks the box but draws nothing on the 2D map"
+  - Closing the brief makes the map catch up at once
+  - Data refreshes and marker animations also stop while the brief is open; the 3D globe and the SVG fallback are unaffected
+root_cause: logic_error
+resolution_type: code_fix
 ---
 
 # A render pause written for a modal outlived it and froze the 2D map behind the Country Brief side panel

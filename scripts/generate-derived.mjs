@@ -39,6 +39,7 @@ export const STEPS = [
   ['welcome teasers', [NODE, 'scripts/build-welcome-teasers.mjs']],
   ['resilience coverage', [...TSX, 'scripts/sync-resilience-coverage.mjs']],
   ['agent skills index', [NODE, 'scripts/build-agent-skills-index.mjs']],
+  ['engineering index', [NODE, 'scripts/generate-engineering-index.mjs']],
   ['source attribution', [NODE, 'scripts/source-attribution.mjs'], '--write'],
   ['locale keys', [NODE, 'scripts/sync-locale-keys.mjs']],
   ['zh-TW locales', ['python3', 'scripts/convert-zh-tw.py']],

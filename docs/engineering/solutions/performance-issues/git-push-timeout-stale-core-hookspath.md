@@ -1,21 +1,25 @@
 ---
 title: Stale absolute core.hooksPath ran an ancient pre-push gate from every worktree
 date: 2026-07-24
-category: performance-issues
-module: git-hooks-worktree-tooling
+area: ci
 problem_type: performance_issue
-component: development_workflow
+tags:
+  - git-hooks
+  - husky
+  - core-hookspath
+  - worktree
+  - pre-push
+  - incremental-tsc
+  - esbuild-batching
+  - push-timeout
+severity: high
+module: git-hooks-worktree-tooling
 symptoms:
-  - "git push from any worktree takes roughly 4 minutes and usually hits the 120s tool timeout"
-  - "pre-push output shows gate steps (unconditional full typechecks, sequential per-file esbuild phase) that do not exist in the current .husky/pre-push on origin/main"
-  - "fixing the shared .git/config core.hooksPath does not fix existing worktrees — each config.worktree carries a copied absolute override"
+  - git push from any worktree takes roughly 4 minutes and usually hits the 120s tool timeout
+  - pre-push output shows gate steps (unconditional full typechecks, sequential per-file esbuild phase) that do not exist in the current .husky/pre-push on origin/main
+  - fixing the shared .git/config core.hooksPath does not fix existing worktrees — each config.worktree carries a copied absolute override
 root_cause: config_error
 resolution_type: config_change
-severity: high
-related_components:
-  - tooling
-  - testing_framework
-tags: [git-hooks, husky, core-hookspath, worktree, pre-push, incremental-tsc, esbuild-batching, push-timeout]
 ---
 
 # Stale absolute core.hooksPath ran an ancient pre-push gate from every worktree

@@ -1,19 +1,23 @@
 ---
-title: "A market anchor that asks a different question lowers Brier without adding information"
+title: A market anchor that asks a different question lowers Brier without adding information
 date: 2026-10-06
-category: logic-errors
-module: scripts/seed-forecasts
+area: intelligence
 problem_type: logic_error
-component: background_job
+tags:
+  - forecast
+  - prediction-markets
+  - calibration
+  - brier
+  - anchor-matching
+  - scoring-artifact
 severity: high
+module: scripts/seed-forecasts
 symptoms:
-  - "Every one of 54 scored published-origin market anchors asked a different question from the forecast it calibrated"
-  - "Cyber threat concentration forecasts were anchored to invasion and presidential-succession markets"
-  - "A higher market blend weight lowered Brier, and a constant base rate beat the market price"
+  - Every one of 54 scored published-origin market anchors asked a different question from the forecast it calibrated
+  - Cyber threat concentration forecasts were anchored to invasion and presidential-succession markets
+  - A higher market blend weight lowered Brier, and a constant base rate beat the market price
 root_cause: missing_validation
 resolution_type: code_fix
-related_components: [testing_framework]
-tags: [forecast, prediction-markets, calibration, brier, anchor-matching, scoring-artifact]
 ---
 
 # A market anchor that asks a different question lowers Brier without adding information

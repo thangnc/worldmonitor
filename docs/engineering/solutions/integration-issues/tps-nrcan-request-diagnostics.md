@@ -1,8 +1,15 @@
 ---
+title: Diagnose TPS timeouts and NRCan refusals
+date: 2026-10-28
+area: seeders
+problem_type: integration_issue
+tags:
+  - tps
+  - nrcan
+  - railway
+  - timeout
+  - http-403
 module: source workers
-component: TPS and NRCan request diagnostics
-problem_type: observability
-tags: [tps, nrcan, railway, timeout, http-403]
 ---
 
 # Diagnose TPS timeouts and NRCan refusals

@@ -1,27 +1,8 @@
 ---
 title: "Migrating onto a sanctioned helper: prove what the helper ADDS, not the behaviour the refactor preserves"
 date: 2026-08-14
-category: conventions
-module: Panel content-write helpers and their migration coverage
+area: browser
 problem_type: convention
-component: testing_framework
-severity: medium
-applies_when:
-  - "Migrating call sites from a raw primitive onto a sanctioned wrapper/helper that a guard or lint ratchet is pushing you toward"
-  - "A refactor is described as behaviour-preserving and the existing suite stays green through it"
-  - "Deciding what red-then-green evidence a migration PR actually owes, when the obvious behaviour was already correct"
-  - "A ratchet or allowlist entry shrinks but does not vanish, and the remaining count looks like unfinished work"
-  - "Only some writes in a method pair move onto the safe path, leaving siblings on the raw one"
-symptoms:
-  - "The migration diff is large but every existing test stays green, so no new test is written and the PR ships as an unproven refactor"
-  - "A test added for the migration passes both before and after the production change, because it asserts the half that did not change"
-  - "A ratchet entry left at x1 gets driven to zero by a later contributor who reads it as an unfinished migration"
-  - "The guard's own remediation text advises the exact edit that introduces the regression"
-  - "A sibling write in the same method is left on the raw path and becomes the only one missing the wrapper's protection"
-related_components:
-  - testing_framework
-  - development_workflow
-  - frontend_stimulus
 tags:
   - migration-coverage
   - test-teeth
@@ -29,6 +10,20 @@ tags:
   - ratchet-guards
   - refactor-proof
   - behaviour-preserving
+severity: medium
+module: Panel content-write helpers and their migration coverage
+symptoms:
+  - The migration diff is large but every existing test stays green, so no new test is written and the PR ships as an unproven refactor
+  - A test added for the migration passes both before and after the production change, because it asserts the half that did not change
+  - A ratchet entry left at x1 gets driven to zero by a later contributor who reads it as an unfinished migration
+  - The guard's own remediation text advises the exact edit that introduces the regression
+  - A sibling write in the same method is left on the raw path and becomes the only one missing the wrapper's protection
+applies_when:
+  - Migrating call sites from a raw primitive onto a sanctioned wrapper/helper that a guard or lint ratchet is pushing you toward
+  - A refactor is described as behaviour-preserving and the existing suite stays green through it
+  - Deciding what red-then-green evidence a migration PR actually owes, when the obvious behaviour was already correct
+  - A ratchet or allowlist entry shrinks but does not vanish, and the remaining count looks like unfinished work
+  - Only some writes in a method pair move onto the safe path, leaving siblings on the raw one
 ---
 
 # Migrating onto a sanctioned helper: prove what the helper ADDS, not the behaviour the refactor preserves

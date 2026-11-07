@@ -1,20 +1,25 @@
 ---
-title: "Pro activation deep-link targeted API Keys, a capability the Pro plan does not have"
+title: Pro activation deep-link targeted API Keys, a capability the Pro plan does not have
 date: 2026-07-25
-category: logic-errors
-module: pro-activation
+area: payments
 problem_type: logic_error
-component: payments
+tags:
+  - entitlements
+  - pro-activation
+  - deep-link
+  - mcp
+  - capability-gating
+  - stale-closure
+  - test-fidelity
 severity: high
+module: pro-activation
 symptoms:
-  - "Activation wizard step 3 read 'Get your API & MCP keys' and deep-linked to Settings -> API Keys, which renders 'Upgrade to API Starter' for a user who had just paid for Pro"
-  - "Pro entitlement is apiAccess:false / mcpAccess:true (convex/config/productCatalog.ts:138,149), so the promised capability never existed on that plan"
-  - "Naively repointing the link at the MCP tab would have traded the upsell for a settings modal with no active panel, because that tab and its panel are both entitlement-gated"
-  - "A capability read captured into the flow-options closure could go stale before the pointer was clicked, since ProActivationChip replays the captured object"
+  - Activation wizard step 3 read 'Get your API & MCP keys' and deep-linked to Settings -> API Keys, which renders 'Upgrade to API Starter' for a user who had just paid for Pro
+  - Pro entitlement is apiAccess:false / mcpAccess:true (convex/config/productCatalog.ts:138,149), so the promised capability never existed on that plan
+  - Naively repointing the link at the MCP tab would have traded the upsell for a settings modal with no active panel, because that tab and its panel are both entitlement-gated
+  - A capability read captured into the flow-options closure could go stale before the pointer was clicked, since ProActivationChip replays the captured object
 root_cause: wrong_api
 resolution_type: code_fix
-related_components: [testing_framework]
-tags: [entitlements, pro-activation, deep-link, mcp, capability-gating, stale-closure, test-fidelity]
 ---
 
 # Pro activation deep-link targeted API Keys, a capability the Pro plan does not have

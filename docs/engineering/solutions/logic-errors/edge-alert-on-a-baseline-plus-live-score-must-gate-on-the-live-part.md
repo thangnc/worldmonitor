@@ -1,31 +1,31 @@
 ---
 title: An edge alert on a score that adds a standing baseline to live signals must fire on the live part, not the score
 date: 2026-10-17
-category: logic-errors
-module: chokepoint-disruption-alerts
+area: intelligence
 problem_type: logic_error
-component: background_job
+tags:
+  - alerting
+  - edge-trigger
+  - hysteresis
+  - baseline
+  - coalesce-key
+  - chokepoints
+  - notification-relay
+  - upstash
 severity: high
+module: chokepoint-disruption-alerts
+symptoms:
+  - Hormuz and Kerch (war-zone baseline 70) already sit in the red band (50+) with no live signal, so a score-threshold alert fires once on the first tick and never again
+  - Bab el-Mandeb (critical baseline 40) crosses 50 on a single navigational warning and flaps on every tick that adds or drops one
+  - a retried publish minted a new coalesceKey per attempt, so publisher dedup could not suppress the duplicate
+  - a malformed Upstash response body reset the saved fired state, re-alerting every red chokepoint
+  - a reading with disruptionScore null counted as 0 and re-armed a fired chokepoint
 root_cause: logic_error
 resolution_type: code_fix
-symptoms:
-  - "Hormuz and Kerch (war-zone baseline 70) already sit in the red band (50+) with no live signal, so a score-threshold alert fires once on the first tick and never again"
-  - "Bab el-Mandeb (critical baseline 40) crosses 50 on a single navigational warning and flaps on every tick that adds or drops one"
-  - "a retried publish minted a new coalesceKey per attempt, so publisher dedup could not suppress the duplicate"
-  - "a malformed Upstash response body reset the saved fired state, re-alerting every red chokepoint"
-  - "a reading with disruptionScore null counted as 0 and re-armed a fired chokepoint"
-tags:
-  - "alerting"
-  - "edge-trigger"
-  - "hysteresis"
-  - "baseline"
-  - "coalesce-key"
-  - "chokepoints"
-  - "notification-relay"
-  - "upstash"
-related_components:
-  - "testing_framework"
 ---
+
+# An edge alert on a score that adds a standing baseline to live signals must fire on the live part, not the score
+
 ## Problem
 
 PR #9249 (issue #9217) added a `chokepoint_disruption` alert. The first version fired when `disruptionScore` reached the red band (`scoreToStatus`, `server/worldmonitor/supply-chain/v1/_scoring.mjs:57`). That score is a standing threat level per chokepoint (`THREAT_LEVEL`, `_scoring.mjs:17`: war zone 70, critical 40, high 30) plus live signals: navigational warnings, AIS disruption and a transit drop. A threshold on the sum mixes a constant with the thing worth alerting on.

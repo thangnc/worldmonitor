@@ -1,18 +1,24 @@
 ---
-module: railway-ops
+title: A Railway cron schedule lives on the deployment manifest, not the service config
 date: 2026-08-04
+area: seeders
 problem_type: integration_issue
-component: tooling
+tags:
+  - railway
+  - cron
+  - graphql
+  - deployment
+  - provisioning
+  - umami
 severity: high
+module: railway-ops
 symptoms:
-  - "A cron schedule set via serviceInstanceUpdate returns true and reads back correctly, but the service keeps firing on its old schedule"
-  - "A scheduled tick produces no new row in the deployments list, so the cron looks like it never ran"
+  - A cron schedule set via serviceInstanceUpdate returns true and reads back correctly, but the service keeps firing on its old schedule
+  - A scheduled tick produces no new row in the deployments list, so the cron looks like it never ran
   - "serviceInstanceUpdate with builder: DOCKERFILE fails with a bare 'Problem processing request'"
-  - "A service lands in the wrong region despite passing region to serviceInstanceUpdate"
+  - A service lands in the wrong region despite passing region to serviceInstanceUpdate
 root_cause: config_error
 resolution_type: workflow_improvement
-related_components: [background_job, documentation]
-tags: [railway, cron, graphql, deployment, provisioning, umami]
 ---
 
 # A Railway cron schedule lives on the deployment manifest, not the service config

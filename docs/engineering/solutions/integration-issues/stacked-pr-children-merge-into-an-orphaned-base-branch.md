@@ -1,19 +1,24 @@
 ---
 title: Stacked PR children merge into an orphaned base branch when the parent's branch survives
 date: 2026-09-22
-category: integration-issues
-module: GitHub PR workflow (stacked PRs)
+area: ci
 problem_type: integration_issue
-component: development_workflow
+tags:
+  - stacked-prs
+  - github
+  - retarget
+  - squash-merge
+  - stacked-merge-guard
+  - branch-protection
+severity: high
+module: GitHub PR workflow (stacked PRs)
 symptoms:
-  - "A child PR shows MERGED, but its changes are not on main"
-  - "The PR page reads 'merged into feat/<parent-branch>' rather than 'merged into main'"
-  - "The stacked-merge integration monitor files a 'Stacked merge integration ... is unproven' issue after the merge"
-  - "stacked-merge-guard was green on the child when it was merged"
+  - A child PR shows MERGED, but its changes are not on main
+  - The PR page reads 'merged into feat/<parent-branch>' rather than 'merged into main'
+  - The stacked-merge integration monitor files a 'Stacked merge integration ... is unproven' issue after the merge
+  - stacked-merge-guard was green on the child when it was merged
 root_cause: missing_workflow_step
 resolution_type: workflow_improvement
-severity: high
-tags: [stacked-prs, github, retarget, squash-merge, stacked-merge-guard, branch-protection]
 ---
 
 # Stacked PR children merge into an orphaned base branch when the parent's branch survives

@@ -1,14 +1,18 @@
 ---
 title: Meter each embedded panel as one bounded user request
 date: 2026-10-02
-category: performance-issues
-module: api/mcp
+area: mcp
 problem_type: performance_issue
-component: service_object
+tags:
+  - mcp
+  - quota
+  - country-brief
+  - caching
+  - paid-usage
 severity: high
+module: api/mcp
 root_cause: internal_fanout_charged_as_user_requests
 resolution_type: code_fix
-tags: [mcp, quota, country-brief, caching, paid-usage]
 ---
 
 # Embedded-panel usage and cost evidence

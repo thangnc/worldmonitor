@@ -1,17 +1,20 @@
 ---
 title: Reject degraded China macro snapshots at the seed publish boundary
 date: 2026-07-13
-category: logic-errors
-module: China macro seed pipeline
+area: seeders
 problem_type: logic_error
-component: background_job
+tags:
+  - china-macro
+  - seed-validation
+  - last-good
+  - launch-readiness
+severity: high
+module: China macro seed pipeline
 symptoms:
   - Degraded snapshots with four indicator slots could pass seed validation
   - A partial refresh could replace a launch-ready cached snapshot
 root_cause: missing_validation
 resolution_type: code_fix
-severity: high
-tags: [china-macro, seed-validation, last-good, launch-readiness]
 ---
 
 # Reject degraded China macro snapshots at the seed publish boundary

@@ -1,20 +1,25 @@
 ---
 title: Umami answers HTTP 200 when it drops a bot write, and the alarm built on it paged on its own crawler
 date: 2026-08-01
-category: integration-issues
-module: analytics
+area: observability
 problem_type: integration_issue
-component: service_object
+tags:
+  - umami
+  - analytics
+  - sentry
+  - alerting
+  - alert-fatigue
+  - bot-filter
+  - observability
+severity: medium
+module: analytics
 symptoms:
-  - "Sentry issue `Umami collector write failed` at 45 events / 24 users in its first 32 minutes"
+  - Sentry issue `Umami collector write failed` at 45 events / 24 users in its first 32 minutes
   - "61% of the events carry `status: 200` and `failureKind: missing-receipt`"
-  - "Zero `P2002` / `session_data_pkey` events anywhere in Sentry over 14 days — the race the alarm was built for"
-  - "The CI collector monitor stays green while the browser alarm floods"
+  - Zero `P2002` / `session_data_pkey` events anywhere in Sentry over 14 days — the race the alarm was built for
+  - The CI collector monitor stays green while the browser alarm floods
 root_cause: logic_error
 resolution_type: code_fix
-severity: medium
-related_components: [tooling]
-tags: [umami, analytics, sentry, alerting, alert-fatigue, bot-filter, observability]
 ---
 
 # Umami answers HTTP 200 when it drops a bot write, and the alarm built on it paged on its own crawler

@@ -1,20 +1,8 @@
 ---
-title: "USDA FAS PSD lives on api.fas.usda.gov with USDA_FAS_PSD_API_KEY and X-Api-Key"
-module: food-stocks
+title: USDA FAS PSD lives on api.fas.usda.gov with USDA_FAS_PSD_API_KEY and X-Api-Key
 date: 2026-08-12
-category: integration-issues
+area: seeders
 problem_type: integration_issue
-component: background_job
-severity: high
-symptoms:
-  - "PSD seeder cannot authenticate because USDA_FAS_API_KEY is unset"
-  - "apps.fas.usda.gov/OpenData/api/psd returns HTTP 500 An error has occurred"
-  - "api.fas.usda.gov with API_KEY header returns 403 API_KEY_MISSING"
-  - "World snapshot is empty even when country rows parse — validateFoodStocks fails"
-root_cause: wrong_api
-resolution_type: code_fix
-related_components:
-  - service_object
 tags:
   - usda
   - fas
@@ -23,6 +11,15 @@ tags:
   - api-key
   - seeder
   - railway
+severity: high
+module: food-stocks
+symptoms:
+  - PSD seeder cannot authenticate because USDA_FAS_API_KEY is unset
+  - apps.fas.usda.gov/OpenData/api/psd returns HTTP 500 An error has occurred
+  - api.fas.usda.gov with API_KEY header returns 403 API_KEY_MISSING
+  - World snapshot is empty even when country rows parse — validateFoodStocks fails
+root_cause: wrong_api
+resolution_type: code_fix
 ---
 
 # USDA FAS PSD lives on api.fas.usda.gov with USDA_FAS_PSD_API_KEY and X-Api-Key

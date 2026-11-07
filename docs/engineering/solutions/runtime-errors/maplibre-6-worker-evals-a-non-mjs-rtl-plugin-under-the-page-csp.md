@@ -1,29 +1,25 @@
 ---
-title: "MapLibre 6's worker evals a non-.mjs RTL plugin under the page CSP — and ignoreErrors made a universal break look Firefox-only"
+title: MapLibre 6's worker evals a non-.mjs RTL plugin under the page CSP — and ignoreErrors made a universal break look Firefox-only
 date: 2026-09-16
-category: runtime-errors
-module: Map basemap (MapLibre worker) and Sentry error filtering
+area: browser
 problem_type: runtime_error
-component: tooling
-severity: high
-symptoms:
-  - "WORLDMONITOR-12T `Error: call to eval() blocked by CSP` — 354 events in the first six hours after a deploy, every event Firefox (140–156), all OSes, zero frames, via `onunhandledrejection`"
-  - "`firstSeen` sat 7 minutes after the merge of #8209, a PR titled as a Sentry noise-filter change"
-  - "Arabic, Hebrew and Persian map labels rendered unshaped and left-to-right in every browser, with nothing in Sentry for Chromium users"
-  - "Sibling zero-frame issues WORLDMONITOR-12V/12X `Object.hasOwn is not a function` appeared on the same release from iOS 15.3 and a Chromium fork"
-root_cause: wrong_api
-resolution_type: code_fix
-related_components:
-  - development_workflow
-  - testing_framework
 tags:
   - maplibre
   - csp
   - web-worker
   - sentry
-  - ignoreErrors
+  - ignoreerrors
   - dependency-upgrade
   - rtl
+severity: high
+module: Map basemap (MapLibre worker) and Sentry error filtering
+symptoms:
+  - "WORLDMONITOR-12T `Error: call to eval() blocked by CSP` — 354 events in the first six hours after a deploy, every event Firefox (140–156), all OSes, zero frames, via `onunhandledrejection`"
+  - "`firstSeen` sat 7 minutes after the merge of #8209, a PR titled as a Sentry noise-filter change"
+  - Arabic, Hebrew and Persian map labels rendered unshaped and left-to-right in every browser, with nothing in Sentry for Chromium users
+  - Sibling zero-frame issues WORLDMONITOR-12V/12X `Object.hasOwn is not a function` appeared on the same release from iOS 15.3 and a Chromium fork
+root_cause: wrong_api
+resolution_type: code_fix
 ---
 
 # MapLibre 6's worker evals a non-.mjs RTL plugin under the page CSP

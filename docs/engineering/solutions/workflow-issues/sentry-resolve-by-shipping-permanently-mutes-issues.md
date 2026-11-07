@@ -1,20 +1,26 @@
 ---
 title: Resolve-by-shipping silently mutes browser Sentry issues forever
 date: 2026-09-07
-category: workflow-issues
-module: sentry-triage
+area: observability
 problem_type: workflow_issue
-component: development_workflow
+tags:
+  - sentry
+  - resolve-by-shipping
+  - inrelease-pin
+  - github-integration
+  - commit-message
+  - observability
+  - muted-issues
+  - sentry-triage
 severity: high
+module: sentry-triage
 symptoms:
-  - "Issues show status resolved and keep recurring, because the GitHub integration pinned them inRelease to a commit SHA that the stable browser semver release can never exceed"
-  - "A commit message that only quoted the resolving marker while explaining the bug pinned a live issue inCommit, with no code-fence or quoting exemption"
-  - "The repo's own sentry-triage skill taught the pin-creating commit convention as doctrine"
-  - "An issue pinned inRelease with an actor in statusDetails, from a Resolve in release click in the UI rather than from any commit, which no commit-message grep or integration setting can prevent"
+  - Issues show status resolved and keep recurring, because the GitHub integration pinned them inRelease to a commit SHA that the stable browser semver release can never exceed
+  - A commit message that only quoted the resolving marker while explaining the bug pinned a live issue inCommit, with no code-fence or quoting exemption
+  - The repo's own sentry-triage skill taught the pin-creating commit convention as doctrine
+  - An issue pinned inRelease with an actor in statusDetails, from a Resolve in release click in the UI rather than from any commit, which no commit-message grep or integration setting can prevent
 root_cause: config_error
 resolution_type: tooling_addition
-related_components: [tooling, documentation]
-tags: [sentry, resolve-by-shipping, inrelease-pin, github-integration, commit-message, observability, muted-issues, sentry-triage]
 ---
 
 # Resolve-by-shipping silently mutes browser Sentry issues forever

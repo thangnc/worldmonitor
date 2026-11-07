@@ -1,18 +1,22 @@
 ---
 title: A per-test-file V8 coverage probe reports zero for every suite without failing
 date: 2026-09-28
-category: test-failures
-module: tests
+area: tests
 problem_type: test_failure
-component: testing_framework
+tags:
+  - v8-coverage
+  - node-test
+  - test-audit
+  - coverage
+  - sandbox
 severity: medium
+module: tests
 symptoms:
-  - "Every suite, including ones that import production modules, reports zero production files executed"
-  - "NODE_V8_COVERAGE is set but the coverage directory stays empty, with no error from node or the test runner"
+  - Every suite, including ones that import production modules, reports zero production files executed
+  - NODE_V8_COVERAGE is set but the coverage directory stays empty, with no error from node or the test runner
   - "Suites that run production code through vm, new Function, a data: URL import or a child process read as coverage-free"
 root_cause: incomplete_setup
 resolution_type: tooling_addition
-tags: [v8-coverage, node-test, test-audit, coverage, sandbox]
 ---
 
 # A per-test-file V8 coverage probe reports zero for every suite without failing

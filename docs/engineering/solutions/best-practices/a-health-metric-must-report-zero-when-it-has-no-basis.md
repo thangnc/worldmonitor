@@ -1,16 +1,8 @@
 ---
 title: A health metric must report zero when it has no basis, never a flattering number
 date: 2026-08-28
-category: best-practices
-module: scripts/_forecast-scorecard
+area: intelligence
 problem_type: best_practice
-component: background_job
-severity: high
-applies_when:
-  - "Adding a rate or ratio that will be read as evidence a system is healthy"
-  - "A denominator can include outcomes that are not the success the metric claims to measure"
-  - "Instrumentation is added to a system with existing records that predate it"
-  - "An acceptance criterion is phrased as 'X must improve without a compensating increase in Y'"
 tags:
   - observability
   - metrics-design
@@ -18,6 +10,13 @@ tags:
   - goodharts-law
   - instrumentation-migration
   - forecast
+severity: high
+module: scripts/_forecast-scorecard
+applies_when:
+  - Adding a rate or ratio that will be read as evidence a system is healthy
+  - A denominator can include outcomes that are not the success the metric claims to measure
+  - Instrumentation is added to a system with existing records that predate it
+  - An acceptance criterion is phrased as 'X must improve without a compensating increase in Y'
 ---
 
 # A health metric must report zero when it has no basis, never a flattering number

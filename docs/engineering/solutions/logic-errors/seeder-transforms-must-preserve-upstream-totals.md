@@ -1,19 +1,27 @@
 ---
-title: "Seeder transforms silently changed upstream conflict totals (UCDP cap, HAPI category sum, HAPI period retention)"
+title: Seeder transforms silently changed upstream conflict totals (UCDP cap, HAPI category sum, HAPI period retention)
 date: 2026-09-24
-category: logic-errors
-module: conflict seeders (UCDP events, HAPI humanitarian summary, UCDP bootstrap projection)
+area: seeders
 problem_type: logic_error
-component: background_job
+tags:
+  - ucdp
+  - hapi
+  - acled
+  - seeder
+  - invariant
+  - upstream-totals
+  - redis
+  - bootstrap
+  - conflict
+severity: high
+module: conflict seeders (UCDP events, HAPI humanitarian summary, UCDP bootstrap projection)
 symptoms:
-  - "Redis held Ukraine August 2026 UCDP deaths as 524; the UCDP candidate release says 5,648"
-  - "conflict:humanitarian:v1:SA September conflictFatalities read 146, exactly twice the 73 political-violence figure"
-  - "HAPI keys held only the newest month, so no HAPI period overlapped UCDP's newest month"
-  - "Bootstrap key conflict:ucdp-events-bootstrap:v1 carried a dedupeIndex (58 percent of its bytes) that no code read"
+  - Redis held Ukraine August 2026 UCDP deaths as 524; the UCDP candidate release says 5,648
+  - conflict:humanitarian:v1:SA September conflictFatalities read 146, exactly twice the 73 political-violence figure
+  - HAPI keys held only the newest month, so no HAPI period overlapped UCDP's newest month
+  - Bootstrap key conflict:ucdp-events-bootstrap:v1 carried a dedupeIndex (58 percent of its bytes) that no code read
 root_cause: logic_error
 resolution_type: code_fix
-severity: high
-tags: [ucdp, hapi, acled, seeder, invariant, upstream-totals, redis, bootstrap, conflict]
 ---
 
 # Seeder transforms silently changed upstream conflict totals

@@ -1,16 +1,8 @@
 ---
 title: When a requirement and its bound are anchored to different clocks, the failure is deterministic — not a retry candidate
 date: 2026-08-28
-category: best-practices
-module: scripts/seed-forecast-resolutions, scripts/_forecast-evidence-archive
+area: intelligence
 problem_type: best_practice
-component: background_job
-severity: high
-applies_when:
-  - "A job retries an item whose success depends on data with a retention window"
-  - "A requirement is expressed relative to the item (deadline, created_at) but the fetch bound is expressed relative to now"
-  - "Entries pile up in a queue and the diagnosis reaches for capacity or throughput"
-  - "A retry budget exists but nothing distinguishes 'not yet' from 'never again'"
 tags:
   - retry-semantics
   - retention-windows
@@ -18,6 +10,13 @@ tags:
   - fail-closed
   - queue-starvation
   - forecast
+severity: high
+module: scripts/seed-forecast-resolutions, scripts/_forecast-evidence-archive
+applies_when:
+  - A job retries an item whose success depends on data with a retention window
+  - A requirement is expressed relative to the item (deadline, created_at) but the fetch bound is expressed relative to now
+  - Entries pile up in a queue and the diagnosis reaches for capacity or throughput
+  - A retry budget exists but nothing distinguishes 'not yet' from 'never again'
 ---
 
 # When a requirement and its bound are anchored to different clocks, the failure is deterministic — not a retry candidate

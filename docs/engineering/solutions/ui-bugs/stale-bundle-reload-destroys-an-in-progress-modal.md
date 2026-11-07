@@ -1,24 +1,31 @@
 ---
-title: "A forced reload on tab-focus destroys the modal the user left the app to serve"
+title: A forced reload on tab-focus destroys the modal the user left the app to serve
 date: 2026-09-24
-category: ui-bugs
-module: src/bootstrap/stale-bundle-check.ts
+area: browser
 problem_type: ui_bug
-component: frontend_stimulus
+tags:
+  - stale-bundle
+  - forced-reload
+  - modal-preservation
+  - clerk-signup
+  - build-hash
+  - visibilitychange
+  - is-modal-open
+  - safety-net-suppression
+  - vacuous-test-fake
+severity: high
+module: src/bootstrap/stale-bundle-check.ts
 symptoms:
   - "A mobile user cannot complete sign-up: leaving the app to read the emailed Clerk verification code and returning closes the modal the code must be entered into"
   - "`[stale-bundle] reload:` appears in the console immediately on returning to the tab, followed by a navigation"
-  - "The Clerk backdrop and any typed email are gone after the reload; the sign-up attempt has to be restarted from the beginning"
-  - "Reproducible on desktop too, because switching to an email tab raises `visibilitychange` on the dashboard"
+  - The Clerk backdrop and any typed email are gone after the reload; the sign-up attempt has to be restarted from the beginning
+  - Reproducible on desktop too, because switching to an email tab raises `visibilitychange` on the dashboard
   - "Every gate stayed green: the reload is the module's documented purpose and no test asserted anything about in-progress UI"
 root_cause: missing_validation
 resolution_type: code_fix
-severity: high
-related_components:
-  - authentication
-  - testing_framework
-tags: [stale-bundle, forced-reload, modal-preservation, clerk-signup, build-hash, visibilitychange, is-modal-open, safety-net-suppression, vacuous-test-fake]
 ---
+
+# A forced reload on tab-focus destroys the modal the user left the app to serve
 
 ## Problem
 

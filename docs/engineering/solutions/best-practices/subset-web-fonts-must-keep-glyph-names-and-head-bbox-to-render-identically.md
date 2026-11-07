@@ -1,15 +1,8 @@
 ---
 title: Subset web fonts render identically only if they keep glyph names, the original head bbox and Google's instancing rounding
 date: 2026-11-04
-category: best-practices
-module: blog-site/scripts/fonts/subset
+area: public-site
 problem_type: best_practice
-component: tooling
-severity: medium
-applies_when:
-  - "Replacing Google Fonts (or any served font) with self-hosted subsets that must look the same"
-  - "Subsetting or instancing a variable font with fontTools"
-  - "Pixel-diffing font changes in Chromium on macOS"
 tags:
   - web-fonts
   - unicode-range
@@ -19,6 +12,12 @@ tags:
   - coretext
   - pixel-diff
   - blog
+severity: medium
+module: blog-site/scripts/fonts/subset
+applies_when:
+  - Replacing Google Fonts (or any served font) with self-hosted subsets that must look the same
+  - Subsetting or instancing a variable font with fontTools
+  - Pixel-diffing font changes in Chromium on macOS
 ---
 
 # Subset web fonts render identically only if they keep glyph names, the original head bbox and Google's instancing rounding

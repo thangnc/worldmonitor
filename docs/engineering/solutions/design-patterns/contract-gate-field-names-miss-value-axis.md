@@ -1,20 +1,8 @@
 ---
-title: "A contract gate that compares field names certifies a payload that violates the contract"
+title: A contract gate that compares field names certifies a payload that violates the contract
 date: 2026-08-02
-category: design-patterns
-module: proto/sebuf contract gates, supply-chain shipping seeder
+area: proto
 problem_type: design_pattern
-component: testing_framework
-severity: high
-applies_when:
-  - "Building or reviewing a gate that diffs a produced payload against a declared schema (proto, OpenAPI, JSON Schema, Avro, GraphQL SDL)"
-  - "A schema declares fields optional/nullable and a producer and a serving handler could disagree about what missing means"
-  - "A handler casts a cached blob or upstream response to its declared response type without field stripping"
-  - "A gate's coverage roster is hand-written to mirror a composition site that lives elsewhere in the source"
-  - "The schema has nested messages, arrays, or an envelope that a top-level name comparison would not descend into"
-  - "Writing a parser self-check — any count pin used to validate another parser"
-root_cause: missing_validation
-resolution_type: tooling_addition
 tags:
   - contract-tests
   - schema-drift
@@ -24,6 +12,17 @@ tags:
   - vacuous-guard
   - hand-mirrored-coverage
   - anti-drift
+severity: high
+module: proto/sebuf contract gates, supply-chain shipping seeder
+root_cause: missing_validation
+resolution_type: tooling_addition
+applies_when:
+  - Building or reviewing a gate that diffs a produced payload against a declared schema (proto, OpenAPI, JSON Schema, Avro, GraphQL SDL)
+  - A schema declares fields optional/nullable and a producer and a serving handler could disagree about what missing means
+  - A handler casts a cached blob or upstream response to its declared response type without field stripping
+  - A gate's coverage roster is hand-written to mirror a composition site that lives elsewhere in the source
+  - The schema has nested messages, arrays, or an envelope that a top-level name comparison would not descend into
+  - Writing a parser self-check — any count pin used to validate another parser
 ---
 
 # A schema gate that compares field names certifies a payload that violates the contract

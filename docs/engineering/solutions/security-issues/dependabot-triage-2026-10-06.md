@@ -1,8 +1,15 @@
 ---
-module: dependencies
-component: npm and pnpm dependency graphs
+title: Dependabot triage on October 6, 2026
+date: 2026-10-06
+area: tooling
 problem_type: security_issue
-tags: [dependabot, stream-json, katex, hono, sprintf-js]
+tags:
+  - dependabot
+  - stream-json
+  - katex
+  - hono
+  - sprintf-js
+module: dependencies
 ---
 
 # Dependabot triage on October 6, 2026

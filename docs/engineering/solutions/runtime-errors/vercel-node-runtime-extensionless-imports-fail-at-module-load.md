@@ -1,19 +1,24 @@
 ---
-title: "Vercel Node-runtime routes fail at module load on extensionless relative imports"
+title: Vercel Node-runtime routes fail at module load on extensionless relative imports
 date: 2026-10-08
-category: runtime-errors
-module: api/mcp-proxy.ts
+area: mcp
 problem_type: runtime_error
-component: tooling
+tags:
+  - vercel-node-runtime
+  - native-esm
+  - err-module-not-found
+  - import-specifiers
+  - mcp-proxy
+  - ghsa-887j
+  - vercel-build-harness
 severity: high
+module: api/mcp-proxy.ts
 symptoms:
   - "Every request to a route moved to runtime: 'nodejs' returns FUNCTION_INVOCATION_FAILED, OPTIONS preflights included"
-  - "vercel build succeeds and every local test passes under tsx and vitest"
-  - "A plain curl User-Agent sees the bot gate's 403, which masks the 500"
+  - vercel build succeeds and every local test passes under tsx and vitest
+  - A plain curl User-Agent sees the bot gate's 403, which masks the 500
 root_cause: wrong_api
 resolution_type: code_fix
-related_components: [testing_framework, development_workflow]
-tags: [vercel-node-runtime, native-esm, err-module-not-found, import-specifiers, mcp-proxy, ghsa-887j, vercel-build-harness]
 ---
 
 # Vercel Node-runtime routes fail at module load on extensionless relative imports

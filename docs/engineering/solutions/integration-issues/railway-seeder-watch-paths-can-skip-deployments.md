@@ -1,19 +1,23 @@
 ---
 title: Railway defers deploys on a red check suite, not on watch paths
 date: 2026-08-04
-category: integration-issues
-module: railway-seeders
+area: seeders
 problem_type: integration_issue
-component: development_workflow
+tags:
+  - railway
+  - seeders
+  - watch-paths
+  - deployment
+  - health-monitoring
+severity: high
+module: railway-seeders
 symptoms:
-  - "A seeder helper changed on green main, but Railway kept running an older source deployment"
-  - "Seed metadata became stale even though the repository fix had merged"
-  - "Railway recorded the deferral only as a deployment whose status is SKIPPED and whose meta.skippedReason reads 'CI check suite failed'"
-  - "The deploy-drift check reported most of the fleet as REJECTED_PUSH on every merge"
+  - A seeder helper changed on green main, but Railway kept running an older source deployment
+  - Seed metadata became stale even though the repository fix had merged
+  - Railway recorded the deferral only as a deployment whose status is SKIPPED and whose meta.skippedReason reads 'CI check suite failed'
+  - The deploy-drift check reported most of the fleet as REJECTED_PUSH on every merge
 root_cause: config_error
 resolution_type: workflow_improvement
-severity: high
-tags: [railway, seeders, watch-paths, deployment, health-monitoring]
 ---
 
 # Railway defers deploys on a red check suite, not on watch paths

@@ -1,14 +1,18 @@
 ---
-title: "Scope browser and codegen checks, and balance the full data suite"
+title: Scope browser and codegen checks, and balance the full data suite
 date: 2026-09-05
-category: performance-issues
-module: CI tests
+area: ci
 problem_type: performance_issue
-component: testing_framework
+tags:
+  - ci-performance
+  - test-selection
+  - sharding
+  - railway
+  - codegen
+severity: medium
+module: CI tests
 root_cause: config_error
 resolution_type: workflow_improvement
-severity: medium
-tags: [ci-performance, test-selection, sharding, railway, codegen]
 ---
 
 # CI test selection and shards

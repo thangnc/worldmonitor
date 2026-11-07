@@ -1,3 +1,12 @@
+---
+title: Joint Staff X coverage for Japan review candidates
+date: 2026-10-24
+area: seeders
+problem_type: integration_issue
+tags:
+  - seeders
+---
+
 # Joint Staff X coverage for Japan review candidates
 
 ## Evidence from 2026-10-24

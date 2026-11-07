@@ -1,20 +1,8 @@
 ---
-title: "MCP OAuth registration rejected every hosted MCP client except Claude"
+title: MCP OAuth registration rejected every hosted MCP client except Claude
 date: 2026-09-17
-category: integration-issues
-module: "MCP OAuth 2.1 authorization server (api/oauth)"
+area: mcp
 problem_type: integration_issue
-component: authentication
-severity: high
-symptoms:
-  - "POST /oauth/register returned 400 invalid_redirect_uri for https://www.cursor.com/agents/mcp/oauth/callback while Cursor desktop (loopback callback) worked"
-  - "Pro subscribers could not connect from Cursor Agents or Grok Bot and had no API-key fallback, because Pro MCP access is OAuth-only"
-  - "VS Code could never register: it sends four redirect_uris in one request and the cap was three"
-root_cause: missing_validation
-resolution_type: code_fix
-related_components:
-  - documentation
-  - testing_framework
 tags:
   - mcp
   - oauth
@@ -24,6 +12,14 @@ tags:
   - issuer
   - cursor
   - chatgpt
+severity: high
+module: MCP OAuth 2.1 authorization server (api/oauth)
+symptoms:
+  - POST /oauth/register returned 400 invalid_redirect_uri for https://www.cursor.com/agents/mcp/oauth/callback while Cursor desktop (loopback callback) worked
+  - Pro subscribers could not connect from Cursor Agents or Grok Bot and had no API-key fallback, because Pro MCP access is OAuth-only
+  - "VS Code could never register: it sends four redirect_uris in one request and the cap was three"
+root_cause: missing_validation
+resolution_type: code_fix
 ---
 
 # MCP OAuth registration rejected every hosted MCP client except Claude

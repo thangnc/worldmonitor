@@ -1,19 +1,24 @@
 ---
 title: A fail-closed feature shipped dead because its env var was never set in production
 date: 2026-11-01
-category: integration-issues
-module: agent-feedback
+area: mcp
 problem_type: integration_issue
-component: development_workflow
+tags:
+  - env-vars
+  - vercel
+  - fail-closed
+  - usage-ua-pepper
+  - agent-feedback
+  - axiom
+  - deploy-verification
+severity: high
+module: agent-feedback
 symptoms:
-  - "report_issue (MCP) refuses every report with 503 \"Feedback is temporarily unavailable.\" right after deploy"
-  - "CI, tests and tools/list are all green; only a real write fails"
-  - "MCP usage telemetry logs the refusal as reason=rate_limit_degraded, which reads as a limiter outage"
+  - report_issue (MCP) refuses every report with 503 "Feedback is temporarily unavailable." right after deploy
+  - CI, tests and tools/list are all green; only a real write fails
+  - MCP usage telemetry logs the refusal as reason=rate_limit_degraded, which reads as a limiter outage
 root_cause: incomplete_setup
 resolution_type: environment_setup
-severity: high
-related_components: [authentication, background_job]
-tags: [env-vars, vercel, fail-closed, usage-ua-pepper, agent-feedback, axiom, deploy-verification]
 ---
 
 # A fail-closed feature shipped dead because its env var was never set in production

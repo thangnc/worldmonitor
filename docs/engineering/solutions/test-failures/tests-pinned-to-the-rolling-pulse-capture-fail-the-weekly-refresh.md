@@ -1,21 +1,29 @@
 ---
-title: "Tests pinned to the rolling live-pulse capture fail the weekly refresh that replaces it"
+title: Tests pinned to the rolling live-pulse capture fail the weekly refresh that replaces it
 date: 2026-10-12
-last_updated: 2026-11-01
-category: test-failures
-module: crawlable-pulse-refresh
+area: public-site
 problem_type: test_failure
-component: testing_framework
+tags:
+  - crawlable-pulse
+  - weekly-refresh
+  - snapshot-pinning
+  - test-fixture-drift
+  - hormuz
+  - forecast-scorecard
+  - false-red
+  - resilience-snapshot
+  - monthly-refresh
+  - refresh-verify-gate
 severity: medium
+module: crawlable-pulse-refresh
 symptoms:
   - "crawlable-pulse-refresh.yml fails in 'Verify published artifacts' after a clean freeze, and the pulse-freshness monitor opens 'Crawlable pulse refresh: snapshot is going stale' (#9115)"
   - "tests/accuracy-corpus.test.mjs: ENOENT opening docs/snapshots/crawlable-live-pulse-2026-10-05.json, the file the refresh just deleted"
   - "tests/crawlable-corpus.test.mjs: 'The input did not match the regular expression /data-chokepoint-open-status>As of ... source coverage for the Strait of Hormuz is partial/' after Hormuz moved from a partial pulse to a published 76-transit count"
-  - "The workflow still opens a draft PR carrying the capture (#9112), so the fix belongs in that branch"
+  - The workflow still opens a draft PR carrying the capture (#9112), so the fix belongs in that branch
 root_cause: test_fixture_drift
 resolution_type: test_fix
-related_components: [documentation, development_workflow, data_pipeline]
-tags: [crawlable-pulse, weekly-refresh, snapshot-pinning, test-fixture-drift, hormuz, forecast-scorecard, false-red, resilience-snapshot, monthly-refresh, refresh-verify-gate]
+last_updated: 2026-11-01
 ---
 
 # Tests pinned to the rolling live-pulse capture fail the weekly refresh that replaces it

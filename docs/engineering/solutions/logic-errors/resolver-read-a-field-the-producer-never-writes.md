@@ -1,19 +1,24 @@
 ---
-title: "Supply-chain hard specs sealed VOID because the resolver read a field the producer never writes"
+title: Supply-chain hard specs sealed VOID because the resolver read a field the producer never writes
 date: 2026-10-06
-category: logic-errors
-module: scripts/_forecast-resolution-eval
+area: intelligence
 problem_type: logic_error
-component: background_job
+tags:
+  - forecast
+  - resolver
+  - field-name-drift
+  - producer-consumer
+  - fixtures
+  - chokepoints
+  - void
 severity: high
+module: scripts/_forecast-resolution-eval
 symptoms:
-  - "28 of 30 supply-chain chokepoint hard-spec entries in the ledger sealed VOID (26 no_establishable_metric, 2 unsupported_window)"
-  - "The riskScore extractor returned NaN for every live supply_chain:chokepoints:v4 record"
-  - "Resolver tests passed because their fixtures used the generator's renamed shape"
+  - 28 of 30 supply-chain chokepoint hard-spec entries in the ledger sealed VOID (26 no_establishable_metric, 2 unsupported_window)
+  - The riskScore extractor returned NaN for every live supply_chain:chokepoints:v4 record
+  - Resolver tests passed because their fixtures used the generator's renamed shape
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [testing_framework]
-tags: [forecast, resolver, field-name-drift, producer-consumer, fixtures, chokepoints, void]
 ---
 
 # Supply-chain hard specs sealed VOID because the resolver read a field the producer never writes
