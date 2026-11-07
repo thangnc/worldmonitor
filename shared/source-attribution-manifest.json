@@ -10197,6 +10197,9 @@
       "references": [
         {
           "path": "src/config/basemap.ts"
+        },
+        {
+          "path": "src/lite/map/style.ts"
         }
       ]
     },

@@ -8,6 +8,28 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { h, render } from 'preact';
 import { act } from 'preact/test-utils';
 
+// MapLibre needs WebGL, which happy-dom lacks. This double covers only what
+// src/lite/map/LiteMap.tsx calls, and places a marker by appending its element.
+vi.mock('maplibre-gl', () => {
+  class FakeMap {
+    touchZoomRotate = { disableRotation: () => undefined };
+    constructor(readonly options: { container: HTMLElement }) {}
+    getContainer(): HTMLElement { return this.options.container; }
+    fitBounds(): this { return this; }
+    zoomIn(): this { return this; }
+    zoomOut(): this { return this; }
+    remove(): void {}
+  }
+  class FakeMarker {
+    constructor(readonly options: { element: HTMLElement }) {}
+    setLngLat(): this { return this; }
+    addTo(map: FakeMap): this { map.getContainer().appendChild(this.options.element); return this; }
+    remove(): this { this.options.element.remove(); return this; }
+  }
+  return { Map: FakeMap, Marker: FakeMarker, setWorkerUrl: () => undefined };
+});
+vi.mock('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url', () => ({ default: '/maplibre-worker.js' }));
+
 // The bootstrap tiers are out of scope here: resolve them at once and hydrate
 // nothing, so every loader goes straight to its (stubbed) RPC.
 vi.mock('@/services/bootstrap', () => ({
@@ -177,6 +199,15 @@ describe('Lite UI shell', () => {
     // The watchlist has no source yet, so it is badged.
     expect(root.querySelector('[data-testid="watchlist"] [data-sample="true"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="regional-timeline"]')?.textContent).toContain('Naval incident');
+    // The MapLibre map starts, credits its tiles and places one marker per
+    // curated hotspot (UCDP fails here, so only hotspots remain).
+    const map = root.querySelector('[data-testid="conflict-map"] [data-map-status]');
+    expect(map?.getAttribute('data-map-status')).toBe('ready');
+    expect(root.querySelector('[data-map-credits]')?.textContent).toContain('OpenStreetMap');
+    const { INTEL_HOTSPOTS } = await import('../../src/config/geo');
+    const hotspots = INTEL_HOTSPOTS.filter((h) => (h.escalationScore ?? 0) >= 3).map((h) => `hotspot:${h.id}`);
+    expect(hotspots.length).toBeGreaterThan(0);
+    expect([...root.querySelectorAll('[data-marker]')].map((m) => m.getAttribute('data-marker')).sort()).toEqual(hotspots.sort());
 
     // The sidebar's Briefing link returns home.
     await act(() => (root.querySelector('[data-nav="briefing"]') as HTMLAnchorElement).click());
