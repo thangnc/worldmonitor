@@ -295,17 +295,20 @@ function Derivatives({
   );
 }
 
+/** Six rows: one per asset class when every class has a story. */
+const MARKET_EVENT_ROWS = 6;
+
 function MarketEvents({ state, events }: { state: ReturnType<typeof useDigest>; events: ReturnType<typeof selectMarketEvents> }) {
   const now = Date.now();
   return (
-    <Card title="Market-moving events" sub="highest-impact finance stories" right={events.length > 4 ? <span class="text-[12px] font-medium text-ink">{events.length} in digest</span> : undefined} testId="market-events">
+    <Card title="Market-moving events" sub="highest-impact story per asset class, in turns" right={events.length > MARKET_EVENT_ROWS ? <span class="text-[12px] font-medium text-ink">{events.length} in digest</span> : undefined} testId="market-events">
       <div class="border-t border-line">
         {state.status !== 'ready' ? (
           <SourceState state={state} source="news digest (finance edition)" />
         ) : events.length === 0 ? (
           <p class="px-5 py-4 text-[12px] text-dim">No market-moving stories match.</p>
         ) : (
-          events.slice(0, 4).map((e) => {
+          events.slice(0, MARKET_EVENT_ROWS).map((e) => {
             const tag = marketTag(e.category);
             return (
               <a key={e.link} href={e.link} target="_blank" rel="noopener noreferrer" class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-5 py-3 last:border-b-0 hover:bg-surface-2/50">

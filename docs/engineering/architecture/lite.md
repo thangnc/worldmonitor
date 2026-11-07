@@ -24,6 +24,7 @@ Start with a low-noise executive view, keep the existing ingestion architecture,
 | "For me only" | The profile flag plus an access gate in front of the owner's domain. |
 | Hosting | The owner's managed stack (see [Platform map](#platform-map)). The Docker compose stack stays a secondary option with the same flag. |
 | AI models | External APIs allowed, through the existing chain in `server/_shared/llm.ts`. Keys and per-call cost are an operating concern. Local Ollama stays optional. |
+| Conflict data | No ACLED (2026-11-07): API access is hard to obtain. UCDP (`seed-ucdp-events`, `UCDP_ACCESS_TOKEN`) supplies the map events and each country's conflict floor. GDELT country events (`seed-gdelt-bulk-materializer`, no key) supply the realtime conflict and unrest signal; `get-risk-scores.ts` scores them whenever ACLED returns no events. UCDP alone cannot do this, because it is an annual release. Health reports ACLED as `not_configured`, which is not a failure, and the `[CII] ACLED returned 0 events` log line is expected. |
 | Front page | A dedicated Lite UI at `/lite`, built from the owner's designs with Preact and Tailwind CSS. With the flag on it is the default page; the full dashboard stays reachable at `/dashboard?full=1`. See [Lite UI](#lite-ui-lite). |
 
 ### Open decisions
@@ -151,7 +152,7 @@ The rules are in `src/config/lite-route.ts`. `vercel.json`, `docker/nginx.conf*`
 |---|---|---|---|
 | Briefing | Hourly AI brief: lead, cited lines and their sources (`insights`, seed-insights); market pulse tickers; macro calendar and AI regulation deadlines as catalysts | Priority events: each child screen's main list merged, importance ≥ 50, ranked by importance × credibility; momentum from story phase; the confirmed / attributed split from the corroboration rule; "since" counts; market regime (five 24h moves); escalation trend from CII history (±10% is stable); watch alerts from built-in rules (impact, BTC 2h move > 4σ, primary-source AI policy) | None. Open questions, Pin, Split cluster, Mute, Manage and Generate brief are SOON |
 | Geopolitics | UCDP events and curated hotspots on the dot map; priority incidents (digest, medium threat and up) | Region strip from CII and country history; 72-hour report histogram; timeline tags and incident status from a corroboration rule (corroborated by a tier-1 source = confirmed); evidence mix by source class | Watchlist |
-| Finance | Tickers (DXY from gold drivers); hourly BTC closes; Hyperliquid funding and open interest; spot ETF flow (an estimate); breadth; market-moving stories; macro calendar | Risk alerts (fixed thresholds); 48h realized volatility; 14-day correlation of hourly returns (Oil stands in for DXY, which has no hourly series) | Liquidations; BTC volume bars |
+| Finance | Tickers (DXY from gold drivers); hourly BTC closes; Hyperliquid funding and open interest; spot ETF flow (an estimate); breadth; market-moving stories (one copy per story, asset classes in turns, war stories left to Geopolitics); macro calendar | Risk alerts (fixed thresholds); 48h realized volatility; 14-day correlation of hourly returns (Oil stands in for DXY, which has no hourly series) | Liquidations; BTC volume bars |
 | Technology & AI | Material developments (tech digest); policy actions (the curated `src/config/ai-regulations.ts` list); arXiv papers; funding and infrastructure stories | Evidence pills; research signal (arXiv plus Hacker News); watched-topic counts | Model and product tracker; infrastructure KPI tiles |
 
 Alerts, Watchlists, Sources, Scoring rules, Settings and each screen's primary action are shown and marked SOON. They arrive with the phases that give them data.
@@ -177,7 +178,7 @@ Do not add a datastore before its gate is met:
 
 ### Operations
 
-- **Seeder allowlist.** Upstream runs about 250 seeders. The profile runs only those feeding Lite panels. This sets Render cost.
+- **Seeder allowlist.** Upstream runs about 250 seeders. The profile runs only those feeding Lite panels. This sets Render cost. It must include `seed-gdelt-bulk-materializer`: without ACLED it is the only realtime conflict input to the risk scores (see [Owner decisions](#owner-decisions)).
 - **Health.** `api/health.js` grades every registered key. Keys produced only by Railway services or Convex show as stale on the owner's stack, so the profile needs a health key subset matching the allowlist.
 - **Licensing.** `shared/source-attribution-manifest.json` has 1,044 hosts: 735 `terms-review`, 189 `excluded`, 120 `reviewed`. Sixteen are licensed under "the World Monitor agreement", which does not cover the owner. The profile applies a source-policy filter from the manifest's `license` and `status` fields.
 - **AGPL.** A private modified deployment that only the owner uses needs no source offer to others ([self-hosting](../../self-hosting.mdx)); the fork is public anyway.

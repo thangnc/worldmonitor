@@ -13,9 +13,12 @@ import {
   closeToCloseBars,
   decodeEntities,
   digestItems,
+  dropNearDuplicates,
   evidenceClassOf,
   evidenceMix,
   fearGreedState,
+  interleaveByMarketTag,
+  isWarStory,
   realizedVolatility,
   regionOfCategory,
   regionOfPoint,
@@ -154,6 +157,41 @@ describe('Lite transforms', () => {
     const out = digestItems(digest);
     assert.deepEqual(out.map((i) => [i.title, i.category]), [['A', 'europe'], ['B', 'europe']]);
     assert.deepEqual(digestItems(null), []);
+  });
+
+  it('keeps one copy of a story reworded across buckets and outlets', () => {
+    // Real headlines from one finance digest: the same sanctions story five times.
+    const titles = [
+      'US Treasury sanctions eight Canadian money exchange firms over Iran ties - Reuters',
+      'US sanctions Canadian money-exchange firms over Iran ties',
+      'US Treasury sanctions Canadian money services firms over Iran-related activity',
+      'US Sanctions Eight Canadian Money Firms Over Alleged Iran Crypto Links',
+      'Bank of Japan signals December rate hike after inflation reaches 2.1%',
+      'ECB Candidate de Cos Says Vigilance Needed on Inflation Risks - Bloomberg',
+    ];
+    const out = dropNearDuplicates(titles.map((title) => ({ title })));
+    assert.deepEqual(out.map((i) => i.title), [titles[0], titles[4], titles[5]]);
+  });
+
+  it('takes market stories in turns across asset classes', () => {
+    const ranked = [
+      { ...item({ title: 'a1' }), category: 'crypto' },
+      { ...item({ title: 'a2' }), category: 'crypto' },
+      { ...item({ title: 'a3' }), category: 'crypto' },
+      { ...item({ title: 'r1' }), category: 'centralbanks' },
+      { ...item({ title: 'r2' }), category: 'bonds' },
+      { ...item({ title: 'c1' }), category: 'ipo' },
+    ];
+    // Classes start in the order their first story ranks; bonds and central banks are both RATES.
+    assert.deepEqual(interleaveByMarketTag(ranked).map((i) => i.title), ['a1', 'r1', 'c1', 'a2', 'r2', 'a3']);
+    assert.deepEqual(interleaveByMarketTag([]), []);
+  });
+
+  it('leaves war stories to Geopolitics but keeps sanctions in finance', () => {
+    const threat = (category: string) => item({ threat: { level: 'THREAT_LEVEL_HIGH', category, confidence: 0.8, source: 'keyword' } } as Partial<NewsItem>);
+    for (const category of ['conflict', 'military', 'terrorism']) assert.equal(isWarStory(threat(category)), true, category);
+    for (const category of ['economic', 'diplomatic', 'protest', 'general']) assert.equal(isWarStory(threat(category)), false, category);
+    assert.equal(isWarStory(item()), false);
   });
 
   it('labels corroboration, never truth', () => {
