@@ -9,6 +9,7 @@ import type { ListFeedDigestResponse, NewsItem } from '@/generated/client/worldm
 import { getSourceType } from '../../../shared/source-provenance';
 import { MIN_CORROBORATING_PUBLISHERS } from '../../../shared/publisher-families.js';
 import { getSourceTier } from '../../../server/_shared/source-tiers';
+import { SIMILARITY_THRESHOLD, jaccardSimilarity, tokenize } from '../../../shared/text-analysis-core.js';
 
 export type Tone = 'crit' | 'high' | 'elev' | 'ok' | 'muted' | 'dim';
 
@@ -31,6 +32,22 @@ export function digestItems(digest: ListFeedDigestResponse | null | undefined, c
     }
   }
   return out;
+}
+
+/**
+ * Drops near-duplicate headlines: one story filed under several buckets, or
+ * rewritten by several outlets. Uses the dashboard's own title similarity
+ * (Jaccard over tokens, shared/text-analysis-core.js). Input order decides
+ * which copy survives, so sort first.
+ */
+export function dropNearDuplicates<T extends { title: string }>(items: readonly T[]): T[] {
+  const kept: Array<{ item: T; tokens: Set<string> }> = [];
+  for (const item of items) {
+    const tokens = tokenize(item.title);
+    if (kept.some((k) => jaccardSimilarity(tokens, k.tokens) >= SIMILARITY_THRESHOLD)) continue;
+    kept.push({ item, tokens });
+  }
+  return kept.map((k) => k.item);
 }
 
 export function byImportance(a: NewsItem, b: NewsItem): number {
@@ -300,11 +317,48 @@ export function marketTag(category: string): { label: string; tone: 'geo' | 'fin
     case 'bonds':
     case 'economic': return { label: 'RATES', tone: 'fin' };
     case 'forex': return { label: 'FX', tone: 'fin' };
+    case 'ipo': return { label: 'CORPORATE', tone: 'fin' };
     default: return { label: 'MARKETS', tone: 'dim' };
   }
 }
 
-export const MARKET_CATEGORIES = ['markets', 'commodities', 'crypto', 'centralbanks', 'economic', 'bonds', 'forex', 'derivatives', 'fin-regulation'] as const;
+/**
+ * Takes the asset classes in turns (rates, commodities, crypto, FX,
+ * corporate, markets), so the importance score, which rates geopolitical
+ * impact, cannot fill the list with one class. Classes keep input order
+ * among themselves and start in the order their first item appears.
+ */
+export function interleaveByMarketTag(items: readonly LiteItem[]): LiteItem[] {
+  const groups = new Map<string, LiteItem[]>();
+  for (const item of items) {
+    const label = marketTag(item.category).label;
+    const group = groups.get(label);
+    if (group) group.push(item);
+    else groups.set(label, [item]);
+  }
+  const queues = [...groups.values()];
+  const rounds = Math.max(0, ...queues.map((queue) => queue.length));
+  const out: LiteItem[] = [];
+  for (let round = 0; round < rounds; round++) {
+    for (const queue of queues) {
+      const next = queue[round];
+      if (next) out.push(next);
+    }
+  }
+  return out;
+}
+
+/**
+ * War, strike and attack stories that feeds file under market buckets. The
+ * Geopolitics screen carries them; the finance list leaves them out. Sanctions
+ * and trade stories are classed `economic` and stay.
+ */
+export function isWarStory(item: NewsItem): boolean {
+  const category = item.threat?.category;
+  return category === 'conflict' || category === 'military' || category === 'terrorism';
+}
+
+export const MARKET_CATEGORIES = ['markets', 'commodities', 'crypto', 'centralbanks', 'economic', 'bonds', 'forex', 'derivatives', 'fin-regulation', 'ipo'] as const;
 
 export type TechFilter = 'all' | 'models' | 'policy' | 'research' | 'infra';
 

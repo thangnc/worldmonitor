@@ -7,6 +7,9 @@ import {
   TECH_CATEGORIES,
   byImportance,
   digestItems,
+  dropNearDuplicates,
+  interleaveByMarketTag,
+  isWarStory,
   threatRank,
   type LiteItem,
 } from './transforms';
@@ -39,11 +42,16 @@ export function selectIncidents(digest: ListFeedDigestResponse | null): LiteItem
     .sort(byImportance);
 }
 
-/** Market-moving items from the finance edition. */
+/**
+ * Market-moving items from the finance edition: no war stories (Geopolitics
+ * has them), one copy per story (the most important), taken in turns across
+ * asset classes.
+ */
 export function selectMarketEvents(digest: ListFeedDigestResponse | null): LiteItem[] {
-  return digestItems(digest, MARKET_CATEGORIES)
-    .filter((item) => (item.importanceScore || 0) > 0)
+  const ranked = digestItems(digest, MARKET_CATEGORIES)
+    .filter((item) => (item.importanceScore || 0) > 0 && !isWarStory(item))
     .sort(byImportance);
+  return interleaveByMarketTag(dropNearDuplicates(ranked));
 }
 
 /** Material AI and tech developments from the tech edition. */
