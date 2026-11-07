@@ -26,7 +26,20 @@ vi.mock('maplibre-gl', () => {
     addTo(map: FakeMap): this { map.getContainer().appendChild(this.options.element); return this; }
     remove(): this { this.options.element.remove(); return this; }
   }
-  return { Map: FakeMap, Marker: FakeMarker, setWorkerUrl: () => undefined };
+  class FakePopup {
+    private content: HTMLElement | null = null;
+    private map: FakeMap | null = null;
+    private listeners: Array<() => void> = [];
+    on(_type: 'close', fn: () => void): this { this.listeners.push(fn); return this; }
+    setDOMContent(el: HTMLElement): this { this.content = el; return this; }
+    setOffset(): this { return this; }
+    setLngLat(): this { return this; }
+    isOpen(): boolean { return this.map !== null; }
+    addTo(map: FakeMap): this { this.map = map; if (this.content) map.getContainer().appendChild(this.content); return this; }
+    // Like MapLibre: removing a popup fires 'close'.
+    remove(): this { this.content?.remove(); this.map = null; for (const fn of this.listeners) fn(); return this; }
+  }
+  return { Map: FakeMap, Marker: FakeMarker, Popup: FakePopup, setWorkerUrl: () => undefined };
 });
 vi.mock('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url', () => ({ default: '/maplibre-worker.js' }));
 
@@ -206,8 +219,25 @@ describe('Lite UI shell', () => {
     expect(root.querySelector('[data-map-credits]')?.textContent).toContain('OpenStreetMap');
     const { INTEL_HOTSPOTS } = await import('../../src/config/geo');
     const hotspots = INTEL_HOTSPOTS.filter((h) => (h.escalationScore ?? 0) >= 3).map((h) => `hotspot:${h.id}`);
-    expect(hotspots.length).toBeGreaterThan(0);
+    expect(hotspots.length).toBeGreaterThan(1);
     expect([...root.querySelectorAll('[data-marker]')].map((m) => m.getAttribute('data-marker')).sort()).toEqual(hotspots.sort());
+
+    // No popup until a marker is clicked; then exactly that marker's details.
+    expect(root.querySelector('[data-map-popup]')).toBeNull();
+    const first = INTEL_HOTSPOTS.find((h) => `hotspot:${h.id}` === hotspots[0]);
+    await act(() => (root.querySelector(`[data-marker="${hotspots[0]}"] button`) as HTMLButtonElement).click());
+    const popup = root.querySelectorAll('[data-map-popup]');
+    expect(popup.length).toBe(1);
+    expect(popup[0]?.getAttribute('data-map-popup')).toBe(hotspots[0]);
+    expect(popup[0]?.textContent).toContain(first?.name);
+    expect(root.querySelector(`[data-marker="${hotspots[0]}"] button`)?.getAttribute('aria-expanded')).toBe('true');
+    // The close button and Escape both dismiss it.
+    await act(() => (root.querySelector('[data-map-popup] button[aria-label="Close"]') as HTMLButtonElement).click());
+    expect(root.querySelector('[data-map-popup]')).toBeNull();
+    await act(() => (root.querySelector(`[data-marker="${hotspots[1]}"] button`) as HTMLButtonElement).click());
+    expect(root.querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe(hotspots[1]);
+    await act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+    expect(root.querySelector('[data-map-popup]')).toBeNull();
 
     // The sidebar's Briefing link returns home.
     await act(() => (root.querySelector('[data-nav="briefing"]') as HTMLAnchorElement).click());

@@ -1,7 +1,7 @@
-import { type ComponentChild, render } from 'preact';
+import { render } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { Map as MapLibreMap, Marker as MapLibreMarker } from 'maplibre-gl';
-import { Locate, Minus, Plus } from 'lucide-preact';
+import type { Map as MapLibreMap, Marker as MapLibreMarker, Popup as MapLibrePopup } from 'maplibre-gl';
+import { Locate, Minus, Plus, X } from 'lucide-preact';
 import type { Tone } from '../data/transforms';
 import { BG, TEXT, cx } from '../components/ui';
 import { MAP_CREDITS, buildLiteMapStyle, readLiteMapTokens } from './style';
@@ -10,11 +10,12 @@ import { WORLD_BOUNDS, markerBounds } from './view';
 /**
  * The Lite conflict map: MapLibre on OpenFreeMap vector tiles, styled from the
  * Lite `@theme` tokens (./style.ts). The canvas cannot take Tailwind classes,
- * but everything drawn over it can: markers, callouts and the zoom buttons
- * are Preact elements with Tailwind classes, placed by MapLibre markers.
+ * but everything drawn over it can: markers, the popup and the zoom buttons
+ * are Preact elements with Tailwind classes, placed by MapLibre.
  *
- * MapLibre is loaded on first use, so the Briefing, Finance and Tech screens
- * never download it.
+ * Clicking a marker opens its popup; clicking the map, the close button or
+ * pressing Escape closes it. MapLibre is loaded on first use, so the
+ * Briefing, Finance and Tech screens never download it.
  */
 export interface MapMarker {
   id: string;
@@ -23,17 +24,16 @@ export interface MapMarker {
   tone: Tone;
   /** Halo radius in pixels. */
   radius: number;
+  /** Hover text and the marker button's accessible name. */
   title: string;
-}
-
-export interface MapCallout {
-  id: string;
-  lat: number;
-  lon: number;
-  name: string;
-  score: number;
-  tone: Tone;
-  detail: string;
+  /** What the popup shows when the marker is clicked. */
+  popup: {
+    kind: string;
+    name: string;
+    /** The headline figure, in the marker's tone. */
+    value: string;
+    lines: readonly string[];
+  };
 }
 
 type MapLibre = typeof import('maplibre-gl');
@@ -67,44 +67,56 @@ function loadMapLibre(): Promise<MapLibre> {
   return libPromise;
 }
 
-function MarkerDot({ tone, radius }: { tone: Tone; radius: number }) {
-  const size = Math.round(radius * 2);
+function MarkerButton({ marker, selected, onSelect }: { marker: MapMarker; selected: boolean; onSelect: () => void }) {
+  const size = Math.round(marker.radius * 2);
   return (
-    <span class="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <span class={cx('absolute inset-0 rounded-full border', HALO[tone])} />
-      <span class={cx('relative h-[6px] w-[6px] rounded-full', BG[tone])} />
-    </span>
+    <button
+      type="button"
+      aria-label={marker.title}
+      aria-expanded={selected}
+      title={marker.title}
+      class="relative flex cursor-pointer items-center justify-center rounded-full"
+      style={{ width: size, height: size }}
+      onClick={(e) => {
+        // Keep the click off the map, which would close the popup again.
+        e.stopPropagation();
+        onSelect();
+      }}
+    >
+      <span class={cx('absolute inset-0 rounded-full border', HALO[marker.tone], selected && 'ring-1 ring-ink/70')} />
+      <span class={cx('relative h-[6px] w-[6px] rounded-full', BG[marker.tone])} />
+    </button>
   );
 }
 
-function CalloutCard({ callout }: { callout: MapCallout }) {
+function PopupCard({ marker, onClose }: { marker: MapMarker; onClose: () => void }) {
+  const { kind, name, value, lines } = marker.popup;
   return (
-    // Hidden on phones: a 156 px card runs off a narrow map.
-    <div class="pointer-events-none hidden w-[156px] rounded-[6px] border border-line bg-surface/90 px-2 py-[5px] sm:block">
-      <div class="flex items-baseline justify-between gap-2">
-        <span class="truncate text-[11.5px] font-semibold text-ink">{callout.name}</span>
-        <span class={cx('font-mono text-[11px]', TEXT[callout.tone])}>{callout.score}</span>
+    <div class="w-[224px] rounded-[6px] border border-line bg-surface/95 px-3 py-[9px] text-left" data-map-popup={marker.id}>
+      <div class="flex items-start justify-between gap-2">
+        <span class="font-mono text-[9.5px] tracking-[0.4px] text-dim uppercase">{kind}</span>
+        <button type="button" aria-label="Close" class="-mr-1 -mt-px text-dim hover:text-ink" onClick={onClose}>
+          <X size={12} strokeWidth={1.5} />
+        </button>
       </div>
-      <div class="mt-px truncate text-[10px] text-dim">{callout.detail}</div>
+      <div class="mt-[3px] flex items-baseline justify-between gap-2">
+        <span class="text-[12.5px] leading-[17px] font-semibold text-ink">{name}</span>
+        <span class={cx('shrink-0 font-mono text-[11.5px]', TEXT[marker.tone])}>{value}</span>
+      </div>
+      {lines.map((line) => (
+        <p key={line} class="mt-1 line-clamp-3 text-[11px] leading-[15px] text-muted">
+          {line}
+        </p>
+      ))}
     </div>
   );
 }
 
-interface Placement {
-  lat: number;
-  lon: number;
-  title?: string;
-  callout: boolean;
-  node: ComponentChild;
-}
-
 export function LiteMap({
   markers,
-  callouts,
   fit,
 }: {
   markers: readonly MapMarker[];
-  callouts: readonly MapCallout[];
   /** `world` shows the whole map; `markers` zooms to the markers (a region filter). */
   fit: 'world' | 'markers';
 }) {
@@ -112,7 +124,9 @@ export function LiteMap({
   const mapRef = useRef<MapLibreMap | null>(null);
   const libRef = useRef<MapLibre | null>(null);
   const placed = useRef(new Map<string, { marker: MapLibreMarker; el: HTMLElement }>());
+  const popupRef = useRef<{ popup: MapLibrePopup; el: HTMLElement } | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [selected, setSelected] = useState<string | null>(null);
 
   const bounds = fit === 'markers' ? markerBounds(markers) : WORLD_BOUNDS;
   const boundsRef = useRef(bounds);
@@ -170,38 +184,72 @@ export function LiteMap({
     const map = mapRef.current;
     const lib = libRef.current;
     if (status !== 'ready' || !map || !lib) return;
-    const want = new Map<string, Placement>();
-    for (const m of markers) {
-      want.set(m.id, { lat: m.lat, lon: m.lon, title: m.title, callout: false, node: <MarkerDot tone={m.tone} radius={m.radius} /> });
-    }
-    for (const c of callouts) {
-      want.set(`callout:${c.id}`, { lat: c.lat, lon: c.lon, callout: true, node: <CalloutCard callout={c} /> });
-    }
     const onMap = placed.current;
+    const ids = new Set(markers.map((m) => m.id));
     for (const [id, { marker, el }] of onMap) {
-      if (want.has(id)) continue;
+      if (ids.has(id)) continue;
       render(null, el);
       marker.remove();
       onMap.delete(id);
     }
-    for (const [id, p] of want) {
-      let entry = onMap.get(id);
+    for (const m of markers) {
+      let entry = onMap.get(m.id);
       if (!entry) {
         const el = document.createElement('div');
-        if (p.callout) el.className = 'z-[1]';
-        else el.dataset.marker = id;
-        const marker = new lib.Marker(p.callout ? { element: el, anchor: 'top-left', offset: [10, 8] } : { element: el })
-          .setLngLat([p.lon, p.lat])
-          .addTo(map);
-        entry = { marker, el };
-        onMap.set(id, entry);
+        el.dataset.marker = m.id;
+        entry = { marker: new lib.Marker({ element: el }).setLngLat([m.lon, m.lat]).addTo(map), el };
+        onMap.set(m.id, entry);
       } else {
-        entry.marker.setLngLat([p.lon, p.lat]);
+        entry.marker.setLngLat([m.lon, m.lat]);
       }
-      if (p.title) entry.el.title = p.title;
-      render(p.node, entry.el);
+      const id = m.id;
+      render(<MarkerButton marker={m} selected={selected === id} onSelect={() => setSelected((s) => (s === id ? null : id))} />, entry.el);
     }
-  }, [status, markers, callouts]);
+  }, [status, markers, selected]);
+
+  // One popup, for the selected marker. MapLibre places it so it stays on screen.
+  useEffect(() => {
+    const map = mapRef.current;
+    const lib = libRef.current;
+    if (status !== 'ready' || !map || !lib) return;
+    const marker = markers.find((m) => m.id === selected);
+    if (!marker) {
+      if (popupRef.current?.popup.isOpen()) popupRef.current.popup.remove();
+      if (selected) setSelected(null);
+      return;
+    }
+    if (!popupRef.current) {
+      const el = document.createElement('div');
+      const popup = new lib.Popup({ closeButton: false, closeOnClick: true, focusAfterOpen: false, maxWidth: 'none', className: 'lite-map-popup' });
+      popup.setDOMContent(el);
+      // Map clicks and the close button both end here.
+      popup.on('close', () => setSelected(null));
+      popupRef.current = { popup, el };
+    }
+    const { popup, el } = popupRef.current;
+    popup.setOffset(marker.radius + 4).setLngLat([marker.lon, marker.lat]);
+    render(<PopupCard marker={marker} onClose={() => popup.remove()} />, el);
+    if (!popup.isOpen()) popup.addTo(map);
+  }, [status, markers, selected]);
+
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelected(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [selected]);
+
+  useEffect(
+    () => () => {
+      if (!popupRef.current) return;
+      render(null, popupRef.current.el);
+      popupRef.current.popup.remove();
+      popupRef.current = null;
+    },
+    [],
+  );
 
   // Refit when the region filter changes the area of interest.
   useEffect(() => {

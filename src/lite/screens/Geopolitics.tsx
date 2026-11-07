@@ -5,7 +5,7 @@ import { INTEL_HOTSPOTS } from '@/config/geo';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { BarStrip, StackedBar } from '../components/charts';
 import { BG, BORDER, Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, Switch, TEXT, cx } from '../components/ui';
-import { LiteMap, type MapCallout, type MapMarker } from '../map/LiteMap';
+import { LiteMap, type MapMarker } from '../map/LiteMap';
 import { selectIncidents, useCountryHistory, useDigest, useRiskScores, useUcdpEvents } from '../data/hooks';
 import { ESCALATION_REGIONS, leadCountry } from '../data/regions';
 import { SAMPLE_WATCHLIST } from '../data/fixtures';
@@ -106,9 +106,8 @@ function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflict
   const ucdp = useUcdpEvents();
   const digest = useDigest('full');
 
-  const { markers, callouts } = useMemo(() => {
+  const markers = useMemo(() => {
     const out: MapMarker[] = [];
-    const callouts: MapCallout[] = [];
     if (layers.conflicts && ucdp.status === 'ready') {
       // Cluster UCDP events on a 2° grid so dense theatres read as one marker.
       const cells = new Map<string, { lat: number; lon: number; deaths: number; events: number; country: string; latest: number }>();
@@ -126,10 +125,24 @@ function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflict
       const ranked = [...cells.entries()].sort((a, b) => b[1].deaths - a[1].deaths).slice(0, 40);
       for (const [key, c] of ranked) {
         const tone = severityFromDeaths(c.deaths);
-        out.push({ id: `ucdp:${key}`, lat: c.lat, lon: c.lon, tone, radius: 4 + Math.min(8, Math.sqrt(c.deaths)), title: `${c.country}: ${c.deaths} deaths, ${c.events} UCDP events` });
-      }
-      for (const [key, c] of ranked.slice(0, 2)) {
-        callouts.push({ id: `ucdp:${key}`, lat: c.lat, lon: c.lon, name: c.country, score: c.deaths, tone: severityFromDeaths(c.deaths), detail: `UCDP · ${c.events} events · ${c.deaths} deaths` });
+        out.push({
+          id: `ucdp:${key}`,
+          lat: c.lat,
+          lon: c.lon,
+          tone,
+          radius: 4 + Math.min(8, Math.sqrt(c.deaths)),
+          title: `${c.country}: ${c.deaths} deaths, ${c.events} UCDP events`,
+          popup: {
+            kind: 'UCDP conflict events',
+            name: c.country,
+            value: `${c.deaths.toLocaleString('en-US')} deaths`,
+            lines: [
+              // One 2° grid cell; the seeder keeps the 12 months before UCDP's newest event.
+              `${c.events} ${c.events === 1 ? 'event' : 'events'} in this 2° area over UCDP's latest 12 months`,
+              c.latest ? `Latest event ${new Date(c.latest).toISOString().slice(0, 10)}` : '',
+            ].filter(Boolean),
+          },
+        });
       }
     }
     if (layers.hotspots) {
@@ -138,10 +151,23 @@ function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflict
         if (score < 3) continue;
         if (region !== 'all' && regionOfPoint(h.lat, h.lon) !== region) continue;
         const tone: Tone = score >= 5 ? 'crit' : score >= 4 ? 'high' : 'elev';
-        out.push({ id: `hotspot:${h.id}`, lat: h.lat, lon: h.lon, tone, radius: 3 + score, title: `${h.name}: escalation ${score}/5 (curated hotspot)` });
+        out.push({
+          id: `hotspot:${h.id}`,
+          lat: h.lat,
+          lon: h.lon,
+          tone,
+          radius: 3 + score,
+          title: `${h.name}: escalation ${score}/5 (curated hotspot)`,
+          popup: {
+            kind: 'Curated hotspot',
+            name: h.name,
+            value: `${score}/5`,
+            lines: [h.location ?? h.subtext ?? '', h.description ?? ''].filter(Boolean),
+          },
+        });
       }
     }
-    return { markers: out, callouts };
+    return out;
   }, [ucdp, region, layers]);
 
   const scrub = useMemo(() => {
@@ -175,7 +201,7 @@ function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflict
       }
     >
       <div class="relative h-[300px] overflow-hidden bg-bg/40 md:h-[380px]">
-        <LiteMap markers={markers} callouts={callouts} fit={region === 'all' ? 'world' : 'markers'} />
+        <LiteMap markers={markers} fit={region === 'all' ? 'world' : 'markers'} />
         {ucdp.status !== 'ready' && layers.conflicts ? (
           <div class="absolute left-14 right-14 top-4 flex justify-start">
             <div class="rounded-[6px] border border-line bg-surface/90 px-2">

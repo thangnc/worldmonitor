@@ -46,3 +46,17 @@
 		outline-offset: 2px;
 	}
 }
+
+/* The conflict map popup (src/lite/map/LiteMap.tsx) is a Tailwind card; drop
+   MapLibre's white box and tip around it. Unlayered on purpose: maplibre-gl.css
+   is unlayered, so layered rules would always lose to it. */
+.lite-map-popup .maplibregl-popup-content {
+	background: transparent;
+	border-radius: 0;
+	box-shadow: none;
+	padding: 0;
+}
+
+.lite-map-popup .maplibregl-popup-tip {
+	display: none;
+}
