@@ -313,11 +313,11 @@ function MarketEvents({ state, events }: { state: ReturnType<typeof useDigest>; 
                   <span class={cx('h-[6px] w-[6px] rounded-full', tag.tone === 'geo' ? 'bg-geo' : tag.tone === 'fin' ? 'bg-fin' : 'bg-dim')} />
                   <span class="font-mono text-[10.5px] font-medium tracking-[0.6px] text-muted">{tag.label}</span>
                 </span>
-                <span class="flex min-w-0 flex-1 flex-col gap-[3px]">
+                <span class="flex min-w-0 flex-1 basis-full flex-col gap-[3px] md:basis-0">
                   <span class="text-[13px] font-medium text-ink">{e.title}</span>
                   <span class="text-[11.5px] text-dim">{e.source} · {sourceCount(e)} report{sourceCount(e) === 1 ? '' : 's'} · {relativeTime(e.publishedAt, now)}</span>
                 </span>
-                <span class="font-mono text-[11.5px] text-muted md:w-[160px] md:text-right">{e.tickers.length ? e.tickers.slice(0, 3).join(' · ') : `impact ${Math.round(e.importanceScore)}`}</span>
+                <span class="font-mono text-[11.5px] text-muted md:w-[160px] md:shrink-0 md:text-right">{e.tickers.length ? e.tickers.slice(0, 3).join(' · ') : `impact ${Math.round(e.importanceScore)}`}</span>
               </a>
             );
           })
