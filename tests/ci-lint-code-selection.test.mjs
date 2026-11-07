@@ -89,13 +89,12 @@ esac
 }
 
 function assertFailsOpen(result) {
-  assert.deepEqual(result, { code: 'true', markdown: 'true', docs: 'true' });
+  assert.deepEqual(result, { code: 'true', docs: 'true' });
 }
 
 test('doc-anchors runs for every repository input that can change rendered anchors', () => {
   const docsOnly = classify(['docs/about.mdx']);
   assert.equal(docsOnly.code, 'false');
-  assert.equal(docsOnly.markdown, 'false');
   assert.equal(docsOnly.docs, 'true');
   for (const file of [
     'scripts/check-doc-anchors.mjs',
@@ -157,14 +156,12 @@ test('the weekly renderer canary keeps every required lint classifier enabled', 
   assert.deepEqual(workflow.on.schedule, [{ cron: '17 6 * * 1' }]);
   const result = classify([], { event: 'schedule' });
   assert.equal(result.code, 'true');
-  assert.equal(result.markdown, 'true');
   assert.equal(result.docs, 'true');
 });
 
 test('pushes to main keep every gated lint classifier enabled', () => {
   const result = classify([], { event: 'push' });
   assert.equal(result.code, 'true');
-  assert.equal(result.markdown, 'true');
   assert.equal(result.docs, 'true');
 });
 

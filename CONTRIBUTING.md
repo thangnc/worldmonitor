@@ -327,6 +327,11 @@ After each default-branch scan, the `prune-overlay-bases` job deletes every Code
 overlay-base cache except the newest per workflow/job/language group, because
 CodeQL saves a new base under a unique key on every run and never removes old ones.
 
+On the `thangnc/worldmonitor` fork, code scanning is off. The owner turned off
+default setup on 2026-11-07 to free CI runners, and `codeql.yml` runs only on manual
+dispatch there because its schedule is gated to `koala73/worldmonitor`. The handover
+below applies when scanning is turned back on.
+
 The repository owner must coordinate activation with the approved merge:
 
 1. Keep default setup enabled while reviewing this workflow. Advanced analysis
