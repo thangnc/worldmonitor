@@ -1978,7 +1978,7 @@ describe('CI workflow coverage', () => {
     }
     // Prose under docs/ stays excluded — the carve-out is for the machine
     // artifact, not for the directory.
-    for (const path of ['docs/api-reference.mdx', 'docs/perf/openapi-bundle-capacity-2026-08-13.md']) {
+    for (const path of ['docs/api-reference.mdx', 'docs/engineering/research/perf/openapi-bundle-capacity-2026-08-13.md']) {
       assert.ok(!codeFilterSays(path), `${path} must not set code=true`);
     }
 
@@ -2964,7 +2964,7 @@ describe('docker-publish conditions', () => {
   it('republishes on a push to main only when the image definition changes', () => {
     // `on.push` rather than a job-level `if:` -- docker-publish.yml publishes
     // no gate-required check, so the "never gate on a workflow's paths:"
-    // convention (docs/solutions/conventions/…) does not apply here.
+    // convention (docs/engineering/solutions/conventions/…) does not apply here.
     const push = (dockerPublish as { on: { push?: { branches?: string[]; paths?: string[]; 'paths-ignore'?: string[] } } }).on.push;
     assert.ok(push, 'docker-publish.yml must trigger on push');
     assert.deepEqual(push.branches, ['main']);

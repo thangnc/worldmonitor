@@ -578,7 +578,7 @@ export interface ParsedItem {
   // link + description). Sibling stamp to isOpinion — same persistence,
   // same buildDigest read-path filter. The brief is event-driven; a
   // vintage-warplane veterans' reunion in a 9,800-person town is not an
-  // event. See docs/plans/2026-05-17-001-fix-feelgood-lifestyle-filter-plan.md
+  // event. See docs/engineering/plans/2026-05-17-001-fix-feelgood-lifestyle-filter-plan.md
   // (Veterans-warplanes anchor case, May 17 0802 brief).
   isFeelGood: boolean;
   // Ephemeral live-programming classification. "WATCH LIVE: ..." and
@@ -2907,7 +2907,7 @@ function buildStoryTrackHsetFields(
     // missing/non-string: shared/brief-filter.js:384's
     // `asTrimmedString(raw.category) || 'General'` fallback converts
     // empty back to 'General' for graceful degradation. See plan
-    // docs/plans/2026-05-17-002-fix-persist-story-track-category-plan.md.
+    // docs/engineering/plans/2026-05-17-002-fix-persist-story-track-category-plan.md.
     'category', typeof item.category === 'string' ? item.category : '',
   ];
 }

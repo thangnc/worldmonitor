@@ -3,7 +3,7 @@
  * them in tests/lite-ui-transforms.test.mts.
  *
  * Every rule here is a labelled heuristic shown as "Derived" in the UI, never
- * presented as a confirmed fact (docs/architecture/lite.md, "Lite UI").
+ * presented as a confirmed fact (docs/engineering/architecture/lite.md, "Lite UI").
  */
 import type { ListFeedDigestResponse, NewsItem } from '@/generated/client/worldmonitor/news/v1/service_client';
 import { getSourceType } from '../../../shared/source-provenance';

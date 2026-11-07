@@ -9,7 +9,7 @@
 // importance/severity classifier wrongly tagged a community
 // human-interest feature as HIGH because "veterans"/"war"/"planes"
 // register as conflict-relevant vocabulary. See plan
-// docs/plans/2026-05-17-001-fix-feelgood-lifestyle-filter-plan.md.
+// docs/engineering/plans/2026-05-17-001-fix-feelgood-lifestyle-filter-plan.md.
 //
 // This module is the SINGLE classifier — sibling to classifyOpinion —
 // imported by BOTH the ingest path (list-feed-digest.ts → stamps

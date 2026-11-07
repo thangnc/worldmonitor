@@ -27,7 +27,7 @@
  *   command whose own request or result crosses 50MiB is rejected.
  *   Even a full hash returned no more than ~1.2KB, so the limit
  *   cannot bind on this path at any chunk size. See
- *   docs/solutions/integration-issues/upstash-max-request-size-counts-one-command-and-answers-http-200.md
+ *   docs/engineering/solutions/integration-issues/upstash-max-request-size-counts-one-command-and-answers-http-200.md
  *
  * Why bail-on-failure (return null):
  *   The caller pairs `trackResults[i]` with `hashes[i]` (see

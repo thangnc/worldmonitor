@@ -178,7 +178,7 @@ export class InsightsPanel extends Panel {
    * #7118: the persistent cache only exists for REPEAT visitors, so before
    * this the early paint did nothing on a cold visit — the brief waited for
    * the whole pipeline and became the field LCP element at p75 ~3.5s (#7113,
-   * docs/perf/field-lcp-dashboard-2026-08-24.md). `insights` rides the FAST
+   * docs/engineering/research/perf/field-lcp-dashboard-2026-08-24.md). `insights` rides the FAST
    * bootstrap tier (api/_bootstrap-tier-keys.js), so on a cold visit the
    * brief is usually already hydrated — fall back to it. The cache is still
    * preferred: it is the cheaper read and needs no bootstrap round trip.

@@ -305,7 +305,7 @@ describe('Umami retention runner check (#6375)', () => {
     // The runbook hands the operator the same command to run by hand. A shallower
     // window there returns push refusals and hides the tick they came to look at.
     const runbook = readFileSync(
-      new URL('../docs/analytics-collector-operations.md', import.meta.url),
+      new URL('../docs/engineering/runbooks/analytics-collector-operations.md', import.meta.url),
       'utf8',
     );
     const [, documentedLimit] = runbook.match(/--service umami-retention --limit (\d+)/u) ?? [];

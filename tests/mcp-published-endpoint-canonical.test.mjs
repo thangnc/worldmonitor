@@ -84,7 +84,8 @@ const EXEMPT = [
   /^tests\//,
   /^e2e\//,
   /\.test\.[cm]?[jt]sx?$/,
-  /^docs\/(?:solutions|research|brainstorms|plans|archive)\//,
+  /^docs\/(?:research|brainstorms|plans)\//,
+  /^docs\/engineering\/(?:solutions|research|plans|archive)\//,
 ];
 const BINARY = /\.(?:png|jpe?g|gif|webp|avif|ico|icns|pdf|woff2?|ttf|otf|mp4|webm|zip|gz|br|pmtiles|wasm|parquet|bin)$/i;
 

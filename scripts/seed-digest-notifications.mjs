@@ -361,7 +361,7 @@ async function callAnalystWhyMatters(story) {
 }
 
 // Personalised digest prose carries the user's profile and greeting, so it
-// honours that user's AI routing policy (docs/internal/ai-routing-policy.md).
+// honours that user's AI routing policy (docs/engineering/architecture/ai-routing-policy.md).
 // Story-level calls (why-matters, descriptions) use shared story content only.
 const resolveAiRoutingPolicy = createAiRoutingPolicyResolver({ siteUrl: CONVEX_SITE_URL, secret: RELAY_SECRET });
 
@@ -783,7 +783,7 @@ async function buildDigest(rule, windowStartMs) {
     // re-classify pre-stamp residue rows from persisted title/link/
     // description. The brief is event-driven; a vintage-warplane
     // veterans' reunion in a 9,800-person town is not an event. See
-    // docs/plans/2026-05-17-001-fix-feelgood-lifestyle-filter-plan.md.
+    // docs/engineering/plans/2026-05-17-001-fix-feelgood-lifestyle-filter-plan.md.
     //
     // M6 / adv-005 — opinion+feel-good counter asymmetry: a row matched
     // by BOTH classifiers (columnist-nostalgia essay; op-ed-with-tribute

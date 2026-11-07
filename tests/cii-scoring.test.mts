@@ -2679,8 +2679,8 @@ describe('CII scoring', () => {
       'docs/overview.mdx',
       'docs/features.mdx',
       'docs/methodology/cii-risk-scores.mdx',
-      'docs/Docs_To_Review/DOCUMENTATION.md',
-      'docs/COMMUNITY-PROMOTION-GUIDE.md',
+      'docs/engineering/archive/legacy/DOCUMENTATION.md',
+      'docs/engineering/product/COMMUNITY-PROMOTION-GUIDE.md',
     ];
     const stalePatterns = [
       /\b(?:20|22|24)\s+(?:curated\s+)?(?:monitored\s+|strategically\s+significant\s+)?(?:Tier[- ]?1\s+)?(?:countries|nations)\b/i,

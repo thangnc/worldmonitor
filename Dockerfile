@@ -47,7 +47,7 @@ RUN node docker/build-handlers.mjs
 # build:pro installs pro-test's own lockfile.
 RUN npm run build:pro
 
-# World Monitor Lite deployment profile (docs/architecture/lite.md). Off by default;
+# World Monitor Lite deployment profile (docs/engineering/architecture/lite.md). Off by default;
 # pass --build-arg VITE_LITE_PROFILE=true to open the image on /lite.
 ARG VITE_LITE_PROFILE=
 ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}

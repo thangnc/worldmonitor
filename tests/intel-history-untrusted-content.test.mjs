@@ -25,7 +25,7 @@ const read = (relative) =>
   readFileSync(fileURLToPath(new URL(`../${relative}`, import.meta.url)), 'utf8');
 
 const HISTORY_TOOLS = ['search_intel_history', 'get_intel_timeline', 'get_similar_events'];
-const DECISION_DOC = 'docs/architecture/intel-history-untrusted-text.md';
+const DECISION_DOC = 'docs/engineering/architecture/intel-history-untrusted-text.md';
 
 function findTool(name) {
   const tool = TOOL_REGISTRY.find((t) => t.name === name);

@@ -275,7 +275,7 @@ const ALLOW_VERCEL_PREVIEW_ORIGINS = process.env.ALLOW_VERCEL_PREVIEW_ORIGINS ==
 //
 // OpenSky's rate limit is per ACCOUNT (4,000 credits/day, keyed on OPENSKY_CLIENT_ID —
 // see scripts/_opensky-account-cooldown.cjs and
-// docs/solutions/integration-issues/opensky-bbox-area-billing-flat-top-tier.md), NOT per
+// docs/engineering/solutions/integration-issues/opensky-bbox-area-billing-flat-top-tier.md), NOT per
 // exit IP. A residential exit therefore buys no extra quota, and an automatic
 // proxy-on-failure fallback would spend a SECOND account credit retrying the one error
 // class a different IP cannot fix (429). That is strictly worse on both axes: more paid
@@ -6209,7 +6209,7 @@ async function handleWingbitsTrackRequest(req, res) {
 // pair (3,192 and 1,160 sq°) spent 8 credits/cycle for less coverage than 4
 // buys. The proxy already treats a bbox-less request as a valid global query
 // (normalizeOpenSkyBbox returns the ',,,' cache key). See
-// docs/solutions/integration-issues/opensky-bbox-area-billing-flat-top-tier.md (#6222).
+// docs/engineering/solutions/integration-issues/opensky-bbox-area-billing-flat-top-tier.md (#6222).
 async function fetchTheaterFlightsFromOpenSky() {
   const seenIds = new Set();
   const allFlights = [];

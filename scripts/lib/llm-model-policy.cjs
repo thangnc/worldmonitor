@@ -32,7 +32,7 @@ const OPENROUTER_FREE_PRIMARY_MODEL = 'google/gemma-4-26b-a4b-it:free';
 // 2026-12-31), inkling (expires 2026-11-04), flint (endpoint down).
 //
 // This overrides the 2026-08-15 research decision not to use this model in
-// production (docs/research/openrouter-free-model-fallback-2026-08-15.md):
+// production (docs/engineering/research/openrouter-free-model-fallback-2026-08-15.md):
 // NVIDIA logs free-endpoint prompts and its API Trial Terms cover trial and
 // evaluation use. Accepted for a best-effort outage leg; the addendum in that
 // doc records the decision. Text users type (chat-analyst, deduct-situation)

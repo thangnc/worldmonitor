@@ -41,7 +41,7 @@ describe('public documentation plan-reference guard', () => {
     const legacyDir = join(docsDir, 'legacy');
 
     try {
-      writeFileSync(join(docsDir, '.mintignore'), 'internal/\nplans/\n');
+      writeFileSync(join(docsDir, '.mintignore'), 'engineering/\ninternal/\nplans/\n');
       writeFileSync(join(docsDir, '.mintlifyignore'), 'internal/\nlegacy/\nplans/\n');
       mkdirSync(legacyDir);
       writeFileSync(join(legacyDir, 'note.md'), 'See `docs/plans/internal-roadmap.md`.\n');
@@ -54,13 +54,14 @@ describe('public documentation plan-reference guard', () => {
     }
   });
 
-  it('requires Mintlify to ignore both internal documentation directories', () => {
+  it('requires Mintlify to ignore the engineering records and both scratch directories', () => {
     const docsDir = mkdtempSync(join(tmpdir(), 'public-doc-plan-references-'));
 
     try {
       writeFileSync(join(docsDir, '.mintignore'), 'plans/\n');
 
       assert.deepEqual(findPublicDocumentationViolations(docsDir), [
+        'docs/.mintignore: must ignore engineering/',
         'docs/.mintignore: must ignore internal/',
       ]);
     } finally {
@@ -74,7 +75,7 @@ describe('public documentation plan-reference guard', () => {
     const plansDir = join(docsDir, 'plans');
 
     try {
-      writeFileSync(join(docsDir, '.mintignore'), 'internal/\nplans/\n');
+      writeFileSync(join(docsDir, '.mintignore'), 'engineering/\ninternal/\nplans/\n');
       mkdirSync(internalDir);
       mkdirSync(plansDir);
       writeFileSync(join(internalDir, 'note.md'), 'See `docs/plans/internal-roadmap.md`.\n');
@@ -92,6 +93,7 @@ describe('public documentation plan-reference guard', () => {
     try {
       assert.deepEqual(findPublicDocumentationViolations(docsDir), [
         'docs/.mintignore: missing required Mintlify ignore file',
+        'docs/.mintignore: must ignore engineering/',
         'docs/.mintignore: must ignore plans/',
         'docs/.mintignore: must ignore internal/',
       ]);
@@ -104,7 +106,7 @@ describe('public documentation plan-reference guard', () => {
     const docsDir = mkdtempSync(join(tmpdir(), 'public-doc-plan-references-'));
 
     try {
-      writeFileSync(join(docsDir, '.mintignore'), 'internal/\nplans/\n!plans/example.md\n!/internal/example.md\n');
+      writeFileSync(join(docsDir, '.mintignore'), 'engineering/\ninternal/\nplans/\n!plans/example.md\n!/internal/example.md\n');
 
       assert.deepEqual(findPublicDocumentationViolations(docsDir), [
         'docs/.mintignore: must not re-include plans/ content: !plans/example.md',
@@ -120,7 +122,7 @@ describe('documentation publication coverage', () => {
   function fixture(t, pages = ['guide']) {
     const dir = mkdtempSync(join(tmpdir(), 'doc-publication-'));
     t.after(() => rmSync(dir, { recursive: true, force: true }));
-    writeFileSync(join(dir, '.mintignore'), 'internal/\nplans/\n');
+    writeFileSync(join(dir, '.mintignore'), 'engineering/\ninternal/\nplans/\n');
     writeFileSync(join(dir, 'docs.json'), JSON.stringify({ navigation: { pages } }));
     writeFileSync(join(dir, 'guide.mdx'), '# Guide\n');
     return dir;
@@ -162,7 +164,7 @@ describe('documentation publication coverage', () => {
 
   it('rejects an excluded navigation target and a missing navigation source', t => {
     const dir = fixture(t, ['guide', 'missing']);
-    writeFileSync(join(dir, '.mintignore'), 'internal/\nplans/\nguide.mdx\n');
+    writeFileSync(join(dir, '.mintignore'), 'engineering/\ninternal/\nplans/\nguide.mdx\n');
     assert.deepEqual(inspectDocumentationPublication(dir).violations, [
       'docs/guide.mdx: excluded page is still in navigation',
       'docs/docs.json: navigation page has no Markdown source: missing',
@@ -181,7 +183,7 @@ describe('documentation publication coverage', () => {
 
   it('fails closed on ignore syntax it cannot evaluate', t => {
     const dir = fixture(t);
-    writeFileSync(join(dir, '.mintignore'), 'internal/\nplans/\n*.md\n');
+    writeFileSync(join(dir, '.mintignore'), 'engineering/\ninternal/\nplans/\n*.md\n');
     assert.match(inspectDocumentationPublication(dir).violations[0], /requires literal relative files or directories/);
   });
 });

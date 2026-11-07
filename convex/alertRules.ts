@@ -506,7 +506,7 @@ export const setQuietHoursForUser = internalMutation({
  * All fields optional — caller passes only what changed. Patch logic preserves
  * existing.sensitivity when caller omits it (no silent narrowing of digest users).
  *
- * See docs/archive/plans/forbid-realtime-all-events.md §1d.
+ * See docs/engineering/archive/plans/forbid-realtime-all-events.md §1d.
  */
 export const setNotificationConfigForUser = internalMutation({
   args: {

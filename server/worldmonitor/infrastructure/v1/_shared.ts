@@ -319,7 +319,7 @@ const CONTENT_CLOCK_EXTRACTORS: Record<
  * Every configured COUNT_SOURCE_KEYS source contributes a clock, reduced with
  * min() — a live fires feed must not hide a frozen news feed, and vice versa.
  * See CONCEPTS.md "Content-Age Contract" and
- * docs/solutions/design-patterns/multi-source-freshness-clock-must-reduce-with-min.md.
+ * docs/engineering/solutions/design-patterns/multi-source-freshness-clock-must-reduce-with-min.md.
  *
  * Returns null when no contributing source is datable, when a contributing
  * source has items that cannot be dated, or when a configured COUNT_SOURCE_KEYS

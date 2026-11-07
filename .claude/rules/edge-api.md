@@ -25,7 +25,7 @@ Source of truth: CLAUDE.md "Critical boundaries", [docs/adding-endpoints.mdx](..
 - A new RPC path is classified once in each of `PREMIUM_RPC_PATHS`, `PUBLIC_NO_AUTH_RPC_PATHS`, and the rate-limit policy (`ENDPOINT_RATE_POLICIES`) when it needs one.
 - A new outbound host in a URL literal needs a row in `shared/source-attribution-manifest.json` (`npm run sources:generate`).
 - Before exposing a tool through MCP (`api/mcp.ts`), answer the "MCP exposure decision" section of the endpoint guide. A mutating tool also needs the abuse and tool-contract answers.
-- Never let a reader turn a failed read into an empty success. See `docs/solutions/conventions/a-degrading-accessor-turns-a-failed-read-into-a-confident-absence.md`.
+- Never let a reader turn a failed read into an empty success. See `docs/engineering/solutions/conventions/a-degrading-accessor-turns-a-failed-read-into-a-confident-absence.md`.
 
 ## Verify
 

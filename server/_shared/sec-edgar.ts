@@ -327,7 +327,7 @@ async function loadCikMap(): Promise<CikMap | null> {
  * - name: case-insensitive exact SEC title only, and only when that title maps
  *   to a single CIK. Unique *prefix* matching was removed: a short unique
  *   prefix (e.g. "delta") is still a guess, and uniqueness is not ownership
- *   (docs/solutions unique-match-is-not-identity). Prefer ticker when known.
+ *   (docs/engineering/solutions unique-match-is-not-identity). Prefer ticker when known.
  *
  * There is deliberately NO domain path. Matching a domain label against filer
  * names is a guess, and confirming that guess needs a domain the authority

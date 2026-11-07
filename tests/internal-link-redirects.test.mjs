@@ -235,7 +235,8 @@ function generatedRoutes(outDir) {
  * and a file outside the nav is still served: on 2026-10-21 all six unlisted,
  * unignored pages (cross-border-movements, country-history-operations and four
  * more) answered 200 on www.worldmonitor.app, and sampled ignored pages
- * answered 404. .mintignore holds only exact paths and `dir/` prefixes.
+ * answered 404. Those six moved into docs/engineering/ on 2026-11-07 and are
+ * no longer built. .mintignore holds only exact paths and `dir/` prefixes.
  */
 function docsRoutes() {
   const files = new Set();
@@ -254,7 +255,7 @@ function docsRoutes() {
     .filter((line) => line && !line.startsWith('#'));
   assert.ok(ignorePatterns.every((p) => !/[*?[\]!]/.test(p)), 'docs/.mintignore gained a glob; teach docsRoutes to match it');
   const ignored = (file) => ignorePatterns.some((p) => (p.endsWith('/')
-    ? file.startsWith(p) // `architecture/` hides docs/architecture/*, not architecture.mdx
+    ? file.startsWith(p) // `engineering/` hides docs/engineering/*, not a sibling engineering.mdx
     : [`${file}.md`, `${file}.mdx`].includes(p)));
   assert.ok(files.size > 100, `docs page extraction found ${files.size} files`);
   return new Set([...files].filter((file) => !ignored(file)).map((page) => `/docs/${page}`));
@@ -750,7 +751,9 @@ describe('internal links never redirect or 404 (#8603)', () => {
       ['/countries/not-a-country/', /resolves to no published route \(404\)/],
       ['/docs/not-a-page', /resolves to no published route \(404\)/],
       ['/docs/roadmap-pro', /resolves to no published route \(404\)/],
-      ['/docs/architecture/pizzint-history', /resolves to no published route \(404\)/],
+      ['/docs/engineering/architecture/pizzint-history', /resolves to no published route \(404\)/],
+      // Unlisted engineering record that used to publish; docs/engineering/ is ignored.
+      ['/docs/cross-border-movements', /resolves to no published route \(404\)/],
     ];
     for (const [href, expected] of cases) {
       const reasons = reasonFor(href);
@@ -772,7 +775,6 @@ describe('internal links never redirect or 404 (#8603)', () => {
       'https://tech.worldmonitor.app/?mode=agent',
       '/countries/norway/',
       '/docs/algorithms',
-      '/docs/cross-border-movements',
       '/docs/architecture',
       '/docs/corrections',
       '/docs/api-reference/supplychainservice/listfuelshortages',

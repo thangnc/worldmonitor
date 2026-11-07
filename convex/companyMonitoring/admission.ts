@@ -243,10 +243,10 @@ async function admissionScopeIsActive(
 
 // The admission classifier reaches its model only through OpenRouter
 // (scripts/lib/company-monitoring-classifier-client.mjs), under the frozen
-// evaluation route in docs/internal/company-monitoring/provider-policy.md.
+// evaluation route in docs/engineering/research/company-monitoring/provider-policy.md.
 // Rerouting it per account would invalidate that evaluation, so an owner whose
 // AI routing policy excludes OpenRouter has the candidate rejected before any
-// evidence is sent (docs/internal/ai-routing-policy.md).
+// evidence is sent (docs/engineering/architecture/ai-routing-policy.md).
 export const COMPANY_MONITORING_CLASSIFIER_PROVIDER = "openrouter";
 
 async function admissionBlockedByAiRoutingPolicy(

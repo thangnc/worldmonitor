@@ -187,7 +187,7 @@ describe('the chokepoint handler serves only declared FlowSource values (#6101)'
     const response = await getChokepointStatus({} as never, {} as never);
     // Assert on the SERIALIZED response, not the in-process object: the wire is
     // JSON, and absent-vs-null-vs-"" only diverge across that boundary. Same
-    // discipline docs/solutions/design-patterns/contract-gate-field-names-miss-value-axis.md
+    // discipline docs/engineering/solutions/design-patterns/contract-gate-field-names-miss-value-axis.md
     // prescribes for this message family.
     const wire = JSON.parse(JSON.stringify(response)) as typeof response;
     served = new Map(

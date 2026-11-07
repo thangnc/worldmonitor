@@ -74,7 +74,7 @@ function countAnalysisSignalTypes(): number {
 
 test('public signal docs keep their listed signal count in sync with the SignalType union', () => {
   const expectedCount = countAnalysisSignalTypes();
-  for (const path of ['docs/signal-intelligence.mdx', 'docs/Docs_To_Review/DOCUMENTATION.md'] as const) {
+  for (const path of ['docs/signal-intelligence.mdx', 'docs/engineering/archive/legacy/DOCUMENTATION.md'] as const) {
     const doc = readRepo(path);
     const countMatch = doc.match(/lists (\d+) distinct signal types/);
     assert.ok(countMatch, `${path} must publish the listed signal type count`);

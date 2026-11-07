@@ -1458,7 +1458,7 @@ test('a snapshot that parses but covers nothing demotes rather than going dark',
 });
 
 test('a slow-failing snapshot does not starve the demoted per-country fan-out', async () => {
-  // docs/solutions/design-patterns/primary-fallback-inversion-budget-transfer.md,
+  // docs/engineering/solutions/design-patterns/primary-fallback-inversion-budget-transfer.md,
   // filed against this module: inverting primary/fallback silently transfers the
   // shared budget to the new primary, so a SLOW (not down) primary permanently
   // disables the emergency fallback. The doc prescribes exactly this

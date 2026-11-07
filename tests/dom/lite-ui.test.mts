@@ -1,4 +1,4 @@
-// World Monitor Lite UI shell (src/lite/, docs/architecture/lite.md "Lite UI").
+// World Monitor Lite UI shell (src/lite/, docs/engineering/architecture/lite.md "Lite UI").
 // Renders the real App with fetch stubbed: one digest fixture, one insights
 // snapshot, every other source failing. Proves the Briefing home and its three
 // child screens render, planned items are marked "soon", sample widgets carry

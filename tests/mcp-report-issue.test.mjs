@@ -1,6 +1,6 @@
 // report_issue (#8721): the MCP door to the agent feedback write path.
 //
-// What these tests pin, from docs/architecture/agent-feedback-threat-model.md:
+// What these tests pin, from docs/engineering/architecture/agent-feedback-threat-model.md:
 //   - caller identity comes from the request and the auth context, never from
 //     the arguments (Entry paths);
 //   - keyed means a Pro or `wm_` principal that passes the entitlement

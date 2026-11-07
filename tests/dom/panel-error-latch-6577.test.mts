@@ -33,7 +33,7 @@
  * shared `Panel` helper: a single mutation of `clearErrorState()` would be
  * killed by any one of them, but a per-site regression (one panel left on
  * `setErrorState`) is only visible if every site is exercised separately.
- * See docs/solutions/conventions/mutate-each-call-site-a-global-mutant-hides-per-site-holes.md
+ * See docs/engineering/solutions/conventions/mutate-each-call-site-a-global-mutant-hides-per-site-holes.md
  *
  * The LOADING branches must NOT move to `clearErrorState()`, and the final
  * describe block pins that. Resetting `retryAttempt` on a loading render would

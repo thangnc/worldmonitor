@@ -216,7 +216,7 @@ describe('buildStoryTrackHsetFields — story:track:v1 HSET contract', () => {
     // category is written as the canonical lowercase EventCategory value
     // (display capitalization happens once in shared/brief-filter.js at
     // envelope build, not here). See plan
-    // docs/plans/2026-05-17-002-fix-persist-story-track-category-plan.md.
+    // docs/engineering/plans/2026-05-17-002-fix-persist-story-track-category-plan.md.
     const conflictItem = baseItem({ category: 'conflict' });
     assert.strictEqual(fieldsToMap(buildStoryTrackHsetFields(conflictItem, '1745000000000', 42)).get('category'), 'conflict');
     const healthItem = baseItem({ category: 'health' });

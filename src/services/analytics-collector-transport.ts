@@ -572,7 +572,7 @@ export function isRetryableCollectorFailure(failure: CollectorFailure): boolean 
   // same answer. Releasing the queue must not be paid for in duplicate
   // conversions (#6288). #6968 keeps this door closed: hidden-tab writes are
   // held instead of raced, so the remaining `raced` population is still an
-  // outstanding request. See docs/analytics-collector-operations.md.
+  // outstanding request. See docs/engineering/runbooks/analytics-collector-operations.md.
   if (failure.raced) return false;
   // A dropped request never reached the network, but re-queueing it just feeds
   // the same saturated queue.

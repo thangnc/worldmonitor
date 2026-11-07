@@ -8,7 +8,7 @@
 // counterparty only as the aggregate `5J`. That does not hold: on 2026-10-18
 // `Q.S.C.A.TO1.A.5J.A.GB.A..N` (empty counterparty) returned 228 counterparty
 // countries, and seed-capital-flows.mjs reads the bilateral series (see
-// docs/solutions/integration-issues/bis-lbs-publishes-bilateral-counterparty-series.md).
+// docs/engineering/solutions/integration-issues/bis-lbs-publishes-bilateral-counterparty-series.md).
 // This seeder still uses `WS_CBS_PUB` (Consolidated Banking Statistics)
 // because it needs by-PARENT foreign claims on an ultimate-risk basis,
 // which only CBS publishes.

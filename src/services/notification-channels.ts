@@ -484,7 +484,7 @@ export async function syncWatchlistTickersToAlertRule(
  * Thrown when the server rejects a (digestMode, sensitivity) pair as incompatible
  * — currently the (realtime, all) combination. UI catches this specifically to
  * render the helper text inline rather than surfacing a generic error.
- * See docs/archive/plans/forbid-realtime-all-events.md §1f.
+ * See docs/engineering/archive/plans/forbid-realtime-all-events.md §1f.
  */
 export class IncompatibleDeliveryError extends Error {
   constructor(message: string) {

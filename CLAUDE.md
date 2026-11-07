@@ -18,7 +18,7 @@ Deeper references: [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIB
 
 ## Product direction: World Monitor Lite profile
 
-The owner runs a private, low-noise build of the `full` variant, focused on three domains: geopolitics and conflicts, finance and crypto, and technology and AI. [docs/architecture/lite.md](docs/architecture/lite.md) is the canonical spec: scope by panel ID, owner decisions, platform map, intelligence reuse map, and phase plan. Change it before changing scope or architecture. File-level rules are in `.claude/rules/lite-profile.md`.
+The owner runs a private, low-noise build of the `full` variant, focused on three domains: geopolitics and conflicts, finance and crypto, and technology and AI. [docs/engineering/architecture/lite.md](docs/engineering/architecture/lite.md) is the canonical spec: scope by panel ID, owner decisions, platform map, intelligence reuse map, and phase plan. Change it before changing scope or architecture. File-level rules are in `.claude/rules/lite-profile.md`.
 
 - New work serves one of the three domains, or passes the spec's decision rule for optional modules. Say which when proposing it.
 - Lite behavior and custom features sit behind the profile env flag. With the flag off, behavior matches upstream. Do not add a `lite` variant.
@@ -150,7 +150,7 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 **`shared/` vs `src/shared/`.** The top-level `shared/` holds logic that both the browser and server/MCP must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side.
 
-**Other surfaces.** `api/mcp.ts` (MCP server), `sdk/`, `cli/`, `pro-test/` (pro landing site, built into `public/pro`), `blog-site/` (built into `public/blog`), `docs/` (Mintlify), `skills/` (published product recipes, distinct from the `.claude/skills/` engineering skills). `claude-plugin/`, `gemini-extension.json`, and `public/agents.md` distribute the product to agent clients. They are not development tooling.
+**Other surfaces.** `api/mcp.ts` (MCP server), `sdk/`, `cli/`, `pro-test/` (pro landing site, built into `public/pro`), `blog-site/` (built into `public/blog`), `docs/` (Mintlify public site; engineering records live in `docs/engineering/`, mapped by [its README](docs/engineering/README.md)), `skills/` (published product recipes, distinct from the `.claude/skills/` engineering skills). `claude-plugin/`, `gemini-extension.json`, and `public/agents.md` distribute the product to agent clients. They are not development tooling.
 
 ## Critical boundaries
 
@@ -171,8 +171,8 @@ The browser import direction is `types -> config -> services -> components -> ap
 - For Sentry events, invoke the `sentry-triage` skill. Its default is read-only triage.
 - To deliver a change from a worktree, the user runs `/ship`. It verifies, commits signed, pushes `<type>/<slug>`, opens the PR on `thangnc/worldmonitor`, and watches CI. It never merges or deploys on its own.
 - After changing `api/`, `server/`, `scripts/seed-*`, or `src/services/`, run the `edge-contract-reviewer` subagent on the diff before opening a PR.
-- Read [documented solutions](docs/solutions/) when the affected area has a prior fix — organized by category directory (`security-issues/`, `logic-errors/`, `conventions/`, …) with YAML frontmatter (`module`, `component`, `problem_type`, `tags`) to grep. Use [CONCEPTS.md](CONCEPTS.md) for shared terms and [design philosophy](docs/architecture.mdx) for design decisions.
-- When a session teaches a durable repo convention, record it in `docs/solutions/` or the matching `.claude/rules/` file, not only in personal memory.
+- Read [documented solutions](docs/engineering/solutions/) when the affected area has a prior fix — organized by category directory (`security-issues/`, `logic-errors/`, `conventions/`, …) with YAML frontmatter (`module`, `component`, `problem_type`, `tags`) to grep. Use [CONCEPTS.md](CONCEPTS.md) for shared terms and [design philosophy](docs/architecture.mdx) for design decisions.
+- When a session teaches a durable repo convention, record it in `docs/engineering/solutions/` or the matching `.claude/rules/` file, not only in personal memory.
 
 Run the smallest meaningful proof first. Preserve useful regression coverage. Run heavy checks sequentially. Report failures honestly. Keep locally verified, PR ready, merged, deployed, observed in production, and acceptance complete as separate claims.
 

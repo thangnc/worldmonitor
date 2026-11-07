@@ -1,5 +1,5 @@
 /**
- * Feature: World Monitor Lite UI at /lite (docs/architecture/lite.md "Lite UI").
+ * Feature: World Monitor Lite UI at /lite (docs/engineering/architecture/lite.md "Lite UI").
  *
  * Launch with VITE_LITE_PROFILE=true and WM_VERIFY_EXPECT=lite (the default)
  * to prove the default route, the Briefing home and its three child screens,

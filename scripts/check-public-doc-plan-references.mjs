@@ -2,7 +2,9 @@
 /**
  * Internal planning documents must never be reachable from public Mintlify
  * content. Gitignore does not protect already-tracked plans, so enforce the
- * boundary at the documentation publication surface.
+ * boundary at the documentation publication surface. Engineering records
+ * (docs/engineering/) must stay out of publication too; plans/ and internal/
+ * remain required as local scratch roots.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -12,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const DOCS_DIR = join(SCRIPT_DIR, '..', 'docs');
 const MINTLIFY_IGNORE_FILE = '.mintignore';
-const REQUIRED_IGNORES = ['plans/', 'internal/'];
+const REQUIRED_IGNORES = ['engineering/', 'plans/', 'internal/'];
 const PLAN_REFERENCE_PATTERN = /(?:(?:^|[^A-Za-z0-9_-])docs\/|(?:\.\.\/)+|\.\/|(?:^|[^A-Za-z0-9_-]))plans\//i;
 
 function decodePercentEscape(encodedSequence) {

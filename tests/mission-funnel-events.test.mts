@@ -81,8 +81,8 @@ describe('funnel event vocabulary (U8)', () => {
     }
   });
 
-  it('documents every funnel event in docs/analytics/mission-funnel-events.md', () => {
-    const doc = read('docs/analytics/mission-funnel-events.md');
+  it('documents every funnel event in docs/engineering/research/analytics/mission-funnel-events.md', () => {
+    const doc = read('docs/engineering/research/analytics/mission-funnel-events.md');
     for (const ev of FUNNEL_EVENTS) {
       assert.ok(doc.includes(`\`${ev}\``), `event '${ev}' missing from the funnel reference doc`);
     }

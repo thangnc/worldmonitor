@@ -15,7 +15,7 @@ paths:
 - Product facts, `llms.txt`, the AI search briefing, source attribution, catalogs, locales, and legal digests are derived files. Change the generator input, then run `npm run generate`. Never hand-edit the output.
 - `skills/` holds published product recipes for API and MCP consumers. Engineering skills for Claude Code live in `.claude/skills/`. Do not mix them.
 - `CLAUDE.md` is the canonical agent guide. `.claude/rules/` files stay short and link to `CLAUDE.md`, CONTRIBUTING.md, or `docs/`. Do not copy rules between them. Do not add guide files for other agent tools (`AGENTS.md`, `.cursor/`, `.windsurf/`).
-- Record a solved problem in `docs/solutions/<category>/` with YAML frontmatter (`module`, `component`, `problem_type`, `tags`). Title it with the lesson, not the symptom.
+- Record a solved problem in `docs/engineering/solutions/<category>/` with YAML frontmatter (`module`, `component`, `problem_type`, `tags`). Title it with the lesson, not the symptom.
 
 ## Verify
 

@@ -433,7 +433,7 @@ describe('Umami storage monitor', () => {
     // floor on purpose (it encodes the measured cold-batch constraint, not one
     // blessed number), so a floor alone would let 300 -> 180 pass silently.
     const runbook = readFileSync(
-      new URL('../docs/analytics-collector-operations.md', import.meta.url),
+      new URL('../docs/engineering/runbooks/analytics-collector-operations.md', import.meta.url),
       'utf8',
     );
 

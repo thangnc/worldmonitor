@@ -1,5 +1,5 @@
 /**
- * Routing rules for the World Monitor Lite UI (`/lite`, docs/architecture/lite.md).
+ * Routing rules for the World Monitor Lite UI (`/lite`, docs/engineering/architecture/lite.md).
  *
  * Pure functions so node:test can cover them without a browser. The flag itself
  * lives in `lite-profile.ts`; callers pass it in.

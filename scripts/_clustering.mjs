@@ -306,7 +306,7 @@ export function recencyWeight(cluster, nowMs = Date.now()) {
  * #6428: this used to be two feed LABELS, which two editions of one newsroom
  * satisfied. Two publishers is a strictly stronger bar at the same number, so
  * the threshold was re-measured rather than left at 2 by assumption — see
- * docs/solutions/best-practices/corroboration-counts-publisher-families.md.
+ * docs/engineering/solutions/best-practices/corroboration-counts-publisher-families.md.
  *
  * Re-exported from the shared module so this gate, the entity bucket below,
  * and the digest's sibling bucket in list-feed-digest.ts cannot drift apart.

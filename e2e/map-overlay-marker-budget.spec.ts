@@ -45,7 +45,7 @@ const EXPECTED_DASHBOARD_METRIC_BUDGETS = {
 } as const;
 // #7867: 15 cold loads across five CI runs measured 8,956-10,065 renderer
 // nodes at first paint. 12,000 leaves 16% of the ceiling above the observed max.
-// Evidence and sample completeness: docs/solutions/performance-issues/cold-dashboard-first-paint-budget.md.
+// Evidence and sample completeness: docs/engineering/solutions/performance-issues/cold-dashboard-first-paint-budget.md.
 const FIRST_PAINT_METRIC_BUDGETS = {
   ...DASHBOARD_METRIC_BUDGETS,
   rendererNodes: 12000,

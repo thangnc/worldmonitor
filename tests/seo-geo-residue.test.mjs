@@ -427,7 +427,7 @@ describe('GEO residue #7616 (U1 agent surfaces)', () => {
       'blog-site/src/data/glossary.ts',
       'docs/features.mdx',
       'docs/documentation.mdx',
-      'docs/PRESS_KIT.md',
+      'docs/engineering/product/PRESS_KIT.md',
       'public/home.md',
       'public/ai-search.md',
     ];

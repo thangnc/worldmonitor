@@ -2,7 +2,7 @@
 
 Captured from public provider responses on 2026-10-29. Source catalog URLs and
 licence caveats are in `scripts/shared/regional-energy-feeds.json` and
-`docs/regional-energy-feeds.md`.
+`docs/engineering/architecture/regional-energy-feeds.md`.
 
 HTML and CSV fixtures retain only representative headers and rows. CAMMESA JSON
 retains representative national samples. Petrobangla and GSE JSON contain text,

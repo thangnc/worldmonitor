@@ -8,7 +8,7 @@ import { describe, it } from 'node:test';
 
 const root = resolve(import.meta.dirname, '..');
 const envExample = readFileSync(resolve(root, '.env.example'), 'utf8');
-const runbook = readFileSync(resolve(root, 'docs/railway-seed-consolidation-runbook.md'), 'utf8');
+const runbook = readFileSync(resolve(root, 'docs/engineering/runbooks/railway-seed-consolidation-runbook.md'), 'utf8');
 const normalizedRunbook = runbook.replace(/\s+/g, ' ');
 
 const SHARED_ENV = ['R2_ACCOUNT_ID', 'R2_ENDPOINT', 'R2_BOOTSTRAP_BUCKET', 'IRAN_EVENTS_ENABLED'];

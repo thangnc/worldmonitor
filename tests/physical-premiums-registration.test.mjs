@@ -60,7 +60,7 @@ describe('physical premium production registration', () => {
 
   it('aligns paper freshness with the daily publisher and health alarm', () => {
     const bundle = read('scripts/seed-bundle-macro.mjs');
-    const runbook = read('docs/railway-seed-consolidation-runbook.md');
+    const runbook = read('docs/engineering/runbooks/railway-seed-consolidation-runbook.md');
     const healthSrc = read('api/health.js');
 
     assert.match(

@@ -29,7 +29,7 @@
  * behind on `replaceChildren` — which is precisely the state #6678 exists to
  * end. So every migrated write is exercised separately, the same argument
  * `panel-error-latch-6577.test.mts` makes for `clearErrorState()`.
- * See docs/solutions/conventions/mutate-each-call-site-a-global-mutant-hides-per-site-holes.md
+ * See docs/engineering/solutions/conventions/mutate-each-call-site-a-global-mutant-hides-per-site-holes.md
  *
  * LATENT, like the #6577 cases, and for the same kind of reason. None of these
  * five keys is in `WEB_PREMIUM_PANELS` (`src/app/panel-layout.ts:126`), so

@@ -24,7 +24,7 @@ RUN npm ci --include=dev --ignore-scripts
 # can be added here or via --build-arg for custom builds; see .env.example for the full list.
 ARG VITE_VARIANT=full
 ARG VITE_WS_API_URL=https://api.worldmonitor.app
-# World Monitor Lite deployment profile (docs/architecture/lite.md). Off by default.
+# World Monitor Lite deployment profile (docs/engineering/architecture/lite.md). Off by default.
 ARG VITE_LITE_PROFILE=
 
 ENV VITE_VARIANT=${VITE_VARIANT}

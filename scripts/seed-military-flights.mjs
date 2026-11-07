@@ -930,7 +930,7 @@ async function getOpenSkyToken() {
 // area with a flat top tier — anything above 400 sq° costs 4 credits, exactly
 // what a global query costs — so the previous PACIFIC+WESTERN pair (1,296 and
 // 4,824 sq°) spent 8 credits/run for strictly less coverage than 4 buys. See
-// docs/solutions/integration-issues/opensky-bbox-area-billing-flat-top-tier.md (#6222).
+// docs/engineering/solutions/integration-issues/opensky-bbox-area-billing-flat-top-tier.md (#6222).
 // Exported as a test seam: the full fetchAllStates path staggers 13 blind-spot
 // regions at 1s each before reaching this tier, which is far too slow for the
 // retry-contract tests that need to drive it directly.

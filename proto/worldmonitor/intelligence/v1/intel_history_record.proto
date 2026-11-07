@@ -8,7 +8,7 @@ import "sebuf/http/annotations.proto";
 // table (convex/intelHistory.ts) after each run. Storing feed text verbatim is
 // deliberate (#5743): an archive whose text was edited at ingest is no longer
 // evidence of what the source published. See
-// docs/architecture/intel-history-untrusted-text.md for the full decision and
+// docs/engineering/architecture/intel-history-untrusted-text.md for the full decision and
 // the retraction path. Defined in its own file because all three RPCs reuse
 // it, matching the satellite.proto convention. (Detached: kept out of the
 // public spec.)

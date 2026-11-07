@@ -20,7 +20,7 @@ paths:
 
 # World Monitor Lite profile
 
-Source of truth: [docs/architecture/lite.md](../../docs/architecture/lite.md). Read the matching section before changing panels, layers, feeds, seeders, or deployment config.
+Source of truth: [docs/engineering/architecture/lite.md](../../docs/engineering/architecture/lite.md). Read the matching section before changing panels, layers, feeds, seeders, or deployment config.
 
 ## Rules
 

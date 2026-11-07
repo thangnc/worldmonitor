@@ -43,7 +43,7 @@ import { recordCreatedCheckoutSession } from "./checkoutSessionLog";
 // MCP paid-funnel campaign marker (#6716). Imported, never re-declared: a
 // second copy of this normalisation is exactly the drift that produced the
 // display-vs-enforcement divergence documented in
-// docs/solutions/security-issues/mcp-quota-credential-class-vs-plan-family-scoping-bypass.md.
+// docs/engineering/solutions/security-issues/mcp-quota-credential-class-vs-plan-family-scoping-bypass.md.
 // The Convex runtime imports from `shared/` elsewhere (convex/apiKeys.ts,
 // convex/companyMonitoring/*), so there is no module-boundary reason to fork it.
 import { normalizeCheckoutAttributionSource as normalizeAttributionSource } from "../../shared/mcp-attribution";

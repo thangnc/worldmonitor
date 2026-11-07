@@ -5,7 +5,7 @@ paths:
 
 # Convex (user-scoped state)
 
-Source of truth: `docs/solutions/database-issues/` (grep `convex`), `docs/solutions/runtime-errors/convex-validator-copied-into-an-action-rejects-the-field-the-table-gained.md`.
+Source of truth: `docs/engineering/solutions/database-issues/` (grep `convex`), `docs/engineering/solutions/runtime-errors/convex-validator-copied-into-an-action-rejects-the-field-the-table-gained.md`.
 
 ## Rules
 

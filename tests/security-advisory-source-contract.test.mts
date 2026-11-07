@@ -159,13 +159,13 @@ describe('security advisory source contract', () => {
       '### Prediction Markets as Leading Indicators',
     );
     const pressKitAdvisoryLine = matchingLine(
-      readRepoFile('docs/PRESS_KIT.md'),
+      readRepoFile('docs/engineering/product/PRESS_KIT.md'),
       /^- \*\*Government travel advisories\*\*:/,
       'PRESS_KIT.md government travel advisories bullet',
     );
     const docs = [
       ['docs/data-sources.mdx Security Advisory Aggregation section', dataSourcesSection],
-      ['docs/PRESS_KIT.md government travel advisories bullet', pressKitAdvisoryLine],
+      ['docs/engineering/product/PRESS_KIT.md government travel advisories bullet', pressKitAdvisoryLine],
     ] as const;
 
     for (const [path, text] of docs) {

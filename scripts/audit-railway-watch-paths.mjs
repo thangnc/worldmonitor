@@ -237,7 +237,7 @@ export function managedRailwayServices(registry) {
 // Repository-wide fallback contract for a live seeder the registry does not
 // manage with an exact dependency closure. Broad watch paths over-trigger, but
 // they cannot MISS a transitive helper change — which is the failure this guard
-// exists to prevent (docs/solutions/integration-issues/
+// exists to prevent (docs/engineering/solutions/integration-issues/
 // railway-seeder-watch-paths-can-skip-deployments.md).
 export const BROAD_WATCH_PATTERNS = Object.freeze(['scripts/**', 'shared/**']);
 

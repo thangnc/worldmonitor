@@ -290,7 +290,7 @@ For Railway registry changes, use `npm run test:railway-registry` during the edi
 loop. It exercises the real CLI, runner, workflow and registry contracts without
 the unrelated health-status publisher fixtures. Run the expanded source-health
 proof once before delivery when that boundary changes. See
-[CI test selection and shards](docs/solutions/performance-issues/ci-test-selection-and-shards.md)
+[CI test selection and shards](docs/engineering/solutions/performance-issues/ci-test-selection-and-shards.md)
 for the commands, full-suite route and timing evidence.
 
 For browser work, use the [verification skill](.claude/skills/verify-worldmonitor/SKILL.md)

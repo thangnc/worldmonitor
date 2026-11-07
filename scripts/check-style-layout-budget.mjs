@@ -2,7 +2,7 @@
 /**
  * The #4536 styleLayout gate (#4487 render axis).
  *
- * `docs/perf/desktop-mainthread-baseline-2026-07-02.md:103` names the
+ * `docs/engineering/research/perf/desktop-mainthread-baseline-2026-07-02.md:103` names the
  * styleLayout share as the gate for forced reflow, and nothing enforced it.
  * Worse than nothing: `tests/measure-*-mainthread.test.mts` DO run in CI via
  * `test:data`, but they exercise fixture parsing only — the Playwright harness
@@ -215,7 +215,7 @@ function main() {
   });
   if (verdict.status === 'regressed') {
     console.error(`[style-layout-budget] REGRESSION: ${verdict.reason}`);
-    console.error('[style-layout-budget] see docs/perf/desktop-mainthread-baseline-2026-07-02.md');
+    console.error('[style-layout-budget] see docs/engineering/research/perf/desktop-mainthread-baseline-2026-07-02.md');
     process.exit(1);
   }
   if (verdict.status === 'unmeasured') {

@@ -273,7 +273,7 @@ function main() {
       `[rehearse-resilience] "${step.name}" failed against a drifted snapshot. A test or generator is pinned to a `
       + 'figure the committed snapshot happens to hold, and the next monthly refresh will fail the same way. Read '
       + 'the figure from the snapshot the build used (manifest.sources.resilienceSnapshot, loadCorpusData().resilience). '
-      + 'See docs/solutions/test-failures/tests-pinned-to-the-rolling-pulse-capture-fail-the-weekly-refresh.md.',
+      + 'See docs/engineering/solutions/test-failures/tests-pinned-to-the-rolling-pulse-capture-fail-the-weekly-refresh.md.',
     );
     process.exit(1);
   }

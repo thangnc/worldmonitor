@@ -225,7 +225,7 @@ describe('FREE_TAB_CAP — catalog drift guard', () => {
  * BOTH reactive sources, and never removes an existing tab.
  *
  * KNOWN WEAKNESS — these are source greps, and a source grep goes green on a
- * name existing in a file; it never drives the decision (see docs/solutions/
+ * name existing in a file; it never drives the decision (see docs/engineering/solutions/
  * logic-errors/playback-control-gated-on-a-clerk-role-field-with-no-writer.md).
  * The `addTab` and re-evaluation guards below survive only because replacing
  * them needs a live `PanelLayoutManager`, and nothing can mount one today: its

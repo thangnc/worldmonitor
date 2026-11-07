@@ -1163,7 +1163,7 @@ const ENERGY_MOBILE_MAP_LAYERS: MapLayers = {
 
 type PanelVariant = 'full' | 'tech' | 'finance' | 'commodity' | 'energy' | 'happy';
 
-// World Monitor Lite profile (docs/architecture/lite.md): same `full` variant,
+// World Monitor Lite profile (docs/engineering/architecture/lite.md): same `full` variant,
 // with Lite panels first and enabled and every other panel disabled.
 const FULL_PANEL_CATALOG: Record<string, PanelConfig> = LITE_PROFILE_ENABLED
   ? buildLitePanelCatalog(FULL_PANELS, { ...TECH_PANELS, ...FINANCE_PANELS })

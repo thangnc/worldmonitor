@@ -4,7 +4,7 @@
  * The World Brief is the field LCP element on ~38% of /dashboard desktop views
  * and paints at p75 ~3.5s, against ~0.8s for the bootstrap skeleton copy it
  * displaces — two thirds of the field LCP regression diagnosed in #7113
- * (docs/perf/field-lcp-dashboard-2026-08-24.md).
+ * (docs/engineering/research/perf/field-lcp-dashboard-2026-08-24.md).
  *
  * #4890 added an early paint, but it reads ONLY the IndexedDB persistent
  * cache, so it helps repeat visitors and does nothing for cold ones — even

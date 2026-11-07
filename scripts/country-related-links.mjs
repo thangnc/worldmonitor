@@ -29,7 +29,7 @@
  * unranked target are described the same way, so no greyed-out country picks
  * up a rank claim from this section.
  *
- * Same-site links take no query tag (docs/solutions/conventions/
+ * Same-site links take no query tag (docs/engineering/solutions/conventions/
  * ref-param-is-affiliate-attribution-use-utm-for-internal-source-tags.md,
  * #8603): any utm_* key on an internal link is a bot 308. Attribution for the
  * Pro/API link rides data-umami-event attributes instead, the pattern the

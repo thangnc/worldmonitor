@@ -1,7 +1,7 @@
 import { seedProfile, waitForBoot, waitForMap } from './_profile.mjs';
 
 /**
- * Feature: World Monitor Lite deployment profile (docs/architecture/lite.md).
+ * Feature: World Monitor Lite deployment profile (docs/engineering/architecture/lite.md).
  *
  * Launch with VITE_LITE_PROFILE=true to prove the profile, or without it to
  * prove upstream `full` is unchanged. WM_VERIFY_EXPECT=lite|full (default

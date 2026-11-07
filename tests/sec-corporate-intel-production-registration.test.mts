@@ -107,7 +107,7 @@ describe('SEC corporate-intelligence production registration (#5695)', () => {
   });
 
   it('documents both members in the consolidation runbook', () => {
-    const runbook = read('docs/railway-seed-consolidation-runbook.md');
+    const runbook = read('docs/engineering/runbooks/railway-seed-consolidation-runbook.md');
     assert.match(runbook, /SEC CIK Map \(daily\)/);
     assert.match(runbook, /SEC 8-K Stream \(30min\)/);
   });

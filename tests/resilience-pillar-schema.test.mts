@@ -1,5 +1,5 @@
 // Phase 2 T2.1 + T2.3 of the country-resilience reference-grade upgrade plan
-// (docs/internal/country-resilience-upgrade-plan.md).
+// (docs/engineering/research/country-resilience/country-resilience-upgrade-plan.md).
 //
 // Pins the three-pillar membership shape and the buildPillarList helper
 // behaviour. Real domain-weighted, coverage-scaled aggregation is live (see

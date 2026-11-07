@@ -1,4 +1,4 @@
-// World Monitor Lite deployment profile (docs/architecture/lite.md).
+// World Monitor Lite deployment profile (docs/engineering/architecture/lite.md).
 // node:test runs with VITE_LITE_PROFILE unset, so these checks cover two
 // things: the flag-off build is exactly upstream `full`, and the pure builders
 // produce a coherent Lite catalog from the real panel and layer registries.

@@ -42,7 +42,7 @@ Two kinds of event share the plumbing. Chokepoint disruption and country risk su
 
 Event definitions (label, description, thresholds, cooldown, id rule, payload schema, sample) come from `event-triggers.json`, a byte-for-byte copy of the repo's `shared/event-triggers.json` (`test/event-registry.test.js` pins it; run `cp shared/event-triggers.json integrations/zapier/event-triggers.json` after a registry change). The same registry drives the delivery worker and the OpenAPI `webhooks` block.
 
-Defaults: New Chokepoint Disruption sends `alertThreshold` 50 and `minLiveSignal` 15 (the in-app alert rule's floor), both editable per Zap. With a live floor the server re-arms a chokepoint only once its score is 10 points under the threshold or its live signal is under 5, and refires at most once per 12 hours. New Country Risk Surge has no threshold inputs; the server rule is a 15-point rise within 24 hours into the high band (index 70 or more), once per surge with a 24-hour cooldown per country, chosen on a 90-day backtest (`docs/research/2026-10-17-zapier-event-triggers-backtest.md`).
+Defaults: New Chokepoint Disruption sends `alertThreshold` 50 and `minLiveSignal` 15 (the in-app alert rule's floor), both editable per Zap. With a live floor the server re-arms a chokepoint only once its score is 10 points under the threshold or its live signal is under 5, and refires at most once per 12 hours. New Country Risk Surge has no threshold inputs; the server rule is a 15-point rise within 24 hours into the high band (index 70 or more), once per surge with a 24-hour cooldown per country, chosen on a 90-day backtest (`docs/engineering/research/2026-10-17-zapier-event-triggers-backtest.md`).
 
 ### Searches and polling triggers
 

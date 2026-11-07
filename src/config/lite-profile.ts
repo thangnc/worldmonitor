@@ -1,7 +1,7 @@
 import type { MapLayers, PanelConfig } from '@/types';
 
 /**
- * World Monitor Lite deployment profile (docs/architecture/lite.md).
+ * World Monitor Lite deployment profile (docs/engineering/architecture/lite.md).
  *
  * The owner's private build of the `full` variant, focused on geopolitics and
  * conflicts, finance and crypto, and technology and AI. It is switched on by

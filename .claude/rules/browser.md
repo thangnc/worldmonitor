@@ -9,7 +9,7 @@ paths:
 
 # Browser app
 
-Source of truth: [ARCHITECTURE.md](../../ARCHITECTURE.md), the [verify-worldmonitor skill](../skills/verify-worldmonitor/SKILL.md), `docs/solutions/ui-bugs/`.
+Source of truth: [ARCHITECTURE.md](../../ARCHITECTURE.md), the [verify-worldmonitor skill](../skills/verify-worldmonitor/SKILL.md), `docs/engineering/solutions/ui-bugs/`.
 
 ## Rules
 

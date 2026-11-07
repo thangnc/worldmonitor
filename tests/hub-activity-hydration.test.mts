@@ -99,7 +99,7 @@ describe('late-mounted hub activity hydration', () => {
 // panel-layout.ts cannot be imported by the plain-Node test harness (Vite-only
 // resolution, and no live PanelLayoutManager is mountable today — #5892), so the
 // factory wiring is guarded at the source level. Per the prevention note in
-// docs/solutions/performance-issues/desktop-cls-immediate-tier-panel-mounts-need-deferred-shells.md,
+// docs/engineering/solutions/performance-issues/desktop-cls-immediate-tier-panel-mounts-need-deferred-shells.md,
 // slice the owning factory FIRST and assert against that body: a whole-file match
 // would pass with the geo call wired into the tech factory, or with the option
 // value mutated.

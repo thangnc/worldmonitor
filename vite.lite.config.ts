@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import pkg from './package.json';
 
 /**
- * World Monitor Lite UI (`/lite`, docs/architecture/lite.md "Lite UI").
+ * World Monitor Lite UI (`/lite`, docs/engineering/architecture/lite.md "Lite UI").
  *
  * A separate build, like vite.plugin.config.ts: it shares no Rollup chunk graph
  * with the dashboard, so the dashboard's chunks, bundle budgets and PWA

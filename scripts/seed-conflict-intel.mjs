@@ -949,7 +949,7 @@ export async function fetchAllHumanitarianSummaries({
   // egress, #5713/#5769/#5772) on the happy path instead of the rescue path.
   let sourceChannel = HAPI_SNAPSHOT_CHANNEL;
   let snapshotFailureReason = null;
-  // docs/solutions/design-patterns/primary-fallback-inversion-budget-transfer.md,
+  // docs/engineering/solutions/design-patterns/primary-fallback-inversion-budget-transfer.md,
   // filed against THIS module: inverting a primary/fallback order silently hands
   // the demoted path's shared time budget to the new primary, so a SLOW (not
   // down) primary permanently disables the emergency fallback — the exact

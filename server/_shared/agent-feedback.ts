@@ -5,7 +5,7 @@
  * both call `submitAgentFeedback`, so a caller has one budget across both and
  * every report is parsed, sanitized, redacted, and hashed the same way.
  *
- * Read docs/architecture/agent-feedback-threat-model.md before changing a
+ * Read docs/engineering/architecture/agent-feedback-threat-model.md before changing a
  * bound, a bucket, or what a response carries. Every text field is
  * attacker-controlled: it is stored as data and never logged, echoed in an
  * error, or interpolated into a prompt.

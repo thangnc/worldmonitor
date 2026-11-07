@@ -142,7 +142,7 @@ export function assessChinaJodiCoverage(records, now, hasMeasurements) {
  * must clear `minCountries` — see MIN_JODI_CONTENT_AGE_COUNTRIES.
  *
  * This reduces with max-over-quorum, NOT the min() that
- * `docs/solutions/design-patterns/multi-source-freshness-clock-must-reduce-with-min.md`
+ * `docs/engineering/solutions/design-patterns/multi-source-freshness-clock-must-reduce-with-min.md`
  * requires. That rule governs one canonical key fed by several independently
  * failing UPSTREAMS, where the live one hides the dead one. JODI is a single
  * upstream — one file per fuel — whose countries are series inside it, and

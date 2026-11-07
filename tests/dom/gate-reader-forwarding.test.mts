@@ -12,7 +12,7 @@
  *     assert.match(panelGating, /export function evaluateTabCap\(/);
  *
  * — which is the source-regex wiring-guard shape this repo has been burned by
- * before (docs/solutions/logic-errors/playback-control-gated-on-a-clerk-role-
+ * before (docs/engineering/solutions/logic-errors/playback-control-gated-on-a-clerk-role-
  * field-with-no-writer.md): a grep goes green on a name existing in a file and
  * never drives the decision. Re-pointing it at the new path would have carried
  * the same non-guarantee to a new address, so it is replaced here by tests that
