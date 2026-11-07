@@ -1,6 +1,6 @@
 import type { UcdpViolenceEvent, UcdpViolenceType } from '@/generated/client/worldmonitor/conflict/v1/service_client';
 import type { UcdpMarker } from '../map/LiteMap';
-import { regionOfPoint, type GeoRegion } from './transforms';
+import { TIME_RANGE_HOURS, regionOfPoint, type GeoRegion, type TimeRange } from './transforms';
 
 /**
  * UCDP events as conflict-map markers, one per exact event location, as the
@@ -10,8 +10,8 @@ import { regionOfPoint, type GeoRegion } from './transforms';
  * DOM elements and no location is dropped.
  */
 
-/** Events listed one per line in a shared-location popup. */
-const LISTED_EVENTS = 4;
+/** Sources named in a shared-location card before "and N more". */
+const LISTED_SOURCES = 2;
 
 const VIOLENCE_LABEL: Record<UcdpViolenceType, string> = {
   UCDP_VIOLENCE_TYPE_STATE_BASED: 'State-based',
@@ -39,7 +39,33 @@ export function eventDates(e: Pick<UcdpViolenceEvent, 'dateStart' | 'dateEnd'>):
 
 const deathsText = (n: number): string => `${n.toLocaleString('en-US')} ${n === 1 ? 'death' : 'deaths'}`;
 
-const actors = (e: UcdpViolenceEvent): string => [e.sideA, e.sideB].filter(Boolean).join(' vs ') || 'Actors not recorded';
+/**
+ * UCDP codes an actor it has no credible identity for as "XXX" plus the
+ * country's Gleditsch–Ward number (UCDP Candidate codebook), e.g. XXX100 in
+ * Colombia. Say what the code means and keep it for reference.
+ */
+export function actorName(name: string): string {
+  const code = name.trim();
+  return /^XXX\d*$/.test(code) ? `Unidentified group (UCDP ${code})` : name;
+}
+
+const actors = (e: UcdpViolenceEvent): string => [e.sideA, e.sideB].filter(Boolean).map(actorName).join(' vs ') || 'Actors not recorded';
+
+/** Each distinct value with its count, most frequent first. */
+function tally(values: readonly string[]): Array<[string, number]> {
+  const counts = new Map<string, number>();
+  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+/** First to last day of the events at one point. */
+export function eventSpan(events: readonly Pick<UcdpViolenceEvent, 'dateStart' | 'dateEnd'>[]): string {
+  const starts = events.map((e) => e.dateStart).filter((t) => t > 0);
+  if (!starts.length) return 'Dates unknown';
+  const first = Math.min(...starts);
+  const last = Math.max(...events.map((e) => Math.max(e.dateStart || 0, e.dateEnd || 0)));
+  return day(first) === day(last) ? day(first) : `${day(first)} to ${day(last)}`;
+}
 
 /** UCDP's low–high range beside the best estimate, when it differs. */
 function estimate(e: UcdpViolenceEvent): string {
@@ -96,25 +122,51 @@ export function ucdpMarkers(
         },
       };
     }
+    // Two or more events at one point: a summary that fits the card without scrolling.
     const country = sorted[0]?.country ?? '';
-    const more = sorted.length - LISTED_EVENTS;
+    const types = tally(sorted.map((e) => violenceLabel(e.violenceType)));
+    const pairs = tally(sorted.map(actors));
+    const sources = tally(sorted.map((e) => e.sourceOriginal).filter(Boolean)).map(([source]) => source);
+    const [topPair] = pairs;
+    const extraSources = sources.length - LISTED_SOURCES;
     return {
       ...base,
-      title: `${country}: ${sorted.length} UCDP events, ${deathsText(loc.deaths)} at ${where}`,
+      title: `${country}: ${sorted.length} UCDP events, ${deathsText(loc.deaths)}, ${eventSpan(sorted)} at ${where}`,
       popup: {
         kind: `UCDP · ${sorted.length} events at this point`,
         name: country,
         value: deathsText(loc.deaths),
         lines: [
-          { text: where, style: 'mono' as const },
-          ...sorted
-            .slice(0, LISTED_EVENTS)
-            .map((e) => ({ text: `${eventDates(e)} · ${violenceLabel(e.violenceType)} · ${actors(e)} · ${deathsText(e.deathsBest)}` })),
-          { text: more > 0 ? `${more} more ${more === 1 ? 'event' : 'events'} at this point` : '', style: 'dim' as const },
+          { text: `${eventSpan(sorted)} · ${where}`, style: 'mono' as const },
+          { text: types.length === 1 ? `${types[0]?.[0]} violence` : types.map(([t, n]) => `${t} ×${n}`).join(' · ') },
+          {
+            text: !topPair
+              ? ''
+              : pairs.length === 1
+                ? topPair[0]
+                : `${topPair[0]} ×${topPair[1]}, and ${pairs.length - 1} other actor ${pairs.length === 2 ? 'pair' : 'pairs'}`,
+          },
+          {
+            text: sources.length
+              ? `Sources: ${sources.slice(0, LISTED_SOURCES).join('; ')}${extraSources > 0 ? ` and ${extraSources} more` : ''}`
+              : '',
+            style: 'dim' as const,
+          },
         ].filter((line) => line.text),
       },
     };
   });
 
   return { markers, locations: byPoint.size };
+}
+
+/**
+ * UCDP events inside the time range, counted back from UCDP's newest event,
+ * not from now: UCDP is a delayed release (weeks behind), so a range ending
+ * today would hold no events. `newest` is that anchor, for labelling the map.
+ */
+export function ucdpInRange(events: readonly UcdpViolenceEvent[], range: TimeRange): { events: UcdpViolenceEvent[]; newest: number } {
+  const newest = events.reduce((max, e) => Math.max(max, e.dateStart || 0), 0);
+  const span = TIME_RANGE_HOURS[range] * 3_600_000;
+  return { events: events.filter((e) => !e.dateStart || newest - e.dateStart < span), newest };
 }

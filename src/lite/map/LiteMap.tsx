@@ -187,15 +187,13 @@ function MapCardView({ marker, onClose }: { marker: MapMarker; onClose: () => vo
           {value}
         </span>
       </div>
-      {/* Capped so a point with several events still fits the map (300 px on phones, 380 px wider); the rest scrolls. */}
-      <div class="max-h-[104px] overflow-y-auto md:max-h-[176px]">
-        {lines.map((line, i) => (
-          // Lines can repeat (two events with the same date, actors and toll), so key by position.
-          <p key={i} class={cx('mt-[5px] line-clamp-3', LINE_CLASS[line.style ?? 'text'])}>
-            {line.text}
-          </p>
-        ))}
-      </div>
+      {/* No scroll area: cards hold a few clamped lines; a point with several events gets a summary (src/lite/data/ucdp.ts). */}
+      {lines.map((line, i) => (
+        // Lines can repeat, so key by position.
+        <p key={i} class={cx('mt-[5px] line-clamp-3', LINE_CLASS[line.style ?? 'text'])}>
+          {line.text}
+        </p>
+      ))}
     </div>
   );
 }
