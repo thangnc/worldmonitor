@@ -161,6 +161,7 @@ scripts/fixtures/_bundle-fixture-pressure-run.mjs
 # including plans, live in docs/engineering/ (see docs/engineering/README.md).
 docs/plans/
 docs/brainstorms/
+docs/solutions/
 playground-pricing.html
 
 # Generated at build time by scripts/generate-third-party-notices.mjs (3MB+).

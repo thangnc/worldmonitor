@@ -7,9 +7,9 @@ Claude Code is the only supported coding agent for this repository. This file is
 | Path | What it does |
 |---|---|
 | `.claude/rules/` | Path-scoped rules. Each loads only when Claude works on matching files: edge API, seeders, proto, browser, tests, CI, Convex, desktop, docs. Keep them short and link to the canonical docs. |
-| `.claude/skills/` | Engineering skills: `verify-worldmonitor` (browser proof), `sentry-triage`, and `ship` (user-invoked `/ship`: deliver a worktree's change as a PR on this fork). |
+| `.claude/skills/` | Engineering skills: `verify-worldmonitor` (browser proof), `sentry-triage`, `learn` (`/learn`: record a lesson in the engineering knowledge base), and `ship` (user-invoked `/ship`: deliver a worktree's change as a PR on this fork). |
 | `.claude/agents/` | Subagents: `edge-contract-reviewer` (repo contract review of a diff). |
-| `.claude/hooks/` + `.claude/settings.json` | Block hand edits to `src/generated/` and `package-lock.json`; Biome-lint each edited JS/TS file. |
+| `.claude/hooks/` + `.claude/settings.json` | Block hand edits to `src/generated/`, `docs/api/`, the generated `docs/engineering/*/INDEX.md` files, and `package-lock.json`; Biome-lint each edited JS/TS file. |
 | `CLAUDE.local.md`, `.claude/settings.local.json` | Personal overrides. Git ignores them. |
 
 `skills/` at the repo root is different: it holds published product recipes for API and MCP consumers.
@@ -108,7 +108,7 @@ Production build per variant: `npm run build:full` (or `build:tech`, `build:fina
 | CI workflows | `.github/workflows/`; [CI/CD table](ARCHITECTURE.md#11-cicd) | Add or update each workflow's table entry. Run `npm run docs:check` and validate the changed workflow before pushing. The pre-push hook enforces the documentation check for workflow changes |
 | Committed derived files (product facts, llms, AI search, catalogs) | `scripts/generate-derived.mjs`; [derived files](CONTRIBUTING.md#derived-files) | `npm run generate`, then commit what it rewrote |
 | Tests and documentation | `tests/`, `e2e/`, `docs/`; [verification guide](CONTRIBUTING.md#verify-the-changed-path) | Relevant existing test or docs check, `git diff --check` |
-| Claude Code setup | `CLAUDE.md`, `.claude/` | Check that every path, symbol, and command it names exists; run the tests that read it (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/agent-page.test.mjs`, `tests/sentry-triage-skill.test.mjs`) and `npm run docs:check` |
+| Claude Code setup | `CLAUDE.md`, `.claude/` | Check that every path, symbol, and command it names exists; run the tests that read it (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/agent-page.test.mjs`, `tests/sentry-triage-skill.test.mjs`, `tests/engineering-docs.test.mjs`) and `npm run docs:check` |
 
 For public documents and API collections, use `https://www.worldmonitor.app` for website and documentation links. Keep MCP and OAuth endpoint identities on the apex host. Run `node --test tests/agent-corpus-canonical-host.test.mjs` after changing published URLs.
 
@@ -171,8 +171,8 @@ The browser import direction is `types -> config -> services -> components -> ap
 - For Sentry events, invoke the `sentry-triage` skill. Its default is read-only triage.
 - To deliver a change from a worktree, the user runs `/ship`. It verifies, commits signed, pushes `<type>/<slug>`, opens the PR on `thangnc/worldmonitor`, and watches CI. It never merges or deploys on its own.
 - After changing `api/`, `server/`, `scripts/seed-*`, or `src/services/`, run the `edge-contract-reviewer` subagent on the diff before opening a PR.
-- Read [documented solutions](docs/engineering/solutions/) when the affected area has a prior fix — organized by category directory (`security-issues/`, `logic-errors/`, `conventions/`, …) with YAML frontmatter (`module`, `component`, `problem_type`, `tags`) to grep. Use [CONCEPTS.md](CONCEPTS.md) for shared terms and [design philosophy](docs/architecture.mdx) for design decisions.
-- When a session teaches a durable repo convention, record it in `docs/engineering/solutions/` or the matching `.claude/rules/` file, not only in personal memory.
+- Before changing an area, check the [engineering knowledge base](docs/engineering/README.md). Grep [solutions/INDEX.md](docs/engineering/solutions/INDEX.md) for the area, symbol, or symptom: it lists every lesson by the area where the fix lives. [plans/INDEX.md](docs/engineering/plans/INDEX.md) shows which plans shipped. Use [CONCEPTS.md](CONCEPTS.md) for shared terms and [design philosophy](docs/architecture.mdx) for design decisions.
+- When a session teaches a durable repo convention or exposes a trap, record it with the `learn` skill (`/learn`): a lesson in `docs/engineering/solutions/`, a line in the matching `.claude/rules/` file, or a term in CONCEPTS.md. Personal memory is not enough.
 
 Run the smallest meaningful proof first. Preserve useful regression coverage. Run heavy checks sequentially. Report failures honestly. Keep locally verified, PR ready, merged, deployed, observed in production, and acceptance complete as separate claims.
 

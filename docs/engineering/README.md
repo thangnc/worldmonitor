@@ -49,9 +49,9 @@ Do not scan the tree top to bottom.
   enforces the frontmatter schema, the indexes, and links inside this tree.
 - Put a new runbook in `runbooks/`, a design spec in `architecture/`, and a
   plan in `plans/`.
-- Keep these files out of `docs/plans/`, `docs/internal/`, and
-  `docs/brainstorms/`. Those paths are gitignored scratch for local planning
-  tools.
+- Keep these files out of `docs/solutions/`, `docs/plans/`, `docs/internal/`,
+  and `docs/brainstorms/`. Those paths are gitignored scratch for local
+  planning tools.
 - Shared terms belong in [`CONCEPTS.md`](../../CONCEPTS.md). Standing,
   path-scoped rules belong in `.claude/rules/`, linking back to the lesson
   here.
