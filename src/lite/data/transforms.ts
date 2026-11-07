@@ -9,6 +9,7 @@ import type { ListFeedDigestResponse, NewsItem } from '@/generated/client/worldm
 import { getSourceType } from '../../../shared/source-provenance';
 import { MIN_CORROBORATING_PUBLISHERS } from '../../../shared/publisher-families.js';
 import { getSourceTier } from '../../../server/_shared/source-tiers';
+import { assessCorroboration, evidenceFromItem, type Corroboration } from '../../../server/_shared/corroboration';
 import { SIMILARITY_THRESHOLD, jaccardSimilarity, tokenize } from '../../../shared/text-analysis-core.js';
 
 export type Tone = 'crit' | 'high' | 'elev' | 'ok' | 'muted' | 'dim';
@@ -54,45 +55,48 @@ export function byImportance(a: NewsItem, b: NewsItem): number {
   return (b.importanceScore || 0) - (a.importanceScore || 0) || (b.publishedAt || 0) - (a.publishedAt || 0);
 }
 
-/** Independent sources reporting the story: the larger of the two counts the digest carries. */
+/**
+ * Reports on the story: the larger of the two counts the digest carries. A
+ * volume figure; the corroboration verdict counts publishers (corroborationOf).
+ */
 export function sourceCount(item: NewsItem): number {
   return Math.max(1, item.storyMeta?.sourceCount ?? 0, item.corroborationCount ?? 0);
 }
 
-/** Tier 1 in shared/source-tiers.json: wire services and official bodies. */
+/** Tier 1 in shared/source-tiers.json: wires, official bodies, and some major outlets and public broadcasters. */
 export function isPrimarySource(sourceName: string): boolean {
   return getSourceTier(sourceName) === 1;
 }
 
-export type ClaimStatus = 'confirmed' | 'attributed' | 'unverified';
+export type CorroborationState = Corroboration['state'];
 
 /**
- * The rule behind CONFIRMED / ATTRIBUTED CLAIM / UNVERIFIED. It measures
- * corroboration, not truth: confirmed = at least MIN_CORROBORATING_PUBLISHERS
- * sources with a tier-1 one among them; attributed = several sources, none
- * tier 1; unverified = a single source.
+ * The dashboard's corroboration verdict for one digest item
+ * (server/_shared/corroboration.ts), so Lite and the full dashboard never
+ * disagree. It counts publisher families from the digest's origin-aware
+ * corroborationCount and describes coverage, not accuracy. Tier 1 is not part
+ * of it: isPrimarySource is shown beside it.
  */
-export function claimStatus(item: NewsItem): ClaimStatus {
-  const count = sourceCount(item);
-  if (count >= MIN_CORROBORATING_PUBLISHERS && isPrimarySource(item.source)) return 'confirmed';
-  if (count >= 2) return 'attributed';
-  return 'unverified';
+export function corroborationOf(item: NewsItem): Corroboration {
+  return assessCorroboration(evidenceFromItem(item));
 }
 
-export const CLAIM_LABEL: Record<ClaimStatus, string> = {
-  confirmed: 'CONFIRMED',
-  attributed: 'ATTRIBUTED CLAIM',
-  unverified: 'UNVERIFIED',
+/** Publishers behind the verdict; null when the digest carried no count. */
+export function publisherCount(c: Corroboration): number | null {
+  return c.state === 'unknown' ? null : c.publishers;
+}
+
+/** Wording for each verdict: `label` in tables and pills, `tag` in the timeline. */
+export const CORROBORATION_VIEW: Record<CorroborationState, { label: string; tag: string; tone: Tone }> = {
+  corroborated: { label: 'Corroborated', tag: 'CORROBORATED', tone: 'ok' },
+  'single-publisher': { label: 'Single publisher', tag: 'SINGLE PUBLISHER', tone: 'high' },
+  'tier4-only': { label: 'Low-tier only', tag: 'LOW-TIER ONLY', tone: 'high' },
+  unknown: { label: 'No count', tag: 'NO COUNT', tone: 'dim' },
 };
 
-export const CLAIM_TONE: Record<ClaimStatus, Tone> = { confirmed: 'ok', attributed: 'high', unverified: 'dim' };
-
-/** The incidents table's status column, from the same rule. */
-export const INCIDENT_STATUS: Record<ClaimStatus, { label: string; tone: Tone }> = {
-  confirmed: { label: 'Confirmed', tone: 'ok' },
-  attributed: { label: 'Developing', tone: 'high' },
-  unverified: { label: 'Claimed', tone: 'muted' },
-};
+/** The rule as one sentence, for footers and DerivedTag tooltips. */
+export const CORROBORATION_RULE =
+  `Corroborated = ${MIN_CORROBORATING_PUBLISHERS}+ publishers (one newsroom's feeds and reprints count once); Single publisher = one; Low-tier only = every publisher is an aggregator or blog; No count = the digest carried none. Coverage, not accuracy.`;
 
 /** Digest credibilityScore (0–100) as a word. */
 export function confidenceLabel(credibility: number): { label: string; tone: Tone } {

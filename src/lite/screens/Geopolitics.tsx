@@ -10,24 +10,23 @@ import { selectIncidents, useCountryHistory, useDigest, useRiskScores, useUcdpEv
 import { ESCALATION_REGIONS, leadCountry } from '../data/regions';
 import { SAMPLE_WATCHLIST } from '../data/fixtures';
 import {
-  CLAIM_LABEL,
-  CLAIM_TONE,
+  CORROBORATION_RULE,
+  CORROBORATION_VIEW,
   GEO_CATEGORIES,
   GEO_REGION_LABEL,
-  INCIDENT_STATUS,
-  claimStatus,
   confidenceLabel,
+  corroborationOf,
   digestItems,
   escalationStatus,
   evidenceMix,
   isPrimarySource,
   pctChange,
   phaseLabel,
+  publisherCount,
   regionOfCategory,
   regionOfPoint,
   relativeTime,
   severityFromDeaths,
-  sourceCount,
   threatTone,
   timeBuckets,
   type GeoRegion,
@@ -282,7 +281,9 @@ function IncidentsCard({ state, rows, total }: { state: ReturnType<typeof useDig
         <p class="px-5 py-4 text-[12px] text-dim">No incidents match this filter.</p>
       ) : (
         rows.map((item) => {
-          const status = INCIDENT_STATUS[claimStatus(item)];
+          const verdict = corroborationOf(item);
+          const status = CORROBORATION_VIEW[verdict.state];
+          const publishers = publisherCount(verdict);
           const confidence = confidenceLabel(item.credibilityScore);
           const region = regionOfCategory(item.category);
           const where = [region ? GEO_REGION_LABEL[region] : item.locationName || item.category, phaseLabel(item.storyMeta?.phase)].filter(Boolean).join(' · ');
@@ -308,7 +309,7 @@ function IncidentsCard({ state, rows, total }: { state: ReturnType<typeof useDig
               </span>
               <span class={cx('text-[12px] font-medium md:w-[92px]', TEXT[confidence.tone])}>{confidence.label}</span>
               <span class="font-mono text-[12px] text-muted md:w-[70px]">
-                {sourceCount(item)} · {isPrimarySource(item.source) ? 1 : 0}P
+                {publishers ?? '–'}{isPrimarySource(item.source) ? ' · T1' : ''}
               </span>
               <span class="font-mono text-[13px] font-medium text-ink md:w-[56px]">{Math.min(100, Math.round(item.importanceScore))}</span>
               <span class="font-mono text-[12px] text-dim md:w-[64px]">{relativeTime(item.publishedAt, now)}</span>
@@ -317,7 +318,7 @@ function IncidentsCard({ state, rows, total }: { state: ReturnType<typeof useDig
         })
       )}
       <footer class="border-t border-line bg-bg px-5 py-[10px] text-[11.5px] text-dim">
-        P = tier-1 source (wire service or official body). Status is a corroboration rule, not severity: Confirmed = 2+ sources with a tier-1 one; Developing = 2+ sources; Claimed = one source.
+        Sources = publishers carrying the story. T1 = reported by a tier-1 outlet. Status is the dashboard's corroboration rule, not severity: {CORROBORATION_RULE}
       </footer>
     </Card>
   );
@@ -330,14 +331,14 @@ function Timeline({ incidents, region }: { incidents: LiteItem[]; region: GeoReg
     .sort((a, b) => b.publishedAt - a.publishedAt)
     .slice(0, 4);
   return (
-    <Panel title="Regional timeline" sub={focus ? GEO_REGION_LABEL[focus] : undefined} right={<DerivedTag how="Tags from the corroboration rule: confirmed = 2+ sources with a tier-1 one; attributed = 2+ sources; unverified = one source." />} testId="regional-timeline">
+    <Panel title="Regional timeline" sub={focus ? GEO_REGION_LABEL[focus] : undefined} right={<DerivedTag how={`Tags from the dashboard's corroboration rule. ${CORROBORATION_RULE}`} />} testId="regional-timeline">
       {entries.length === 0 ? (
         <p class="text-[12px] text-dim">No recent incidents.</p>
       ) : (
         <ol class="flex flex-col">
           {entries.map((item, index) => {
-            const claim = claimStatus(item);
-            const tone = CLAIM_TONE[claim];
+            const view = CORROBORATION_VIEW[corroborationOf(item).state];
+            const tone = view.tone;
             return (
               <li key={item.link} class="flex gap-3">
                 <span class="w-9 shrink-0 font-mono text-[11px] leading-[17px] text-dim">{new Date(item.publishedAt).toISOString().slice(11, 16)}</span>
@@ -347,7 +348,7 @@ function Timeline({ incidents, region }: { incidents: LiteItem[]; region: GeoReg
                 </span>
                 <span class="flex min-w-0 flex-col gap-[3px] pb-[10px]">
                   <a href={item.link} target="_blank" rel="noopener noreferrer" class="text-[12.5px] leading-[18px] text-ink hover:underline">{item.title}</a>
-                  <span class={cx('font-mono text-[9.5px] font-medium tracking-[0.6px]', TEXT[tone])}>{CLAIM_LABEL[claim]}</span>
+                  <span class={cx('font-mono text-[9.5px] font-medium tracking-[0.6px]', TEXT[tone])}>{view.tag}</span>
                 </span>
               </li>
             );

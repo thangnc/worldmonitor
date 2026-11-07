@@ -27,6 +27,7 @@ import {
   PRIORITY_THRESHOLD,
   WATCH_RULES,
   domainOfCategory,
+  corroborationSentence,
   evaluateWatchRules,
   evidenceLine,
   firstSeen,
@@ -38,12 +39,14 @@ import {
   type PriorityEvent,
 } from '../data/briefing';
 import {
-  claimStatus,
+  CORROBORATION_RULE,
   cleanSnippet,
   confidenceLabel,
+  corroborationOf,
   digestItems,
   isPrimarySource,
   pctChange,
+  publisherCount,
   relativeTime,
   sourceCount,
   TECH_CATEGORIES,
@@ -356,8 +359,8 @@ function EventRow({
 }
 
 function EventDetail({ event: e, clusterSources }: { event: PriorityEvent; clusterSources?: string[] }) {
-  const status = claimStatus(e);
-  const count = sourceCount(e);
+  const verdict = corroborationOf(e);
+  const publishers = publisherCount(verdict);
   const summary = cleanSnippet(e);
   const others = (clusterSources ?? []).filter((s) => s !== e.source).slice(0, 4);
   const column = (icon: ComponentChildren, head: string, tone: string, items: ComponentChildren[]) => (
@@ -381,19 +384,19 @@ function EventDetail({ event: e, clusterSources }: { event: PriorityEvent; clust
       ) : null}
       <div>
         <div class="grid gap-px overflow-hidden rounded-[8px] border border-line bg-line md:grid-cols-3">
-          {column(<Check size={12} strokeWidth={2} />, 'CONFIRMED', 'text-ok', [
-            status === 'confirmed' ? `${count} sources, led by tier-1 ${e.source}` : 'Nothing meets the confirmation rule yet',
+          {column(<Check size={12} strokeWidth={2} />, 'CORROBORATION', 'text-ok', [
+            corroborationSentence(verdict),
           ])}
           {column(<Quote size={12} strokeWidth={2} />, 'ATTRIBUTED CLAIMS', 'text-high', [
-            status === 'confirmed' ? `Lead report: ${e.source}` : `${e.source} reports the headline`,
-            ...(count > 1 && status !== 'confirmed' ? [`${count - 1} other source${count === 2 ? '' : 's'} carry the story; none tier 1`] : []),
+            `${e.source} reports the headline${isPrimarySource(e.source) ? ' (tier-1 outlet)' : ''}`,
+            ...(publishers !== null && publishers > 1 ? [`${publishers - 1} other publisher${publishers === 2 ? '' : 's'} carry the story`] : []),
           ])}
           {column(<CircleHelp size={12} strokeWidth={2} />, 'OPEN QUESTIONS', 'text-dim', [
             <>Needs event analysis <span class="ml-1 rounded-[3px] border border-line px-1 font-mono text-[9px] tracking-[0.6px] text-dim">SOON</span></>,
           ])}
         </div>
         <div class="mt-1 flex justify-end">
-          <DerivedTag how="Columns follow the corroboration rule (sources and tier 1), not extracted claims. Open questions need the event-analysis phase." />
+          <DerivedTag how={`Columns follow the dashboard's corroboration rule, not extracted claims, so none says the claim is true. ${CORROBORATION_RULE} Open questions need the event-analysis phase.`} />
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-[6px]">
@@ -407,7 +410,7 @@ function EventDetail({ event: e, clusterSources }: { event: PriorityEvent; clust
             {s}
           </span>
         ))}
-        {!others.length && count > 1 ? <span class="rounded-[4px] border border-line bg-bg px-2 py-1 text-[11.5px] text-muted">+{count - 1} more</span> : null}
+        {!others.length && publishers !== null && publishers > 1 ? <span class="rounded-[4px] border border-line bg-bg px-2 py-1 text-[11.5px] text-muted">+{publishers - 1} more</span> : null}
         <span class="flex-1" />
         {[
           { Icon: Pin, label: 'Pin' },
