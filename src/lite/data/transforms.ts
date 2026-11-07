@@ -425,3 +425,14 @@ export function cleanSnippet(item: Pick<NewsItem, 'snippet' | 'title'>): string 
   const title = item.title.trim().toLowerCase();
   return !text || text.toLowerCase().startsWith(title.slice(0, Math.min(40, title.length))) ? '' : text;
 }
+
+/** The dashboard's map time ranges (`TimeRange` in src/components/DeckGLMap.ts), without "all". */
+export type TimeRange = '1h' | '6h' | '24h' | '48h' | '7d';
+
+export const TIME_RANGE_HOURS: Record<TimeRange, number> = { '1h': 1, '6h': 6, '24h': 24, '48h': 48, '7d': 168 };
+
+/** True when `ts` falls in the last `range` before `now`; an item without a timestamp stays, as on the dashboard. */
+export function inTimeRange(ts: number | null | undefined, now: number, range: TimeRange): boolean {
+  if (!ts) return true;
+  return now - ts < TIME_RANGE_HOURS[range] * 3_600_000;
+}

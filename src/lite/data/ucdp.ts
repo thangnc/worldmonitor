@@ -1,15 +1,15 @@
 import type { UcdpViolenceEvent, UcdpViolenceType } from '@/generated/client/worldmonitor/conflict/v1/service_client';
-import type { MapMarker } from '../map/LiteMap';
-import { regionOfPoint, severityFromDeaths, type GeoRegion } from './transforms';
+import type { UcdpMarker } from '../map/LiteMap';
+import { regionOfPoint, type GeoRegion } from './transforms';
 
 /**
  * UCDP events as conflict-map markers, one per exact event location, as the
  * dashboard's UCDP layer draws them. Events UCDP geocodes to the same point
- * share one marker, whose popup lists each of them.
+ * share one marker, whose popup lists each of them. The map clusters nearby
+ * locations by zoom (src/lite/map/LiteMap.tsx), so only visible ones become
+ * DOM elements and no location is dropped.
  */
 
-/** Marker ceiling. Each marker is a DOM element, so a full-year fallback payload is trimmed to the deadliest locations. */
-export const UCDP_MARKER_LIMIT = 400;
 /** Events listed one per line in a shared-location popup. */
 const LISTED_EVENTS = 4;
 
@@ -43,7 +43,7 @@ const actors = (e: UcdpViolenceEvent): string => [e.sideA, e.sideB].filter(Boole
 
 /** UCDP's low–high range beside the best estimate, when it differs. */
 function estimate(e: UcdpViolenceEvent): string {
-  return e.deathsLow !== e.deathsHigh ? `best estimate ${e.deathsBest}, range ${e.deathsLow}–${e.deathsHigh}` : '';
+  return e.deathsLow !== e.deathsHigh ? `Best estimate ${e.deathsBest}, range ${e.deathsLow}–${e.deathsHigh}` : '';
 }
 
 interface Location {
@@ -57,7 +57,7 @@ interface Location {
 export function ucdpMarkers(
   events: readonly UcdpViolenceEvent[],
   region: GeoRegion,
-): { markers: MapMarker[]; locations: number } {
+): { markers: UcdpMarker[]; locations: number } {
   const byPoint = new Map<string, Location>();
   for (const e of events) {
     const lat = e.location?.latitude;
@@ -72,20 +72,12 @@ export function ucdpMarkers(
     byPoint.set(key, loc);
   }
 
-  const ranked = [...byPoint.entries()]
-    .sort((a, b) => b[1].deaths - a[1].deaths || b[1].latest - a[1].latest)
-    .slice(0, UCDP_MARKER_LIMIT);
+  const ranked = [...byPoint.entries()].sort((a, b) => b[1].deaths - a[1].deaths || b[1].latest - a[1].latest);
 
-  const markers = ranked.map(([key, loc]): MapMarker => {
+  const markers = ranked.map(([key, loc]): UcdpMarker => {
     const where = formatCoordinates(loc.lat, loc.lon);
     const sorted = [...loc.events].sort((a, b) => (b.dateStart || 0) - (a.dateStart || 0));
-    const base = {
-      id: `ucdp:${key}`,
-      lat: loc.lat,
-      lon: loc.lon,
-      tone: severityFromDeaths(loc.deaths),
-      radius: 4 + Math.min(8, Math.sqrt(loc.deaths)),
-    };
+    const base = { kind: 'ucdp' as const, id: `ucdp:${key}`, lat: loc.lat, lon: loc.lon, deaths: loc.deaths };
     const [only] = sorted;
     if (only && sorted.length === 1) {
       return {
@@ -96,11 +88,11 @@ export function ucdpMarkers(
           name: only.country,
           value: deathsText(only.deathsBest),
           lines: [
-            actors(only),
-            [eventDates(only), estimate(only)].filter(Boolean).join(' · '),
-            where,
-            only.sourceOriginal ? `Source: ${only.sourceOriginal}` : '',
-          ].filter(Boolean),
+            { text: actors(only) },
+            { text: `${eventDates(only)} · ${where}`, style: 'mono' as const },
+            { text: estimate(only), style: 'dim' as const },
+            { text: only.sourceOriginal ? `Source: ${only.sourceOriginal}` : '', style: 'dim' as const },
+          ].filter((line) => line.text),
         },
       };
     }
@@ -114,12 +106,12 @@ export function ucdpMarkers(
         name: country,
         value: deathsText(loc.deaths),
         lines: [
-          where,
+          { text: where, style: 'mono' as const },
           ...sorted
             .slice(0, LISTED_EVENTS)
-            .map((e) => `${eventDates(e)} · ${violenceLabel(e.violenceType)} · ${actors(e)} · ${deathsText(e.deathsBest)}`),
-          more > 0 ? `${more} more ${more === 1 ? 'event' : 'events'} at this point` : '',
-        ].filter(Boolean),
+            .map((e) => ({ text: `${eventDates(e)} · ${violenceLabel(e.violenceType)} · ${actors(e)} · ${deathsText(e.deathsBest)}` })),
+          { text: more > 0 ? `${more} more ${more === 1 ? 'event' : 'events'} at this point` : '', style: 'dim' as const },
+        ].filter((line) => line.text),
       },
     };
   });

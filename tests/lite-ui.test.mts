@@ -28,10 +28,14 @@ import {
   thresholdState,
   timeBuckets,
 } from '../src/lite/data/transforms.ts';
-import { UCDP_MARKER_LIMIT, eventDates, formatCoordinates, ucdpMarkers } from '../src/lite/data/ucdp.ts';
+import { eventDates, formatCoordinates, ucdpMarkers } from '../src/lite/data/ucdp.ts';
+import { CONVERGENCE_RADIUS_KM, MILITARY_RADIUS_KM, escalationLevel, scoreHotspots } from '../src/lite/data/escalation.ts';
+import { computeEscalationScore } from '../shared/analysis-hotspot-escalation.ts';
+import { TIME_RANGE_HOURS, inTimeRange } from '../src/lite/data/transforms.ts';
+import type { Hotspot } from '../src/types/index.ts';
 import type { UcdpViolenceEvent } from '../src/generated/client/worldmonitor/conflict/v1/service_client.ts';
 import { OPENFREEMAP_TILEJSON, buildLiteMapStyle } from '../src/lite/map/style.ts';
-import { WORLD_BOUNDS, markerBounds } from '../src/lite/map/view.ts';
+import { WORLD_BOUNDS, compactCount, markerBounds, placeCard, ucdpRadius } from '../src/lite/map/view.ts';
 import type { ListFeedDigestResponse, NewsItem } from '../src/generated/client/worldmonitor/news/v1/service_client.ts';
 import {
   PRIORITY_THRESHOLD,
@@ -418,13 +422,16 @@ describe('Lite conflict map', () => {
     assert.equal(first?.popup.kind, 'UCDP · State-based violence');
     assert.equal(first?.popup.name, 'Yemen (North Yemen)');
     assert.equal(first?.popup.value, '3 deaths');
+    assert.equal(first?.deaths, 3);
+    // The design's event card: actors, then date and coordinates in mono, then small print.
     assert.deepEqual(first?.popup.lines, [
-      'Government of Yemen (North Yemen) vs Forces of the Presidential Leadership Council',
-      '2026-09-30 · best estimate 3, range 2–5',
-      '13.580°N, 44.021°E',
-      'Source: Local sources; CIMP',
+      { text: 'Government of Yemen (North Yemen) vs Forces of the Presidential Leadership Council' },
+      { text: '2026-09-30 · 13.580°N, 44.021°E', style: 'mono' },
+      { text: 'Best estimate 3, range 2–5', style: 'dim' },
+      { text: 'Source: Local sources; CIMP', style: 'dim' },
     ]);
-    assert.equal(markers[1]?.popup.lines[1], '2026-09-30');
+    // No range when UCDP's low and high agree.
+    assert.deepEqual(markers[1]?.popup.lines.map((l) => l.text).slice(1, 3), ['2026-09-30 · 13.600°N, 44.100°E', 'Source: Local sources; CIMP']);
   });
 
   it('lists every event UCDP geocodes to the same point in one popup, newest first', () => {
@@ -434,19 +441,20 @@ describe('Lite conflict map', () => {
     const popup = markers[0]?.popup;
     assert.equal(popup?.kind, 'UCDP · 6 events at this point');
     assert.equal(popup?.value, '6 deaths');
-    assert.equal(popup?.lines[0], '13.580°N, 44.021°E');
-    assert.match(popup?.lines[1] ?? '', /^2026-09-06 · State-based · Government of Yemen/);
-    assert.equal(popup?.lines.at(-1), '2 more events at this point');
+    assert.deepEqual(popup?.lines[0], { text: '13.580°N, 44.021°E', style: 'mono' });
+    assert.match(popup?.lines[1]?.text ?? '', /^2026-09-06 · State-based · Government of Yemen/);
+    assert.deepEqual(popup?.lines.at(-1), { text: '2 more events at this point', style: 'dim' });
   });
 
-  it('filters UCDP markers by region and caps them at the deadliest locations', () => {
+  it('filters UCDP markers by region and keeps every location, deadliest first', () => {
     const kyiv = ucdpEvent({ id: 'k', location: { latitude: 50.4, longitude: 30.5 }, country: 'Ukraine' });
     assert.deepEqual(ucdpMarkers([ucdpEvent({}), kyiv], 'europe').markers.map((m) => m.popup.name), ['Ukraine']);
-    const many = Array.from({ length: UCDP_MARKER_LIMIT + 5 }, (_, i) => ucdpEvent({ id: String(i), location: { latitude: 10, longitude: i * 0.1 }, deathsBest: i }));
-    const capped = ucdpMarkers(many, 'all');
-    assert.equal(capped.locations, UCDP_MARKER_LIMIT + 5);
-    assert.equal(capped.markers.length, UCDP_MARKER_LIMIT);
-    assert.equal(capped.markers[0]?.popup.value, `${UCDP_MARKER_LIMIT + 4} deaths`);
+    // The map clusters by zoom, so no location is dropped to bound the DOM.
+    const many = Array.from({ length: 405 }, (_, i) => ucdpEvent({ id: String(i), location: { latitude: 10, longitude: i * 0.1 }, deathsBest: i }));
+    const all = ucdpMarkers(many, 'all');
+    assert.equal(all.locations, 405);
+    assert.equal(all.markers.length, 405);
+    assert.equal(all.markers[0]?.popup.value, '404 deaths');
   });
 
   it('formats UCDP coordinates and multi-day events', () => {
@@ -461,6 +469,105 @@ describe('Lite conflict map', () => {
     assert.deepEqual(markerBounds([{ lat: 50, lon: 30 }]), [[26, 46], [34, 54]]);
     // A wide spread: 2° of padding, clamped to the world.
     assert.deepEqual(markerBounds([{ lat: 10, lon: -178 }, { lat: 60, lon: 40 }]), [[-180, 8], [42, 62]]);
+  });
+});
+
+describe('Lite hotspot live escalation', () => {
+  const NOW = Date.UTC(2026, 10, 8, 12);
+  const kyiv: Hotspot = { id: 'kyiv', name: 'Kyiv', lat: 50.45, lon: 30.52, keywords: ['kyiv', 'ukraine'], escalationScore: 5 };
+  const near = { latitude: 50.5, longitude: 30.6 }; // ~8 km from Kyiv
+  const far = { latitude: 48.0, longitude: 37.8 }; // ~590 km away
+  const none = { news: null, ciiScores: null, unrest: null, earthquakes: null, flights: null };
+
+  it('scores with the shared core, reading only the inputs inside each window and radius', () => {
+    const feeds = {
+      news: [
+        { title: 'Strikes hit Kyiv overnight', publishedAt: NOW - 30 * 60_000 },
+        { title: 'Ukraine talks resume', publishedAt: NOW - 90 * 60_000 },
+        { title: 'Kyiv power restored', publishedAt: NOW - 3 * 3_600_000 }, // outside the 2 h window
+        { title: 'Unrelated market news', publishedAt: NOW - 10 * 60_000 },
+      ],
+      ciiScores: [{ region: 'UA', combinedScore: 72 }, { region: 'RU', combinedScore: 40 }],
+      unrest: [
+        { location: near, occurredAt: NOW - 3_600_000 },
+        { location: far, occurredAt: NOW - 3_600_000 },
+      ],
+      earthquakes: [{ location: near, occurredAt: NOW - 3_600_000 }],
+      flights: [
+        { location: { latitude: 51.4, longitude: 30.5 }, lastSeenAt: NOW - 60_000 }, // ~105 km
+        { location: { latitude: 53.0, longitude: 30.5 }, lastSeenAt: NOW - 60_000 }, // ~285 km
+      ],
+    } as unknown as Parameters<typeof scoreHotspots>[1];
+    const [result] = scoreHotspots([kyiv], feeds, NOW);
+    assert.deepEqual(result?.missing, []);
+    // Two headlines in 2 h: the dashboard's matches, breaking flag and velocity.
+    assert.equal(result?.score.components.newsActivity, 2 * 15 + 30 + 1 * 5);
+    assert.equal(result?.score.components.ciiContribution, 72);
+    assert.equal(result?.score.components.militaryActivity, 10);
+    // Protest + earthquake (+ the flight) converge within 150 km; the far protest does not count.
+    assert.ok((result?.score.components.geoConvergence ?? 0) > 0);
+    assert.equal(CONVERGENCE_RADIUS_KM, 150);
+    assert.equal(MILITARY_RADIUS_KM, 200);
+    // No second formula: the same inputs through the shared core give the same score.
+    const direct = computeEscalationScore(kyiv, {
+      newsMatches: 2, hasBreaking: true, newsVelocity: 1, ciiScore: 72,
+      geoAlertScore: 0, geoAlertTypes: 0, flightsNearby: 1, vesselsNearby: 0,
+    }, { now: NOW });
+    assert.equal(result?.score.components.newsActivity, direct.components.newsActivity);
+    assert.equal(result?.score.staticBaseline, 5);
+  });
+
+  it('names missing feeds and scores them as the shared core scores absent inputs', () => {
+    const [result] = scoreHotspots([kyiv], none, NOW);
+    assert.deepEqual(result?.missing, ['news', 'countryRisk', 'unrest', 'earthquakes', 'militaryFlights']);
+    assert.deepEqual(result?.score.components, { newsActivity: 0, ciiContribution: 30, geoConvergence: 0, militaryActivity: 0 });
+    // Baseline 5 alone: 0.3 × 5 + 0.7 × (1 + 0.3) = 2.41, the dashboard's "watch" level.
+    assert.equal(result?.score.combinedScore, 2.4);
+    assert.equal(escalationLevel(result?.score.combinedScore ?? 0).label, 'Watch');
+  });
+
+  it('maps the live score to the dashboard levels; every level is drawn, names from elevated up', () => {
+    assert.deepEqual(escalationLevel(4.6), { tone: 'crit', label: 'Critical', named: true });
+    assert.deepEqual(escalationLevel(3.6), { tone: 'high', label: 'High', named: true });
+    assert.deepEqual(escalationLevel(2.5), { tone: 'elev', label: 'Elevated', named: true });
+    assert.deepEqual(escalationLevel(2.4), { tone: 'muted', label: 'Watch', named: false });
+    assert.deepEqual(escalationLevel(1.2), { tone: 'muted', label: 'Stable', named: false });
+  });
+});
+
+describe('Lite conflict map layout', () => {
+  it('sizes UCDP circles by deaths and labels them compactly', () => {
+    assert.equal(ucdpRadius(0), 6);
+    assert.ok(ucdpRadius(412) > ucdpRadius(58));
+    assert.equal(ucdpRadius(1_000_000), 26);
+    assert.deepEqual([412, 1200, 6998, 15_400].map(compactCount), ['412', '1.2k', '7k', '15k']);
+  });
+
+  it('places the card away from the map centre and inside the map, with the leader line on its nearest edge', () => {
+    const map = { w: 760, h: 380 };
+    const card = { w: 272, h: 140 };
+    for (const marker of [{ x: 100, y: 60 }, { x: 680, y: 60 }, { x: 100, y: 330 }, { x: 680, y: 330 }]) {
+      const { left, top, attach } = placeCard(marker, card, map);
+      assert.ok(left >= 12 && left + card.w <= map.w - 12, `left ${left} for ${JSON.stringify(marker)}`);
+      assert.ok(top >= 12 && top + card.h <= map.h - 12, `top ${top} for ${JSON.stringify(marker)}`);
+      // The card sits on the side away from the centre.
+      assert.equal(left > marker.x, marker.x < map.w / 2);
+      assert.ok(attach.x >= left && attach.x <= left + card.w && attach.y >= top && attach.y <= top + card.h);
+    }
+    // A map smaller than the card keeps the card at the margin.
+    assert.deepEqual(placeCard({ x: 50, y: 50 }, card, { w: 200, h: 100 }).left, 12);
+  });
+});
+
+describe('Lite time range', () => {
+  it('keeps items inside the dashboard ranges, and items without a time', () => {
+    const now = Date.UTC(2026, 10, 8, 12);
+    assert.deepEqual(TIME_RANGE_HOURS, { '1h': 1, '6h': 6, '24h': 24, '48h': 48, '7d': 168 });
+    assert.equal(inTimeRange(now - 59 * 60_000, now, '1h'), true);
+    assert.equal(inTimeRange(now - 61 * 60_000, now, '1h'), false);
+    assert.equal(inTimeRange(now - 47 * 3_600_000, now, '48h'), true);
+    assert.equal(inTimeRange(now - 8 * 24 * 3_600_000, now, '7d'), false);
+    assert.equal(inTimeRange(0, now, '1h'), true);
   });
 });
 

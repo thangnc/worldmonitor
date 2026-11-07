@@ -21,6 +21,9 @@ export const useDigest = (edition: src.DigestEdition) => useResource(`digest:${e
 export const useRiskScores = () => useResource('riskScores', src.loadRiskScores);
 export const useCountryHistory = (code: string) => useResource(`history:${code}`, () => src.loadCountryHistory(code));
 export const useUcdpEvents = () => useResource('ucdpEvents', src.loadUcdpEvents);
+export const useUnrestEvents = () => useResource('unrestEvents', src.loadUnrestEvents);
+export const useEarthquakes = () => useResource('earthquakes', src.loadEarthquakes);
+export const useMilitaryFlights = () => useResource('militaryFlights', src.loadMilitaryFlights);
 export const useCryptoQuotes = () => useResource('cryptoQuotes', src.loadCryptoQuotes);
 export const useMarketQuotes = () => useResource('marketQuotes', src.loadMarketQuotes);
 export const useCommodityQuotes = () => useResource('commodityQuotes', src.loadCommodityQuotes);

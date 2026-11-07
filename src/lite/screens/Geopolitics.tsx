@@ -5,21 +5,33 @@ import { INTEL_HOTSPOTS } from '@/config/geo';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { BarStrip, StackedBar } from '../components/charts';
 import { BG, BORDER, Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, Switch, TEXT, cx } from '../components/ui';
-import { LiteMap, type MapMarker } from '../map/LiteMap';
-import { selectIncidents, useCountryHistory, useDigest, useRiskScores, useUcdpEvents } from '../data/hooks';
+import { Diamond, LiteMap, type MapMarker } from '../map/LiteMap';
+import {
+  selectIncidents,
+  useCountryHistory,
+  useDigest,
+  useEarthquakes,
+  useMilitaryFlights,
+  useRiskScores,
+  useUcdpEvents,
+  useUnrestEvents,
+} from '../data/hooks';
 import { ESCALATION_REGIONS, leadCountry } from '../data/regions';
-import { UCDP_MARKER_LIMIT, ucdpMarkers } from '../data/ucdp';
+import { ucdpMarkers } from '../data/ucdp';
+import { FEED_LABEL, escalationLevel, scoreHotspots } from '../data/escalation';
 import { SAMPLE_WATCHLIST } from '../data/fixtures';
 import {
   CORROBORATION_RULE,
   CORROBORATION_VIEW,
   GEO_CATEGORIES,
   GEO_REGION_LABEL,
+  TIME_RANGE_HOURS,
   confidenceLabel,
   corroborationOf,
   digestItems,
   escalationStatus,
   evidenceMix,
+  inTimeRange,
   isPrimarySource,
   pctChange,
   phaseLabel,
@@ -31,7 +43,7 @@ import {
   timeBuckets,
   type GeoRegion,
   type LiteItem,
-  type Tone,
+  type TimeRange,
 } from '../data/transforms';
 import { signed } from '../format';
 
@@ -42,6 +54,9 @@ const REGION_OPTIONS = [
   { value: 'africa', label: 'Africa' },
   { value: 'asia', label: 'Asia-Pacific' },
 ] as const satisfies ReadonlyArray<{ value: GeoRegion; label: string }>;
+
+/** The dashboard's time ranges. They filter the digest-driven parts of the screen; UCDP is a delayed release and is not filtered, as on the dashboard. */
+const TIME_RANGE_OPTIONS = (Object.keys(TIME_RANGE_HOURS) as TimeRange[]).map((value) => ({ value, label: value }));
 
 /**
  * Escalation regions. The card follows the first listed country that has a
@@ -55,6 +70,7 @@ export function Geopolitics() {
   const [region, setRegion] = useState<GeoRegion>('all');
   const [search, setSearch] = useState('');
   const [layers, setLayers] = useState({ conflicts: true, hotspots: true });
+  const [range, setRange] = useState<TimeRange>('7d');
   const digest = useDigest('full');
   const risk = useRiskScores();
 
@@ -62,7 +78,9 @@ export function Geopolitics() {
     () => (digest.status === 'ready' ? selectIncidents(digest.data) : []),
     [digest],
   );
-  const visible = incidents.filter((i) => inRegion(i, region) && matchesSearch(search, i.title, i.source, i.locationName));
+  const now = Date.now();
+  const inRange = incidents.filter((i) => inTimeRange(i.publishedAt, now, range));
+  const visible = inRange.filter((i) => inRegion(i, region) && matchesSearch(search, i.title, i.source, i.locationName));
   const escalating = risk.status === 'ready'
     ? ESCALATION_REGIONS.filter((r) => {
         const { score } = leadCountry(r.countries, risk.data.ciiScores);
@@ -76,7 +94,7 @@ export function Geopolitics() {
         title="Geopolitics & Conflicts"
         subtitle={
           <>
-            {digest.status === 'ready' ? `${incidents.length} active events` : 'Loading events'}
+            {digest.status === 'ready' ? `${inRange.length} active events in ${range}` : 'Loading events'}
             {escalating != null ? ` · ${escalating} regions at high CII` : ''} · refresh 5 min
           </>
         }
@@ -87,13 +105,13 @@ export function Geopolitics() {
       />
       <div class="flex flex-col gap-6 px-4 py-6 wide:flex-row wide:px-7">
         <div class="flex min-w-0 flex-1 flex-col gap-5">
-          <ConflictMap region={region} layers={layers} />
+          <ConflictMap region={region} layers={layers} range={range} onRange={setRange} />
           <IncidentsCard state={digest} rows={visible.slice(0, 6)} total={visible.length} />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
-          <Timeline incidents={incidents} region={region} />
+          <Timeline incidents={inRange} region={region} />
           <Watchlist />
-          <EvidenceMix state={digest} region={region} />
+          <EvidenceMix state={digest} region={region} range={range} />
           <MapLayers layers={layers} onChange={setLayers} />
         </div>
       </div>
@@ -101,74 +119,108 @@ export function Geopolitics() {
   );
 }
 
-function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflicts: boolean; hotspots: boolean } }) {
+function ConflictMap({
+  region, layers, range, onRange,
+}: {
+  region: GeoRegion;
+  layers: { conflicts: boolean; hotspots: boolean };
+  range: TimeRange;
+  onRange: (range: TimeRange) => void;
+}) {
   const ucdp = useUcdpEvents();
   const digest = useDigest('full');
+  const risk = useRiskScores();
+  const unrest = useUnrestEvents();
+  const earthquakes = useEarthquakes();
+  const flights = useMilitaryFlights();
 
-  const { markers, ucdpLocations } = useMemo(() => {
+  // The dashboard's live hotspot score, from whichever of its inputs have loaded.
+  const escalation = useMemo(
+    () =>
+      scoreHotspots(
+        INTEL_HOTSPOTS,
+        {
+          news: digest.status === 'ready' ? digestItems(digest.data) : null,
+          ciiScores: risk.status === 'ready' ? risk.data.ciiScores : null,
+          unrest: unrest.status === 'ready' ? unrest.data : null,
+          earthquakes: earthquakes.status === 'ready' ? earthquakes.data : null,
+          flights: flights.status === 'ready' ? flights.data : null,
+        },
+        Date.now(),
+      ),
+    [digest, risk, unrest, earthquakes, flights],
+  );
+
+  const markers = useMemo(() => {
     const out: MapMarker[] = [];
-    let ucdpLocations = 0;
     if (layers.conflicts && ucdp.status === 'ready') {
-      // One marker per exact UCDP event location, as on the dashboard's UCDP layer.
-      const placed = ucdpMarkers(ucdp.data, region);
-      out.push(...placed.markers);
-      ucdpLocations = placed.locations;
+      // One marker per exact UCDP event location; the map clusters them by zoom.
+      out.push(...ucdpMarkers(ucdp.data, region).markers);
     }
     if (layers.hotspots) {
-      for (const h of INTEL_HOTSPOTS) {
-        const score = h.escalationScore ?? 0;
-        if (score < 3) continue;
+      for (const { hotspot: h, score, missing } of escalation) {
+        const level = escalationLevel(score.combinedScore);
         if (region !== 'all' && regionOfPoint(h.lat, h.lon) !== region) continue;
-        const tone: Tone = score >= 5 ? 'crit' : score >= 4 ? 'high' : 'elev';
+        const live = score.combinedScore.toFixed(1);
+        const c = score.components;
         out.push({
+          kind: 'hotspot',
           id: `hotspot:${h.id}`,
           lat: h.lat,
           lon: h.lon,
-          tone,
-          radius: 3 + score,
-          title: `${h.name}: escalation ${score}/5 (curated hotspot)`,
+          tone: level.tone,
+          // Below 3/5 the diamond stays, small and grey, without a name, so 29 names do not crowd the map.
+          label: level.named ? h.name : '',
+          title: `${h.name}: live escalation ${live}/5, ${level.label.toLowerCase()} (curated hotspot)`,
           popup: {
             kind: 'Curated hotspot',
             name: h.name,
-            value: `${score}/5`,
-            lines: [h.location ?? h.subtext ?? '', h.description ?? ''].filter(Boolean),
+            value: `${live}/5`,
+            score: score.combinedScore,
+            lines: [
+              { text: h.location ?? h.subtext ?? '' },
+              { text: h.description ?? '' },
+              {
+                text: `${level.label} · live score, baseline ${score.staticBaseline}/5 · news ${Math.round(c.newsActivity)} · country risk ${Math.round(c.ciiContribution)} · convergence ${Math.round(c.geoConvergence)} · military ${Math.round(c.militaryActivity)}`,
+                style: 'dim' as const,
+              },
+              { text: missing.length ? `Not available: ${missing.map((f) => FEED_LABEL[f]).join(', ')}` : '', style: 'dim' as const },
+            ].filter((line) => line.text),
           },
         });
       }
     }
-    return { markers: out, ucdpLocations };
-  }, [ucdp, region, layers]);
+    return out;
+  }, [ucdp, escalation, region, layers]);
 
   const scrub = useMemo(() => {
     if (digest.status !== 'ready') return null;
     const stamps = digestItems(digest.data, GEO_CATEGORIES).map((i) => i.publishedAt);
-    return timeBuckets(stamps, Date.now(), 72, 42);
-  }, [digest]);
-
-  const activeLayers = Number(layers.conflicts) + Number(layers.hotspots);
+    return timeBuckets(stamps, Date.now(), TIME_RANGE_HOURS[range], 42);
+  }, [digest, range]);
 
   return (
     <Card
       title="Conflict map"
-      sub={
-        ucdpLocations > UCDP_MARKER_LIMIT
-          ? `UCDP events (deadliest ${UCDP_MARKER_LIMIT} of ${ucdpLocations} locations) and curated hotspots`
-          : 'UCDP events and curated hotspots'
-      }
+      sub="UCDP events (not time-filtered) and curated hotspots (live score)"
       testId="conflict-map"
       right={
         <>
-          <div class="hidden items-center gap-[14px] md:flex">
-            {(['crit', 'high', 'elev'] as const).map((tone) => (
-              <span key={tone} class="flex items-center gap-[6px] text-[11.5px] text-muted">
-                <Dot tone={tone} size={8} />
-                {tone === 'crit' ? 'Critical' : tone === 'high' ? 'High' : 'Elevated'}
-              </span>
-            ))}
+          <div class="hidden items-center gap-[16px] md:flex" data-testid="map-legend">
+            <span class="flex items-center gap-[5px] text-[11.5px] text-muted" title="UCDP is a delayed release, so the time range does not filter it">
+              {[7, 10, 13].map((size) => (
+                <span key={size} class="rounded-full border border-crit/80 bg-crit/25" style={{ width: size, height: size }} />
+              ))}
+              <span class="ml-[3px]">UCDP events · size = deaths</span>
+            </span>
+            <span class="flex items-center gap-[4px] text-[11.5px] text-muted" title="All curated hotspots, coloured by the live escalation score: red critical, orange high, yellow elevated, grey watch or stable">
+              <Diamond tone="elev" filled={false} size={9} />
+              Curated hotspot
+            </span>
           </div>
           <span class="flex items-center gap-[6px] rounded-[6px] border border-line px-[10px] py-[5px] text-[11.5px] text-muted">
             <Layers size={13} strokeWidth={1.5} />
-            Layers · {activeLayers} of 5
+            Layers
           </span>
         </>
       }
@@ -182,18 +234,43 @@ function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflict
             </div>
           </div>
         ) : null}
-        {scrub ? (
-          <div class="absolute bottom-4 left-4 right-4 flex h-8 items-center gap-3 rounded-[6px] border border-line bg-surface/90 px-3" title="Reports per time slice, last 72 hours">
-            <span class="font-mono text-[10.5px] text-dim">−72h</span>
-            <div class="min-w-0 flex-1">
-              <BarStrip values={scrub} height={16} label="Reports over the last 72 hours" colorFor={(i) => (i >= scrub.length - 6 ? 'bg-geo' : 'bg-track')} />
-            </div>
-            <span class="font-mono text-[10.5px] text-muted">now</span>
-          </div>
-        ) : null}
+        {/* The time range sits on the map, as on the dashboard, and filters the screen's digest-driven parts. */}
+        <div class="absolute bottom-4 left-4 right-4 flex h-9 items-center gap-3 rounded-[6px] border border-line bg-surface/90 pr-3 pl-1">
+          <TimeRangeControl value={range} onChange={onRange} />
+          {scrub ? (
+            <>
+              <div class="min-w-0 flex-1" title={`Reports per time slice, last ${range}`}>
+                <BarStrip values={scrub} height={16} label={`Reports over the last ${range}`} colorFor={(i) => (i >= scrub.length - 6 ? 'bg-geo' : 'bg-track')} />
+              </div>
+              <span class="font-mono text-[10.5px] text-muted">now</span>
+            </>
+          ) : null}
+        </div>
       </div>
       <RegionStrip />
     </Card>
+  );
+}
+
+/** The dashboard's time buttons, compact enough for the map's bottom bar. */
+function TimeRangeControl({ value, onChange }: { value: TimeRange; onChange: (range: TimeRange) => void }) {
+  return (
+    <fieldset aria-label="Time range" class="m-0 flex shrink-0 gap-px border-0 p-0" data-testid="time-range">
+      {TIME_RANGE_OPTIONS.map((o) => {
+        const active = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(o.value)}
+            class={cx('rounded-[4px] px-[7px] py-[3px] font-mono text-[10.5px]', active ? 'bg-surface-2 text-ink' : 'text-dim hover:text-muted')}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </fieldset>
   );
 }
 
@@ -353,8 +430,11 @@ function Watchlist() {
   );
 }
 
-function EvidenceMix({ state, region }: { state: ReturnType<typeof useDigest>; region: GeoRegion }) {
-  const items = state.status === 'ready' ? digestItems(state.data, GEO_CATEGORIES).filter((i) => inRegion(i, region)) : [];
+function EvidenceMix({ state, region, range }: { state: ReturnType<typeof useDigest>; region: GeoRegion; range: TimeRange }) {
+  const now = Date.now();
+  const items = state.status === 'ready'
+    ? digestItems(state.data, GEO_CATEGORIES).filter((i) => inRegion(i, region) && inTimeRange(i.publishedAt, now, range))
+    : [];
   const mix = evidenceMix(items);
   return (
     <Panel title="Evidence mix" sub={state.status === 'ready' ? `${items.length} reports` : undefined} right={<DerivedTag how="Source classes from shared/source-provenance.ts types and shared/source-tiers.json." />} testId="evidence-mix">

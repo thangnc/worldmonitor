@@ -23,6 +23,10 @@ import type {
 } from '@/generated/client/worldmonitor/market/v1/service_client';
 import type { GetRiskScoresResponse, GetCountryHistoryResponse } from '@/generated/client/worldmonitor/intelligence/v1/service_client';
 import type { UcdpViolenceEvent } from '@/generated/client/worldmonitor/conflict/v1/service_client';
+import type { UnrestEvent } from '@/generated/client/worldmonitor/unrest/v1/service_client';
+import type { Earthquake } from '@/generated/client/worldmonitor/seismology/v1/service_client';
+import type { MilitaryFlight } from '@/generated/client/worldmonitor/military/v1/service_client';
+import { MILITARY_QUERY_REGIONS } from '@/config/military';
 import type { EconomicEvent } from '@/generated/client/worldmonitor/economic/v1/service_client';
 import type { ArxivPaper, HackernewsItem } from '@/generated/client/worldmonitor/research/v1/service_client';
 import {
@@ -30,7 +34,10 @@ import {
   EconomicServiceClient,
   IntelligenceServiceClient,
   MarketServiceClient,
+  MilitaryServiceClient,
   ResearchServiceClient,
+  SeismologyServiceClient,
+  UnrestServiceClient,
 } from '@/services/generated-rpc-clients';
 import { getRpcBaseUrl, rpcFetch } from '@/services/rpc-client';
 import { publicRpcFetch } from '@/services/public-rpc-fetch';
@@ -45,6 +52,9 @@ const intelligence = new IntelligenceServiceClient(getRpcBaseUrl(), options);
 const conflict = new ConflictServiceClient(getRpcBaseUrl(), options);
 const economic = new EconomicServiceClient(getRpcBaseUrl(), options);
 const research = new ResearchServiceClient(getRpcBaseUrl(), options);
+const unrest = new UnrestServiceClient(getRpcBaseUrl(), options);
+const seismology = new SeismologyServiceClient(getRpcBaseUrl(), options);
+const military = new MilitaryServiceClient(getRpcBaseUrl(), options);
 
 let bootstrapReady: Promise<void> | null = null;
 
@@ -121,6 +131,44 @@ export async function loadUcdpEvents(): Promise<UcdpViolenceEvent[] | null> {
     ? (boot.events as UcdpViolenceEvent[])
     : (await conflict.listUcdpEvents({ start: 0, end: 0, pageSize: 0, cursor: '', country: '' })).events;
   return events.filter((e) => e.location && Number.isFinite(e.location.latitude));
+}
+
+// Inputs to the hotspots' live escalation score (src/lite/data/escalation.ts).
+
+export async function loadUnrestEvents(): Promise<UnrestEvent[] | null> {
+  const { events } = await unrest.listUnrestEvents({
+    start: 0, end: 0, pageSize: 0, cursor: '', country: '', minSeverity: 'SEVERITY_LEVEL_UNSPECIFIED',
+    neLat: 0, neLon: 0, swLat: 0, swLon: 0,
+  });
+  return events.length ? events : null;
+}
+
+export async function loadEarthquakes(): Promise<Earthquake[] | null> {
+  const { earthquakes } = await seismology.listEarthquakes({ start: 0, end: 0, pageSize: 0, cursor: '', minMagnitude: 0 });
+  return earthquakes.length ? earthquakes : null;
+}
+
+/** Pages limit per region; the global snapshot holds a few hundred aircraft. */
+const FLIGHT_PAGE_SIZE = 500;
+const FLIGHT_MAX_PAGES = 10;
+
+export async function loadMilitaryFlights(): Promise<MilitaryFlight[] | null> {
+  const flights: MilitaryFlight[] = [];
+  // The dashboard's query regions (src/services/military-flights.ts), paged by cursor.
+  for (const region of MILITARY_QUERY_REGIONS) {
+    let cursor = '';
+    for (let page = 0; page < FLIGHT_MAX_PAGES; page++) {
+      const resp = await military.listMilitaryFlights({
+        pageSize: FLIGHT_PAGE_SIZE, cursor,
+        neLat: region.lamax, neLon: region.lomax, swLat: region.lamin, swLon: region.lomin,
+        operator: 'MILITARY_OPERATOR_UNSPECIFIED', aircraftType: 'MILITARY_AIRCRAFT_TYPE_UNSPECIFIED',
+      });
+      flights.push(...resp.flights);
+      cursor = resp.pagination?.nextCursor ?? '';
+      if (!cursor) break;
+    }
+  }
+  return flights.length ? flights : null;
 }
 
 // ---- Finance ----------------------------------------------------------------

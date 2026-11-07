@@ -21,3 +21,43 @@ export function markerBounds(points: ReadonlyArray<{ lat: number; lon: number }>
     [Math.min(180, e + padLon), Math.min(85, n + padLat)],
   ];
 }
+
+/** UCDP circle radius in pixels: area grows with deaths, capped so a large toll does not cover a region. */
+export function ucdpRadius(deaths: number): number {
+  return Math.min(26, 6 + Math.sqrt(Math.max(0, deaths)) * 0.9);
+}
+
+/** Deaths printed inside a UCDP circle once it is large enough to hold them. */
+export const LABEL_MIN_RADIUS = 12;
+
+/** `412`, `1.2k`, `15k`. */
+export function compactCount(n: number): string {
+  if (n < 1000) return String(n);
+  const k = n / 1000;
+  return `${k < 10 ? k.toFixed(1).replace(/\.0$/, '') : Math.round(k)}k`;
+}
+
+interface Point {
+  x: number;
+  y: number;
+}
+interface Size {
+  w: number;
+  h: number;
+}
+
+/**
+ * Where a marker's detail card sits: off to the side away from the map's
+ * centre, kept inside the map, with the point on the card nearest the marker
+ * for the leader line.
+ */
+export function placeCard(marker: Point, card: Size, map: Size, gap = 28, margin = 12): { left: number; top: number; attach: Point } {
+  const keepInside = (v: number, size: number, room: number) => Math.max(margin, Math.min(v, room - size - margin));
+  const left = keepInside(marker.x < map.w / 2 ? marker.x + gap : marker.x - gap - card.w, card.w, map.w);
+  const top = keepInside(marker.y < map.h / 2 ? marker.y + gap : marker.y - gap - card.h, card.h, map.h);
+  const attach = {
+    x: Math.min(Math.max(marker.x, left), left + card.w),
+    y: Math.min(Math.max(marker.y, top), top + card.h),
+  };
+  return { left, top, attach };
+}
