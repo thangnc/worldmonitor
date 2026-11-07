@@ -160,24 +160,31 @@ export function ucdpMarkers(
   return { markers, locations: byPoint.size };
 }
 
-/**
- * UCDP events inside the time range, counted back from UCDP's newest event,
- * not from now: UCDP is a delayed release (weeks behind), so a range ending
- * today would hold no events. `newest` is that anchor, for labelling the map.
- */
-export function ucdpInRange(events: readonly UcdpViolenceEvent[], range: TimeRange): { events: UcdpViolenceEvent[]; newest: number } {
-  const newest = events.reduce((max, e) => Math.max(max, e.dateStart || 0), 0);
-  const span = TIME_RANGE_HOURS[range] * 3_600_000;
-  return { events: events.filter((e) => !e.dateStart || newest - e.dateStart < span), newest };
-}
+const DAY_MS = 86_400_000;
 
 /**
- * The map subtitle for the UCDP window. UCDP dates events by day (every start
- * is midnight UTC), so a range shorter than a day can only show its latest day.
+ * UCDP events inside the time range, counted back from now like the rest of
+ * the screen. UCDP dates events by day (every start is midnight UTC), so an
+ * event counts when any part of its day falls inside the range: 1h near
+ * midnight still shows that day. UCDP is a delayed release, weeks behind, so
+ * short ranges are often empty; `newest` is UCDP's newest event, to say so.
  */
-export function ucdpWindowLabel(range: TimeRange, newest: number): string {
-  const end = day(newest);
-  return TIME_RANGE_HOURS[range] <= 24
-    ? `UCDP events: its latest day, ${end} (UCDP dates events by day, not hour)`
-    : `UCDP events: the last ${range} of UCDP data, to ${end}`;
+export function ucdpInRange(
+  events: readonly UcdpViolenceEvent[],
+  range: TimeRange,
+  now: number,
+): { events: UcdpViolenceEvent[]; newest: number } {
+  const newest = events.reduce((max, e) => Math.max(max, e.dateStart || 0), 0);
+  const from = now - TIME_RANGE_HOURS[range] * 3_600_000;
+  return {
+    events: events.filter((e) => !e.dateStart || (Math.max(e.dateStart, e.dateEnd || 0) + DAY_MS > from && e.dateStart <= now)),
+    newest,
+  };
+}
+
+/** The map subtitle for the UCDP window, naming UCDP's newest day when the range holds none. */
+export function ucdpWindowLabel(range: TimeRange, shown: number, newest: number): string {
+  return shown > 0
+    ? `UCDP events: the last ${range}`
+    : `No UCDP events in the last ${range}; UCDP's newest is ${day(newest)} (a delayed release)`;
 }

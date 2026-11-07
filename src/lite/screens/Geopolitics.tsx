@@ -56,8 +56,8 @@ const REGION_OPTIONS = [
 ] as const satisfies ReadonlyArray<{ value: GeoRegion; label: string }>;
 
 /**
- * The dashboard's time ranges plus 30 days. They filter the digest-driven parts of the screen from now,
- * and UCDP events from UCDP's newest event (a delayed release; see ucdpInRange).
+ * The dashboard's time ranges plus 30 days. They filter the digest-driven parts of the screen and the
+ * UCDP events, all counted back from now (see ucdpInRange for UCDP's day-dated events).
  */
 const TIME_RANGE_OPTIONS = (Object.keys(TIME_RANGE_HOURS) as TimeRange[]).map((value) => ({ value, label: value }));
 
@@ -154,7 +154,7 @@ function ConflictMap({
     [digest, risk, unrest, earthquakes, flights],
   );
 
-  const ucdpRange = useMemo(() => (ucdp.status === 'ready' ? ucdpInRange(ucdp.data, range) : null), [ucdp, range]);
+  const ucdpRange = useMemo(() => (ucdp.status === 'ready' ? ucdpInRange(ucdp.data, range, Date.now()) : null), [ucdp, range]);
 
   const markers = useMemo(() => {
     const out: MapMarker[] = [];
@@ -209,14 +209,14 @@ function ConflictMap({
       title="Conflict map"
       sub={
         ucdpRange?.newest
-          ? `${ucdpWindowLabel(range, ucdpRange.newest)} · curated hotspots: live score`
+          ? `${ucdpWindowLabel(range, ucdpRange.events.length, ucdpRange.newest)} · curated hotspots: live score`
           : 'UCDP events and curated hotspots (live score)'
       }
       testId="conflict-map"
       right={
         <>
           <div class="hidden items-center gap-[16px] md:flex" data-testid="map-legend">
-            <span class="flex items-center gap-[5px] text-[11.5px] text-muted" title="UCDP is a delayed release, weeks behind; the time range counts back from its newest event">
+            <span class="flex items-center gap-[5px] text-[11.5px] text-muted" title="UCDP is a delayed release, weeks behind, so short time ranges may hold no events">
               {[7, 10, 13].map((size) => (
                 <span key={size} class="rounded-full border border-crit/80 bg-crit/25" style={{ width: size, height: size }} />
               ))}
