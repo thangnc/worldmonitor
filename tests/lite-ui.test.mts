@@ -47,6 +47,16 @@ import {
   sinceStats,
   trendLabel,
 } from '../src/lite/data/briefing.ts';
+import {
+  FLAT_MOVE,
+  buildPriceBoard,
+  eventTag,
+  geoCause,
+  isMarketMovingWarStory,
+  linkPriceMoves,
+  namedInstruments,
+  priceMoveLabel,
+} from '../src/lite/data/prices.ts';
 import middleware from '../middleware.ts';
 
 function item(overrides: Partial<NewsItem> = {}): NewsItem {
@@ -199,6 +209,14 @@ describe('Lite transforms', () => {
     for (const category of ['conflict', 'military', 'terrorism']) assert.equal(isWarStory(threat(category)), true, category);
     for (const category of ['economic', 'diplomatic', 'protest', 'general']) assert.equal(isWarStory(threat(category)), false, category);
     assert.equal(isWarStory(item()), false);
+  });
+
+  it('keeps a war story as a market event only when its headline names an instrument', () => {
+    const war = (title: string) => item({ title, threat: { level: 'THREAT_LEVEL_HIGH', category: 'conflict', confidence: 0.8, source: 'keyword' } } as Partial<NewsItem>);
+    assert.equal(isMarketMovingWarStory(war('Brent jumps after drone strike on Saudi refinery')), true);
+    assert.equal(isMarketMovingWarStory(war('Shelling kills 12 in Kharkiv')), false);
+    assert.equal(isMarketMovingWarStory(war('Forces pound the city as dollar aid stalls')), false, 'FX words do not admit a war story');
+    assert.equal(isMarketMovingWarStory(item({ title: 'Gold hits record' })), false, 'not a war story');
   });
 
   it('uses the dashboard corroboration verdict, which tier 1 never upgrades', () => {
@@ -443,5 +461,56 @@ describe('Lite conflict map', () => {
     assert.deepEqual(markerBounds([{ lat: 50, lon: 30 }]), [[26, 46], [34, 54]]);
     // A wide spread: 2° of padding, clamped to the world.
     assert.deepEqual(markerBounds([{ lat: 10, lon: -178 }, { lat: 60, lon: 40 }]), [[-180, 8], [42, 62]]);
+  });
+});
+
+describe('Lite market events: price links', () => {
+  const quote = (symbol: string, price: number, change: number) => ({ symbol, price, change });
+  const board = buildPriceBoard(
+    [
+      [quote('BTC', 64000, -4.8), quote('ETH', 3100, -6.1)],
+      [quote('^GSPC', 5800, 0.4), quote('^IXIC', 18000, 0.9), quote('^TNX', 4.38, 1.4), quote('NVDA', 140, 3.2)],
+      [quote('BZ=F', 82, 2.9), quote('CL=F', 78, 2.6), quote('GC=F', 2400, 0.1), quote('EURUSD=X', 1.08, -0.1)],
+    ],
+    { value: 104.2, changePct: 0.3 },
+  );
+  const story = (title: string, category: string, extra: Partial<NewsItem> = {}) => ({ ...item({ title, ...extra }), category });
+
+  it('names instruments from the headline, then the stock tickers', () => {
+    assert.deepEqual(namedInstruments(item({ title: 'Oil and gold rally as dollar slips', tickers: ['NVDA'] })).map((i) => i.symbol), ['BZ=F', 'GC=F', 'DXY', 'NVDA']);
+    assert.deepEqual(namedInstruments(item({ title: 'Bank of Japan holds rates' })), []);
+  });
+
+  it('pairs a named instrument with its companion, else uses the asset-class benchmarks', () => {
+    assert.deepEqual(linkPriceMoves(story('Brent +2.9% as carriers reroute around the Cape', 'commodities'), board).map((m) => m.text), ['Brent +2.9%', 'WTI +2.6%']);
+    assert.deepEqual(linkPriceMoves(story('Long-liquidation cascade after perp funding turns negative', 'crypto'), board).map((m) => m.text), ['BTC −4.8%', 'ETH −6.1%']);
+    assert.deepEqual(linkPriceMoves(story('Fed minutes show split on cuts', 'centralbanks'), board).map((m) => m.text), ['US10Y 4.38%', 'DXY +0.3%']);
+    assert.deepEqual(linkPriceMoves(story('Nvidia beats estimates', 'ipo', { tickers: ['NVDA'] }), board).map((m) => m.text), ['NVDA +3.2%', 'S&P 500 +0.4%']);
+  });
+
+  it('skips instruments without a quote and reports none when nothing is quoted', () => {
+    assert.deepEqual(linkPriceMoves(story('Cocoa futures slide', 'commodities'), board).map((m) => m.text), ['Brent +2.9%', 'Gold +0.1%']);
+    assert.deepEqual(linkPriceMoves(story('Bitcoin slides', 'crypto'), new Map()), []);
+    assert.equal(priceMoveLabel([]).text, 'No linked quote');
+  });
+
+  it('says "No price impact" only when every linked quote stayed under the flat threshold', () => {
+    const flat = buildPriceBoard([[quote('GC=F', 2400, FLAT_MOVE.pct / 2)]], { value: 104, changePct: -0.1 });
+    const label = priceMoveLabel(linkPriceMoves(story('Gold steady ahead of jobs data', 'commodities'), flat));
+    assert.equal(label.text, 'No price impact');
+    assert.equal(label.flat, true);
+    assert.match(label.detail, /Gold \+0\.1% · DXY −0\.1%/);
+    assert.equal(priceMoveLabel(linkPriceMoves(story('Bitcoin slides', 'crypto'), board)).text, 'BTC −4.8% · ETH −6.1%');
+  });
+
+  it('tags commodity rows by the named commodity and words the geopolitical cause', () => {
+    assert.equal(eventTag(story('Brent climbs', 'commodities')).label, 'OIL');
+    assert.equal(eventTag(story('Gold record', 'commodities')).label, 'GOLD');
+    assert.equal(eventTag(story('Commodity index flat', 'commodities')).label, 'OIL & COMMOD.');
+    assert.equal(eventTag(story('Gold record', 'crypto')).label, 'CRYPTO');
+    const war = { level: 'THREAT_LEVEL_HIGH', category: 'conflict', confidence: 0.8, source: 'keyword' } as NewsItem['threat'];
+    assert.equal(geoCause(item({ title: 'Oil jumps after tanker hit', threat: war, locationName: 'Yemen' })), 'Yemen conflict');
+    assert.equal(geoCause(item({ title: 'Oil jumps after tanker hit', threat: war })), 'Conflict');
+    assert.equal(geoCause(item({ title: 'Gold record' })), null);
   });
 });

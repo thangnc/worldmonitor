@@ -16,13 +16,14 @@ import {
   useHyperliquid,
   useMacroCalendar,
   useMarketQuotes,
+  usePriceBoard,
   useStablecoins,
 } from '../data/hooks';
 import { SAMPLE_BTC_VOLUME, SAMPLE_LIQUIDATIONS } from '../data/fixtures';
+import { PRICE_LINK_RULE, eventTag, geoCause, linkPriceMoves, priceMoveLabel } from '../data/prices';
 import {
   closeToCloseBars,
   fearGreedState,
-  marketTag,
   pctChange,
   realizedVolatility,
   relativeTime,
@@ -298,29 +299,60 @@ function Derivatives({
 /** Six rows: one per asset class when every class has a story. */
 const MARKET_EVENT_ROWS = 6;
 
+const TAG_DOT = { geo: 'bg-geo', fin: 'bg-fin', dim: 'bg-dim' } as const;
+
 function MarketEvents({ state, events }: { state: ReturnType<typeof useDigest>; events: ReturnType<typeof selectMarketEvents> }) {
+  const [expanded, setExpanded] = useState(false);
+  const board = usePriceBoard();
   const now = Date.now();
+  const more = events.length > MARKET_EVENT_ROWS;
+  const shown = expanded ? events : events.slice(0, MARKET_EVENT_ROWS);
   return (
-    <Card title="Market-moving events" sub="highest-impact story per asset class, in turns" right={events.length > MARKET_EVENT_ROWS ? <span class="text-[12px] font-medium text-ink">{events.length} in digest</span> : undefined} testId="market-events">
+    <Card
+      title="Market-moving events"
+      sub="grouped by cause · linked to price moves"
+      right={
+        <>
+          <DerivedTag how={PRICE_LINK_RULE} />
+          {more ? (
+            <button type="button" class="text-[12px] font-medium text-ink hover:underline" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} data-testid="market-events-toggle">
+              {expanded ? 'Show fewer ↑' : `View all ${events.length} →`}
+            </button>
+          ) : null}
+        </>
+      }
+      testId="market-events"
+    >
       <div class="border-t border-line">
         {state.status !== 'ready' ? (
           <SourceState state={state} source="news digest (finance edition)" />
         ) : events.length === 0 ? (
           <p class="px-5 py-4 text-[12px] text-dim">No market-moving stories match.</p>
         ) : (
-          events.slice(0, MARKET_EVENT_ROWS).map((e) => {
-            const tag = marketTag(e.category);
+          shown.map((e) => {
+            const tag = eventTag(e);
+            const cause = geoCause(e);
+            const moves = board ? priceMoveLabel(linkPriceMoves(e, board)) : null;
             return (
-              <a key={e.link} href={e.link} target="_blank" rel="noopener noreferrer" class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-5 py-3 last:border-b-0 hover:bg-surface-2/50">
-                <span class="flex w-[96px] shrink-0 items-center gap-[6px]">
-                  <span class={cx('h-[6px] w-[6px] rounded-full', tag.tone === 'geo' ? 'bg-geo' : tag.tone === 'fin' ? 'bg-fin' : 'bg-dim')} />
-                  <span class="font-mono text-[10.5px] font-medium tracking-[0.6px] text-muted">{tag.label}</span>
+              <a key={e.link} href={e.link} target="_blank" rel="noopener noreferrer" class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-5 py-[14px] last:border-b-0 hover:bg-surface-2/50" data-testid="market-event">
+                <span class="flex w-[104px] shrink-0 items-center gap-[8px]">
+                  <span class={cx('h-[6px] w-[6px] rounded-full', TAG_DOT[cause ? 'geo' : tag.tone])} />
+                  <span class="font-mono text-[11px] font-medium tracking-[0.6px] text-muted">{tag.label}</span>
                 </span>
                 <span class="flex min-w-0 flex-1 basis-full flex-col gap-[3px] md:basis-0">
-                  <span class="text-[13px] font-medium text-ink">{e.title}</span>
-                  <span class="text-[11.5px] text-dim">{e.source} · {sourceCount(e)} report{sourceCount(e) === 1 ? '' : 's'} · {relativeTime(e.publishedAt, now)}</span>
+                  <span class="text-[14px] font-medium text-ink">{e.title}</span>
+                  <span class="text-[12px] text-dim">
+                    {cause ? <>Linked to <span class="text-geo">GEO</span> · {cause} · </> : null}
+                    {e.source} · {sourceCount(e)} report{sourceCount(e) === 1 ? '' : 's'} · {relativeTime(e.publishedAt, now)}
+                  </span>
                 </span>
-                <span class="font-mono text-[11.5px] text-muted md:w-[160px] md:shrink-0 md:text-right">{e.tickers.length ? e.tickers.slice(0, 3).join(' · ') : `impact ${Math.round(e.importanceScore)}`}</span>
+                <span
+                  class={cx('font-mono text-[12px] md:max-w-[260px] md:shrink-0 md:text-right', moves && !moves.flat ? 'text-muted' : 'text-dim')}
+                  title={moves?.detail}
+                  data-testid="market-event-moves"
+                >
+                  {moves ? moves.text : '…'}
+                </span>
               </a>
             );
           })
