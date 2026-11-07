@@ -1,25 +1,8 @@
 ---
-title: "Lifecycle emails addressed to the Dodo checkout email, not the Clerk login email, look like scams and failed sends"
-module: billing-identity
+title: Lifecycle emails addressed to the Dodo checkout email, not the Clerk login email, look like scams and failed sends
 date: 2026-08-08
-category: architecture-patterns
+area: payments
 problem_type: architecture_pattern
-component: payments
-severity: medium
-applies_when:
-  - "Triaging a \"paid but can't log in\" support ticket, especially from an email address the product has no account for"
-  - "The billing provider (Dodo Payments) and the auth provider (Clerk) can each hold a different email address for the same customer"
-  - "A lifecycle or welcome email is addressed from the payment provider's checkout email rather than the auth provider's login email"
-  - "Searching an email platform (e.g. Resend) by a customer's login email returns no results, which looks like a send failure but is actually an identity mismatch"
-  - "Confirming which account a payment reached: use the checkout session's linked user id in metadata, not any email address, as the source of truth"
-symptoms:
-  - "Customer email claims 'paid for Pro and can't log in' from an address that has no Clerk account"
-  - "Convex entitlement lookup for the correct userId already shows valid, paid coverage, contradicting the ticket"
-  - "Searching the email platform by the customer's stated login email returns zero sends, which looks like a missing welcome email"
-  - "The welcome email was delivered and clicked, but to a third address: the checkout billing email, not the login email"
-related_components:
-  - authentication
-  - email_processing
 tags:
   - dodo-payments
   - clerk
@@ -29,6 +12,19 @@ tags:
   - support-triage
   - welcome-email
   - checkout-vs-login-email
+severity: medium
+module: billing-identity
+symptoms:
+  - Customer email claims 'paid for Pro and can't log in' from an address that has no Clerk account
+  - Convex entitlement lookup for the correct userId already shows valid, paid coverage, contradicting the ticket
+  - Searching the email platform by the customer's stated login email returns zero sends, which looks like a missing welcome email
+  - "The welcome email was delivered and clicked, but to a third address: the checkout billing email, not the login email"
+applies_when:
+  - Triaging a "paid but can't log in" support ticket, especially from an email address the product has no account for
+  - The billing provider (Dodo Payments) and the auth provider (Clerk) can each hold a different email address for the same customer
+  - A lifecycle or welcome email is addressed from the payment provider's checkout email rather than the auth provider's login email
+  - Searching an email platform (e.g. Resend) by a customer's login email returns no results, which looks like a send failure but is actually an identity mismatch
+  - "Confirming which account a payment reached: use the checkout session's linked user id in metadata, not any email address, as the source of truth"
 ---
 
 # Lifecycle emails addressed to the Dodo checkout email, not the Clerk login email, look like scams and failed sends

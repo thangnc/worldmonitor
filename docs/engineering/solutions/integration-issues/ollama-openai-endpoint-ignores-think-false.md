@@ -1,20 +1,26 @@
 ---
-title: "Ollama's OpenAI-compatible endpoint ignores think false, and the sidecar idle timer cut silent completions"
+title: Ollama's OpenAI-compatible endpoint ignores think false, and the sidecar idle timer cut silent completions
 date: 2026-10-25
-category: integration-issues
-module: ollama-llm-provider
+area: intelligence
 problem_type: integration_issue
-component: assistant
+tags:
+  - ollama
+  - qwen3
+  - reasoning
+  - think
+  - reasoning-effort
+  - sidecar
+  - idle-timeout
+  - desktop-translation
+severity: high
+module: ollama-llm-provider
 symptoms:
-  - "Desktop headline translation shows 'Translation unavailable. Check your AI provider settings and try again.' with a local qwen3:8b"
-  - "summarize-article returns HTTP 200 with status SUMMARIZE_STATUS_ERROR and statusDetail Error after about 12 seconds"
+  - Desktop headline translation shows 'Translation unavailable. Check your AI provider settings and try again.' with a local qwen3:8b
+  - summarize-article returns HTTP 200 with status SUMMARIZE_STATUS_ERROR and statusDetail Error after about 12 seconds
   - "local-api.log shows '[SummarizeArticle:ollama] Error: Error upstream request idle-timed out'"
-  - "A direct /v1/chat/completions call with no reasoning control returns empty content, finish_reason length, and a reasoning field"
+  - A direct /v1/chat/completions call with no reasoning control returns empty content, finish_reason length, and a reasoning field
 root_cause: wrong_api
 resolution_type: code_fix
-severity: high
-related_components: [testing_framework]
-tags: [ollama, qwen3, reasoning, think, reasoning-effort, sidecar, idle-timeout, desktop-translation]
 ---
 
 # Ollama's OpenAI-compatible endpoint ignores think false, and the sidecar idle timer cut silent completions

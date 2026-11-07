@@ -1,15 +1,22 @@
 ---
-title: "A time-windowed prune undercuts any check that diffs across the window"
+title: A time-windowed prune undercuts any check that diffs across the window
 date: 2026-09-05
-category: logic-errors
-module: ais-relay
-problem_type: bug
-component: background_job
+area: seeders
+problem_type: logic_error
+tags:
+  - ais-relay
+  - dark-ships
+  - ais-gaps
+  - time-windows
+  - prune
+  - blindspot
+  - detection
+  - temporal-baselines
 severity: high
-symptoms: "Dark-ship (AIS gap) detection counts zero forever while the algorithm reads correct"
-root_cause: "cleanupAggregates prunes the history structure to the 30-min DENSITY_WINDOW, so the >1h gap the check diffs across can never exist in the pruned data"
+module: ais-relay
+symptoms: Dark-ship (AIS gap) detection counts zero forever while the algorithm reads correct
+root_cause: cleanupAggregates prunes the history structure to the 30-min DENSITY_WINDOW, so the >1h gap the check diffs across can never exist in the pruned data
 resolution_type: code_change
-tags: [ais-relay, dark-ships, ais-gaps, time-windows, prune, blindspot, detection, temporal-baselines]
 ---
 
 # A time-windowed prune undercuts any check that diffs across the window

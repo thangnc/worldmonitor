@@ -1,20 +1,26 @@
 ---
 title: The relay's public /rss proxy fetched allowlisted hosts without vetting where they resolved
 date: 2026-10-12
-category: security-issues
-module: ais-relay
+area: seeders
 problem_type: security_issue
-component: background_job
+tags:
+  - ssrf
+  - dns-rebinding
+  - dns-pinning
+  - rss-proxy
+  - railway
+  - allowlist
+  - backoff
+  - stale-cache
 severity: medium
+module: ais-relay
 symptoms:
-  - "scripts/ais-relay.cjs served /rss without auth by design and fetched any allowlisted feed host with raw http.get/https.get through the OS resolver, with no private-range check and no address pinning"
-  - "The allowlist holds 428 hosts whose DNS belongs to third parties, so one dangling or rebound hostname answering with 169.254.x, RFC 1918 or an fd00::/8 address was a raw read primitive into the Railway network"
-  - "The upstream body was buffered with no size cap and a 2xx was CDN-cached for 10 minutes, so a leaked internal response would have been served to every later caller"
-  - "The first fix routed a blocked answer through the generic sendError(403), which recorded backoff; the next request for the same feed then served the stale cached body with a 200 before any lookup ran, and in-flight followers got a 502"
+  - scripts/ais-relay.cjs served /rss without auth by design and fetched any allowlisted feed host with raw http.get/https.get through the OS resolver, with no private-range check and no address pinning
+  - The allowlist holds 428 hosts whose DNS belongs to third parties, so one dangling or rebound hostname answering with 169.254.x, RFC 1918 or an fd00::/8 address was a raw read primitive into the Railway network
+  - The upstream body was buffered with no size cap and a 2xx was CDN-cached for 10 minutes, so a leaked internal response would have been served to every later caller
+  - The first fix routed a blocked answer through the generic sendError(403), which recorded backoff; the next request for the same feed then served the stale cached body with a 200 before any lookup ran, and in-flight followers got a 502
 root_cause: missing_validation
 resolution_type: code_fix
-related_components: [notification-relay, redis_cache]
-tags: [ssrf, dns-rebinding, dns-pinning, rss-proxy, railway, allowlist, backoff, stale-cache]
 ---
 
 # The relay's public /rss proxy fetched allowlisted hosts without vetting where they resolved

@@ -1,15 +1,20 @@
 ---
-title: "robots.txt is a crawl control, not a canonicalization tool — block only what nothing else can consolidate"
+title: robots.txt is a crawl control, not a canonicalization tool — block only what nothing else can consolidate
 date: 2026-09-05
-category: conventions
-module: seo-crawlability
+area: public-site
 problem_type: convention
-component: infrastructure
+tags:
+  - seo
+  - robots-txt
+  - crawl-budget
+  - canonicalization
+  - referral-capture
+  - search-console
+module: seo-crawlability
 applies_when:
-  - "Adding a Disallow rule to public/robots.www.txt or public/robots.variant.txt to reduce crawl waste"
-  - "Acting on a Search Console report where 'Page with redirect' or 'Alternate page with proper canonical' is large and rising"
-  - "Reviewing a change that blocks parameterised URLs to save crawl budget"
-tags: [seo, robots-txt, crawl-budget, canonicalization, referral-capture, search-console]
+  - Adding a Disallow rule to public/robots.www.txt or public/robots.variant.txt to reduce crawl waste
+  - Acting on a Search Console report where 'Page with redirect' or 'Alternate page with proper canonical' is large and rising
+  - Reviewing a change that blocks parameterised URLs to save crawl budget
 ---
 
 # robots.txt is a crawl control, not a canonicalization tool — block only what nothing else can consolidate

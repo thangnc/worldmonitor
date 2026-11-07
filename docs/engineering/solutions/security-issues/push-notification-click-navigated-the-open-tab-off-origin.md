@@ -1,21 +1,27 @@
 ---
 title: A push notification click navigated the open dashboard tab to an attacker-supplied URL
 date: 2026-09-19
-category: security-issues
-module: notification-relay
+area: seeders
 problem_type: security_issue
-component: background_job
+tags:
+  - web-push
+  - service-worker
+  - notification-click
+  - tab-nabbing
+  - open-redirect
+  - url-validation
+  - cross-origin
+  - phishing
 severity: medium
+module: notification-relay
 symptoms:
-  - "/api/notify accepted a fully attacker-crafted payload and it was delivered end-to-end from the platform's own sending identity, so the notification carried WorldMonitor's icon, title and trust"
-  - "Clicking the notification did not open a new tab — notificationclick fed the payload URL to c.navigate() on the first same-origin window, so the dashboard tab itself became the attacker's page"
+  - /api/notify accepted a fully attacker-crafted payload and it was delivered end-to-end from the platform's own sending identity, so the notification carried WorldMonitor's icon, title and trust
+  - Clicking the notification did not open a new tab — notificationclick fed the payload URL to c.navigate() on the first same-origin window, so the dashboard tab itself became the attacker's page
   - "No scheme discipline on either side of the boundary: javascript:, data: and http: targets were persisted into the notification payload too"
-  - "Two pre-existing security regression suites were silently deleted by a truncating edit while the file's test count went UP, and both the local run and CI stayed green"
+  - Two pre-existing security regression suites were silently deleted by a truncating edit while the file's test count went UP, and both the local run and CI stayed green
   - "The first fix then regressed tab reuse on every host production actually serves: the dispatcher stamped apex-absolute URLs, the worker compared origins strictly, and www never equals apex — so every dashboard click opened a duplicate tab"
 root_cause: missing_validation
 resolution_type: code_fix
-related_components: [testing_framework]
-tags: [web-push, service-worker, notification-click, tab-nabbing, open-redirect, url-validation, cross-origin, phishing]
 ---
 
 # A push notification click navigated the open dashboard tab to an attacker-supplied URL

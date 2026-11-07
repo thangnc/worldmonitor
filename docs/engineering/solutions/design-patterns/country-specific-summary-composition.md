@@ -1,15 +1,18 @@
 ---
 title: Compose country-specific summaries from existing country data contracts
 date: 2026-07-14
-category: design-patterns
-module: Country Intel
+area: browser
 problem_type: design_pattern
-component: frontend_stimulus
+tags:
+  - country-intel
+  - china
+  - source-attribution
+  - progressive-loading
 severity: medium
+module: Country Intel
 applies_when:
   - A country needs a bespoke overview without changing generic country pages
   - Existing domain clients already expose the needed data and attribution
-tags: [country-intel, china, source-attribution, progressive-loading]
 ---
 
 # Compose country-specific summaries from existing country data contracts

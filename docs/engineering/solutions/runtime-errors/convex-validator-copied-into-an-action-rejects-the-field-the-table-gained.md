@@ -1,18 +1,23 @@
 ---
 title: A Convex validator copied into an action rejects the field the table gained
 date: 2026-10-20
-category: runtime-errors
-module: convex-entitlements
+area: convex
 problem_type: runtime_error
-component: payments
+tags:
+  - convex
+  - validator
+  - v-object
+  - entitlements
+  - redis-cache
+  - schema-drift
+  - sentry
+severity: medium
+module: convex-entitlements
 symptoms:
   - "Sentry WORLDMONITOR-18W from Convex `payments/cacheActions:syncEntitlementCache`: ArgumentValidationError, Object contains extra field `historyDays` that is not in the validator"
   - "Fired on every entitlement write after #9435 shipped; the write itself succeeded, only the scheduled Redis cache sync failed"
 root_cause: missing_validation
 resolution_type: code_fix
-severity: medium
-related_components: [database]
-tags: [convex, validator, v-object, entitlements, redis-cache, schema-drift, sentry]
 ---
 
 # A Convex validator copied into an action rejects the field the table gained

@@ -1,21 +1,28 @@
 ---
-title: "An idle-time auto-open popover steals focus from an open modal and swallows its Escape"
+title: An idle-time auto-open popover steals focus from an open modal and swallows its Escape
 date: 2026-09-29
-category: ui-bugs
-module: src/app/event-handlers.ts
+area: browser
 problem_type: ui_bug
-component: frontend_stimulus
+tags:
+  - mission-preset
+  - onboarding-popover
+  - request-idle-callback
+  - schedule-after-first-paint
+  - focus-steal
+  - escape-key
+  - stop-propagation
+  - is-modal-open
+  - ci-only-flake
+  - playwright-error-context
+severity: medium
+module: src/app/event-handlers.ts
 symptoms:
-  - "The WebMCP smoke `validates monitor switches and opens settings and alerts through existing UI` fails in CI on both attempts at `expect(#unifiedSettingsModal.active).toHaveCount(0)` after Escape, and passes locally alone and as the full suite"
-  - "The Playwright error-context.md aria snapshot marks the header `◎ Mission` button `[active]`, outside the open settings dialog"
-  - "The failing screenshot shows the settings modal still open on the Notifications tab"
-  - "The commit under test touched nothing in the UI path, and its own PR run of the same job was green"
+  - The WebMCP smoke `validates monitor switches and opens settings and alerts through existing UI` fails in CI on both attempts at `expect(#unifiedSettingsModal.active).toHaveCount(0)` after Escape, and passes locally alone and as the full suite
+  - The Playwright error-context.md aria snapshot marks the header `◎ Mission` button `[active]`, outside the open settings dialog
+  - The failing screenshot shows the settings modal still open on the Notifications tab
+  - The commit under test touched nothing in the UI path, and its own PR run of the same job was green
 root_cause: async_timing
 resolution_type: code_fix
-severity: medium
-related_components:
-  - testing_framework
-tags: [mission-preset, onboarding-popover, request-idle-callback, schedule-after-first-paint, focus-steal, escape-key, stop-propagation, is-modal-open, ci-only-flake, playwright-error-context]
 ---
 
 # An idle-time auto-open popover steals focus from an open modal and swallows its Escape

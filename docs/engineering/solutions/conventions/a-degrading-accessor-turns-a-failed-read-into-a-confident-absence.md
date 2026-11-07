@@ -1,20 +1,30 @@
 ---
-title: "A degrading accessor turns a failed read into a confident absence"
+title: A degrading accessor turns a failed read into a confident absence
 date: 2026-09-07
-category: conventions
-module: src/utils/safe-storage.ts, src/utils/cloud-prefs-sync.ts, src/utils/settings-persistence.ts
+area: browser
 problem_type: convention
-component: service_object
+tags:
+  - localstorage
+  - safe-accessor
+  - fail-closed
+  - silent-data-loss
+  - cloud-sync
+  - cross-tab-state
+  - accessor-migration
+  - hit-miss-failure
 severity: high
+module: src/utils/safe-storage.ts, src/utils/cloud-prefs-sync.ts, src/utils/settings-persistence.ts
 applies_when:
-  - "Migrating raw localStorage/sessionStorage calls onto a shared safe accessor that swallows failures and returns null"
-  - "A call site treats an absent value as user intent (cleared, opted out, empty set) rather than as an unknown"
-  - "A local read feeds a payload that REPLACES remote state wholesale rather than merging into it"
-  - "Cross-tab state (dirty-key sidecars, generation counters, version markers) is read-modify-written from storage"
-  - "A cleanup or sign-out path early-returns on an unreadable value, skipping steps that must run unconditionally"
-  - "A success or failure toast is derived from whether the wrapped call threw"
-tags: [localstorage, safe-accessor, fail-closed, silent-data-loss, cloud-sync, cross-tab-state, accessor-migration, hit-miss-failure]
+  - Migrating raw localStorage/sessionStorage calls onto a shared safe accessor that swallows failures and returns null
+  - A call site treats an absent value as user intent (cleared, opted out, empty set) rather than as an unknown
+  - A local read feeds a payload that REPLACES remote state wholesale rather than merging into it
+  - Cross-tab state (dirty-key sidecars, generation counters, version markers) is read-modify-written from storage
+  - A cleanup or sign-out path early-returns on an unreadable value, skipping steps that must run unconditionally
+  - A success or failure toast is derived from whether the wrapped call threw
 ---
+
+# A degrading accessor turns a failed read into a confident absence
+
 ## Context
 
 PR #7840 (`fix(storage): stop the null-localStorage crash class recurring`, follow-up to #7832) fixed issue #7833 by migrating `cloud-prefs-sync.ts` and `settings-persistence.ts` off raw `localStorage.getItem()`/`setItem()` calls onto the degrading accessors in `src/utils/safe-storage.ts` (`safeStorageGet`, `safeStorageSet`, …). Those accessors exist because Android WebView with DOM storage disabled makes `localStorage` itself `null` — a `TypeError` on every access — and sandboxed iframes / blocked cookies make the property throw (WORLDMONITOR-122 and related). The fix worked: the crash class went away. But code review on the same PR found that the mechanical swap had opened a second, quieter failure class in every call site that read a synced value and treated its absence as meaningful — and it kept finding new instances as the review went round after round. Six are enumerated below, all in `src/utils/cloud-prefs-sync.ts` unless noted, all traceable to the same one-line cause.

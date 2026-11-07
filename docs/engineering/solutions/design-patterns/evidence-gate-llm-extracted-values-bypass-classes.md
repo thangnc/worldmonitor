@@ -1,17 +1,8 @@
 ---
 title: "Evidence-gating LLM-extracted values: prove the value on the source, then attack the prover"
 date: 2026-08-08
-category: design-patterns
-module: consumer-prices-core extraction pipeline (search adapter, price-evidence gate)
+area: intelligence
 problem_type: design_pattern
-component: service_object
-severity: high
-applies_when:
-  - "An LLM extractor returns a scalar (price, count, date) read from content the same call fetched, and downstream treats it as ground truth"
-  - "A prompt-only anti-fabrication rule ('never invent a value') is producing false negatives on values that ARE printed on the page"
-  - "A schema change makes the extracted field nullable AND required, handing the model a sanctioned null escape hatch"
-  - "Designing a deterministic verifier that checks an extracted value against raw content (digit matching, substring proof)"
-  - "A guard's abstain path ('could not verify') is behaviorally identical to its pass path"
 tags:
   - llm-extraction
   - anti-fabrication
@@ -19,6 +10,14 @@ tags:
   - regex-verification
   - fail-open-observability
   - scraping
+severity: high
+module: consumer-prices-core extraction pipeline (search adapter, price-evidence gate)
+applies_when:
+  - An LLM extractor returns a scalar (price, count, date) read from content the same call fetched, and downstream treats it as ground truth
+  - A prompt-only anti-fabrication rule ('never invent a value') is producing false negatives on values that ARE printed on the page
+  - A schema change makes the extracted field nullable AND required, handing the model a sanctioned null escape hatch
+  - Designing a deterministic verifier that checks an extracted value against raw content (digit matching, substring proof)
+  - A guard's abstain path ('could not verify') is behaviorally identical to its pass path
 ---
 
 # Evidence-gating LLM-extracted values: prove the value on the source, then attack the prover

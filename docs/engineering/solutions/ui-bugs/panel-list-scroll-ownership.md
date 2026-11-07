@@ -1,10 +1,14 @@
 ---
 title: Ordinary dashboard lists use the shared panel scrollport
 date: 2026-11-05
-module: Dashboard panels
-component: Panel
+area: browser
 problem_type: ui_bug
-tags: [scrolling, panels, climate-news, css]
+tags:
+  - scrolling
+  - panels
+  - climate-news
+  - css
+module: Dashboard panels
 ---
 
 # Ordinary dashboard lists use the shared panel scrollport

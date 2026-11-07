@@ -1,15 +1,21 @@
 ---
-title: "i18n shell namespaces are a byte-budgeted first-paint surface — post-boot copy must live outside them"
+title: i18n shell namespaces are a byte-budgeted first-paint surface — post-boot copy must live outside them
 date: 2026-07-23
-last_updated: 2026-09-29
-category: conventions
-module: i18n
+area: browser
 problem_type: convention
-component: frontend
+tags:
+  - i18n
+  - en-shell
+  - first-paint
+  - byte-budget
+  - locale-gates
+  - premium-namespace
+  - billing-state
+module: i18n
 applies_when:
-  - "Adding new t() keys referenced from eager chrome files (src/App.ts, src/app/panel-layout.ts, src/settings-main.ts, src/settings-window.ts, or anything under src/components/)"
-  - "Choosing a namespace for UI copy that renders only after boot-time data resolves (auth, Convex snapshots, entitlements)"
-tags: [i18n, en-shell, first-paint, byte-budget, locale-gates, premium-namespace, billing-state]
+  - Adding new t() keys referenced from eager chrome files (src/App.ts, src/app/panel-layout.ts, src/settings-main.ts, src/settings-window.ts, or anything under src/components/)
+  - Choosing a namespace for UI copy that renders only after boot-time data resolves (auth, Convex snapshots, entitlements)
+last_updated: 2026-09-29
 ---
 
 # i18n shell namespaces are a byte-budgeted first-paint surface — post-boot copy must live outside them

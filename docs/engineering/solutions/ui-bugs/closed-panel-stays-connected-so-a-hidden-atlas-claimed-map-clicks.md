@@ -1,21 +1,33 @@
 ---
-title: "A closed panel is still connected — a hidden Storage Atlas claimed the map click and swallowed it; gate claims on visibility and deliver deferred opens from the mount hook"
+title: A closed panel is still connected — a hidden Storage Atlas claimed the map click and swallowed it; gate claims on visibility and deliver deferred opens from the mount hook
 date: 2026-11-04
-category: ui-bugs
-module: src/components/StorageFacilityMapPanel.ts
+area: browser
 problem_type: ui_bug
-component: frontend_stimulus
+tags:
+  - panel-lifecycle
+  - isconnected
+  - hidden-class
+  - click-claim
+  - preventdefault
+  - cancelable-event
+  - deferred-panel
+  - afterpanelmounted
+  - storage-atlas
+  - deckgl
+  - map-popup
+  - mobile-cat-hidden
+  - map-fullscreen
+severity: high
+module: src/components/StorageFacilityMapPanel.ts
 symptoms:
-  - "Clicking a green storage dot on the 2D map does nothing after the Strategic Storage Atlas was closed with its X, collapsed, filtered out by a mobile category chip, or covered by the fullscreen map"
-  - "Hovering still names the facility, so the dot is clearly picked; no popup, no console error"
-  - "Open in Storage Atlas sometimes shows the bare atlas table with no drawer when the panel chunk loads slowly"
+  - Clicking a green storage dot on the 2D map does nothing after the Strategic Storage Atlas was closed with its X, collapsed, filtered out by a mobile category chip, or covered by the fullscreen map
+  - Hovering still names the facility, so the dot is clearly picked; no popup, no console error
+  - Open in Storage Atlas sometimes shows the bare atlas table with no drawer when the panel chunk loads slowly
 root_cause: logic_error
 resolution_type: code_fix
-severity: high
-related_components:
-  - testing_framework
-tags: [panel-lifecycle, isconnected, hidden-class, click-claim, preventdefault, cancelable-event, deferred-panel, afterpanelmounted, storage-atlas, deckgl, map-popup, mobile-cat-hidden, map-fullscreen]
 ---
+
+# A closed panel is still connected — a hidden Storage Atlas claimed the map click and swallowed it; gate claims on visibility and deliver deferred opens from the mount hook
 
 ## Problem
 

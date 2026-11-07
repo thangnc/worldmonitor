@@ -1,21 +1,28 @@
 ---
-title: "economic:ecb-fx-rates:v1 change1d is an absolute rate delta, not a percentage — appending % misreports every pair"
+title: economic:ecb-fx-rates:v1 change1d is an absolute rate delta, not a percentage — appending % misreports every pair
 date: 2026-08-05
-category: integration-issues
-module: scripts/seed-ecb-fx-rates.mjs
+area: seeders
 problem_type: integration_issue
-component: frontend
+tags:
+  - ecb
+  - fx
+  - change1d
+  - unit-contract
+  - seeded-payload
+  - quote-direction
+  - cross-surface-parity
+  - market-panel
+severity: high
+module: scripts/seed-ecb-fx-rates.mjs
 symptoms:
-  - "A new surface renders the ECB day-over-day figure as '+0.0%' for most pairs, every day"
-  - "The pairs that do move show a percentage wrong by a factor of rate/100 — EURJPY 0.85 prints as '0.9%' when the true change is 0.50%"
-  - "Two surfaces rendering the same seeded field disagree numerically, with no test failing on either side"
+  - A new surface renders the ECB day-over-day figure as '+0.0%' for most pairs, every day
+  - The pairs that do move show a percentage wrong by a factor of rate/100 — EURJPY 0.85 prints as '0.9%' when the true change is 0.50%
+  - Two surfaces rendering the same seeded field disagree numerically, with no test failing on either side
 root_cause: wrong_api
 resolution_type: code_fix
-severity: high
-related_components:
-  - testing_framework
-tags: [ecb, fx, change1d, unit-contract, seeded-payload, quote-direction, cross-surface-parity, market-panel]
 ---
+
+# economic:ecb-fx-rates:v1 change1d is an absolute rate delta, not a percentage — appending % misreports every pair
 
 ## Problem
 

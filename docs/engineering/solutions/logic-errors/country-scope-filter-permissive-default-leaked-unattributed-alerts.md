@@ -1,19 +1,24 @@
 ---
 title: Country Scope filter's permissive default leaked every unattributed alert category
 date: 2026-07-18
-category: logic-errors
-module: notification-relay
+area: seeders
 problem_type: logic_error
-component: background_job
+tags:
+  - notifications
+  - country-scope
+  - fail-open
+  - denylist-vs-allowlist
+  - attribution
+  - normalization
+  - mutation-testing
 severity: high
+module: notification-relay
 symptoms:
-  - "User scoped to 10 Eastern-European countries received CRITICAL alerts for São Paulo/Hong Kong/Kuala Lumpur/Guangzhou airport disruptions"
-  - "VIX surge (Commodity Market) and Sudan conflict casualties (UCDP) delivered despite neither matching the configured Country Scope"
-  - "Existing country-filter test suite stayed green throughout — it asserted the filter's own semantics, not delivery outcomes for real publisher payloads"
+  - User scoped to 10 Eastern-European countries received CRITICAL alerts for São Paulo/Hong Kong/Kuala Lumpur/Guangzhou airport disruptions
+  - VIX surge (Commodity Market) and Sudan conflict casualties (UCDP) delivered despite neither matching the configured Country Scope
+  - Existing country-filter test suite stayed green throughout — it asserted the filter's own semantics, not delivery outcomes for real publisher payloads
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [service_object, testing_framework]
-tags: [notifications, country-scope, fail-open, denylist-vs-allowlist, attribution, normalization, mutation-testing]
 ---
 
 # Country Scope filter's permissive default leaked every unattributed alert category

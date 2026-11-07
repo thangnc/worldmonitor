@@ -1,8 +1,9 @@
 ---
 title: "feat: Worldwide Supply Chain Routing Intelligence — UI + Scenario Engine"
-type: feat
-status: active
 date: 2026-04-09
+status: done
+evidence: "Sprints A–D merged 2026-04-10 (#2890, #2896, #2903, #2905); the sprint table in the body was not updated"
+type: feat
 origin: docs/brainstorms/2026-04-09-worldwide-shipping-intelligence-requirements.md
 ---
 

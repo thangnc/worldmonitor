@@ -1,17 +1,8 @@
 ---
-module: seeders
+title: "ArcGIS pagination: advance resultOffset by rows returned, never by the requested page size"
 date: 2026-07-28
+area: seeders
 problem_type: integration_issue
-component: tooling
-severity: high
-symptoms:
-  - "Multi-page ArcGIS FeatureServer query returns rows with a contiguous block silently missing (e.g. exactly 1,000 consecutive days absent from every chokepoint's series)"
-  - "Row count comes back suspiciously identical across unrelated entities queried with the same WHERE shape"
-  - "Missing block starts exactly at row index equal to the server's maxRecordCount and spans (requested pageSize - maxRecordCount) rows"
-root_cause: logic_error
-resolution_type: code_fix
-related_components:
-  - background_job
 tags:
   - arcgis
   - portwatch
@@ -19,6 +10,14 @@ tags:
   - resultoffset
   - exceededtransferlimit
   - data-loss
+severity: high
+module: seeders
+symptoms:
+  - Multi-page ArcGIS FeatureServer query returns rows with a contiguous block silently missing (e.g. exactly 1,000 consecutive days absent from every chokepoint's series)
+  - Row count comes back suspiciously identical across unrelated entities queried with the same WHERE shape
+  - Missing block starts exactly at row index equal to the server's maxRecordCount and spans (requested pageSize - maxRecordCount) rows
+root_cause: logic_error
+resolution_type: code_fix
 ---
 
 # ArcGIS pagination: advance resultOffset by rows returned, never by the requested page size

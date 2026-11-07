@@ -1,16 +1,24 @@
 ---
-module: product-catalog
+title: Purging the live product catalog is a three-layer eviction
 date: 2026-07-22
+area: payments
 problem_type: workflow_issue
-component: development_workflow
+tags:
+  - product-catalog
+  - cache-purge
+  - cloudflare
+  - vercel-cdn
+  - redis
+  - ais-relay
+  - cdn-staleness
 severity: medium
-applies_when: "Catalog copy or pricing changed in a merged PR but https://api.worldmonitor.app/api/product-catalog still serves the old payload"
+module: product-catalog
 symptoms:
-  - "DELETE /api/product-catalog returns {purged:true} but a plain GET still serves the old tiers"
+  - DELETE /api/product-catalog returns {purged:true} but a plain GET still serves the old tiers
   - "cf-cache-status: HIT with a rewritten cache-control (max-age=1800) that matches none of the handler's values"
   - "x-product-catalog-source: cache with a fetchedAt timestamp hours in the past"
 resolution_type: workflow_improvement
-tags: [product-catalog, cache-purge, cloudflare, vercel-cdn, redis, ais-relay, cdn-staleness]
+applies_when: Catalog copy or pricing changed in a merged PR but https://api.worldmonitor.app/api/product-catalog still serves the old payload
 ---
 
 # Purging the live product catalog is a three-layer eviction

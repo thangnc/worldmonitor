@@ -1,12 +1,15 @@
 ---
 title: UKMTO Maritime Incidents - Plan
-type: feat
 date: 2026-10-29
+status: done
+evidence: "PR #9832 merged 2026-10-29"
+type: feat
 artifact_contract: ce-unified-plan/v1
 artifact_readiness: implementation-ready
-product_contract_source: ce-plan-bootstrap
 execution: code
+product_contract_source: ce-plan-bootstrap
 ---
+
 # UKMTO Maritime Incidents - Plan
 
 ## Goal Capsule

@@ -1,19 +1,25 @@
 ---
-title: "Golden-baseline env pinning missed a module-load-captured constant"
+title: Golden-baseline env pinning missed a module-load-captured constant
 date: 2026-09-05
-category: test-failures
-module: cri-golden-baseline-harness
+area: tests
 problem_type: test_failure
-component: testing_framework
+tags:
+  - golden-baseline
+  - env-pinning
+  - module-load-constants
+  - test-hermeticity
+  - feature-flags
+  - resilience-scoring
+  - frozen-harness
+  - fail-fast-guard
 severity: medium
+module: cri-golden-baseline-harness
 symptoms:
-  - "Golden baseline test fails its formula assertion with a 'regenerate the baseline' message even though the golden bytes are correct"
-  - "Golden test passes on one machine and fails on another (dev or CI) that has different ambient RESILIENCE_* environment variables"
-  - "process.env pins written in a test before() hook have no effect on module-load-captured constants such as RESILIENCE_SCHEMA_V2_ENABLED"
+  - Golden baseline test fails its formula assertion with a 'regenerate the baseline' message even though the golden bytes are correct
+  - Golden test passes on one machine and fails on another (dev or CI) that has different ambient RESILIENCE_* environment variables
+  - process.env pins written in a test before() hook have no effect on module-load-captured constants such as RESILIENCE_SCHEMA_V2_ENABLED
 root_cause: test_isolation
 resolution_type: test_fix
-related_components: [tooling, development_workflow]
-tags: [golden-baseline, env-pinning, module-load-constants, test-hermeticity, feature-flags, resilience-scoring, frozen-harness, fail-fast-guard]
 ---
 
 # Golden-baseline env pinning missed a module-load-captured constant

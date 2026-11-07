@@ -1,17 +1,22 @@
 ---
 title: "CI test runners are CPU-bound: shard by measured time, and use parallel steps only for setup"
 date: 2026-10-07
-category: performance-issues
-module: CI tests
+area: ci
 problem_type: performance_issue
-component: testing_framework
+tags:
+  - ci-performance
+  - sharding
+  - parallel-steps
+  - github-actions
+  - playwright
+  - cpu-bound
+severity: medium
+module: CI tests
 symptoms:
-  - "The Test workflow took 273-330s, set by the slower of two variant-smoke shards (432 vs 356 test-seconds)"
-  - "GitHub Actions parallel steps (June 2026) looked like a way to cut that wall, but the long steps are single commands"
+  - The Test workflow took 273-330s, set by the slower of two variant-smoke shards (432 vs 356 test-seconds)
+  - GitHub Actions parallel steps (June 2026) looked like a way to cut that wall, but the long steps are single commands
 root_cause: config_error
 resolution_type: workflow_improvement
-severity: medium
-tags: [ci-performance, sharding, parallel-steps, github-actions, playwright, cpu-bound]
 ---
 
 # CI test runners are CPU-bound: shard by measured time, and use parallel steps only for setup

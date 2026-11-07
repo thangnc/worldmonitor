@@ -1,14 +1,8 @@
 ---
 title: Test guard assertions must exercise the real guard, and test helpers must reset module state
 date: 2026-07-18
-category: best-practices
-module: auth/session tests
+area: tests
 problem_type: best_practice
-component: testing_framework
-severity: medium
-applies_when:
-  - Writing regression tests for numeric boundary or non-finite value guards
-  - Writing test-only escape hatches that mutate module-level state
 tags:
   - testing
   - regression-tests
@@ -17,6 +11,11 @@ tags:
   - test-helpers
   - infinity
   - guard-coverage
+severity: medium
+module: auth/session tests
+applies_when:
+  - Writing regression tests for numeric boundary or non-finite value guards
+  - Writing test-only escape hatches that mutate module-level state
 ---
 
 # Test guard assertions must exercise the real guard, and test helpers must reset module state

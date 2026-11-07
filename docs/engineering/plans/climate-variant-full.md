@@ -1,3 +1,10 @@
+---
+title: "Climate Variant: Full Implementation Plan"
+date: 2026-03-29
+status: abandoned
+evidence: "Climate data layers shipped (#2531, #2532, #2535, #2634, #2652); the climate variant itself was never built and is outside the Lite scope"
+---
+
 # Climate Variant: Full Implementation Plan
 
 ## Current State

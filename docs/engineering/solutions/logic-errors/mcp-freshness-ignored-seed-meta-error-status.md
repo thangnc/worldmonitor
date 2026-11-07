@@ -1,19 +1,25 @@
 ---
 title: MCP freshness ignored seed-meta error status that /api/health reports as SEED_ERROR
 date: 2026-10-18
-category: logic-errors
-module: mcp-freshness
+area: mcp
 problem_type: logic_error
-component: service_object
+tags:
+  - mcp
+  - freshness
+  - seed-meta
+  - health-parity
+  - seed-error
+  - social-velocity
+  - evaluatefreshness
+  - stale
+severity: medium
+module: mcp-freshness
 symptoms:
   - "MCP tool responses reported `stale: false` for data that /api/health classified as SEED_ERROR"
-  - "A failed relay refresh writes seed-meta with a fresh fetchedAt and status 'error' while the last good payload stays served, so an age-only check passes"
+  - A failed relay refresh writes seed-meta with a fresh fetchedAt and status 'error' while the last good payload stays served, so an age-only check passes
   - "Latent at maxStaleMin 30 for get_social_velocity; the window grew to 9 hours when #9336 raised the budget to 540"
 root_cause: logic_error
 resolution_type: code_fix
-severity: medium
-related_components: [background_job, testing_framework]
-tags: [mcp, freshness, seed-meta, health-parity, seed-error, social-velocity, evaluatefreshness, stale]
 ---
 
 # MCP freshness ignored seed-meta error status that /api/health reports as SEED_ERROR

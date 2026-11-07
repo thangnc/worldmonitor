@@ -1,21 +1,27 @@
 ---
 title: CodeQL incomplete-multi-character-sanitization is only cleared by a fixed-point tag strip
 date: 2026-10-06
-category: security-issues
-module: disease-outbreaks
+area: seeders
 problem_type: security_issue
-component: background_job
+tags:
+  - codeql
+  - code-scanning
+  - sanitization
+  - html-stripping
+  - regex
+  - rss
+  - disease-outbreaks
+  - seeder
 severity: high
+module: disease-outbreaks
 symptoms:
   - "CodeQL js/incomplete-multi-character-sanitization (high) flagged the .replace(/<[^>]+>/g, '') line in cleanRssDescription on PR #8940"
-  - "The alert fired only because the PR edited the line; the same single-pass strip already existed on main"
-  - "Chaining .replace(/</g, '') after the tag strip was still flagged on the same line"
-  - "A single alternation regex /<[^>]+>|</g was still flagged on the same line"
-  - "A unit test showed /<[^>]+>/ leaves an unclosed tag start such as '<script src=x' unchanged"
+  - The alert fired only because the PR edited the line; the same single-pass strip already existed on main
+  - Chaining .replace(/</g, '') after the tag strip was still flagged on the same line
+  - A single alternation regex /<[^>]+>|</g was still flagged on the same line
+  - A unit test showed /<[^>]+>/ leaves an unclosed tag start such as '<script src=x' unchanged
 root_cause: missing_validation
 resolution_type: code_fix
-related_components: [testing_framework]
-tags: [codeql, code-scanning, sanitization, html-stripping, regex, rss, disease-outbreaks, seeder]
 ---
 
 # CodeQL incomplete-multi-character-sanitization is only cleared by a fixed-point tag strip

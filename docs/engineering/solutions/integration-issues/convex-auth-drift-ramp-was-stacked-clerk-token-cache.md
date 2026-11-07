@@ -1,21 +1,8 @@
 ---
 title: The May–July Convex auth-drift ramp was the stacked Clerk token cache times a growing write path
-module: Convex / Clerk auth
 date: 2026-08-23
-category: integration-issues
+area: convex
 problem_type: integration_issue
-component: authentication
-severity: high
-symptoms:
-  - "WORLDMONITOR-QK (convex_auth_drift) ramped 13.6x from 8 to 109 events/week across 344 users, then decayed without a diagnosed cause"
-  - "Every retained event is production POST userPreferences:setPreferences — 354 of 354, zero GET"
-  - "The last high-rate event (2026-07-28T22:40Z) sits after the real fixes merged, so a merge-window search that starts there misses them"
-  - "A constant client defect whose event volume climbs because the write path it rides keeps growing"
-root_cause: async_timing
-resolution_type: documentation_update
-related_components:
-  - testing_framework
-  - documentation
 tags:
   - sentry
   - clerk
@@ -24,6 +11,15 @@ tags:
   - token-cache
   - auth-drift
   - two-verifier
+severity: high
+module: Convex / Clerk auth
+symptoms:
+  - WORLDMONITOR-QK (convex_auth_drift) ramped 13.6x from 8 to 109 events/week across 344 users, then decayed without a diagnosed cause
+  - Every retained event is production POST userPreferences:setPreferences — 354 of 354, zero GET
+  - The last high-rate event (2026-07-28T22:40Z) sits after the real fixes merged, so a merge-window search that starts there misses them
+  - A constant client defect whose event volume climbs because the write path it rides keeps growing
+root_cause: async_timing
+resolution_type: documentation_update
 ---
 
 # The May–July Convex auth-drift ramp was the stacked Clerk token cache times a growing write path

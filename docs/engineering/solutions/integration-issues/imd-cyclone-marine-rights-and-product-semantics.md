@@ -1,18 +1,23 @@
 ---
 title: Keep IMD cyclone and marine products typed and unflattened
 date: 2026-08-27
-category: integration-issues
-module: Weather and natural seed pipeline
+area: seeders
 problem_type: integration_issue
-component: background_job
+tags:
+  - weather
+  - tropical-cyclones
+  - imd
+  - marine-warnings
+  - source-admission
+  - railway-seeders
+severity: high
+module: Weather and natural seed pipeline
 symptoms:
-  - "An IMD 401 or empty cyclone season could be read as an India all-clear"
-  - "Forecast wind radii or a cone of uncertainty could be drawn as an observed storm footprint"
-  - "Port signals and sea-area bulletins could disappear into generic NWS weather alerts"
+  - An IMD 401 or empty cyclone season could be read as an India all-clear
+  - Forecast wind radii or a cone of uncertainty could be drawn as an observed storm footprint
+  - Port signals and sea-area bulletins could disappear into generic NWS weather alerts
 root_cause: missing_validation
 resolution_type: seed_data_update
-severity: high
-tags: [weather, tropical-cyclones, imd, marine-warnings, source-admission, railway-seeders]
 ---
 
 # Keep IMD cyclone and marine products typed and unflattened

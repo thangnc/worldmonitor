@@ -1,18 +1,8 @@
 ---
-title: "Vendor SDK hidden retries nested under an app-level retry ladder multiply provider requests"
-module: payments
+title: Vendor SDK hidden retries nested under an app-level retry ladder multiply provider requests
 date: 2026-08-02
+area: payments
 problem_type: integration_issue
-component: payments
-severity: high
-symptoms:
-  - "Sentry: Uncaught Error: Failed to create checkout session: 429 status code (no body), thrown inside the @dodopayments/convex component action (WORLDMONITOR-WP)"
-  - "Rate-limited checkouts bounce users to a retry screen even for short bursts the retry layers should absorb"
-  - "Worst-case provider request count per checkout multiplies (outer ladder attempts x SDK internal retries)"
-root_cause: config_error
-resolution_type: code_fix
-related_components:
-  - service_object
 tags:
   - dodo
   - rate-limit
@@ -23,6 +13,14 @@ tags:
   - retry-after
   - checkout
   - convex-component
+severity: high
+module: payments
+symptoms:
+  - "Sentry: Uncaught Error: Failed to create checkout session: 429 status code (no body), thrown inside the @dodopayments/convex component action (WORLDMONITOR-WP)"
+  - Rate-limited checkouts bounce users to a retry screen even for short bursts the retry layers should absorb
+  - Worst-case provider request count per checkout multiplies (outer ladder attempts x SDK internal retries)
+root_cause: config_error
+resolution_type: code_fix
 ---
 
 # Vendor SDK hidden retries nested under an app-level retry ladder multiply provider requests

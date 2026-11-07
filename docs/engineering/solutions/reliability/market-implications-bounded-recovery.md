@@ -1,3 +1,12 @@
+---
+title: Bounded recovery for malformed market synthesis
+date: 2026-09-11
+area: intelligence
+problem_type: reliability_issue
+tags:
+  - intelligence
+---
+
 # Bounded recovery for malformed market synthesis
 
 An unparseable market-implications completion previously ended synthesis until

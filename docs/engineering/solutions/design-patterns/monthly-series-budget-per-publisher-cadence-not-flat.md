@@ -1,13 +1,21 @@
 ---
-title: "A flat content-age budget on a monthly multi-market series flags routine skipped releases; size it per publisher from measured cadence and serve the fresher publisher"
+title: A flat content-age budget on a monthly multi-market series flags routine skipped releases; size it per publisher from measured cadence and serve the fresher publisher
 date: 2026-10-21
-category: design-patterns
-module: yield-curves
+area: seeders
 problem_type: design_pattern
-component: seeder
+tags:
+  - content-freshness
+  - oecd
+  - fred
+  - ecb
+  - cadence
+  - provenance
+  - seed-meta
+  - yield-curves
+  - alfred
 severity: medium
-applies_when: "A seeder serves many markets from one monthly upstream whose release lag varies by market, and health reports STALE_CONTENT on a single late release"
-tags: [content-freshness, oecd, fred, ecb, cadence, provenance, seed-meta, yield-curves, alfred]
+module: yield-curves
+applies_when: A seeder serves many markets from one monthly upstream whose release lag varies by market, and health reports STALE_CONTENT on a single late release
 ---
 
 # A flat content-age budget on a monthly multi-market series flags routine skipped releases; size it per publisher from measured cadence and serve the fresher publisher

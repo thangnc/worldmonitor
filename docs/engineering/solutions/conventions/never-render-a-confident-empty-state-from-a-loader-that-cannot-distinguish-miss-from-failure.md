@@ -1,16 +1,25 @@
 ---
-title: "Never render a confident empty state from a loader that cannot distinguish a miss from a failure"
+title: Never render a confident empty state from a loader that cannot distinguish a miss from a failure
 date: 2026-08-05
-category: conventions
-module: src/services/bootstrap.ts
+area: browser
 problem_type: convention
-component: frontend
+tags:
+  - empty-state
+  - error-handling
+  - ensure-hydrated
+  - bootstrap
+  - retry
+  - honesty
+  - hit-miss-failure
+  - panel-ux
+module: src/services/bootstrap.ts
 applies_when:
-  - "A client loader swallows fetch/timeout/parse errors and returns a single 'nothing' value such as undefined or null"
-  - "A panel or view decides between rendering data and rendering an empty state based on that value"
-  - "The data source is one whose genuinely-empty state is implausible (a rates table, a country list, a fixed catalogue)"
-tags: [empty-state, error-handling, ensure-hydrated, bootstrap, retry, honesty, hit-miss-failure, panel-ux]
+  - A client loader swallows fetch/timeout/parse errors and returns a single 'nothing' value such as undefined or null
+  - A panel or view decides between rendering data and rendering an empty state based on that value
+  - The data source is one whose genuinely-empty state is implausible (a rates table, a country list, a fixed catalogue)
 ---
+
+# Never render a confident empty state from a loader that cannot distinguish a miss from a failure
 
 ## Context
 

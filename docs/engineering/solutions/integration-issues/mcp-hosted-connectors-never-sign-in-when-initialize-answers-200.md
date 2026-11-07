@@ -1,20 +1,8 @@
 ---
-title: "Hosted MCP connectors could never sign in because the unauthenticated initialize answered 200"
+title: Hosted MCP connectors could never sign in because the unauthenticated initialize answered 200
 date: 2026-09-18
-category: integration-issues
-module: "MCP server transport auth (api/mcp/handler.ts)"
+area: mcp
 problem_type: integration_issue
-component: authentication
-severity: high
-symptoms:
-  - "Cursor Agents reported 'Could not obtain authentication URL' when connecting https://worldmonitor.app/mcp"
-  - "Grok Bot rendered an Authorize card whose button did nothing, while other OAuth MCP servers worked in the same client"
-  - "The server connected and listed about 75 tools with no sign-in, then returned 401 on the first paid tool call"
-root_cause: logic_error
-resolution_type: code_fix
-related_components:
-  - documentation
-  - testing_framework
 tags:
   - mcp
   - oauth
@@ -24,6 +12,14 @@ tags:
   - hosted-connectors
   - cursor
   - grok
+severity: high
+module: MCP server transport auth (api/mcp/handler.ts)
+symptoms:
+  - Cursor Agents reported 'Could not obtain authentication URL' when connecting https://worldmonitor.app/mcp
+  - Grok Bot rendered an Authorize card whose button did nothing, while other OAuth MCP servers worked in the same client
+  - The server connected and listed about 75 tools with no sign-in, then returned 401 on the first paid tool call
+root_cause: logic_error
+resolution_type: code_fix
 ---
 
 # Hosted MCP connectors could never sign in because the unauthenticated initialize answered 200

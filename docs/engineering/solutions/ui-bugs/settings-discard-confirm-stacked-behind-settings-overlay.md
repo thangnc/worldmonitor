@@ -1,22 +1,30 @@
 ---
-title: "The Settings discard confirm rendered behind Settings, so Close went dead and the tab wedged"
+title: The Settings discard confirm rendered behind Settings, so Close went dead and the tab wedged
 date: 2026-09-30
-category: ui-bugs
-module: src/components/confirm-dialog.ts
+area: browser
 problem_type: ui_bug
-component: frontend_stimulus
+tags:
+  - z-index
+  - stacking-context
+  - confirm-dialog
+  - unified-settings
+  - modal-overlay
+  - stale-bundle
+  - reload-wedge
+  - playwright-hit-test
+  - element-from-point
+severity: medium
+module: src/components/confirm-dialog.ts
 symptoms:
-  - "Clicking Close on Settings after toggling a panel (without Save) does nothing, and repeated clicks do nothing either"
+  - Clicking Close on Settings after toggling a panel (without Save) does nothing, and repeated clicks do nothing either
   - "Sentry WORLDMONITOR-15Z `[stale-bundle] reload still deferred, modal never closed` with `blocked_by: modal-overlay`, `reload_policy: blocking`"
-  - "15Z event breadcrumbs show `ui.click button.modal-close.unified-settings-close` several times in a row with Settings still on screen"
+  - 15Z event breadcrumbs show `ui.click button.modal-close.unified-settings-close` several times in a row with Settings still on screen
   - "Every e2e test of the confirm stayed green: they asserted `toHaveCount(1)` / `toHaveClass(/active/)` and dismissed it with Escape"
 root_cause: logic_error
 resolution_type: code_fix
-severity: medium
-related_components:
-  - testing_framework
-tags: [z-index, stacking-context, confirm-dialog, unified-settings, modal-overlay, stale-bundle, reload-wedge, playwright-hit-test, element-from-point]
 ---
+
+# The Settings discard confirm rendered behind Settings, so Close went dead and the tab wedged
 
 ## Problem
 

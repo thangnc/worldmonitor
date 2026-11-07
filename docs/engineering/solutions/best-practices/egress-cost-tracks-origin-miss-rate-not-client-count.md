@@ -1,19 +1,25 @@
 ---
 title: CDN/Redis egress cost is origin-miss rate x payload size, not client count (the lever test)
 date: 2026-07-15
-category: best-practices
-module: bootstrap-hydration
+area: edge-api
 problem_type: best_practice
-component: service_object
+tags:
+  - egress-cost
+  - cdn-caching
+  - redis
+  - bootstrap-hydration
+  - origin-miss-rate
+  - measurement-protocol
+  - cache-deduplication
+  - rpc-fallthrough
 severity: high
+module: bootstrap-hydration
 applies_when:
   - Evaluating a proposed CDN or Redis egress-cost optimization before committing engineering time
   - Deciding whether deduplicating byte-identical Redis keys will reduce bandwidth
   - A feature combines a one-shot hydration payload (e.g. getHydratedData) with a periodic client refresh
   - Scoping the cost of a new bootstrap or RPC data path
   - Measuring cache traffic to attribute egress cost by key
-related_components: [background_job, tooling]
-tags: [egress-cost, cdn-caching, redis, bootstrap-hydration, origin-miss-rate, measurement-protocol, cache-deduplication, rpc-fallthrough]
 ---
 
 # The lever test for CDN/Redis egress: cost is origin-miss rate times payload, not client count

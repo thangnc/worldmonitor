@@ -1,17 +1,24 @@
 ---
-title: "A live client-metadata fetch must not burn a one-shot OAuth code or sign users out"
+title: A live client-metadata fetch must not burn a one-shot OAuth code or sign users out
 date: 2026-10-17
-category: integration-issues
-module: "MCP OAuth 2.1 authorization server (api/oauth)"
+area: mcp
 problem_type: integration_issue
-component: authentication
+tags:
+  - mcp
+  - oauth
+  - cimd
+  - client-id-metadata-document
+  - token-endpoint
+  - getdel
+  - retryable-errors
+  - vscode
+severity: high
+module: MCP OAuth 2.1 authorization server (api/oauth)
 symptoms:
-  - "POST /oauth/token answered 503 with Retry-After during a vendor outage, and the retry returned 400 invalid_grant because the code was already deleted"
-  - "A vendor 403, HTML challenge page, or truncated JSON body at refresh time answered 401 invalid_client, which makes MCP clients drop a working connection"
+  - POST /oauth/token answered 503 with Retry-After during a vendor outage, and the retry returned 400 invalid_grant because the code was already deleted
+  - A vendor 403, HTML challenge page, or truncated JSON body at refresh time answered 401 invalid_client, which makes MCP clients drop a working connection
 root_cause: logic_error
 resolution_type: code_fix
-severity: high
-tags: [mcp, oauth, cimd, client-id-metadata-document, token-endpoint, getdel, retryable-errors, vscode]
 ---
 
 # A live client-metadata fetch must not burn a one-shot OAuth code or sign users out

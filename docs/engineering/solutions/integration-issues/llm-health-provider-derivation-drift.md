@@ -1,18 +1,22 @@
 ---
 title: LLM health derives providers from credential presence
 date: 2026-08-28
-category: integration-issues
-module: llm-health
+area: observability
 problem_type: integration_issue
-component: service_object
+tags:
+  - llm
+  - groq
+  - health-check
+  - desktop
+  - sidecar
+  - provider-parity
+severity: medium
+module: llm-health
 symptoms:
-  - "The desktop health indicator omitted Groq when GROQ_API_KEY did not start with gsk_"
-  - "Server LLM calls still used the same Groq key"
+  - The desktop health indicator omitted Groq when GROQ_API_KEY did not start with gsk_
+  - Server LLM calls still used the same Groq key
 root_cause: duplicated_policy
 resolution_type: code_change
-severity: medium
-related_components: [desktop, server, testing]
-tags: [llm, groq, health-check, desktop, sidecar, provider-parity]
 ---
 
 # LLM health derives providers from credential presence

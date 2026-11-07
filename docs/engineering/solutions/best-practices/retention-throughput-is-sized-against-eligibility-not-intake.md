@@ -1,11 +1,18 @@
 ---
-module: analytics
+title: Size a retention job against the eligibility rate, not against intake
 date: 2026-08-04
+area: observability
 problem_type: best_practice
-component: background_job
+tags:
+  - retention
+  - capacity-planning
+  - measurement
+  - cron
+  - umami
+  - postgres
 severity: medium
-applies_when: "Sizing the schedule or batch of any bounded retention, TTL, archival, or purge job that deletes rows older than a fixed age"
-tags: [retention, capacity-planning, measurement, cron, umami, postgres]
+module: analytics
+applies_when: Sizing the schedule or batch of any bounded retention, TTL, archival, or purge job that deletes rows older than a fixed age
 ---
 
 # Size a retention job against the eligibility rate, not against intake

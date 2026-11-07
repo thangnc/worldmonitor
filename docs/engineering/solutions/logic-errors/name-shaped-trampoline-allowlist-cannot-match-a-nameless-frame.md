@@ -1,20 +1,26 @@
 ---
 title: "Vite's fourth trampoline rename was no name at all — fn: '' defeats a name-shaped allowlist"
 date: 2026-08-13
-category: logic-errors
-module: Sentry error filtering
+area: observability
 problem_type: logic_error
-component: tooling
+tags:
+  - sentry
+  - before-send
+  - stack-gating
+  - vite-minification
+  - debugbear
+  - fetch-wrapper
+  - anonymous-frame
+  - regression-testing
 severity: medium
+module: Sentry error filtering
 symptoms:
   - "Sentry WORLDMONITOR-Y4 (`TypeError: Failed to fetch`, 28 events / 27 users, error level) kept firing despite the beforeSend suppression gate shipped 2026-08-04 (PR #6129)"
   - "Replaying the shipped predicate against all 28 production events split 100% clean on the previous fix's deploy time: 14/14 pre-deploy suppressed by current code, 14/14 post-deploy surfaced"
   - "Every surfaced event was blocked by exactly one panel-storage chunk frame with fn: null (normalized to ''), which no name-shaped regex can match"
-  - "isTrampolineFrameFunction('') returned false, so one nameless frame defeated the .every() allowlist and the whole event surfaced"
+  - isTrampolineFrameFunction('') returned false, so one nameless frame defeated the .every() allowlist and the whole event surfaced
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [testing_framework, development_workflow]
-tags: [sentry, before-send, stack-gating, vite-minification, debugbear, fetch-wrapper, anonymous-frame, regression-testing]
 ---
 
 # Vite's fourth trampoline rename was no name at all — fn: '' defeats a name-shaped allowlist

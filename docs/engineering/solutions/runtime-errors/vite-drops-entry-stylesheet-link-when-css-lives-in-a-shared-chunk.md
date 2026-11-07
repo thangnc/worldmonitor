@@ -1,21 +1,28 @@
 ---
-title: "Vite dropped dashboard.html's stylesheet link, so a failed CSS download aborted the App boot"
+title: Vite dropped dashboard.html's stylesheet link, so a failed CSS download aborted the App boot
 date: 2026-09-15
-category: runtime-errors
-module: vite.config.ts (dashboard build)
+area: browser
 problem_type: runtime_error
-component: tooling
+tags:
+  - vite
+  - rollup
+  - manual-chunks
+  - css-code-split
+  - preload-css
+  - vite-preload-error
+  - dashboard-html
+  - deferred-stylesheet
+  - debugbear-rum
+  - worldmonitor-xt
+severity: high
+module: vite.config.ts (dashboard build)
 symptoms:
-  - "Sentry WORLDMONITOR-XT at error level, `Unable to preload CSS for /assets/debugbear-rum-<hash>.css`"
-  - "Production dashboard.html links no app stylesheet, and main-*.js lists it in the preload list of import('./App')"
+  - Sentry WORLDMONITOR-XT at error level, `Unable to preload CSS for /assets/debugbear-rum-<hash>.css`
+  - Production dashboard.html links no app stylesheet, and main-*.js lists it in the preload list of import('./App')
   - "With the stylesheet download dropped, the App is never constructed and #app stays on its skeleton"
-  - "About 642 KB of first-party CSS ships under a vendor-looking name, debugbear-rum-<hash>.css"
+  - About 642 KB of first-party CSS ships under a vendor-looking name, debugbear-rum-<hash>.css
 root_cause: config_error
 resolution_type: config_change
-severity: high
-related_components:
-  - testing_framework
-tags: [vite, rollup, manual-chunks, css-code-split, preload-css, vite-preload-error, dashboard-html, deferred-stylesheet, debugbear-rum, worldmonitor-xt]
 ---
 
 # Vite dropped dashboard.html's stylesheet link, so a failed CSS download aborted the App boot

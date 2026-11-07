@@ -1,19 +1,24 @@
 ---
 title: Presence-only numeric grounding licenses date parts, the scale, and swapped metrics
 date: 2026-09-23
-category: logic-errors
-module: shared/brief-llm-core.js, shared/brief-claim-rules.js, server/worldmonitor/intelligence/v1/get-country-intel-brief.ts, scripts/crawlable-developments.mjs
+area: intelligence
 problem_type: logic_error
-component: brief_system
+tags:
+  - llm-hallucination
+  - output-validation
+  - numeric-grounding
+  - evidence-binding
+  - country-brief
+  - crawlable-corpus
+  - shared-rules
 severity: high
+module: shared/brief-llm-core.js, shared/brief-claim-rules.js, server/worldmonitor/intelligence/v1/get-country-intel-brief.ts, scripts/crawlable-developments.mjs
 symptoms:
-  - "A claim citing the fact text 'score of 62.3 of 100, in the Elevated band, as of Sep 23, 2026' passed the numeric validator while stating 'score of 23 of 100', 'score of 100' or 'scores 2026'"
-  - "A claim citing 2 data points (CII 62.3, fiscal space 28) passed with the values swapped between the metrics"
+  - A claim citing the fact text 'score of 62.3 of 100, in the Elevated band, as of Sep 23, 2026' passed the numeric validator while stating 'score of 23 of 100', 'score of 100' or 'scores 2026'
+  - A claim citing 2 data points (CII 62.3, fiscal space 28) passed with the values swapped between the metrics
   - "The server validator and the corpus publish gate disagreed: a claim citing 2 headlines passed the server and withheld the whole country brief at the gate"
 root_cause: missing_validation
 resolution_type: code_fix
-related_components: [testing_framework]
-tags: [llm-hallucination, output-validation, numeric-grounding, evidence-binding, country-brief, crawlable-corpus, shared-rules]
 ---
 
 # Presence-only numeric grounding licenses date parts, the scale, and swapped metrics

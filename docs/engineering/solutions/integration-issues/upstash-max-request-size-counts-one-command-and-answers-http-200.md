@@ -1,20 +1,27 @@
 ---
 title: Upstash's max-request-size counts ONE command's result, and the rejection arrives as HTTP 200
 date: 2026-08-02
-category: integration-issues
-module: digest-replay-log
+area: intelligence
 problem_type: integration_issue
-component: database
+tags:
+  - upstash
+  - redis
+  - rest-api
+  - lrange
+  - pagination
+  - silent-failure
+  - http-200
+  - limits
+  - alerting
+severity: high
+module: digest-replay-log
 symptoms:
   - "Upstash alert: database hit the Max Request Size limit of 50MB at least 3 times in 15 minutes"
   - "`scripts/replay-digest-cooldown.mjs` exits 2 with `no records returned. Verify DIGEST_DEDUP_REPLAY_LOG=1 has been on` while the flag is demonstrably on and the keys hold data"
-  - "No HTTP 413 anywhere in Railway logs across all 80 services"
-  - "44 of 200 `digest:replay-log:v1:*` keys are individually over 50MiB"
+  - No HTTP 413 anywhere in Railway logs across all 80 services
+  - 44 of 200 `digest:replay-log:v1:*` keys are individually over 50MiB
 root_cause: wrong_api
 resolution_type: code_fix
-severity: high
-related_components: [background_job, tooling]
-tags: [upstash, redis, rest-api, lrange, pagination, silent-failure, http-200, limits, alerting]
 ---
 
 # Upstash's max-request-size counts ONE command's result, and the rejection arrives as HTTP 200

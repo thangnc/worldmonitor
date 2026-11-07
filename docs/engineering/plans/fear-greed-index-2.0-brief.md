@@ -1,3 +1,10 @@
+---
+title: Fear & Greed Index 2.0 — Design Brief
+date: 2026-03-24
+status: done
+evidence: "Shipped with the brief in PR #2181 (2026-03-24); market:fear-greed:history:v1 was not built"
+---
+
 # Fear & Greed Index 2.0 — Design Brief
 
 ## Goal

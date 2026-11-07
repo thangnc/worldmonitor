@@ -1,18 +1,8 @@
 ---
-module: prediction-markets
+title: A catch-all pool that becomes a real partition silently narrows every consumer that used it as "all"
 date: 2026-07-30
+area: intelligence
 problem_type: logic_error
-component: service_object
-severity: high
-symptoms:
-  - "A producer published three labelled pools that were near-duplicates of each other — 75 records covering only 46 distinct markets"
-  - "The pool named 'geopolitical' was topped by a Fed-rates market at $45.6M while genuine geopolitics sat below it"
-  - "Downstream consumers that selected a pool by name were reading meaningless labels, with no test or health signal failing"
-root_cause: logic_error
-resolution_type: code_fix
-related_components:
-  - forecast-engine
-  - mcp-tools
 tags:
   - classification
   - partition
@@ -20,6 +10,14 @@ tags:
   - consumer-enumeration
   - seeder
   - prediction-markets
+severity: high
+module: prediction-markets
+symptoms:
+  - A producer published three labelled pools that were near-duplicates of each other — 75 records covering only 46 distinct markets
+  - The pool named 'geopolitical' was topped by a Fed-rates market at $45.6M while genuine geopolitics sat below it
+  - Downstream consumers that selected a pool by name were reading meaningless labels, with no test or health signal failing
+root_cause: logic_error
+resolution_type: code_fix
 ---
 
 # A catch-all pool that becomes a real partition silently narrows every consumer that used it as "all"

@@ -1,16 +1,21 @@
 ---
 title: A layout breakpoint is encoded in more places than it is defined
 date: 2026-08-25
-category: architecture-patterns
-module: split-layout
+area: browser
 problem_type: architecture_pattern
-component: frontend
+tags:
+  - breakpoint
+  - media-query
+  - split-layout
+  - e2e
+  - css-drift
+  - tauri
 severity: high
+module: split-layout
 applies_when:
-  - "Changing a viewport/layout threshold (a breakpoint, a min-width gate, a split-vs-stacked switch)"
-  - "Unifying two thresholds that previously differed per platform (web vs desktop app)"
-  - "Auditing why a class-applied CSS block duplicates a media query"
-tags: [breakpoint, media-query, split-layout, e2e, css-drift, tauri]
+  - Changing a viewport/layout threshold (a breakpoint, a min-width gate, a split-vs-stacked switch)
+  - Unifying two thresholds that previously differed per platform (web vs desktop app)
+  - Auditing why a class-applied CSS block duplicates a media query
 ---
 
 # A layout breakpoint is encoded in more places than it is defined

@@ -1,19 +1,29 @@
 ---
 title: "NZ fuel prices: MBIE went behind a bot wall, and ExcelJS cannot read the Commerce Commission XLSX that replaced it"
-module: seed-fuel-prices
 date: 2026-11-01
-category: integration-issues
+area: seeders
 problem_type: integration_issue
-component: background_job
+tags:
+  - fuel-prices
+  - new-zealand
+  - comcom
+  - mbie
+  - incapsula
+  - bot-wall
+  - xlsx
+  - exceljs
+  - fflate
+  - spreadsheetml
+  - namespace-prefix
+  - plausibility-bounds
 severity: medium
+module: seed-fuel-prices
 symptoms:
-  - "New Zealand missing from the Fuel Prices panel from about 2026-05-20; NZ listed as a tolerated failed source on every seed-fuel-prices run"
-  - "mbie.govt.nz weekly-table.csv answers HTTP 200 text/html (~212 B Incapsula stub) from residential, datacenter and proxy IPs; data.govt.nz and stats.govt.nz show the same wall"
+  - New Zealand missing from the Fuel Prices panel from about 2026-05-20; NZ listed as a tolerated failed source on every seed-fuel-prices run
+  - mbie.govt.nz weekly-table.csv answers HTTP 200 text/html (~212 B Incapsula stub) from residential, datacenter and proxy IPs; data.govt.nz and stats.govt.nz show the same wall
   - "ExcelJS on the Commerce Commission workbook throws \"Cannot read properties of undefined (reading 'sheets')\"; after stripping the x: prefix it throws \"reading 'company'\" from docProps"
 root_cause: wrong_api
 resolution_type: code_fix
-related_components: [testing_framework]
-tags: [fuel-prices, new-zealand, comcom, mbie, incapsula, bot-wall, xlsx, exceljs, fflate, spreadsheetml, namespace-prefix, plausibility-bounds]
 ---
 
 # NZ fuel prices: MBIE went behind a bot wall, and ExcelJS cannot read the Commerce Commission XLSX that replaced it

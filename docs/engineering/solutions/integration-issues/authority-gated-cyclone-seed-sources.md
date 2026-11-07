@@ -1,18 +1,22 @@
 ---
 title: Keep authority-gated cyclone sources out of production seed snapshots
 date: 2026-07-14
-category: integration-issues
-module: Natural event seed pipeline
+area: seeders
 problem_type: integration_issue
-component: background_job
+tags:
+  - natural-events
+  - tropical-cyclones
+  - hko
+  - source-admission
+  - railway-seeders
+severity: high
+module: Natural event seed pipeline
 symptoms:
-  - "An experimental agency feed could be mistaken for an approved operational source"
-  - "A single cyclone wind value could conceal incompatible agency averaging periods"
-  - "An HKO tropical-cyclone signal can be useful before a named storm is available"
+  - An experimental agency feed could be mistaken for an approved operational source
+  - A single cyclone wind value could conceal incompatible agency averaging periods
+  - An HKO tropical-cyclone signal can be useful before a named storm is available
 root_cause: missing_validation
 resolution_type: seed_data_update
-severity: high
-tags: [natural-events, tropical-cyclones, hko, source-admission, railway-seeders]
 ---
 
 # Keep authority-gated cyclone sources out of production seed snapshots

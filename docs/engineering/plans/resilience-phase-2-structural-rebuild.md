@@ -1,3 +1,10 @@
+---
+title: "Resilience Phase 2: Structural Rebuild"
+date: 2026-04-12
+status: done
+evidence: "Tasks T2.1–T2.9 merged (#2977–#2992); flag flip in PR #2993 (2026-04-12)"
+---
+
 # Resilience Phase 2: Structural Rebuild
 
 Phase 2 of the Country Resilience Index reference-grade upgrade. Rebuilds the top-level shape from five flat domains into three pillars with partly non-compensatory aggregation, adds recovery capacity pillar, and ships a full validation suite.

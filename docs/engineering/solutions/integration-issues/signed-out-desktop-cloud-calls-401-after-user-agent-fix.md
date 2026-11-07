@@ -1,20 +1,25 @@
 ---
-title: "Signed-out desktop got a 401 on every cloud call once the User-Agent 403 was fixed"
+title: Signed-out desktop got a 401 on every cloud call once the User-Agent 403 was fixed
 date: 2026-10-20
-category: integration-issues
-module: desktop-sidecar
+area: desktop
 problem_type: integration_issue
-component: authentication
+tags:
+  - desktop
+  - sidecar
+  - wm-session
+  - anonymous-session
+  - cloud-fallback
+  - "401"
+  - fake-remote-tests
 severity: high
+module: desktop-sidecar
 symptoms:
-  - "Desktop 2.11.1 local-api.log: `cloud returned 401` for every proxied route, body `{\"error\":\"API key required\"}`"
-  - "2.5.23 and 2.11.0 logged `cloud returned 403` for the same routes; the status changed with the release, the empty panels did not"
+  - 'Desktop 2.11.1 local-api.log: `cloud returned 401` for every proxied route, body `{"error":"API key required"}`'
+  - 2.5.23 and 2.11.0 logged `cloud returned 403` for the same routes; the status changed with the release, the empty panels did not
   - "desktop.log: `injected 0 keychain secrets into sidecar env` (no WORLDMONITOR_API_KEY, user not signed in)"
-  - "Seed-only panels (climate, USNI fleet, conflict, markets, forecasts) stayed empty on a signed-out or free desktop"
+  - Seed-only panels (climate, USNI fleet, conflict, markets, forecasts) stayed empty on a signed-out or free desktop
 root_cause: missing_permission
 resolution_type: code_fix
-related_components: [testing_framework]
-tags: [desktop, sidecar, wm-session, anonymous-session, cloud-fallback, 401, fake-remote-tests]
 ---
 
 # Signed-out desktop got a 401 on every cloud call once the User-Agent 403 was fixed

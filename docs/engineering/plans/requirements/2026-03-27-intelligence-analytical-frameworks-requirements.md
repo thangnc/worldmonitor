@@ -1,5 +1,8 @@
 ---
+title: Intelligence Analytical Frameworks
 date: 2026-03-27
+status: done
+evidence: "PR #2380 merged 2026-03-27; follow-up #2386"
 topic: intelligence-analytical-frameworks
 ---
 

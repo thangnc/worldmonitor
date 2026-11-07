@@ -1,18 +1,25 @@
 ---
 title: A section on two discovery surfaces needs one renderer and an idempotent splice
 date: 2026-09-05
-category: architecture-patterns
-module: agent discovery surfaces, llms.txt generation
+area: public-site
 problem_type: architecture_pattern
-component: tooling
+tags:
+  - llms-txt
+  - agent-discovery
+  - idempotent-splice
+  - generated-block
+  - single-owner
+  - build-scripts
+  - sitemap-parity
+  - geo
 severity: high
+module: agent discovery surfaces, llms.txt generation
 applies_when:
-  - "A generated block must live inside a hand-maintained file whose surrounding prose has to survive regeneration"
-  - "The same section must stay byte-identical across two or more published surfaces (a generated corpus and a hand-written index)"
-  - "Adding a family of routes that agent or LLM discovery files are expected to enumerate"
-  - "A build script writes more than one output and its --check mode must name every stale file"
-  - "A guard should prove a discovery surface covers a whole route family rather than a pinned list of URLs"
-tags: [llms-txt, agent-discovery, idempotent-splice, generated-block, single-owner, build-scripts, sitemap-parity, geo]
+  - A generated block must live inside a hand-maintained file whose surrounding prose has to survive regeneration
+  - The same section must stay byte-identical across two or more published surfaces (a generated corpus and a hand-written index)
+  - Adding a family of routes that agent or LLM discovery files are expected to enumerate
+  - A build script writes more than one output and its --check mode must name every stale file
+  - A guard should prove a discovery surface covers a whole route family rather than a pinned list of URLs
 ---
 
 # A section on two discovery surfaces needs one renderer and an idempotent splice

@@ -1,18 +1,24 @@
 ---
-title: "A prefetched request keeps its abort budget only if the budget moves with it"
+title: A prefetched request keeps its abort budget only if the budget moves with it
 date: 2026-10-15
-category: performance-issues
-module: Dashboard boot (src/main.ts, src/services/bootstrap.ts, src/services/bootstrap-prefetch.ts)
+area: browser
 problem_type: performance_issue
-component: frontend_stimulus
+tags:
+  - bootstrap
+  - prefetch
+  - abort-budget
+  - fast-tier
+  - e2e
+  - timing
+  - ci-only-failure
 severity: medium
+module: Dashboard boot (src/main.ts, src/services/bootstrap.ts, src/services/bootstrap-prefetch.ts)
 symptoms:
   - "After moving the fast bootstrap tier request from App.init() into the entry script, CI's 'a fast-tier abort keeps its fallback' e2e failed: the held response never aborted and the earthquakes fallback count stayed 0"
   - "After charging the budget from the request start, CI's 'a complete tier pair answers repeat loaders with zero refetch' failed: earthquakes refetched once"
-  - "Both passed on a fast local machine and failed only on slower CI runners serving the Vite dev server"
+  - Both passed on a fast local machine and failed only on slower CI runners serving the Vite dev server
 root_cause: async_timing
 resolution_type: code_fix
-tags: [bootstrap, prefetch, abort-budget, fast-tier, e2e, timing, ci-only-failure]
 ---
 
 # A prefetched request keeps its abort budget only if the budget moves with it

@@ -1,18 +1,25 @@
 ---
 title: "China Stock Connect: northbound net flow no longer exists, and the four SSE/SZSE endpoints that do"
 date: 2026-08-05
-category: tooling-decisions
-module: china-market-data
+area: seeders
 problem_type: tooling_decision
-component: tooling
+tags:
+  - china
+  - sse
+  - szse
+  - stock-connect
+  - northbound
+  - margin
+  - market-data
+  - endpoint-discovery
+  - railway-seeders
 severity: medium
+module: china-market-data
 applies_when:
-  - "Adding any China A-share market-data series (Stock Connect, margin, sector, CGB)"
-  - "An issue or panel asks for northbound 'flows', 'net buy', or 'foreign inflow'"
-  - "Choosing between SSE/SZSE direct and BaoStock / AKShare / EastMoney"
-  - "Discovering undocumented endpoints on a JS-driven exchange site"
-related_components: [background_job, documentation]
-tags: [china, sse, szse, stock-connect, northbound, margin, market-data, endpoint-discovery, railway-seeders]
+  - Adding any China A-share market-data series (Stock Connect, margin, sector, CGB)
+  - An issue or panel asks for northbound 'flows', 'net buy', or 'foreign inflow'
+  - Choosing between SSE/SZSE direct and BaoStock / AKShare / EastMoney
+  - Discovering undocumented endpoints on a JS-driven exchange site
 ---
 
 # China Stock Connect: the net-flow series is gone, and where the real data lives

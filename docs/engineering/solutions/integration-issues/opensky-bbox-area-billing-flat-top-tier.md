@@ -1,19 +1,8 @@
 ---
-title: "OpenSky bills /states/all by bbox AREA with a flat top tier — two big regional boxes cost double a global query and cover less"
-module: military-flights
+title: OpenSky bills /states/all by bbox AREA with a flat top tier — two big regional boxes cost double a global query and cover less
 date: 2026-08-05
-category: integration-issues
+area: seeders
 problem_type: integration_issue
-component: background_job
-severity: high
-symptoms:
-  - "OpenSky /states/all returns HTTP 429 with X-Rate-Limit-Retry-After-Seconds ~22688 (~6.3h) for the authenticated production client"
-  - "seed-meta:theater-posture reports sourceVersion: wingbits with fresh data while OpenSky contributes nothing — the quota burn is silent"
-  - "Military aircraft outside the two hardcoded query regions (Americas, Australia, most of Africa) never appear at any price"
-root_cause: wrong_api
-resolution_type: code_fix
-related_components:
-  - service_object
 tags:
   - opensky
   - rate-limit
@@ -25,6 +14,14 @@ tags:
   - seeder
   - wingbits
   - fallback-cascade
+severity: high
+module: military-flights
+symptoms:
+  - OpenSky /states/all returns HTTP 429 with X-Rate-Limit-Retry-After-Seconds ~22688 (~6.3h) for the authenticated production client
+  - "seed-meta:theater-posture reports sourceVersion: wingbits with fresh data while OpenSky contributes nothing — the quota burn is silent"
+  - Military aircraft outside the two hardcoded query regions (Americas, Australia, most of Africa) never appear at any price
+root_cause: wrong_api
+resolution_type: code_fix
 ---
 
 # OpenSky bills /states/all by bbox AREA with a flat top tier — two big regional boxes cost double a global query and cover less

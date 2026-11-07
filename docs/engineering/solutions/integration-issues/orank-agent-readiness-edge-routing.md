@@ -1,10 +1,14 @@
 ---
 title: Agent discovery and error responses across Cloudflare and Vercel
 date: 2026-09-05
-category: integration-issues
-module: Agent discovery
+area: edge-api
 problem_type: integration_issue
-tags: [orank, cloudflare, markdown, api-errors]
+tags:
+  - orank
+  - cloudflare
+  - markdown
+  - api-errors
+module: Agent discovery
 ---
 
 # Agent discovery and error responses across Cloudflare and Vercel

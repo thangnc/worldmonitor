@@ -1,19 +1,26 @@
 ---
-title: "IOM DTM country-list advertises a country its per-country endpoints refuse, one 204 aborted the daily run"
-module: displacement seeder (scripts/seed-dtm-displacement.mjs, health bundle)
+title: IOM DTM country-list advertises a country its per-country endpoints refuse, one 204 aborted the daily run
 date: 2026-10-13
-category: integration-issues
+area: seeders
 problem_type: integration_issue
-component: background_job
+tags:
+  - dtm
+  - iom
+  - displacement
+  - health-bundle
+  - stale-seed
+  - graceful-failure
+  - per-country-skip
+  - upstream-inconsistency
+  - seed-freshness
 severity: medium
+module: displacement seeder (scripts/seed-dtm-displacement.mjs, health bundle)
 symptoms:
-  - "/api/health reported dtmDisplacement STALE_SEED (seedAgeMin 5956 against maxStaleMin 2880) while the health bundle stayed green on Railway"
+  - /api/health reported dtmDisplacement STALE_SEED (seedAgeMin 5956 against maxStaleMin 2880) while the health bundle stayed green on Railway
   - "Every daily bundle tick logged FETCH FAILED: DTM admin1?Admin0Pcode=BDI&FromReportingDate=2025-04-01: No Country Code found matching your query. then === Failed gracefully === (exit 75, TTL extended, nothing republished)"
-  - "diagnose-railway-seeders classified seed-bundle-health as HEALTHY (with warnings) because the bundle runner exits 0 on a graceful member skip"
+  - diagnose-railway-seeders classified seed-bundle-health as HEALTHY (with warnings) because the bundle runner exits 0 on a graceful member skip
 root_cause: missing_validation
 resolution_type: code_fix
-related_components: [service_object, testing_framework]
-tags: [dtm, iom, displacement, health-bundle, stale-seed, graceful-failure, per-country-skip, upstream-inconsistency, seed-freshness]
 ---
 
 # IOM DTM country-list advertises a country its per-country endpoints refuse, one 204 aborted the daily run

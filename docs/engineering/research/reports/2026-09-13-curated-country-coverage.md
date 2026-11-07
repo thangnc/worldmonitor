@@ -4,7 +4,7 @@ Related: [issue #7748](https://github.com/koala73/worldmonitor/issues/7748).
 
 ## Baseline
 
-This audit uses the committed [2026-09-09 snapshot](../../../snapshots/crawlable-live-pulse-2026-09-09.json), not a new production capture. Its 196 country records contain 72 eligible and published briefs. Of the 124 remaining records, 123 have no curated headline: 96 have enough publisher families but fail the curated-source gate, 16 also fail the two-publisher floor, and 11 have no grounding. Haiti has a curated source but fails the publisher floor.
+This audit uses the committed 2026-09-09 snapshot (`docs/snapshots/crawlable-live-pulse-2026-09-09.json`, since rotated out by the weekly refresh; recover it from git history), not a new production capture. Its 196 country records contain 72 eligible and published briefs. Of the 124 remaining records, 123 have no curated headline: 96 have enough publisher families but fail the curated-source gate, 16 also fail the two-publisher floor, and 11 have no grounding. Haiti has a curated source but fails the publisher floor.
 
 Counts come from `countries[*].developments.headlines`: a row with `origin != "country-index"` is curated. Region labels come from `shared/iso2-to-region.json`; its east-asia group includes Pacific states, and its Europe group includes Central Asia. The table below lists every country without a curated row.
 

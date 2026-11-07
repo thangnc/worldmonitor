@@ -1,8 +1,9 @@
 ---
 title: "fix(brief): persist category on story:track:v1 so threads card stops showing 8/8 General"
-type: fix
-status: active
 date: 2026-05-17
+status: done
+evidence: "PR #3751 merged 2026-05-18"
+type: fix
 ---
 
 # fix(brief): persist category on story:track:v1 so threads card stops showing 8/8 General

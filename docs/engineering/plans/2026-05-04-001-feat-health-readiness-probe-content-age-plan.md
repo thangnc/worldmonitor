@@ -1,8 +1,9 @@
 ---
 title: "feat: Health-Readiness Probe — content-age tracking distinct from seeder-run age"
-type: feat
-status: draft
 date: 2026-05-04
+status: done
+evidence: "Sprints 1–4 merged 2026-05-08 (#3596–#3599, #3603); optional sprint 5 not verified"
+type: feat
 origin: 2026-05-04 production incident — disease-outbreaks layer rendered empty despite /api/health reporting OK
 ---
 

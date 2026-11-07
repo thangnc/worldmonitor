@@ -1,14 +1,18 @@
 ---
-title: "Source-label RRF needs independent corroboration before ranking promotion"
+title: Source-label RRF needs independent corroboration before ranking promotion
 date: 2026-08-02
-category: best-practices
-module: "Digest and World Brief ranking (#5991, Epic #5981)"
+area: intelligence
 problem_type: best_practice
-component: digest_ranking
+tags:
+  - ranking
+  - reciprocal-rank-fusion
+  - corroboration
+  - syndication
+  - freshness
+  - replay-log
 severity: medium
-applies_when: "Evaluating source-vote or reciprocal-rank-fusion ordering for a delayed news digest"
-status: reject-naive-source-label-rrf
-tags: [ranking, reciprocal-rank-fusion, corroboration, syndication, freshness, replay-log]
+module: "Digest and World Brief ranking (#5991, Epic #5981)"
+applies_when: Evaluating source-vote or reciprocal-rank-fusion ordering for a delayed news digest
 ---
 
 # Source-label RRF needs independent corroboration before ranking promotion

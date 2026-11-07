@@ -1,20 +1,8 @@
 ---
-title: "A degraded seeder tick overwrote the 24h stale fallback with weaker coverage, so country flight pages returned 500"
-module: military-flights
+title: A degraded seeder tick overwrote the 24h stale fallback with weaker coverage, so country flight pages returned 500
 date: 2026-10-19
-category: logic-errors
+area: seeders
 problem_type: logic_error
-component: background_job
-severity: high
-symptoms:
-  - "GET /api/intelligence/v1/get-country-signal-observations with family=COUNTRY_SIGNAL_FAMILY_FLIGHT_PAGE returns HTTP 500 for US, IR, GB, FR, NZ, JP and 200 for UA, LB, IL, DE"
-  - "Sentry burst of `API 500: /api/intelligence/v1/get-country-signal-observations` from many browsers within a few minutes (WORLDMONITOR-18S)"
-  - "Redis military:flights:v1 AND military:flights:stale:v1 both carry coverage: regional"
-  - "seed-military-flights Railway log shows `[adsb.lol] fetch failed` then `[Source] adsbLol=no wingbits=yes`"
-root_cause: logic_error
-resolution_type: code_fix
-related_components:
-  - service_object
 tags:
   - military-flights
   - stale-key
@@ -24,6 +12,15 @@ tags:
   - wingbits
   - seeder
   - fallback
+severity: high
+module: military-flights
+symptoms:
+  - GET /api/intelligence/v1/get-country-signal-observations with family=COUNTRY_SIGNAL_FAMILY_FLIGHT_PAGE returns HTTP 500 for US, IR, GB, FR, NZ, JP and 200 for UA, LB, IL, DE
+  - "Sentry burst of `API 500: /api/intelligence/v1/get-country-signal-observations` from many browsers within a few minutes (WORLDMONITOR-18S)"
+  - "Redis military:flights:v1 AND military:flights:stale:v1 both carry coverage: regional"
+  - seed-military-flights Railway log shows `[adsb.lol] fetch failed` then `[Source] adsbLol=no wingbits=yes`
+root_cause: logic_error
+resolution_type: code_fix
 ---
 
 # A degraded seeder tick overwrote the 24h stale fallback with weaker coverage, so country flight pages returned 500

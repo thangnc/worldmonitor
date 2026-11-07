@@ -1,21 +1,29 @@
 ---
-title: "Panel resize strips wider than the content padding took clicks from the news translate button"
+title: Panel resize strips wider than the content padding took clicks from the news translate button
 date: 2026-10-27
-category: ui-bugs
-module: src/styles/main.css
+area: browser
 problem_type: ui_bug
-component: frontend_stimulus
+tags:
+  - resize-handle
+  - hit-test
+  - element-from-point
+  - pointer-events
+  - panel-content
+  - cluster-meta
+  - translate-button
+  - pseudo-element
+  - subpixel
+severity: medium
+module: src/styles/main.css
 symptoms:
-  - "In a non-English UI, the right part of the headline translate button in clustered news rows starts a width resize instead of translating"
-  - "The cursor flips to ew-resize over the right edge of the button while the button is still visible under it"
-  - "At scroll end, the bottom of the last news row starts a height resize"
+  - In a non-English UI, the right part of the headline translate button in clustered news rows starts a width resize instead of translating
+  - The cursor flips to ew-resize over the right edge of the button while the button is still visible under it
+  - At scroll end, the bottom of the last news row starts a height resize
 root_cause: logic_error
 resolution_type: code_fix
-severity: medium
-related_components:
-  - testing_framework
-tags: [resize-handle, hit-test, element-from-point, pointer-events, panel-content, cluster-meta, translate-button, pseudo-element, subpixel]
 ---
+
+# Panel resize strips wider than the content padding took clicks from the news translate button
 
 ## Problem
 

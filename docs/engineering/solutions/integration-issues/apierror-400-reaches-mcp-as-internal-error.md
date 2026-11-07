@@ -1,20 +1,23 @@
 ---
 title: A handler's ApiError(400) reaches MCP callers as -32603 "Internal error"; throw ValidationError with the argument name
 date: 2026-10-17
-category: integration-issues
-module: mcp tool dispatch
+area: mcp
 problem_type: integration_issue
-component: service_object
+tags:
+  - mcp
+  - validation-error
+  - apierror
+  - rpc-validation-error
+  - json-rpc
+  - invalid-params
+  - sebuf
+severity: medium
+module: mcp tool dispatch
 symptoms:
-  - "MCP search_flight_prices_by_date with a 50-day range returns -32603 \"Internal error: data fetch failed\""
-  - "The same request against /api/aviation/v1/search-google-dates returns 400 {\"message\":\"Date range must contain 1 to 31 days\"}"
+  - 'MCP search_flight_prices_by_date with a 50-day range returns -32603 "Internal error: data fetch failed"'
+  - The same request against /api/aviation/v1/search-google-dates returns 400 {"message":"Date range must contain 1 to 31 days"}
 root_cause: wrong_api
 resolution_type: code_fix
-severity: medium
-related_components:
-  - search-google-flights
-  - search-google-dates
-tags: [mcp, validation-error, apierror, rpc-validation-error, json-rpc, invalid-params, sebuf]
 ---
 
 # A handler's ApiError(400) reaches MCP callers as -32603 "Internal error"; throw ValidationError with the argument name

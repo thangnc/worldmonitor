@@ -1,16 +1,8 @@
 ---
-title: "A composing handler cannot see the failures its dependencies swallow"
+title: A composing handler cannot see the failures its dependencies swallow
 date: 2026-09-07
-category: conventions
-module: server/worldmonitor/intelligence/v1
+area: edge-api
 problem_type: convention
-component: api_endpoint
-severity: high
-applies_when:
-  - "Building a surface that composes several existing RPC handlers you did not write"
-  - "An endpoint promises that missing or failed source data is reported explicitly"
-  - "Adding a health boolean such as degraded, healthy, or stale to a response"
-  - "A new server surface must return the same result as an existing browser view"
 tags:
   - error-handling
   - fail-closed
@@ -19,6 +11,13 @@ tags:
   - api-design
   - rpc-composition
   - parity
+severity: high
+module: server/worldmonitor/intelligence/v1
+applies_when:
+  - Building a surface that composes several existing RPC handlers you did not write
+  - An endpoint promises that missing or failed source data is reported explicitly
+  - Adding a health boolean such as degraded, healthy, or stale to a response
+  - A new server surface must return the same result as an existing browser view
 ---
 
 # A composing handler cannot see the failures its dependencies swallow

@@ -1,16 +1,19 @@
 ---
 title: Deterministic timestamps for GDELT bulk fallback fixtures
 date: 2026-07-14
-category: test-failures
-module: GDELT conflict-event fallback
+area: tests
 problem_type: test_failure
-component: testing_framework
+tags:
+  - gdelt
+  - rolling-window
+  - deterministic-tests
+  - fixtures
+severity: medium
+module: GDELT conflict-event fallback
 symptoms:
-  - "CI unit tests failed after static bulk-export timestamps crossed the 24-hour rolling cutoff"
+  - CI unit tests failed after static bulk-export timestamps crossed the 24-hour rolling cutoff
 root_cause: logic_error
 resolution_type: test_fix
-severity: medium
-tags: [gdelt, rolling-window, deterministic-tests, fixtures]
 ---
 
 # Deterministic timestamps for GDELT bulk fallback fixtures

@@ -1,26 +1,8 @@
 ---
-title: "A test double richer than its library certifies the bug it hides"
+title: A test double richer than its library certifies the bug it hides
 date: 2026-09-17
-category: conventions
-module: docker/redis-rest-proxy.mjs, test doubles for third-party clients
+area: tests
 problem_type: convention
-component: testing_framework
-severity: high
-applies_when:
-  - "Hand-writing a stub, fake, or mock for a third-party client the repo does not install as a dependency"
-  - "Asserting that production source contains a specific call site, as a stand-in for behavioural coverage"
-  - "A bug report says a code path has never worked, while its tests are green"
-  - "Reviewing a test whose fixture defines the same surface the code under test consumes"
-symptoms:
-  - "A route fails 100% of the time in production while its unit tests pass"
-  - "A regression test scrapes the implementation and asserts it matches a literal call site"
-  - "Mutation-testing the production line reds the suite, yet the bug still shipped"
-  - "A stub exposes a method the real library does not have, so the wrong call works in tests"
-root_cause: wrong_api
-resolution_type: test_fix
-related_components:
-  - testing_framework
-  - development_workflow
 tags:
   - test-doubles
   - stub-drift
@@ -29,6 +11,20 @@ tags:
   - vacuous-tests
   - third-party-api
   - green-while-dead
+severity: high
+module: docker/redis-rest-proxy.mjs, test doubles for third-party clients
+symptoms:
+  - A route fails 100% of the time in production while its unit tests pass
+  - A regression test scrapes the implementation and asserts it matches a literal call site
+  - Mutation-testing the production line reds the suite, yet the bug still shipped
+  - A stub exposes a method the real library does not have, so the wrong call works in tests
+root_cause: wrong_api
+resolution_type: test_fix
+applies_when:
+  - Hand-writing a stub, fake, or mock for a third-party client the repo does not install as a dependency
+  - Asserting that production source contains a specific call site, as a stand-in for behavioural coverage
+  - A bug report says a code path has never worked, while its tests are green
+  - Reviewing a test whose fixture defines the same surface the code under test consumes
 ---
 
 # A test double richer than its library certifies the bug it hides

@@ -1,9 +1,19 @@
 ---
-module: seed-bundle-runner
+title: A static admission gate that ignores the runtime's own pre-consumption admits configurations that can never run
 date: 2026-08-13
+area: seeders
 problem_type: logic_error
-component: background_job
+tags:
+  - green-while-dead
+  - admission-gate
+  - budget-headroom
+  - runtime-cost-blind-spot
+  - railway-cron
+  - static-config-gate
+  - silent-pass
+  - seed-bundle-runner
 severity: critical
+module: seed-bundle-runner
 symptoms:
   - Railway paints `seed-bundle-resilience` SUCCESS every tick while every section is deferred and nothing publishes
   - The startup admission guard passes a section sized at exactly `maxBundleMs - KILL_GRACE_MS`, which the runtime check then rejects on every tick
@@ -11,8 +21,6 @@ symptoms:
   - A seed-meta staleness alarm is the only signal that surfaces six hours of silent non-publication, ~14h after the fact
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [tooling, testing_framework]
-tags: [green-while-dead, admission-gate, budget-headroom, runtime-cost-blind-spot, railway-cron, static-config-gate, silent-pass, seed-bundle-runner]
 ---
 
 # A static admission gate that ignores the runtime's own pre-consumption admits configurations that can never run

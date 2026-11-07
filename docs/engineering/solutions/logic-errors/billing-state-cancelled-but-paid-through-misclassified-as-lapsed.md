@@ -1,20 +1,25 @@
 ---
-title: "deriveBillingUxState fallthrough misclassified cancelled-but-paid-through subscriptions as lapsed"
+title: deriveBillingUxState fallthrough misclassified cancelled-but-paid-through subscriptions as lapsed
 date: 2026-07-23
-category: logic-errors
-module: billing-state
+area: payments
 problem_type: logic_error
-component: payments
+tags:
+  - billing
+  - entitlements
+  - subscription-state
+  - coverage-semantics
+  - cancelled-but-paid-through
+  - client-side-derivation
+  - convex-watch-race
 severity: high
+module: billing-state
 symptoms:
-  - "deriveBillingUxState (src/services/billing-state.ts) returned 'lapsed' for status 'cancelled' subscriptions unconditionally, without checking whether currentPeriodEnd was still in the future"
-  - "A cancelled-but-paid-through customer whose entitlement snapshot resolves after the subscription watch would transiently see 'Your Pro subscription has ended - Resubscribe'"
-  - "Diverged from the server's own coverage semantics in isCoveringAt (convex/payments/subscriptionHelpers.ts), which treats cancelled-with-future-currentPeriodEnd as covering, not lapsed"
-  - "Four of the ten review personas independently flagged the same fallthrough line pre-merge"
+  - deriveBillingUxState (src/services/billing-state.ts) returned 'lapsed' for status 'cancelled' subscriptions unconditionally, without checking whether currentPeriodEnd was still in the future
+  - A cancelled-but-paid-through customer whose entitlement snapshot resolves after the subscription watch would transiently see 'Your Pro subscription has ended - Resubscribe'
+  - Diverged from the server's own coverage semantics in isCoveringAt (convex/payments/subscriptionHelpers.ts), which treats cancelled-with-future-currentPeriodEnd as covering, not lapsed
+  - Four of the ten review personas independently flagged the same fallthrough line pre-merge
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [testing_framework]
-tags: [billing, entitlements, subscription-state, coverage-semantics, cancelled-but-paid-through, client-side-derivation, convex-watch-race]
 ---
 
 # deriveBillingUxState fallthrough misclassified cancelled-but-paid-through subscriptions as lapsed

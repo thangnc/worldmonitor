@@ -1,18 +1,27 @@
 ---
-module: seeders
+title: A coordinate fallback to 0 publishes Null Island or hides the item
 date: 2026-10-05
+area: seeders
 problem_type: logic_error
-component: background_job
+tags:
+  - null-island
+  - coordinates
+  - placeholder
+  - country-centroid
+  - map-layer
+  - redis-sweep
+  - seeder
+  - dockerfile-relay
+  - watch-patterns
 severity: high
+module: seeders
 symptoms:
-  - "Map tooltip 'Portland International (PDX) — Normal operations' on a dot in the Gulf of Guinea, south of Nigeria"
-  - "23 FAA-only US airports stacked on one 0,0 dot, including LAX and PHL ground stops"
+  - Map tooltip 'Portland International (PDX) — Normal operations' on a dot in the Gulf of Guinea, south of Nigeria
+  - 23 FAA-only US airports stacked on one 0,0 dot, including LAX and PHL ground stops
   - "22 of 26 Cloudflare Radar traffic anomalies never drawn: the map filters 0,0, so they silently vanished"
-  - "API/MCP callers receive lat 0 / lng 0 for disease outbreaks, a Cabo Verde flood and every PizzINT venue"
+  - API/MCP callers receive lat 0 / lng 0 for disease outbreaks, a Cabo Verde flood and every PizzINT venue
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [service_object, testing_framework]
-tags: [null-island, coordinates, placeholder, country-centroid, map-layer, redis-sweep, seeder, dockerfile-relay, watch-patterns]
 ---
 
 # A coordinate fallback to 0 publishes Null Island or hides the item

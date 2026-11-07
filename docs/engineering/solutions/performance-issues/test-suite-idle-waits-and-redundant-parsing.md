@@ -1,23 +1,27 @@
 ---
-title: "Redundant parsing and unstubbed production timing waits drove ~9 minutes of CI test-suite wall time per PR"
+title: Redundant parsing and unstubbed production timing waits drove ~9 minutes of CI test-suite wall time per PR
 date: 2026-08-07
-category: performance-issues
-module: "CI test suite (unit test runner + Playwright smoke)"
+area: ci
 problem_type: performance_issue
-component: testing_framework
+tags:
+  - ci-performance
+  - test-suite
+  - caching
+  - memoization
+  - playwright
+  - idle-wait
+  - redundant-parsing
+  - retry-backoff
+severity: high
+module: CI test suite (unit test runner + Playwright smoke)
 symptoms:
-  - "CI's `unit` job (`npm run test:data`, 1212 files via `tsx --test`) took ~5 minutes per PR, with `test:data` itself measured at 3m14s"
-  - "CI's `variant-smoke-full` Playwright job took ~4m40s per PR, with the news-budget spec alone accounting for 2m33s"
-  - "Per-test durations from the CI spec-reporter log showed 67% of 1,906 CPU-seconds concentrated in tests running longer than 1 second"
-  - "The same 2.1MB docs/api/worldmonitor.openapi.yaml was YAML-parsed by 15 separate test processes (one file 13x), and tests/_lib/import-graph-walk.mjs re-read and re-stripped every file on every BFS pass (up to 8 passes per Railway service) with no caching"
-  - "Tests stubbing failures (429 retries under `withRetry`, `yahooGate`/`finnhubGate` spacing) and Playwright's eight 8s settle windows in the news-budget spec slept through real wall-clock delays despite the underlying fetches being fully mocked"
+  - CI's `unit` job (`npm run test:data`, 1212 files via `tsx --test`) took ~5 minutes per PR, with `test:data` itself measured at 3m14s
+  - CI's `variant-smoke-full` Playwright job took ~4m40s per PR, with the news-budget spec alone accounting for 2m33s
+  - Per-test durations from the CI spec-reporter log showed 67% of 1,906 CPU-seconds concentrated in tests running longer than 1 second
+  - The same 2.1MB docs/api/worldmonitor.openapi.yaml was YAML-parsed by 15 separate test processes (one file 13x), and tests/_lib/import-graph-walk.mjs re-read and re-stripped every file on every BFS pass (up to 8 passes per Railway service) with no caching
+  - Tests stubbing failures (429 retries under `withRetry`, `yahooGate`/`finnhubGate` spacing) and Playwright's eight 8s settle windows in the news-budget spec slept through real wall-clock delays despite the underlying fetches being fully mocked
 root_cause: missing_tooling
 resolution_type: tooling_addition
-severity: high
-related_components:
-  - tooling
-  - development_workflow
-tags: [ci-performance, test-suite, caching, memoization, playwright, idle-wait, redundant-parsing, retry-backoff]
 ---
 
 # CI test time was mostly idle waiting and redundant parsing, not test work

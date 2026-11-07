@@ -1,19 +1,8 @@
 ---
-title: "IMF WEO fiscal-year mapping lives in per-country METHODOLOGY_NOTES, returned only by single-country SDMX queries"
+title: IMF WEO fiscal-year mapping lives in per-country METHODOLOGY_NOTES, returned only by single-country SDMX queries
 date: 2026-10-21
-category: integration-issues
-module: scripts/seed-national-debt.mjs
+area: seeders
 problem_type: integration_issue
-component: background_job
-severity: medium
-symptoms:
-  - "National debt clock anchored every fiscal-year economy at December 31, so Egypt and Pakistan (June-end) and India (March-end) were off by months"
-  - "A multi-country WEO SDMX probe (EGY+IND+USA) returned only SCALE, DECIMALS_DISPLAYED, OVERLAP, COUNTRY_UPDATE_DATE, PRECISION, DERIVATION_TYPE and SOURCE"
-  - "Issue #9425 recorded that the feed had no fiscal-year metadata and called for a hand-built table"
-root_cause: wrong_api
-resolution_type: code_fix
-related_components:
-  - documentation
 tags:
   - imf
   - sdmx
@@ -22,6 +11,14 @@ tags:
   - national-debt
   - methodology-notes
   - middleware-bundle
+severity: medium
+module: scripts/seed-national-debt.mjs
+symptoms:
+  - National debt clock anchored every fiscal-year economy at December 31, so Egypt and Pakistan (June-end) and India (March-end) were off by months
+  - A multi-country WEO SDMX probe (EGY+IND+USA) returned only SCALE, DECIMALS_DISPLAYED, OVERLAP, COUNTRY_UPDATE_DATE, PRECISION, DERIVATION_TYPE and SOURCE
+  - "Issue #9425 recorded that the feed had no fiscal-year metadata and called for a hand-built table"
+root_cause: wrong_api
+resolution_type: code_fix
 ---
 
 # IMF WEO fiscal-year mapping lives in per-country METHODOLOGY_NOTES

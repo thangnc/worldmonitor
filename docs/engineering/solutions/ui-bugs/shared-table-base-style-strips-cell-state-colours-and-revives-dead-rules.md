@@ -1,22 +1,29 @@
 ---
-title: "A shared table base style stripped cell state colours, and lowering its specificity revived dead rules"
+title: A shared table base style stripped cell state colours, and lowering its specificity revived dead rules
 date: 2026-11-04
-category: ui-bugs
-module: src/styles/panels.css
+area: browser
 problem_type: ui_bug
-component: frontend_stimulus
+tags:
+  - css-specificity
+  - where-selector
+  - wm-table
+  - panel-tables
+  - state-colours
+  - row-header
+  - inline-style
+  - cascade
+severity: medium
+module: src/styles/panels.css
 symptoms:
-  - "After moving FX and BTC ETF tables onto the shared .wm-table style, gain/loss, ticker and dimmed cells rendered in the plain cell colour"
-  - "After lowering the base to :where(), Climate Anomalies deltas and Displacement/UCDP cells picked up colours their class rules had never shown"
-  - "FAO food price product names (<th scope=\"row\">) rendered uppercase and muted like column headers"
-  - "Inline-styled tables kept their own header and cell look after gaining the wm-table class"
+  - After moving FX and BTC ETF tables onto the shared .wm-table style, gain/loss, ticker and dimmed cells rendered in the plain cell colour
+  - After lowering the base to :where(), Climate Anomalies deltas and Displacement/UCDP cells picked up colours their class rules had never shown
+  - FAO food price product names (<th scope="row">) rendered uppercase and muted like column headers
+  - Inline-styled tables kept their own header and cell look after gaining the wm-table class
 root_cause: logic_error
 resolution_type: code_fix
-severity: medium
-related_components:
-  - testing_framework
-tags: [css-specificity, where-selector, wm-table, panel-tables, state-colours, row-header, inline-style, cascade]
 ---
+
+# A shared table base style stripped cell state colours, and lowering its specificity revived dead rules
 
 ## Problem
 

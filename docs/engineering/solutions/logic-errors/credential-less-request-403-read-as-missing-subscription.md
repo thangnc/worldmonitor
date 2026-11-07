@@ -1,19 +1,8 @@
 ---
-title: "A credential-less request's 403 read as a missing subscription — the offline Widget Builder told Pro users to upgrade"
-module: widget-builder
+title: A credential-less request's 403 read as a missing subscription — the offline Widget Builder told Pro users to upgrade
 date: 2026-09-29
+area: browser
 problem_type: logic_error
-component: authentication
-severity: medium
-symptoms:
-  - "Opening the Pro Widget Builder offline showed 'Pro subscription required. If you just upgraded, refresh the page; otherwise contact support.'"
-  - "A paying user saw the upgrade copy while the network, or only Clerk, was unreachable"
-  - "No request error was shown, because the health check did return; it returned 403"
-root_cause: logic_error
-resolution_type: code_fix
-related_components:
-  - frontend
-  - testing_framework
 tags:
   - widget-builder
   - clerk-token
@@ -21,6 +10,14 @@ tags:
   - entitlement-denial
   - preflight
   - stale-async-result
+severity: medium
+module: widget-builder
+symptoms:
+  - Opening the Pro Widget Builder offline showed 'Pro subscription required. If you just upgraded, refresh the page; otherwise contact support.'
+  - A paying user saw the upgrade copy while the network, or only Clerk, was unreachable
+  - No request error was shown, because the health check did return; it returned 403
+root_cause: logic_error
+resolution_type: code_fix
 ---
 
 # A credential-less request's 403 read as a missing subscription

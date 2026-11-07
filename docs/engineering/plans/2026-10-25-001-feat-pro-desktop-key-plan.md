@@ -1,11 +1,13 @@
 ---
 title: Pro Desktop Key - Plan
-type: feat
 date: 2026-10-25
+status: done
+evidence: "PR #9687 merged 2026-10-26"
+type: feat
 artifact_contract: ce-unified-plan/v1
 artifact_readiness: implementation-ready
-product_contract_source: ce-plan-bootstrap
 execution: code
+product_contract_source: ce-plan-bootstrap
 ---
 
 # Pro Desktop Key - Plan

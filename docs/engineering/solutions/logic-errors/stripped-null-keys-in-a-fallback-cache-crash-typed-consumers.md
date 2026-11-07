@@ -1,18 +1,23 @@
 ---
 title: Stripping null keys before caching makes replayed records crash typed consumers
 date: 2026-08-05
-category: logic-errors
-module: scripts/_yahoo-sector-valuations.cjs
+area: seeders
 problem_type: logic_error
-component: service_object
+tags:
+  - last-good-cache
+  - redis
+  - seed-fallback
+  - staleness
+  - market-sectors
+  - type-safety
 severity: critical
+module: scripts/_yahoo-sector-valuations.cjs
 symptoms:
-  - "Sector valuations tab renders nothing; TypeError 'Cannot read properties of undefined (reading toFixed)'."
-  - "Backfilled sector rows render the literal string 'NaN%' for YTD, coloured red."
-  - "Commodities, energy and FX panels silently skip a refresh cycle when the valuations tab is open."
+  - Sector valuations tab renders nothing; TypeError 'Cannot read properties of undefined (reading toFixed)'.
+  - Backfilled sector rows render the literal string 'NaN%' for YTD, coloured red.
+  - Commodities, energy and FX panels silently skip a refresh cycle when the valuations tab is open.
 root_cause: logic_error
 resolution_type: code_fix
-tags: [last-good-cache, redis, seed-fallback, staleness, market-sectors, type-safety]
 ---
 
 # Stripping null keys before caching makes replayed records crash typed consumers

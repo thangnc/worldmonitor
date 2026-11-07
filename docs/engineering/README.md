@@ -14,9 +14,9 @@ Do not scan the tree top to bottom.
 | When you are… | Read | What it holds |
 |---|---|---|
 | Changing scope, architecture, or a contract | [`architecture/`](architecture/) | Current design specs and contracts. [`lite.md`](architecture/lite.md) is the canonical Lite profile spec. Change the spec before the code. |
-| Fixing a bug or touching an area with history | [`solutions/`](solutions/) | One lesson per file, filed by problem type. Grep the area, module, or symptom first. A matching lesson usually names the trap and the guard test. |
+| Fixing a bug or touching an area with history | [`solutions/INDEX.md`](solutions/INDEX.md) | One lesson per file, indexed by the area where the fix lives. Grep the index for the area, a tag, or a word from the symptom. A matching lesson usually names the trap and the guard test. |
 | Operating production: rollout, recovery, credentials, health | [`runbooks/`](runbooks/) | Step-by-step procedures and the evidence they expect. |
-| Starting or resuming a multi-step feature | [`plans/`](plans/) | Implementation plans. [`plans/requirements/`](plans/requirements/) holds the requirement briefs they started from. |
+| Starting or resuming a multi-step feature | [`plans/INDEX.md`](plans/INDEX.md) | Implementation plans by status (active, done, abandoned, superseded). [`plans/requirements/`](plans/requirements/) holds the requirement briefs they started from. |
 | Checking how a number or decision was measured | [`research/`](research/) | Dated evidence: perf baselines, audits, investigations, validation runs, reports, and source notes. True when written; re-measure before relying on a figure. |
 | Running the documentation alignment audit | [`process/`](process/) | Protocol and templates. |
 | Writing outward-facing copy | [`product/`](product/) | Press kit and community promotion guide. Tests check their claims against the code. |
@@ -26,8 +26,8 @@ Do not scan the tree top to bottom.
 
 - `architecture/`, `runbooks/`, and `solutions/` are current guidance. When one
   disagrees with the code, the code wins: fix the document in the same change.
-- `plans/` describe intent at the time of writing. Check git history and the
-  code before assuming a plan shipped or still applies.
+- `plans/` describe intent at the time of writing. Their `status` says whether
+  they shipped; check git history and the code before relying on one.
 - `research/` and `archive/` are historical. Cite them as evidence, not as
   instructions.
 
@@ -42,8 +42,11 @@ Do not scan the tree top to bottom.
 
 ## Adding to it
 
-- Record a solved problem as a lesson in `solutions/<category>/`. Title it
-  with the lesson, not the symptom.
+- Record a solved problem as a lesson in `solutions/<category>/`, following
+  [`solutions/README.md`](solutions/README.md). Title it with the lesson, not
+  the symptom. Plans follow [`plans/README.md`](plans/README.md).
+- Run `npm run generate` to refresh the indexes. `tests/engineering-docs.test.mjs`
+  enforces the frontmatter schema, the indexes, and links inside this tree.
 - Put a new runbook in `runbooks/`, a design spec in `architecture/`, and a
   plan in `plans/`.
 - Keep these files out of `docs/plans/`, `docs/internal/`, and

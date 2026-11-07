@@ -1,19 +1,26 @@
 ---
 title: A denied push permission rendered as a retryable failure, making "Try again" a permanent dead end
 date: 2026-07-25
-category: logic-errors
-module: pro-activation
+area: payments
 problem_type: logic_error
-component: frontend_stimulus
+tags:
+  - activation
+  - onboarding
+  - push-notifications
+  - permissions
+  - terminal-vs-transient
+  - retry-dead-end
+  - telemetry-collapse
+  - test-harness-vacuity
+  - mutation-testing
 severity: high
+module: pro-activation
 symptoms:
-  - "Activation wizard's alerts step showed \"DIDN'T WORK — Try again\" when notifications were blocked at the browser level"
-  - "Clicking \"Try again\" failed identically every time — browsers never re-prompt once Notification.permission is denied"
-  - "The wizard already had a correct blocked state with site-settings instructions, but it only rendered when permission was denied at mount"
+  - Activation wizard's alerts step showed "DIDN'T WORK — Try again" when notifications were blocked at the browser level
+  - Clicking "Try again" failed identically every time — browsers never re-prompt once Notification.permission is denied
+  - The wizard already had a correct blocked state with site-settings instructions, but it only rendered when permission was denied at mount
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [authentication, testing_framework]
-tags: [activation, onboarding, push-notifications, permissions, terminal-vs-transient, retry-dead-end, telemetry-collapse, test-harness-vacuity, mutation-testing]
 ---
 
 # A denied push permission rendered as a retryable failure, making "Try again" a permanent dead end

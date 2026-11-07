@@ -1,19 +1,25 @@
 ---
-title: "A flake fix was traded away in a later PR, and the flake came back"
+title: A flake fix was traded away in a later PR, and the flake came back
 date: 2026-10-24
-category: test-failures
-module: china-policy-events-tests
+area: tests
 problem_type: test_failure
-component: testing_framework
+tags:
+  - flaky-test
+  - regression
+  - positive-control
+  - timing-test
+  - ratio-of-mins
+  - median
+  - git-log-s
+  - china-policy
 severity: medium
+module: china-policy-events-tests
 symptoms:
   - "unit-shard fails on 'keeps its teeth: a genuinely quadratic scan still trips the gate' with a ratio just under the 12x ceiling (11.4x min/min on PR #9633)"
-  - "The same test had failed the same way before (11.9x on CI) and had been fixed"
+  - The same test had failed the same way before (11.9x on CI) and had been fixed
   - "The failure is CI-only: locally the control measures 14-16x, alone or under heavy load"
 root_cause: logic_error
 resolution_type: test_fix
-related_components: [development_workflow]
-tags: [flaky-test, regression, positive-control, timing-test, ratio-of-mins, median, git-log-s, china-policy]
 ---
 
 # A flake fix was traded away in a later PR, and the flake came back

@@ -1,20 +1,29 @@
 ---
 title: Theme-flipping color tokens make buttons unreadable in one theme
 date: 2026-11-01
-category: ui-bugs
-module: src/styles
+area: browser
 problem_type: ui_bug
-component: tooling
+tags:
+  - css
+  - theme
+  - contrast
+  - wcag
+  - css-variables
+  - light-theme
+  - route-explorer
+  - upgrade-cta
+  - semantic-colors
+  - badges
+severity: high
+module: src/styles
 symptoms:
-  - "Upgrade to PRO button renders as a blank white block (route explorer, dark theme)"
-  - "Green buttons show near-white text on green in the light theme (3.13:1)"
-  - "Follow buttons lose their label on hover (about 1.05:1 in both themes)"
-  - "Route explorer chips and active tab unreadable in light theme although the modal stays dark"
-  - "Red, orange, amber and green status text 3.2-3.6:1 on white in the light theme"
+  - Upgrade to PRO button renders as a blank white block (route explorer, dark theme)
+  - Green buttons show near-white text on green in the light theme (3.13:1)
+  - Follow buttons lose their label on hover (about 1.05:1 in both themes)
+  - Route explorer chips and active tab unreadable in light theme although the modal stays dark
+  - Red, orange, amber and green status text 3.2-3.6:1 on white in the light theme
 root_cause: logic_error
 resolution_type: code_fix
-severity: high
-tags: [css, theme, contrast, wcag, css-variables, light-theme, route-explorer, upgrade-cta, semantic-colors, badges]
 ---
 
 # Theme-flipping color tokens make buttons unreadable in one theme

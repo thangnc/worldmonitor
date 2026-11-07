@@ -1,26 +1,27 @@
 ---
-title: "An origin cache header proves nothing about the layer that honours it"
+title: An origin cache header proves nothing about the layer that honours it
 date: 2026-09-04
-last_updated: 2026-09-08
-category: conventions
-module: crawlable corpus / CDN cache configuration
+area: public-site
 problem_type: convention
-component: deploy_config
+tags:
+  - public-site
 severity: high
-applies_when:
-  - "Asserting cache headers in tests/deploy-config.test.mjs and treating that as proof a route is cached"
-  - "Adding a new route family to vercel.json with CDN-Cache-Control and expecting the CDN to honour it"
-  - "Diagnosing cf-cache-status DYNAMIC on a route whose origin headers look correct"
-  - "Changing anything about the crawlable corpus' caching, TTFB, or crawl budget"
-  - "Reviewing a fix whose only evidence is a green offline config assertion"
-  - "Deferring half of a two-part change and pinning the deferral with a passing test"
-  - "Shipping a claim whose other half is applied by hand outside the repo"
-  - "Caching a proxied or content-negotiated route (Accept, RSC) at a shared edge"
+module: crawlable corpus / CDN cache configuration
 symptoms:
   - "Every corpus route answers with the configured CDN-Cache-Control and Cloudflare still reports cf-cache-status: DYNAMIC"
-  - "tests/deploy-config.test.mjs is green on every family while production serves none of them from cache"
-  - "CrUX field TTFB stays flat across dozens of windows despite repeated caching 'fixes'"
-  - "A route family is configured identically to a working one but behaves differently in production"
+  - tests/deploy-config.test.mjs is green on every family while production serves none of them from cache
+  - CrUX field TTFB stays flat across dozens of windows despite repeated caching 'fixes'
+  - A route family is configured identically to a working one but behaves differently in production
+applies_when:
+  - Asserting cache headers in tests/deploy-config.test.mjs and treating that as proof a route is cached
+  - Adding a new route family to vercel.json with CDN-Cache-Control and expecting the CDN to honour it
+  - Diagnosing cf-cache-status DYNAMIC on a route whose origin headers look correct
+  - Changing anything about the crawlable corpus' caching, TTFB, or crawl budget
+  - Reviewing a fix whose only evidence is a green offline config assertion
+  - Deferring half of a two-part change and pinning the deferral with a passing test
+  - Shipping a claim whose other half is applied by hand outside the repo
+  - Caching a proxied or content-negotiated route (Accept, RSC) at a shared edge
+last_updated: 2026-09-08
 ---
 
 # An origin cache header proves nothing about the layer that honours it

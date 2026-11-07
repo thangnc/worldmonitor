@@ -1,21 +1,26 @@
 ---
-title: "Scroll re-prime of a zero-TTL panel flickers the loading radar on every scroll tick"
+title: Scroll re-prime of a zero-TTL panel flickers the loading radar on every scroll tick
 date: 2026-08-07
-category: ui-bugs
-module: "src/app/data-loader.ts, src/components/ChinaCorridorPanel.ts, src/components/ChinaActivityNowcastPanel.ts, src/App.ts"
+area: browser
 problem_type: ui_bug
-component: frontend
+tags:
+  - scroll-handler
+  - viewport-prime
+  - showloading
+  - cachettlms-zero
+  - circuit-breaker-cache
+  - skipifpopulated
+  - data-loader
+  - loading-radar-flicker
+severity: medium
+module: src/app/data-loader.ts, src/components/ChinaCorridorPanel.ts, src/components/ChinaActivityNowcastPanel.ts, src/App.ts
 symptoms:
-  - "Scrolling up or down on the dashboard makes exactly the China Logistics Corridors and China Activity Nowcast panels flicker and show the loading radar until scrolling stops; other panels stay stable"
-  - "The flicker recurs on every scroll re-entry, not once per session, because App.ts's rAF-throttled window scroll listener (handleViewportPrime) re-runs dataLoader.loadAllData() on each scroll event"
-  - "Each re-entry is a full production RPC round-trip, not a cache hit, because both services deliberately run with zero-TTL circuit-breaker cache policies (the server owns aggregate caching; a client last-good cache would hide fail-closed responses)"
-  - "Sibling panels driven through the same viewport-gated loadAllData() path (e.g. MarketBreadthPanel) do not flicker, because their fetchData() only calls showLoading() when nothing is rendered yet"
+  - Scrolling up or down on the dashboard makes exactly the China Logistics Corridors and China Activity Nowcast panels flicker and show the loading radar until scrolling stops; other panels stay stable
+  - The flicker recurs on every scroll re-entry, not once per session, because App.ts's rAF-throttled window scroll listener (handleViewportPrime) re-runs dataLoader.loadAllData() on each scroll event
+  - Each re-entry is a full production RPC round-trip, not a cache hit, because both services deliberately run with zero-TTL circuit-breaker cache policies (the server owns aggregate caching; a client last-good cache would hide fail-closed responses)
+  - Sibling panels driven through the same viewport-gated loadAllData() path (e.g. MarketBreadthPanel) do not flicker, because their fetchData() only calls showLoading() when nothing is rendered yet
 root_cause: logic_error
 resolution_type: code_fix
-severity: medium
-related_components:
-  - testing_framework
-tags: [scroll-handler, viewport-prime, showloading, cachettlms-zero, circuit-breaker-cache, skipifpopulated, data-loader, loading-radar-flicker]
 ---
 
 # Scroll re-prime of a zero-TTL panel flickers the loading radar on every scroll tick

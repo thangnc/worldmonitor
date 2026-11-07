@@ -1,8 +1,11 @@
 ---
 title: Comtrade commodity evidence and cache recovery
-module: supply-chain
-problem_type: integration_issue
 date: 2026-09-11
+area: edge-api
+problem_type: integration_issue
+tags:
+  - edge-api
+module: supply-chain
 issue: 7990
 ---
 

@@ -1,20 +1,8 @@
 ---
-title: "IMF WEO PUBLICATION_DATE and UPDATE_DATE are dataset-level reference metadata; attributes=all returns them with the series attributes"
+title: IMF WEO PUBLICATION_DATE and UPDATE_DATE are dataset-level reference metadata; attributes=all returns them with the series attributes
 date: 2026-10-18
-category: integration-issues
-module: scripts/_seed-utils.mjs
+area: seeders
 problem_type: integration_issue
-component: background_job
-severity: medium
-symptoms:
-  - 'Country brief IMF WEO indicator rows always rendered "IMF release not supplied"'
-  - "imfSdmxFetchIndicator requested attributes=dsd and returned only numbers, so no release date reached the seeded payload"
-  - "attributes=msd returns the dates but drops series-level DSD attributes"
-  - "/metadata/structure/dataflow/IMF.RES/WEO/9.0.0 returns empty metadataSets"
-root_cause: wrong_api
-resolution_type: code_fix
-related_components:
-  - service_object
 tags:
   - imf
   - sdmx
@@ -23,6 +11,15 @@ tags:
   - update-date
   - seed-utils
   - bootstrap-boundary
+severity: medium
+module: scripts/_seed-utils.mjs
+symptoms:
+  - Country brief IMF WEO indicator rows always rendered "IMF release not supplied"
+  - imfSdmxFetchIndicator requested attributes=dsd and returned only numbers, so no release date reached the seeded payload
+  - attributes=msd returns the dates but drops series-level DSD attributes
+  - /metadata/structure/dataflow/IMF.RES/WEO/9.0.0 returns empty metadataSets
+root_cause: wrong_api
+resolution_type: code_fix
 ---
 
 # IMF WEO release dates are reference metadata, not DSD attributes

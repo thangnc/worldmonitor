@@ -1,16 +1,8 @@
 ---
-title: "Published citation anchors need identity-based ids and visible scroll targets"
+title: Published citation anchors need identity-based ids and visible scroll targets
 date: 2026-09-08
-category: design-patterns
-module: crawlable corpus, sources page generator
+area: public-site
 problem_type: design_pattern
-component: frontend
-severity: medium
-applies_when:
-  - "Publishing fragment URLs as machine-readable citations — JSON-LD ListItem.url, speakable selectors, sitemap fragments, or an llms.txt pointer"
-  - "Disambiguating a slug collision by iteration order over a collection that is displayed sorted, so an insertion or rename can reorder it"
-  - "Adding scroll-to-anchor navigation to a page carrying sticky or fixed chrome above the anchored region"
-  - "Writing a test that asserts an anchor id exists in the rendered HTML"
 tags:
   - citation-integrity
   - stable-anchors
@@ -20,8 +12,13 @@ tags:
   - vacuous-guard
   - seo
   - geo
-related_components:
-  - testing_framework
+severity: medium
+module: crawlable corpus, sources page generator
+applies_when:
+  - Publishing fragment URLs as machine-readable citations — JSON-LD ListItem.url, speakable selectors, sitemap fragments, or an llms.txt pointer
+  - Disambiguating a slug collision by iteration order over a collection that is displayed sorted, so an insertion or rename can reorder it
+  - Adding scroll-to-anchor navigation to a page carrying sticky or fixed chrome above the anchored region
+  - Writing a test that asserts an anchor id exists in the rendered HTML
 ---
 
 # Published citation anchors need identity-based ids and visible scroll targets

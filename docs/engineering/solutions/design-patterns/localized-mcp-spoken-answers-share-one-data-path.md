@@ -1,16 +1,23 @@
 ---
-title: "Localized MCP spoken answers share one data path; only the phrases change"
+title: Localized MCP spoken answers share one data path; only the phrases change
 date: 2026-11-01
-category: design-patterns
-module: mcp-spoken
+area: mcp
 problem_type: design_pattern
-component: assistant
+tags:
+  - mcp
+  - spoken-mode
+  - arabic
+  - i18n
+  - plural-rules
+  - voice-agents
+  - response-mode
+  - tts
 severity: medium
+module: mcp-spoken
 applies_when:
-  - "Adding a second language to a templated, non-LLM narration (MCP response_mode spoken or similar)"
-  - "Adding an argument that shapes the response envelope but must never reach the tool or panel schemas"
-  - "Speaking data whose own text (headlines, titles) may arrive in a language other than the answer's"
-tags: [mcp, spoken-mode, arabic, i18n, plural-rules, voice-agents, response-mode, tts]
+  - Adding a second language to a templated, non-LLM narration (MCP response_mode spoken or similar)
+  - Adding an argument that shapes the response envelope but must never reach the tool or panel schemas
+  - Speaking data whose own text (headlines, titles) may arrive in a language other than the answer's
 ---
 
 # Localized MCP spoken answers share one data path; only the phrases change

@@ -1,17 +1,8 @@
 ---
-title: "Publishing a formula means tracing each term to its data producer, not to its local variable"
+title: Publishing a formula means tracing each term to its data producer, not to its local variable
 date: 2026-09-04
-category: conventions
-module: crawlable corpus, chokepoint disruption score
+area: public-site
 problem_type: convention
-component: documentation
-severity: high
-applies_when:
-  - "Writing or reviewing public prose that states how a published number is computed"
-  - "Single-sourcing a methodology string that several surfaces had each restated"
-  - "A score term is named for its effect (anomalyBonus, threatWeight) rather than its input"
-  - "The value reaches the scorer through a cache key or a relay rather than a direct call"
-  - "Declaring which displayed metrics are context rather than score inputs"
 tags:
   - methodology-prose
   - single-source-of-truth
@@ -19,6 +10,14 @@ tags:
   - crawlable-corpus
   - data-provenance
   - chokepoints
+severity: high
+module: crawlable corpus, chokepoint disruption score
+applies_when:
+  - Writing or reviewing public prose that states how a published number is computed
+  - Single-sourcing a methodology string that several surfaces had each restated
+  - A score term is named for its effect (anomalyBonus, threatWeight) rather than its input
+  - The value reaches the scorer through a cache key or a relay rather than a direct call
+  - Declaring which displayed metrics are context rather than score inputs
 ---
 
 # Publishing a formula means tracing each term to its data producer, not to its local variable

@@ -1,18 +1,27 @@
 ---
-module: git_merge_integrity
+title: A clean git merge can silently drop hunks — verify the result against BOTH parents
 date: 2026-09-05
-last_updated: 2026-10-06
+area: ci
 problem_type: workflow_issue
-component: development_workflow
+tags:
+  - git-merge
+  - auto-merge
+  - duplicate-object-key
+  - biome
+  - frankenstate
+  - ort-strategy
+  - both-parents-verification
+  - ci-repair
+  - preview-namespace
 severity: high
+module: git_merge_integrity
 symptoms:
-  - "A test that is green on origin/main fails on the feature branch immediately after `git merge origin/main` reports 'Merge made by the ort strategy' with no conflicts"
-  - "The merged test file contains hunks from BOTH parents' versions of the file — e.g. an import added by one parent and a fixture call added by the other — while a line from the second parent silently disappears"
+  - A test that is green on origin/main fails on the feature branch immediately after `git merge origin/main` reports 'Merge made by the ort strategy' with no conflicts
+  - The merged test file contains hunks from BOTH parents' versions of the file — e.g. an import added by one parent and a fixture call added by the other — while a line from the second parent silently disappears
   - "`git diff origin/main -- <file>` on the merged branch shows a diff for a file the feature branch never touched"
 root_cause: silent_merge_mangling
 resolution_type: workflow_improvement
-related_components: [testing_framework, ci_gates]
-tags: [git-merge, auto-merge, duplicate-object-key, biome, frankenstate, ort-strategy, both-parents-verification, ci-repair, preview-namespace]
+last_updated: 2026-10-06
 ---
 
 # A clean git merge can silently drop hunks — verify the result against BOTH parents

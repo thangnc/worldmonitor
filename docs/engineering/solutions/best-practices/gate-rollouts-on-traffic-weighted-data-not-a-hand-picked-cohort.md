@@ -1,13 +1,21 @@
 ---
-title: "Gate a rollout on traffic-weighted data, not a hand-picked cohort"
+title: Gate a rollout on traffic-weighted data, not a hand-picked cohort
 date: 2026-07-18
-category: best-practices
-module: "Bootstrap storage cutover verification (U-K3 gate, #5338)"
+area: edge-api
 problem_type: best_practice
-component: development_workflow
+tags:
+  - verification-gate
+  - rollout
+  - percentile
+  - sample-size
+  - traffic-weighted
+  - decision-criteria
+  - measurement
+  - cutover
+  - p95
 severity: medium
-applies_when: "Writing the pass/fail gate for a migration, cutover, or A/B rollout — especially when the plan names a specific 'worst case' cohort to gate on"
-tags: [verification-gate, rollout, percentile, sample-size, traffic-weighted, decision-criteria, measurement, cutover, p95]
+module: "Bootstrap storage cutover verification (U-K3 gate, #5338)"
+applies_when: Writing the pass/fail gate for a migration, cutover, or A/B rollout — especially when the plan names a specific 'worst case' cohort to gate on
 ---
 
 # Gate a rollout on traffic-weighted data, not a hand-picked cohort

@@ -1,20 +1,25 @@
 ---
-title: "An npm registry outage reddened every PR, and `??` hid why"
+title: An npm registry outage reddened every PR, and `??` hid why
 date: 2026-07-26
-category: integration-issues
-module: security-audit
+area: ci
 problem_type: integration_issue
-component: development_workflow
+tags:
+  - npm-audit
+  - security-audit
+  - ci-gate
+  - third-party-outage
+  - nullish-coalescing
+  - soft-fail
+  - diagnostics
+severity: high
+module: security-audit
 symptoms:
-  - "audit-lockfile fails for every workspace, taking security-audit and gate red repo-wide; no PR can merge"
-  - "The CI log shows ONE BLANK LINE followed by `##[error]Process completed with exit code 1` — zero diagnostic text"
-  - "Other open PRs appear green, so the failure looks specific to the PR being worked on"
-  - "The same commit, unchanged, passed the same workflow seven hours earlier"
+  - audit-lockfile fails for every workspace, taking security-audit and gate red repo-wide; no PR can merge
+  - The CI log shows ONE BLANK LINE followed by `##[error]Process completed with exit code 1` — zero diagnostic text
+  - Other open PRs appear green, so the failure looks specific to the PR being worked on
+  - The same commit, unchanged, passed the same workflow seven hours earlier
 root_cause: logic_error
 resolution_type: code_fix
-severity: high
-related_components: [tooling, testing_framework]
-tags: [npm-audit, security-audit, ci-gate, third-party-outage, nullish-coalescing, soft-fail, diagnostics]
 ---
 
 # An npm registry outage reddened every PR, and `??` hid why

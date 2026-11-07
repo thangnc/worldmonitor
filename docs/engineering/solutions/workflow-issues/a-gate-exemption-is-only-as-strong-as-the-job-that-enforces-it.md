@@ -1,19 +1,29 @@
 ---
-module: ci-path-filtering
+title: A gate exemption is only as strong as the job that enforces it
 date: 2026-09-04
-last_updated: 2026-10-06
+area: ci
 problem_type: workflow_issue
-component: development_workflow
+tags:
+  - ci-path-filter
+  - docs-only-pr
+  - docs-i18n-parity
+  - green-while-dead
+  - gate-exemption
+  - skipped-not-failed
+  - shell-quoting
+  - awk
+  - mutation-testing
+  - seo
 severity: high
+module: ci-path-filtering
 symptoms:
-  - "A generated public artifact is exempted from a merge-blocking scanner, and the test that replaces that scanner never runs on the PR that edits the artifact"
+  - A generated public artifact is exempted from a merge-blocking scanner, and the test that replaces that scanner never runs on the PR that edits the artifact
   - "`gh pr checks --watch` prints every job as `pass` or `skipping` and exits 0 while `changes` concluded FAILURE"
-  - "A job that should have run for a PR touching `scripts/` and `tests/` reports `SKIPPED` rather than `FAILURE`"
-  - "An apostrophe inside an awk comment in `.github/workflows/test.yml` kills the whole `changes` step"
+  - A job that should have run for a PR touching `scripts/` and `tests/` reports `SKIPPED` rather than `FAILURE`
+  - An apostrophe inside an awk comment in `.github/workflows/test.yml` kills the whole `changes` step
 root_cause: missing_workflow_step
 resolution_type: workflow_improvement
-related_components: [testing_framework, documentation]
-tags: [ci-path-filter, docs-only-pr, docs-i18n-parity, green-while-dead, gate-exemption, skipped-not-failed, shell-quoting, awk, mutation-testing, seo]
+last_updated: 2026-10-06
 ---
 
 # A gate exemption is only as strong as the job that enforces it

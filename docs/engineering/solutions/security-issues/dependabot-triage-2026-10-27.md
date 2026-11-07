@@ -1,8 +1,17 @@
 ---
-module: dependencies
-component: npm and pnpm dependency graphs
+title: Dependabot triage on October 27, 2026
+date: 2026-10-27
+area: tooling
 problem_type: security_issue
-tags: [dependabot, undici, miniflare, wrangler, fast-uri, ajv, umami]
+tags:
+  - dependabot
+  - undici
+  - miniflare
+  - wrangler
+  - fast-uri
+  - ajv
+  - umami
+module: dependencies
 ---
 
 # Dependabot triage on October 27, 2026

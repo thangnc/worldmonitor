@@ -1,23 +1,27 @@
 ---
 title: "Live video panels silently degrade: dead YouTube detection, rotted fallback IDs, and an undisclosed 5-minute idle stop"
-module: live-video-panels (Live News / Live Webcams)
 date: 2026-09-14
-category: integration-issues
+area: browser
 problem_type: integration_issue
-component: background_job
+tags:
+  - youtube
+  - live-video
+  - relay-fetch
+  - railway-relay
+  - fallback-video-ids
+  - idle-timeout
+  - silent-degradation
+  - dashboard
 severity: high
+module: live-video-panels (Live News / Live Webcams)
 symptoms:
   - "Production `/api/youtube/live` returns `{videoId: null, channelExists: false}` for all 20 tested channel handles (including `@CNN`, `@BBCNews`, `@markets`), while the same `youtube.com/@handle/live` pages return `isLive: true` when fetched from a residential IP"
-  - "LiveWebcamsPanel's default grid (jerusalem, middle-east, kyiv, washington) plays hardcoded fallback video IDs that ended in 2026-06/2026-07; the kyiv fallback replays a 2022 recording under a 'LIVE' tile"
-  - "Live News fallbacks for cnbc and cnn play unrelated or deleted videos (a documentary marathon, a deleted ABC News clip) instead of live coverage"
-  - "After 5 minutes with no mousedown/keydown/scroll/touchstart/mousemove, Live News and Live Webcams silently stop playback and CSS animations pause, with no explanation in the Auto-play setting copy"
-  - "A cancelling paying user reported the dashboard 'only lasts about 4 minutes' and 'the wrong video links in the tv screen'"
+  - LiveWebcamsPanel's default grid (jerusalem, middle-east, kyiv, washington) plays hardcoded fallback video IDs that ended in 2026-06/2026-07; the kyiv fallback replays a 2022 recording under a 'LIVE' tile
+  - Live News fallbacks for cnbc and cnn play unrelated or deleted videos (a documentary marathon, a deleted ABC News clip) instead of live coverage
+  - After 5 minutes with no mousedown/keydown/scroll/touchstart/mousemove, Live News and Live Webcams silently stop playback and CSS animations pause, with no explanation in the Auto-play setting copy
+  - A cancelling paying user reported the dashboard 'only lasts about 4 minutes' and 'the wrong video links in the tv screen'
 root_cause: logic_error
 resolution_type: code_fix
-related_components:
-  - frontend_stimulus
-  - testing_framework
-tags: [youtube, live-video, relay-fetch, railway-relay, fallback-video-ids, idle-timeout, silent-degradation, dashboard]
 ---
 
 # Live video panels silently degrade: dead YouTube detection, rotted fallback IDs, and an undisclosed 5-minute idle stop

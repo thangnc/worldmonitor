@@ -1,21 +1,28 @@
 ---
-title: "The judged forecast lane resolved nothing for six weeks behind three silent faults"
+title: The judged forecast lane resolved nothing for six weeks behind three silent faults
 date: 2026-10-06
-category: logic-errors
-module: scripts/seed-forecast-resolutions
+area: intelligence
 problem_type: logic_error
-component: background_job
+tags:
+  - forecast
+  - judged-lane
+  - llm-judge
+  - coverage-marker
+  - ttl
+  - liveness-proof
+  - health-alarm
+  - groq
+  - openrouter
 severity: critical
+module: scripts/seed-forecast-resolutions
 symptoms:
-  - "No judged forecast reached a scored outcome from 2026-08-23 to 2026-10-06"
-  - "Every judge-B attempt from 2026-08-29 recorded judge_unavailable or judge_returned_empty (175 of 175)"
-  - "Every due judged entry stopped at reason archive_incomplete before any judge was called"
-  - "forecast:evidence:coverage:v1 was absent while forecast:evidence:v1 held a healthy archive"
-  - "No health signal fired; the seeder kept reporting OK"
+  - No judged forecast reached a scored outcome from 2026-08-23 to 2026-10-06
+  - Every judge-B attempt from 2026-08-29 recorded judge_unavailable or judge_returned_empty (175 of 175)
+  - Every due judged entry stopped at reason archive_incomplete before any judge was called
+  - forecast:evidence:coverage:v1 was absent while forecast:evidence:v1 held a healthy archive
+  - No health signal fired; the seeder kept reporting OK
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [assistant, development_workflow]
-tags: [forecast, judged-lane, llm-judge, coverage-marker, ttl, liveness-proof, health-alarm, groq, openrouter]
 ---
 
 # The judged forecast lane resolved nothing for six weeks behind three silent faults

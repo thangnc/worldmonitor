@@ -1,21 +1,27 @@
 ---
-title: "get_keyword_spikes advertised a 48-hour baseline while its capped fetch sampled ~2 hours"
+title: get_keyword_spikes advertised a 48-hour baseline while its capped fetch sampled ~2 hours
 date: 2026-07-28
-category: logic-errors
-module: api/mcp/registry/nlp-tools.ts
+area: mcp
 problem_type: logic_error
-component: assistant
+tags:
+  - mcp
+  - keyword-spikes
+  - baseline-window
+  - capped-fetch
+  - redis-zrange
+  - digest-accumulator
+  - derived-statistic
+  - code-review-catch
 severity: high
+module: api/mcp/registry/nlp-tools.ts
 symptoms:
-  - "get_keyword_spikes (api/mcp/registry/nlp-tools.ts, extracted from rpc-tools.ts) divided per-keyword story counts by a hardcoded KEYWORD_SPIKE_BASELINE_MS (48h) while the ZRANGE feeding it was capped at LIMIT 0 800 over digest:accumulator:v1:full:en"
-  - "At real production volume (~350-440 stories/hour per scripts/lib/story-track-batch-reader.mjs) the newest 800 entries span only ~2 hours, so almost every term's baseline count computed to ~0 and the spike decision fell through to the cold-start rule"
-  - "Multipliers inflated by roughly the ratio of the assumed 48h span to the ~2h actually sampled (~23x), while the tool response's baseline_hours field still reported a flat 48"
+  - get_keyword_spikes (api/mcp/registry/nlp-tools.ts, extracted from rpc-tools.ts) divided per-keyword story counts by a hardcoded KEYWORD_SPIKE_BASELINE_MS (48h) while the ZRANGE feeding it was capped at LIMIT 0 800 over digest:accumulator:v1:full:en
+  - At real production volume (~350-440 stories/hour per scripts/lib/story-track-batch-reader.mjs) the newest 800 entries span only ~2 hours, so almost every term's baseline count computed to ~0 and the spike decision fell through to the cold-start rule
+  - Multipliers inflated by roughly the ratio of the assumed 48h span to the ~2h actually sampled (~23x), while the tool response's baseline_hours field still reported a flat 48
   - "Nothing failed loudly: the cap (KEYWORD_SPIKE_MAX_STORIES) and the window constant (KEYWORD_SPIKE_BASELINE_MS) each looked correct read in isolation, and the mismatch only surfaced by joining the cap against the accumulator's real fill rate"
   - "Caught pre-merge by three independent reviewers, including a cross-model pass, on PR #5734 (issue #5697) before any of this reached production"
 root_cause: logic_error
 resolution_type: code_fix
-related_components: [testing_framework]
-tags: [mcp, keyword-spikes, baseline-window, capped-fetch, redis-zrange, digest-accumulator, derived-statistic, code-review-catch]
 ---
 
 # A per-call fetch cap silently narrowed the window a baseline claimed to cover

@@ -1,18 +1,23 @@
 ---
 title: A degraded 200 poisoned the last-good cache it was supposed to fall back to
 date: 2026-07-30
-category: logic-errors
-module: News digest loader
+area: intelligence
 problem_type: logic_error
-component: frontend_stimulus
+tags:
+  - news-digest
+  - last-good
+  - degraded-response
+  - cache-poisoning
+  - compare-and-swap
+  - circuit-breaker
+severity: high
+module: News digest loader
 symptoms:
   - Every preset news category rendered empty while the server had a good digest one request away
   - The empty dashboard survived reloads, not just the page load that caused it
   - The digest circuit breaker never tripped against a server emitting empty-but-200 responses
 root_cause: missing_validation
 resolution_type: code_fix
-severity: high
-tags: [news-digest, last-good, degraded-response, cache-poisoning, compare-and-swap, circuit-breaker]
 ---
 
 # A degraded 200 poisoned the last-good cache it was supposed to fall back to

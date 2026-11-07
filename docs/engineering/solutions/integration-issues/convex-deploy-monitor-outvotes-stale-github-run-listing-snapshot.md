@@ -1,21 +1,27 @@
 ---
 title: The post-merge deploy monitor false-alarmed on a stale GitHub run-listing snapshot, not a dead workflow
 date: 2026-09-24
-category: integration-issues
-module: check-postmerge-deploys
+area: ci
 problem_type: integration_issue
-component: development_workflow
+tags:
+  - github-actions
+  - postmerge-monitor
+  - stale-api-response
+  - eventual-consistency
+  - false-alarm
+  - convex-deploy
+  - run-listing
+  - scheduled-workflow
+severity: high
+module: check-postmerge-deploys
 symptoms:
   - "`postmerge-deploy ERROR: Convex Deploy [NO_RUN_IN_WINDOW] the newest run of convex-deploy.yml on main (34136482776) predates the 168h window — the workflow may have stopped running`"
-  - "Post-merge Deploy Monitor failed 21 of its last 120 ticks between 2026-09-23T07:34Z and 2026-09-24T09:54Z, naming the same run id every time"
-  - "Convex Deploy ran and succeeded on every push to main throughout the window, and the `convex-deployed` tag showed production current"
-  - "The same script run locally against the same `main` was green on every attempt"
+  - Post-merge Deploy Monitor failed 21 of its last 120 ticks between 2026-09-23T07:34Z and 2026-09-24T09:54Z, naming the same run id every time
+  - Convex Deploy ran and succeeded on every push to main throughout the window, and the `convex-deployed` tag showed production current
+  - The same script run locally against the same `main` was green on every attempt
   - "`GET /repos/{repo}/actions/workflows/convex-deploy.yml/runs?branch=main&per_page=100` answers HTTP 200 with `total_count` 1366 against a true 3168 and a 17-day-old run as the newest, interleaved with correct answers to the identical URL"
 root_cause: async_timing
 resolution_type: code_fix
-severity: high
-related_components: [tooling, development_workflow]
-tags: [github-actions, postmerge-monitor, stale-api-response, eventual-consistency, false-alarm, convex-deploy, run-listing, scheduled-workflow]
 ---
 
 # The post-merge deploy monitor false-alarmed on a stale GitHub run-listing snapshot, not a dead workflow

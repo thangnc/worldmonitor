@@ -1,21 +1,8 @@
 ---
-title: "Assert what a branch produces, not what a lenient classifier concludes from it"
+title: Assert what a branch produces, not what a lenient classifier concludes from it
 date: 2026-09-02
-category: conventions
-module: test and CI verification infrastructure
+area: tests
 problem_type: convention
-component: testing_framework
-severity: high
-applies_when:
-  - "A test asserts a downstream outcome (a retry firing, a boolean flag, a coarse classification) instead of the value the branch under test directly produces"
-  - "A lenient downstream classifier — a broad regex, a coarse enum, a boolean check — sits between the branch and the assertion and can map several distinct branch outputs onto the same outcome"
-  - "Writing or reviewing a test for a fallback ladder such as `err?.message ?? err?.code ?? JSON.stringify(err)` whose output feeds a classifier"
-  - 'A classification regex like /\b429\b|rate.?limit|too many requests/i is fed by a JSON.stringify() fallback rung, whose serialized output can satisfy the regex by accident'
-  - "Auditing whether deleting or reordering one rung of a fallback chain would still leave the existing suite green"
-related_components:
-  - testing_framework
-  - development_workflow
-  - background_job
 tags:
   - mutation-testing
   - vacuous-tests
@@ -25,7 +12,17 @@ tags:
   - error-message-ladder
   - non-discriminating-assertion
   - json-stringify-fallback
+severity: high
+module: test and CI verification infrastructure
+applies_when:
+  - A test asserts a downstream outcome (a retry firing, a boolean flag, a coarse classification) instead of the value the branch under test directly produces
+  - A lenient downstream classifier — a broad regex, a coarse enum, a boolean check — sits between the branch and the assertion and can map several distinct branch outputs onto the same outcome
+  - Writing or reviewing a test for a fallback ladder such as `err?.message ?? err?.code ?? JSON.stringify(err)` whose output feeds a classifier
+  - A classification regex like /\b429\b|rate.?limit|too many requests/i is fed by a JSON.stringify() fallback rung, whose serialized output can satisfy the regex by accident
+  - Auditing whether deleting or reordering one rung of a fallback chain would still leave the existing suite green
 ---
+
+# Assert what a branch produces, not what a lenient classifier concludes from it
 
 ## Context
 

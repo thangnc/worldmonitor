@@ -1,19 +1,24 @@
 ---
 title: A merged seeder fix is not live until its cron fires — backfill long-cron seeders by hand
 date: 2026-07-14
-category: integration-issues
-module: railway-seeders
+area: seeders
 problem_type: integration_issue
-component: development_workflow
+tags:
+  - railway
+  - seeders
+  - cron
+  - health-monitoring
+  - seed-meta
+  - backfill
+  - deployment
+severity: high
+module: railway-seeders
 symptoms:
-  - "/api/health reports a domain EMPTY (crit) with records=0 and no seedAgeMin, days after the fix merged"
-  - "The seeder's Railway service shows only SUCCESS builds — no crashes, nothing red"
-  - "A health key goes crit the moment its PR merges, then clears by itself hours or days later"
+  - /api/health reports a domain EMPTY (crit) with records=0 and no seedAgeMin, days after the fix merged
+  - The seeder's Railway service shows only SUCCESS builds — no crashes, nothing red
+  - A health key goes crit the moment its PR merges, then clears by itself hours or days later
 root_cause: missing_workflow_step
 resolution_type: workflow_improvement
-severity: high
-related_components: [background_job, documentation]
-tags: [railway, seeders, cron, health-monitoring, seed-meta, backfill, deployment]
 ---
 
 # A merged seeder fix is not live until its cron fires

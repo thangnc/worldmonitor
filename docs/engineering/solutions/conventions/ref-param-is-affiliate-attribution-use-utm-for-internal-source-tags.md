@@ -1,14 +1,20 @@
 ---
-title: "?ref= on dashboard URLs is affiliate attribution — and a same-site link takes NO query tag at all"
+title: ?ref= on dashboard URLs is affiliate attribution — and a same-site link takes NO query tag at all
 date: 2026-07-24
-category: conventions
-module: referral-capture
+area: payments
 problem_type: convention
-component: frontend
+tags:
+  - referral-capture
+  - attribution
+  - utm
+  - seo-corpus
+  - checkout
+  - affonso
+  - crawl-budget
+module: referral-capture
 applies_when:
-  - "Adding source/attribution query params to any link that lands on the dashboard (static corpus CTAs, blog CTAs, email links, partner links)"
-  - "Acting on third-party SEO/analytics audit recommendations that propose a ?ref= or ?utm_source= convention for internal links"
-tags: [referral-capture, attribution, utm, seo-corpus, checkout, affonso, crawl-budget]
+  - Adding source/attribution query params to any link that lands on the dashboard (static corpus CTAs, blog CTAs, email links, partner links)
+  - Acting on third-party SEO/analytics audit recommendations that propose a ?ref= or ?utm_source= convention for internal links
 ---
 
 # ?ref= on dashboard URLs is affiliate attribution — and a same-site link takes NO query tag at all

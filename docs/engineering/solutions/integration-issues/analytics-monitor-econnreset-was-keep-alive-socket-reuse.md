@@ -1,20 +1,27 @@
 ---
 title: The analytics collector monitor paged on ECONNRESET from reused keep-alive sockets, not from the collector
 date: 2026-11-05
-category: integration-issues
-module: analytics
+area: observability
 problem_type: integration_issue
-component: tooling
+tags:
+  - umami
+  - analytics
+  - monitor
+  - undici
+  - keep-alive
+  - econnreset
+  - cloudflare
+  - node-fetch
+  - false-alarm
+severity: medium
+module: analytics
 symptoms:
-  - "Analytics Collector Monitor fails with `1/12 attempts failed ... ECONNRESET (phase=request)`"
-  - "The failed write is always in burst 2 or 3, never burst 1"
-  - "The failure arrives 13-113 ms after the request starts, with no HTTP status"
-  - "The next scheduled run is green and Railway shows no matching collector error"
+  - Analytics Collector Monitor fails with `1/12 attempts failed ... ECONNRESET (phase=request)`
+  - The failed write is always in burst 2 or 3, never burst 1
+  - The failure arrives 13-113 ms after the request starts, with no HTTP status
+  - The next scheduled run is green and Railway shows no matching collector error
 root_cause: wrong_api
 resolution_type: code_fix
-severity: medium
-related_components: [testing_framework]
-tags: [umami, analytics, monitor, undici, keep-alive, econnreset, cloudflare, node-fetch, false-alarm]
 ---
 
 # The analytics collector monitor paged on ECONNRESET from reused keep-alive sockets, not from the collector

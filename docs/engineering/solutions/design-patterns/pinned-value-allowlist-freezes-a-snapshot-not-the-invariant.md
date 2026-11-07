@@ -1,19 +1,8 @@
 ---
-title: "A guard that pins the values which were wrong freezes a snapshot, not the invariant"
+title: A guard that pins the values which were wrong freezes a snapshot, not the invariant
 date: 2026-09-03
-category: design-patterns
-module: JSON-LD entity graph, schema-graph contract gates
+area: tests
 problem_type: design_pattern
-component: testing_framework
-severity: high
-applies_when:
-  - "Writing a gate that stops several producers from contradicting each other under one shared identity (JSON-LD @id, a shared cache key, a denormalized row, a config fragment merged from several files)"
-  - "A fix enumerates the specific fields that were found wrong and pins those"
-  - "The gate's producer population is a hand-written path list rather than a discovered one"
-  - "A shared identity can be both DECLARED (identity plus a body) and merely REFERENCED (identity alone) in the same document"
-  - "Some properties of the shared entity legitimately differ per producer while others must not"
-root_cause: missing_validation
-resolution_type: tooling_addition
 tags:
   - contract-tests
   - vacuous-guard
@@ -23,6 +12,16 @@ tags:
   - allowlist-vs-invariant
   - anti-drift
   - population-discovery
+severity: high
+module: JSON-LD entity graph, schema-graph contract gates
+root_cause: missing_validation
+resolution_type: tooling_addition
+applies_when:
+  - Writing a gate that stops several producers from contradicting each other under one shared identity (JSON-LD @id, a shared cache key, a denormalized row, a config fragment merged from several files)
+  - A fix enumerates the specific fields that were found wrong and pins those
+  - The gate's producer population is a hand-written path list rather than a discovered one
+  - A shared identity can be both DECLARED (identity plus a body) and merely REFERENCED (identity alone) in the same document
+  - Some properties of the shared entity legitimately differ per producer while others must not
 ---
 
 # A guard that pins the values which were wrong freezes a snapshot, not the invariant

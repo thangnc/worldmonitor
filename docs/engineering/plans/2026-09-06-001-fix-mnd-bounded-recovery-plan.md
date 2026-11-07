@@ -1,11 +1,13 @@
 ---
 title: MND Bounded Recovery - Plan
-type: fix
 date: 2026-09-06
+status: done
+evidence: "PR #7784 merged 2026-09-06"
+type: fix
 artifact_contract: ce-unified-plan/v1
 artifact_readiness: implementation-ready
-product_contract_source: ce-plan-bootstrap
 execution: code
+product_contract_source: ce-plan-bootstrap
 ---
 
 # MND Bounded Recovery - Plan

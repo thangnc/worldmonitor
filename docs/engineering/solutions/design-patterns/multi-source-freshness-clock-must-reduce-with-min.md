@@ -1,13 +1,19 @@
 ---
-title: "A freshness clock covering two independent upstreams must reduce with min, not max"
+title: A freshness clock covering two independent upstreams must reduce with min, not max
 date: 2026-08-05
-category: design-patterns
-module: seed-content-age
+area: seeders
 problem_type: design_pattern
-component: background_job
+tags:
+  - content-age
+  - stale-content
+  - freshness
+  - seeders
+  - health-monitoring
+  - alarm-design
+  - multi-source
 severity: high
-applies_when: "A seeder publishes one canonical key assembled from two or more upstreams that can freeze independently, and reports a single content-age contract for it"
-tags: [content-age, stale-content, freshness, seeders, health-monitoring, alarm-design, multi-source]
+module: seed-content-age
+applies_when: A seeder publishes one canonical key assembled from two or more upstreams that can freeze independently, and reports a single content-age contract for it
 ---
 
 # A freshness clock covering two independent upstreams must reduce with min, not max

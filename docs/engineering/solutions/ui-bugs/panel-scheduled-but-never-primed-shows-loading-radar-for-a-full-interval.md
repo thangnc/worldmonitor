@@ -1,22 +1,29 @@
 ---
-title: "A panel registered only in scheduleRefresh shows a loading radar for a full interval — App.ts needs BOTH the refresh and the prime entry"
+title: A panel registered only in scheduleRefresh shows a loading radar for a full interval — App.ts needs BOTH the refresh and the prime entry
 date: 2026-08-05
-category: ui-bugs
-module: src/App.ts
+area: browser
 problem_type: ui_bug
-component: frontend
+tags:
+  - panel-registration
+  - app-ts
+  - refresh-scheduler
+  - prime-visible-panel-data
+  - showloading
+  - opt-in-panel
+  - guardrail-test
+  - run-immediately
+severity: high
+module: src/App.ts
 symptoms:
-  - "A newly added panel renders the loading radar indefinitely after the user enables it — no error, no retry, no telemetry"
-  - "Reproduces on 100% of first opens; the panel only populates after a full REFRESH_INTERVALS period (6h for the slow economic panels)"
-  - "Every DOM/unit test for the panel passes, because they call panel.fetchData() directly — a call site production never reaches on first mount"
+  - A newly added panel renders the loading radar indefinitely after the user enables it — no error, no retry, no telemetry
+  - Reproduces on 100% of first opens; the panel only populates after a full REFRESH_INTERVALS period (6h for the slow economic panels)
+  - Every DOM/unit test for the panel passes, because they call panel.fetchData() directly — a call site production never reaches on first mount
   - "Worse on a hidden tab or when the panel scrolls out of viewport: pauseWhenHidden stops the clock and the near-viewport predicate gates the tick"
 root_cause: incomplete_setup
 resolution_type: code_fix
-severity: high
-related_components:
-  - testing_framework
-tags: [panel-registration, app-ts, refresh-scheduler, prime-visible-panel-data, showloading, opt-in-panel, guardrail-test, run-immediately]
 ---
+
+# A panel registered only in scheduleRefresh shows a loading radar for a full interval — App.ts needs BOTH the refresh and the prime entry
 
 ## Problem
 

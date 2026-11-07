@@ -1,21 +1,26 @@
 ---
 title: A transport-grace deadline carried past its own expiry poisons the health verdict cache
 date: 2026-09-17
-category: logic-errors
-module: api-health
+area: observability
 problem_type: logic_error
-component: service_object
+tags:
+  - health-check
+  - relay-gateway-gate
+  - transport-grace
+  - softening-deadline
+  - cache-stampede
+  - redis-ttl
+  - pr-review-caught
+severity: high
+module: api-health
 symptoms:
-  - "Caught in code review before merge, so these are the symptoms the shipped code would have shown, not an observed incident"
-  - "In any relay outage outlasting the 3-minute transport grace, every RELAY_GATE_UNREACHABLE verdict would republish the already-expired transportGraceUntil deadline instead of dropping it"
-  - "hasExpiredActivationGrace would reject every one of those snapshots as unservable and snapshotTtlSeconds would clip their Redis TTL to its 1-second floor"
-  - "Every health poll would therefore run a full ~390-command Redis sweep instead of one warm read, for as long as the outage ran with polling frequent enough to keep the verdict retained"
-  - "The check's own reported verdict, status and compact-payload placement stay correct throughout, so no status or classification assertion can catch it; only an assertion on the published cache lifetime does"
+  - Caught in code review before merge, so these are the symptoms the shipped code would have shown, not an observed incident
+  - In any relay outage outlasting the 3-minute transport grace, every RELAY_GATE_UNREACHABLE verdict would republish the already-expired transportGraceUntil deadline instead of dropping it
+  - hasExpiredActivationGrace would reject every one of those snapshots as unservable and snapshotTtlSeconds would clip their Redis TTL to its 1-second floor
+  - Every health poll would therefore run a full ~390-command Redis sweep instead of one warm read, for as long as the outage ran with polling frequent enough to keep the verdict retained
+  - The check's own reported verdict, status and compact-payload placement stay correct throughout, so no status or classification assertion can catch it; only an assertion on the published cache lifetime does
 root_cause: logic_error
 resolution_type: code_fix
-severity: high
-related_components: [background_job]
-tags: [health-check, relay-gateway-gate, transport-grace, softening-deadline, cache-stampede, redis-ttl, pr-review-caught]
 ---
 
 # A transport-grace deadline carried past its own expiry poisons the health verdict cache

@@ -1,21 +1,8 @@
 ---
-module: "scripts/bundle-budgets.mjs (client bundle-size CI gate, #7111)"
+title: Local .env presence silently changes Vite bundle output shape — seed CI budgets from an env-clean build
 date: 2026-08-24
+area: ci
 problem_type: workflow_issue
-component: tooling
-severity: high
-applies_when:
-  - "Seeding or re-seeding a committed snapshot that CI will compare a fresh build against (bundle-size budgets, generated-output diffs, size/perf baselines)"
-  - "The build reads any import.meta.env.VITE_* (or similar build-time env) variable in a conditional that affects what code ships, not just what string gets inlined"
-  - "The local dev environment has env files (.env, .env.local) that CI's clean checkout does not — in worktrees they are symlinks and silently present"
-symptoms:
-  - "Local Vite build measured the protomaps chunk at 55.6 KB with .env/.env.local present, vs 18.1 KB in an env-clean build"
-  - "A bundle-size budget seeded with local .env files present reds CI on numbers CI itself never produced, on unrelated PRs"
-root_cause: config_error
-resolution_type: tooling_addition
-related_components:
-  - "vite build config"
-  - "CI test workflow (test.yml unit job)"
 tags:
   - vite
   - env-parity
@@ -24,6 +11,17 @@ tags:
   - ci-gate
   - dotenv
   - worktree-symlinks
+severity: high
+module: "scripts/bundle-budgets.mjs (client bundle-size CI gate, #7111)"
+symptoms:
+  - Local Vite build measured the protomaps chunk at 55.6 KB with .env/.env.local present, vs 18.1 KB in an env-clean build
+  - A bundle-size budget seeded with local .env files present reds CI on numbers CI itself never produced, on unrelated PRs
+root_cause: config_error
+resolution_type: tooling_addition
+applies_when:
+  - Seeding or re-seeding a committed snapshot that CI will compare a fresh build against (bundle-size budgets, generated-output diffs, size/perf baselines)
+  - The build reads any import.meta.env.VITE_* (or similar build-time env) variable in a conditional that affects what code ships, not just what string gets inlined
+  - The local dev environment has env files (.env, .env.local) that CI's clean checkout does not — in worktrees they are symlinks and silently present
 ---
 
 # Local .env presence silently changes Vite bundle output shape — seed CI budgets from an env-clean build

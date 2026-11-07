@@ -1,26 +1,8 @@
 ---
 title: "Mutate each call site: a global mutant proves the helper is reachable, not that each site is covered"
 date: 2026-07-30
-category: conventions
-module: prompt-boundary sanitization and its test coverage
+area: tests
 problem_type: convention
-component: testing_framework
-severity: high
-applies_when:
-  - "Applying one shared guard helper across many call sites in a sweep, then claiming the sweep is tested"
-  - "Mutation-testing a fix by neutering the shared helper rather than the individual call sites"
-  - "Writing fixtures for a formatter whose output row interpolates several untrusted fields"
-  - "Writing fixtures for a function with a primary path and a fallback path, where the fixture satisfies the primary"
-  - "Reviewing a security sweep whose test count went up a lot but whose per-site coverage was never measured"
-symptoms:
-  - "Neutering the shared helper turns many tests red, so the sweep looks covered — but individual call sites have no test at all"
-  - "Reverting the guard on one field of a multi-field output row leaves the whole suite green"
-  - "A guard inside a fallback branch is never exercised because every fixture supplies the primary path that short-circuits it"
-  - "A reviewer's targeted single-site mutation goes green on a suite that a global mutation reds"
-related_components:
-  - testing_framework
-  - development_workflow
-  - authentication
 tags:
   - mutation-testing
   - guard-coverage
@@ -29,6 +11,19 @@ tags:
   - fixture-design
   - fallback-branches
   - security-testing
+severity: high
+module: prompt-boundary sanitization and its test coverage
+symptoms:
+  - Neutering the shared helper turns many tests red, so the sweep looks covered — but individual call sites have no test at all
+  - Reverting the guard on one field of a multi-field output row leaves the whole suite green
+  - A guard inside a fallback branch is never exercised because every fixture supplies the primary path that short-circuits it
+  - A reviewer's targeted single-site mutation goes green on a suite that a global mutation reds
+applies_when:
+  - Applying one shared guard helper across many call sites in a sweep, then claiming the sweep is tested
+  - Mutation-testing a fix by neutering the shared helper rather than the individual call sites
+  - Writing fixtures for a formatter whose output row interpolates several untrusted fields
+  - Writing fixtures for a function with a primary path and a fallback path, where the fixture satisfies the primary
+  - Reviewing a security sweep whose test count went up a lot but whose per-site coverage was never measured
 ---
 
 # Mutate each call site: a global mutant proves the helper is reachable, not that each site is covered

@@ -1,17 +1,8 @@
 ---
 title: Evidence a gate emits is not evidence until you find it in the artifact
 date: 2026-09-07
-category: conventions
-module: e2e, .github/workflows/test.yml
+area: ci
 problem_type: convention
-component: testing_framework
-severity: high
-root_cause: wrong_api
-resolution_type: test_fix
-applies_when:
-  - "Attaching JSON, screenshots, or metrics from a Playwright spec for later reading"
-  - "Adding a measurement to a CI gate that a human or agent is expected to read back"
-  - "Relying on a test artifact to satisfy an issue's acceptance criteria"
 tags:
   - playwright
   - ci-artifacts
@@ -19,6 +10,14 @@ tags:
   - silent-failure
   - source-text-guard
   - evidence
+severity: high
+module: e2e, .github/workflows/test.yml
+root_cause: wrong_api
+resolution_type: test_fix
+applies_when:
+  - Attaching JSON, screenshots, or metrics from a Playwright spec for later reading
+  - Adding a measurement to a CI gate that a human or agent is expected to read back
+  - Relying on a test artifact to satisfy an issue's acceptance criteria
 ---
 
 # Evidence a gate emits is not evidence until you find it in the artifact
