@@ -9,6 +9,8 @@ review_agents:
 
 # WorldMonitor Review Context
 
+Knowledge capture: this repo records lessons with its own `/learn` skill (`.claude/skills/learn/`) in `docs/engineering/solutions/`, on the schema in `docs/engineering/solutions/README.md`. Plans go in `docs/engineering/plans/`. The default `docs/solutions/` and `docs/plans/` paths are gitignored scratch, and `tests/engineering-docs.test.mjs` fails if a tracked file lands there.
+
 TypeScript monorepo: Vanilla TS panels (no React), sebuf proto RPCs, Redis-cached seed data,
 Vercel edge functions, Railway cron seeds.
 
