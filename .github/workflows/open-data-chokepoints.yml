@@ -33,7 +33,7 @@ jobs:
     outputs:
       snapshot_date: ${{ steps.build.outputs.snapshot_date }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
@@ -89,7 +89,7 @@ jobs:
       PR_TITLE: 'chore(open-data): refresh chokepoint status snapshot ${{ needs.snapshot.outputs.snapshot_date }}'
       PR_BODY: 'Daily chokepoint status open-data snapshot for ${{ needs.snapshot.outputs.snapshot_date }}, built from the public GetChokepointStatus endpoint by the Open Data: Chokepoint Status Snapshot workflow and published under CC BY 4.0.'
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           # A dispatch can target a feature branch; the dataset is always
