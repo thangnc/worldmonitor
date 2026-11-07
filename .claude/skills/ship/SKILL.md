@@ -61,6 +61,7 @@ Fork facts that override the upstream wording:
    - Attach the step 3 screenshots: `gh pr edit <n> --repo thangnc/worldmonitor --attach '/abs/path.png#Description, commit <sha>'`. Then check that the images appear in the body.
 7. **Watch CI** until every run for the head commit completes. Report each run, and each failed job.
    - First wait until `gh run list --repo thangnc/worldmonitor --commit <full sha>` lists a run; `gh pr checks --watch` exits early with "no checks reported" if it starts too soon.
+   - Then watch with one plain command in the background: `gh pr checks <n> --repo thangnc/worldmonitor --watch --interval 30`. A worktree-isolated session refuses polling loops that build `gh` arguments at runtime.
    - Pull request runs: Test, Typecheck, Proto Generation Check and Stacked Merge Guard on every PR. Resilience Snapshot Rehearsal and others when their paths change. Contributor Trust skips. The `main` ruleset requires no check, but the owner merges only on green.
    - A `startup_failure` with no jobs means GitHub rejected the workflow. Read the message on the run page. On this fork it has been the Actions policy: only GitHub-made actions plus the SHA-pinned ones allowed in Settings, Actions.
    - On a failure, read the failed log (`gh run view <id> --repo thangnc/worldmonitor --log-failed`) and fix it in this worktree. A failure that also happens on `main` belongs in its own PR, not this one.
