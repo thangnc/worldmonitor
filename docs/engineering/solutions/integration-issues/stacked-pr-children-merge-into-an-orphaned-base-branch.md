@@ -19,6 +19,7 @@ symptoms:
   - stacked-merge-guard was green on the child when it was merged
 root_cause: missing_workflow_step
 resolution_type: workflow_improvement
+last_updated: 2026-11-07
 ---
 
 # Stacked PR children merge into an orphaned base branch when the parent's branch survives
@@ -93,8 +94,10 @@ Retargeting on merge removes the first condition regardless of the other two: a 
 
 ## Prevention
 
-- **Turn on `delete_branch_on_merge`**, or delete each parent branch immediately after it merges.
-  GitHub then retargets the children itself. This is the cheapest fix, and it worked for #8517 → #8518.
+- **Retarget the children, then delete the parent branch.** GitHub's own retarget on branch deletion
+  is not reliable: it moved #8518 off #8517's branch, but a hand delete 16 seconds after #16 merged
+  closed #17 instead (2026-11-07). See
+  [Retarget stacked children before deleting a merged parent's branch](../workflow-issues/retarget-stacked-children-before-deleting-the-merged-parent-branch.md).
 - **Before merging a stacked child, confirm its base is `main`.** If the PR page says it merges into
   the parent's feature branch and the parent has already merged, retarget first: `gh pr edit <n> --base main`, then merge
   `main` into the child's branch.
@@ -111,6 +114,7 @@ Retargeting on merge removes the first condition regardless of the other two: a 
 - #8533: recovery PR that landed the stranded 4/5 and 5/5 on `main`
 - #8534: auto-retarget of children on parent merge (open as of this writing)
 - #7006: earlier orphaned-stacked-merge incident, the reason the monitor exists
+- [Restart CI on a retargeted PR with a fresh commit, not close-reopen](../workflow-issues/restart-ci-on-a-retargeted-pr-with-a-fresh-commit-not-close-reopen.md)
 - **The reverse case, in the same stack.** #8164 (2/5) was auto-closed, not rejected, when #8163's
   branch was deleted after it squash-merged, three days after the merge. Contrast #8518, which GitHub
   retargeted when #8517's branch was deleted seconds after its merge. An auto-closed child can look
