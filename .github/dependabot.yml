@@ -4,9 +4,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # A dependency joins the first group whose patterns match. CodeQL actions keep
+    # their own group (tests/codeql-workflow.test.mjs); every other action shares
+    # one weekly PR instead of one PR per action.
     groups:
       codeql:
         patterns: ["github/codeql-action/*"]
+      actions:
+        patterns: ["*"]
 
   - package-ecosystem: "docker"
     directory: "/"
