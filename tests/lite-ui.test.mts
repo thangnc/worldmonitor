@@ -28,6 +28,8 @@ import {
   thresholdState,
   timeBuckets,
 } from '../src/lite/data/transforms.ts';
+import { UCDP_MARKER_LIMIT, eventDates, formatCoordinates, ucdpMarkers } from '../src/lite/data/ucdp.ts';
+import type { UcdpViolenceEvent } from '../src/generated/client/worldmonitor/conflict/v1/service_client.ts';
 import { OPENFREEMAP_TILEJSON, buildLiteMapStyle } from '../src/lite/map/style.ts';
 import { WORLD_BOUNDS, markerBounds } from '../src/lite/map/view.ts';
 import type { ListFeedDigestResponse, NewsItem } from '../src/generated/client/worldmonitor/news/v1/service_client.ts';
@@ -369,6 +371,70 @@ describe('Lite conflict map', () => {
     // Land, water, borders and place names only: no roads, buildings or POIs.
     const sourceLayers = new Set(style.layers.map((l) => (l as { 'source-layer'?: string })['source-layer']).filter(Boolean));
     assert.deepEqual([...sourceLayers].sort(), ['boundary', 'place', 'water']);
+  });
+
+  const ucdpEvent = (over: Partial<UcdpViolenceEvent>): UcdpViolenceEvent => ({
+    id: '1',
+    dateStart: Date.UTC(2026, 8, 30),
+    dateEnd: Date.UTC(2026, 8, 30),
+    location: { latitude: 13.579522, longitude: 44.020908 },
+    country: 'Yemen (North Yemen)',
+    sideA: 'Government of Yemen (North Yemen)',
+    sideB: 'Forces of the Presidential Leadership Council',
+    deathsBest: 3,
+    deathsLow: 2,
+    deathsHigh: 5,
+    violenceType: 'UCDP_VIOLENCE_TYPE_STATE_BASED',
+    sourceOriginal: 'Local sources; CIMP',
+    ...over,
+  });
+
+  it('places one UCDP marker per event location, with the event details', () => {
+    const near = ucdpEvent({ id: '2', location: { latitude: 13.6, longitude: 44.1 }, deathsBest: 1, deathsLow: 1, deathsHigh: 1 });
+    const { markers, locations } = ucdpMarkers([ucdpEvent({}), near], 'all');
+    // 0.08° apart: two markers at the recorded coordinates, not one grid cell.
+    assert.equal(locations, 2);
+    assert.deepEqual(markers.map((m) => [m.lat, m.lon]), [[13.579522, 44.020908], [13.6, 44.1]]);
+    const [first] = markers;
+    assert.equal(first?.id, 'ucdp:13.579522,44.020908');
+    assert.equal(first?.popup.kind, 'UCDP · State-based violence');
+    assert.equal(first?.popup.name, 'Yemen (North Yemen)');
+    assert.equal(first?.popup.value, '3 deaths');
+    assert.deepEqual(first?.popup.lines, [
+      'Government of Yemen (North Yemen) vs Forces of the Presidential Leadership Council',
+      '2026-09-30 · best estimate 3, range 2–5',
+      '13.580°N, 44.021°E',
+      'Source: Local sources; CIMP',
+    ]);
+    assert.equal(markers[1]?.popup.lines[1], '2026-09-30');
+  });
+
+  it('lists every event UCDP geocodes to the same point in one popup, newest first', () => {
+    const events = [1, 2, 3, 4, 5, 6].map((d) => ucdpEvent({ id: String(d), dateStart: Date.UTC(2026, 8, d), dateEnd: Date.UTC(2026, 8, d), deathsBest: 1 }));
+    const { markers } = ucdpMarkers(events, 'all');
+    assert.equal(markers.length, 1);
+    const popup = markers[0]?.popup;
+    assert.equal(popup?.kind, 'UCDP · 6 events at this point');
+    assert.equal(popup?.value, '6 deaths');
+    assert.equal(popup?.lines[0], '13.580°N, 44.021°E');
+    assert.match(popup?.lines[1] ?? '', /^2026-09-06 · State-based · Government of Yemen/);
+    assert.equal(popup?.lines.at(-1), '2 more events at this point');
+  });
+
+  it('filters UCDP markers by region and caps them at the deadliest locations', () => {
+    const kyiv = ucdpEvent({ id: 'k', location: { latitude: 50.4, longitude: 30.5 }, country: 'Ukraine' });
+    assert.deepEqual(ucdpMarkers([ucdpEvent({}), kyiv], 'europe').markers.map((m) => m.popup.name), ['Ukraine']);
+    const many = Array.from({ length: UCDP_MARKER_LIMIT + 5 }, (_, i) => ucdpEvent({ id: String(i), location: { latitude: 10, longitude: i * 0.1 }, deathsBest: i }));
+    const capped = ucdpMarkers(many, 'all');
+    assert.equal(capped.locations, UCDP_MARKER_LIMIT + 5);
+    assert.equal(capped.markers.length, UCDP_MARKER_LIMIT);
+    assert.equal(capped.markers[0]?.popup.value, `${UCDP_MARKER_LIMIT + 4} deaths`);
+  });
+
+  it('formats UCDP coordinates and multi-day events', () => {
+    assert.equal(formatCoordinates(-1.5, -70.25), '1.500°S, 70.250°W');
+    assert.equal(eventDates({ dateStart: Date.UTC(2026, 8, 24), dateEnd: Date.UTC(2026, 8, 26) }), '2026-09-24 to 2026-09-26');
+    assert.equal(eventDates({ dateStart: 0, dateEnd: 0 }), 'Date unknown');
   });
 
   it('fits the world, or the markers padded to at least 8°', () => {
