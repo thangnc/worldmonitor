@@ -178,23 +178,30 @@ export async function loadCryptoQuotes(): Promise<CryptoQuote[] | null> {
   return boot ? (boot.quotes as CryptoQuote[]) : (await market.listCryptoQuotes({ ids: [] })).quotes;
 }
 
+/** Symbols the tickers need; the bootstrap set must contain them. */
 export const EQUITY_SYMBOLS = ['^GSPC', '^TNX'] as const;
+/** Fallback request when bootstrap misses: the tickers plus the indices market events link to. */
+const EQUITY_FALLBACK_SYMBOLS = [...EQUITY_SYMBOLS, '^IXIC', '^DJI'] as const;
 
+/** Every seeded stock and index quote (market events price story tickers with them). */
 export async function loadMarketQuotes(): Promise<MarketQuote[] | null> {
   const boot = await hydrated('marketQuotes', hasArray('quotes'));
-  const fromBoot = (boot?.quotes as MarketQuote[] | undefined)?.filter((q) => (EQUITY_SYMBOLS as readonly string[]).includes(q.symbol));
-  if (fromBoot && fromBoot.length === EQUITY_SYMBOLS.length) return fromBoot;
-  return (await market.listMarketQuotes({ symbols: [...EQUITY_SYMBOLS] })).quotes;
+  const fromBoot = boot?.quotes as MarketQuote[] | undefined;
+  if (fromBoot && EQUITY_SYMBOLS.every((s) => fromBoot.some((q) => q.symbol === s))) return fromBoot;
+  return (await market.listMarketQuotes({ symbols: [...EQUITY_FALLBACK_SYMBOLS] })).quotes;
 }
 
-/** Brent and gold futures. */
+/** Brent and gold futures: the tickers need them; the bootstrap set must contain them. */
 export const COMMODITY_SYMBOLS = ['BZ=F', 'GC=F'] as const;
+/** Fallback request when bootstrap misses: the tickers plus what market events link to. */
+const COMMODITY_FALLBACK_SYMBOLS = [...COMMODITY_SYMBOLS, 'CL=F', 'NG=F', 'SI=F', 'HG=F', 'EURUSD=X', 'USDJPY=X'] as const;
 
+/** Every seeded commodity and FX quote (market events link stories to them). */
 export async function loadCommodityQuotes(): Promise<CommodityQuote[] | null> {
   const boot = await hydrated('commodityQuotes', hasArray('quotes'));
-  const fromBoot = (boot?.quotes as CommodityQuote[] | undefined)?.filter((q) => (COMMODITY_SYMBOLS as readonly string[]).includes(q.symbol));
-  if (fromBoot && fromBoot.length === COMMODITY_SYMBOLS.length) return fromBoot;
-  return (await market.listCommodityQuotes({ symbols: [...COMMODITY_SYMBOLS] })).quotes;
+  const fromBoot = boot?.quotes as CommodityQuote[] | undefined;
+  if (fromBoot && COMMODITY_SYMBOLS.every((s) => fromBoot.some((q) => q.symbol === s))) return fromBoot;
+  return (await market.listCommodityQuotes({ symbols: [...COMMODITY_FALLBACK_SYMBOLS] })).quotes;
 }
 
 export async function loadGoldIntelligence(): Promise<GetGoldIntelligenceResponse | null> {

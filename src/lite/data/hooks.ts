@@ -14,6 +14,7 @@ import {
   type LiteItem,
 } from './transforms';
 import type { ListFeedDigestResponse } from '@/generated/client/worldmonitor/news/v1/service_client';
+import { buildPriceBoard, isMarketMovingWarStory, type PriceBoard } from './prices';
 import { rankPriorityEvents, type PriorityEvent } from './briefing';
 
 export const useDigest = (edition: src.DigestEdition) => useResource(`digest:${edition}`, () => src.loadDigest(edition));
@@ -47,14 +48,36 @@ export function selectIncidents(digest: ListFeedDigestResponse | null): LiteItem
 
 /**
  * Market-moving items from the finance edition: no war stories (Geopolitics
- * has them), one copy per story (the most important), taken in turns across
- * asset classes.
+ * has them) unless the headline names a commodity ("Oil jumps after
+ * strike on …"), one copy per story (the most important), taken in turns
+ * across asset classes.
  */
 export function selectMarketEvents(digest: ListFeedDigestResponse | null): LiteItem[] {
   const ranked = digestItems(digest, MARKET_CATEGORIES)
-    .filter((item) => (item.importanceScore || 0) > 0 && !isWarStory(item))
+    .filter((item) => (item.importanceScore || 0) > 0 && (!isWarStory(item) || isMarketMovingWarStory(item)))
     .sort(byImportance);
   return interleaveByMarketTag(dropNearDuplicates(ranked));
+}
+
+/**
+ * Every seeded quote the Lite UI has loaded (crypto, stocks and indices,
+ * commodities and FX, DXY from gold drivers), keyed by symbol, for linking
+ * stories to price moves. Null until at least one source settles.
+ */
+export function usePriceBoard(): PriceBoard | null {
+  const crypto = useCryptoQuotes();
+  const equities = useMarketQuotes();
+  const commodities = useCommodityQuotes();
+  const gold = useGoldIntelligence();
+  return useMemo(() => {
+    const states = [crypto, equities, commodities, gold];
+    if (states.every((st) => st.status === 'loading')) return null;
+    const dxy = gold.status === 'ready' ? gold.data.drivers.find((d) => /dxy|dollar/i.test(d.label) || d.symbol.startsWith('DX')) : undefined;
+    return buildPriceBoard(
+      [crypto.status === 'ready' ? crypto.data : null, equities.status === 'ready' ? equities.data : null, commodities.status === 'ready' ? commodities.data : null],
+      dxy,
+    );
+  }, [crypto, equities, commodities, gold]);
 }
 
 /** Material AI and tech developments from the tech edition. */
