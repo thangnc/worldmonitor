@@ -210,7 +210,7 @@ describe('Lite UI shell', () => {
     const development = root.querySelector('[data-development]');
     expect(development?.textContent).toContain('Lab releases open-weights model');
     expect(development?.textContent).toContain('Benchmarks self-reported.');
-    expect(development?.textContent).toContain('Single source');
+    expect(development?.textContent).toContain('Single publisher');
     expect(root.querySelectorAll('[data-testid="model-tracker"] [data-sample-row]')).toHaveLength(4);
     expect(root.querySelector('[data-testid="model-tracker"] [data-sample="true"]')).not.toBeNull();
   });

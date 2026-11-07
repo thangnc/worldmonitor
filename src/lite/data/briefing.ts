@@ -6,7 +6,8 @@
  * DERIVED and says how in a tooltip (docs/engineering/architecture/lite.md, "Lite UI").
  */
 import type { NewsItem } from '@/generated/client/worldmonitor/news/v1/service_client';
-import { GEO_CATEGORIES, MARKET_CATEGORIES, TECH_CATEGORIES, isPrimarySource, sourceCount, type LiteItem, type Tone } from './transforms';
+import type { Corroboration } from '../../../server/_shared/corroboration';
+import { GEO_CATEGORIES, MARKET_CATEGORIES, TECH_CATEGORIES, corroborationOf, isPrimarySource, type LiteItem, type Tone } from './transforms';
 
 export type Domain = 'geo' | 'fin' | 'tech';
 
@@ -81,11 +82,24 @@ export function momentum(phase: string | undefined): { label: 'rising' | 'steady
   }
 }
 
-/** "7 sources · 1 primary": the cluster size, and whether the lead outlet is tier 1. */
+/** The Briefing detail's corroboration column: the verdict as a sentence. */
+export function corroborationSentence(verdict: Corroboration): string {
+  switch (verdict.state) {
+    case 'corroborated': return `${verdict.publishers} publishers carry the story`;
+    case 'single-publisher': return 'One publisher so far';
+    case 'tier4-only': return `${verdict.publishers} publishers, all aggregators or blogs`;
+    case 'unknown': return 'The digest carried no publisher count';
+  }
+}
+
+/** "3 publishers · tier 1": the corroboration verdict, and whether the reporting outlet is tier 1. */
 export function evidenceLine(item: NewsItem): string {
-  const count = sourceCount(item);
-  const primary = isPrimarySource(item.source);
-  return `${count} source${count === 1 ? '' : 's'}${primary ? ' · primary' : count === 1 ? ' · single' : ''}`;
+  const verdict = corroborationOf(item);
+  const tier1 = isPrimarySource(item.source) ? ' · tier 1' : '';
+  if (verdict.state === 'unknown') return `publisher count unknown${tier1}`;
+  if (verdict.state === 'single-publisher') return `single publisher${tier1}`;
+  const lowTier = verdict.state === 'tier4-only' ? ' · low-tier only' : '';
+  return `${verdict.publishers} publishers${tier1}${lowTier}`;
 }
 
 /** Day-over-day change as an escalation word. ±10% is the stable band. */

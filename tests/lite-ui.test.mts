@@ -9,14 +9,15 @@ import {
   shouldRedirectToLite,
 } from '../src/config/lite-route.ts';
 import {
-  claimStatus,
   closeToCloseBars,
+  corroborationOf,
   decodeEntities,
   digestItems,
   dropNearDuplicates,
   evidenceClassOf,
   evidenceMix,
   fearGreedState,
+  publisherCount,
   interleaveByMarketTag,
   isWarStory,
   realizedVolatility,
@@ -30,8 +31,10 @@ import {
 import type { ListFeedDigestResponse, NewsItem } from '../src/generated/client/worldmonitor/news/v1/service_client.ts';
 import {
   PRIORITY_THRESHOLD,
+  corroborationSentence,
   domainOfCategory,
   evaluateWatchRules,
+  evidenceLine,
   marketRegime,
   momentum,
   priorityScore,
@@ -194,10 +197,26 @@ describe('Lite transforms', () => {
     assert.equal(isWarStory(item()), false);
   });
 
-  it('labels corroboration, never truth', () => {
-    assert.equal(claimStatus(item({ source: 'Reuters', corroborationCount: 3 })), 'confirmed');
-    assert.equal(claimStatus(item({ source: 'Some Blog', corroborationCount: 3 })), 'attributed');
-    assert.equal(claimStatus(item({ source: 'Reuters', corroborationCount: 1 })), 'unverified');
+  it('uses the dashboard corroboration verdict, which tier 1 never upgrades', () => {
+    // Same publishers, same verdict, whichever outlet the item came from.
+    assert.deepEqual(corroborationOf(item({ source: 'Reuters', corroborationCount: 3 })), { state: 'corroborated', publishers: 3 });
+    assert.deepEqual(corroborationOf(item({ source: 'Some Blog', corroborationCount: 3 })), { state: 'corroborated', publishers: 3 });
+    assert.deepEqual(corroborationOf(item({ source: 'Reuters', corroborationCount: 1 })), { state: 'single-publisher', publishers: 1 });
+    // No server count is unknown, never a confident "one source".
+    assert.deepEqual(corroborationOf(item({ source: 'Reuters', corroborationCount: 0 })), { state: 'unknown' });
+    // storyMeta.sourceCount is report volume; the verdict counts publishers only.
+    const reprinted = item({ corroborationCount: 1, storyMeta: { firstSeen: 0, mentionCount: 1, sourceCount: 5, phase: 'STORY_PHASE_DEVELOPING' } });
+    assert.equal(corroborationOf(reprinted).state, 'single-publisher');
+    assert.equal(publisherCount({ state: 'unknown' }), null);
+  });
+
+  it('words the verdict without claiming truth', () => {
+    assert.equal(evidenceLine(item({ source: 'Reuters', corroborationCount: 3 })), '3 publishers · tier 1');
+    assert.equal(evidenceLine(item({ source: 'Some Blog', corroborationCount: 1 })), 'single publisher');
+    assert.equal(evidenceLine(item({ source: 'Reuters', corroborationCount: 0 })), 'publisher count unknown · tier 1');
+    assert.equal(corroborationSentence({ state: 'corroborated', publishers: 4 }), '4 publishers carry the story');
+    assert.equal(corroborationSentence({ state: 'tier4-only', publishers: 2 }), '2 publishers, all aggregators or blogs');
+    assert.equal(corroborationSentence({ state: 'unknown' }), 'The digest carried no publisher count');
   });
 
   it('splits sources into classes whose shares sum to 1', () => {
