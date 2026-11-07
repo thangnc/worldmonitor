@@ -8,6 +8,7 @@ import { BG, BORDER, Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, Segmen
 import { LiteMap, type MapMarker } from '../map/LiteMap';
 import { selectIncidents, useCountryHistory, useDigest, useRiskScores, useUcdpEvents } from '../data/hooks';
 import { ESCALATION_REGIONS, leadCountry } from '../data/regions';
+import { UCDP_MARKER_LIMIT, ucdpMarkers } from '../data/ucdp';
 import { SAMPLE_WATCHLIST } from '../data/fixtures';
 import {
   CORROBORATION_RULE,
@@ -26,7 +27,6 @@ import {
   regionOfCategory,
   regionOfPoint,
   relativeTime,
-  severityFromDeaths,
   threatTone,
   timeBuckets,
   type GeoRegion,
@@ -105,44 +105,14 @@ function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflict
   const ucdp = useUcdpEvents();
   const digest = useDigest('full');
 
-  const markers = useMemo(() => {
+  const { markers, ucdpLocations } = useMemo(() => {
     const out: MapMarker[] = [];
+    let ucdpLocations = 0;
     if (layers.conflicts && ucdp.status === 'ready') {
-      // Cluster UCDP events on a 2° grid so dense theatres read as one marker.
-      const cells = new Map<string, { lat: number; lon: number; deaths: number; events: number; country: string; latest: number }>();
-      for (const e of ucdp.data) {
-        const lat = e.location?.latitude ?? 0;
-        const lon = e.location?.longitude ?? 0;
-        if (region !== 'all' && regionOfPoint(lat, lon) !== region) continue;
-        const key = `${Math.round(lat / 2)},${Math.round(lon / 2)}`;
-        const cell = cells.get(key) ?? { lat, lon, deaths: 0, events: 0, country: e.country, latest: 0 };
-        cell.deaths += e.deathsBest || 0;
-        cell.events += 1;
-        cell.latest = Math.max(cell.latest, e.dateStart || 0);
-        cells.set(key, cell);
-      }
-      const ranked = [...cells.entries()].sort((a, b) => b[1].deaths - a[1].deaths).slice(0, 40);
-      for (const [key, c] of ranked) {
-        const tone = severityFromDeaths(c.deaths);
-        out.push({
-          id: `ucdp:${key}`,
-          lat: c.lat,
-          lon: c.lon,
-          tone,
-          radius: 4 + Math.min(8, Math.sqrt(c.deaths)),
-          title: `${c.country}: ${c.deaths} deaths, ${c.events} UCDP events`,
-          popup: {
-            kind: 'UCDP conflict events',
-            name: c.country,
-            value: `${c.deaths.toLocaleString('en-US')} deaths`,
-            lines: [
-              // One 2° grid cell; the seeder keeps the 12 months before UCDP's newest event.
-              `${c.events} ${c.events === 1 ? 'event' : 'events'} in this 2° area over UCDP's latest 12 months`,
-              c.latest ? `Latest event ${new Date(c.latest).toISOString().slice(0, 10)}` : '',
-            ].filter(Boolean),
-          },
-        });
-      }
+      // One marker per exact UCDP event location, as on the dashboard's UCDP layer.
+      const placed = ucdpMarkers(ucdp.data, region);
+      out.push(...placed.markers);
+      ucdpLocations = placed.locations;
     }
     if (layers.hotspots) {
       for (const h of INTEL_HOTSPOTS) {
@@ -166,7 +136,7 @@ function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflict
         });
       }
     }
-    return out;
+    return { markers: out, ucdpLocations };
   }, [ucdp, region, layers]);
 
   const scrub = useMemo(() => {
@@ -180,7 +150,11 @@ function ConflictMap({ region, layers }: { region: GeoRegion; layers: { conflict
   return (
     <Card
       title="Conflict map"
-      sub="UCDP events and curated hotspots"
+      sub={
+        ucdpLocations > UCDP_MARKER_LIMIT
+          ? `UCDP events (deadliest ${UCDP_MARKER_LIMIT} of ${ucdpLocations} locations) and curated hotspots`
+          : 'UCDP events and curated hotspots'
+      }
       testId="conflict-map"
       right={
         <>

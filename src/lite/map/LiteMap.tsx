@@ -92,7 +92,7 @@ function MarkerButton({ marker, selected, onSelect }: { marker: MapMarker; selec
 function PopupCard({ marker, onClose }: { marker: MapMarker; onClose: () => void }) {
   const { kind, name, value, lines } = marker.popup;
   return (
-    <div class="w-[224px] rounded-[6px] border border-line bg-surface/95 px-3 py-[9px] text-left" data-map-popup={marker.id}>
+    <div class="w-[256px] rounded-[6px] border border-line bg-surface/95 px-3 py-[9px] text-left" data-map-popup={marker.id}>
       <div class="flex items-start justify-between gap-2">
         <span class="font-mono text-[9.5px] tracking-[0.4px] text-dim uppercase">{kind}</span>
         <button type="button" aria-label="Close" class="-mr-1 -mt-px text-dim hover:text-ink" onClick={onClose}>
@@ -103,11 +103,15 @@ function PopupCard({ marker, onClose }: { marker: MapMarker; onClose: () => void
         <span class="text-[12.5px] leading-[17px] font-semibold text-ink">{name}</span>
         <span class={cx('shrink-0 font-mono text-[11.5px]', TEXT[marker.tone])}>{value}</span>
       </div>
-      {lines.map((line) => (
-        <p key={line} class="mt-1 line-clamp-3 text-[11px] leading-[15px] text-muted">
-          {line}
-        </p>
-      ))}
+      {/* Capped so a point with several events still fits the map (300 px on phones, 380 px wider); the rest scrolls. */}
+      <div class="max-h-[96px] overflow-y-auto md:max-h-[168px]">
+        {lines.map((line, i) => (
+          // Lines can repeat (two events with the same date, actors and toll), so key by position.
+          <p key={i} class="mt-1 line-clamp-3 text-[11px] leading-[15px] text-muted">
+            {line}
+          </p>
+        ))}
+      </div>
     </div>
   );
 }
