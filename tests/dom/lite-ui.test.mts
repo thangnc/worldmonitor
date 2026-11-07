@@ -215,8 +215,11 @@ describe('Lite UI shell', () => {
     expect(root.querySelector('[data-testid="watchlist"] [data-sample="true"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="regional-timeline"]')?.textContent).toContain('Naval incident');
     // The MapLibre map starts, credits its tiles and shows the design's legend.
-    const map = root.querySelector('[data-testid="conflict-map"] [data-map-status]');
-    expect(map?.getAttribute('data-map-status')).toBe('ready');
+    // MapLibre loads through three lazy imports, which can outlast one flush on a busy CI runner.
+    await vi.waitFor(async () => {
+      await flush();
+      expect(root.querySelector('[data-testid="conflict-map"] [data-map-status]')?.getAttribute('data-map-status')).toBe('ready');
+    }, { timeout: 5000 });
     expect(root.querySelector('[data-map-credits]')?.textContent).toContain('OpenStreetMap');
     const legend = root.querySelector('[data-testid="map-legend"]')?.textContent ?? '';
     expect(legend).toContain('UCDP events · size = deaths');

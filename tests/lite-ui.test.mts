@@ -28,10 +28,10 @@ import {
   thresholdState,
   timeBuckets,
 } from '../src/lite/data/transforms.ts';
-import { eventDates, formatCoordinates, ucdpMarkers } from '../src/lite/data/ucdp.ts';
+import { actorName, eventDates, eventSpan, formatCoordinates, ucdpInRange, ucdpMarkers, ucdpWindowLabel } from '../src/lite/data/ucdp.ts';
 import { CONVERGENCE_RADIUS_KM, MILITARY_RADIUS_KM, escalationLevel, scoreHotspots } from '../src/lite/data/escalation.ts';
 import { computeEscalationScore } from '../shared/analysis-hotspot-escalation.ts';
-import { TIME_RANGE_HOURS, inTimeRange } from '../src/lite/data/transforms.ts';
+import { TIME_RANGE_HOURS, inTimeRange, type TimeRange } from '../src/lite/data/transforms.ts';
 import type { Hotspot } from '../src/types/index.ts';
 import type { UcdpViolenceEvent } from '../src/generated/client/worldmonitor/conflict/v1/service_client.ts';
 import { OPENFREEMAP_TILEJSON, buildLiteMapStyle } from '../src/lite/map/style.ts';
@@ -434,16 +434,55 @@ describe('Lite conflict map', () => {
     assert.deepEqual(markers[1]?.popup.lines.map((l) => l.text).slice(1, 3), ['2026-09-30 · 13.600°N, 44.100°E', 'Source: Local sources; CIMP']);
   });
 
-  it('lists every event UCDP geocodes to the same point in one popup, newest first', () => {
+  it('summarises two or more events at one point: date span, violence types, actors, sources', () => {
     const events = [1, 2, 3, 4, 5, 6].map((d) => ucdpEvent({ id: String(d), dateStart: Date.UTC(2026, 8, d), dateEnd: Date.UTC(2026, 8, d), deathsBest: 1 }));
+    events[5] = { ...events[5]!, violenceType: 'UCDP_VIOLENCE_TYPE_ONE_SIDED', sideA: 'XXX678', sideB: 'Civilians', sourceOriginal: 'Yemen Monitor' };
     const { markers } = ucdpMarkers(events, 'all');
     assert.equal(markers.length, 1);
     const popup = markers[0]?.popup;
     assert.equal(popup?.kind, 'UCDP · 6 events at this point');
     assert.equal(popup?.value, '6 deaths');
-    assert.deepEqual(popup?.lines[0], { text: '13.580°N, 44.021°E', style: 'mono' });
-    assert.match(popup?.lines[1]?.text ?? '', /^2026-09-06 · State-based · Government of Yemen/);
-    assert.deepEqual(popup?.lines.at(-1), { text: '2 more events at this point', style: 'dim' });
+    assert.deepEqual(popup?.lines, [
+      { text: '2026-09-01 to 2026-09-06 · 13.580°N, 44.021°E', style: 'mono' },
+      { text: 'State-based ×5 · One-sided ×1' },
+      { text: 'Government of Yemen (North Yemen) vs Forces of the Presidential Leadership Council ×5, and 1 other actor pair' },
+      { text: 'Sources: Local sources; CIMP; Yemen Monitor', style: 'dim' },
+    ]);
+    // Two events already summarise; one shared actor pair is named once.
+    const two = ucdpMarkers(events.slice(0, 2), 'all').markers[0]?.popup;
+    assert.equal(two?.kind, 'UCDP · 2 events at this point');
+    assert.equal(two?.lines[2]?.text, 'Government of Yemen (North Yemen) vs Forces of the Presidential Leadership Council');
+  });
+
+  it("names UCDP's unidentified-actor codes and spans multi-day points", () => {
+    assert.equal(actorName('XXX100'), 'Unidentified group (UCDP XXX100)');
+    assert.equal(actorName('Government of Colombia'), 'Government of Colombia');
+    assert.equal(actorName('XXX-Clan'), 'XXX-Clan');
+    const xxx = ucdpMarkers([ucdpEvent({ sideA: 'XXX100', sideB: 'XXX100' })], 'all').markers[0];
+    assert.equal(xxx?.popup.lines[0]?.text, 'Unidentified group (UCDP XXX100) vs Unidentified group (UCDP XXX100)');
+    assert.equal(eventSpan([{ dateStart: Date.UTC(2026, 8, 3), dateEnd: Date.UTC(2026, 8, 3) }]), '2026-09-03');
+    assert.equal(eventSpan([{ dateStart: Date.UTC(2026, 8, 3), dateEnd: Date.UTC(2026, 8, 5) }, { dateStart: Date.UTC(2026, 8, 1), dateEnd: 0 }]), '2026-09-01 to 2026-09-05');
+  });
+
+  it('filters UCDP by range counted back from now, by whole UCDP days', () => {
+    const now = Date.UTC(2026, 10, 8, 10);
+    const today = Date.UTC(2026, 10, 8);
+    const events = [0, 1, 2, 5, 10, 40].map((back) => ucdpEvent({ id: String(back), dateStart: today - back * 86_400_000 }));
+    const ids = (range: TimeRange) => ucdpInRange(events, range, now).events.map((e) => e.id);
+    // Day-dated: an event counts when any part of its day is inside the range.
+    assert.deepEqual(ids('1h'), ['0']);
+    assert.deepEqual(ids('24h'), ['0', '1']);
+    assert.deepEqual(ids('48h'), ['0', '1', '2']);
+    assert.deepEqual(ids('7d'), ['0', '1', '2', '5']);
+    assert.deepEqual(ids('30d'), ['0', '1', '2', '5', '10']);
+    // A multi-day event counts through its last day; a future one does not.
+    const spanning = ucdpEvent({ id: 's', dateStart: today - 9 * 86_400_000, dateEnd: today - 3 * 86_400_000 });
+    assert.deepEqual(ucdpInRange([spanning, ucdpEvent({ id: 'f', dateStart: today + 86_400_000 })], '7d', now).events.map((e) => e.id), ['s']);
+    // UCDP lags by weeks: a range newer than its newest event is empty, and the subtitle says why.
+    const old = ucdpInRange([ucdpEvent({ dateStart: Date.UTC(2026, 8, 30) })], '7d', now);
+    assert.equal(old.events.length, 0);
+    assert.equal(ucdpWindowLabel('7d', old.events.length, old.newest), "No UCDP events in the last 7d; UCDP's newest is 2026-09-30 (a delayed release)");
+    assert.equal(ucdpWindowLabel('48h', 3, old.newest), 'UCDP events: the last 48h');
   });
 
   it('filters UCDP markers by region and keeps every location, deadliest first', () => {
@@ -562,7 +601,8 @@ describe('Lite conflict map layout', () => {
 describe('Lite time range', () => {
   it('keeps items inside the dashboard ranges, and items without a time', () => {
     const now = Date.UTC(2026, 10, 8, 12);
-    assert.deepEqual(TIME_RANGE_HOURS, { '1h': 1, '6h': 6, '24h': 24, '48h': 48, '7d': 168 });
+    assert.deepEqual(TIME_RANGE_HOURS, { '1h': 1, '6h': 6, '24h': 24, '48h': 48, '7d': 168, '30d': 720 });
+    assert.equal(inTimeRange(now - 29 * 24 * 3_600_000, now, '30d'), true);
     assert.equal(inTimeRange(now - 59 * 60_000, now, '1h'), true);
     assert.equal(inTimeRange(now - 61 * 60_000, now, '1h'), false);
     assert.equal(inTimeRange(now - 47 * 3_600_000, now, '48h'), true);

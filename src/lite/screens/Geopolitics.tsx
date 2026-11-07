@@ -17,7 +17,7 @@ import {
   useUnrestEvents,
 } from '../data/hooks';
 import { ESCALATION_REGIONS, leadCountry } from '../data/regions';
-import { ucdpMarkers } from '../data/ucdp';
+import { ucdpInRange, ucdpMarkers, ucdpWindowLabel } from '../data/ucdp';
 import { FEED_LABEL, escalationLevel, scoreHotspots } from '../data/escalation';
 import { SAMPLE_WATCHLIST } from '../data/fixtures';
 import {
@@ -55,7 +55,10 @@ const REGION_OPTIONS = [
   { value: 'asia', label: 'Asia-Pacific' },
 ] as const satisfies ReadonlyArray<{ value: GeoRegion; label: string }>;
 
-/** The dashboard's time ranges. They filter the digest-driven parts of the screen; UCDP is a delayed release and is not filtered, as on the dashboard. */
+/**
+ * The dashboard's time ranges plus 30 days. They filter the digest-driven parts of the screen and the
+ * UCDP events, all counted back from now (see ucdpInRange for UCDP's day-dated events).
+ */
 const TIME_RANGE_OPTIONS = (Object.keys(TIME_RANGE_HOURS) as TimeRange[]).map((value) => ({ value, label: value }));
 
 /**
@@ -151,11 +154,13 @@ function ConflictMap({
     [digest, risk, unrest, earthquakes, flights],
   );
 
+  const ucdpRange = useMemo(() => (ucdp.status === 'ready' ? ucdpInRange(ucdp.data, range, Date.now()) : null), [ucdp, range]);
+
   const markers = useMemo(() => {
     const out: MapMarker[] = [];
-    if (layers.conflicts && ucdp.status === 'ready') {
+    if (layers.conflicts && ucdpRange) {
       // One marker per exact UCDP event location; the map clusters them by zoom.
-      out.push(...ucdpMarkers(ucdp.data, region).markers);
+      out.push(...ucdpMarkers(ucdpRange.events, region).markers);
     }
     if (layers.hotspots) {
       for (const { hotspot: h, score, missing } of escalation) {
@@ -191,7 +196,7 @@ function ConflictMap({
       }
     }
     return out;
-  }, [ucdp, escalation, region, layers]);
+  }, [ucdpRange, escalation, region, layers]);
 
   const scrub = useMemo(() => {
     if (digest.status !== 'ready') return null;
@@ -202,12 +207,16 @@ function ConflictMap({
   return (
     <Card
       title="Conflict map"
-      sub="UCDP events (not time-filtered) and curated hotspots (live score)"
+      sub={
+        ucdpRange?.newest
+          ? `${ucdpWindowLabel(range, ucdpRange.events.length, ucdpRange.newest)} · curated hotspots: live score`
+          : 'UCDP events and curated hotspots (live score)'
+      }
       testId="conflict-map"
       right={
         <>
           <div class="hidden items-center gap-[16px] md:flex" data-testid="map-legend">
-            <span class="flex items-center gap-[5px] text-[11.5px] text-muted" title="UCDP is a delayed release, so the time range does not filter it">
+            <span class="flex items-center gap-[5px] text-[11.5px] text-muted" title="UCDP is a delayed release, weeks behind, so short time ranges may hold no events">
               {[7, 10, 13].map((size) => (
                 <span key={size} class="rounded-full border border-crit/80 bg-crit/25" style={{ width: size, height: size }} />
               ))}
