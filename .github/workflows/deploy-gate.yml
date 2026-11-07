@@ -64,7 +64,7 @@ jobs:
       # One commit and only the script. The base-drift phase fetches the
       # history it needs; most evaluations stop before it (pending or failed
       # checks), and the full-history checkout took a median 11s, p90 62s.
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.workflow_sha }}
           filter: blob:none
@@ -86,7 +86,7 @@ jobs:
       matrix: ${{ steps.plan.outputs.matrix }}
       count: ${{ steps.plan.outputs.count }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
@@ -107,7 +107,7 @@ jobs:
       queue: max
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
@@ -118,7 +118,7 @@ jobs:
           mkdir -p "$(dirname "$RESULT_PATH")"
           bash -e .github/scripts/deploy-gate.sh invalidate
       - if: ${{ always() }}
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: deploy-gate-invalidate-${{ github.run_attempt }}-${{ matrix.sha }}
           path: ${{ runner.temp }}/invalidation/result.json
@@ -135,7 +135,7 @@ jobs:
       invalidation_failed: ${{ steps.plan.outputs.invalidation_failed }}
       protocol_failed: ${{ steps.plan.outputs.protocol_failed }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
@@ -166,7 +166,7 @@ jobs:
     steps:
       # Same shallow, script-only checkout as evaluate-direct. The base-drift
       # phase unshallows when it needs the commit graph.
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.workflow_sha }}
           filter: blob:none
