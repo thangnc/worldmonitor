@@ -21,6 +21,7 @@ Deeper references: [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIB
 The owner runs a private, low-noise build of the `full` variant, focused on three domains: geopolitics and conflicts, finance and crypto, and technology and AI. [docs/engineering/architecture/lite.md](docs/engineering/architecture/lite.md) is the canonical spec: scope by panel ID, owner decisions, platform map, intelligence reuse map, and phase plan. Change it before changing scope or architecture. File-level rules are in `.claude/rules/lite-profile.md`.
 
 - New work serves one of the three domains, or passes the spec's decision rule for optional modules. Say which when proposing it.
+- Early indicators come first: feeds that report army activity, violence, macro releases, bond moves, hacking, releases and outages as soon as they happen. Link each indicator to the news around it, and say "No linked news found" rather than guess a cause (spec: Early indicators).
 - Lite behavior and custom features sit behind the profile env flag. With the flag off, behavior matches upstream. Do not add a `lite` variant.
 - The owner's front page is the Lite UI at `/lite` (`src/lite/`, Preact and Tailwind): the cross-domain Briefing, with the three domain screens as its children. Its widgets show real data, a labelled derived rule, or labelled samples, never unlabelled samples.
 - Reuse the existing `shared/` intelligence modules (story identity, publisher families, credibility, corroboration, keyword spikes, grounded briefs) before writing new scoring, dedup, or brief code.
