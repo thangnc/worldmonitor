@@ -14,7 +14,17 @@ vi.mock('maplibre-gl', () => {
   class FakeMap {
     touchZoomRotate = { disableRotation: () => undefined };
     private handlers = new Map<string, Array<() => void>>();
-    constructor(readonly options: { container: HTMLElement }) {}
+    // Data layers the Tech map adds (sources by id, layers in order), for assertions.
+    static sources = new Map<string, unknown>();
+    static layers: string[] = [];
+    constructor(readonly options: { container: HTMLElement }) {
+      // The real map fires 'load' once its style is ready, after the caller subscribed.
+      queueMicrotask(() => { for (const fn of this.handlers.get('load') ?? []) fn(); });
+    }
+    addSource(id: string, source: { data: unknown }): this { FakeMap.sources.set(id, source.data); return this; }
+    getSource(id: string) { return FakeMap.sources.has(id) ? { setData: (data: unknown) => FakeMap.sources.set(id, data) } : undefined; }
+    addLayer(layer: { id: string }): this { FakeMap.layers.push(layer.id); return this; }
+    setPaintProperty(): this { return this; }
     getContainer(): HTMLElement { return this.options.container; }
     on(type: string, fn: () => void): this { this.handlers.set(type, [...(this.handlers.get(type) ?? []), fn]); return this; }
     off(type: string, fn: () => void): this { this.handlers.set(type, (this.handlers.get(type) ?? []).filter((f) => f !== fn)); return this; }
@@ -33,7 +43,7 @@ vi.mock('maplibre-gl', () => {
     addTo(map: FakeMap): this { map.getContainer().appendChild(this.options.element); return this; }
     remove(): this { this.options.element.remove(); return this; }
   }
-  return { Map: FakeMap, Marker: FakeMarker, setWorkerUrl: () => undefined };
+  return { Map: FakeMap, Marker: FakeMarker, setWorkerUrl: () => undefined, __fake: FakeMap };
 });
 vi.mock('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url', () => ({ default: '/maplibre-worker.js' }));
 
@@ -441,6 +451,68 @@ describe('Lite indicator card', () => {
       expect(tile('Exploited CVEs · week').textContent).toContain('vs last week');
       // The tiles are real or a stated state now: no sample badge on the panel.
       expect(root.querySelector('[data-testid="infra-business"] [data-sample="true"]')).toBeNull();
+    } finally {
+      vi.stubGlobal('fetch', base);
+      vi.mocked(bootstrap.ensureHydrated).mockImplementation(async () => undefined);
+    }
+  });
+
+  it('draws the Tech infrastructure map from the feeds, toggles layers, and focuses a marker from its indicator', async () => {
+    const base = fetch;
+    const now = Date.now();
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+      if (url.includes('/api/news/v1/list-feed-digest')) return json(DIGEST);
+      if (url.includes('/api/infrastructure/v1/list-internet-outages')) {
+        return json({ fetchedAt: now - 60_000, outages: [{
+          id: 'cf-1', title: '', link: '', description: '', detectedAt: now - 3_600_000, country: 'Yemen', region: '', location: { latitude: 15.5, longitude: 48 },
+          severity: 'OUTAGE_SEVERITY_TOTAL', categories: ['Cloudflare Radar', 'POWER OUTAGE', 'NATIONWIDE'], cause: 'POWER_OUTAGE', outageType: 'NATIONWIDE', endedAt: 0,
+        }] });
+      }
+      if (url.includes('/api/infrastructure/v1/list-internet-ddos-attacks')) {
+        return json({ protocol: [], vector: [], dateRangeStart: '', dateRangeEnd: '', topTargetLocations: [{ countryCode: 'US', countryName: 'United States', percentage: 11.2, latitude: 39, longitude: -98 }] });
+      }
+      if (url.includes('/api/infrastructure/v1/get-cable-health')) return json({ generatedAt: now, cables: {} });
+      return base(input, init);
+    }));
+    const bootstrap = await import('@/services/bootstrap');
+    vi.mocked(bootstrap.ensureHydrated).mockImplementation(async (key: string) => (key === 'cyberThreats'
+      ? { threats: [{ id: 'f1', type: 'CYBER_THREAT_TYPE_C2_SERVER', source: 'CYBER_THREAT_SOURCE_FEODO', indicator: '1.2.3.4', indicatorType: 'CYBER_THREAT_INDICATOR_TYPE_IP', location: { latitude: 52.3, longitude: 4.9 }, country: 'NL', severity: 'CRITICALITY_LEVEL_HIGH', malwareFamily: 'QakBot', tags: [], firstSeenAt: 0, lastSeenAt: 0 }] }
+      : undefined));
+    try {
+      history.replaceState(null, '', '/lite/tech');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const map = () => root.querySelector('[data-testid="infra-map"]') as HTMLElement;
+      await vi.waitFor(async () => {
+        await flush();
+        expect(map().querySelector('[data-marker="outage:cf-1"]')).not.toBeNull();
+        expect(map().querySelector('[data-marker^="attack:"]')).not.toBeNull();
+        expect(map().querySelector('[data-marker="ddos:US"]')).not.toBeNull();
+        expect(map().querySelector('[data-marker^="cloud:aws-"]')).not.toBeNull();
+      }, { timeout: 10_000, interval: 50 });
+      const { __fake } = (await import('maplibre-gl')) as unknown as { __fake: { sources: Map<string, unknown>; layers: string[] } };
+      expect(__fake.layers).toEqual(expect.arrayContaining(['lite-areas', 'lite-lines']));
+      expect(__fake.sources.get('lite-areas')).toBe('/data/countries.geojson');
+      expect((__fake.sources.get('lite-lines') as { features: unknown[] }).features.length).toBeGreaterThan(50);
+
+      // The layers popover turns a layer off and back on.
+      await act(() => (map().querySelector('[data-testid="layers-button"]') as HTMLButtonElement).click());
+      expect(map().querySelector('[data-testid="layers-button"]')?.textContent).toContain('Layers · 6');
+      await act(() => (map().querySelector('[data-layer-row="outages"] [role="switch"]') as HTMLButtonElement).click());
+      expect(map().querySelector('[data-marker="outage:cf-1"]')).toBeNull();
+      expect(map().querySelector('[data-testid="layers-button"]')?.textContent).toContain('Layers · 5');
+      await act(() => (map().querySelector('[data-layer-row="outages"] [role="switch"]') as HTMLButtonElement).click());
+      await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
+      expect(map().querySelector('[data-testid="layers-popover"]')).toBeNull();
+      expect(map().querySelector('[data-marker="outage:cf-1"]')).not.toBeNull();
+
+      // Expanding the fired outage indicator opens that outage's card on the map.
+      const card = root.querySelector('[data-testid="tech-indicators"] button[data-indicator="internet-outage"]') as HTMLButtonElement;
+      await act(() => card.click());
+      await flush();
+      expect(map().querySelector('[data-map-popup="outage:cf-1"]')?.textContent).toContain('Yemen');
     } finally {
       vi.stubGlobal('fetch', base);
       vi.mocked(bootstrap.ensureHydrated).mockImplementation(async () => undefined);

@@ -1,11 +1,11 @@
 import { render } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { Map as MapLibreMap, Marker as MapLibreMarker } from 'maplibre-gl';
+import type { ExpressionSpecification, Map as MapLibreMap, Marker as MapLibreMarker } from 'maplibre-gl';
 import Supercluster from 'supercluster';
 import { Locate, Minus, Plus, X } from 'lucide-preact';
 import type { Tone } from '../data/transforms';
 import { BG, BORDER, TEXT, cx } from '../components/ui';
-import { MAP_CREDITS, buildLiteMapStyle, readLiteMapTokens } from './style';
+import { MAP_CREDITS, buildLiteMapStyle, readLiteMapTokens, readToneColors, type MapTone } from './style';
 import { LABEL_MIN_RADIUS, WORLD_BOUNDS, compactCount, markerBounds, placeCard, ucdpRadius } from './view';
 
 /**
@@ -19,6 +19,11 @@ import { LABEL_MIN_RADIUS, WORLD_BOUNDS, compactCount, markerBounds, placeCard, 
  * Clicking a location or hotspot opens one card beside it, joined by a leader
  * line; clicking the map, the close button or Escape closes it. MapLibre is
  * loaded on first use, so the other Lite screens never download it.
+ *
+ * Area and line data (country shading, cables) are GeoJSON fill and line
+ * layers under the markers, coloured from the same tokens; everything a user
+ * clicks stays a Preact marker. Glyph markers (hexagons, dots, squares, sites,
+ * tags) carry the Technology screen's layers.
  */
 export interface CardLine {
   text: string;
@@ -59,7 +64,48 @@ export interface HotspotMarker extends MarkerBase {
   label: string;
 }
 
-export type MapMarker = UcdpMarker | HotspotMarker;
+export type GlyphShape = 'hex' | 'dot' | 'square' | 'site' | 'tag';
+
+export interface GlyphMarker extends MarkerBase {
+  kind: 'glyph';
+  shape: GlyphShape;
+  tone: MapTone;
+  /** Inside the glyph: a count on a hexagon, the label of a tag. */
+  text?: string;
+  /** Beside the glyph, hidden on phones. */
+  label?: string;
+  /** Outline only: an ended outage, a quiet region. */
+  hollow?: boolean;
+}
+
+export type MapMarker = UcdpMarker | HotspotMarker | GlyphMarker;
+
+/** A shaded country (ISO 3166-1 alpha-2). */
+export interface MapArea {
+  code: string;
+  tone: MapTone;
+  /** 0–1. */
+  opacity: number;
+}
+
+/** A polyline, [lon, lat] pairs. */
+export interface MapLine {
+  id: string;
+  coords: ReadonlyArray<readonly [number, number]>;
+  tone: MapTone;
+  width?: number;
+}
+
+/** Country polygons for area shading, already public for the dashboard map. */
+export const COUNTRIES_GEOJSON_URL = '/data/countries.geojson';
+
+// Written out in full so Tailwind sees every class (rule: lite-profile.md).
+const GLYPH_TEXT: Record<MapTone, string> = { ...TEXT, tech: 'text-tech' };
+const GLYPH_BG: Record<MapTone, string> = { ...BG, tech: 'bg-tech' };
+const GLYPH_BORDER: Record<MapTone, string> = { ...BORDER, tech: 'border-tech' };
+const GLYPH_FILL: Record<MapTone, string> = {
+  crit: 'bg-crit/30', high: 'bg-high/30', elev: 'bg-elev/30', ok: 'bg-ok/30', muted: 'bg-muted/20', dim: 'bg-dim/20', tech: 'bg-tech/30',
+};
 
 type MapLibre = typeof import('maplibre-gl');
 
@@ -151,6 +197,51 @@ function HotspotPin({ marker, selected, onClick }: { marker: HotspotMarker; sele
   );
 }
 
+/** A Technology layer mark: hexagon with a count, outage dot, region square, data-centre site or a tag. */
+function Glyph({ marker, selected, onClick }: { marker: GlyphMarker; selected: boolean; onClick: () => void }) {
+  const { shape, tone, text, label, hollow } = marker;
+  let mark;
+  if (shape === 'hex') {
+    mark = (
+      <span class="relative flex h-[26px] w-[24px] items-center justify-center">
+        <svg viewBox="0 0 24 26" class={cx('absolute inset-0 h-full w-full', GLYPH_TEXT[tone])} aria-hidden="true">
+          <polygon points="12,1 23,7 23,19 12,25 1,19 1,7" fill="var(--color-bg)" fill-opacity="0.9" stroke="currentColor" stroke-width={selected ? 2.5 : 1.5} />
+        </svg>
+        <span class="relative font-mono text-[9.5px] font-semibold text-ink">{text}</span>
+      </span>
+    );
+  } else if (shape === 'tag') {
+    mark = <span class={cx('rounded-[3px] border bg-bg/85 px-[5px] py-px font-mono text-[10px] leading-[14px]', GLYPH_BORDER[tone], GLYPH_TEXT[tone], selected && 'bg-surface-2')}>{text}</span>;
+  } else if (shape === 'site') {
+    mark = (
+      <span class={cx('flex h-[14px] w-[14px] items-center justify-center rounded-[3px] border bg-bg/85', GLYPH_BORDER[tone], selected && 'border-2')}>
+        <span class={cx('h-[6px] w-[6px] rounded-[1px]', GLYPH_BG[tone])} />
+      </span>
+    );
+  } else {
+    const box = shape === 'dot' ? 'h-[12px] w-[12px] rounded-full' : 'h-[9px] w-[9px] rounded-[2px]';
+    mark = <span class={cx('border', box, GLYPH_BORDER[tone], hollow ? 'bg-bg/70' : shape === 'dot' ? GLYPH_BG[tone] : GLYPH_FILL[tone], selected && 'border-2 border-ink')} />;
+  }
+  return (
+    <div class="pointer-events-none flex items-center gap-[5px]">
+      <button
+        type="button"
+        aria-label={marker.title}
+        aria-expanded={selected}
+        title={marker.title}
+        class="pointer-events-auto flex cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+      >
+        {mark}
+      </button>
+      {label ? <span class={cx('hidden rounded-[3px] bg-bg/85 px-[5px] py-px text-[10.5px] leading-4 sm:inline', GLYPH_TEXT[tone])}>{label}</span> : null}
+    </div>
+  );
+}
+
 const LINE_CLASS: Record<NonNullable<CardLine['style']> | 'text', string> = {
   text: 'text-[11.5px] leading-[16px] text-muted',
   mono: 'font-mono text-[11px] leading-[16px] text-ink',
@@ -159,15 +250,15 @@ const LINE_CLASS: Record<NonNullable<CardLine['style']> | 'text', string> = {
 
 function MapCardView({ marker, onClose }: { marker: MapMarker; onClose: () => void }) {
   const { kind, name, value, lines, score } = marker.popup;
-  const tone: Tone = marker.kind === 'hotspot' ? marker.tone : 'crit';
+  const tone: MapTone = marker.kind === 'ucdp' ? 'crit' : marker.tone;
   return (
     <div
       class="w-[272px] rounded-[8px] border border-line bg-surface/95 px-[14px] py-3 text-left shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
       data-map-popup={marker.id}
     >
       <div class="flex items-center justify-between gap-2">
-        <span class={cx('flex min-w-0 items-center gap-[7px] font-mono text-[10px] font-semibold tracking-[1px] uppercase', TEXT[tone])}>
-          {marker.kind === 'hotspot' ? <Diamond tone={tone} filled={false} size={8} /> : <span class={cx('h-[7px] w-[7px] shrink-0 rounded-full', BG[tone])} />}
+        <span class={cx('flex min-w-0 items-center gap-[7px] font-mono text-[10px] font-semibold tracking-[1px] uppercase', GLYPH_TEXT[tone])}>
+          {marker.kind === 'hotspot' ? <Diamond tone={marker.tone} filled={false} size={8} /> : <span class={cx('h-[7px] w-[7px] shrink-0 rounded-full', GLYPH_BG[tone])} />}
           <span class="truncate">{kind}</span>
         </span>
         <button type="button" aria-label="Close" class="-mr-1 text-dim hover:text-ink" onClick={onClose}>
@@ -176,11 +267,11 @@ function MapCardView({ marker, onClose }: { marker: MapMarker; onClose: () => vo
       </div>
       <div class="mt-[6px] flex items-baseline justify-between gap-3">
         <span class="text-[14px] leading-[19px] font-semibold text-ink">{name}</span>
-        <span class={cx('flex shrink-0 items-center gap-[6px] font-mono text-[12px]', TEXT[tone])}>
+        <span class={cx('flex shrink-0 items-center gap-[6px] font-mono text-[12px]', GLYPH_TEXT[tone])}>
           {score != null ? (
             <span class="flex gap-[2px]" aria-hidden="true">
               {[1, 2, 3, 4, 5].map((i) => (
-                <span key={i} class={cx('h-[11px] w-[6px] rounded-[1px]', i <= Math.round(score) ? BG[tone] : 'bg-track')} />
+                <span key={i} class={cx('h-[11px] w-[6px] rounded-[1px]', i <= Math.round(score) ? GLYPH_BG[tone] : 'bg-track')} />
               ))}
             </span>
           ) : null}
@@ -205,10 +296,18 @@ type Shown =
 export function LiteMap({
   markers,
   fit,
+  areas,
+  lines,
+  focus,
 }: {
   markers: readonly MapMarker[];
   /** `world` shows the whole map; `markers` zooms to the markers (a region filter). */
   fit: 'world' | 'markers';
+  /** Shaded countries. Omitted: no country polygons are fetched. */
+  areas?: readonly MapArea[];
+  lines?: readonly MapLine[];
+  /** Opens a marker's card from outside (an indicator card click). A new object re-opens the same id. */
+  focus?: { id: string } | null;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -217,6 +316,8 @@ export function LiteMap({
   const libRef = useRef<MapLibre | null>(null);
   const placed = useRef(new Map<string, { marker: MapLibreMarker; el: HTMLElement }>());
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  // The style (and so the layers data layers sit under) has loaded.
+  const [styleReady, setStyleReady] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState({ zoom: 0, west: -180, south: -85, east: 180, north: 85 });
   const [point, setPoint] = useState<{ x: number; y: number } | null>(null);
@@ -228,7 +329,7 @@ export function LiteMap({
   const boundsKey = bounds.flat().map((v) => v.toFixed(1)).join(',');
 
   const ucdp = useMemo(() => markers.filter((m): m is UcdpMarker => m.kind === 'ucdp'), [markers]);
-  const hotspots = useMemo(() => markers.filter((m): m is HotspotMarker => m.kind === 'hotspot'), [markers]);
+  const hotspots = useMemo(() => markers.filter((m): m is HotspotMarker | GlyphMarker => m.kind !== 'ucdp'), [markers]);
   const byId = useMemo(() => new Map(markers.map((m) => [m.id, m])), [markers]);
 
   const index = useMemo(() => {
@@ -301,6 +402,7 @@ export function LiteMap({
         };
         map.on('moveend', syncView);
         map.on('click', () => setSelected(null));
+        map.on('load', () => setStyleReady(true));
         mapRef.current = map;
         syncView();
         setStatus('ready');
@@ -339,13 +441,19 @@ export function LiteMap({
       const id = s.type === 'cluster' ? s.id : s.marker.id;
       const lngLat: [number, number] = s.type === 'cluster' ? [s.lon, s.lat] : [s.marker.lon, s.marker.lat];
       const hotspot = s.type === 'marker' && s.marker.kind === 'hotspot';
+      const glyph = s.type === 'marker' && s.marker.kind === 'glyph' ? s.marker : null;
       let entry = onMap.get(id);
       if (!entry) {
         const el = document.createElement('div');
         // The diamond, not its name, sits on the point (anchor left, offset by half the 18 px box).
         if (s.type === 'cluster') el.dataset.cluster = String(s.count);
         else el.dataset.marker = id;
-        const options = hotspot ? { element: el, anchor: 'left' as const, offset: [-9, 0] as [number, number] } : { element: el };
+        // A glyph with a label also anchors left, so the mark, not the label, sits on the point.
+        const options = hotspot
+          ? { element: el, anchor: 'left' as const, offset: [-9, 0] as [number, number] }
+          : glyph?.label
+            ? { element: el, anchor: 'left' as const, offset: [glyph.shape === 'hex' ? -12 : -7, 0] as [number, number] }
+            : { element: el };
         entry = { marker: new lib.Marker(options).setLngLat(lngLat).addTo(map), el };
         onMap.set(id, entry);
       } else {
@@ -356,8 +464,8 @@ export function LiteMap({
       // A hotspot's element spans its name too, so only the diamond button inside takes clicks.
       const named = s.type === 'marker' && s.marker.kind === 'hotspot' && Boolean(s.marker.label);
       entry.el.classList.remove('z-0', 'z-[1]', 'z-[2]', 'pointer-events-none');
-      entry.el.classList.add(!hotspot ? 'z-[1]' : named ? 'z-[2]' : 'z-0');
-      if (hotspot) entry.el.classList.add('pointer-events-none');
+      entry.el.classList.add(glyph ? (glyph.shape === 'hex' ? 'z-[2]' : glyph.shape === 'tag' ? 'z-0' : 'z-[1]') : !hotspot ? 'z-[1]' : named ? 'z-[2]' : 'z-0');
+      if (hotspot || glyph) entry.el.classList.add('pointer-events-none');
       if (s.type === 'cluster') {
         const zoomIn = () => {
           const zoom = Math.min(MAP_MAX_ZOOM, index.getClusterExpansionZoom(s.clusterId));
@@ -371,6 +479,8 @@ export function LiteMap({
         render(
           m.kind === 'hotspot' ? (
             <HotspotPin marker={m} selected={selected === m.id} onClick={toggle} />
+          ) : m.kind === 'glyph' ? (
+            <Glyph marker={m} selected={selected === m.id} onClick={toggle} />
           ) : (
             <UcdpCircle deaths={m.deaths} label={m.title} selected={selected === m.id} onClick={toggle} />
           ),
@@ -379,6 +489,54 @@ export function LiteMap({
       }
     }
   }, [status, shown, selected, index]);
+
+  // Area and line layers, under the markers and above the land and water.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!styleReady || !map) return;
+    const colors = readToneColors();
+    if (areas) {
+      if (!map.getSource('lite-areas')) {
+        map.addSource('lite-areas', { type: 'geojson', data: COUNTRIES_GEOJSON_URL });
+        map.addLayer({ id: 'lite-areas', type: 'fill', source: 'lite-areas', paint: { 'fill-color': colors.muted, 'fill-opacity': 0 } }, 'country-border');
+      }
+      const unique = [...new Map(areas.map((a) => [a.code.toUpperCase(), a])).values()];
+      const code: ExpressionSpecification = ['get', 'ISO3166-1-Alpha-2'];
+      const fill = ['match', code, ...unique.flatMap((a) => [a.code.toUpperCase(), colors[a.tone]]), colors.muted] as unknown as ExpressionSpecification;
+      const opacity = ['match', code, ...unique.flatMap((a) => [a.code.toUpperCase(), Math.max(0, Math.min(1, a.opacity))]), 0] as unknown as ExpressionSpecification;
+      map.setPaintProperty('lite-areas', 'fill-color', unique.length ? fill : colors.muted);
+      map.setPaintProperty('lite-areas', 'fill-opacity', unique.length ? opacity : 0);
+    }
+    if (lines) {
+      const data = {
+        type: 'FeatureCollection' as const,
+        features: lines.map((l) => ({
+          type: 'Feature' as const,
+          properties: { id: l.id, color: colors[l.tone], width: l.width ?? 1 },
+          geometry: { type: 'LineString' as const, coordinates: l.coords.map(([lon, lat]) => [lon, lat]) },
+        })),
+      };
+      const source = map.getSource('lite-lines') as { setData?: (d: unknown) => void } | undefined;
+      if (source?.setData) source.setData(data);
+      else {
+        map.addSource('lite-lines', { type: 'geojson', data });
+        map.addLayer(
+          { id: 'lite-lines', type: 'line', source: 'lite-lines', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'width'], 'line-opacity': 0.75 } },
+          'country-label',
+        );
+      }
+    }
+  }, [styleReady, areas, lines]);
+
+  // An outside focus opens that marker's card and brings it into view.
+  useEffect(() => {
+    if (!focus) return;
+    const m = byId.get(focus.id);
+    if (!m) return;
+    setSelected(m.id);
+    const map = mapRef.current;
+    if (map) map.easeTo({ center: [m.lon, m.lat], zoom: Math.max(map.getZoom(), 2.5), duration: 600 });
+  }, [focus]);
 
   const selectedMarker = selected ? byId.get(selected) ?? null : null;
 

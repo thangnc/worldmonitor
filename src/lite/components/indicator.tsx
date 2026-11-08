@@ -263,7 +263,7 @@ export function HealthDots({ feeds }: { feeds: readonly FeedState[] }) {
 }
 
 /** A feed list: fired feeds as compact cards that expand in place, the rest as state rows. */
-export function IndicatorFeed({ feeds, now }: { feeds: readonly FeedState[]; now: number }) {
+export function IndicatorFeed({ feeds, now, onFocus }: { feeds: readonly FeedState[]; now: number; onFocus?: (indicator: Indicator) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   return (
     <div class="flex flex-col gap-[10px]" data-testid="indicator-feed">
@@ -271,7 +271,7 @@ export function IndicatorFeed({ feeds, now }: { feeds: readonly FeedState[]; now
         if (f.kind !== 'fired') return <FeedStateRow key={f.id} feed={f} />;
         return open === f.id
           ? <IndicatorCard key={f.id} indicator={f.indicator} now={now} onCollapse={() => setOpen(null)} />
-          : <IndicatorCardCompact key={f.id} indicator={f.indicator} onExpand={() => setOpen(f.id)} />;
+          : <IndicatorCardCompact key={f.id} indicator={f.indicator} onExpand={() => { setOpen(f.id); if (f.indicator.focusId) onFocus?.(f.indicator); }} />;
       })}
     </div>
   );

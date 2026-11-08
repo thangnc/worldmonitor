@@ -46,6 +46,8 @@ export interface Indicator {
   /** When the feed last refreshed, if it says. */
   updatedAt?: number;
   links: NewsLinks;
+  /** The map marker this indicator points at, when its screen has a map ("outage:cf-1", "provider:aws"). */
+  focusId?: string;
   /** A grounded one-line "why", labelled model inference. Not produced yet. */
   why?: string;
 }

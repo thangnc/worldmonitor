@@ -1,13 +1,19 @@
-import { useMemo, useState } from 'preact/hooks';
-import { Box, Check, CheckCheck, CloudOff, Cpu, Landmark, Quote, Scale, Server, ShieldAlert, Sparkles, type LucideIcon } from 'lucide-preact';
+import { useMemo, useRef, useState } from 'preact/hooks';
+import { Box, Cable, Check, CheckCheck, CloudOff, Cpu, Hexagon, Landmark, Quote, Scale, Server, ShieldAlert, Sparkles, Target, Waypoints, type LucideIcon } from 'lucide-preact';
 import { getLatestActions, getUpcomingDeadlines } from '@/config/ai-regulations';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
 import { HealthDots, IndicatorFeed } from '../components/indicator';
+import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
+import { LiteMap, type GlyphMarker, type MapArea, type MapLine } from '../map/LiteMap';
 import {
   selectTechDevelopments,
   useArxiv,
+  useCableHealth,
+  useCyberThreats,
+  useDdosAttacks,
   useDigest,
+  useTechGeo,
   useHackerNews,
   useInternetOutages,
   useRecentKev,
@@ -16,7 +22,18 @@ import {
 } from '../data/hooks';
 import { SAMPLE_MODELS } from '../data/fixtures';
 import { MINUS } from '../format';
-import { feedCounts } from '../data/indicators';
+import { feedCounts, type Indicator } from '../data/indicators';
+import {
+  DATACENTER_MIN_CHIPS,
+  MAP_OUTAGE_DAYS,
+  attackHexes,
+  cableLayer,
+  cloudRegionMarkers,
+  datacenterMarkers,
+  ddosLayer,
+  outageMarkers,
+  type TechLayer,
+} from '../data/tech-map';
 import type { ResourceState } from '../data/store';
 import {
   SPIKE_BASELINE_DAYS,
@@ -88,6 +105,8 @@ const WATCHED_TOPICS = [
 
 export function Tech() {
   const [filter, setFilter] = useState<TechFilter>('all');
+  // An indicator card asks the map to open its marker; a new object re-opens the same one.
+  const [focus, setFocus] = useState<{ key: string } | null>(null);
   const [search, setSearch] = useState('');
   const digest = useDigest('tech');
   const all = useMemo(() => (digest.status === 'ready' ? selectTechDevelopments(digest.data) : []), [digest]);
@@ -107,11 +126,12 @@ export function Tech() {
       />
       <div class="flex flex-col gap-6 px-4 py-6 wide:flex-row wide:px-7">
         <div class="flex min-w-0 flex-1 flex-col gap-5">
+          <InfraMap focus={focus} />
           <Developments state={digest} rows={rows} total={all.length} />
           <ModelTracker />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
-          <Indicators />
+          <Indicators onFocus={(i) => i.focusId && setFocus({ key: i.focusId })} />
           <Policy />
           <ResearchRadar />
           <InfraBusiness state={digest} />
@@ -119,6 +139,140 @@ export function Tech() {
         </div>
       </div>
     </>
+  );
+}
+
+
+const ALL_ON: Record<TechLayer, boolean> = { ddos: true, attackers: true, outages: true, cloud: true, datacenters: true, cables: true };
+
+const LEGEND: ReadonlyArray<{ key: TechLayer; mark: preact.JSX.Element; label: string; sub: string }> = [
+  { key: 'ddos', mark: <span class="flex gap-[2px]">{['bg-tech/30', 'bg-tech/55', 'bg-tech/80'].map((c) => <span key={c} class={cx('h-[9px] w-[5px] rounded-[1px]', c)} />)}</span>, label: 'DDoS targets', sub: 'who is attacked' },
+  { key: 'attackers', mark: <Hexagon size={12} strokeWidth={1.5} class="text-muted" />, label: 'Attack servers', sub: 'where attackers sit' },
+  { key: 'outages', mark: <span class="flex gap-[2px]">{['bg-crit', 'bg-high', 'bg-elev'].map((c) => <span key={c} class={cx('h-[7px] w-[7px] rounded-full', c)} />)}</span>, label: 'Outages', sub: 'nationwide · regional · network' },
+  { key: 'cloud', mark: <span class="flex gap-[2px]">{['border-muted', 'border-elev bg-elev/30', 'border-crit bg-crit/30'].map((c) => <span key={c} class={cx('h-[7px] w-[7px] rounded-[2px] border', c)} />)}</span>, label: 'Cloud regions', sub: 'AWS · Azure · GCP · Cloudflare' },
+  { key: 'datacenters', mark: <span class="flex h-[11px] w-[11px] items-center justify-center rounded-[2px] border border-muted"><span class="h-[5px] w-[5px] rounded-[1px] bg-muted" /></span>, label: 'AI data centres', sub: 'amber = outage in country' },
+  { key: 'cables', mark: <span class="flex items-center gap-[2px]">{['bg-dim', 'bg-elev', 'bg-crit'].map((c) => <span key={c} class={cx('h-[2px] w-[6px]', c)} />)}</span>, label: 'Undersea cables', sub: 'ok · degraded · fault' },
+];
+
+function InfraMap({ focus }: { focus: { key: string } | null }) {
+  const [layers, setLayers] = useState<Record<TechLayer, boolean>>(ALL_ON);
+  const ddos = useDdosAttacks();
+  const threats = useCyberThreats();
+  const outages = useInternetOutages();
+  const services = useServiceStatuses();
+  const cables = useCableHealth();
+  const geo = useTechGeo();
+  const card = useRef<HTMLDivElement>(null);
+  const now = Date.now();
+
+  const built = useMemo(() => {
+    const markers: GlyphMarker[] = [];
+    let areas: MapArea[] = [];
+    let lines: MapLine[] = [];
+    if (layers.ddos && ddos.status === 'ready') {
+      const d = ddosLayer(ddos.data);
+      areas = d.areas;
+      markers.push(...d.tags);
+    }
+    if (layers.cables && geo.status === 'ready') {
+      const c = cableLayer(geo.data.cables, cables.status === 'ready' ? cables.data : null);
+      lines = c.lines;
+      markers.push(...c.markers);
+    }
+    if (layers.cloud && geo.status === 'ready') markers.push(...cloudRegionMarkers(geo.data.regions, services.status === 'ready' ? services.data.statuses : []));
+    if (layers.datacenters && geo.status === 'ready') markers.push(...datacenterMarkers(geo.data.datacenters, outages.status === 'ready' ? outages.data.outages : [], now));
+    if (layers.outages && outages.status === 'ready') markers.push(...outageMarkers(outages.data.outages, now));
+    if (layers.attackers && threats.status === 'ready') markers.push(...attackHexes(threats.data));
+    return { markers, areas, lines };
+    // now changes every render; the layers rebuild when a source refreshes.
+  }, [layers, ddos, threats, outages, services, cables, geo]);
+
+  // Resolve an indicator's focus key against the markers on the map.
+  const mapFocus = useMemo(() => {
+    if (!focus) return null;
+    let id: string | undefined;
+    if (focus.key.startsWith('provider:')) id = built.markers.find((m) => m.id.startsWith(`cloud:${focus.key.slice('provider:'.length)}-`))?.id;
+    else if (focus.key === 'attackers') id = built.markers.find((m) => m.id.startsWith('attack:'))?.id;
+    else id = built.markers.find((m) => m.id === focus.key)?.id;
+    if (id) card.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return id ? { id } : null;
+  }, [focus]);
+
+  const failed = [
+    { state: ddos, name: 'DDoS targets', source: 'seed-internet-outages' },
+    { state: threats, name: 'Attack servers', source: 'seed-cyber-threats' },
+    { state: outages, name: 'Outages', source: 'seed-internet-outages' },
+    { state: services, name: 'Cloud status', source: 'list-service-statuses' },
+    { state: cables, name: 'Cable health', source: 'get-cable-health' },
+  ].filter((f) => f.state.status === 'error');
+
+  const groups: LayerGroup[] = [
+    {
+      title: 'Cyber',
+      note: 'Cloudflare Radar · threat feeds',
+      rows: [
+        { key: 'ddos', label: 'DDoS targets · Cloudflare Radar', sub: 'country shading by share of attack traffic, 7 days', icon: <Target size={14} strokeWidth={1.5} class="text-tech" />, on: layers.ddos },
+        { key: 'attackers', label: 'Attack servers · threat feeds', sub: `${threats.status === 'ready' ? `${threats.data.filter((t) => t.location).length} located indicators · ` : ''}8° hexagons`, icon: <Hexagon size={14} strokeWidth={1.5} class="text-muted" />, on: layers.attackers },
+      ],
+    },
+    {
+      title: 'Infrastructure',
+      rows: [
+        { key: 'outages', label: 'Internet outages · Cloudflare Radar', sub: `last ${MAP_OUTAGE_DAYS} days; hollow when ended over 24 h ago`, icon: <CloudOff size={14} strokeWidth={1.5} class="text-high" />, on: layers.outages },
+        { key: 'cloud', label: 'Cloud regions', sub: 'red only when the incident names the region', icon: <Server size={14} strokeWidth={1.5} class="text-muted" />, on: layers.cloud },
+        { key: 'datacenters', label: 'AI data centres · Epoch AI', sub: `existing, ${DATACENTER_MIN_CHIPS.toLocaleString('en-US')}+ chips`, icon: <Cpu size={14} strokeWidth={1.5} class="text-muted" />, on: layers.datacenters },
+        { key: 'cables', label: 'Undersea cables · NGA warnings', sub: 'health: ok, degraded, fault', icon: <Cable size={14} strokeWidth={1.5} class="text-muted" />, on: layers.cables },
+      ],
+    },
+  ];
+
+  return (
+    <div ref={card}>
+      <Card
+        title="Infrastructure & cyber map"
+        sub="live · Cloudflare Radar every 30 min · threat feeds every 2 h"
+        testId="infra-map"
+        right={<LayersPopover groups={groups} onToggle={(key, on) => setLayers((cur) => ({ ...cur, [key]: on }))} footer="DDoS shading shows who is attacked; hexagons show where attackers' servers are." />}
+      >
+        <div class="relative h-[320px] overflow-hidden bg-bg/40 md:h-[440px]">
+          <LiteMap markers={built.markers} areas={built.areas} lines={built.lines} fit="world" focus={mapFocus} />
+          {failed.length ? (
+            <div class="absolute left-14 right-14 top-4 flex flex-wrap gap-2">
+              {failed.map((f) => (
+                <span key={f.name} class="rounded-[6px] border border-line bg-surface/90 px-2 py-1 text-[11px] text-high" data-source-state="error">
+                  {f.name}: source unavailable · {f.source}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <div class="absolute bottom-3 left-3 hidden flex-col gap-[5px] rounded-[8px] border border-line bg-surface/90 px-3 py-[9px] md:flex" data-testid="infra-map-legend">
+            {LEGEND.filter((l) => layers[l.key]).map((l) => (
+              <span key={l.key} class="flex items-center gap-2 text-[11px]">
+                <span class="flex w-6 justify-center">{l.mark}</span>
+                <span class="text-ink">{l.label}</span>
+                <span class="text-dim">{l.sub}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+        <div class="grid grid-cols-1 border-t border-line md:grid-cols-2">
+          <div class="flex gap-[10px] px-5 py-3 md:border-r md:border-line">
+            <Waypoints size={14} strokeWidth={1.5} class="mt-[2px] shrink-0 text-muted" />
+            <span class="flex flex-col gap-[2px]">
+              <span class="text-[12.5px] font-medium text-ink">Targets vs attackers</span>
+              <span class="text-[11.5px] leading-4 text-dim">Violet countries are where DDoS traffic lands. Hexagons are where attacking servers are hosted, not who they hit.</span>
+            </span>
+          </div>
+          <div class="flex gap-[10px] border-t border-line px-5 py-3 md:border-t-0">
+            <Server size={14} strokeWidth={1.5} class="mt-[2px] shrink-0 text-muted" />
+            <span class="flex flex-col gap-[2px]">
+              <span class="text-[12.5px] font-medium text-ink">Cloud outages are usually company-wide</span>
+              <span class="text-[11.5px] leading-4 text-dim">A region turns red only when the incident names it. Otherwise all of a provider's regions show amber. Status pages rarely name one.</span>
+            </span>
+          </div>
+        </div>
+      </Card>
+    </div>
   );
 }
 
@@ -288,7 +442,7 @@ function ResearchRadar() {
   );
 }
 
-function Indicators() {
+function Indicators({ onFocus }: { onFocus: (indicator: Indicator) => void }) {
   const outages = useInternetOutages();
   const services = useServiceStatuses();
   const kev = useRecentKev();
@@ -306,7 +460,7 @@ function Indicators() {
       right={<><HealthDots feeds={feeds} /><DerivedTag how={`${TECH_RULES} Nothing is delivered yet.`} /></>}
       testId="tech-indicators"
     >
-      <IndicatorFeed feeds={feeds} now={Date.now()} />
+      <IndicatorFeed feeds={feeds} now={Date.now()} onFocus={onFocus} />
     </Panel>
   );
 }
