@@ -1913,13 +1913,14 @@ describe('welcome landing page routing', () => {
     assert.match(viteConfigSource, /start_url:\s*env\.VITE_LITE_PROFILE === 'true' \? '\/lite' : '\/dashboard'/);
   });
 
-  it('serves the Lite UI at /lite and its three child screens, and nothing else under it', () => {
+  it('serves the Lite UI at /lite, its three child screens and Sources, and nothing else under it', () => {
     const rewrites = vercelConfig.rewrites.filter((r) => r.source.startsWith('/lite'));
     assert.deepEqual(rewrites, [
       { source: '/lite', destination: '/lite.html' },
       { source: '/lite/geopolitics', destination: '/lite.html' },
       { source: '/lite/finance', destination: '/lite.html' },
       { source: '/lite/tech', destination: '/lite.html' },
+      { source: '/lite/sources', destination: '/lite.html' },
     ]);
     assert.ok(vercelConfig.redirects.some((r) => r.source === '/lite/' && r.destination === '/lite' && r.permanent === true));
     // Built on its own (vite.lite.config.ts, npm run build:lite) so it shares

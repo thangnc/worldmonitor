@@ -440,10 +440,25 @@ export async function loadTechGeo(): Promise<TechGeo> {
 
 // ---- Ingestion health -------------------------------------------------------
 
+/** One check in the compact health body: only problem and pending checks are listed. */
+export interface CompactHealthCheck {
+  status: string;
+  records?: number | null;
+  seedAgeMin?: number;
+  maxStaleMin?: number;
+  errorCode?: string;
+  consecutiveSourceFailures?: number;
+  lastSourceFailureCode?: string;
+}
+
 export interface CompactHealth {
   status: string;
   checkedAt?: string;
   summary?: { total?: number; ok?: number; warn?: number; stale?: number; empty?: number; error?: number };
+  /** Checks that are failing or degraded, by check name (api/health.js SEED_META). */
+  problems?: Record<string, CompactHealthCheck>;
+  /** Checks with a warning that is not a problem yet. */
+  pending?: Record<string, CompactHealthCheck>;
 }
 
 /** GDELT conflict counts for the Lite map (on-demand bootstrap key, CDN-shielded). */

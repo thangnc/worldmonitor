@@ -136,6 +136,8 @@ async function flush(): Promise<void> {
 }
 
 let root: HTMLElement;
+// The compact health body `/api/health?compact=1` returns; null answers 503 like every other source.
+let healthBody: object | null = null;
 
 // Stubbed for the whole file, never restored: loaders still pending when a
 // test ends must not reach happy-dom's real network stack.
@@ -144,6 +146,9 @@ beforeAll(() => {
     const url = String(input instanceof Request ? input.url : input);
     if (url.includes('/api/news/v1/list-feed-digest')) {
       return new Response(JSON.stringify(DIGEST), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    if (url.includes('/api/health') && healthBody) {
+      return new Response(JSON.stringify(healthBody), { status: 200, headers: { 'content-type': 'application/json' } });
     }
     if (url.includes('/api/bootstrap') && url.includes('keys=insights')) {
       return new Response(JSON.stringify({ data: { insights: insights() } }), { status: 200, headers: { 'content-type': 'application/json' } });
@@ -154,6 +159,7 @@ beforeAll(() => {
 
 beforeEach(async () => {
   history.replaceState(null, '', '/lite');
+  healthBody = null;
   const { resetResourcesForTests } = await import('../../src/lite/data/store');
   resetResourcesForTests();
   const { __resetServerInsightsCacheForTests } = await import('../../src/services/insights-loader');
@@ -179,10 +185,11 @@ describe('Lite UI shell', () => {
     expect(root.querySelector('[data-lite-screen]')?.getAttribute('data-lite-screen')).toBe('briefing');
     expect(root.querySelector('h1')?.textContent).toBe('Cross-domain briefing');
     expect(root.querySelector('[data-nav="briefing"]')?.getAttribute('aria-current')).toBe('page');
-    // Five planned nav items plus the topbar action: visible, not interactive.
+    // Four planned nav items plus the topbar action: visible, not interactive. Sources is built.
     const soon = [...root.querySelectorAll('[data-soon="true"]')].map((el) => el.textContent?.replace('SOON', '').trim());
-    expect(soon).toEqual(expect.arrayContaining(['Alerts', 'Watchlists', 'Sources', 'Scoring rules', 'Settings']));
+    expect(soon).toEqual(expect.arrayContaining(['Alerts', 'Watchlists', 'Scoring rules', 'Settings']));
     expect(soon).not.toContain('Briefing');
+    expect(soon).not.toContain('Sources');
     expect(root.querySelector('[data-testid="open-full-dashboard"]')?.getAttribute('href')).toBe('/dashboard?full=1');
 
     // The brief: lead, one line per story with its domain and its citation link.
@@ -736,6 +743,66 @@ describe('Lite indicator card', () => {
     // The AI line is suppressed when nothing is linked.
     expect(full.textContent).not.toContain('Model inference');
     expect(full.textContent).toContain('08:31 UTC');
+  });
+});
+
+describe('Lite Sources screen', () => {
+  it('lists connectors failing first from the compact health check, with a detail panel and no actions', async () => {
+    healthBody = {
+      status: 'DEGRADED',
+      summary: { total: 418, ok: 416, warn: 2 },
+      checkedAt: new Date().toISOString(),
+      problems: {
+        ucdpEvents: { status: 'SEED_ERROR', records: 38, seedAgeMin: 52, errorCode: 'UCDP_HTTP_429', consecutiveSourceFailures: 4 },
+        stablecoinMarkets: { status: 'STALE_SEED', records: 12, seedAgeMin: 74 },
+      },
+    };
+    const { App } = await import('../../src/lite/App');
+    await act(() => render(h(App, null), root));
+    await flush();
+    await act(() => (root.querySelector('[data-nav="sources"]') as HTMLAnchorElement).click());
+    const rowStatus = () => [...root.querySelectorAll('tr[data-connector]')].map((r) => `${r.getAttribute('data-connector')}:${r.getAttribute('data-status')}`);
+    await vi.waitFor(async () => {
+      await flush();
+      expect(rowStatus().some((s) => s.endsWith(':loading'))).toBe(false);
+    }, { timeout: 10_000, interval: 50 });
+
+    expect(location.pathname).toBe('/lite/sources');
+    expect(root.querySelector('h1')?.textContent).toBe('Sources & ingestion');
+    const rows = rowStatus();
+    expect(rows.slice(0, 2)).toEqual(['ucdp:failing', 'stablecoins:degraded']);
+    expect(rows).toContain('digest-world:live');
+    expect(rows).toContain('crypto:live');
+    // The first failing connector opens in the detail panel with its error.
+    const detail = root.querySelector('[data-testid="connector-detail"]');
+    expect(detail?.getAttribute('data-connector')).toBe('ucdp');
+    expect(detail?.textContent).toContain('UCDP_HTTP_429');
+    expect(detail?.textContent).toContain('4 in a row');
+    expect(detail?.textContent).toContain('ucdpapi.pcr.uu.se');
+    // Read-only: no primary action, no sample values.
+    expect(root.querySelector('main [data-soon="true"]')).toBeNull();
+    expect(root.querySelector('main [data-sample="true"]')).toBeNull();
+    expect(root.querySelectorAll('[data-testid="tier-policy"] [data-tier]')).toHaveLength(4);
+    expect(root.querySelector('[data-testid="licensing"] [data-licence="reviewed"]')?.textContent).toContain('api.adsb.lol');
+
+    // A row opens its detail; the Degraded filter keeps only problem rows.
+    await act(() => (root.querySelector('tr[data-connector="crypto"] button') as HTMLButtonElement).click());
+    expect(root.querySelector('[data-testid="connector-detail"]')?.getAttribute('data-connector')).toBe('crypto');
+    const degraded = [...root.querySelectorAll('fieldset[aria-label="Connector filter"] button')][1] as HTMLButtonElement;
+    await act(() => degraded.click());
+    expect(rowStatus()).toEqual(['ucdp:failing', 'stablecoins:degraded']);
+  });
+
+  it('marks seeded connectors unknown, not live, when the health check is unavailable', async () => {
+    history.replaceState(null, '', '/lite/sources');
+    const { App } = await import('../../src/lite/App');
+    await act(() => render(h(App, null), root));
+    await vi.waitFor(async () => {
+      await flush();
+      expect(root.querySelector('tr[data-connector="ucdp"]')?.getAttribute('data-status')).toBe('unknown');
+    }, { timeout: 10_000, interval: 50 });
+    expect(root.querySelector('tr[data-connector="digest-world"]')?.getAttribute('data-status')).toBe('live');
+    expect(root.querySelector('header p')?.textContent).toContain('health check unavailable');
   });
 });
 

@@ -7,7 +7,8 @@ The owner's front page under the World Monitor Lite profile ([spec](../../../../
 - `lite-default-route`: `/` (middleware on Vercel, the `src/main.ts` guard elsewhere) and `/dashboard` land on `/lite`.
 - `lite-screens`: the Briefing (`/lite`) and its children `/lite/geopolitics`, `/lite/finance` and `/lite/tech` render through the sidebar links, and the Briefing's domain tags and panel links, without a page load.
 - `lite-badges`: sample widgets carry `[data-sample="true"]`; rule-based values carry `[data-derived="true"]`; a real source that is empty or failed renders `[data-source-state]`.
-- `lite-soon`: Alerts, Watchlists, Sources, Scoring rules, Settings and each primary action are `[data-soon="true"]`.
+- `lite-soon`: Alerts, Watchlists, Scoring rules, Settings and each domain screen's primary action are `[data-soon="true"]`.
+- `lite-sources`: `/lite/sources` lists the connectors Lite reads, failing first, from the compact health check and the digests. A row opens its detail; All and Degraded filter the table. It is read-only: no action button, no samples.
 - `lite-escape`: `[data-testid="open-full-dashboard"]` opens `/dashboard?full=1`, and a reload stays on the dashboard.
 
 ## How to get to it (user POV)
@@ -19,7 +20,8 @@ The owner's front page under the World Monitor Lite profile ([spec](../../../../
 
 - **Flag on.** `VITE_LITE_PROFILE=true wm-verify.sh launch` (the owner's `.env.local` already sets it), then `WM_VERIFY_EXPECT=lite wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-ui.mjs --name lite-ui-on`. It asserts the redirects, visits each screen at 1440 and 390 px, logs every source state and sample count, checks there is no horizontal overflow, and proves the escape route.
 - **Flag off.** `cleanup`, then `VITE_LITE_PROFILE= wm-verify.sh launch` and `WM_VERIFY_EXPECT=full ... --name lite-ui-off`. `/dashboard` must stay the dashboard and `/lite` must show `[data-lite-off="true"]`.
-- **Handles.** `[data-lite-screen]` on the root, `[data-nav="briefing|geopolitics|finance|tech"]`, `[data-open-screen]` on Briefing links, `[data-testid="priority-events|priority-incidents|market-events|tech-developments"]` for each screen's main card.
+- **Sources.** `WM_VERIFY_EXPECT=lite wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-sources.mjs --name lite-sources`. The dev server does not serve `/api/health`, so the step routes `?compact=1` to a TEST DATA fixture (one failing, one degraded check) and labels its screenshots `test-data`; `WM_VERIFY_LIVE_HEALTH=1` leaves it alone and shows every seeded connector as unknown.
+- **Handles.** `[data-lite-screen]` on the root, `[data-nav="briefing|geopolitics|finance|tech|sources"]`, `tr[data-connector][data-status]` and `[data-testid="connector-detail|licensing|tier-policy"]` on Sources, `[data-open-screen]` on Briefing links, `[data-testid="priority-events|priority-incidents|market-events|tech-developments"]` for each screen's main card.
 
 ## Gotchas
 

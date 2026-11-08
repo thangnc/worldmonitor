@@ -5,6 +5,7 @@ import { LITE_SCREEN_PATHS } from '@/config/lite-route';
 import { navigate } from '../router';
 import { useDigest, useDomainCounts, useHealth } from '../data/hooks';
 import { utcClock } from '../format';
+import { CONNECTORS } from '../data/connectors';
 import { cx } from './ui';
 
 const ICON = { size: 15, strokeWidth: 1.5 } as const;
@@ -130,11 +131,19 @@ export function Sidebar({ screen }: { screen: LiteScreen }) {
           <DomainItem screen="tech" active={screen === 'tech'} color="bg-tech" label="Technology & AI" count={counts.tech} />
         </div>
 
-        <div class="hidden flex-col gap-[2px] wide:flex">
+        <div class="flex flex-col gap-[2px]">
           <SectionLabel>SYSTEM</SectionLabel>
-          <SoonItem icon={<Database {...ICON} />} label="Sources" />
-          <SoonItem icon={<SlidersHorizontal {...ICON} />} label="Scoring rules" />
-          <SoonItem icon={<Settings {...ICON} />} label="Settings" />
+          <NavLink screen="sources" active={screen === 'sources'}>
+            <span class={screen === 'sources' ? 'text-ink' : 'text-dim'}>
+              <Database {...ICON} />
+            </span>
+            <span>Sources</span>
+            <span class="ml-auto font-mono text-[11px] text-dim">{CONNECTORS.length}</span>
+          </NavLink>
+          <div class="hidden flex-col gap-[2px] wide:flex">
+            <SoonItem icon={<SlidersHorizontal {...ICON} />} label="Scoring rules" />
+            <SoonItem icon={<Settings {...ICON} />} label="Settings" />
+          </div>
         </div>
         <div class="flex flex-col gap-[2px]">
           <a

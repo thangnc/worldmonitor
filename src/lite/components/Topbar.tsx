@@ -4,10 +4,11 @@ import { Plus, Search } from 'lucide-preact';
 
 /**
  * Page header: title and computed subtitle, the screen's filter, a search box
- * that filters the current screen, and the primary action (not built yet).
+ * that filters the current screen, and the primary action (not built yet;
+ * a read-only screen has none).
  */
 export function Topbar({
-  title, subtitle, filter, search, onSearch, searchWidth = 200, actionLabel, actionIcon,
+  title, subtitle, filter, search, onSearch, searchWidth = 200, searchPlaceholder = 'Search events, entities, assets', actionLabel, actionIcon,
 }: {
   title: string;
   subtitle: ComponentChildren;
@@ -15,7 +16,8 @@ export function Topbar({
   search: string;
   onSearch: (value: string) => void;
   searchWidth?: number;
-  actionLabel: string;
+  searchPlaceholder?: string;
+  actionLabel?: string;
   actionIcon?: ComponentChildren;
 }) {
   const input = useRef<HTMLInputElement>(null);
@@ -47,23 +49,25 @@ export function Topbar({
           type="search"
           value={search}
           onInput={(e) => onSearch((e.currentTarget as HTMLInputElement).value)}
-          placeholder="Search events, entities, assets"
+          placeholder={searchPlaceholder}
           aria-label="Search this screen"
           class="min-w-0 flex-1 bg-transparent text-[12px] text-ink placeholder:text-dim focus:outline-none"
         />
         <kbd class="font-mono text-[11px] text-dim">⌘K</kbd>
       </label>
-      <button
-        type="button"
-        disabled
-        title={`${actionLabel}: not built yet`}
-        class="flex cursor-not-allowed items-center gap-2 rounded-[7px] bg-ink px-[14px] py-[9px] text-[12.5px] font-semibold text-bg opacity-60"
-        data-soon="true"
-      >
-        {actionIcon ?? <Plus size={14} strokeWidth={2} />}
-        {actionLabel}
-        <span class="font-mono text-[9px] font-semibold tracking-[0.6px]">SOON</span>
-      </button>
+      {actionLabel ? (
+        <button
+          type="button"
+          disabled
+          title={`${actionLabel}: not built yet`}
+          class="flex cursor-not-allowed items-center gap-2 rounded-[7px] bg-ink px-[14px] py-[9px] text-[12.5px] font-semibold text-bg opacity-60"
+          data-soon="true"
+        >
+          {actionIcon ?? <Plus size={14} strokeWidth={2} />}
+          {actionLabel}
+          <span class="font-mono text-[9px] font-semibold tracking-[0.6px]">SOON</span>
+        </button>
+      ) : null}
     </header>
   );
 }
