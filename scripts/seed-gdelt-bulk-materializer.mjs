@@ -10,9 +10,10 @@ import {
   replaceDyadDays,
   scoreDyads,
 } from './_gdelt-dyad-tension.mjs';
-import { GDELT_BULK_COUNTRY_EVENTS_KEY, GDELT_BULK_DYAD_KEY } from './_gdelt-bulk-contract.mjs';
+import { GDELT_BULK_CONFLICT_COUNTS_KEY, GDELT_BULK_COUNTRY_EVENTS_KEY, GDELT_BULK_DYAD_KEY } from './_gdelt-bulk-contract.mjs';
 import {
   countryEventsDayStamps,
+  conflictCountsProjection,
   mergeCountryEventsBuckets,
   parseCountryEventsExport,
   planCountryEventsRepair,
@@ -50,6 +51,7 @@ import {
 export {
   GDELT_INTEL_KEY,
   GDELT_BULK_STATE_KEY,
+  GDELT_BULK_CONFLICT_COUNTS_KEY,
   GDELT_BULK_CONFLICT_KEY,
   GDELT_BULK_UNREST_KEY,
   GDELT_BULK_ARTICLES_KEY,
@@ -107,6 +109,11 @@ const DYAD_TTL = 92 * 86_400;
 const COUNTRY_EVENTS_TTL = 32 * 86_400;
 export const COUNTRY_EVENTS_META_KEY = 'seed-meta:gdelt:bulk:country-events';
 export const COUNTRY_EVENTS_ACTIVATION_KEY = 'seed-activated:gdelt:bulk:country-events';
+// The Lite map's compact counts: more than 3x the 15-minute cadence, like the
+// row-level conflict key, so one missed tick does not empty the map.
+const CONFLICT_COUNTS_TTL = 6 * 60 * 60;
+export const CONFLICT_COUNTS_META_KEY = 'seed-meta:gdelt:bulk:conflict-counts';
+export const CONFLICT_COUNTS_ACTIVATION_KEY = 'seed-activated:gdelt:bulk:conflict-counts';
 const CONFLICT_TTL = 6 * 60 * 60;
 const UNREST_TTL = 4.5 * 60 * 60;
 // 3h, NOT 45min: api/health.js gates positiveGeoEvents at maxStaleMin 60 AND
@@ -752,6 +759,7 @@ export async function fetchMaterializedGdelt(deps = {}) {
     ...materialized.intel,
     _dyads: { ...dyads, ...scoreDyads(dyads, nowMs), updatedAt: nowMs },
     _countryEvents: { ...countryEvents, ...summarizeCountryEvents(countryEvents, nowMs), updatedAt: nowMs },
+    _conflictCounts: conflictCountsProjection(countryEvents, nowMs),
     _timelines: materialized.timelines,
     _unrest: materialized.unrest,
     _positive: materialized.positive,
@@ -779,6 +787,15 @@ export async function fetchMaterializedGdelt(deps = {}) {
       updatedAt: nowMs,
     },
   };
+}
+
+/** Countries with a conflict-coded article in any kept hour or day. */
+export function conflictCountsRecordCount(counts) {
+  const codes = new Set();
+  for (const bucket of [...(counts?.hours ?? []), ...(counts?.days ?? [])]) {
+    for (const iso2 of Object.keys(bucket?.byCountry ?? {})) codes.add(iso2);
+  }
+  return codes.size;
 }
 
 function publishTransform(data) {
@@ -820,6 +837,7 @@ export async function afterPublish(data, _meta, deps = {}) {
     _writeActivationMarker = () => writeActivation(COUNTRY_ARTICLES_ACTIVATION_KEY),
     _writeDyadActivationMarker = () => writeActivation('seed-activated:gdelt:bulk:dyad-tension'),
     _writeCountryEventsActivationMarker = () => writeActivation(COUNTRY_EVENTS_ACTIVATION_KEY),
+    _writeConflictCountsActivationMarker = () => writeActivation(CONFLICT_COUNTS_ACTIVATION_KEY),
   } = deps;
   const outputOperations = Object.entries(data._timelines ?? {}).flatMap(
     ([topic, series]) => [
@@ -856,6 +874,14 @@ export async function afterPublish(data, _meta, deps = {}) {
         GDELT_BULK_COUNTRY_EVENTS_KEY, data._countryEvents, COUNTRY_EVENTS_TTL,
         Object.keys(data._countryEvents?.byCountry ?? {}).length,
         COUNTRY_EVENTS_META_KEY,
+      ),
+    },
+    {
+      label: CONFLICT_COUNTS_META_KEY,
+      run: () => _writeExtraKeyWithMeta(
+        GDELT_BULK_CONFLICT_COUNTS_KEY, data._conflictCounts, CONFLICT_COUNTS_TTL,
+        conflictCountsRecordCount(data._conflictCounts),
+        CONFLICT_COUNTS_META_KEY,
       ),
     },
     {
@@ -917,6 +943,10 @@ export async function afterPublish(data, _meta, deps = {}) {
   const countryEventsResult = settled[outputOperations.findIndex(({ label }) => label === COUNTRY_EVENTS_META_KEY)];
   if (countryEventsResult?.status === 'fulfilled' && countryEventsResult.value !== false) {
     await _writeCountryEventsActivationMarker();
+  }
+  const conflictCountsResult = settled[outputOperations.findIndex(({ label }) => label === CONFLICT_COUNTS_META_KEY)];
+  if (conflictCountsResult?.status === 'fulfilled' && conflictCountsResult.value !== false) {
+    await _writeConflictCountsActivationMarker();
   }
   const failures = settled.flatMap((result, index) => {
     if (result.status === 'rejected') return [result.reason];
@@ -982,6 +1012,8 @@ export const RUN_SEED_OPTS = {
       { key: timelineKey('vol', id), ttlSeconds: TIMELINE_TTL },
     ]),
     { key: GDELT_BULK_CONFLICT_KEY, ttlSeconds: CONFLICT_TTL },
+    { key: GDELT_BULK_CONFLICT_COUNTS_KEY, ttlSeconds: CONFLICT_COUNTS_TTL },
+    { key: CONFLICT_COUNTS_META_KEY, ttlSeconds: TIMELINE_TTL },
     { key: GDELT_BULK_UNREST_KEY, ttlSeconds: UNREST_TTL },
     { key: GDELT_BULK_ARTICLES_KEY, ttlSeconds: ARTICLES_TTL },
     { key: GDELT_BULK_COUNTRY_ARTICLES_KEY, ttlSeconds: COUNTRY_ARTICLES_TTL },

@@ -12,27 +12,37 @@ import { act } from 'preact/test-utils';
 // src/lite/map/LiteMap.tsx calls, and places a marker by appending its element.
 vi.mock('maplibre-gl', () => {
   class FakeMap {
+    static last: FakeMap | null = null;
     touchZoomRotate = { disableRotation: () => undefined };
-    private handlers = new Map<string, Array<() => void>>();
-    constructor(readonly options: { container: HTMLElement }) {}
+    handlers = new Map<string, Array<(e?: unknown) => void>>();
+    // GeoJSON sources (the country fill and the context overlays) and the layers that draw them.
+    sources = new Map<string, { data: unknown; setData: (d: unknown) => void }>();
+    layers: Array<{ id: string; before?: string }> = [];
+    featureState = new Map<string, Record<string, unknown>>();
+    constructor(readonly options: { container: HTMLElement }) { FakeMap.last = this; }
     getContainer(): HTMLElement { return this.options.container; }
-    on(type: string, fn: () => void): this { this.handlers.set(type, [...(this.handlers.get(type) ?? []), fn]); return this; }
-    off(type: string, fn: () => void): this { this.handlers.set(type, (this.handlers.get(type) ?? []).filter((f) => f !== fn)); return this; }
-    getZoom(): number { return 1; }
-    getBounds() { return { getWest: () => -180, getSouth: () => -85, getEast: () => 180, getNorth: () => 85 }; }
-    project(): { x: number; y: number } { return { x: 0, y: 0 }; }
-    // Context overlays: GeoJSON sources and the layers that draw them.
-    readonly sources = new Map<string, { data: unknown; setData: (d: unknown) => void }>();
-    readonly layers: string[] = [];
+    on(type: string, fn: (e?: unknown) => void): this { this.handlers.set(type, [...(this.handlers.get(type) ?? []), fn]); return this; }
+    once(type: string, fn: (e?: unknown) => void): this { return this.on(type, fn); }
+    off(type: string, fn: (e?: unknown) => void): this { this.handlers.set(type, (this.handlers.get(type) ?? []).filter((f) => f !== fn)); return this; }
+    fire(type: string, e?: unknown): void { for (const fn of this.handlers.get(type) ?? []) fn(e); }
     isStyleLoaded(): boolean { return true; }
-    once(type: string, fn: () => void): this { return this.on(type, fn); }
-    getSource(id: string) { return this.sources.get(id); }
     addSource(id: string, spec: { data: unknown }): this {
       const source = { data: spec.data, setData(d: unknown) { source.data = d; } };
       this.sources.set(id, source);
       return this;
     }
-    addLayer(layer: { id: string }): this { this.layers.push(layer.id); return this; }
+    getSource(id: string): unknown { return this.sources.get(id); }
+    addLayer(layer: { id: string }, before?: string): this { this.layers.push({ id: layer.id, before }); return this; }
+    getLayer(id: string): unknown { return this.layers.find((l) => l.id === id); }
+    setFeatureState(target: { id: string | number }, state: Record<string, unknown>): void { this.featureState.set(String(target.id), state); }
+    // The fill layer is hit wherever the test clicks: it names the country to hit in `clickCountry`.
+    clickCountry = '';
+    queryRenderedFeatures(): Array<{ id: string; properties: Record<string, string> }> {
+      return this.clickCountry ? [{ id: this.clickCountry, properties: { 'ISO3166-1-Alpha-2': this.clickCountry } }] : [];
+    }
+    getZoom(): number { return 1; }
+    getBounds() { return { getWest: () => -180, getSouth: () => -85, getEast: () => 180, getNorth: () => 85 }; }
+    project(): { x: number; y: number } { return { x: 0, y: 0 }; }
     easeTo(): this { return this; }
     fitBounds(): this { return this; }
     zoomIn(): this { return this; }
@@ -45,8 +55,16 @@ vi.mock('maplibre-gl', () => {
     addTo(map: FakeMap): this { map.getContainer().appendChild(this.options.element); return this; }
     remove(): this { this.options.element.remove(); return this; }
   }
-  return { Map: FakeMap, Marker: FakeMarker, setWorkerUrl: () => undefined };
+  return { Map: FakeMap, Marker: FakeMarker, setWorkerUrl: () => undefined, __FakeMap: FakeMap };
 });
+
+// The country shapes: one feature is enough for the shading layer to start.
+vi.mock('@/services/country-geometry', () => ({
+  getCountriesGeoJson: vi.fn(async () => ({
+    type: 'FeatureCollection',
+    features: [{ type: 'Feature', properties: { 'ISO3166-1-Alpha-2': 'UA', name: 'Ukraine' }, geometry: { type: 'Polygon', coordinates: [[[22, 44], [40, 44], [40, 52], [22, 52], [22, 44]]] } }],
+  })),
+}));
 vi.mock('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url', () => ({ default: '/maplibre-worker.js' }));
 
 // The bootstrap tiers are out of scope here: resolve them at once and hydrate
@@ -234,7 +252,8 @@ describe('Lite UI shell', () => {
     }, { timeout: 5000 });
     expect(root.querySelector('[data-map-credits]')?.textContent).toContain('OpenStreetMap');
     const legend = root.querySelector('[data-testid="map-legend"]')?.textContent ?? '';
-    expect(legend).toContain('UCDP events · size = deaths');
+    expect(legend).toContain('Reported violence · GDELT');
+    expect(legend).toContain('Verified background · UCDP');
     expect(legend).toContain('Curated hotspot');
     // Every curated hotspot is drawn, as on the dashboard, coloured by the live
     // score. Only news and the curated baseline are available here, so only the
@@ -271,14 +290,15 @@ describe('Lite UI shell', () => {
     });
     expect(root.querySelector('[data-map-popup]')).toBeNull();
 
-    // The time range filters the digest-driven parts: the hour-old incident leaves at 1h.
-    const pick = (range: string) => [...root.querySelectorAll('[data-testid="time-range"] button')].find((b) => b.textContent === range) as HTMLButtonElement;
-    await act(() => pick('1h').click());
-    expect(root.querySelector('h1 + p')?.textContent).toContain('0 active events in 1h');
-    expect(root.querySelector('[data-incident]')).toBeNull();
-    await act(() => pick('7d').click());
-    expect(root.querySelector('h1 + p')?.textContent).toContain('1 active events in 7d');
+    // The owner's ranges; they filter the digest-driven parts (the hour-old incident stays in all of them).
+    const buttons = [...root.querySelectorAll('[data-testid="time-range"] button')];
+    expect(buttons.map((b) => b.textContent)).toEqual(['6h', '24h', '7d', '30d']);
+    const pick = (range: string) => buttons.find((b) => b.textContent === range) as HTMLButtonElement;
+    await act(() => pick('6h').click());
+    expect(root.querySelector('h1 + p')?.textContent).toContain('1 active events in 6h');
     expect(root.querySelector('[data-incident]')?.textContent).toContain('Naval incident near Bab el-Mandeb');
+    // No GDELT counts here: the violence feed names its seeder instead of guessing.
+    expect(root.querySelector('[data-testid="geo-indicators"] [data-feed="violence"]')?.getAttribute('data-feed-state')).toBe('unavailable');
 
     // The sidebar's Briefing link returns home.
     await act(() => (root.querySelector('[data-nav="briefing"]') as HTMLAnchorElement).click());
@@ -609,5 +629,106 @@ describe('Lite indicator card', () => {
     // The AI line is suppressed when nothing is linked.
     expect(full.textContent).not.toContain('Model inference');
     expect(full.textContent).toContain('08:31 UTC');
+  });
+});
+
+describe('Lite Geopolitics: GDELT reported violence', () => {
+  it('shades spiking countries, fires the violence indicator with its linked news, and opens a country card', async () => {
+    const HOUR = 3_600_000;
+    const DAY = 86_400_000;
+    const now = Date.now();
+    const currentHour = Math.floor(now / HOUR) * HOUR;
+    const today = Math.floor(now / DAY) * DAY;
+    // Ukraine: 40 reports a day for a week; 5 an hour over the last six complete hours (×3).
+    const counts = {
+      updatedAt: now - 60_000, cursor: '', cohortsPerHour: 4, cohortsPerDay: 96,
+      hours: Array.from({ length: 48 }, (_, i) => currentHour - (47 - i) * HOUR).map((start) => ({
+        hour: new Date(start).toISOString().slice(0, 13),
+        cohorts: start === currentHour ? 1 : 4,
+        byCountry: start >= currentHour - 6 * HOUR && start < currentHour ? { UA: 5 } : { UA: 1 },
+      })),
+      days: Array.from({ length: 30 }, (_, i) => today - (29 - i) * DAY).map((start) => ({
+        date: new Date(start).toISOString().slice(0, 10),
+        cohorts: start === today ? 40 : 96,
+        byCountry: { UA: 40 },
+      })),
+    };
+    const boot = await import('@/services/bootstrap');
+    vi.mocked(boot.ensureHydrated).mockImplementation(async (key: string) => (key === 'gdeltConflictCounts' ? counts : undefined));
+    const base = fetch;
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.includes('/api/news/v1/list-feed-digest')) {
+        const digest = {
+          ...DIGEST,
+          categories: {
+            ...DIGEST.categories,
+            europe: { items: [{ source: 'Reuters', title: 'Ukraine reports drone strikes on Kharkiv', link: 'https://example.com/ua', publishedAt: now - 2 * HOUR, isAlert: false, locationName: '', importanceScore: 40, corroborationCount: 2, snippet: '', tickers: [], credibilityScore: 70 }] },
+          },
+        };
+        return new Response(JSON.stringify(digest), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      return base(input, init);
+    }));
+    try {
+      history.replaceState(null, '', '/lite/geopolitics');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const maplib = (await import('maplibre-gl')) as unknown as {
+        __FakeMap: { last: { sources: Map<string, unknown>; layers: Array<{ id: string; before?: string }>; featureState: Map<string, Record<string, unknown>>; clickCountry: string; fire: (type: string, e?: unknown) => void } | null };
+      };
+      await vi.waitFor(async () => {
+        await flush();
+        expect(root.querySelector('[data-testid="geo-indicators"] [data-indicator="violence:UA"]')).not.toBeNull();
+        expect(maplib.__FakeMap.last?.sources.has('lite-countries')).toBe(true);
+      }, { timeout: 10_000, interval: 50 });
+      // At 7d Ukraine is at its normal, so nothing is shaded; the last 6 h are at ×3.
+      expect(maplib.__FakeMap.last?.featureState.get('UA')?.step ?? 0).toBe(0);
+      const range = (r: string) => [...root.querySelectorAll('[data-testid="time-range"] button')].find((b) => b.textContent === r) as HTMLButtonElement;
+      await act(() => range('6h').click());
+      await flush();
+      expect(maplib.__FakeMap.last?.featureState.get('UA')?.step).toBe(3);
+      const map = maplib.__FakeMap.last!;
+      // The shading is a fill under the borders and labels.
+      expect(map.sources.has('lite-countries')).toBe(true);
+      expect(map.layers).toContainEqual({ id: 'lite-country-fill', before: 'country-border' });
+
+      const card = root.querySelector('[data-testid="geo-indicators"] [data-indicator="violence:UA"]') as HTMLElement;
+      expect(card.textContent).toContain('Violence spike · Ukraine');
+      expect(card.textContent).toContain('30 reports');
+      expect(card.textContent).toContain('REPORTED');
+      expect(card.textContent).toContain('1 linked');
+      await act(() => (card as HTMLButtonElement).click());
+      expect(root.querySelector('[data-testid="geo-indicators"] [data-testid="linked-news"]')?.textContent).toContain('Ukraine reports drone strikes on Kharkiv');
+
+      // The 6h histogram has one bar per complete hour.
+      expect(root.querySelector('[data-testid="gdelt-histogram"]')).not.toBeNull();
+
+      // Clicking the shaded country opens its card at the click point.
+      map.clickCountry = 'UA';
+      await act(() => map.fire('click', { point: { x: 10, y: 10 }, lngLat: { lng: 31, lat: 48 } }));
+      const popup = root.querySelector('[data-map-popup="country:UA"]');
+      expect(popup?.textContent).toContain('Reported violence · GDELT');
+      expect(popup?.textContent).toContain('Ukraine');
+      expect(popup?.textContent).toContain('reports');
+      expect(popup?.textContent).toContain('Machine-coded news reports, not verified events.');
+      // Clicking where no shaded country is closes it.
+      map.clickCountry = '';
+      await act(() => map.fire('click', { point: { x: 1, y: 1 }, lngLat: { lng: 0, lat: 0 } }));
+      expect(root.querySelector('[data-map-popup]')).toBeNull();
+      // Back at 7d the shading clears through feature state.
+      await act(() => range('7d').click());
+      await flush();
+      expect(map.featureState.get('UA')?.step).toBe(0);
+
+      // The strip shows five hotspots; a tile opens its hotspot's card.
+      const tiles = [...root.querySelectorAll('[data-hotspot-tile]')] as HTMLButtonElement[];
+      expect(tiles).toHaveLength(5);
+      await act(() => tiles[0]!.click());
+      expect(root.querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe(`hotspot:${tiles[0]!.getAttribute('data-hotspot-tile')}`);
+    } finally {
+      vi.stubGlobal('fetch', base);
+      vi.mocked(boot.ensureHydrated).mockImplementation(async () => undefined);
+    }
   });
 });
