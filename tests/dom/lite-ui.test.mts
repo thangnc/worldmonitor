@@ -138,6 +138,8 @@ async function flush(): Promise<void> {
 let root: HTMLElement;
 // The compact health body `/api/health?compact=1` returns; null answers 503 like every other source.
 let healthBody: object | null = null;
+// How many health requests answer 503 REFRESH_PENDING before healthBody is served.
+let healthPendingResponses = 0;
 
 // Stubbed for the whole file, never restored: loaders still pending when a
 // test ends must not reach happy-dom's real network stack.
@@ -146,6 +148,10 @@ beforeAll(() => {
     const url = String(input instanceof Request ? input.url : input);
     if (url.includes('/api/news/v1/list-feed-digest')) {
       return new Response(JSON.stringify(DIGEST), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    if (url.includes('/api/health') && healthPendingResponses > 0) {
+      healthPendingResponses -= 1;
+      return new Response(JSON.stringify({ status: 'REFRESH_PENDING', error: 'Health refresh is pending. Retry shortly.', retryAfterSeconds: 3 }), { status: 503, headers: { 'content-type': 'application/json' } });
     }
     if (url.includes('/api/health') && healthBody) {
       return new Response(JSON.stringify(healthBody), { status: 200, headers: { 'content-type': 'application/json' } });
@@ -160,6 +166,7 @@ beforeAll(() => {
 beforeEach(async () => {
   history.replaceState(null, '', '/lite');
   healthBody = null;
+  healthPendingResponses = 0;
   const { resetResourcesForTests } = await import('../../src/lite/data/store');
   resetResourcesForTests();
   const { __resetServerInsightsCacheForTests } = await import('../../src/services/insights-loader');
@@ -823,6 +830,21 @@ describe('Lite Sources screen', () => {
     }, { timeout: 10_000, interval: 50 });
     expect(root.querySelector('tr[data-connector="digest-world"]')?.getAttribute('data-status')).toBe('live');
     expect(root.querySelector('header p')?.textContent).toContain('health check unavailable');
+  });
+
+  it('retries the health check while it answers refresh pending, and gives up after three attempts', async () => {
+    const { loadHealth } = await import('../../src/lite/data/sources');
+    const waits: number[] = [];
+    const wait = async (ms: number) => { waits.push(ms); };
+    healthBody = { status: 'HEALTHY', summary: { total: 1, ok: 1, warn: 0 }, checkedAt: new Date().toISOString() };
+
+    healthPendingResponses = 1;
+    expect((await loadHealth(wait))?.status).toBe('HEALTHY');
+    expect(waits).toEqual([3000]);
+
+    healthPendingResponses = 3;
+    await expect(loadHealth(wait)).rejects.toThrow('health: HTTP 503');
+    expect(waits).toEqual([3000, 3000, 3000]);
   });
 });
 
