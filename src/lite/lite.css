@@ -25,6 +25,9 @@
 	--color-high: #ff9f43;
 	--color-elev: #e8c547;
 	--color-ok: #3dd68c;
+	/* Indicator card: REPORTED trust label, and the "No linked news found" accent. */
+	--color-reported: #7fb2ff;
+	--color-nolink: #ff7ac6;
 
 	--font-sans: "IBM Plex Sans Variable", "IBM Plex Sans", system-ui, sans-serif;
 	--font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;

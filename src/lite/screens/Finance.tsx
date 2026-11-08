@@ -3,7 +3,8 @@ import { useMemo, useState } from 'preact/hooks';
 import type { CryptoQuote } from '@/generated/client/worldmonitor/market/v1/service_client';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { BarStrip, LineChart } from '../components/charts';
-import { Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
+import { Card, ColLabel, DerivedTag, Panel, SampleBadge, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
+import { HealthDots, IndicatorFeed } from '../components/indicator';
 import {
   selectMarketEvents,
   useCommodityQuotes,
@@ -20,17 +21,17 @@ import {
   useStablecoins,
 } from '../data/hooks';
 import { SAMPLE_BTC_VOLUME, SAMPLE_LIQUIDATIONS } from '../data/fixtures';
+import { FINANCE_RULES, financeFeeds } from '../data/finance-indicators';
+import { feedCounts } from '../data/indicators';
 import { PRICE_LINK_RULE, eventTag, geoCause, linkPriceMoves, priceMoveLabel } from '../data/prices';
 import {
   closeToCloseBars,
-  fearGreedState,
+  digestItems,
   pctChange,
   realizedVolatility,
   relativeTime,
   returnCorrelation,
   sourceCount,
-  thresholdState,
-  type AlertState,
   type Tone,
 } from '../data/transforms';
 import { MINUS, price, signed, usdCompact } from '../format';
@@ -78,7 +79,7 @@ export function Finance() {
           <MarketEvents state={digest} events={events.filter((e) => matchesSearch(search, e.title, e.source, e.tickers.join(' ')))} />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
-          <RiskAlerts />
+          <Indicators />
           <MacroCalendar search={search} />
           <Correlation />
           <p class="text-[11px] leading-[17px] text-dim">
@@ -362,52 +363,25 @@ function MarketEvents({ state, events }: { state: ReturnType<typeof useDigest>; 
   );
 }
 
-const ALERT_STYLE: Record<AlertState, { label: string; tone: Tone }> = {
-  triggered: { label: 'Triggered', tone: 'crit' },
-  watching: { label: 'Watching', tone: 'high' },
-  normal: { label: 'Normal', tone: 'dim' },
-};
-
-function RiskAlerts() {
+function Indicators() {
   const crypto = useCryptoQuotes();
   const flow = useHyperliquid();
   const stables = useStablecoins();
-  const fg = useFearGreed();
-  const btc = crypto.status === 'ready' ? crypto.data.find((q) => q.symbol.toUpperCase() === 'BTC') : undefined;
-  const hl = flow.status === 'ready' ? flow.data.assets.find((a) => a.symbol.toUpperCase() === 'BTC') : undefined;
-  const fundingPct = hl ? Number(hl.funding) * 100 : null;
-  const coins = stables.status === 'ready' ? stables.data.stablecoins : [];
-  const maxDev = coins.length ? Math.max(...coins.map((c) => Math.abs(c.deviation))) : null;
-  const depegged = stables.status === 'ready' ? stables.data.summary?.depeggedCount ?? 0 : 0;
-
-  const rules: Array<{ name: string; detail: string; state: AlertState | null }> = [
-    { name: 'Volatility breakout', detail: btc ? `BTC 24h ${signed(btc.change)} · watch 2.5%, fire 4%` : 'BTC quote unavailable', state: thresholdState(btc?.change, 2.5, 4) },
-    { name: 'Funding extreme', detail: fundingPct != null ? `BTC perp ${fundingPct.toFixed(4)}%/h · watch 0.005%, fire 0.01%` : 'Hyperliquid unavailable', state: thresholdState(fundingPct, 0.005, 0.01) },
-    {
-      name: 'Stablecoin depeg',
-      detail: coins.length ? `${depegged} of ${coins.length} off peg · max deviation ${maxDev?.toFixed(2)}%` : 'Stablecoin data unavailable',
-      state: coins.length ? (depegged > 0 ? 'triggered' : thresholdState(maxDev, 0.5, 1)) : null,
-    },
-    { name: 'Sentiment extreme', detail: fg.status === 'ready' ? `Fear & greed ${Math.round(fg.data.compositeScore)} (${fg.data.compositeLabel})` : 'Fear & greed unavailable', state: fg.status === 'ready' ? fearGreedState(fg.data.compositeScore) : null },
-  ];
-
+  const fearGreed = useFearGreed();
+  const digest = useDigest('finance');
+  const feeds = useMemo(
+    () => financeFeeds({ crypto, flow, stables, fearGreed, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
+    [crypto, flow, stables, fearGreed, digest],
+  );
+  const counts = feedCounts(feeds);
   return (
-    <Panel title="Risk alerts" sub={`${rules.length} rules`} right={<DerivedTag how="Fixed thresholds over seeded data. Delivery (push, email) arrives with the alerts phase." />} testId="risk-alerts">
-      {rules.map((r) => {
-        const style = r.state ? ALERT_STYLE[r.state] : { label: 'No data', tone: 'dim' as Tone };
-        return (
-          <div key={r.name} class={cx('flex items-center gap-[10px] rounded-[7px] border px-3 py-[10px]', r.state === 'triggered' ? 'border-crit/35 bg-crit/[0.07]' : 'border-line')}>
-            <span class="flex min-w-0 flex-1 flex-col gap-[2px]">
-              <span class="text-[12.5px] font-medium text-ink">{r.name}</span>
-              <span class="text-[11px] text-dim">{r.detail}</span>
-            </span>
-            <span class="flex items-center gap-[5px]">
-              <Dot tone={style.tone} />
-              <span class={cx('text-[11px] font-medium', r.state === 'normal' || !r.state ? 'text-muted' : TEXT[style.tone])}>{style.label}</span>
-            </span>
-          </div>
-        );
-      })}
+    <Panel
+      title="Indicators"
+      sub={[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`].filter(Boolean).join(' · ')}
+      right={<><HealthDots feeds={feeds} /><DerivedTag how={`${FINANCE_RULES} Nothing is delivered yet.`} /></>}
+      testId="risk-alerts"
+    >
+      <IndicatorFeed feeds={feeds} now={Date.now()} />
     </Panel>
   );
 }

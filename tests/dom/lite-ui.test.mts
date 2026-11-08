@@ -305,3 +305,92 @@ describe('Lite UI shell', () => {
     expect(root.querySelector('[data-testid="model-tracker"] [data-sample="true"]')).not.toBeNull();
   });
 });
+
+describe('Lite indicator card', () => {
+  it('renders a fired Finance rule as a card with its linked news, expands it, and keeps quiet rules as rows', async () => {
+    const base = fetch;
+    const now = Date.now();
+    const depegDigest = {
+      ...DIGEST,
+      categories: {
+        ...DIGEST.categories,
+        crypto: { items: [{ source: 'CoinDesk', title: 'Ethena USDe slips below its peg as redemptions rise', link: 'https://example.com/usde', publishedAt: now - 2 * 3_600_000, isAlert: false, locationName: '', importanceScore: 55, corroborationCount: 2, snippet: '', tickers: [], credibilityScore: 60 }] },
+      },
+    };
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+      if (url.includes('/api/news/v1/list-feed-digest')) return json(depegDigest);
+      if (url.includes('/api/market/v1/list-stablecoin-markets')) {
+        return json({
+          timestamp: new Date(now - 5 * 60_000).toISOString(),
+          summary: { depeggedCount: 0 },
+          stablecoins: [
+            { id: 'tether', symbol: 'usdt', name: 'Tether', price: 1.0003, deviation: 0.03, pegStatus: 'ON PEG' },
+            { id: 'ethena-usde', symbol: 'usde', name: 'Ethena USDe', price: 0.994, deviation: 0.6, pegStatus: 'SLIGHT DEPEG' },
+          ],
+        });
+      }
+      if (url.includes('/api/market/v1/get-fear-greed-index')) return json({ compositeScore: 55, compositeLabel: 'Neutral', seededAt: new Date(now - 3_600_000).toISOString() });
+      return base(input, init);
+    }));
+    try {
+      history.replaceState(null, '', '/lite/finance');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const panel = () => root.querySelector('[data-testid="risk-alerts"]') as HTMLElement;
+      await vi.waitFor(async () => {
+        await flush();
+        expect(panel().querySelector('[data-indicator="stablecoin-depeg"]')).not.toBeNull();
+        expect(panel().querySelector('[data-feed="fear-greed"]')?.getAttribute('data-feed-state')).toBe('quiet');
+      }, { timeout: 10_000, interval: 50 });
+
+      const compact = panel().querySelector('[data-indicator="stablecoin-depeg"]') as HTMLButtonElement;
+      expect(compact.tagName).toBe('BUTTON');
+      expect(compact.textContent).toContain('Stablecoin depeg · USDe');
+      expect(compact.textContent).toContain('$0.9940');
+      expect(compact.textContent).toContain('MARKET DATA');
+      expect(compact.textContent).toContain('1 linked');
+      // Fired cards come first; a failed source is a row that names its seeder.
+      expect(panel().querySelector('[data-testid="indicator-feed"]')?.firstElementChild).toBe(compact);
+      expect(panel().querySelector('[data-feed="btc-funding"]')?.textContent).toContain('seed-hyperliquid-flow');
+
+      await act(() => compact.click());
+      const full = panel().querySelector('article[data-indicator="stablecoin-depeg"]') as HTMLElement;
+      expect(full).not.toBeNull();
+      expect(full.textContent).toContain('FIRED');
+      const linked = full.querySelector('[data-testid="linked-news"]') as HTMLElement;
+      expect(linked.textContent).toContain('Ethena USDe slips below its peg as redemptions rise');
+      expect(linked.textContent).toContain('−2h');
+      expect(linked.querySelector('[data-match]')?.textContent).toBe('driver: USDe');
+      expect((linked.querySelector('a') as HTMLAnchorElement).rel).toBe('noopener noreferrer');
+
+      // Escape collapses it back to the compact card.
+      await act(() => { full.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+      expect(panel().querySelector('article[data-indicator="stablecoin-depeg"]')).toBeNull();
+      expect(panel().querySelector('button[data-indicator="stablecoin-depeg"]')).not.toBeNull();
+    } finally {
+      vi.stubGlobal('fetch', base);
+    }
+  });
+
+  it('says "No linked news found" with what it searched when no story matches', async () => {
+    const { IndicatorCard, IndicatorCardCompact } = await import('../../src/lite/components/indicator');
+    const indicator = {
+      id: 'btc-move', domain: 'fin' as const, name: 'Price move · BTC 24h', value: '$71,240', change: '−5.0% 24h', rule: '±4%',
+      trust: { level: 'market' as const, source: 'CoinGecko' }, at: Date.UTC(2026, 10, 8, 8, 31),
+      links: { stories: [], searched: 1316, windowHours: 6 },
+      why: 'must not render without links',
+    };
+    await act(() => render(h('div', null, h(IndicatorCardCompact, { indicator }), h(IndicatorCard, { indicator, now: Date.UTC(2026, 10, 8, 9) })), root));
+    const compact = root.querySelector('button[data-indicator="btc-move"]') as HTMLElement;
+    expect(compact.getAttribute('data-linked')).toBe('false');
+    expect(compact.textContent).toContain('No linked news found');
+    const full = root.querySelector('article[data-indicator="btc-move"]') as HTMLElement;
+    expect(full.querySelector('[data-testid="no-linked-news"]')?.textContent).toContain('Searched 1,316 stories from 6 h before to 1 h after');
+    expect(full.querySelector('[data-testid="linked-news"]')).toBeNull();
+    // The AI line is suppressed when nothing is linked.
+    expect(full.textContent).not.toContain('Model inference');
+    expect(full.textContent).toContain('08:31 UTC');
+  });
+});
