@@ -136,12 +136,15 @@ Defaults are a starting point (open decision 2). Each build PR runs its seeders 
 | Other government bonds | `seed-yield-curve-*` (DE, GB, JP and others) | A 10-year moves 10 bp or more in a day | Official data |
 | Price moves | Seeded quotes (the existing risk alerts) | The existing fixed thresholds and BTC 2 h move over 4σ | Market data |
 | Company material events | `seed-sec-8k-stream` (SEC 8-K filings; no key) | A filing by a watchlist company | Official filing |
+| Bitcoin ETF flows | `seed-etf-flows` (10 US spot bitcoin ETFs from `scripts/shared/etfs.json`, Yahoo daily bars; `ALPHA_VANTAGE_API_KEY` optional) | 8 or more of the ETFs flow the same way in a day | Estimated (from price and volume, not issuer-reported flows) |
+| Stablecoin depeg | `seed-stablecoin-markets` (CoinGecko, CoinPaprika fallback; no key) | A tracked stablecoin is classed `DEPEGGED`: more than 1% from $1 (`scripts/shared/stablecoins.json`) | Market data |
 
 **Technology and AI.** Link window: 12 h before. The linked news is the tech digest, which includes Hacker News: an outage, a hack or an exploited vulnerability links to the stories there that name its vendor, network or country.
 
 | Indicator | Feed | Default trigger | Label |
 |---|---|---|---|
 | Internet and power outages | `seed-internet-outages` (Cloudflare Radar; key `CLOUDFLARE_API_TOKEN`) | A new country or network outage; the stated cause (power cut, cable cut, government shutdown) is shown | Reported (Cloudflare) |
+| Cloud and AI service outages | `infra:service-statuses:v1` from `server/worldmonitor/infrastructure/v1/list-service-statuses.ts` (public status pages of AWS, Azure, Google Cloud, Cloudflare, GitHub, OpenAI, Anthropic and others; no key). `seed-service-statuses` warms the upstream production URL, so the owner's deployment warms its own endpoint | A watched provider reports a partial or major outage | Official (provider status page) |
 | Exploited vulnerabilities | `seed-cve-reference` (CISA KEV subset of NVD; key `NVD_API_KEY` optional) | A new known-exploited CVE, or one naming a watchlist vendor | Official (CISA) |
 | Attack infrastructure | `seed-cyber-threats` (abuse.ch Feodo Tracker and URLhaus, AlienVault OTX, AbuseIPDB, C2IntelFeeds; keys `URLHAUS_AUTH_KEY`, `OTX_API_KEY`, `ABUSEIPDB_API_KEY`) | A spike against its 7-day average | Reported (threat feeds) |
 | Model and product releases | None yet ([gap 5](#gaps-to-build)) | — | — |
@@ -153,8 +156,8 @@ Each step is its own PR with screenshots, and starts by running its seeders loca
 
 1. The news link rule as one shared Lite module, with tests, used first by the existing Finance price links.
 2. Geopolitics: the GDELT violence layer on the map, filtered by the time range; military aircraft as a layer; incidents at sea and embassy alerts as indicator rows, then airspace closures once FAA access arrives. UCDP becomes the verified background layer.
-3. Finance: macro release surprises and yield moves, each with linked news.
-4. Technology and AI: outages, exploited vulnerabilities and attack infrastructure (all keys in hand); then the model-release tracker.
+3. Finance: macro release surprises, yield moves, bitcoin ETF flows and stablecoin depegs, each with linked news.
+4. Technology and AI: internet, cloud and AI service outages, exploited vulnerabilities and attack infrastructure (all keys in hand); then the model-release tracker.
 5. The Briefing's watch alerts list the fired indicators from Geopolitics, Finance and Technology.
 
 ## Removed or optional by default
