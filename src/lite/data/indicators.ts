@@ -36,6 +36,8 @@ export interface Indicator {
   change?: string;
   /** "±10 bp", "> 0.5% from $1". */
   rule: string;
+  /** One supporting line: "2s10s +41 bp · no sign flip", "Others normal: …". */
+  detail?: string;
   trust: { level: Trust; source: string };
   /** When the rule fired: the time of the data it read. */
   at: number;

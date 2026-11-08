@@ -27,7 +27,13 @@ import type { UnrestEvent } from '@/generated/client/worldmonitor/unrest/v1/serv
 import type { Earthquake } from '@/generated/client/worldmonitor/seismology/v1/service_client';
 import type { MilitaryFlight } from '@/generated/client/worldmonitor/military/v1/service_client';
 import { MILITARY_QUERY_REGIONS } from '@/config/military';
-import type { EconomicEvent } from '@/generated/client/worldmonitor/economic/v1/service_client';
+import type {
+  GetEconomicCalendarResponse,
+  GetGovernmentYieldCurveResponse,
+  UsTreasuryParYieldCurve,
+} from '@/generated/client/worldmonitor/economic/v1/service_client';
+import type { GetShippingRatesResponse } from '@/generated/client/worldmonitor/supply_chain/v1/service_client';
+import type { ListMaterialEventsResponse } from '@/generated/client/worldmonitor/intelligence/v1/service_client';
 import type { ArxivPaper, HackernewsItem } from '@/generated/client/worldmonitor/research/v1/service_client';
 import {
   ConflictServiceClient,
@@ -37,6 +43,7 @@ import {
   MilitaryServiceClient,
   ResearchServiceClient,
   SeismologyServiceClient,
+  SupplyChainServiceClient,
   UnrestServiceClient,
 } from '@/services/generated-rpc-clients';
 import { getRpcBaseUrl, rpcFetch } from '@/services/rpc-client';
@@ -55,6 +62,7 @@ const research = new ResearchServiceClient(getRpcBaseUrl(), options);
 const unrest = new UnrestServiceClient(getRpcBaseUrl(), options);
 const seismology = new SeismologyServiceClient(getRpcBaseUrl(), options);
 const military = new MilitaryServiceClient(getRpcBaseUrl(), options);
+const supplyChain = new SupplyChainServiceClient(getRpcBaseUrl(), options);
 
 let bootstrapReady: Promise<void> | null = null;
 
@@ -233,10 +241,48 @@ export async function loadFearGreed(): Promise<GetFearGreedIndexResponse | null>
   return resp.compositeScore > 0 ? resp : null;
 }
 
-export async function loadMacroCalendar(): Promise<EconomicEvent[] | null> {
+/**
+ * The macro calendar from yesterday to two weeks out (the seeder keeps one
+ * past day). Past releases carry their FRED actual and the prior print; no
+ * source gives a forecast (`estimate` is empty).
+ */
+export async function loadMacroCalendar(): Promise<GetEconomicCalendarResponse | null> {
   const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
-  const resp = await economic.getEconomicCalendar({ fromDate: day(0), toDate: day(7) });
-  return resp.unavailable ? null : resp.events;
+  const resp = await economic.getEconomicCalendar({ fromDate: day(-3), toDate: day(14) });
+  return resp.unavailable || !resp.events.length ? null : resp;
+}
+
+/** US Treasury par yield curves, newest last: the last 10 business days. */
+export async function loadTreasuryCurves(): Promise<UsTreasuryParYieldCurve[] | null> {
+  const resp = await economic.getUsTreasuryParYieldCurve({ history: true, limit: 10 });
+  if (resp.unavailable) return null;
+  return [...resp.curves].filter((c) => Number.isFinite(c.date)).sort((a, b) => a.date - b.date);
+}
+
+/** Government bond markets whose 10-year the Finance indicators watch. */
+export const OTHER_BOND_COUNTRIES = ['DE', 'GB', 'JP'] as const;
+
+/** Daily curves for the other bond markets. Null when every market fails. */
+export async function loadOtherBonds(): Promise<GetGovernmentYieldCurveResponse[] | null> {
+  const results = await Promise.allSettled(
+    OTHER_BOND_COUNTRIES.map((country) => economic.getGovernmentYieldCurve({ country, history: true, limit: 5 })),
+  );
+  const ok = results.flatMap((r) => (r.status === 'fulfilled' && !r.value.unavailable && r.value.curves.length ? [r.value] : []));
+  if (!ok.length && results.every((r) => r.status === 'rejected')) throw new Error('government yield curves unavailable');
+  return ok;
+}
+
+/** Freight indices (SCFI weekly, Baltic Dry daily): bootstrap key `shippingRates`, else the RPC. */
+export async function loadShippingRates(): Promise<GetShippingRatesResponse | null> {
+  const boot = await hydrated('shippingRates', hasArray('indices'));
+  const resp = boot ? (boot as unknown as GetShippingRatesResponse) : await supplyChain.getShippingRates({});
+  return resp.indices.length ? resp : null;
+}
+
+/** Material 8-K filings from the last 7 days, newest first (seed-sec-8k-stream). */
+export async function loadMaterialEvents(): Promise<ListMaterialEventsResponse | null> {
+  const resp = await intelligence.listMaterialEvents({ itemCode: '', limit: 100 });
+  return resp.unavailable ? null : resp;
 }
 
 /** Hourly closes per symbol, 14 days (on-demand bootstrap key `marketCorrelationSeries`). */

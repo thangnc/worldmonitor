@@ -374,6 +374,67 @@ describe('Lite indicator card', () => {
     }
   });
 
+  it('renders the step-3 Finance feeds with their detail line, and the Treasury curve today against a week ago', async () => {
+    const base = fetch;
+    const now = Date.now();
+    const day = (offset: number) => Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate()) + offset * 86_400_000;
+    const curve = (date: number, twoYear: number, tenYear: number) => ({ date, threeMonth: 4.19, twoYear, fiveYear: 4.64, tenYear, thirtyYear: 5.26 });
+    const filingsDigest = {
+      ...DIGEST,
+      categories: {
+        ...DIGEST.categories,
+        // The Treasury rule fires at the 16:00 New York close of the curve's date.
+        markets: { items: [{ source: 'Reuters', title: 'Treasury yields jump as traders reprice Fed path', link: 'https://example.com/ust', publishedAt: day(0) + 20 * 3_600_000, isAlert: false, locationName: '', importanceScore: 60, corroborationCount: 3, snippet: '', tickers: [], credibilityScore: 70 }] },
+      },
+    };
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+      if (url.includes('/api/news/v1/list-feed-digest')) return json(filingsDigest);
+      if (url.includes('/api/economic/v1/get-us-treasury-par-yield-curve')) {
+        return json({ unavailable: false, curves: [curve(day(-8), 4.56, 4.94), curve(day(-1), 4.4, 4.75), curve(day(0), 4.51, 4.86)] });
+      }
+      if (url.includes('/api/intelligence/v1/list-material-events')) {
+        return json({
+          unavailable: false, fetchedAtMs: now - 60_000,
+          events: [{ company: 'APPLE INC', cik: '0000320193', form: '8-K', accession: 'a', filedAtMs: now - 2 * 3_600_000, url: 'https://www.sec.gov/a', items: [{ code: '1.05', description: 'Material Cybersecurity Incidents' }] }],
+        });
+      }
+      return base(input, init);
+    }));
+    try {
+      history.replaceState(null, '', '/lite/finance');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const panel = () => root.querySelector('[data-testid="risk-alerts"]') as HTMLElement;
+      await vi.waitFor(async () => {
+        await flush();
+        expect(panel().querySelector('[data-indicator="treasury"]')).not.toBeNull();
+        expect(panel().querySelector('[data-indicator="sec-8k"]')).not.toBeNull();
+      }, { timeout: 10_000, interval: 50 });
+
+      const treasury = panel().querySelector('[data-indicator="treasury"]') as HTMLButtonElement;
+      expect(treasury.textContent).toContain('4.51 / 4.86%');
+      expect(treasury.textContent).toContain('+11 / +11 bp');
+      expect(treasury.querySelector('[data-testid="indicator-detail"]')?.textContent).toContain('2s10s +35 bp');
+      expect(treasury.textContent).toContain('OFFICIAL');
+      expect(treasury.textContent).toContain('1 linked');
+      const filing = panel().querySelector('[data-indicator="sec-8k"]') as HTMLButtonElement;
+      expect(filing.textContent).toContain('8-K filing · APPLE INC');
+      expect(filing.textContent).toContain('Item 1.05');
+      // Feeds this test left unanswered name their seeders.
+      expect(panel().querySelector('[data-feed="freight-scfi"]')?.textContent).toContain('seed-supply-chain-trade');
+      expect(panel().querySelector('[data-feed="other-bonds"]')?.textContent).toContain('seed-bundle-yield-curves');
+
+      const curveCard = root.querySelector('[data-testid="treasury-curve"]') as HTMLElement;
+      expect(curveCard.querySelector('[data-series="latest"]')).not.toBeNull();
+      expect(curveCard.querySelector('[data-series="week-ago"]')).not.toBeNull();
+      expect(curveCard.textContent).toContain('2s10s +35 bp (−3 bp w/w)');
+    } finally {
+      vi.stubGlobal('fetch', base);
+    }
+  });
+
   it('says "No linked news found" with what it searched when no story matches', async () => {
     const { IndicatorCard, IndicatorCardCompact } = await import('../../src/lite/components/indicator');
     const indicator = {

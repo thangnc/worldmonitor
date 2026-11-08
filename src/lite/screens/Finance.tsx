@@ -17,12 +17,17 @@ import {
   useHyperliquid,
   useMacroCalendar,
   useMarketQuotes,
+  useMaterialEvents,
+  useOtherBonds,
   usePriceBoard,
+  useShippingRates,
   useStablecoins,
+  useTreasuryCurves,
 } from '../data/hooks';
 import { SAMPLE_BTC_VOLUME, SAMPLE_LIQUIDATIONS } from '../data/fixtures';
 import { FINANCE_RULES, financeFeeds } from '../data/finance-indicators';
-import { feedCounts } from '../data/indicators';
+import { feedCounts, sortFeeds } from '../data/indicators';
+import { MACRO_RULES, financeMacroFeeds, macroValue, spreadBp, treasuryWindow } from '../data/finance-macro-indicators';
 import { PRICE_LINK_RULE, eventTag, geoCause, linkPriceMoves, priceMoveLabel } from '../data/prices';
 import {
   closeToCloseBars,
@@ -77,10 +82,11 @@ export function Finance() {
           <Tickers />
           <BtcDetail range={range} />
           <MarketEvents state={digest} events={events.filter((e) => matchesSearch(search, e.title, e.source, e.tickers.join(' ')))} />
+          <MacroCalendar search={search} />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
           <Indicators />
-          <MacroCalendar search={search} />
+          <TreasuryCurve />
           <Correlation />
           <p class="text-[11px] leading-[17px] text-dim">
             Market data shown for monitoring and context only. Analysis, not investment advice. Prices are the latest seeded quotes and may lag their providers.
@@ -368,58 +374,175 @@ function Indicators() {
   const flow = useHyperliquid();
   const stables = useStablecoins();
   const fearGreed = useFearGreed();
+  const calendar = useMacroCalendar();
+  const curves = useTreasuryCurves();
+  const bonds = useOtherBonds();
+  const etf = useEtfFlows();
+  const rates = useShippingRates();
+  const filings = useMaterialEvents();
   const digest = useDigest('finance');
-  const feeds = useMemo(
-    () => financeFeeds({ crypto, flow, stables, fearGreed, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
-    [crypto, flow, stables, fearGreed, digest],
-  );
+  const feeds = useMemo(() => {
+    const news = digest.status === 'ready' ? digestItems(digest.data) : [];
+    const now = Date.now();
+    return sortFeeds([
+      ...financeFeeds({ crypto, flow, stables, fearGreed, news, now }),
+      ...financeMacroFeeds({ calendar, curves, bonds, etf, flow, rates, filings, news, now }),
+    ]);
+  }, [crypto, flow, stables, fearGreed, calendar, curves, bonds, etf, rates, filings, digest]);
   const counts = feedCounts(feeds);
   return (
     <Panel
       title="Indicators"
-      sub={[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`].filter(Boolean).join(' · ')}
-      right={<><HealthDots feeds={feeds} /><DerivedTag how={`${FINANCE_RULES} Nothing is delivered yet.`} /></>}
+      right={<><HealthDots feeds={feeds} /><DerivedTag how={`${FINANCE_RULES} ${MACRO_RULES} Nothing is delivered yet.`} /></>}
       testId="risk-alerts"
     >
+      <p class="-mt-1 text-[11.5px] text-dim" data-testid="indicator-counts">
+        {[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`, 'newest first'].filter(Boolean).join(' · ')}
+      </p>
       <IndicatorFeed feeds={feeds} now={Date.now()} />
     </Panel>
   );
 }
 
+const dayLabel = (ymd: string) =>
+  new Date(`${ymd.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+/** "+0.3%", "+165k", or the raw string for other units. */
+function printValue(value: string, unit: string): string {
+  const n = Number.parseFloat(value);
+  if (!value.trim() || !Number.isFinite(n)) return '—';
+  if (/^k$/i.test(unit)) return macroValue(n, true);
+  return `${n < 0 ? MINUS : n > 0 ? '+' : ''}${Math.abs(n).toFixed(1)}${unit === '%' ? '%' : unit ? ` ${unit}` : ''}`;
+}
+
+function printChange(actual: string, previous: string, unit: string): { text: string; value: number } | null {
+  const a = Number.parseFloat(actual);
+  const p = Number.parseFloat(previous);
+  if (!actual.trim() || !previous.trim() || !Number.isFinite(a) || !Number.isFinite(p)) return null;
+  const d = a - p;
+  return { text: /^k$/i.test(unit) ? macroValue(d, true) : signed(d, 1, unit === '%' ? ' pt' : unit ? ` ${unit}` : ''), value: d };
+}
+
 function MacroCalendar({ search }: { search: string }) {
   const cal = useMacroCalendar();
   const rows = cal.status === 'ready'
-    ? cal.data
-        .filter((e) => matchesSearch(search, e.event, e.country))
+    ? cal.data.events
+        .filter((e) => /high|medium/i.test(e.impact) && matchesSearch(search, e.event, e.country))
         .sort((a, b) => a.date.localeCompare(b.date))
-        .filter((e) => /high|medium/i.test(e.impact))
-        .slice(0, 5)
+        .slice(0, 8)
     : [];
   return (
-    <Panel title="Macro calendar" sub="next 7 days" testId="macro-calendar">
-      <div class="flex gap-2">
-        <ColLabel class="w-[50px] text-[9.5px]">DATE</ColLabel>
-        <ColLabel class="flex-1 text-[9.5px]">EVENT</ColLabel>
-        <ColLabel class="w-12 text-[9.5px]">CONS.</ColLabel>
-        <ColLabel class="w-11 text-[9.5px]">PRIOR</ColLabel>
+    <Card
+      title="Macro calendar"
+      sub="recent releases & the next two weeks"
+      right={<DerivedTag how="CHANGE is the actual minus the prior print. No source gives a forecast yet, so the prior print stands in for one." />}
+      testId="macro-calendar"
+    >
+      <div class="flex flex-col gap-3 border-t border-line px-5 py-4">
+        <div class="flex gap-3">
+          <ColLabel class="w-[86px] text-[9.5px]">DATE</ColLabel>
+          <ColLabel class="flex-1 text-[9.5px]">EVENT</ColLabel>
+          <ColLabel class="w-16 text-right text-[9.5px]">PRIOR</ColLabel>
+          <ColLabel class="w-16 text-right text-[9.5px]">ACTUAL</ColLabel>
+          <ColLabel class="w-20 text-right text-[9.5px]">CHANGE</ColLabel>
+        </div>
+        {cal.status !== 'ready' ? (
+          <SourceState state={cal} source="economic calendar (seed-economic-calendar)" pad={false} />
+        ) : rows.length === 0 ? (
+          <p class="text-[12px] text-dim">No medium- or high-impact releases in this window.</p>
+        ) : (
+          rows.map((e) => {
+            const change = printChange(e.actual, e.previous, e.unit);
+            return (
+              <div key={`${e.date}${e.event}`} class="flex items-center gap-3 border-t border-line pt-3" data-macro-row>
+                <span class="w-[86px] shrink-0 font-mono text-[11.5px] text-dim">{dayLabel(e.date)}</span>
+                <span class="flex min-w-0 flex-1 items-center gap-[6px]">
+                  <span class="truncate text-[13px] text-ink" title={`${e.country} · ${e.event}`}>{e.country ? `${e.country} ` : ''}{e.event}</span>
+                  {/high/i.test(e.impact) ? <span class="font-mono text-[9px] font-semibold tracking-[0.5px] text-crit">HIGH</span> : null}
+                </span>
+                <span class="w-16 text-right font-mono text-[12px] text-muted">{printValue(e.previous, e.unit)}</span>
+                <span class="w-16 text-right font-mono text-[12px] font-medium text-ink">{printValue(e.actual, e.unit)}</span>
+                <span class={cx('w-20 text-right font-mono text-[12px]', change ? changeTone(change.value) : 'text-dim')}>{change ? change.text : '—'}</span>
+              </div>
+            );
+          })
+        )}
       </div>
-      {cal.status !== 'ready' ? (
-        <SourceState state={cal} source="economic calendar (seed-economic-calendar)" pad={false} />
-      ) : rows.length === 0 ? (
-        <p class="text-[12px] text-dim">No medium- or high-impact events this week.</p>
-      ) : (
-        rows.map((e) => (
-          <div key={`${e.date}${e.event}`} class="flex items-center gap-2">
-            <span class="w-[50px] font-mono text-[11.5px] text-muted">{new Date(`${e.date.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', timeZone: 'UTC' })}</span>
-            <span class="flex min-w-0 flex-1 items-center gap-[6px]">
-              <span class="truncate text-[12.5px] text-ink" title={`${e.country} · ${e.event}`}>{e.country ? `${e.country} ` : ''}{e.event}</span>
-              {/high/i.test(e.impact) ? <span class="font-mono text-[9px] font-semibold tracking-[0.5px] text-crit">HIGH</span> : null}
+    </Card>
+  );
+}
+
+const CURVE_TENORS = [
+  { key: 'threeMonth', label: '3M' },
+  { key: 'twoYear', label: '2Y' },
+  { key: 'fiveYear', label: '5Y' },
+  { key: 'tenYear', label: '10Y' },
+  { key: 'thirtyYear', label: '30Y' },
+] as const;
+
+const curveDate = (ts: number) => new Date(ts).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+function TreasuryCurve() {
+  const curves = useTreasuryCurves();
+  const win = curves.status === 'ready' ? treasuryWindow(curves.data) : null;
+  if (!win) {
+    return (
+      <Panel title="US Treasury curve" sub="today vs 1 week ago" testId="treasury-curve">
+        <SourceState state={curves.status === 'ready' ? { status: 'empty', data: null, at: curves.at } : curves} source="Treasury par yields (seed-us-treasury-par-yield)" pad={false} />
+      </Panel>
+    );
+  }
+  const { latest, weekAgo } = win;
+  const today = CURVE_TENORS.map((t) => latest[t.key] ?? null);
+  const before = CURVE_TENORS.map((t) => (weekAgo ? weekAgo[t.key] ?? null : null));
+  const values = [...today, ...before].filter((v): v is number => v != null);
+  const lo = Math.floor(Math.min(...values) * 10) / 10 - 0.05;
+  const hi = Math.ceil(Math.max(...values) * 10) / 10 + 0.05;
+  const W = 300;
+  const H = 120;
+  const x = (i: number) => 14 + (i / (CURVE_TENORS.length - 1)) * (W - 28);
+  const y = (v: number) => 8 + (1 - (v - lo) / (hi - lo || 1)) * (H - 16);
+  const path = (series: Array<number | null>) => series.map((v, i) => (v == null ? null : `${x(i)},${y(v)}`)).filter(Boolean).join(' ');
+  const grid = [lo + (hi - lo) * 0.15, (lo + hi) / 2, hi - (hi - lo) * 0.15];
+  const spread = spreadBp(latest);
+  const spreadWeek = spreadBp(weekAgo);
+  const flip = spread != null && spreadWeek != null && spread !== 0 && spreadWeek !== 0 && Math.sign(spread) !== Math.sign(spreadWeek);
+  const bp = (v: number) => `${v < 0 ? MINUS : '+'}${Math.abs(v).toFixed(0)} bp`;
+  return (
+    <Panel title="US Treasury curve" sub="today vs 1 week ago" testId="treasury-curve">
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-muted">
+        <span class="flex items-center gap-[6px]"><span class="h-[2px] w-4 rounded bg-ink" aria-hidden="true" />{curveDate(latest.date)}</span>
+        {weekAgo ? <span class="flex items-center gap-[6px]"><span class="h-[2px] w-4 rounded bg-dim" aria-hidden="true" />{curveDate(weekAgo.date)}</span> : <span class="text-dim">no curve a week back</span>}
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} class="h-[130px] w-full" role="img" aria-label={`US Treasury par yield curve on ${curveDate(latest.date)}${weekAgo ? ` and ${curveDate(weekAgo.date)}` : ''}`}>
+        {grid.map((g) => (
+          <g key={g}>
+            <line x1={0} x2={W} y1={y(g)} y2={y(g)} stroke="var(--color-line)" stroke-width={1} vector-effect="non-scaling-stroke" />
+            <text x={0} y={y(g) - 3} fill="var(--color-dim)" font-size="8" font-family="var(--font-mono)">{g.toFixed(1)}%</text>
+          </g>
+        ))}
+        {weekAgo ? <polyline points={path(before)} fill="none" stroke="var(--color-dim)" stroke-width={1.5} data-series="week-ago" /> : null}
+        <polyline points={path(today)} fill="none" stroke="var(--color-ink)" stroke-width={2} data-series="latest" />
+        {today.map((v, i) => (v == null ? null : <circle key={i} cx={x(i)} cy={y(v)} r={2.5} fill="var(--color-ink)" />))}
+      </svg>
+      <div class="grid grid-cols-5 gap-1 text-center">
+        {CURVE_TENORS.map((t, i) => {
+          const now = today[i];
+          const then = before[i];
+          const d = now != null && then != null ? (now - then) * 100 : null;
+          return (
+            <span key={t.key} class="flex flex-col gap-[2px]">
+              <span class="font-mono text-[10px] text-dim">{t.label}</span>
+              <span class="font-mono text-[11.5px] text-ink">{now != null ? now.toFixed(2) : '—'}</span>
+              <span class={cx('font-mono text-[10.5px]', d == null ? 'text-dim' : 'text-muted')}>{d != null ? bp(d) : '—'}</span>
             </span>
-            <span class="w-12 font-mono text-[11.5px] text-ink">{e.estimate || '—'}</span>
-            <span class="w-11 font-mono text-[11.5px] text-dim">{e.previous || '—'}</span>
-          </div>
-        ))
-      )}
+          );
+        })}
+      </div>
+      <p class="text-[11px] leading-4 text-dim">
+        {spread != null ? `2s10s ${bp(spread)}${spreadWeek != null ? ` (${bp(spread - spreadWeek)} w/w)` : ''}. ` : ''}
+        {flip ? '2s10s changed sign this week.' : 'No 2s10s sign flip in this window.'} Official par yields, data to {curveDate(latest.date)}.
+      </p>
     </Panel>
   );
 }
