@@ -37,9 +37,12 @@ import type { GetChokepointStatusResponse, GetShippingRatesResponse } from '@/ge
 import type { ListSanctionsPressureResponse } from '@/generated/client/worldmonitor/sanctions/v1/service_client';
 import type { ListMaterialEventsResponse } from '@/generated/client/worldmonitor/intelligence/v1/service_client';
 import type { ArxivPaper, HackernewsItem } from '@/generated/client/worldmonitor/research/v1/service_client';
+import type { ListInternetOutagesResponse, ListServiceStatusesResponse } from '@/generated/client/worldmonitor/infrastructure/v1/service_client';
+import { decodeRecentKev, decodeThreatHistory, type RecentKev, type ThreatHistory } from './tech-indicators';
 import {
   ConflictServiceClient,
   EconomicServiceClient,
+  InfrastructureServiceClient,
   IntelligenceServiceClient,
   MarketServiceClient,
   MilitaryServiceClient,
@@ -64,6 +67,7 @@ const research = new ResearchServiceClient(getRpcBaseUrl(), options);
 const unrest = new UnrestServiceClient(getRpcBaseUrl(), options);
 const seismology = new SeismologyServiceClient(getRpcBaseUrl(), options);
 const military = new MilitaryServiceClient(getRpcBaseUrl(), options);
+const infrastructure = new InfrastructureServiceClient(getRpcBaseUrl(), options);
 const supplyChain = new SupplyChainServiceClient(getRpcBaseUrl(), options);
 const sanctions = new SanctionsServiceClient(getRpcBaseUrl(), options);
 
@@ -326,6 +330,44 @@ export async function loadArxiv(): Promise<ArxivPaper[] | null> {
 
 export async function loadHackerNews(): Promise<HackernewsItem[] | null> {
   return (await research.listHackernewsItems({ feedType: 'top', pageSize: 30, cursor: '' })).items;
+}
+
+// Early indicators (spec: Catalogue › Technology and AI). Each loader returns
+// the whole response so a valid empty list (no outage, no KEV addition) stays
+// a ready, quiet state; a failed read throws and the feed reads unavailable.
+
+/** Cloudflare Radar outages. Read over RPC, not bootstrap: only the RPC carries `fetchedAt`. */
+export async function loadInternetOutages(): Promise<ListInternetOutagesResponse | null> {
+  return infrastructure.listInternetOutages({ start: 0, end: 0, pageSize: 0, cursor: '', country: '' });
+}
+
+/** Provider status pages; each record carries its own `checkedAt`. */
+export async function loadServiceStatuses(): Promise<ListServiceStatusesResponse | null> {
+  const boot = await hydrated('serviceStatuses', hasArray('statuses'));
+  const resp = boot ? (boot as unknown as ListServiceStatusesResponse) : await infrastructure.listServiceStatuses({ status: 'SERVICE_OPERATIONAL_STATUS_UNSPECIFIED' });
+  return resp.statuses.length ? resp : null;
+}
+
+/**
+ * On-demand bootstrap keys with no RPC (they add no public API operation).
+ * `ensureHydrated` answers undefined for both a miss and a failed fetch, so
+ * anything but a valid payload is an error, never an empty state.
+ */
+function required<T>(key: string, value: T | null): T {
+  if (value == null) throw new Error(`${key}: no payload`);
+  return value;
+}
+
+/** Daily attack-infrastructure counts (seed-cyber-threats). */
+export async function loadThreatHistory(): Promise<ThreatHistory> {
+  await startBootstrap();
+  return required('cyberThreatHistory', decodeThreatHistory(await ensureHydrated('cyberThreatHistory')));
+}
+
+/** CISA KEV additions of the last 30 days (seed-cve-reference). */
+export async function loadRecentKev(): Promise<RecentKev> {
+  await startBootstrap();
+  return required('kevRecent', decodeRecentKev(await ensureHydrated('kevRecent')));
 }
 
 // ---- Ingestion health -------------------------------------------------------

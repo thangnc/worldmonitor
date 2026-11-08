@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { isIP } from 'node:net';
-import { loadEnvFile, CHROME_UA, runSeed, verifySeedKey, writeExtraKey } from './_seed-utils.mjs';
+import { loadEnvFile, CHROME_UA, getRedisCredentials, readSeedSnapshot, redisCommand, runSeed, verifySeedKey, writeExtraKey, writeExtraKeyWithMetaAtomically } from './_seed-utils.mjs';
+import { CYBER_HISTORY_ACTIVATION_KEY, CYBER_HISTORY_KEY, CYBER_HISTORY_TTL_SECONDS, countThreats, mergeThreatHistory } from './_cyber-threat-history.mjs';
 
 loadEnvFile(import.meta.url);
 
@@ -800,6 +801,40 @@ export function toProto(raw) {
 // Main fetch function
 // ========================================================================
 
+/** This run's counts, set by fetchAllThreats and published after the snapshot. */
+let lastRunCounts = null;
+
+/**
+ * Fold this run's counts into the 30-day history (Lite attack-infrastructure
+ * spike). Runs only after the snapshot published. The previous history is read
+ * strictly: a failed read skips this run instead of publishing over the days.
+ */
+export async function publishThreatHistory(counts, nowMs = Date.now(), {
+  read = (key) => readSeedSnapshot(key, { strict: true, timeoutMs: 10_000 }),
+  write = writeExtraKeyWithMetaAtomically,
+  // Health treats the history probe as pending until this marker exists (api/health.js ACTIVATION_MARKERS).
+  markActivated = async () => {
+    const { url, token } = getRedisCredentials();
+    await redisCommand(url, token, ['SET', CYBER_HISTORY_ACTIVATION_KEY, '1']);
+  },
+} = {}) {
+  if (!counts || counts.total <= 0) return null;
+  let previous;
+  try {
+    previous = await read(CYBER_HISTORY_KEY);
+  } catch (err) {
+    console.warn(`  [history] previous ${CYBER_HISTORY_KEY} unreadable, history not updated: ${err.message || err}`);
+    return null;
+  }
+  const history = mergeThreatHistory(previous, counts, nowMs);
+  // One line on purpose: tests/seed-ttl-outlives-staleness-fleet.test.mjs reads the
+  // first line-leading `ttlSeconds:` as this seeder's canonical TTL (runSeed's, below).
+  await write({ key: CYBER_HISTORY_KEY, data: history, ttlSeconds: CYBER_HISTORY_TTL_SECONDS, recordCount: history.days.length, fetchedAt: nowMs });
+  await markActivated();
+  console.log(`  [history] ${CYBER_HISTORY_KEY}: ${history.days.length} day(s), today ${counts.total}`);
+  return history;
+}
+
 async function fetchAllThreats() {
   const now = Date.now();
   const cutoffMs = now - DEFAULT_DAYS * 86400000;
@@ -828,6 +863,8 @@ async function fetchAllThreats() {
   ]);
 
   console.log(`  Combined (deduped): ${combined.length}`);
+  // Counted before the snapshot cap, so the daily history sees every indicator.
+  lastRunCounts = countThreats(combined);
 
   // #4008: stamp a stable per-indicator first-seen (upstream when present, else
   // WorldMonitor-observed) before sort/proto so `firstSeenAt` is populated for
@@ -873,6 +910,14 @@ if (isMain) {
     ttlSeconds: CACHE_TTL,
     sourceVersion: 'multi-ioc-v2',
     extraKeys: [{ key: BOOTSTRAP_KEY, declareRecords }],
+    afterPublish: async () => {
+      try {
+        await publishThreatHistory(lastRunCounts);
+      } catch (err) {
+        // The snapshot is already live; a history write failure only ages its seed-meta.
+        console.warn(`  [history] write failed: ${err.message || err}`);
+      }
+    },
 
     declareRecords,
     schemaVersion: 1,

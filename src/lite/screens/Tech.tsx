@@ -3,8 +3,31 @@ import { Box, Check, CheckCheck, CloudOff, Cpu, Landmark, Quote, Scale, Server, 
 import { getLatestActions, getUpcomingDeadlines } from '@/config/ai-regulations';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
-import { selectTechDevelopments, useArxiv, useDigest, useHackerNews } from '../data/hooks';
-import { SAMPLE_INFRA_KPIS, SAMPLE_MODELS } from '../data/fixtures';
+import { HealthDots, IndicatorFeed } from '../components/indicator';
+import {
+  selectTechDevelopments,
+  useArxiv,
+  useDigest,
+  useHackerNews,
+  useInternetOutages,
+  useRecentKev,
+  useServiceStatuses,
+  useThreatHistory,
+} from '../data/hooks';
+import { SAMPLE_MODELS } from '../data/fixtures';
+import { MINUS } from '../format';
+import { feedCounts } from '../data/indicators';
+import type { ResourceState } from '../data/store';
+import {
+  SPIKE_BASELINE_DAYS,
+  TECH_RULES,
+  WATCHED_PROVIDERS,
+  isOutageLive,
+  isWatchedOutage,
+  kevWeekCounts,
+  techFeeds,
+  threatBaseline,
+} from '../data/tech-indicators';
 import {
   CORROBORATION_VIEW,
   TECH_FILTER_CATEGORIES,
@@ -88,6 +111,7 @@ export function Tech() {
           <ModelTracker />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
+          <Indicators />
           <Policy />
           <ResearchRadar />
           <InfraBusiness state={digest} />
@@ -264,20 +288,128 @@ function ResearchRadar() {
   );
 }
 
+function Indicators() {
+  const outages = useInternetOutages();
+  const services = useServiceStatuses();
+  const kev = useRecentKev();
+  const history = useThreatHistory();
+  const digest = useDigest('tech');
+  const feeds = useMemo(
+    () => techFeeds({ outages, services, kev, history, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
+    [outages, services, kev, history, digest],
+  );
+  const counts = feedCounts(feeds);
+  return (
+    <Panel
+      title="Indicators"
+      sub={[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`].filter(Boolean).join(' · ')}
+      right={<><HealthDots feeds={feeds} /><DerivedTag how={`${TECH_RULES} Nothing is delivered yet.`} /></>}
+      testId="tech-indicators"
+    >
+      <IndicatorFeed feeds={feeds} now={Date.now()} />
+    </Panel>
+  );
+}
+
+interface Tile {
+  key: string;
+  value: string;
+  delta: string;
+  source: string;
+  tone: Tone;
+}
+
+/** A tile for a source that failed or has not loaded: its state, never a number. */
+function stateTile(key: string, state: ResourceState<unknown>, source: string): Tile {
+  const value = state.status === 'loading' ? '…' : '—';
+  const delta = state.status === 'loading' ? 'loading' : state.status === 'error' ? 'source unavailable' : 'no data yet';
+  return { key, value, delta, source, tone: 'muted' };
+}
+
+function infraTiles(now: number, outages: ReturnType<typeof useInternetOutages>, services: ReturnType<typeof useServiceStatuses>, kev: ReturnType<typeof useRecentKev>, history: ReturnType<typeof useThreatHistory>): Tile[] {
+  const tiles: Tile[] = [];
+
+  if (outages.status === 'ready') {
+    const live = outages.data.outages.filter((o) => !o.endedAt);
+    const by = (sev: string) => live.filter((o) => o.severity === sev).length;
+    const parts = [
+      by('OUTAGE_SEVERITY_TOTAL') && `${by('OUTAGE_SEVERITY_TOTAL')} nationwide`,
+      by('OUTAGE_SEVERITY_MAJOR') && `${by('OUTAGE_SEVERITY_MAJOR')} regional`,
+      by('OUTAGE_SEVERITY_PARTIAL') && `${by('OUTAGE_SEVERITY_PARTIAL')} network`,
+    ].filter(Boolean);
+    const recent = outages.data.outages.filter((o) => isOutageLive(o, now)).length;
+    tiles.push({ key: 'Active outages', value: String(live.length), delta: parts.length ? parts.join(' · ') : `${recent} in the last 24 h`, source: 'Cloudflare Radar', tone: live.length ? 'high' : 'muted' });
+  } else tiles.push(stateTile('Active outages', outages, 'Cloudflare Radar'));
+
+  if (services.status === 'ready') {
+    const watched = services.data.statuses.filter((s) => s.id in WATCHED_PROVIDERS);
+    const down = watched.filter((s) => isWatchedOutage(s) || s.status === 'SERVICE_OPERATIONAL_STATUS_DEGRADED');
+    tiles.push({
+      key: 'Providers degraded',
+      value: `${down.length} / ${watched.length}`,
+      delta: down.length ? down.map((s) => s.name).join(' · ') : 'all operational',
+      source: 'status pages',
+      tone: down.some(isWatchedOutage) ? 'high' : down.length ? 'elev' : 'muted',
+    });
+  } else tiles.push(stateTile('Providers degraded', services, 'status pages'));
+
+  if (kev.status === 'ready') {
+    const { thisWeek, lastWeek } = kevWeekCounts(kev.data.items, now);
+    const diff = thisWeek - lastWeek;
+    tiles.push({
+      key: 'Exploited CVEs · week',
+      value: String(thisWeek),
+      delta: `${diff > 0 ? '+' : diff < 0 ? MINUS : '±'}${Math.abs(diff)} vs last week`,
+      source: 'CISA KEV',
+      tone: diff > 0 ? 'high' : 'muted',
+    });
+  } else tiles.push(stateTile('Exploited CVEs · week', kev, 'CISA KEV'));
+
+  if (history.status === 'ready') {
+    const base = threatBaseline(history.data);
+    const feeds = Object.keys(history.data.latest.bySource).length;
+    tiles.push(base.ratio != null && base.average != null
+      ? {
+          key: 'Threat indicators',
+          value: `×${base.ratio.toFixed(1)}`,
+          delta: `${base.latest.toLocaleString('en-US')} vs ${Math.round(base.average).toLocaleString('en-US')} avg`,
+          source: `${feeds} feeds`,
+          tone: base.ratio >= 2 ? 'high' : 'muted',
+        }
+      : {
+          key: 'Threat indicators',
+          value: base.latest.toLocaleString('en-US'),
+          delta: `baseline ${base.days} of ${SPIKE_BASELINE_DAYS} days`,
+          source: `${feeds} feeds`,
+          tone: 'muted',
+        });
+  } else tiles.push(stateTile('Threat indicators', history, 'threat feeds'));
+
+  return tiles;
+}
+
 function InfraBusiness({ state }: { state: ReturnType<typeof useDigest> }) {
+  const outages = useInternetOutages();
+  const services = useServiceStatuses();
+  const kev = useRecentKev();
+  const history = useThreatHistory();
+  const tiles = infraTiles(Date.now(), outages, services, kev, history);
   const deals = state.status === 'ready' ? digestItems(state.data, ['funding', 'hardware', 'cloud']).sort(byImportance).slice(0, 3) : [];
   return (
-    <Panel title="Infrastructure & business" right={<SampleBadge title="The KPI tiles have no source yet: design sample values. The stories below are live." />} testId="infra-business">
-      <div>
-        <div class="grid grid-cols-3 gap-px overflow-hidden rounded-[7px] border border-line bg-line">
-          {SAMPLE_INFRA_KPIS.map((k) => (
-            <div key={k.key} class="flex flex-col gap-[2px] bg-bg p-[10px]">
-              <span class="text-[10.5px] text-dim">{k.key}</span>
-              <span class="font-mono text-[17px] font-medium text-ink">{k.value}</span>
-              <span class={cx('font-mono text-[10.5px]', k.tone === 'ok' ? 'text-ok' : 'text-muted')}>{k.delta}</span>
-            </div>
-          ))}
-        </div>
+    <Panel
+      title="Infrastructure & business"
+      right={<DerivedTag how="Counts from the indicator feeds: outages Cloudflare lists as not ended; watched cloud and AI providers not operational; CVEs CISA added to KEV in the last 7 days against the 7 before; the latest threat-indicator count against its 7-day average. The stories below are from the tech digest." />}
+      testId="infra-business"
+    >
+      <div class="grid grid-cols-2 gap-px overflow-hidden rounded-[7px] border border-line bg-line">
+        {tiles.map((k) => (
+          <div key={k.key} class="flex flex-col gap-[2px] bg-bg p-[10px]" data-infra-tile={k.key}>
+            <span class="text-[10.5px] text-dim">{k.key}</span>
+            <span class="font-mono text-[17px] font-medium text-ink">{k.value}</span>
+            <span class={cx('font-mono text-[10.5px] leading-[14px]', TEXT[k.tone])}>{k.delta}</span>
+            <span class="text-[10px] text-dim">{k.source}</span>
+          </div>
+        ))}
       </div>
       {state.status !== 'ready' ? (
         <SourceState state={state} source="news digest (tech edition)" pad={false} />

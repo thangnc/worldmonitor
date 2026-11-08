@@ -51,6 +51,9 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   crossSourceSignals: 'intelligence:cross-source-signals:v1',
   wildfires: 'wildfire:fires-bootstrap:v1',
   cyberThreats: 'cyber:threats-bootstrap:v2',
+  // Lite Technology & AI indicators (docs/engineering/architecture/lite.md).
+  cyberThreatHistory: 'cyber:threats:history:v1',
+  kevRecent: 'cyber:kev-recent:v1',
   techReadiness: 'economic:worldbank-techreadiness:v1',
   progressData: 'economic:worldbank-progress:v1',
   renewableEnergy: 'economic:worldbank-renewable:v1',
@@ -191,6 +194,9 @@ const FAST_KEY_NAMES = new Set([
 const ON_DEMAND_KEY_NAMES = new Set([
   'ukmtoIncidents',
   'cyberThreats',
+  // Lite Tech indicators: 30 days of attack-infrastructure counts (~3 KB) and
+  // the last 30 days of CISA KEV additions (~17 KB), read only by /lite/tech.
+  'cyberThreatHistory', 'kevRecent',
   'chinaPolicyEvents', 'chinaDecisionSignals',
   'bisDsr', 'bisPropertyResidential', 'bisPropertyCommercial',
   // One row of this feeds the Central Banks tab's policy-rate list, which BIS
