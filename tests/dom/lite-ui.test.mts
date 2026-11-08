@@ -628,6 +628,9 @@ describe('Lite indicator card', () => {
         return json({ protocol: [], vector: [], dateRangeStart: '', dateRangeEnd: '', topTargetLocations: [{ countryCode: 'US', countryName: 'United States', percentage: 11.2, latitude: 39, longitude: -98 }] });
       }
       if (url.includes('/api/infrastructure/v1/get-cable-health')) return json({ generatedAt: now, cables: {} });
+      if (url.includes('/api/infrastructure/v1/list-service-statuses')) {
+        return json({ statuses: [{ id: 'cloudflare', name: 'Cloudflare', status: 'SERVICE_OPERATIONAL_STATUS_PARTIAL_OUTAGE', description: 'Partial System Outage', url: '', checkedAt: now - 60_000, latencyMs: 80 }] });
+      }
       if (url.includes('/data/countries.geojson')) {
         return json({ type: 'FeatureCollection', features: [
           { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[-100, 30], [-90, 30], [-90, 40], [-100, 30]]] }, properties: { 'ISO3166-1-Alpha-2': 'US' } },
@@ -650,7 +653,7 @@ describe('Lite indicator card', () => {
         expect(map().querySelector('[data-marker="outage:cf-1"]')).not.toBeNull();
         expect(map().querySelector('[data-marker^="attack:"]')).not.toBeNull();
         expect(map().querySelector('[data-marker="ddos:US"]')).not.toBeNull();
-        expect(map().querySelector('[data-marker^="cloud:aws-"]')).not.toBeNull();
+        expect(map().querySelector('[data-marker^="cloud:aws:"]')).not.toBeNull();
       }, { timeout: 10_000, interval: 50 });
       // Cables and DDoS shading are GeoJSON overlays: 98 cable lines; the US fill once countries.geojson loads.
       const { __FakeMap: __fake } = (await import('maplibre-gl')) as unknown as { __FakeMap: { last: { layers: Array<{ id: string }>; sources: Map<string, { data: { features: Array<{ properties: { id: string; tone: string } }> } }> } } };
@@ -678,6 +681,14 @@ describe('Lite indicator card', () => {
       await act(() => card.click());
       await flush();
       expect(map().querySelector('[data-map-popup="outage:cf-1"]')?.textContent).toContain('Yemen');
+
+      // A provider outage opens the card of that provider's first region (Cloudflare's ids are cf-*), shown amber: no region named.
+      const service = root.querySelector('[data-testid="tech-indicators"] button[data-indicator="service-outage"]') as HTMLButtonElement;
+      await act(() => service.click());
+      await flush();
+      const regionCard = map().querySelector('[data-map-popup^="cloud:cloudflare:"]') as HTMLElement;
+      expect(regionCard?.textContent).toContain('Degraded');
+      expect(regionCard?.textContent).toContain('Partial System Outage');
     } finally {
       vi.stubGlobal('fetch', base);
       vi.mocked(bootstrap.ensureHydrated).mockImplementation(async () => undefined);

@@ -192,7 +192,7 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
   // Resolve an indicator's focus key against the markers on the map.
   const focusId = useMemo(() => {
     if (!focus) return null;
-    if (focus.startsWith('provider:')) return built.markers.find((m) => m.id.startsWith(`cloud:${focus.slice('provider:'.length)}-`))?.id ?? null;
+    if (focus.startsWith('provider:')) return built.markers.find((m) => m.id.startsWith(`cloud:${focus.slice('provider:'.length)}:`))?.id ?? null;
     if (focus === 'attackers') return built.markers.find((m) => m.id.startsWith('attack:'))?.id ?? null;
     return built.markers.find((m) => m.id === focus)?.id ?? null;
   }, [focus, built]);
@@ -240,7 +240,7 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
         <div class="relative h-[320px] overflow-hidden bg-bg/40 md:h-[440px]">
           <LiteMap markers={built.markers} overlays={built.overlays} fit="world" focusId={focusId} onSelect={(id) => { if (!id) onFocus(null); }} />
           {failed.length ? (
-            <div class="absolute left-14 right-14 top-4 flex flex-wrap gap-2">
+            <div class="absolute left-14 right-14 top-4 z-[4] flex flex-wrap gap-2">
               {failed.map((f) => (
                 <span key={f.name} class="rounded-[6px] border border-line bg-surface/90 px-2 py-1 text-[11px] text-high" data-source-state="error">
                   {f.name}: source unavailable · {f.source}
@@ -248,7 +248,7 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
               ))}
             </div>
           ) : null}
-          <div class="absolute bottom-3 left-3 hidden flex-col gap-[5px] rounded-[8px] border border-line bg-surface/90 px-3 py-[9px] md:flex" data-testid="infra-map-legend">
+          <div class="absolute bottom-3 left-3 z-[4] hidden flex-col gap-[5px] rounded-[8px] border border-line bg-surface/90 px-3 py-[9px] md:flex" data-testid="infra-map-legend">
             {LEGEND.filter((l) => layers[l.key]).map((l) => (
               <span key={l.key} class="flex items-center gap-2 text-[11px]">
                 <span class="flex w-6 justify-center">{l.mark}</span>

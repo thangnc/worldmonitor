@@ -34,6 +34,11 @@ const DAY_MS = 86_400_000;
 export const MAP_OUTAGE_DAYS = 7;
 /** Attack-server cells, in degrees. */
 export const HEX_CELL_DEG = 8;
+/**
+ * A cell this close (in degrees) to a busier one joins it, so hexagons never
+ * overlap at world zoom, where 8° is about 20 px and a hexagon is 24 px wide.
+ */
+export const HEX_MIN_SEPARATION_DEG = 14;
 /** AI data centres shown: existing sites with at least this many chips. */
 export const DATACENTER_MIN_CHIPS = 20_000;
 /** DDoS targets labelled with their share. */
@@ -125,7 +130,28 @@ export function attackHexes(threats: readonly CyberThreat[]): GlyphMarker[] {
     if (t.country) c.countries.set(t.country, (c.countries.get(t.country) ?? 0) + 1);
   }
   const top = (m: Map<string, number>) => [...m.entries()].sort((a, b) => b[1] - a[1]);
-  return [...cells.entries()]
+  // Busiest first; a cell near an already kept one folds into it.
+  const kept: Array<[string, NonNullable<ReturnType<typeof cells.get>>]> = [];
+  const mergeInto = (into: Map<string, number>, from: Map<string, number>) => {
+    for (const [k, n] of from) into.set(k, (into.get(k) ?? 0) + n);
+  };
+  for (const [key, c] of [...cells.entries()].sort((a, b) => b[1].n - a[1].n)) {
+    const near = kept.find(([, k]) => Math.hypot(k.lat / k.n - c.lat / c.n, k.lon / k.n - c.lon / c.n) < HEX_MIN_SEPARATION_DEG);
+    if (!near) {
+      kept.push([key, c]);
+      continue;
+    }
+    // The kept hexagon stays where it is; only its counts grow.
+    const k = near[1];
+    const scale = (k.n + c.n) / k.n;
+    k.lat *= scale;
+    k.lon *= scale;
+    k.n += c.n;
+    mergeInto(k.bySource, c.bySource);
+    mergeInto(k.families, c.families);
+    mergeInto(k.countries, c.countries);
+  }
+  return kept
     .sort((a, b) => b[1].n - a[1].n)
     .map(([key, c], rank): GlyphMarker => {
       const families = top(c.families);
@@ -183,7 +209,7 @@ const OUTAGE_STATUSES = new Set(['SERVICE_OPERATIONAL_STATUS_PARTIAL_OUTAGE', 'S
 /** The region code ("us-east-1") or its name ("N. Virginia") appears in the incident text. */
 export function incidentNamesRegion(region: CloudRegion, text: string): boolean {
   if (!text) return false;
-  const code = region.id.replace(/^(aws|gcp|azure|cloudflare)-/, '');
+  const code = region.id.replace(/^[a-z]+-/, '');
   const lower = text.toLowerCase();
   if (code.length >= 5 && lower.includes(code.toLowerCase())) return true;
   const inner = /\(([^)]+)\)/.exec(region.name)?.[1];
@@ -200,7 +226,8 @@ export function cloudRegionMarkers(regions: readonly CloudRegion[], statuses: re
     const provider = PROVIDER_NAME[r.provider];
     const state = !status ? 'status unknown' : named ? 'incident names this region' : out ? `${provider} outage, no region named` : 'operational';
     return {
-      kind: 'glyph', shape: 'square', tone, hollow: tone === 'muted', id: `cloud:${r.id}`, lat: r.lat, lon: r.lon,
+      // The provider is in the id, so an indicator can find its regions (Cloudflare's ids are cf-*).
+      kind: 'glyph', shape: 'square', tone, hollow: tone === 'muted', id: `cloud:${r.provider}:${r.id}`, lat: r.lat, lon: r.lon,
       title: `${provider} ${r.name}: ${state}`,
       popup: {
         kind: `Cloud region · ${provider}`, name: r.name, value: named ? 'Named' : out ? 'Degraded' : status ? 'OK' : '—',

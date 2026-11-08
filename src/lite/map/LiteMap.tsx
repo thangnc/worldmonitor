@@ -593,7 +593,10 @@ export function LiteMap({
         const [dx, dy] = pin?.nudge ?? [0, 0];
         const glyph = s.type === 'marker' && s.marker.kind === 'glyph' ? s.marker : null;
         const offset: [number, number] = [(glyph ? -glyphWidth(glyph.shape) / 2 : pin ? -8 : -9) + dx, dy];
-        const options = hotspot ? { element: el, anchor: 'left' as const, offset } : { element: el };
+        // A tag sits just above its point, so it never hides the mark there.
+        const options = glyph?.shape === 'tag'
+          ? { element: el, anchor: 'bottom' as const, offset: [0, -10] as [number, number] }
+          : hotspot ? { element: el, anchor: 'left' as const, offset } : { element: el };
         entry = { marker: new lib.Marker(options).setLngLat(lngLat).addTo(map), el };
         onMap.set(id, entry);
       } else {
@@ -604,11 +607,11 @@ export function LiteMap({
       // A hotspot's element spans its name too, so only the diamond button inside takes clicks.
       // Pins: signals on top, chokepoints over lanes, centres at the bottom.
       const named = s.type === 'marker' && s.marker.kind !== 'ucdp' && Boolean(s.marker.label);
-      // Glyphs: attack hexagons on top, tags at the bottom.
+      // Glyphs: tags on top (they are small and sit above their point), then attack hexagons.
       const pinLayer = s.type === 'marker' && s.marker.kind === 'pin'
         ? s.marker.shape === 'signal' ? (s.marker.fired ? 'z-[3]' : 'z-[2]') : s.marker.shape === 'chokepoint' ? 'z-[1]' : 'z-0'
         : s.type === 'marker' && s.marker.kind === 'glyph'
-          ? s.marker.shape === 'hex' ? 'z-[2]' : s.marker.shape === 'tag' ? 'z-0' : 'z-[1]'
+          ? s.marker.shape === 'tag' ? 'z-[3]' : s.marker.shape === 'hex' ? 'z-[2]' : 'z-[1]'
           : null;
       entry.el.classList.remove('z-0', 'z-[1]', 'z-[2]', 'z-[3]', 'pointer-events-none');
       entry.el.classList.add(pinLayer ?? (!hotspot ? 'z-[1]' : named ? 'z-[2]' : 'z-0'));

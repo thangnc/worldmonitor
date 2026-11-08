@@ -669,6 +669,12 @@ describe('Lite tech map', async () => {
     assert.equal(hexes[0]!.label, 'QakBot · CobaltStrike', 'OTX pulse titles are not families');
     assert.equal(hexes[1]!.label, undefined);
     assert.match(hexes[0]!.popup.lines.at(-1)!.text, /Not who they hit/);
+    // Two cells 9° apart would overlap at world zoom: the smaller joins the busier one, which keeps its place.
+    const merged = attackHexes([threat(10, 10, 'CYBER_THREAT_SOURCE_FEODO'), threat(10.5, 10.5, 'CYBER_THREAT_SOURCE_FEODO'), threat(18.5, 10, 'CYBER_THREAT_SOURCE_OTX')]);
+    assert.equal(merged.length, 1);
+    assert.equal(merged[0]!.text, '3');
+    assert.ok(Math.abs(merged[0]!.lat - 10.25) < 1e-9);
+    assert.equal(attackHexes([threat(10, 10, 'CYBER_THREAT_SOURCE_FEODO'), threat(40, 10, 'CYBER_THREAT_SOURCE_FEODO')]).length, 2);
   });
 
   it('places outages of the last 7 days, hollow once they ended over 24 h ago', () => {
