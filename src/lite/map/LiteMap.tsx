@@ -79,9 +79,6 @@ export interface PinMarker extends MarkerBase {
   heading?: number;
   tone: Tone;
   fired: boolean;
-  /** Name chip beside the mark, and its second line. Hidden on phones. */
-  label?: string;
-  sub?: string;
   /** Pixel nudge for a pin that would sit on a neighbour at world zoom (Fed and NYSE). */
   nudge?: [number, number];
 }
@@ -93,8 +90,6 @@ export interface GlyphMarker extends MarkerBase {
   tone: GlyphTone;
   /** Inside the glyph: a count on a hexagon, the text of a tag. */
   text?: string;
-  /** Beside the glyph, hidden on phones. */
-  label?: string;
   /** Outline only: an ended outage, a quiet region. */
   hollow?: boolean;
 }
@@ -255,29 +250,21 @@ function Pin({ marker, selected, onClick }: { marker: PinMarker; selected: boole
   if (marker.shape === 'centre') {
     return <span class="flex h-[16px] w-[16px] items-center justify-center" title={marker.title}><PinMark shape="centre" tone="dim" fired={false} /></span>;
   }
-  const chip = marker.shape === 'signal' ? (marker.fired ? 'text-fin' : 'text-muted') : marker.tone === 'dim' ? 'text-muted' : TEXT[marker.tone];
+  // No name chip beside the mark: what a pin says opens in its card on click.
   return (
-    <div class="pointer-events-none flex items-center gap-[5px]">
-      <button
-        type="button"
-        aria-label={marker.title}
-        aria-expanded={selected}
-        title={marker.title}
-        class={cx('pointer-events-auto flex h-[16px] w-[16px] cursor-pointer items-center justify-center rounded-full', selected && 'ring-2 ring-ink/60')}
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick();
-        }}
-      >
-        <PinMark shape={marker.shape} tone={marker.tone} fired={marker.fired} heading={marker.heading} />
-      </button>
-      {marker.label ? (
-        <span class={cx('hidden flex-col rounded-[4px] border bg-bg/85 px-[6px] py-[2px] sm:flex', marker.fired ? 'border-line' : 'border-transparent')}>
-          <span class={cx('whitespace-nowrap text-[11px] font-medium leading-4', chip)}>{marker.label}</span>
-          {marker.sub ? <span class="whitespace-nowrap font-mono text-[10px] leading-[14px] text-muted">{marker.sub}</span> : null}
-        </span>
-      ) : null}
-    </div>
+    <button
+      type="button"
+      aria-label={marker.title}
+      aria-expanded={selected}
+      title={marker.title}
+      class={cx('pointer-events-auto flex h-[16px] w-[16px] cursor-pointer items-center justify-center rounded-full', selected && 'ring-2 ring-ink/60')}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+    >
+      <PinMark shape={marker.shape} tone={marker.tone} fired={marker.fired} heading={marker.heading} />
+    </button>
   );
 }
 
@@ -316,23 +303,21 @@ export function GlyphMark({ shape, tone, text, hollow, selected = false }: Pick<
 }
 
 function Glyph({ marker, selected, onClick }: { marker: GlyphMarker; selected: boolean; onClick: () => void }) {
+  // No name beside the glyph: what it stands for opens in its card on click.
   return (
-    <div class="pointer-events-none flex items-center gap-[5px]">
-      <button
-        type="button"
-        aria-label={marker.title}
-        aria-expanded={selected}
-        title={marker.title}
-        class="pointer-events-auto flex cursor-pointer"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick();
-        }}
-      >
-        <GlyphMark shape={marker.shape} tone={marker.tone} text={marker.text} hollow={marker.hollow} selected={selected} />
-      </button>
-      {marker.label ? <span class={cx('hidden whitespace-nowrap rounded-[3px] bg-bg/85 px-[5px] py-px text-[10.5px] leading-4 sm:inline', TONE_TEXT[marker.tone])}>{marker.label}</span> : null}
-    </div>
+    <button
+      type="button"
+      aria-label={marker.title}
+      aria-expanded={selected}
+      title={marker.title}
+      class="pointer-events-auto flex cursor-pointer"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+    >
+      <GlyphMark shape={marker.shape} tone={marker.tone} text={marker.text} hollow={marker.hollow} selected={selected} />
+    </button>
   );
 }
 
@@ -631,7 +616,7 @@ export function LiteMap({
       // Named hotspots draw above UCDP circles; grey unnamed ones below, so they never cover a death count.
       // A hotspot's element spans its name too, so only the diamond button inside takes clicks.
       // Pins: signals and sea incidents on top, chokepoints over lanes, centres and aircraft at the bottom.
-      const named = s.type === 'marker' && s.marker.kind !== 'ucdp' && Boolean(s.marker.label);
+      const named = s.type === 'marker' && s.marker.kind === 'hotspot' && Boolean(s.marker.label);
       // Glyphs: tags on top (they are small and sit above their point), then attack hexagons.
       const pinLayer = s.type === 'marker' && s.marker.kind === 'pin'
         ? s.marker.shape === 'signal' ? (s.marker.fired ? 'z-[3]' : 'z-[2]')

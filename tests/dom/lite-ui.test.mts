@@ -508,14 +508,23 @@ describe('Lite indicator card', () => {
         expect(map().querySelector('[data-marker="chokepoint:bab_el_mandeb"]')).not.toBeNull();
       }, { timeout: 10_000, interval: 50 });
 
-      // Crypto feeds have no pin; the fired Treasury feed is a labelled pin at the Fed.
+      // Crypto feeds have no pin; the fired Treasury feed is a pin at the Fed.
       const drawn = [...map().querySelectorAll('[data-marker^="signal:"]')].map((m) => m.getAttribute('data-marker'));
       expect(drawn).not.toContain('signal:btc');
       const fed = map().querySelector('[data-marker="signal:fed"]') as HTMLElement;
-      expect(fed.textContent).toContain('Fed · UST 10Y 4.86% +11 bp');
-      expect(map().querySelector('[data-marker="chokepoint:bab_el_mandeb"]')?.textContent).toContain('Bab El-Mandeb');
-      // A chokepoint the source did not report is drawn grey, without a name chip.
-      expect(map().querySelector('[data-marker="chokepoint:panama"]')?.textContent).toBe('');
+      expect(fed.querySelector('button')?.getAttribute('aria-label')).toContain('Fed · UST 10Y 4.86% +11 bp');
+      // Nothing opens by itself: no name chips beside pins, no card, and the legend waits behind its button.
+      expect(fed.textContent).toBe('');
+      expect(map().querySelector('[data-marker="chokepoint:bab_el_mandeb"]')?.textContent).toBe('');
+      expect(map().querySelector('[data-map-popup]')).toBeNull();
+      expect(map().querySelector('[data-testid="markets-legend"]')).toBeNull();
+      const legendToggle = map().querySelector('[data-testid="markets-legend-toggle"]') as HTMLButtonElement;
+      expect(legendToggle.getAttribute('aria-expanded')).toBe('false');
+      await act(() => legendToggle.click());
+      expect([...map().querySelectorAll('[data-testid="markets-legend"] [data-legend-row]')].map((r) => r.getAttribute('data-legend-row'))).toEqual(['Finance signals', 'Chokepoints', 'Shipping lanes', 'New sanctions', 'Financial centres']);
+      expect(legendToggle.getAttribute('aria-expanded')).toBe('true');
+      await act(() => legendToggle.click());
+      expect(map().querySelector('[data-testid="markets-legend"]')).toBeNull();
 
       // The pin opens the same indicator card the panel shows.
       await act(() => (fed.querySelector('button') as HTMLButtonElement).click());
@@ -664,6 +673,15 @@ describe('Lite indicator card', () => {
         expect(map().querySelector('[data-marker="ddos:US"]')).not.toBeNull();
         expect(map().querySelector('[data-marker^="cloud:aws:"]')).not.toBeNull();
       }, { timeout: 10_000, interval: 50 });
+      // Nothing opens by itself: no names beside the glyphs, no card, and the legend waits behind its button.
+      expect(map().querySelector('[data-marker="outage:cf-1"]')?.textContent).toBe('');
+      expect(map().querySelector('[data-map-popup]')).toBeNull();
+      expect(map().querySelector('[data-testid="infra-map-legend"]')).toBeNull();
+      await act(() => (map().querySelector('[data-testid="infra-map-legend-toggle"]') as HTMLButtonElement).click());
+      expect(map().querySelectorAll('[data-testid="infra-map-legend"] [data-legend-row]').length).toBe(6);
+      await act(() => (map().querySelector('[data-testid="infra-map-legend-toggle"]') as HTMLButtonElement).click());
+      expect(map().querySelector('[data-testid="infra-map-legend"]')).toBeNull();
+
       // Cables and DDoS shading are GeoJSON overlays: 98 cable lines; the US fill once countries.geojson loads.
       const { __FakeMap: __fake } = (await import('maplibre-gl')) as unknown as { __FakeMap: { last: { layers: Array<{ id: string }>; sources: Map<string, { data: { features: Array<{ properties: { id: string; tone: string } }> } }> } } };
       await vi.waitFor(async () => {

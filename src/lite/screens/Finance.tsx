@@ -210,8 +210,6 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
         out.push({
           kind: 'pin', shape: 'chokepoint', tone: c.tone, fired: c.tone !== 'dim', id: c.id, lat: c.lat, lon: c.lon,
           title: `${c.name} · ${c.info ? c.status : 'no status read'}`,
-          label: c.tone !== 'dim' ? c.name : undefined,
-          sub: c.moved ?? undefined,
           popup: {
             kind: 'Chokepoint',
             name: c.name,
@@ -229,16 +227,12 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
     }
     if (layers.signals) {
       for (const p of pins) {
-        const [first, ...rest] = p.signals;
         const fired = p.signals.filter((s) => s.fired && s.indicator);
         out.push({
           kind: 'pin', shape: 'signal', tone: 'muted', fired: p.fired, id: p.id, lat: p.issuer.lat, lon: p.issuer.lon,
           // New York sits on Washington at world zoom: lift the NYSE pin clear of the Fed's.
           nudge: p.issuer.id === 'nyse' ? [6, -14] : undefined,
           title: `${p.issuer.short} · ${p.signals.map((s) => s.text).join(' · ')}`,
-          // Only fired pins carry a name chip; quiet ones keep the map readable and show it on hover.
-          label: p.fired && first ? `${p.issuer.short} · ${first.text}` : undefined,
-          sub: p.fired && rest.length ? rest.map((s) => s.text).join(' · ') : undefined,
           popup: {
             kind: p.issuer.name,
             name: p.issuer.short,
@@ -308,7 +302,7 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
     >
       <div class="relative h-[320px] border-t border-line md:h-[400px]">
         <LiteMap markers={markers} fit="world" overlays={overlays} focusId={focus} onSelect={(id) => { if (!id) onFocus(null); }} />
-        <MapLegend testId="markets-legend">
+        <MapLegend testId="markets-legend" collapsible>
           <LegendRow mark={<span class="flex gap-[3px]"><PinMark shape="signal" tone="muted" fired /><PinMark shape="signal" tone="muted" fired={false} /></span>} name="Finance signals" note="fired · quiet" />
           <LegendRow mark={<span class="flex gap-[3px]"><PinMark shape="chokepoint" tone="dim" fired={false} /><PinMark shape="chokepoint" tone="crit" fired /></span>} name="Chokepoints" note="red = disrupted" />
           <LegendRow mark={<span class="flex gap-[3px]"><span class="mt-[5px] block h-[2px] w-[10px] bg-track" /><span class="mt-[5px] block h-[2px] w-[10px] bg-elev" /></span>} name="Shipping lanes" note="amber = at risk" />

@@ -153,7 +153,7 @@ export function attackHexes(threats: readonly CyberThreat[]): GlyphMarker[] {
   }
   return kept
     .sort((a, b) => b[1].n - a[1].n)
-    .map(([key, c], rank): GlyphMarker => {
+    .map(([key, c]): GlyphMarker => {
       const families = top(c.families);
       const family = families[0]?.[0];
       const lat = c.lat / c.n;
@@ -161,8 +161,6 @@ export function attackHexes(threats: readonly CyberThreat[]): GlyphMarker[] {
       return {
         kind: 'glyph', shape: 'hex', tone: 'muted', id: `attack:${key}`, lat, lon,
         text: compactCount(c.n),
-        // Only the busiest cells carry a family name, so labels do not crowd the map.
-        label: rank < 4 && family ? families.slice(0, 2).map(([f]) => f).join(' · ') : undefined,
         title: `${c.n} attack-infrastructure indicators located here${family ? `, mostly ${family}` : ''}`,
         popup: {
           kind: 'Attack servers · threat feeds', name: top(c.countries).slice(0, 3).map(([country]) => country).join(', ') || 'Unknown country', value: c.n.toLocaleString('en-US'),
@@ -188,7 +186,6 @@ export function outageMarkers(outages: readonly InternetOutage[], now: number): 
       return {
         kind: 'glyph', shape: 'dot', tone: SEVERITY_TONE[o.severity] ?? 'elev', hollow: !live,
         id: `outage:${o.id}`, lat: o.location!.latitude, lon: o.location!.longitude,
-        label: live ? o.country : undefined,
         title: `${SEVERITY_WORD[o.severity] ?? 'Internet'} outage in ${o.country}, ${ongoing ? 'ongoing' : 'ended'} (Cloudflare Radar)`,
         popup: {
           kind: 'Internet outage · Cloudflare Radar', name: o.country || 'Unknown country', value: SEVERITY_WORD[o.severity] ?? 'Outage',

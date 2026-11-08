@@ -6,6 +6,7 @@ import { Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, 
 import { HealthDots, IndicatorFeed } from '../components/indicator';
 import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
 import { GlyphMark, LiteMap, type GlyphMarker, type MapOverlays } from '../map/LiteMap';
+import { LegendRow, MapLegend } from '../map/legend';
 import {
   selectTechDevelopments,
   useArxiv,
@@ -248,15 +249,9 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
               ))}
             </div>
           ) : null}
-          <div class="absolute bottom-3 left-3 z-[4] hidden flex-col gap-[5px] rounded-[8px] border border-line bg-surface/90 px-3 py-[9px] md:flex" data-testid="infra-map-legend">
-            {LEGEND.filter((l) => layers[l.key]).map((l) => (
-              <span key={l.key} class="flex items-center gap-2 text-[11px]">
-                <span class="flex w-6 justify-center">{l.mark}</span>
-                <span class="text-ink">{l.label}</span>
-                <span class="text-dim">{l.sub}</span>
-              </span>
-            ))}
-          </div>
+          <MapLegend testId="infra-map-legend" collapsible>
+            {LEGEND.filter((l) => layers[l.key]).map((l) => <LegendRow key={l.key} mark={l.mark} name={l.label} note={l.sub} />)}
+          </MapLegend>
         </div>
         <div class="grid grid-cols-1 border-t border-line md:grid-cols-2">
           <div class="flex gap-[10px] px-5 py-3 md:border-r md:border-line">

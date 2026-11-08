@@ -830,8 +830,8 @@ describe('Lite tech map', async () => {
     ]);
     assert.equal(hexes.length, 2);
     assert.equal(hexes[0]!.text, '4');
-    assert.equal(hexes[0]!.label, 'QakBot · CobaltStrike', 'OTX pulse titles are not families');
-    assert.equal(hexes[1]!.label, undefined);
+    assert.equal(hexes[0]!.popup.lines[1]!.text, 'Families: QakBot 2, CobaltStrike 1', 'OTX pulse titles are not families');
+    assert.equal(hexes[1]!.popup.lines[1]!.text, 'No family named (OTX and AbuseIPDB carry none)');
     assert.match(hexes[0]!.popup.lines.at(-1)!.text, /Not who they hit/);
     // Two cells 9° apart would overlap at world zoom: the smaller joins the busier one, which keeps its place.
     const merged = attackHexes([threat(10, 10, 'CYBER_THREAT_SOURCE_FEODO'), threat(10.5, 10.5, 'CYBER_THREAT_SOURCE_FEODO'), threat(18.5, 10, 'CYBER_THREAT_SOURCE_OTX')]);
