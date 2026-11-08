@@ -3,6 +3,7 @@
 // and src/main.ts, and the labelled heuristics the widgets display.
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   LITE_SCREEN_PATHS,
   parseLiteScreen,
@@ -32,6 +33,21 @@ import { TIME_RANGE_HOURS, inTimeRange } from '../src/lite/data/transforms.ts';
 import type { Hotspot } from '../src/types/index.ts';
 import type { UcdpViolenceEvent } from '../src/generated/client/worldmonitor/conflict/v1/service_client.ts';
 import { OPENFREEMAP_TILEJSON, buildLiteMapStyle } from '../src/lite/map/style.ts';
+import {
+  CONNECTORS,
+  digestConnectorStatus,
+  healthConnectorStatus,
+  licenceTally,
+  minutesLabel,
+  sortConnectorRows,
+  tierRows,
+  type ConnectorRow,
+} from '../src/lite/data/connectors.ts';
+import type { CompactHealth } from '../src/lite/data/sources.ts';
+import type { ResourceState } from '../src/lite/data/store.ts';
+import { SOURCE_TIERS } from '../server/_shared/source-tiers.ts';
+import { __testing__ as healthTesting } from '../api/health.js';
+import attributionManifest from '../shared/source-attribution-manifest.json' with { type: 'json' };
 import { WORLD_BOUNDS, compactCount, markerBounds, placeCard, ucdpRadius } from '../src/lite/map/view.ts';
 import type { ListFeedDigestResponse, NewsItem } from '../src/generated/client/worldmonitor/news/v1/service_client.ts';
 import {
@@ -84,6 +100,7 @@ describe('Lite routes', () => {
     assert.equal(parseLiteScreen('/lite/geopolitics'), 'geopolitics');
     assert.equal(parseLiteScreen('/lite/finance'), 'finance');
     assert.equal(parseLiteScreen('/lite/tech/'), 'tech');
+    assert.equal(parseLiteScreen('/lite/sources'), 'sources');
     assert.equal(parseLiteScreen('/lite/unknown'), 'briefing');
     for (const [screen, path] of Object.entries(LITE_SCREEN_PATHS)) assert.equal(parseLiteScreen(path), screen);
   });
@@ -153,9 +170,9 @@ describe('Lite default route (middleware.ts)', () => {
     }
   });
 
-  it('lets exactly the four Lite paths through the unknown-page 404 gate', () => {
+  it('lets exactly the five Lite paths through the unknown-page 404 gate', () => {
     delete process.env.VITE_LITE_PROFILE;
-    for (const path of ['/lite', '/lite/', '/lite/geopolitics', '/lite/finance', '/lite/tech']) {
+    for (const path of ['/lite', '/lite/', '/lite/geopolitics', '/lite/finance', '/lite/tech', '/lite/sources']) {
       const resp = middleware(request(path)) as Response | undefined;
       assert.notEqual(resp?.status, 404, path);
     }
@@ -594,6 +611,31 @@ describe('Lite market events: price links', () => {
     assert.deepEqual(namedInstruments(item({ title: 'Bank of Japan holds rates' })), []);
   });
 
+  it('names US10Y only for US government debt, not any yield or the Treasury department', () => {
+    const us10y = (title: string) => namedInstruments(item({ title })).some((i) => i.symbol === '^TNX');
+    // Headlines from the live digest, 2026-11-08.
+    for (const title of [
+      'OCBC Sees US Treasury Yields At Lower Levels After Bond Rally',
+      'Treasury Yields Down Following Democrats Midterm Win',
+      'Treasuries rally as traders price in a December cut',
+      '10-year Treasury yield tops 4.6%',
+      'U.S. 10-year yield climbs after payrolls',
+    ]) {
+      assert.equal(us10y(title), true, title);
+    }
+    for (const title of [
+      'Best High-Yield Savings Accounts of November 2026: Up to 5%',
+      '5 High-Yield Stocks (Up To 11%) That Have Been Left For Dead',
+      'The AI ‘credit card’ is getting costlier as CoreWeave bond yield tops 16%',
+      'US Treasury sanctions Canadian money services firms over Iran-related transactions',
+      'U.S. Treasury Certifies 6,576 Opportunity Zone Census Tracts',
+      'Japan 10-year yield hits highest since 2008',
+      'Wheat yields fall in drought-hit Kansas',
+    ]) {
+      assert.equal(us10y(title), false, title);
+    }
+  });
+
   it('pairs a named instrument with its companion, else uses the asset-class benchmarks', () => {
     assert.deepEqual(linkPriceMoves(story('Brent +2.9% as carriers reroute around the Cape', 'commodities'), board).map((m) => m.text), ['Brent +2.9%', 'WTI +2.6%']);
     assert.deepEqual(linkPriceMoves(story('Long-liquidation cascade after perp funding turns negative', 'crypto'), board).map((m) => m.text), ['BTC −4.8%', 'ETH −6.1%']);
@@ -625,5 +667,227 @@ describe('Lite market events: price links', () => {
     assert.equal(geoCause(item({ title: 'Oil jumps after tanker hit', threat: war, locationName: 'Yemen' })), 'Yemen conflict');
     assert.equal(geoCause(item({ title: 'Oil jumps after tanker hit', threat: war })), 'Conflict');
     assert.equal(geoCause(item({ title: 'Gold record' })), null);
+  });
+});
+
+describe('Lite Sources connectors', () => {
+  const NOW = Date.parse('2026-11-08T12:00:00Z');
+  const ready = (data: CompactHealth): ResourceState<CompactHealth> => ({ status: 'ready', data, at: NOW });
+  const { SEED_META } = healthTesting as unknown as { SEED_META: Record<string, { maxStaleMin?: number }> };
+  // ON_DEMAND_KEYS is not exported; read its literal from the source.
+  const onDemandBlock = /const ON_DEMAND_KEYS = new Set\(\[([\s\S]*?)\]\);/.exec(readFileSync(new URL('../api/health.js', import.meta.url), 'utf8'))?.[1] ?? '';
+  const ON_DEMAND_KEYS = new Set([...onDemandBlock.replace(/\/\/.*$/gm, '').matchAll(/'([^']+)'/g)].map((m) => m[1]));
+
+  it('names each health check and its max age exactly as api/health.js does', () => {
+    const ids = new Set<string>();
+    for (const c of CONNECTORS) {
+      assert.ok(!ids.has(c.id), `duplicate id ${c.id}`);
+      ids.add(c.id);
+      // A connector reads either health checks or a digest, never both.
+      assert.equal(Boolean(c.healthKeys?.length), !c.digest, c.id);
+      if (!c.healthKeys) continue;
+      const ages = c.healthKeys.flatMap((key) => {
+        const meta = SEED_META[key];
+        // An on-demand key with no seed-meta gate is graded on presence only.
+        if (!meta) {
+          assert.ok(ON_DEMAND_KEYS.has(key), `${c.id}: ${key} is in neither SEED_META nor ON_DEMAND_KEYS`);
+          return [];
+        }
+        assert.equal(typeof meta.maxStaleMin, 'number', `${c.id}: ${key} has no maxStaleMin`);
+        return [meta.maxStaleMin as number];
+      });
+      const longest = ages.length ? Math.max(...ages) : undefined;
+      assert.equal(c.maxStaleMin, longest, `${c.id}: maxStaleMin is the longest check's`);
+    }
+  });
+
+  it('records each upstream host with its licence status from the attribution manifest', () => {
+    const byHost = new Map(attributionManifest.entries.map((e) => [e.host, e.status]));
+    for (const c of CONNECTORS) {
+      for (const h of c.hosts) {
+        assert.ok(byHost.has(h.host), `${c.id}: ${h.host} is not in the manifest`);
+        assert.equal(h.licence, byHost.get(h.host), `${c.id}: ${h.host}`);
+      }
+    }
+  });
+
+  it('reads a seeded connector from the compact health check: problems fail or degrade, the rest are live', () => {
+    const health = ready({
+      status: 'DEGRADED',
+      problems: {
+        ucdpEvents: { status: 'SEED_ERROR', records: 38, seedAgeMin: 52, errorCode: 'UCDP_HTTP_429', consecutiveSourceFailures: 4 },
+        cryptoQuotes: { status: 'EMPTY', records: 0 },
+        stablecoinMarkets: { status: 'STALE_SEED', records: 12, seedAgeMin: 74 },
+        etfFlows: { status: 'EMPTY_ON_DEMAND', records: 0 },
+        marketQuotes: { status: 'REDIS_PARTIAL', records: null },
+      },
+      pending: { econCalendar: { status: 'CONTENT_AGE_PREWARNING', seedAgeMin: 200 } },
+    });
+    const failing = healthConnectorStatus('ucdpEvents', health, NOW);
+    assert.equal(failing.kind, 'failing');
+    assert.equal(failing.detail, 'Seed error');
+    assert.equal(failing.errorCode, 'UCDP_HTTP_429');
+    assert.equal(failing.consecutiveFailures, 4);
+    assert.equal(failing.updatedAt, NOW - 52 * 60_000);
+    assert.equal(healthConnectorStatus('cryptoQuotes', health, NOW).kind, 'failing');
+    assert.equal(healthConnectorStatus('marketQuotes', health, NOW).kind, 'failing');
+    assert.equal(healthConnectorStatus('stablecoinMarkets', health, NOW).kind, 'degraded');
+    // On-demand and pending warnings are not problems.
+    assert.equal(healthConnectorStatus('etfFlows', health, NOW).kind, 'live');
+    assert.equal(healthConnectorStatus('econCalendar', health, NOW).kind, 'live');
+    assert.equal(healthConnectorStatus('econCalendar', health, NOW).ageMin, 200);
+    const passing = healthConnectorStatus('hyperliquidFlow', health, NOW);
+    assert.equal(passing.kind, 'live');
+    assert.equal(passing.ageMin, undefined);
+    // Several checks: the worst one sets the status and is named.
+    const several = healthConnectorStatus(['hyperliquidFlow', 'stablecoinMarkets', 'econCalendar'], health, NOW);
+    assert.equal(several.kind, 'degraded');
+    assert.equal(several.detail, 'Stale seed · stablecoinMarkets');
+    assert.equal(healthConnectorStatus(['hyperliquidFlow', 'econCalendar'], health, NOW).kind, 'live');
+  });
+
+  it('never claims live when the health check is loading or unavailable', () => {
+    assert.equal(healthConnectorStatus('ucdpEvents', { status: 'loading', data: null, at: 0 }, NOW).kind, 'loading');
+    assert.equal(healthConnectorStatus('ucdpEvents', { status: 'error', data: null, at: NOW, error: 'x' }, NOW).kind, 'unknown');
+    assert.equal(healthConnectorStatus('ucdpEvents', { status: 'empty', data: null, at: NOW }, NOW).kind, 'unknown');
+  });
+
+  it('reads a digest connector from the digest: feed coverage and generation time', () => {
+    const digest = { generatedAt: '2026-11-08T11:45:00Z', coverage: { feedCompleted: 274, feedTotal: 308 }, categories: {} } as unknown as ListFeedDigestResponse;
+    const live = digestConnectorStatus({ status: 'ready', data: digest, at: NOW }, NOW);
+    assert.equal(live.kind, 'live');
+    assert.equal(live.ageMin, 15);
+    assert.deepEqual(live.feeds, { completed: 274, total: 308 });
+    assert.equal(live.detail, '274 of 308 feeds answered');
+    assert.equal(digestConnectorStatus({ status: 'error', data: null, at: NOW, error: 'x' }, NOW).kind, 'failing');
+    assert.equal(digestConnectorStatus({ status: 'empty', data: null, at: NOW }, NOW).kind, 'degraded');
+  });
+
+  it('sorts failing first, then degraded, then by domain, keeping catalogue order', () => {
+    const row = (id: string, kind: ConnectorRow['status']['kind']): ConnectorRow => ({
+      connector: CONNECTORS.find((c) => c.id === id)!, status: { kind, detail: '' },
+    });
+    const sorted = sortConnectorRows([
+      row('insights', 'live'), row('crypto', 'live'), row('stablecoins', 'degraded'), row('ucdp', 'live'), row('research', 'failing'), row('stocks', 'live'),
+    ]);
+    assert.deepEqual(sorted.map((r) => r.connector.id), ['research', 'stablecoins', 'ucdp', 'crypto', 'stocks', 'insights']);
+  });
+
+  it('tallies distinct hosts by licence and counts outlets per declared tier', () => {
+    const tally = licenceTally();
+    const hosts = new Set(CONNECTORS.flatMap((c) => c.hosts.map((h) => h.host)));
+    assert.equal(tally.reviewed.length + tally['terms-review'].length + tally.excluded.length, hosts.size);
+    assert.deepEqual(tally.reviewed, ['api.adsb.lol', 'nvd.nist.gov', 'services.nvd.nist.gov', 'www.sec.gov']);
+    const tiers = tierRows();
+    assert.deepEqual(tiers.map((t) => t.tier), [1, 2, 3, 4]);
+    assert.equal(tiers.reduce((sum, t) => sum + t.outlets, 0), Object.values(SOURCE_TIERS).filter((t) => t >= 1 && t <= 4).length);
+    assert.deepEqual(tierRows({ a: 1, b: 4, c: 4, d: 9 }).map((t) => t.outlets), [1, 0, 0, 2]);
+  });
+
+  it('labels max ages in minutes, hours and days', () => {
+    assert.equal(minutesLabel(30), '30 min');
+    assert.equal(minutesLabel(150), '2.5 h');
+    assert.equal(minutesLabel(1440), '24 h');
+    assert.equal(minutesLabel(2880), '2 d');
+  });
+});
+
+describe('Lite tech map', async () => {
+  const { attackHexes, cableLayer, cloudRegionMarkers, datacenterMarkers, ddosLayer, incidentNamesRegion, outageMarkers, HEX_CELL_DEG } = await import('../src/lite/data/tech-map.ts');
+  const NOW = Date.UTC(2026, 10, 8, 12);
+  const H = 3_600_000;
+  type Threat = Parameters<typeof attackHexes>[0][number];
+  const threat = (lat: number, lon: number, source: string, malwareFamily = '', country = 'NL'): Threat =>
+    ({ id: `${lat}:${lon}:${source}`, type: 'CYBER_THREAT_TYPE_C2_SERVER', source, indicator: '1.2.3.4', indicatorType: 'CYBER_THREAT_INDICATOR_TYPE_IP', location: { latitude: lat, longitude: lon }, country, severity: 'CRITICALITY_LEVEL_HIGH', malwareFamily, tags: [], firstSeenAt: 0, lastSeenAt: 0 } as Threat);
+  type Outage = Parameters<typeof outageMarkers>[0][number];
+  const outage = (o: Partial<Outage>): Outage => ({
+    id: 'cf-1', title: '', link: '', description: '', detectedAt: NOW - 2 * H, country: 'Yemen', region: '', location: { latitude: 15.5, longitude: 48 },
+    severity: 'OUTAGE_SEVERITY_TOTAL', categories: ['Cloudflare Radar', 'POWER OUTAGE', 'NATIONWIDE'], cause: 'POWER_OUTAGE', outageType: 'NATIONWIDE', endedAt: 0, ...o,
+  } as Outage);
+
+  it('shades DDoS targets by their share and labels the top ones', () => {
+    const shape = (iso: string) => ({ type: 'Feature' as const, geometry: { type: 'Polygon' as const, coordinates: [] }, properties: { 'ISO3166-1-Alpha-2': iso } });
+    const shapes = { type: 'FeatureCollection' as const, features: [shape('US'), shape('BR'), shape('FR')] };
+    const { fills, tags } = ddosLayer({ protocol: [], vector: [], dateRangeStart: '2026-11-01', dateRangeEnd: '2026-11-08', topTargetLocations: [
+      { countryCode: 'us', countryName: 'United States', percentage: 11.2, latitude: 39, longitude: -98 },
+      { countryCode: 'BR', countryName: 'Brazil', percentage: 5.6, latitude: -10, longitude: -55 },
+      { countryCode: 'XX', countryName: 'None', percentage: 0, latitude: 0, longitude: 0 },
+    ] }, shapes);
+    assert.deepEqual(fills.features.map((f) => [f.properties.id, f.properties.tone]), [['US', 'tech'], ['BR', 'tech']]);
+    assert.ok(fills.features[0]!.properties.opacity > fills.features[1]!.properties.opacity);
+    assert.deepEqual(ddosLayer({ protocol: [], vector: [], dateRangeStart: '', dateRangeEnd: '', topTargetLocations: [] }, null).fills.features, []);
+    assert.deepEqual(tags.map((t) => t.text), ['US 11.2%', 'BR 5.6%']);
+  });
+
+  it(`bins located attack servers into ${HEX_CELL_DEG}° cells with a count and the main family from feeds that name one`, () => {
+    const hexes = attackHexes([
+      threat(52.1, 4.3, 'CYBER_THREAT_SOURCE_FEODO', 'QakBot'),
+      threat(52.4, 4.9, 'CYBER_THREAT_SOURCE_C2INTEL', 'CobaltStrike'),
+      threat(52.3, 4.8, 'CYBER_THREAT_SOURCE_FEODO', 'QakBot'),
+      threat(50.0, 5.0, 'CYBER_THREAT_SOURCE_OTX', 'Pulse: banking campaign'),
+      threat(-33.9, 151.2, 'CYBER_THREAT_SOURCE_ABUSEIPDB', '', 'AU'),
+      { ...threat(0, 0, 'CYBER_THREAT_SOURCE_FEODO'), location: undefined },
+    ]);
+    assert.equal(hexes.length, 2);
+    assert.equal(hexes[0]!.text, '4');
+    assert.equal(hexes[0]!.label, 'QakBot · CobaltStrike', 'OTX pulse titles are not families');
+    assert.equal(hexes[1]!.label, undefined);
+    assert.match(hexes[0]!.popup.lines.at(-1)!.text, /Not who they hit/);
+    // Two cells 9° apart would overlap at world zoom: the smaller joins the busier one, which keeps its place.
+    const merged = attackHexes([threat(10, 10, 'CYBER_THREAT_SOURCE_FEODO'), threat(10.5, 10.5, 'CYBER_THREAT_SOURCE_FEODO'), threat(18.5, 10, 'CYBER_THREAT_SOURCE_OTX')]);
+    assert.equal(merged.length, 1);
+    assert.equal(merged[0]!.text, '3');
+    assert.ok(Math.abs(merged[0]!.lat - 10.25) < 1e-9);
+    assert.equal(attackHexes([threat(10, 10, 'CYBER_THREAT_SOURCE_FEODO'), threat(40, 10, 'CYBER_THREAT_SOURCE_FEODO')]).length, 2);
+  });
+
+  it('places outages of the last 7 days, hollow once they ended over 24 h ago', () => {
+    const markers = outageMarkers([
+      outage({ id: 'live' }),
+      outage({ id: 'old', detectedAt: NOW - 3 * 24 * H, endedAt: NOW - 3 * 24 * H + H, severity: 'OUTAGE_SEVERITY_PARTIAL' }),
+      outage({ id: 'gone', detectedAt: NOW - 9 * 24 * H, endedAt: NOW - 9 * 24 * H + H }),
+    ], NOW);
+    assert.deepEqual(markers.map((m) => [m.id, m.tone, m.hollow]), [['outage:live', 'crit', false], ['outage:old', 'elev', true]]);
+  });
+
+  it('turns every region of a provider with an outage amber, and red only when the incident names it', () => {
+    const regions = [
+      { id: 'aws-us-east-1', provider: 'aws' as const, name: 'US East (N. Virginia)', city: 'Ashburn', country: 'USA', lat: 39, lon: -77 },
+      { id: 'aws-eu-west-1', provider: 'aws' as const, name: 'EU (Ireland)', city: 'Dublin', country: 'Ireland', lat: 53, lon: -6 },
+      { id: 'gcp-us-central1', provider: 'gcp' as const, name: 'Iowa', city: 'Council Bluffs', country: 'USA', lat: 41, lon: -95 },
+    ];
+    const status = (id: string, s: string, description = '') => ({ id, name: id, status: s, description, url: '', checkedAt: NOW, latencyMs: 1 }) as Parameters<typeof cloudRegionMarkers>[1][number];
+    const tones = (statuses: Parameters<typeof cloudRegionMarkers>[1]) => cloudRegionMarkers(regions, statuses).map((m) => m.tone);
+    assert.deepEqual(tones([status('aws', 'SERVICE_OPERATIONAL_STATUS_OPERATIONAL')]), ['muted', 'muted', 'muted']);
+    assert.deepEqual(tones([status('aws', 'SERVICE_OPERATIONAL_STATUS_PARTIAL_OUTAGE', 'Recent incidents reported')]), ['elev', 'elev', 'muted']);
+    assert.deepEqual(tones([status('aws', 'SERVICE_OPERATIONAL_STATUS_MAJOR_OUTAGE', 'Increased error rates in us-east-1')]), ['crit', 'elev', 'muted']);
+    assert.equal(incidentNamesRegion(regions[1]!, 'Connectivity issues in Ireland'), true);
+    assert.equal(incidentNamesRegion(regions[2]!, 'Elevated errors'), false);
+  });
+
+  it('marks an AI data centre amber when an internet outage is live in the same country', () => {
+    const site = (id: string, country: string, chipCount = 50_000, status: 'existing' | 'planned' = 'existing') =>
+      ({ id, name: id, owner: 'Lab', country, lat: 0, lon: 0, status, chipType: 'H100', chipCount });
+    const markers = datacenterMarkers(
+      [site('dc-ye', 'Yemen'), site('dc-us', 'United States of America'), site('dc-small', 'Yemen', 1_000), site('dc-planned', 'Yemen', 90_000, 'planned')],
+      [outage({})],
+      NOW,
+    );
+    assert.deepEqual(markers.map((m) => [m.id, m.tone]), [['dc:dc-ye', 'elev'], ['dc:dc-us', 'muted']]);
+  });
+
+  it('colours cables by health and pins a card on a degraded or faulted one', () => {
+    const cable = (id: string) => ({ id, name: id.toUpperCase(), points: [[0, 0], [10, 10], [20, 20]] as [number, number][], major: true });
+    const { lines, markers } = cableLayer([cable('marea'), cable('faster'), cable('peace')], {
+      generatedAt: NOW,
+      cables: {
+        faster: { status: 'CABLE_HEALTH_STATUS_FAULT', score: 1, confidence: 0.9, lastUpdated: NOW, evidence: [{ source: 'NGA', summary: 'Cable repair ship on station', ts: NOW }] },
+        peace: { status: 'CABLE_HEALTH_STATUS_DEGRADED', score: 0.5, confidence: 0.6, lastUpdated: NOW, evidence: [] },
+      },
+    });
+    assert.deepEqual(lines.features.map((l) => [l.properties.id, l.properties.tone]), [['marea', 'dim'], ['faster', 'crit'], ['peace', 'elev']]);
+    assert.deepEqual(markers.map((m) => [m.id, m.lat, m.lon]), [['cable:faster', 10, 10], ['cable:peace', 10, 10]]);
+    assert.match(markers[0]!.popup.lines[0]!.text, /NGA: Cable repair ship/);
+    assert.deepEqual(cableLayer([cable('marea')], null).markers, [], 'no health data: lines only, no guessed status');
   });
 });

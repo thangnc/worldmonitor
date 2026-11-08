@@ -6,6 +6,7 @@ import { Briefing } from './screens/Briefing';
 import { Geopolitics } from './screens/Geopolitics';
 import { Finance } from './screens/Finance';
 import { Tech } from './screens/Tech';
+import { Sources } from './screens/Sources';
 import { REFRESH_MS, refreshAll } from './data/store';
 
 const TITLES = {
@@ -13,6 +14,7 @@ const TITLES = {
   geopolitics: 'Geopolitics & Conflicts',
   finance: 'Finance & Crypto',
   tech: 'Technology & AI',
+  sources: 'Sources & ingestion',
 } as const;
 
 export function App() {
@@ -35,7 +37,7 @@ export function App() {
         <Sidebar screen={screen} />
       </div>
       <main class="min-w-0 flex-1">
-        {screen === 'geopolitics' ? <Geopolitics /> : screen === 'finance' ? <Finance /> : screen === 'tech' ? <Tech /> : <Briefing />}
+        {screen === 'geopolitics' ? <Geopolitics /> : screen === 'finance' ? <Finance /> : screen === 'tech' ? <Tech /> : screen === 'sources' ? <Sources /> : <Briefing />}
       </main>
     </div>
   );

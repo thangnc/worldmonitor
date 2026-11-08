@@ -114,7 +114,8 @@ async function seedFixture(entries, plan, now, redisOrigin) {
     },
     protocol: { success: true, result: { summary_0: { TCP: '70', UDP: '30' }, meta: { dateRange: [{ startTime: 'S', endTime: 'E' }] } } },
     vector: { success: true, result: { summary_0: { SYN: '100' }, meta: { dateRange: [] } } },
-    target: { success: true, result: { top_0: [{ clientCountryAlpha2: 'US', clientCountryName: 'United States', value: '55' }] } },
+    // The live response shape of radar/attacks/layer3/top/locations/target (2026-11-08).
+    target: { success: true, result: { top_0: [{ targetCountryAlpha2: 'US', targetCountryName: 'United States', value: '55', rank: 1 }] } },
     traffic: {
       success: true,
       result: {
@@ -524,6 +525,9 @@ test('an optional slice that could not be confirmed is recorded on the success m
     JSON.parse(healthy.store.get(DDOS_KEY))._targetLocationsDegraded, undefined,
     'the diagnostic stays on seed-meta and never reaches the published payload',
   );
+  const published = JSON.parse(healthy.store.get(DDOS_KEY));
+  const targets = (published.data ?? published).topTargetLocations;
+  assert.deepEqual(targets.map((t) => [t.countryCode, t.countryName, t.percentage]), [['US', 'United States', 55]], 'a confirmed slice publishes its target countries');
   const healthyEntry = classifyCompanion('ddosAttacks', DDOS_KEY, DDOS_META_KEY, healthy.store);
   const degradedEntry = classifyCompanion('ddosAttacks', DDOS_KEY, DDOS_META_KEY, degraded.store);
   assert.equal(healthyEntry.status, 'OK');

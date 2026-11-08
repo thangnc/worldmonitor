@@ -93,7 +93,10 @@ const NAMED: ReadonlyArray<[RegExp, Instrument]> = [
   [/\b(ether|ethereum|eth)\b/i, I.eth],
   [/\bsolana\b/i, I.sol],
   [/\b(xrp|ripple)\b/i, I.xrp],
-  [/\b(treasur(y|ies)|10-year|yields?)\b/i, I.us10y],
+  // US government debt only. A bare "yield" is a savings rate, a high-yield
+  // stock or a corporate bond; a bare "Treasury" is often the department
+  // (sanctions, tax rules); a bare "10-year" can be a gilt, Bund or JGB.
+  [/\b(treasuries|treasury (yields?|notes?|bonds?|bills?|market|auctions?|curve)|t-notes?|10-year (treasury|t-note|note)s?|u\.?s\.? (10-year|bond) yields?)\b/i, I.us10y],
   [/\b(dollar|dxy|greenback)\b/i, I.dxy],
   [/\b(euro|eur\/usd)\b/i, I.eur],
   [/\b(sterling|british pound|gbp\/usd)\b/i, I.gbp],

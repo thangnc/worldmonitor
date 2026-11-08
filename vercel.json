@@ -136,7 +136,8 @@
     { "source": "/lite/", "destination": "/lite", "permanent": true },
     { "source": "/lite/geopolitics/", "destination": "/lite/geopolitics", "permanent": true },
     { "source": "/lite/finance/", "destination": "/lite/finance", "permanent": true },
-    { "source": "/lite/tech/", "destination": "/lite/tech", "permanent": true }
+    { "source": "/lite/tech/", "destination": "/lite/tech", "permanent": true },
+    { "source": "/lite/sources/", "destination": "/lite/sources", "permanent": true }
   ],
   "rewrites": [
     { "source": "/plugin/assets/boot-:attempt([0-9]+)/:asset([a-zA-Z0-9_.-]+\\.js)", "destination": "/plugin/assets/:asset" },
@@ -176,6 +177,7 @@
     { "source": "/lite/geopolitics", "destination": "/lite.html" },
     { "source": "/lite/finance", "destination": "/lite.html" },
     { "source": "/lite/tech", "destination": "/lite.html" },
+    { "source": "/lite/sources", "destination": "/lite.html" },
     { "source": "/dashboard", "has": [{ "type": "host", "value": "tech.worldmonitor.app" }], "destination": "/dashboard-tech.html" },
     { "source": "/dashboard", "has": [{ "type": "host", "value": "finance.worldmonitor.app" }], "destination": "/dashboard-finance.html" },
     { "source": "/dashboard", "has": [{ "type": "host", "value": "commodity.worldmonitor.app" }], "destination": "/dashboard-commodity.html" },

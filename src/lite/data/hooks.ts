@@ -16,6 +16,7 @@ import {
 import type { ListFeedDigestResponse } from '@/generated/client/worldmonitor/news/v1/service_client';
 import { buildPriceBoard, isMarketMovingWarStory, type PriceBoard } from './prices';
 import { rankPriorityEvents, type PriorityEvent } from './briefing';
+import { CONNECTORS, digestConnectorStatus, healthConnectorStatus, sortConnectorRows, type ConnectorRow } from './connectors';
 
 export const useDigest = (edition: src.DigestEdition) => useResource(`digest:${edition}`, () => src.loadDigest(edition));
 export const useRiskScores = () => useResource('riskScores', src.loadRiskScores);
@@ -48,6 +49,14 @@ export const useCountryShapes = (enabled: boolean) => useResource('countryShapes
 export const useArxiv = () => useResource('arxiv', src.loadArxiv);
 export const useHackerNews = () => useResource('hackerNews', src.loadHackerNews);
 export const useHealth = () => useResource('health', src.loadHealth);
+export const useInternetOutages = () => useResource('internetOutages', src.loadInternetOutages);
+export const useServiceStatuses = () => useResource('serviceStatuses', src.loadServiceStatuses);
+export const useThreatHistory = () => useResource('threatHistory', src.loadThreatHistory);
+export const useRecentKev = () => useResource('recentKev', src.loadRecentKev);
+export const useDdosAttacks = () => useResource('ddosAttacks', src.loadDdosAttacks);
+export const useCyberThreats = () => useResource('cyberThreats', src.loadCyberThreats);
+export const useCableHealth = () => useResource('cableHealth', src.loadCableHealth);
+export const useTechGeo = () => useResource('techGeo', src.loadTechGeo);
 export const useInsights = () => useResource('insights', src.loadInsights);
 
 /** Geopolitics incidents: medium threat or above from the geo buckets, most important first. */
@@ -132,4 +141,28 @@ export function usePriorityEvents(): { ready: boolean; failed: boolean; ranked: 
     [full, finance, tech],
   );
   return { ready, failed, ranked, below };
+}
+
+/**
+ * The Sources screen's connector rows, sorted failing first. Seeded connectors
+ * read the compact health check; digest connectors read the digests, which the
+ * sidebar counts load anyway.
+ */
+export function useConnectorRows(): ConnectorRow[] {
+  const health = useHealth();
+  const full = useDigest('full');
+  const finance = useDigest('finance');
+  const tech = useDigest('tech');
+  return useMemo(() => {
+    const now = Date.now();
+    const digests = { full, finance, tech };
+    return sortConnectorRows(
+      CONNECTORS.map((connector) => ({
+        connector,
+        status: connector.digest
+          ? digestConnectorStatus(digests[connector.digest], now)
+          : healthConnectorStatus(connector.healthKeys ?? [], health, now),
+      })),
+    );
+  }, [health, full, finance, tech]);
 }

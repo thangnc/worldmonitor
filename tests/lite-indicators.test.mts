@@ -9,7 +9,7 @@ import type {
   GetHyperliquidFlowResponse,
   ListStablecoinMarketsResponse,
 } from '../src/generated/client/worldmonitor/market/v1/service_client.ts';
-import { LINK_WINDOW_HOURS, MAX_LINKED_STORIES, linkNews, matchReason, offsetLabel } from '../src/lite/data/news-link.ts';
+import { DRIVERS, LINK_WINDOW_HOURS, MAX_LINKED_STORIES, linkNews, matchReason, offsetLabel } from '../src/lite/data/news-link.ts';
 import { STALE_FACTOR, feedCounts, feedState, sortFeeds, type FeedState, type Indicator } from '../src/lite/data/indicators.ts';
 import { chokepointPins, featureIso2, newSanctionCountries, pinIdForFeed, sanctionFills, shippingLanes, signalPins } from '../src/lite/data/markets-map.ts';
 import { buildPriceBoard } from '../src/lite/data/prices.ts';
@@ -18,6 +18,20 @@ import { STRATEGIC_WATERWAYS } from '../src/config/geo.ts';
 import { TRADE_ROUTES } from '../src/config/trade-routes.ts';
 import type { ChokepointInfo } from '../src/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
 import { STABLECOIN_DEPEG_PCT, financeFeeds } from '../src/lite/data/finance-indicators.ts';
+import type { InternetOutage, ListInternetOutagesResponse, ListServiceStatusesResponse, ServiceStatus } from '../src/generated/client/worldmonitor/infrastructure/v1/service_client.ts';
+import {
+  KEV_NEW_DAYS,
+  SPIKE_RATIO,
+  decodeRecentKev,
+  decodeThreatHistory,
+  kevSubject,
+  kevWeekCounts,
+  techFeeds,
+  threatBaseline,
+  type ExploitedVulnerability,
+  type RecentKev,
+  type ThreatHistory,
+} from '../src/lite/data/tech-indicators.ts';
 import type { LiteItem } from '../src/lite/data/transforms.ts';
 import type { MilitaryFlight } from '../src/generated/client/worldmonitor/military/v1/service_client.ts';
 import type { ListUkmtoIncidentsResponse } from '../src/generated/client/worldmonitor/maritime/v1/service_client.ts';
@@ -125,6 +139,8 @@ describe('news link rule', () => {
 
   it('names why each story matched: ticker, country, entity or driver', () => {
     assert.deepEqual(matchReason({ instruments: ['^TNX'] }, story('Treasury yields jump after payrolls', AT)), { kind: 'ticker', label: 'ticker: US10Y' });
+    // A savings-account "yield" is not the 10-year: no link at all.
+    assert.equal(matchReason({ instruments: ['^TNX'], drivers: DRIVERS['^TNX'] }, story('Best High-Yield Savings Accounts of November 2026: Up to 5%', AT)), null);
     assert.deepEqual(matchReason({ instruments: ['NVDA'] }, story('Chipmaker beats estimates', AT, { tickers: ['nvda'] })), { kind: 'ticker', label: 'ticker: NVDA' });
     assert.deepEqual(matchReason({ countries: [{ name: 'Yemen', code: 'YE' }] }, story('Yemen port struck overnight', AT)), { kind: 'country', label: 'country: Yemen' });
     assert.deepEqual(matchReason({ entities: ['bitcoin'] }, story('Spot BTC funds see outflows', AT, { title: 'Spot funds see outflows', snippet: 'Bitcoin products lost $200M' })), { kind: 'entity', label: 'entity: Bitcoin' });
@@ -751,5 +767,143 @@ describe('Geopolitics layers: aircraft, sea incidents, GPS interference', () => 
     );
     assert.deepEqual(fills.features.map((f) => [f.properties.id, f.properties.tone]), [['h', 'crit'], ['m', 'elev']]);
     assert.equal(fills.features[0]?.geometry.coordinates[0]?.length, 5, 'the ring is closed');
+  });
+});
+
+describe('Technology & AI indicator rules', () => {
+  const outage = (o: Partial<InternetOutage>): InternetOutage => ({
+    id: 'cf-1', title: 'Internet disruption in Yemen', link: '', description: '', detectedAt: AT - 2 * H, country: 'Yemen', region: '',
+    severity: 'OUTAGE_SEVERITY_TOTAL', categories: ['Cloudflare Radar', 'POWER OUTAGE', 'NATIONWIDE', 'YemenNet'], cause: 'POWER_OUTAGE',
+    outageType: 'NATIONWIDE', endedAt: 0, ...o,
+  });
+  const outages = (list: InternetOutage[]): ListInternetOutagesResponse => ({ outages: list, fetchedAt: AT - 10 * 60_000 });
+  const status = (id: string, name: string, s: ServiceStatus['status'], description = ''): ServiceStatus =>
+    ({ id, name, status: s, description, url: '', checkedAt: AT - 5 * 60_000, latencyMs: 100 });
+  const services = (list: ServiceStatus[]): ListServiceStatusesResponse => ({ statuses: list });
+  const kevItem = (id: string, addedAt: string, extra: Partial<ExploitedVulnerability> = {}): ExploitedVulnerability => ({
+    id, addedAt, dueAt: '2026-11-27', name: 'Ivanti Connect Secure Authentication Bypass Vulnerability', vendorProduct: '',
+    cvssScore: 9.8, cvssSeverity: 'CRITICAL', description: 'Auth bypass.', ...extra,
+  });
+  const kev = (items: ExploitedVulnerability[]): RecentKev => ({ fetchedAt: AT - 3 * H, days: 30, items, attribution: '' });
+  const history = (prior: number[], latest: number): ThreatHistory => ({
+    updatedAt: AT - 30 * 60_000,
+    latest: { at: AT - 30 * 60_000, total: latest, bySource: { c2intel: latest / 2, abuseipdb: latest / 2 }, byFamily: { cobaltstrike: latest / 2 } },
+    days: [
+      ...prior.map((total, i) => ({ date: new Date(AT - (prior.length - i) * 24 * H).toISOString().slice(0, 10), total, bySource: {}, byFamily: {} })),
+      { date: new Date(AT).toISOString().slice(0, 10), total: latest, bySource: {}, byFamily: {} },
+    ],
+  });
+
+  function feeds(opts: {
+    outages?: InternetOutage[];
+    services?: ServiceStatus[];
+    kev?: ExploitedVulnerability[];
+    history?: ThreatHistory;
+    news?: LiteItem[];
+  } = {}) {
+    return techFeeds({
+      outages: ready(outages(opts.outages ?? [])),
+      services: ready(services(opts.services ?? [status('aws', 'AWS', 'SERVICE_OPERATIONAL_STATUS_OPERATIONAL')])),
+      kev: ready(kev(opts.kev ?? [])),
+      history: ready(opts.history ?? history([100, 100, 100], 100)),
+      news: opts.news ?? [],
+      now: AT,
+    });
+  }
+  const find = (list: ReturnType<typeof feeds>, id: string) => list.find((f) => f.id === id);
+
+  it('fires an internet outage that is ongoing or new in 24 h, with scope and stated cause, not a percentage', () => {
+    assert.equal(find(feeds({ outages: [outage({ detectedAt: AT - 30 * H, endedAt: AT - 26 * H })] }), 'internet-outage')?.kind, 'quiet');
+    const fired = find(feeds({ outages: [outage({ detectedAt: AT - 30 * H, endedAt: 0 })] }), 'internet-outage');
+    assert.equal(fired?.kind, 'fired');
+    if (fired?.kind !== 'fired') return;
+    assert.equal(fired.indicator.name, 'Internet outage · Yemen');
+    assert.equal(fired.indicator.value, 'Nationwide');
+    assert.equal(fired.indicator.change, 'power outage');
+    assert.match(fired.indicator.detail ?? '', /YemenNet · stated cause: power outage · started \d\d:\d\d UTC · ongoing/);
+    assert.equal(fired.indicator.trust.level, 'reported');
+  });
+
+  it('links an outage to stories naming its country', () => {
+    const news = [story('Yemen goes dark after grid failure', AT - 3 * H), story('New GPU launched', AT - H)];
+    const fired = find(feeds({ outages: [outage({})], news }), 'internet-outage');
+    assert.equal(fired?.kind === 'fired' && fired.indicator.links.stories[0]?.reason.label, 'country: Yemen');
+  });
+
+  it('fires on a watched provider with a partial or major outage, not on a degraded or unwatched one', () => {
+    const quiet = find(feeds({ services: [status('aws', 'AWS', 'SERVICE_OPERATIONAL_STATUS_DEGRADED'), status('slack', 'Slack', 'SERVICE_OPERATIONAL_STATUS_MAJOR_OUTAGE')] }), 'service-outage');
+    assert.equal(quiet?.kind, 'quiet');
+    assert.match(quiet?.kind === 'quiet' ? quiet.detail : '', /degraded: AWS/);
+    const news = [story('Azure outage hits Teams and Outlook users', AT - H)];
+    const fired = find(feeds({
+      services: [status('azure', 'Azure', 'SERVICE_OPERATIONAL_STATUS_PARTIAL_OUTAGE', 'Recent incidents reported'), status('openai', 'OpenAI', 'SERVICE_OPERATIONAL_STATUS_MAJOR_OUTAGE')],
+      news,
+    }), 'service-outage');
+    assert.equal(fired?.kind, 'fired');
+    if (fired?.kind !== 'fired') return;
+    assert.equal(fired.indicator.name, 'Service outage · OpenAI', 'a major outage leads');
+    assert.equal(fired.indicator.value, 'Major');
+    assert.match(fired.indicator.detail ?? '', /also: Azure partial/);
+    assert.equal(fired.indicator.trust.level, 'official');
+    assert.equal(fired.indicator.links.stories[0]?.reason.label, 'driver: Azure');
+  });
+
+  it(`fires a KEV addition from the last ${KEV_NEW_DAYS} days, labelled with its date, and counts the week`, () => {
+    assert.equal(find(feeds({ kev: [kevItem('CVE-2026-1', '2026-11-05')] }), 'kev-new')?.kind, 'quiet');
+    const fired = find(feeds({ kev: [kevItem('CVE-2026-3', '2026-11-07'), kevItem('CVE-2026-2', '2026-11-06')] }), 'kev-new');
+    assert.equal(fired?.kind, 'fired');
+    if (fired?.kind !== 'fired') return;
+    assert.equal(fired.indicator.name, 'Exploited vulnerability · CVE-2026-3');
+    assert.equal(fired.indicator.value, '9.8 CVSS');
+    assert.equal(fired.indicator.dataDate, 'added 7 Nov');
+    assert.match(fired.indicator.detail ?? '', /\+1 more this week/);
+    assert.deepEqual(kevWeekCounts([kevItem('a', '2026-11-08'), kevItem('b', '2026-11-02'), kevItem('c', '2026-11-01'), kevItem('d', '2026-10-25')], AT), { thisWeek: 2, lastWeek: 1 });
+  });
+
+  it('links a KEV entry by its id and the vendor and product in CISA\'s name when NVD has no product yet', () => {
+    assert.deepEqual(kevSubject(kevItem('CVE-2026-9', '2026-11-07')).drivers, ['CVE-2026-9', 'ivanti', 'connect']);
+    assert.deepEqual(kevSubject(kevItem('CVE-2026-9', '2026-11-07', { vendorProduct: 'microsoft:exchange_server', name: 'Microsoft Exchange Server Remote Code Execution Vulnerability' })).drivers,
+      ['CVE-2026-9', 'microsoft', 'exchange server', 'exchange']);
+  });
+
+  it(`fires attack infrastructure at ${SPIKE_RATIO}× its 7-day average, and builds a baseline first`, () => {
+    const building = find(feeds({ history: history([100, 100], 500) }), 'attack-spike');
+    assert.equal(building?.kind, 'quiet');
+    assert.match(building?.kind === 'quiet' ? building.detail : '', /building baseline \(2 of 7 days\)/);
+    assert.equal(find(feeds({ history: history([100, 100, 100, 100], 190) }), 'attack-spike')?.kind, 'quiet');
+    const fired = find(feeds({ history: history([100, 100, 100, 100], 240) }), 'attack-spike');
+    assert.equal(fired?.kind, 'fired');
+    if (fired?.kind !== 'fired') return;
+    assert.equal(fired.indicator.change, '×2.4 vs 7d');
+    assert.match(fired.indicator.detail ?? '', /C2Intel 120 · AbuseIPDB 120 — top families: cobaltstrike 100%/);
+    const base = threatBaseline(history([10, 10, 10, 10, 10, 10, 10, 100, 100], 50));
+    assert.equal(base.days, 7, 'only the 7 complete days before today count');
+  });
+
+  it('decodes the on-demand payloads strictly and keeps a valid empty KEV list', () => {
+    assert.equal(decodeThreatHistory(undefined), null);
+    assert.equal(decodeThreatHistory({ updatedAt: 1, latest: { at: 1 }, days: [] }), null, 'a latest run without a total is not a history');
+    const h = decodeThreatHistory({ updatedAt: 2, latest: { at: 2, total: 5, bySource: { otx: 5, bad: -1 }, byFamily: {} }, days: [{ date: '2026-11-08', total: 5 }, { date: 'x', total: 1 }] });
+    assert.deepEqual(h?.latest.bySource, { otx: 5 });
+    assert.deepEqual(h?.days.map((d) => d.date), ['2026-11-08']);
+    assert.equal(decodeRecentKev(null), null);
+    assert.deepEqual(decodeRecentKev({ fetchedAt: 3, days: 30, items: [] })?.items, []);
+    assert.deepEqual(decodeRecentKev({ fetchedAt: 3, items: [{ id: 'nope', addedAt: '2026-11-01' }, { id: 'CVE-2026-0001', addedAt: '2026-11-01' }] })?.items.map((i) => i.id), ['CVE-2026-0001']);
+  });
+
+  it('reads unavailable, naming the seeder, when a source failed, and stale when it is late', () => {
+    const list = techFeeds({
+      outages: { status: 'error', data: null, at: AT, error: 'HTTP 503' },
+      services: ready(services([status('aws', 'AWS', 'SERVICE_OPERATIONAL_STATUS_OPERATIONAL')])),
+      kev: ready({ ...kev([]), fetchedAt: AT - 3 * 24 * H }),
+      history: { status: 'empty', data: null, at: AT },
+      news: [],
+      now: AT,
+    });
+    const out = find(list, 'internet-outage');
+    assert.equal(out?.kind, 'unavailable');
+    assert.match(out?.kind === 'unavailable' ? out.detail : '', /seed-internet-outages/);
+    assert.equal(find(list, 'kev-new')?.kind, 'stale');
+    assert.equal(find(list, 'attack-spike')?.kind, 'unavailable');
   });
 });
