@@ -314,6 +314,8 @@ const EXCLUDED_FROM_MCP = new Map([
     'intermediate: per-country daily GDELT conflict/protest buckets and baselines that feed the CII Conflict and Unrest components; agents read the result through the risk-score tools.'],
   ['gdelt:bulk:conflict-counts:v1',
     'derived display projection: the same GDELT conflict article counts as gdelt:bulk:country-events:v1, cut to 48 hourly and 30 daily buckets for the Lite Geopolitics map; agents read the result through the risk-score tools.'],
+  ['intelligence:gpsjam:high-cells:v1',
+    'derived display projection: today\'s and the previous day\'s high GPS-interference cell IDs from intelligence:gpsjam:v2, kept for the Lite Geopolitics indicator; agents read GPS interference through the existing tools.'],
   ['intelligence:wsb-tickers:v1',
     'deferred: companion to get_social_velocity (Reddit r/wallstreetbets sentiment). Future expanded social-sentiment tool would bundle this with reddit feed.'],
   ['intelligence:telegram-feed:v1',

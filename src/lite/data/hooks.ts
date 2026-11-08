@@ -26,6 +26,10 @@ export const useUnrestEvents = () => useResource('unrestEvents', src.loadUnrestE
 export const useEarthquakes = () => useResource('earthquakes', src.loadEarthquakes);
 export const useMilitaryFlights = () => useResource('militaryFlights', src.loadMilitaryFlights);
 export const useConflictCounts = () => useResource('conflictCounts', src.loadConflictCounts);
+export const useSeaIncidents = () => useResource('seaIncidents', src.loadSeaIncidents);
+/** The day's hexagons are large: loaded only while the GPS layer is on. */
+export const useGpsInterference = (enabled: boolean) => useResource('gpsInterference', src.loadGpsInterference, enabled);
+export const useGpsHighCells = () => useResource('gpsHighCells', src.loadGpsHighCells);
 export const useCryptoQuotes = () => useResource('cryptoQuotes', src.loadCryptoQuotes);
 export const useMarketQuotes = () => useResource('marketQuotes', src.loadMarketQuotes);
 export const useCommodityQuotes = () => useResource('commodityQuotes', src.loadCommodityQuotes);

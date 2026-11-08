@@ -2,7 +2,7 @@ import { render, type ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { GeoJSONSource, Map as MapLibreMap, Marker as MapLibreMarker } from 'maplibre-gl';
 import Supercluster from 'supercluster';
-import { Locate, Minus, Plus, X } from 'lucide-preact';
+import { Locate, Minus, Plane, Plus, Ship, X } from 'lucide-preact';
 import type { Tone } from '../data/transforms';
 import { BG, BORDER, TEXT, cx } from '../components/ui';
 import { COUNTRY_CODE_PROPERTY, COUNTRY_FILL_LAYER, COUNTRY_FILL_SOURCE, MAP_CREDITS, buildLiteMapStyle, countryFillLayer, readLiteMapTokens } from './style';
@@ -63,12 +63,20 @@ export interface HotspotMarker extends MarkerBase {
   tone: Tone;
   /** Name shown beside the diamond; empty draws a smaller diamond without one. */
   label: string;
+  /** Military aircraft near the hotspot, drawn as a "✈ N" chip when the indicator fired. */
+  badge?: number;
 }
 
 export interface PinMarker extends MarkerBase {
   kind: 'pin';
-  /** `signal`: a dot, filled when fired; `chokepoint`: a ring; `centre`: a small square, context only. */
-  shape: 'signal' | 'chokepoint' | 'centre';
+  /**
+   * `signal`: a dot, filled when fired; `chokepoint`: a ring; `centre`: a small
+   * square, context only; `aircraft`: a plane turned to its heading; `sea`: a
+   * ship (an incident at sea).
+   */
+  shape: 'signal' | 'chokepoint' | 'centre' | 'aircraft' | 'sea';
+  /** Degrees from north, for `aircraft`. */
+  heading?: number;
   tone: Tone;
   fired: boolean;
   /** Name chip beside the mark, and its second line. Hidden on phones. */
@@ -200,6 +208,12 @@ function HotspotPin({ marker, selected, onClick }: { marker: HotspotMarker; sele
           <Diamond tone={marker.tone} filled={selected} size={marker.label ? 12 : 9} />
         </span>
       </button>
+      {marker.badge ? (
+        <span class="flex items-center gap-[3px] rounded-[5px] bg-ink px-[5px] py-px font-mono text-[10.5px] font-semibold leading-4 text-bg" data-aircraft-badge={marker.badge}>
+          <Plane size={10} strokeWidth={2} aria-hidden="true" />
+          {marker.badge}
+        </span>
+      ) : null}
       {/* Names are hidden on phones, where they would cover the small map. */}
       {marker.label ? (
         <span class={cx('hidden rounded-[4px] bg-bg/85 px-[6px] py-px text-[11px] leading-4 sm:inline', TEXT[marker.tone])}>{marker.label}</span>
@@ -213,8 +227,19 @@ const PIN_DOT: Readonly<Record<Tone, string>> = {
 };
 
 /** The signal, chokepoint and centre marks, shared with the map legend. */
-export function PinMark({ shape, tone, fired }: { shape: PinMarker['shape']; tone: Tone; fired: boolean }) {
+export function PinMark({ shape, tone, fired, heading }: { shape: PinMarker['shape']; tone: Tone; fired: boolean; heading?: number }) {
   if (shape === 'centre') return <span class="block h-[5px] w-[5px] bg-dim" aria-hidden="true" />;
+  // lucide's plane points north-east, so a heading of 45° draws it as is.
+  if (shape === 'aircraft') {
+    return <Plane size={12} strokeWidth={1.75} class="block text-ink/80" style={{ transform: `rotate(${(heading ?? 45) - 45}deg)` }} aria-hidden="true" />;
+  }
+  if (shape === 'sea') {
+    return (
+      <span class={cx('flex h-[16px] w-[16px] items-center justify-center rounded-[4px] border bg-bg', fired ? 'border-ok text-ok' : 'border-dim text-dim')} aria-hidden="true">
+        <Ship size={11} strokeWidth={1.75} />
+      </span>
+    );
+  }
   if (shape === 'chokepoint') {
     return <span class={cx('block h-[11px] w-[11px] rounded-full border-2', PIN_DOT[tone], tone === 'dim' ? 'bg-bg/70' : 'bg-bg')} aria-hidden="true" />;
   }
@@ -244,7 +269,7 @@ function Pin({ marker, selected, onClick }: { marker: PinMarker; selected: boole
           onClick();
         }}
       >
-        <PinMark shape={marker.shape} tone={marker.tone} fired={marker.fired} />
+        <PinMark shape={marker.shape} tone={marker.tone} fired={marker.fired} heading={marker.heading} />
       </button>
       {marker.label ? (
         <span class={cx('hidden flex-col rounded-[4px] border bg-bg/85 px-[6px] py-[2px] sm:flex', marker.fired ? 'border-line' : 'border-transparent')}>
@@ -605,11 +630,13 @@ export function LiteMap({
       // Set on every render: a hotspot's level, and so its layer, can change on refresh.
       // Named hotspots draw above UCDP circles; grey unnamed ones below, so they never cover a death count.
       // A hotspot's element spans its name too, so only the diamond button inside takes clicks.
-      // Pins: signals on top, chokepoints over lanes, centres at the bottom.
+      // Pins: signals and sea incidents on top, chokepoints over lanes, centres and aircraft at the bottom.
       const named = s.type === 'marker' && s.marker.kind !== 'ucdp' && Boolean(s.marker.label);
       // Glyphs: tags on top (they are small and sit above their point), then attack hexagons.
       const pinLayer = s.type === 'marker' && s.marker.kind === 'pin'
-        ? s.marker.shape === 'signal' ? (s.marker.fired ? 'z-[3]' : 'z-[2]') : s.marker.shape === 'chokepoint' ? 'z-[1]' : 'z-0'
+        ? s.marker.shape === 'signal' ? (s.marker.fired ? 'z-[3]' : 'z-[2]')
+          : s.marker.shape === 'sea' ? 'z-[3]'
+          : s.marker.shape === 'chokepoint' ? 'z-[1]' : 'z-0'
         : s.type === 'marker' && s.marker.kind === 'glyph'
           ? s.marker.shape === 'tag' ? 'z-[3]' : s.marker.shape === 'hex' ? 'z-[2]' : 'z-[1]'
           : null;

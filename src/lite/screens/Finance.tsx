@@ -6,6 +6,7 @@ import { Card, ColLabel, DerivedTag, Panel, SourceState, cx } from '../component
 import { HealthDots, IndicatorCard, IndicatorFeed } from '../components/indicator';
 import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
 import { LiteMap, PinMark, type MapMarker } from '../map/LiteMap';
+import { LegendRow, MapLegend } from '../map/legend';
 import {
   selectMarketEvents,
   useChokepoints,
@@ -307,13 +308,13 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
     >
       <div class="relative h-[320px] border-t border-line md:h-[400px]">
         <LiteMap markers={markers} fit="world" overlays={overlays} focusId={focus} onSelect={(id) => { if (!id) onFocus(null); }} />
-        <div class="pointer-events-none absolute bottom-3 left-3 z-[4] hidden flex-col gap-[6px] rounded-[8px] border border-line bg-surface/90 px-3 py-[10px] sm:flex" data-testid="markets-legend">
+        <MapLegend testId="markets-legend">
           <LegendRow mark={<span class="flex gap-[3px]"><PinMark shape="signal" tone="muted" fired /><PinMark shape="signal" tone="muted" fired={false} /></span>} name="Finance signals" note="fired · quiet" />
           <LegendRow mark={<span class="flex gap-[3px]"><PinMark shape="chokepoint" tone="dim" fired={false} /><PinMark shape="chokepoint" tone="crit" fired /></span>} name="Chokepoints" note="red = disrupted" />
           <LegendRow mark={<span class="flex gap-[3px]"><span class="mt-[5px] block h-[2px] w-[10px] bg-track" /><span class="mt-[5px] block h-[2px] w-[10px] bg-elev" /></span>} name="Shipping lanes" note="amber = at risk" />
           <LegendRow mark={<span class="block h-[10px] w-[14px] border border-elev bg-elev/15" />} name="New sanctions" note="by country" />
           <LegendRow mark={<PinMark shape="centre" tone="dim" fired={false} />} name="Financial centres" note="context only" />
-        </div>
+        </MapLegend>
         {failed.length ? (
           <span class="absolute right-3 top-10 z-[4] rounded-[4px] bg-surface/90 px-2 py-px text-[10.5px] text-dim">Unavailable: {failed.join(', ')}</span>
         ) : null}
@@ -327,16 +328,6 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
         </MapNote>
       </div>
     </Card>
-  );
-}
-
-function LegendRow({ mark, name, note }: { mark: ComponentChildren; name: string; note: string }) {
-  return (
-    <span class="flex items-center gap-2">
-      <span class="flex w-[30px] items-center">{mark}</span>
-      <span class="text-[11.5px] text-ink">{name}</span>
-      <span class="text-[10.5px] text-dim">{note}</span>
-    </span>
   );
 }
 
