@@ -1516,7 +1516,7 @@ const SEED_META = {
     key: 'seed-meta:gdelt:bulk:conflict-counts', maxStaleMin: 45,
     activationKey: 'seed-activated:gdelt:bulk:conflict-counts',
     cutover: {
-      mode: 'activation-marker', fromKey: null, issue: 34,
+      mode: 'activation-marker', fromKey: null, issue: 35,
       activationKey: 'seed-activated:gdelt:bulk:conflict-counts',
     },
   },
