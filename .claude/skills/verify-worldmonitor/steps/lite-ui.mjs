@@ -55,6 +55,11 @@ export default async function ({ page, base, shot, log, expectVisible }) {
     const title = await page.textContent('h1');
     if (title !== screen.title) throw new Error(`${screen.path}: title "${title}"`);
     await settle(page);
+    if (screen.nav === 'finance') {
+      // Step 3: the markets map and the Treasury curve sit beside the main card.
+      await expectVisible('[data-testid="markets-map"]');
+      await expectVisible('[data-testid="treasury-curve"]');
+    }
     const states = await page.$$eval('[data-source-state]', (els) => els.map((el) => `${el.getAttribute('data-source-state')}: ${el.textContent}`));
     const samples = await page.$$eval('[data-sample="true"]', (els) => els.length);
     log(screen.path, 'sample badges', samples, 'source states', JSON.stringify(states));

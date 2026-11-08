@@ -16,7 +16,7 @@ import type { GetShippingRatesResponse, ShippingIndex } from '@/generated/client
 import type { ListMaterialEventsResponse, MaterialEvent } from '@/generated/client/worldmonitor/intelligence/v1/service_client';
 import { MARKET_SYMBOLS } from '@/config/markets';
 import { MINUS, signed, usdCompact } from '../format';
-import { feedState, type FeedState, type Indicator } from './indicators';
+import { feedState, withReading, type FeedState, type Indicator } from './indicators';
 import { DRIVERS, LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';
 import type { ResourceState } from './store';
 import type { LiteItem } from './transforms';
@@ -152,7 +152,10 @@ export function macroFeed(input: { calendar: ResourceState<GetEconomicCalendarRe
     .sort((a, b) => a.date.localeCompare(b.date))[0];
   const nextText = next ? `next ${MACRO.find((r) => r.test.test(next.event))?.label ?? next.event} ${dayMonth(ymdMs(next.date))}` : null;
   const lastText = last ? `${last.rule.label} ${macroValue(last.actual, last.rule.payrolls)}, prior ${macroValue(last.previous, last.rule.payrolls)}` : null;
-  return quietDetail(feed, [lastText, nextText, 'fires on a gap to the prior print'].filter(Boolean).join(' · '));
+  const reading = fired
+    ? `${fired.rule.label.replace('US ', '')} ${fired.rule.payrolls ? macroValue(fired.change, true) : signed(fired.change, 1, ' pt')} vs prior`
+    : last ? `${last.rule.label.replace('US ', '')} ${macroValue(last.actual, last.rule.payrolls)}` : nextText;
+  return withReading(quietDetail(feed, [lastText, nextText, 'fires on a gap to the prior print'].filter(Boolean).join(' · ')), reading);
 }
 
 // ---- Treasury yields --------------------------------------------------------
@@ -210,9 +213,10 @@ export function treasuryFeed(input: { curves: ResourceState<UsTreasuryParYieldCu
     id: 'treasury', name: 'Treasury yields · 2Y / 10Y', source: win ? curves : emptyOf(curves), seeder: 'seed-us-treasury-par-yield',
     cadenceMin: 3 * 1440, dataAt: latest ? latest.date : null, fired: indicator, now,
   });
-  return quietDetail(feed, latest
+  const reading = latest ? `UST 10Y ${latest.tenYear?.toFixed(2) ?? '—'}% ${d10 != null ? bp(d10) : ''}`.trim() : null;
+  return withReading(quietDetail(feed, latest
     ? `2Y ${latest.twoYear?.toFixed(2) ?? '—'}% (${d2 != null ? bp(d2) : '—'}) · 10Y ${latest.tenYear?.toFixed(2) ?? '—'}% (${d10 != null ? bp(d10) : '—'}) · ${spreadText ?? '2s10s —'} · data to ${dayMonth(latest.date)}`
-    : null);
+    : null), reading);
 }
 
 // ---- Other 10-year bonds ----------------------------------------------------
@@ -354,9 +358,10 @@ export function scfiFeed(input: { rates: ResourceState<GetShippingRatesResponse>
       }
     : null;
   const feed = feedState({ id: 'freight-scfi', name: 'Container freight · SCFI', source: index ? rates : emptyOf(rates), seeder: 'seed-supply-chain-trade', cadenceMin: 360, dataAt: fetchedAt, fired: indicator, now });
-  return quietDetail(feed, index
+  const reading = index ? `SCFI ${Math.round(index.currentValue).toLocaleString('en-US')}${change != null ? ` ${signed(change)} w/w` : ''}` : null;
+  return withReading(quietDetail(feed, index
     ? `${Math.round(index.currentValue).toLocaleString('en-US')} · ${change != null ? `${signed(change)} w/w` : 'no dated prior week'}${point ? ` · week to ${dayMonth(ymdMs(point.date))}` : ''} · fires at ±${FREIGHT_MOVE_PCT}%`
-    : null);
+    : null), reading);
 }
 
 export function bdiFeed(input: { rates: ResourceState<GetShippingRatesResponse> } & Ctx): FeedState {
@@ -379,9 +384,10 @@ export function bdiFeed(input: { rates: ResourceState<GetShippingRatesResponse> 
       }
     : null;
   const feed = feedState({ id: 'freight-bdi', name: 'Dry bulk · Baltic Dry', source: index ? rates : emptyOf(rates), seeder: 'seed-supply-chain-trade', cadenceMin: 360, dataAt: fetchedAt, fired: indicator, now });
-  return quietDetail(feed, index
+  const reading = index ? `BDI ${Math.round(index.currentValue).toLocaleString('en-US')}${change != null ? ` ${signed(change)} d/d` : ''}` : null;
+  return withReading(quietDetail(feed, index
     ? `${Math.round(index.currentValue).toLocaleString('en-US')} · ${change != null ? `${signed(change)} d/d` : 'no prior day reported'}${point ? ` · data to ${dayMonth(ymdMs(point.date))}` : ''} · fires at ±${FREIGHT_MOVE_PCT}%`
-    : null);
+    : null), reading);
 }
 
 // ---- 8-K filings ------------------------------------------------------------
@@ -471,9 +477,10 @@ export function filingsFeed(input: { filings: ResourceState<ListMaterialEventsRe
     : null;
   const feed = feedState({ id: 'sec-8k', name: 'Company filings · 8-K', source: filings, seeder: 'seed-sec-8k-stream', cadenceMin: 30, dataAt: fetchedAt, fired: indicator, now });
   const recent = events.filter((e) => now - e.filedAtMs <= FILING_WINDOW_HOURS * HOUR_MS).length;
-  return quietDetail(feed, filings.status === 'ready'
+  const reading = top ? `8-K ${filerName(top.event.company)}${item ? ` · ${item.code}` : ''}` : filings.status === 'ready' ? `8-K · ${recent} filings, none matched` : null;
+  return withReading(quietDetail(feed, filings.status === 'ready'
     ? `${recent} material filing${recent === 1 ? '' : 's'} in ${FILING_WINDOW_HOURS} h · none from the stock list or with a key item`
-    : null);
+    : null), reading);
 }
 
 /** Every step-3 feed, unsorted. */

@@ -1,77 +1,84 @@
 import type { ComponentChildren } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
-import type { CryptoQuote } from '@/generated/client/worldmonitor/market/v1/service_client';
+import { Bitcoin, MapPin } from 'lucide-preact';
 import { Topbar, matchesSearch } from '../components/Topbar';
-import { BarStrip, LineChart } from '../components/charts';
-import { Card, ColLabel, DerivedTag, Panel, SampleBadge, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
-import { HealthDots, IndicatorFeed } from '../components/indicator';
+import { Card, ColLabel, DerivedTag, Panel, SourceState, cx } from '../components/ui';
+import { HealthDots, IndicatorCard, IndicatorFeed } from '../components/indicator';
+import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
+import { LiteMap, PinMark, type MapMarker } from '../map/LiteMap';
 import {
   selectMarketEvents,
+  useChokepoints,
   useCommodityQuotes,
-  useCorrelationSeries,
+  useCountryShapes,
   useCryptoQuotes,
   useDigest,
   useEtfFlows,
   useFearGreed,
-  useGoldIntelligence,
   useHyperliquid,
   useMacroCalendar,
   useMarketQuotes,
   useMaterialEvents,
   useOtherBonds,
   usePriceBoard,
+  useSanctions,
   useShippingRates,
   useStablecoins,
   useTreasuryCurves,
 } from '../data/hooks';
-import { SAMPLE_BTC_VOLUME, SAMPLE_LIQUIDATIONS } from '../data/fixtures';
 import { FINANCE_RULES, financeFeeds } from '../data/finance-indicators';
-import { feedCounts, sortFeeds } from '../data/indicators';
-import { MACRO_RULES, financeMacroFeeds, macroValue, spreadBp, treasuryWindow } from '../data/finance-macro-indicators';
-import { PRICE_LINK_RULE, eventTag, geoCause, linkPriceMoves, priceMoveLabel } from '../data/prices';
+import { feedCounts, sortFeeds, type FeedState } from '../data/indicators';
+import { MACRO_RULES, YIELD_MOVE_BP, bondMoves, financeMacroFeeds, macroValue, spreadBp, treasuryWindow } from '../data/finance-macro-indicators';
 import {
-  closeToCloseBars,
-  digestItems,
-  pctChange,
-  realizedVolatility,
-  relativeTime,
-  returnCorrelation,
-  sourceCount,
-  type Tone,
-} from '../data/transforms';
-import { MINUS, price, signed, usdCompact } from '../format';
-
-type Range = '1D' | '2D';
-const RANGE_OPTIONS = [
-  { value: '1D', label: '1D' },
-  { value: '2D', label: '2D' },
-  { value: '1W', label: '1W', disabled: true, title: 'No hourly history beyond 48h in this build' },
-  { value: '1M', label: '1M', disabled: true, title: 'No hourly history beyond 48h in this build' },
-  { value: '1Y', label: '1Y', disabled: true, title: 'No hourly history beyond 48h in this build' },
-] as const;
+  FINANCIAL_CENTRE_POINTS,
+  chokepointPins,
+  newSanctionCountries,
+  pinIdForFeed,
+  sanctionFills,
+  shippingLanes,
+  signalPins,
+} from '../data/markets-map';
+import { PRICE_LINK_RULE, eventTag, geoCause, linkPriceMoves, priceMoveLabel } from '../data/prices';
+import { digestItems, relativeTime, sourceCount } from '../data/transforms';
+import { MINUS, price, signed } from '../format';
 
 const changeTone = (v: number | null | undefined): string => (v == null ? 'text-dim' : v < 0 ? 'text-crit' : 'text-ok');
 
+/** Every Finance feed, sorted: fired newest first, then quiet, stale and unavailable. */
+function useFinanceFeeds(): FeedState[] {
+  const crypto = useCryptoQuotes();
+  const flow = useHyperliquid();
+  const stables = useStablecoins();
+  const fearGreed = useFearGreed();
+  const calendar = useMacroCalendar();
+  const curves = useTreasuryCurves();
+  const bonds = useOtherBonds();
+  const etf = useEtfFlows();
+  const rates = useShippingRates();
+  const filings = useMaterialEvents();
+  const digest = useDigest('finance');
+  return useMemo(() => {
+    const news = digest.status === 'ready' ? digestItems(digest.data) : [];
+    const now = Date.now();
+    return sortFeeds([
+      ...financeFeeds({ crypto, flow, stables, fearGreed, news, now }),
+      ...financeMacroFeeds({ calendar, curves, bonds, etf, flow, rates, filings, news, now }),
+    ]);
+  }, [crypto, flow, stables, fearGreed, calendar, curves, bonds, etf, rates, filings, digest]);
+}
+
 export function Finance() {
-  const [range, setRange] = useState<Range>('1D');
   const [search, setSearch] = useState('');
+  const [focus, setFocus] = useState<string | null>(null);
   const digest = useDigest('finance');
   const events = useMemo(() => (digest.status === 'ready' ? selectMarketEvents(digest.data) : []), [digest]);
+  const feeds = useFinanceFeeds();
 
   return (
     <>
       <Topbar
         title="Finance & Crypto"
-        subtitle={<>Seeded quotes · {digest.status === 'ready' ? `${events.length} market-moving stories` : 'loading stories'} · not investment advice</>}
-        filter={
-          <SegmentedControl
-            label="Chart range"
-            mono
-            options={RANGE_OPTIONS}
-            value={range}
-            onChange={(v) => (v === '1D' || v === '2D') && setRange(v)}
-          />
-        }
+        subtitle={<>1D · seeded quotes · {digest.status === 'ready' ? `${events.length} market-moving stories` : 'loading stories'} · not investment advice</>}
         search={search}
         onSearch={setSearch}
         searchWidth={240}
@@ -80,14 +87,13 @@ export function Finance() {
       <div class="flex flex-col gap-6 px-4 py-6 wide:flex-row wide:px-7">
         <div class="flex min-w-0 flex-1 flex-col gap-5">
           <Tickers />
-          <BtcDetail range={range} />
+          <MarketsMap feeds={feeds} focus={focus} onFocus={setFocus} />
           <MarketEvents state={digest} events={events.filter((e) => matchesSearch(search, e.title, e.source, e.tickers.join(' ')))} />
           <MacroCalendar search={search} />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
-          <Indicators />
+          <Indicators feeds={feeds} onOpen={(feed) => setFocus(pinIdForFeed(feed))} />
           <TreasuryCurve />
-          <Correlation />
           <p class="text-[11px] leading-[17px] text-dim">
             Market data shown for monitoring and context only. Analysis, not investment advice. Prices are the latest seeded quotes and may lag their providers.
           </p>
@@ -105,25 +111,24 @@ interface Ticker {
   changeValue: number | null;
 }
 
+/** Five tiles, 1D change only (owner's choice: Finance shows the 1D range). */
 function Tickers() {
   const crypto = useCryptoQuotes();
   const equities = useMarketQuotes();
   const commodities = useCommodityQuotes();
-  const gold = useGoldIntelligence();
 
   const find = (list: ReadonlyArray<{ symbol: string; price: number; change: number }> | null, symbol: string) =>
     list?.find((q) => q.symbol.toUpperCase() === symbol.toUpperCase());
   const cryptoList = crypto.status === 'ready' ? crypto.data : null;
   const equityList = equities.status === 'ready' ? equities.data : null;
   const commodityList = commodities.status === 'ready' ? commodities.data : null;
-  const dxy = gold.status === 'ready' ? gold.data.drivers.find((d) => /dxy|dollar/i.test(d.label) || d.symbol.startsWith('DX')) : undefined;
   const tnx = find(equityList, '^TNX');
 
-  const tile = (symbol: string, cls: string, q: { price: number; change: number } | undefined, fmt = price): Ticker => ({
+  const tile = (symbol: string, cls: string, q: { price: number; change: number } | undefined): Ticker => ({
     symbol,
     cls,
-    value: q ? fmt(q.price) : '—',
-    change: q ? `${signed(q.change)} 24h` : '—',
+    value: q ? price(q.price) : '—',
+    change: q ? `${signed(q.change)} 1D` : '—',
     changeValue: q ? q.change : null,
   });
 
@@ -131,22 +136,21 @@ function Tickers() {
   if (tnx) {
     const prev = tnx.price / (1 + tnx.change / 100);
     const bp = (tnx.price - prev) * 100;
-    tenYear = { symbol: 'US 10Y', cls: 'Rates', value: `${tnx.price.toFixed(2)}%`, change: `${bp < 0 ? MINUS : '+'}${Math.abs(bp).toFixed(0)}bp 24h`, changeValue: bp };
+    tenYear = { symbol: 'US 10Y', cls: 'Rates', value: `${tnx.price.toFixed(2)}%`, change: `${bp < 0 ? MINUS : '+'}${Math.abs(bp).toFixed(0)}bp 1D`, changeValue: bp };
   }
 
   const tickers: Ticker[] = [
     tile('BTC', 'Crypto', find(cryptoList, 'BTC')),
-    tile('ETH', 'Crypto', find(cryptoList, 'ETH')),
+    tile('Brent', 'Oil', find(commodityList, 'BZ=F')),
+    tile('Gold', 'Metals', find(commodityList, 'GC=F')),
     tile('S&P 500', 'Equities', find(equityList, '^GSPC')),
-    tile('Brent', 'Commodities', find(commodityList, 'BZ=F')),
-    dxy ? { symbol: 'DXY', cls: 'FX', value: dxy.value.toFixed(1), change: `${signed(dxy.changePct)} 24h`, changeValue: dxy.changePct } : { symbol: 'DXY', cls: 'FX', value: '—', change: '—', changeValue: null },
     tenYear,
   ];
 
   return (
-    <div class="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-line bg-line sm:grid-cols-3 md:grid-cols-6" data-testid="ticker-strip">
-      {tickers.map((t, i) => (
-        <div key={t.symbol} class={cx('flex flex-col gap-1 px-[14px] py-3', i === 0 ? 'border-b-2 border-ink bg-surface-2' : 'bg-surface')}>
+    <div class="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-line bg-line sm:grid-cols-3 md:grid-cols-5" data-testid="ticker-strip">
+      {tickers.map((t) => (
+        <div key={t.symbol} class="flex flex-col gap-1 bg-surface px-[14px] py-3" data-ticker={t.symbol}>
           <div class="flex items-center justify-between">
             <span class="text-[12px] font-semibold text-ink">{t.symbol}</span>
             <span class="font-mono text-[10px] text-dim">{t.cls}</span>
@@ -159,147 +163,192 @@ function Tickers() {
   );
 }
 
-type ChartTab = 'price' | 'funding' | 'oi';
+type MapLayer = 'signals' | 'chokepoints' | 'lanes' | 'sanctions' | 'centres';
 
-function BtcDetail({ range }: { range: Range }) {
-  const crypto = useCryptoQuotes();
-  const flow = useHyperliquid();
-  const [tab, setTab] = useState<ChartTab>('price');
-  const btc: CryptoQuote | undefined = crypto.status === 'ready' ? crypto.data.find((q) => q.symbol.toUpperCase() === 'BTC') : undefined;
-  const hlBtc = flow.status === 'ready' ? flow.data.assets.find((a) => a.symbol.toUpperCase() === 'BTC') : undefined;
-  const closes = (btc?.sparkline ?? []).slice(range === '1D' ? -25 : -49);
-  const bars = closeToCloseBars(closes);
-  const lo = closes.length ? Math.min(...closes) : 0;
-  const hi = closes.length ? Math.max(...closes) : 0;
-  const span = hi - lo || 1;
-  const move = closes.length > 1 ? (closes[closes.length - 1] ?? 0) - (closes[0] ?? 0) : null;
-  const movePct = closes.length > 1 ? pctChange(closes[0] ?? 0, closes[closes.length - 1] ?? 0) : null;
-  const vol = realizedVolatility(btc?.sparkline ?? []);
-  const breadth = crypto.status === 'ready' ? { down: crypto.data.filter((q) => q.change < 0).length, total: crypto.data.length } : null;
-  const funding = hlBtc ? Number(hlBtc.funding) : null;
-  const oiUsd = hlBtc ? Number(hlBtc.openInterest) * Number(hlBtc.markPx) : null;
-  const oiSpark = hlBtc?.sparkOi ?? [];
-  const oiChange = oiSpark.length > 1 ? pctChange(oiSpark[0] ?? 0, oiSpark[oiSpark.length - 1] ?? 0) : null;
-  const tabs: Array<{ key: ChartTab; label: string }> = [
-    { key: 'price', label: 'Price' },
-    { key: 'funding', label: 'Funding' },
-    { key: 'oi', label: 'Open interest' },
+const dayMonthUtc = (ts: number | string) => new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+/**
+ * "Where markets are moving": Finance signals pinned where they are issued,
+ * chokepoints with the price they move, and context layers.
+ */
+function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; focus: string | null; onFocus: (id: string | null) => void }) {
+  const [layers, setLayers] = useState<Record<MapLayer, boolean>>({ signals: true, chokepoints: true, lanes: true, sanctions: true, centres: true });
+  const bonds = useOtherBonds();
+  const chokepoints = useChokepoints();
+  const sanctions = useSanctions();
+  const rates = useShippingRates();
+  const board = usePriceBoard();
+  const now = Date.now();
+
+  const moves = useMemo(() => (bonds.status === 'ready' ? bondMoves(bonds.data) : []), [bonds]);
+  const pins = useMemo(() => signalPins(feeds, moves, YIELD_MOVE_BP), [feeds, moves]);
+  const scfi = rates.status === 'ready' ? rates.data.indices.find((i) => i.indexId === 'SCFI')?.periodChangePct ?? null : null;
+  const chokes = useMemo(
+    () => chokepointPins(chokepoints.status === 'ready' ? chokepoints.data.chokepoints : [], board, scfi),
+    [chokepoints, board, scfi],
+  );
+  const redChokepoints = useMemo(() => new Set(chokes.filter((c) => c.tone === 'crit').map((c) => c.id.replace('chokepoint:', ''))), [chokes]);
+  const lanes = useMemo(() => shippingLanes(redChokepoints), [redChokepoints]);
+  const sanctioned = useMemo(() => newSanctionCountries(sanctions.status === 'ready' ? sanctions.data.countries : []), [sanctions]);
+  // Country shapes (about 200 KB) load only when there is something to shade.
+  const shapes = useCountryShapes(layers.sanctions && sanctioned.size > 0);
+  const fills = useMemo(
+    () => sanctionFills(shapes?.status === 'ready' ? shapes.data : null, sanctioned),
+    [shapes, sanctioned],
+  );
+
+  const markers = useMemo((): MapMarker[] => {
+    const out: MapMarker[] = [];
+    if (layers.centres) {
+      for (const c of FINANCIAL_CENTRE_POINTS) {
+        out.push({ kind: 'pin', shape: 'centre', tone: 'dim', fired: false, id: c.id, lat: c.lat, lon: c.lon, title: `${c.name} · financial centre`, popup: { kind: 'Financial centre', name: c.name, value: '', lines: [] } });
+      }
+    }
+    if (layers.chokepoints) {
+      for (const c of chokes) {
+        out.push({
+          kind: 'pin', shape: 'chokepoint', tone: c.tone, fired: c.tone !== 'dim', id: c.id, lat: c.lat, lon: c.lon,
+          title: `${c.name} · ${c.info ? c.status : 'no status read'}`,
+          label: c.tone !== 'dim' ? c.name : undefined,
+          sub: c.moved ?? undefined,
+          popup: {
+            kind: 'Chokepoint',
+            name: c.name,
+            value: c.info ? `${Math.round(c.info.disruptionScore)}/100` : '—',
+            lines: c.info
+              ? [
+                  { text: `Disruption score ${Math.round(c.info.disruptionScore)} (${c.status || 'unknown'}) · ${c.info.activeWarnings} active warning${c.info.activeWarnings === 1 ? '' : 's'}` },
+                  ...(c.moved ? [{ text: `Moves: ${c.moved}`, style: 'mono' as const }] : []),
+                  ...(c.info.description ? [{ text: c.info.description, style: 'dim' as const }] : []),
+                ]
+              : [{ text: 'No status read: the chokepoint status source did not answer.', style: 'dim' as const }],
+          },
+        });
+      }
+    }
+    if (layers.signals) {
+      for (const p of pins) {
+        const [first, ...rest] = p.signals;
+        const fired = p.signals.filter((s) => s.fired && s.indicator);
+        out.push({
+          kind: 'pin', shape: 'signal', tone: 'muted', fired: p.fired, id: p.id, lat: p.issuer.lat, lon: p.issuer.lon,
+          // New York sits on Washington at world zoom: lift the NYSE pin clear of the Fed's.
+          nudge: p.issuer.id === 'nyse' ? [6, -14] : undefined,
+          title: `${p.issuer.short} · ${p.signals.map((s) => s.text).join(' · ')}`,
+          // Only fired pins carry a name chip; quiet ones keep the map readable and show it on hover.
+          label: p.fired && first ? `${p.issuer.short} · ${first.text}` : undefined,
+          sub: p.fired && rest.length ? rest.map((s) => s.text).join(' · ') : undefined,
+          popup: {
+            kind: p.issuer.name,
+            name: p.issuer.short,
+            value: '',
+            lines: [],
+            body: (
+              <>
+                {fired.map((s) => <IndicatorCard key={s.feedId} indicator={s.indicator!} now={now} />)}
+                {p.signals.filter((s) => !s.indicator).map((s) => (
+                  <p key={`${s.feedId}${s.text}`} class={cx('font-mono text-[11.5px]', s.fired ? 'text-ink' : 'text-muted')}>
+                    {s.text}{s.fired ? '' : ' · quiet'}
+                  </p>
+                ))}
+              </>
+            ),
+          },
+        });
+      }
+    }
+    return out;
+  }, [layers, pins, chokes, now]);
+
+  const overlays = useMemo(
+    () => ({ lines: layers.lanes ? lanes : undefined, fills: layers.sanctions ? fills : undefined }),
+    [layers.lanes, layers.sanctions, lanes, fills],
+  );
+
+  const fired = pins.filter((p) => p.fired).length;
+  const groups: LayerGroup[] = [
+    {
+      title: 'Signals',
+      note: 'where issued',
+      rows: [
+        { id: 'signals', mark: <PinMark shape="signal" tone="muted" fired />, name: 'Finance signals', sub: `${fired} fired · ${pins.length - fired} quiet · crypto stays off the map`, on: layers.signals },
+        { id: 'chokepoints', mark: <PinMark shape="chokepoint" tone="crit" fired />, name: 'Chokepoints', sub: 'red at disruption score 50 · with the price it moves', on: layers.chokepoints },
+        { id: 'geo', mark: <MapPin size={14} class="text-geo" aria-hidden="true" />, name: 'Market-moving geopolitics', sub: 'arrives with the Geopolitics indicators (step 2)', on: null },
+      ],
+    },
+    {
+      title: 'Context',
+      note: 'optional',
+      rows: [
+        { id: 'lanes', mark: <span class="block h-[2px] w-4 bg-elev" aria-hidden="true" />, name: 'Shipping lanes', sub: 'amber = disrupted, high risk or via a red chokepoint', on: layers.lanes },
+        {
+          id: 'sanctions', mark: <span class="block h-[10px] w-[14px] border border-elev bg-elev/15" aria-hidden="true" />, name: 'New sanctions',
+          sub: sanctions.status === 'ready'
+            ? `${sanctioned.size ? `${sanctioned.size} countr${sanctioned.size === 1 ? 'y' : 'ies'}` : 'none'} in OFAC data to ${dayMonthUtc(Number(sanctions.data.datasetDate) || sanctions.data.datasetDate)}`
+            : 'OFAC · seed-sanctions-pressure',
+          on: layers.sanctions,
+        },
+        { id: 'centres', mark: <PinMark shape="centre" tone="dim" fired={false} />, name: 'Financial centres', sub: 'context only', on: layers.centres },
+      ],
+    },
   ];
 
+  const failed = [
+    chokepoints.status === 'error' || chokepoints.status === 'empty' ? 'chokepoint status (grey)' : null,
+    sanctions.status === 'error' ? 'sanctions (seed-sanctions-pressure)' : null,
+  ].filter(Boolean);
+
   return (
-    <section class="flex flex-col overflow-hidden rounded-[10px] border border-line bg-surface md:flex-row" data-testid="btc-detail">
-      <div class="flex min-w-0 flex-1 flex-col gap-3 px-5 pb-[14px] pt-4">
-        <div class="flex flex-wrap items-end gap-3">
-          <div class="flex flex-col gap-[2px]">
-            <span class="text-[11.5px] text-dim">BTC / USD · hourly close-to-close · {range === '1D' ? '24h' : '48h'}</span>
-            <div class="flex items-end gap-[10px]">
-              <span class="font-mono text-[28px] font-medium leading-[31px] text-ink">{btc ? price(btc.price) : '—'}</span>
-              {move != null && movePct != null ? (
-                <span class={cx('font-mono text-[13px] font-medium leading-[21px]', changeTone(move))}>
-                  {move < 0 ? MINUS : '+'}{price(Math.abs(move))} ({signed(movePct)}) in {range === '1D' ? '24h' : '48h'}
-                </span>
-              ) : null}
-            </div>
-          </div>
-          <div class="ml-auto flex gap-[14px]" role="tablist" aria-label="BTC chart">
-            {tabs.map((t) => (
-              <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)} class={cx('text-[12px]', tab === t.key ? 'font-medium text-ink' : 'text-dim hover:text-muted')}>
-                {t.label}
-              </button>
-            ))}
-          </div>
+    <Card
+      title="Where markets are moving"
+      sub="signals pinned at the issuing bank or exchange"
+      right={<LayersPopover groups={groups} onToggle={(id, on) => setLayers((l) => ({ ...l, [id]: on }))} footer="Pins mark where a signal is issued, not where it is felt." />}
+      testId="markets-map"
+    >
+      <div class="relative h-[320px] border-t border-line md:h-[400px]">
+        <LiteMap markers={markers} fit="world" overlays={overlays} focusId={focus} onSelect={(id) => { if (!id) onFocus(null); }} />
+        <div class="pointer-events-none absolute bottom-3 left-3 z-[4] hidden flex-col gap-[6px] rounded-[8px] border border-line bg-surface/90 px-3 py-[10px] sm:flex" data-testid="markets-legend">
+          <LegendRow mark={<span class="flex gap-[3px]"><PinMark shape="signal" tone="muted" fired /><PinMark shape="signal" tone="muted" fired={false} /></span>} name="Finance signals" note="fired · quiet" />
+          <LegendRow mark={<span class="flex gap-[3px]"><PinMark shape="chokepoint" tone="dim" fired={false} /><PinMark shape="chokepoint" tone="crit" fired /></span>} name="Chokepoints" note="red = disrupted" />
+          <LegendRow mark={<span class="flex gap-[3px]"><span class="mt-[5px] block h-[2px] w-[10px] bg-track" /><span class="mt-[5px] block h-[2px] w-[10px] bg-elev" /></span>} name="Shipping lanes" note="amber = at risk" />
+          <LegendRow mark={<span class="block h-[10px] w-[14px] border border-elev bg-elev/15" />} name="New sanctions" note="by country" />
+          <LegendRow mark={<PinMark shape="centre" tone="dim" fired={false} />} name="Financial centres" note="context only" />
         </div>
-        {tab === 'price' ? (
-          crypto.status !== 'ready' || bars.length === 0 ? (
-            <SourceState state={crypto.status === 'ready' ? { status: 'empty', data: null, at: crypto.at } : crypto} source="hourly BTC closes, the crypto quote sparkline (seed-crypto-quotes)" pad={false} />
-          ) : (
-            <>
-              <div class="flex gap-[10px]">
-                <div class="flex h-[210px] min-w-0 flex-1 gap-[3px] border-b border-line" role="img" aria-label="BTC hourly close-to-close bars">
-                  {bars.map((b, i) => {
-                    const top = ((hi - Math.max(b.open, b.close)) / span) * 100;
-                    const height = Math.max(0.6, (Math.abs(b.close - b.open) / span) * 100);
-                    return <span key={i} class="relative flex-1"><span class={cx('absolute inset-x-0 rounded-[1px]', b.up ? 'bg-ok' : 'bg-crit')} style={{ top: `${top}%`, height: `${height}%` }} /></span>;
-                  })}
-                </div>
-                <div class="flex h-[210px] w-9 flex-col justify-between font-mono text-[10px] text-dim">
-                  {[0, 1, 2, 3, 4].map((k) => <span key={k}>{((hi - (span * k) / 4) / 1000).toFixed(1)}k</span>)}
-                </div>
-              </div>
-              <div class="flex items-center gap-2 pr-[46px]">
-                <div class="min-w-0 flex-1 opacity-70">
-                  <BarStrip values={SAMPLE_BTC_VOLUME.slice(-bars.length)} height={30} gap={3} label="Volume (sample)" colorFor={(i) => (bars[i]?.up ? 'bg-ok/35' : 'bg-crit/35')} />
-                </div>
-                <SampleBadge title="No volume source yet. Bars are the design sample." />
-              </div>
-            </>
-          )
-        ) : (
-          <div class="flex flex-col gap-2" data-testid={`btc-${tab}`}>
-            {hlBtc ? (
-              <>
-                <LineChart values={tab === 'funding' ? hlBtc.sparkFunding : hlBtc.sparkOi} height={210} stroke={tab === 'funding' ? 'var(--color-high)' : 'var(--color-fin)'} />
-                <span class="text-[11.5px] text-dim">Hyperliquid BTC perpetual, {tab === 'funding' ? 'funding rate' : 'open interest'}, recent polls.</span>
-              </>
-            ) : (
-              <SourceState state={flow.status === 'ready' ? { status: 'empty', data: null, at: flow.at } : flow} source="Hyperliquid flow (seed-hyperliquid-flow)" pad={false} />
-            )}
-          </div>
-        )}
+        {failed.length ? (
+          <span class="absolute right-3 top-10 z-[4] rounded-[4px] bg-surface/90 px-2 py-px text-[10.5px] text-dim">Unavailable: {failed.join(', ')}</span>
+        ) : null}
       </div>
-      <Derivatives
-        funding={funding}
-        composite={hlBtc && !hlBtc.warmup ? hlBtc.composite : null}
-        warmup={hlBtc?.warmup ?? false}
-        oiUsd={oiUsd}
-        oiChange={oiChange}
-        vol={vol}
-        breadth={breadth}
-      />
-    </section>
+      <div class="grid border-t border-line md:grid-cols-2">
+        <MapNote icon={<MapPin size={14} class="text-muted" aria-hidden="true" />} title="Pinned where the signal is issued">
+          A Treasury or payrolls move sits at the Fed, a Bund move at the ECB, an 8-K at the NYSE. The pin marks the source, not where the effect is felt.
+        </MapNote>
+        <MapNote icon={<Bitcoin size={14} class="text-muted" aria-hidden="true" />} title="Crypto stays off the map">
+          Bitcoin ETF flows, stablecoin pegs, perp positioning and BTC moves have no real place, so they stay as cards in the Indicators panel.
+        </MapNote>
+      </div>
+    </Card>
   );
 }
 
-function Metric({ label, value, sub, subTone = 'muted', badge }: { label: string; value: string; sub: string; subTone?: Tone; badge?: ComponentChildren }) {
+function LegendRow({ mark, name, note }: { mark: ComponentChildren; name: string; note: string }) {
   return (
-    <div class="flex flex-col gap-[2px]">
-      <span class="flex items-center gap-2 text-[11.5px] text-dim">{label}{badge}</span>
-      <span class="font-mono text-[16px] font-medium text-ink">{value}</span>
-      <span class={cx('text-[11px]', TEXT[subTone])}>{sub}</span>
+    <span class="flex items-center gap-2">
+      <span class="flex w-[30px] items-center">{mark}</span>
+      <span class="text-[11.5px] text-ink">{name}</span>
+      <span class="text-[10.5px] text-dim">{note}</span>
+    </span>
+  );
+}
+
+function MapNote({ icon, title, children }: { icon: ComponentChildren; title: string; children: ComponentChildren }) {
+  return (
+    <div class="flex gap-3 border-line px-5 py-[14px] md:odd:border-r [&+&]:border-t md:[&+&]:border-t-0">
+      <span class="mt-[2px]">{icon}</span>
+      <span class="flex flex-col gap-[3px]">
+        <span class="text-[13px] font-semibold text-ink">{title}</span>
+        <span class="text-[12px] leading-[17px] text-dim">{children}</span>
+      </span>
     </div>
-  );
-}
-
-function Derivatives({
-  funding, composite, warmup, oiUsd, oiChange, vol, breadth,
-}: { funding: number | null; composite: number | null; warmup: boolean; oiUsd: number | null; oiChange: number | null; vol: number | null; breadth: { down: number; total: number } | null }) {
-  const etf = useEtfFlows();
-  const etfSummary = etf.status === 'ready' ? etf.data.summary : undefined;
-  return (
-    <aside class="flex w-full flex-col gap-[14px] border-t border-line bg-bg px-[18px] py-4 md:w-[220px] md:shrink-0 md:border-l md:border-t-0" data-testid="derivatives">
-      <ColLabel>DERIVATIVES & FLOWS</ColLabel>
-      <Metric
-        label="Perp funding (1h)"
-        value={funding != null && Number.isFinite(funding) ? `${funding < 0 ? MINUS : ''}${Math.abs(funding * 100).toFixed(4)}%` : '—'}
-        sub={composite != null ? `Hyperliquid · risk score ${Math.round(composite)}/100` : warmup ? 'Hyperliquid · score warming up' : 'Hyperliquid'}
-        subTone={funding != null && funding < 0 ? 'crit' : 'muted'}
-      />
-      <Metric
-        label="Open interest"
-        value={oiUsd != null && Number.isFinite(oiUsd) ? usdCompact(oiUsd) : '—'}
-        sub={oiChange != null ? `${signed(oiChange)} over recent polls` : 'Hyperliquid'}
-        subTone={oiChange != null && oiChange < 0 ? 'crit' : 'muted'}
-      />
-      <Metric label="Liquidations 24h" value={SAMPLE_LIQUIDATIONS.value} sub={SAMPLE_LIQUIDATIONS.sub} subTone="dim" badge={<SampleBadge title="No liquidation data source yet. Design sample." />} />
-      <Metric label="48h realized vol" value={vol != null ? `${vol.toFixed(0)}%` : '—'} sub="annualized, hourly closes" badge={<DerivedTag how="Standard deviation of hourly log returns over 48h, annualized." />} />
-      <Metric
-        label="Spot ETF net flow"
-        value={etfSummary ? usdCompact(etfSummary.totalEstFlow) : '—'}
-        sub={etfSummary ? `est. from volume · ${etfSummary.netDirection.toLowerCase() || 'flat'}` : etf.status === 'loading' ? 'loading' : 'no data yet'}
-        subTone={etfSummary && etfSummary.totalEstFlow < 0 ? 'crit' : 'muted'}
-      />
-      <Metric label="Breadth" value={breadth ? `${breadth.down} / ${breadth.total}` : '—'} sub="tracked coins down 24h" />
-    </aside>
   );
 }
 
@@ -369,26 +418,7 @@ function MarketEvents({ state, events }: { state: ReturnType<typeof useDigest>; 
   );
 }
 
-function Indicators() {
-  const crypto = useCryptoQuotes();
-  const flow = useHyperliquid();
-  const stables = useStablecoins();
-  const fearGreed = useFearGreed();
-  const calendar = useMacroCalendar();
-  const curves = useTreasuryCurves();
-  const bonds = useOtherBonds();
-  const etf = useEtfFlows();
-  const rates = useShippingRates();
-  const filings = useMaterialEvents();
-  const digest = useDigest('finance');
-  const feeds = useMemo(() => {
-    const news = digest.status === 'ready' ? digestItems(digest.data) : [];
-    const now = Date.now();
-    return sortFeeds([
-      ...financeFeeds({ crypto, flow, stables, fearGreed, news, now }),
-      ...financeMacroFeeds({ calendar, curves, bonds, etf, flow, rates, filings, news, now }),
-    ]);
-  }, [crypto, flow, stables, fearGreed, calendar, curves, bonds, etf, rates, filings, digest]);
+function Indicators({ feeds, onOpen }: { feeds: readonly FeedState[]; onOpen: (feed: FeedState) => void }) {
   const counts = feedCounts(feeds);
   return (
     <Panel
@@ -399,7 +429,8 @@ function Indicators() {
       <p class="-mt-1 text-[11.5px] text-dim" data-testid="indicator-counts">
         {[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`, 'newest first'].filter(Boolean).join(' · ')}
       </p>
-      <IndicatorFeed feeds={feeds} now={Date.now()} />
+      <IndicatorFeed feeds={feeds} now={Date.now()} onOpen={onOpen} />
+      <p class="text-[11px] leading-4 text-dim">Crypto has no place on the map: ETF flows, pegs and perps stay here as cards with their linked news.</p>
     </Panel>
   );
 }
@@ -543,49 +574,6 @@ function TreasuryCurve() {
         {spread != null ? `2s10s ${bp(spread)}${spreadWeek != null ? ` (${bp(spread - spreadWeek)} w/w)` : ''}. ` : ''}
         {flip ? '2s10s changed sign this week.' : 'No 2s10s sign flip in this window.'} Official par yields, data to {curveDate(latest.date)}.
       </p>
-    </Panel>
-  );
-}
-
-const CORRELATION_ASSETS = [
-  { symbol: 'BTC-USD', label: 'BTC' },
-  { symbol: 'ETH-USD', label: 'ETH' },
-  { symbol: '^GSPC', label: 'SPX' },
-  { symbol: 'GC=F', label: 'Gold' },
-  { symbol: 'CL=F', label: 'Oil' },
-] as const;
-
-function Correlation() {
-  const series = useCorrelationSeries();
-  const assets = series.status === 'ready' ? CORRELATION_ASSETS.filter((a) => series.data[a.symbol]) : [];
-  const cell = (r: number | null, same: boolean) => {
-    if (same || r == null) return { background: 'var(--color-surface-2)', color: 'var(--color-dim)', text: '—' };
-    const alpha = Math.min(0.75, Math.abs(r) * 0.8);
-    const rgb = r >= 0 ? '76,195,255' : '255,159,67';
-    return { background: `rgba(${rgb},${alpha.toFixed(2)})`, color: alpha > 0.5 ? 'var(--color-bg)' : 'var(--color-muted)', text: r.toFixed(2).replace('-', MINUS) };
-  };
-  return (
-    <Panel title="Correlation" sub="14d · hourly returns" right={<DerivedTag how="Pearson correlation of hourly log returns over the 14-day correlation series. Oil stands in for DXY, which has no hourly series." />} testId="correlation">
-      {series.status !== 'ready' || assets.length < 2 ? (
-        <SourceState state={series.status === 'ready' ? { status: 'empty', data: null, at: series.at } : series} source="market correlation series (seed-market-correlation-series)" pad={false} />
-      ) : (
-        <div class="grid gap-[3px]" style={{ gridTemplateColumns: `40px repeat(${assets.length}, minmax(0, 1fr))` }}>
-          <span />
-          {assets.map((a) => <span key={a.symbol} class="text-center font-mono text-[10px] text-dim">{a.label}</span>)}
-          {assets.map((row) => [
-            <span key={`${row.symbol}-label`} class="self-center font-mono text-[10px] text-dim">{row.label}</span>,
-            ...assets.map((col) => {
-              const r = row.symbol === col.symbol ? null : returnCorrelation(series.data[row.symbol] ?? [], series.data[col.symbol] ?? []);
-              const c = cell(r, row.symbol === col.symbol);
-              return (
-                <span key={`${row.symbol}-${col.symbol}`} class="flex h-[26px] items-center justify-center rounded-[3px] font-mono text-[10.5px]" style={{ background: c.background, color: c.color }}>
-                  {c.text}
-                </span>
-              );
-            }),
-          ])}
-        </div>
-      )}
     </Panel>
   );
 }
