@@ -27,7 +27,14 @@ import type { UnrestEvent } from '@/generated/client/worldmonitor/unrest/v1/serv
 import type { Earthquake } from '@/generated/client/worldmonitor/seismology/v1/service_client';
 import type { MilitaryFlight } from '@/generated/client/worldmonitor/military/v1/service_client';
 import { MILITARY_QUERY_REGIONS } from '@/config/military';
-import type { EconomicEvent } from '@/generated/client/worldmonitor/economic/v1/service_client';
+import type {
+  GetEconomicCalendarResponse,
+  GetGovernmentYieldCurveResponse,
+  UsTreasuryParYieldCurve,
+} from '@/generated/client/worldmonitor/economic/v1/service_client';
+import type { GetChokepointStatusResponse, GetShippingRatesResponse } from '@/generated/client/worldmonitor/supply_chain/v1/service_client';
+import type { ListSanctionsPressureResponse } from '@/generated/client/worldmonitor/sanctions/v1/service_client';
+import type { ListMaterialEventsResponse } from '@/generated/client/worldmonitor/intelligence/v1/service_client';
 import type { ArxivPaper, HackernewsItem } from '@/generated/client/worldmonitor/research/v1/service_client';
 import type {
   GetCableHealthResponse,
@@ -48,14 +55,15 @@ import {
   MarketServiceClient,
   MilitaryServiceClient,
   ResearchServiceClient,
+  SanctionsServiceClient,
   SeismologyServiceClient,
+  SupplyChainServiceClient,
   UnrestServiceClient,
 } from '@/services/generated-rpc-clients';
 import { getRpcBaseUrl, rpcFetch } from '@/services/rpc-client';
 import { publicRpcFetch } from '@/services/public-rpc-fetch';
 import { toApiUrl } from '@/services/runtime';
 import { ensureHydrated, fetchBootstrapData, getHydratedData, waitForBootstrapSlowTier } from '@/services/bootstrap';
-import { isMarketCorrelationPayload } from '@/services/news-market-correlation';
 import { fetchServerInsights, type ServerInsights } from '@/services/insights-loader';
 
 const options = { fetch: rpcFetch };
@@ -69,6 +77,8 @@ const seismology = new SeismologyServiceClient(getRpcBaseUrl(), options);
 const military = new MilitaryServiceClient(getRpcBaseUrl(), options);
 const infrastructure = new InfrastructureServiceClient(getRpcBaseUrl(), options);
 const cyber = new CyberServiceClient(getRpcBaseUrl(), options);
+const supplyChain = new SupplyChainServiceClient(getRpcBaseUrl(), options);
+const sanctions = new SanctionsServiceClient(getRpcBaseUrl(), options);
 
 let bootstrapReady: Promise<void> | null = null;
 
@@ -247,22 +257,77 @@ export async function loadFearGreed(): Promise<GetFearGreedIndexResponse | null>
   return resp.compositeScore > 0 ? resp : null;
 }
 
-export async function loadMacroCalendar(): Promise<EconomicEvent[] | null> {
+/**
+ * The macro calendar from yesterday to two weeks out (the seeder keeps one
+ * past day). Past releases carry their FRED actual and the prior print; no
+ * source gives a forecast (`estimate` is empty).
+ */
+export async function loadMacroCalendar(): Promise<GetEconomicCalendarResponse | null> {
   const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
-  const resp = await economic.getEconomicCalendar({ fromDate: day(0), toDate: day(7) });
-  return resp.unavailable ? null : resp.events;
+  const resp = await economic.getEconomicCalendar({ fromDate: day(-3), toDate: day(14) });
+  return resp.unavailable || !resp.events.length ? null : resp;
 }
 
-/** Hourly closes per symbol, 14 days (on-demand bootstrap key `marketCorrelationSeries`). */
-export async function loadCorrelationSeries(): Promise<Record<string, number[]> | null> {
-  const payload = await ensureHydrated('marketCorrelationSeries');
-  if (!isMarketCorrelationPayload(payload)) return null;
-  const out: Record<string, number[]> = {};
-  for (const series of payload.series) {
-    const values = series.points.map((p) => p.value).filter((v) => Number.isFinite(v));
-    if (values.length > 2) out[series.symbol] = values;
-  }
-  return Object.keys(out).length ? out : null;
+/** US Treasury par yield curves, newest last: the last 10 business days. */
+export async function loadTreasuryCurves(): Promise<UsTreasuryParYieldCurve[] | null> {
+  const resp = await economic.getUsTreasuryParYieldCurve({ history: true, limit: 10 });
+  if (resp.unavailable) return null;
+  return [...resp.curves].filter((c) => Number.isFinite(c.date)).sort((a, b) => a.date - b.date);
+}
+
+/** Government bond markets whose 10-year the Finance indicators watch. */
+export const OTHER_BOND_COUNTRIES = ['DE', 'GB', 'JP'] as const;
+
+/** Daily curves for the other bond markets. Null when every market fails. */
+export async function loadOtherBonds(): Promise<GetGovernmentYieldCurveResponse[] | null> {
+  const results = await Promise.allSettled(
+    OTHER_BOND_COUNTRIES.map((country) => economic.getGovernmentYieldCurve({ country, history: true, limit: 5 })),
+  );
+  const ok = results.flatMap((r) => (r.status === 'fulfilled' && !r.value.unavailable && r.value.curves.length ? [r.value] : []));
+  if (!ok.length && results.every((r) => r.status === 'rejected')) throw new Error('government yield curves unavailable');
+  return ok;
+}
+
+/** Freight indices (SCFI weekly, Baltic Dry daily): bootstrap key `shippingRates`, else the RPC. */
+export async function loadShippingRates(): Promise<GetShippingRatesResponse | null> {
+  const boot = await hydrated('shippingRates', hasArray('indices'));
+  const resp = boot ? (boot as unknown as GetShippingRatesResponse) : await supplyChain.getShippingRates({});
+  return resp.indices.length ? resp : null;
+}
+
+/** Material 8-K filings from the last 7 days, newest first (seed-sec-8k-stream). */
+export async function loadMaterialEvents(): Promise<ListMaterialEventsResponse | null> {
+  const resp = await intelligence.listMaterialEvents({ itemCode: '', limit: 100 });
+  return resp.unavailable ? null : resp;
+}
+
+// ---- Finance map context ----------------------------------------------------
+
+/** Chokepoint status (disruption score, warnings): bootstrap key `chokepoints`, else the RPC. */
+export async function loadChokepoints(): Promise<GetChokepointStatusResponse | null> {
+  const boot = await hydrated('chokepoints', hasArray('chokepoints'));
+  const resp = boot ? (boot as unknown as GetChokepointStatusResponse) : await supplyChain.getChokepointStatus({});
+  return resp.chokepoints.length ? resp : null;
+}
+
+/** OFAC sanctions pressure by country, with new designations: bootstrap key `sanctionsPressure`, else the RPC. */
+export async function loadSanctions(): Promise<ListSanctionsPressureResponse | null> {
+  const boot = await hydrated('sanctionsPressure', hasArray('countries'));
+  const resp = boot ? (boot as unknown as ListSanctionsPressureResponse) : await sanctions.listSanctionsPressure({ maxItems: 0 });
+  return resp.countries.length ? resp : null;
+}
+
+export interface CountryShapes {
+  type: 'FeatureCollection';
+  features: Array<{ type: 'Feature'; geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: unknown }; properties: Record<string, unknown> | null }>;
+}
+
+/** Country polygons (`public/data/countries.geojson`, about 200 KB), loaded only when a layer shades countries. */
+export async function loadCountryShapes(): Promise<CountryShapes | null> {
+  const resp = await fetch('/data/countries.geojson', { signal: AbortSignal.timeout(15_000) });
+  if (!resp.ok) throw new Error(`countries.geojson: HTTP ${resp.status}`);
+  const data = (await resp.json()) as CountryShapes;
+  return data?.type === 'FeatureCollection' && Array.isArray(data.features) ? data : null;
 }
 
 // ---- Technology & AI --------------------------------------------------------

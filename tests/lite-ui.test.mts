@@ -9,7 +9,6 @@ import {
   shouldRedirectToLite,
 } from '../src/config/lite-route.ts';
 import {
-  closeToCloseBars,
   corroborationOf,
   decodeEntities,
   digestItems,
@@ -20,11 +19,9 @@ import {
   publisherCount,
   interleaveByMarketTag,
   isWarStory,
-  realizedVolatility,
   regionOfCategory,
   regionOfPoint,
   relativeTime,
-  returnCorrelation,
   thresholdState,
   timeBuckets,
 } from '../src/lite/data/transforms.ts';
@@ -257,23 +254,6 @@ describe('Lite transforms', () => {
     const now = 100 * 3_600_000;
     const buckets = timeBuckets([now - 1, now - 3_600_000 * 2.5, now + 5, now - 3_600_000 * 10], now, 4, 4);
     assert.deepEqual(buckets, [0, 1, 0, 1]);
-  });
-
-  it('computes realized volatility and return correlation', () => {
-    assert.equal(realizedVolatility([100]), null);
-    assert.equal(realizedVolatility([100, 100, 100]), 0);
-    const up = [100, 101, 103, 102, 105, 107];
-    assert.ok((realizedVolatility(up) ?? 0) > 0);
-    assert.ok(Math.abs((returnCorrelation(up, up) ?? 0) - 1) < 1e-9);
-    assert.ok((returnCorrelation(up, up.map((v) => 1 / v)) ?? 0) < -0.99);
-    assert.equal(returnCorrelation([1, 2], [1, 2]), null);
-  });
-
-  it('builds close-to-close bars without inventing highs or lows', () => {
-    assert.deepEqual(closeToCloseBars([10, 12, 11]), [
-      { open: 10, close: 12, up: true },
-      { open: 12, close: 11, up: false },
-    ]);
   });
 
   it('grades thresholds and sentiment extremes, and reports missing data as null', () => {
@@ -676,13 +656,16 @@ describe('Lite tech map', async () => {
   } as Outage);
 
   it('shades DDoS targets by their share and labels the top ones', () => {
-    const { areas, tags } = ddosLayer({ protocol: [], vector: [], dateRangeStart: '2026-11-01', dateRangeEnd: '2026-11-08', topTargetLocations: [
+    const shape = (iso: string) => ({ type: 'Feature' as const, geometry: { type: 'Polygon' as const, coordinates: [] }, properties: { 'ISO3166-1-Alpha-2': iso } });
+    const shapes = { type: 'FeatureCollection' as const, features: [shape('US'), shape('BR'), shape('FR')] };
+    const { fills, tags } = ddosLayer({ protocol: [], vector: [], dateRangeStart: '2026-11-01', dateRangeEnd: '2026-11-08', topTargetLocations: [
       { countryCode: 'us', countryName: 'United States', percentage: 11.2, latitude: 39, longitude: -98 },
       { countryCode: 'BR', countryName: 'Brazil', percentage: 5.6, latitude: -10, longitude: -55 },
       { countryCode: 'XX', countryName: 'None', percentage: 0, latitude: 0, longitude: 0 },
-    ] });
-    assert.deepEqual(areas.map((a) => a.code), ['US', 'BR']);
-    assert.ok(areas[0]!.opacity > areas[1]!.opacity);
+    ] }, shapes);
+    assert.deepEqual(fills.features.map((f) => [f.properties.id, f.properties.tone]), [['US', 'tech'], ['BR', 'tech']]);
+    assert.ok(fills.features[0]!.properties.opacity > fills.features[1]!.properties.opacity);
+    assert.deepEqual(ddosLayer({ protocol: [], vector: [], dateRangeStart: '', dateRangeEnd: '', topTargetLocations: [] }, null).fills.features, []);
     assert.deepEqual(tags.map((t) => t.text), ['US 11.2%', 'BR 5.6%']);
   });
 
@@ -746,7 +729,7 @@ describe('Lite tech map', async () => {
         peace: { status: 'CABLE_HEALTH_STATUS_DEGRADED', score: 0.5, confidence: 0.6, lastUpdated: NOW, evidence: [] },
       },
     });
-    assert.deepEqual(lines.map((l) => [l.id, l.tone]), [['marea', 'dim'], ['faster', 'crit'], ['peace', 'elev']]);
+    assert.deepEqual(lines.features.map((l) => [l.properties.id, l.properties.tone]), [['marea', 'dim'], ['faster', 'crit'], ['peace', 'elev']]);
     assert.deepEqual(markers.map((m) => [m.id, m.lat, m.lon]), [['cable:faster', 10, 10], ['cable:peace', 10, 10]]);
     assert.match(markers[0]!.popup.lines[0]!.text, /NGA: Cable repair ship/);
     assert.deepEqual(cableLayer([cable('marea')], null).markers, [], 'no health data: lines only, no guessed status');

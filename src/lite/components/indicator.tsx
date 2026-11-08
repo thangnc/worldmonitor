@@ -154,7 +154,7 @@ export function IndicatorCard({ indicator, now, onCollapse }: { indicator: Indic
           <span class="font-mono text-[11px] text-muted">rule: {indicator.rule}</span>
         </span>
       </div>
-      {indicator.detail ? <p class="text-[12px] leading-[17px] text-muted" data-indicator-detail>{indicator.detail}</p> : null}
+      {indicator.detail ? <p class="text-[12px] leading-[17px] text-muted" data-testid="indicator-detail">{indicator.detail}</p> : null}
       <div class="flex flex-wrap items-center gap-[10px]">
         <TrustChip trust={indicator.trust} />
         <span class="text-[11px] text-dim">{timeLine(indicator, now)}</span>
@@ -198,7 +198,7 @@ export function IndicatorCardCompact({ indicator, onExpand }: { indicator: Indic
         {indicator.change ? <span class="whitespace-nowrap font-mono text-[11.5px] font-semibold leading-4 text-ink">{indicator.change}</span> : null}
         <span class="ml-auto whitespace-nowrap font-mono text-[10px] leading-[15px] text-dim">rule {indicator.rule}</span>
       </span>
-      {indicator.detail ? <span class="line-clamp-2 w-full text-[11.5px] leading-4 text-muted" data-indicator-detail>{indicator.detail}</span> : null}
+      {indicator.detail ? <span class="w-full text-[11.5px] leading-4 text-muted" data-testid="indicator-detail">{indicator.detail}</span> : null}
       <span class="flex w-full items-center gap-2">
         <TrustChip trust={indicator.trust} compact />
         {linked ? (
@@ -262,8 +262,11 @@ export function HealthDots({ feeds }: { feeds: readonly FeedState[] }) {
   );
 }
 
-/** A feed list: fired feeds as compact cards that expand in place, the rest as state rows. */
-export function IndicatorFeed({ feeds, now, onFocus }: { feeds: readonly FeedState[]; now: number; onFocus?: (indicator: Indicator) => void }) {
+/**
+ * A feed list: fired feeds as compact cards that expand in place, the rest as
+ * state rows. `onOpen` lets a screen focus the feed's map marker.
+ */
+export function IndicatorFeed({ feeds, now, onOpen }: { feeds: readonly FeedState[]; now: number; onOpen?: (feed: FeedState) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   return (
     <div class="flex flex-col gap-[10px]" data-testid="indicator-feed">
@@ -271,7 +274,7 @@ export function IndicatorFeed({ feeds, now, onFocus }: { feeds: readonly FeedSta
         if (f.kind !== 'fired') return <FeedStateRow key={f.id} feed={f} />;
         return open === f.id
           ? <IndicatorCard key={f.id} indicator={f.indicator} now={now} onCollapse={() => setOpen(null)} />
-          : <IndicatorCardCompact key={f.id} indicator={f.indicator} onExpand={() => { setOpen(f.id); if (f.indicator.focusId) onFocus?.(f.indicator); }} />;
+          : <IndicatorCardCompact key={f.id} indicator={f.indicator} onExpand={() => { setOpen(f.id); onOpen?.(f); }} />;
       })}
     </div>
   );

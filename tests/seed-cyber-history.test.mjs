@@ -80,8 +80,10 @@ describe('publishThreatHistory', () => {
 
   it('merges onto the previous history and publishes it with seed-meta', async () => {
     const writes = [];
+    let marked = 0;
     const previous = mergeThreatHistory(null, { total: 10, bySource: {}, byFamily: {} }, NOW - DAY);
-    const history = await publishThreatHistory(counts, NOW, { read: async () => previous, write: async (args) => writes.push(args) });
+    const history = await publishThreatHistory(counts, NOW, { read: async () => previous, write: async (args) => writes.push(args), markActivated: async () => { marked += 1; } });
+    assert.equal(marked, 1, 'the activation marker follows a successful publish');
     assert.equal(writes.length, 1);
     assert.equal(writes[0].key, CYBER_HISTORY_KEY);
     assert.equal(writes[0].ttlSeconds, CYBER_HISTORY_TTL_SECONDS);
@@ -95,6 +97,7 @@ describe('publishThreatHistory', () => {
     const result = await publishThreatHistory(counts, NOW, {
       read: async () => { throw new Error('Redis snapshot read failed: HTTP 500'); },
       write: async (args) => writes.push(args),
+      markActivated: async () => { throw new Error('marker must not be written'); },
     });
     assert.equal(result, null);
     assert.equal(writes.length, 0);

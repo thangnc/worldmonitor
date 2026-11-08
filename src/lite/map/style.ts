@@ -22,6 +22,11 @@ export interface LiteMapTokens {
   surface: string;
   track: string;
   dim: string;
+  /** Context overlays: amber for disrupted lanes and new sanctions, red for incidents. */
+  elev: string;
+  crit: string;
+  /** Technology overlays: DDoS target shading. */
+  tech: string;
 }
 
 // Mirrors src/lite/lite.css. Used only when the CSS variables are not
@@ -31,35 +36,16 @@ const FALLBACK_TOKENS: LiteMapTokens = {
   surface: '#111419',
   track: '#2e3540',
   dim: '#5f6874',
-};
-
-/** Tones a map mark or layer can take: the status tones plus the Technology violet. */
-export type MapTone = 'crit' | 'high' | 'elev' | 'ok' | 'muted' | 'dim' | 'tech';
-
-// Mirrors src/lite/lite.css, for when the variables are not readable.
-const FALLBACK_TONES: Record<MapTone, string> = {
-  crit: '#f2555a',
-  high: '#ff9f43',
   elev: '#e8c547',
-  ok: '#3dd68c',
-  muted: '#9aa2ae',
-  dim: '#5f6874',
+  crit: '#f2555a',
   tech: '#b18cff',
 };
-
-/** The tone colors for data layers, read from the Lite `@theme` variables. */
-export function readToneColors(root: Element = document.documentElement): Record<MapTone, string> {
-  const css = getComputedStyle(root);
-  const out = { ...FALLBACK_TONES };
-  for (const tone of Object.keys(out) as MapTone[]) out[tone] = css.getPropertyValue(`--color-${tone}`).trim() || FALLBACK_TONES[tone];
-  return out;
-}
 
 /** Reads the Lite `@theme` colors from CSS variables. */
 export function readLiteMapTokens(root: Element = document.documentElement): LiteMapTokens {
   const css = getComputedStyle(root);
   const read = (name: keyof LiteMapTokens) => css.getPropertyValue(`--color-${name}`).trim() || FALLBACK_TOKENS[name];
-  return { bg: read('bg'), surface: read('surface'), track: read('track'), dim: read('dim') };
+  return { bg: read('bg'), surface: read('surface'), track: read('track'), dim: read('dim'), elev: read('elev'), crit: read('crit'), tech: read('tech') };
 }
 
 export function buildLiteMapStyle(tokens: LiteMapTokens = FALLBACK_TOKENS): StyleSpecification {

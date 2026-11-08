@@ -4,6 +4,7 @@
 // UTC day, per source and per malware family, for HISTORY_DAYS days.
 
 export const CYBER_HISTORY_KEY = 'cyber:threats:history:v1';
+export const CYBER_HISTORY_ACTIVATION_KEY = 'seed-activated:cyber:threats-history';
 export const HISTORY_DAYS = 30;
 /** Outlives the retention window, so a few missed runs do not drop the history. */
 export const CYBER_HISTORY_TTL_SECONDS = 35 * 86_400;

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { isIP } from 'node:net';
-import { loadEnvFile, CHROME_UA, readSeedSnapshot, runSeed, verifySeedKey, writeExtraKey, writeExtraKeyWithMetaAtomically } from './_seed-utils.mjs';
-import { CYBER_HISTORY_KEY, CYBER_HISTORY_TTL_SECONDS, countThreats, mergeThreatHistory } from './_cyber-threat-history.mjs';
+import { loadEnvFile, CHROME_UA, getRedisCredentials, readSeedSnapshot, redisCommand, runSeed, verifySeedKey, writeExtraKey, writeExtraKeyWithMetaAtomically } from './_seed-utils.mjs';
+import { CYBER_HISTORY_ACTIVATION_KEY, CYBER_HISTORY_KEY, CYBER_HISTORY_TTL_SECONDS, countThreats, mergeThreatHistory } from './_cyber-threat-history.mjs';
 
 loadEnvFile(import.meta.url);
 
@@ -812,6 +812,11 @@ let lastRunCounts = null;
 export async function publishThreatHistory(counts, nowMs = Date.now(), {
   read = (key) => readSeedSnapshot(key, { strict: true, timeoutMs: 10_000 }),
   write = writeExtraKeyWithMetaAtomically,
+  // Health treats the history probe as pending until this marker exists (api/health.js ACTIVATION_MARKERS).
+  markActivated = async () => {
+    const { url, token } = getRedisCredentials();
+    await redisCommand(url, token, ['SET', CYBER_HISTORY_ACTIVATION_KEY, '1']);
+  },
 } = {}) {
   if (!counts || counts.total <= 0) return null;
   let previous;
@@ -822,13 +827,10 @@ export async function publishThreatHistory(counts, nowMs = Date.now(), {
     return null;
   }
   const history = mergeThreatHistory(previous, counts, nowMs);
-  await write({
-    key: CYBER_HISTORY_KEY,
-    data: history,
-    ttlSeconds: CYBER_HISTORY_TTL_SECONDS,
-    recordCount: history.days.length,
-    fetchedAt: nowMs,
-  });
+  // One line on purpose: tests/seed-ttl-outlives-staleness-fleet.test.mjs reads the
+  // first line-leading `ttlSeconds:` as this seeder's canonical TTL (runSeed's, below).
+  await write({ key: CYBER_HISTORY_KEY, data: history, ttlSeconds: CYBER_HISTORY_TTL_SECONDS, recordCount: history.days.length, fetchedAt: nowMs });
+  await markActivated();
   console.log(`  [history] ${CYBER_HISTORY_KEY}: ${history.days.length} day(s), today ${counts.total}`);
   return history;
 }

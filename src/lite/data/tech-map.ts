@@ -22,7 +22,9 @@ import type { CyberThreat } from '@/generated/client/worldmonitor/cyber/v1/servi
 import type { CloudRegion } from '@/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@/types';
 import { resolveCountryCode } from '../../../shared/country-code-resolve';
-import type { GlyphMarker, MapArea, MapLine } from '../map/LiteMap';
+import type { GlyphMarker } from '../map/LiteMap';
+import type { CountryShapes } from './sources';
+import { featureIso2, type FeatureCollectionOf } from './markets-map';
 import { compactCount } from '../map/view';
 import { THREAT_FEED_LABEL, isOutageLive } from './tech-indicators';
 
@@ -59,10 +61,24 @@ const pct = (n: number) => `${n.toFixed(1)}%`;
 
 // ---- DDoS targets -------------------------------------------------------------
 
-export function ddosLayer(resp: ListInternetDdosAttacksResponse): { areas: MapArea[]; tags: GlyphMarker[] } {
+/** A shaded country for the map's `overlays.fills`: violet, opacity by share of attack traffic. */
+export interface DdosFill {
+  type: 'Feature';
+  geometry: CountryShapes['features'][number]['geometry'];
+  properties: { tone: 'tech'; id: string; name: string; opacity: number };
+}
+
+export function ddosLayer(resp: ListInternetDdosAttacksResponse, shapes: CountryShapes | null): { fills: FeatureCollectionOf<DdosFill>; tags: GlyphMarker[] } {
   const hits = resp.topTargetLocations.filter((h) => h.countryCode && h.percentage > 0);
   const max = hits.reduce((m, h) => Math.max(m, h.percentage), 0) || 1;
-  const areas = hits.map((h) => ({ code: h.countryCode.toUpperCase(), tone: 'tech' as const, opacity: 0.18 + 0.5 * (h.percentage / max) }));
+  const share = new Map(hits.map((h) => [h.countryCode.toUpperCase(), h]));
+  const features: DdosFill[] = [];
+  for (const f of shapes?.features ?? []) {
+    const iso = featureIso2(f.properties);
+    const hit = iso ? share.get(iso) : undefined;
+    if (!iso || !hit) continue;
+    features.push({ type: 'Feature', geometry: f.geometry, properties: { tone: 'tech', id: iso, name: hit.countryName, opacity: 0.18 + 0.5 * (hit.percentage / max) } });
+  }
   const range = resp.dateRangeStart && resp.dateRangeEnd ? `${resp.dateRangeStart.slice(0, 10)} to ${resp.dateRangeEnd.slice(0, 10)}` : 'last 7 days';
   const tags = [...hits]
     .sort((a, b) => b.percentage - a.percentage)
@@ -77,7 +93,7 @@ export function ddosLayer(resp: ListInternetDdosAttacksResponse): { areas: MapAr
         lines: [{ text: 'Share of layer 3 DDoS attack traffic Cloudflare saw aimed at this country. It shows who is attacked, not where attacks come from.' }, { text: range, style: 'dim' }],
       },
     }));
-  return { areas, tags };
+  return { fills: { type: 'FeatureCollection', features }, tags };
 }
 
 // ---- Attack servers -------------------------------------------------------------
@@ -229,20 +245,27 @@ export function datacenterMarkers(sites: readonly AIDataCenter[], outages: reado
 
 // ---- Undersea cables ------------------------------------------------------------
 
-const CABLE_TONE: Readonly<Record<string, MapLine['tone']>> = {
+/** A cable for the map's `overlays.lines`: grey when healthy or unknown, amber degraded, red fault. */
+export interface CableLine {
+  type: 'Feature';
+  geometry: { type: 'LineString'; coordinates: Array<[number, number]> };
+  properties: { tone: 'dim' | 'elev' | 'crit'; id: string };
+}
+
+const CABLE_TONE: Readonly<Record<string, CableLine['properties']['tone']>> = {
   CABLE_HEALTH_STATUS_FAULT: 'crit',
   CABLE_HEALTH_STATUS_DEGRADED: 'elev',
 };
 
-export function cableLayer(cables: readonly UnderseaCable[], health: GetCableHealthResponse | null): { lines: MapLine[]; markers: GlyphMarker[] } {
+export function cableLayer(cables: readonly UnderseaCable[], health: GetCableHealthResponse | null): { lines: FeatureCollectionOf<CableLine>; markers: GlyphMarker[] } {
   const records: Record<string, CableHealthRecord> = health?.cables ?? {};
-  const lines: MapLine[] = [];
+  const lines: CableLine[] = [];
   const markers: GlyphMarker[] = [];
   for (const c of cables) {
     if (c.points.length < 2) continue;
     const rec = records[c.id];
     const tone = (rec && CABLE_TONE[rec.status]) ?? 'dim';
-    lines.push({ id: c.id, coords: c.points, tone, width: tone === 'dim' ? 1 : 2 });
+    lines.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: c.points.map(([lon, lat]) => [lon, lat] as [number, number]) }, properties: { tone, id: c.id } });
     if (rec && tone !== 'dim') {
       const [lon, lat] = c.points[Math.floor(c.points.length / 2)]!;
       const word = rec.status === 'CABLE_HEALTH_STATUS_FAULT' ? 'Fault' : 'Degraded';
@@ -259,5 +282,5 @@ export function cableLayer(cables: readonly UnderseaCable[], health: GetCableHea
       });
     }
   }
-  return { lines, markers };
+  return { lines: { type: 'FeatureCollection', features: lines }, markers };
 }
