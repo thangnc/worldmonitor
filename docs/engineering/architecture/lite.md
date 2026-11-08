@@ -27,10 +27,11 @@ The owner's priority (2026-11-08) is **early indicators**: see army activity, co
 | Hosting | The owner's managed stack (see [Platform map](#platform-map)). The Docker compose stack stays a secondary option with the same flag. |
 | AI models | External APIs allowed, through the existing chain in `server/_shared/llm.ts`. Keys and per-call cost are an operating concern. Local Ollama stays optional. |
 | Conflict data | No ACLED (2026-11-07): API access is hard to obtain. UCDP (`seed-ucdp-events`, `UCDP_ACCESS_TOKEN`) supplies the map events and each country's conflict floor. GDELT country events (`seed-gdelt-bulk-materializer`, no key) supply the realtime conflict and unrest signal; `get-risk-scores.ts` scores them whenever ACLED returns no events. UCDP alone cannot do this, because it is an annual release. Health reports ACLED as `not_configured`, which is not a failure, and the `[CII] ACLED returned 0 events` log line is expected. |
-| Lite map | MapLibre on OpenFreeMap vector tiles, solid land (2026-11-07): free, no key, no usage limits, and already the dashboard's fallback basemap. The style (`src/lite/map/style.ts`) draws only land, water, country borders and place names, colored from the Lite `@theme` tokens; markers, the popup a marker click opens, zoom buttons and the OpenStreetMap credit are Tailwind-styled HTML. No popup is open until a marker is clicked. MapLibre loads only when Geopolitics opens. If OpenFreeMap is down, the map shows the background with markers still placed. |
-| Conflict map design | The owner's design (2026-11-08). UCDP locations are red circles sized by deaths, clustered by zoom (`supercluster`) with the toll printed inside; a click zooms a cluster in or opens a location's event card. Curated hotspots are diamonds with a name, coloured by the dashboard's live escalation score (`src/lite/data/escalation.ts` over `shared/analysis-hotspot-escalation.ts`: news in the last 2 h, CII, unrest, earthquake and military-flight convergence within 150 km, flights within 200 km; no vessels or session history). All curated hotspots are drawn, as on the dashboard; from 3/5 (elevated) they also show their name, and below it they are small grey diamonds labelled watch or stable in their card. Cards open on click beside the marker with a leader line. The dashboard's time range (1h–7d, default 7d) plus 30d (2026-11-08) sits on the map. It filters the digest-driven parts of the screen and the UCDP events, all counted back from now (owner's choice, for consistency across the screen). UCDP dates events by day, so an event counts when any part of its day falls inside the range. UCDP is a delayed release (weeks behind), so short ranges are often empty; the map's subtitle then names UCDP's newest date. A point with two or more UCDP events gets a summary card (date span, violence types, actor pairs, sources), and UCDP's `XXX` codes for actors it cannot identify read "Unidentified group (UCDP XXX100)". |
+| Lite map | MapLibre on OpenFreeMap vector tiles, solid land (2026-11-07): free, no key, no usage limits, and already the dashboard's fallback basemap. The style (`src/lite/map/style.ts`) draws only land, water, country borders and place names, colored from the Lite `@theme` tokens; markers, the popup a marker click opens, zoom buttons and the OpenStreetMap credit are Tailwind-styled HTML. No popup is open until a marker is clicked. MapLibre loads only when a screen with a map opens (Geopolitics, Finance or Technology). If OpenFreeMap is down, the map shows the background with markers still placed. |
+| Conflict map design | The owner's design (2026-11-08). UCDP locations are red circles sized by deaths, clustered by zoom (`supercluster`) with the toll printed inside; a click zooms a cluster in or opens a location's event card. Curated hotspots are diamonds with a name, coloured by the dashboard's live escalation score (`src/lite/data/escalation.ts` over `shared/analysis-hotspot-escalation.ts`: news in the last 2 h, CII, unrest, earthquake and military-flight convergence within 150 km, flights within 200 km; no vessels or session history). All curated hotspots are drawn, as on the dashboard; from 3/5 (elevated) they also show their name, and below it they are small grey diamonds labelled watch or stable in their card. Cards open on click beside the marker with a leader line. The dashboard's time range (1h–7d, default 7d) plus 30d (2026-11-08) sits on the map. It filters the digest-driven parts of the screen and the UCDP events, all counted back from now (owner's choice, for consistency across the screen). UCDP dates events by day, so an event counts when any part of its day falls inside the range. UCDP is a delayed release (weeks behind), so short ranges are often empty; the map's subtitle then names UCDP's newest date. The indicator designs supersede the range and UCDP parts of this row: see Indicator screens below; the code follows in build step 2. A point with two or more UCDP events gets a summary card (date span, violence types, actor pairs, sources), and UCDP's `XXX` codes for actors it cannot identify read "Unidentified group (UCDP XXX100)". |
 | Early indicators | The owner's priority (2026-11-08): indicators that arrive first, each linked to the news around it, so a price move or an event can be understood, not only seen. Each indicator has a written trigger rule, its source and timestamp, and a "reported" or "verified" label. Without linked news it says "No linked news found" and never guesses a cause. The catalogue, the defaults and the build order are in [Early indicators](#early-indicators). |
 | Indicator sources | The owner holds free keys for Cloudflare Radar, NVD, abuse.ch, AbuseIPDB and AlienVault OTX (2026-11-08), so the Technology and AI indicators can be built. FAA NOTAM access is not self-service and has been requested; airspace closures wait for it. Keys live in the deployment's env and, for local seeder runs, in `.env.local`; they are never committed or printed. |
+| Indicator screens | The owner's designs (2026-11-08) for the Briefing, Geopolitics, Finance & Crypto, Technology & AI and the layers popover. Every domain screen has a map with a layers popover, an indicator panel beside it and its domain panels below; the Briefing has a fired-indicators block with a feed-health strip. Owner answers: VERIFIED is kept for independently verified datasets (UCDP), and prices are labelled MARKET DATA; a stablecoin fires at 0.5% from $1; Finance shows the 1D range only; the Geopolitics range is 6h, 24h, 7d and 30d (12 months dropped), and UCDP shows as the verified background whatever the range; "Primary-source regulation" stays a labelled sample until a regulation feed exists. Details in [Screen design](#screen-design). |
 | Front page | A dedicated Lite UI at `/lite`, built from the owner's designs with Preact and Tailwind CSS. With the flag on it is the default page; the full dashboard stays reachable at `/dashboard?full=1`. See [Lite UI](#lite-ui-lite). |
 
 ### Open decisions
@@ -67,7 +68,7 @@ Contextual monitoring, not a trading terminal. Refresh target: 1 to 5 minutes fo
 | Market pulse | `markets`, `macro-signals`, `fear-greed` | — |
 | BTC/crypto detail | `crypto`, `etf-flows`, `stablecoins`; Hyperliquid positioning stress (`scripts/seed-hyperliquid-flow.mjs`) | `crypto-news` missing from `full`; no liquidation data |
 | Macro and calendar | `economic-calendar`, `macro-signals` | `centralbanks` missing from `full` |
-| Market-moving events | market news in the digest; seeded crypto, stock, index, commodity and FX quotes for the price links | Rows are deduplicated stories, not clustered events; no freight index to link shipping stories to |
+| Market-moving events | market news in the digest; seeded crypto, stock, index, commodity and FX quotes for the price links; freight indices (`supply_chain:shipping:v2`) | Rows are deduplicated stories, not clustered events; the freight indices are not linked to shipping stories yet |
 | Risk alerts | stablecoin depeg status (`shared/stablecoin-classifier.cjs`), relay `market_alert` on 24h moves | Depeg never notifies; funding and open interest are display-only; no volatility model |
 
 Market commentary is labelled as analysis, not investment advice. Price and derivatives data must be licensed and fit provider rate limits.
@@ -115,12 +116,24 @@ Every indicator links to the news, in both directions:
 
 Defaults are a starting point (open decision 2). Each build PR runs its seeders locally first and reports how often the trigger would have fired. "Key" names the credential the seeder needs; none is printed or committed.
 
+Labels say what kind of evidence a value is (owner's rule, 2026-11-08):
+
+- **Official**: published by a government, regulator, central bank, exchange operator or the issuer itself.
+- **Reported**: third-party telemetry or machine-coded reports (transponders, GDELT, Cloudflare, threat feeds).
+- **Estimated**: derived from proxies; the card says what from.
+- **Market data**: prices and market-derived values from a quote provider.
+- **Verified**: an independently verified dataset. Only UCDP qualifies today; a composite of several venues is still market data.
+
+A slow feed shows the date its data covers ("data to 3 Nov", "week to 7 Nov"), not a clock time, so a daily, weekly or delayed feed does not read as stale.
+
 **Geopolitics and conflicts.** Link window: 24 h before.
 
 | Indicator | Feed | Default trigger | Label |
 |---|---|---|---|
-| Reported violence | `seed-gdelt-bulk-materializer` (GDELT events, CAMEO 18–20, every 15 min; no key) | A country's or hotspot's events in the last 6 h reach twice its 7-day average for 6 h, and at least 5 | Reported (news, machine-coded) |
-| Military aircraft | `seed-military-flights` (adsb.lol; no key) | 5 or more military aircraft within 200 km of a curated hotspot | Reported (transponders) |
+| Reported violence | `seed-gdelt-bulk-materializer` (GDELT events, CAMEO 18–20, every 15 min; no key). Events carry a country, not coordinates, so the map shades countries | A country's or hotspot's events in the last 6 h reach twice its 7-day average for 6 h, and at least 5. Needs the count history in [Baselines](#baselines) | Reported (news, machine-coded) |
+| Military aircraft | `seed-military-flights` (adsb.lol; no key) | 5 or more military aircraft within 200 km of a curated hotspot. The card splits them by type where the aircraft is on the known list, and counts the rest as other | Reported (transponders) |
+| Chokepoint transits | `seed-portwatch` (IMF PortWatch daily transits by vessel type at Bab el-Mandeb, Suez, Hormuz, Malacca, Panama, the Bosphorus, the Taiwan Strait, Gibraltar, the Dover Strait and the Cape of Good Hope; refreshed every 6 h, data a few days behind) and `seed-chokepoint-flows` (tanker flow in mb/d at the oil chokepoints among them) | 7-day transits 25% or more below the year-earlier normal, or tanker flow below 85% of its 90-day normal on each of the last 3 days (the seeder's `disrupted` flag) | Estimated (IMF PortWatch, from ship transponders) |
+| GPS interference | `fetch-gpsjam` (gpsjam.org, daily map cells of about 1,800 km² with the share of aircraft reporting bad GPS; medium 2–10%, high above 10%; no key) | A high cell within 200 km of a curated hotspot that had none the day before, or a region's high cells up 50% or more on the day. Needs the previous day kept ([Baselines](#baselines)) | Reported (gpsjam.org, aircraft transponders) |
 | Airspace closures | `seed-notam-nms` (FAA NOTAM service; key `NOTAM_KEY`, `NOTAM_SECRET`; access requested from the FAA, so built last in step 2) | A new closure over a watchlist country or a curated hotspot | Official notice |
 | Incidents at sea | `seed-ukmto-incidents` (UKMTO; no key) | Any new incident | Official notice |
 | Taiwan Strait activity | `seed-cross-strait-activity` | Daily activity above its 30-day average | Official report |
@@ -137,28 +150,89 @@ Defaults are a starting point (open decision 2). Each build PR runs its seeders 
 | Price moves | Seeded quotes (the existing risk alerts) | The existing fixed thresholds and BTC 2 h move over 4σ | Market data |
 | Company material events | `seed-sec-8k-stream` (SEC 8-K filings; no key) | A filing by a watchlist company | Official filing |
 | Bitcoin ETF flows | `seed-etf-flows` (10 US spot bitcoin ETFs from `scripts/shared/etfs.json`, Yahoo daily bars; `ALPHA_VANTAGE_API_KEY` optional) | 8 or more of the ETFs flow the same way in a day | Estimated (from price and volume, not issuer-reported flows) |
-| Stablecoin depeg | `seed-stablecoin-markets` (CoinGecko, CoinPaprika fallback; no key) | A tracked stablecoin is classed `DEPEGGED`: more than 1% from $1 (`scripts/shared/stablecoins.json`) | Market data |
+| Stablecoin depeg | `seed-stablecoin-markets` (USDT, USDC, DAI, FDUSD, USDe; CoinGecko, CoinPaprika fallback; no key) | A tracked stablecoin more than 0.5% from $1 (owner's choice): the classifier's `SLIGHT DEPEG` or `DEPEGGED` (`scripts/shared/stablecoins.json`) | Market data |
+| Perp positioning | `seed-hyperliquid-flow` (one venue, every 5 min: BTC, ETH, SOL, PAXG, oil, metals, natural gas, EUR, JPY; stress score from funding 30%, volume 25%, open interest 25%, basis 20%) | Stress score 60 or more (the seeder's `ALERT_THRESHOLD`) | Market data (Hyperliquid, one venue). No liquidation figures: no source has them |
+| Container and bulk freight | `seed-supply-chain-trade` (`supply_chain:shipping:v2`: SCFI weekly on Fridays, Baltic Dry daily) | SCFI 5% or more week on week, or the Baltic Dry 5% or more in a day | Official (Shanghai Shipping Exchange) for SCFI; Market data for the Baltic Dry |
 
 **Technology and AI.** Link window: 12 h before. The linked news is the tech digest, which includes Hacker News: an outage, a hack or an exploited vulnerability links to the stories there that name its vendor, network or country.
 
 | Indicator | Feed | Default trigger | Label |
 |---|---|---|---|
-| Internet and power outages | `seed-internet-outages` (Cloudflare Radar; key `CLOUDFLARE_API_TOKEN`) | A new country or network outage; the stated cause (power cut, cable cut, government shutdown) is shown | Reported (Cloudflare) |
+| Internet and power outages | `seed-internet-outages` (Cloudflare Radar; key `CLOUDFLARE_API_TOKEN`) | A new country or network outage. The card shows its type, scope and stated cause (power cut, cable cut, government shutdown), not a percentage drop: Cloudflare's outage notices and traffic anomalies carry none | Reported (Cloudflare) |
 | Cloud and AI service outages | `infra:service-statuses:v1` from `server/worldmonitor/infrastructure/v1/list-service-statuses.ts` (public status pages of AWS, Azure, Google Cloud, Cloudflare, GitHub, OpenAI, Anthropic and others; no key). `seed-service-statuses` warms the upstream production URL, so the owner's deployment warms its own endpoint | A watched provider reports a partial or major outage | Official (provider status page) |
 | Exploited vulnerabilities | `seed-cve-reference` (CISA KEV subset of NVD; key `NVD_API_KEY` optional) | A new known-exploited CVE, or one naming a watchlist vendor | Official (CISA) |
-| Attack infrastructure | `seed-cyber-threats` (abuse.ch Feodo Tracker and URLhaus, AlienVault OTX, AbuseIPDB, C2IntelFeeds; keys `URLHAUS_AUTH_KEY`, `OTX_API_KEY`, `ABUSEIPDB_API_KEY`) | A spike against its 7-day average | Reported (threat feeds) |
+| Attack infrastructure | `seed-cyber-threats` (abuse.ch Feodo Tracker and URLhaus, AlienVault OTX, AbuseIPDB, C2IntelFeeds; keys `URLHAUS_AUTH_KEY`, `OTX_API_KEY`, `ABUSEIPDB_API_KEY`) | A spike against its 7-day average. Needs the count history in [Baselines](#baselines) | Reported (threat feeds) |
 | Model and product releases | None yet ([gap 5](#gaps-to-build)) | — | — |
 | Live power-grid outages | None yet; `seed-power-reliability` is per-country background, not live | — | — |
+| Primary-source regulation | None yet; the policy list is hand-maintained (`src/config/ai-regulations.ts`) | — | Shown as SAMPLE (owner's choice) until a regulation feed exists |
+
+### Baselines
+
+Rules measured against a normal need history that some feeds do not keep. It is kept in Redis as rolling count keys with a TTL longer than the window, so no new datastore is needed (the Supabase gate covers history longer than Redis TTLs):
+
+- **GDELT conflict events**: the key holds only the last 24 h (`GDELT_ROLLING_WINDOW_MS`). Keep hourly global counts and daily counts per country for 30 days. They feed the violence rule, the report histogram, the 30d range and the region strip.
+- **Attack infrastructure**: `seed-cyber-threats` keeps the latest snapshot. Keep daily counts per source and malware family for 30 days.
+- **GPS interference**: keep the previous day's high cells.
+
+Feeds that already keep history: Taiwan Strait activity, Treasury par yields (the curve against a week ago), chokepoint transits and the Hyperliquid baselines.
+
+### Screen design
+
+The owner's designs (2026-11-08). The design exports stay out of the repository.
+
+**Indicator card.** One component on every screen: domain chip, name, time; value and change; the rule it crossed; label and source; linked-news count, or "No linked news found" with an accent. A feed with nothing fired shows a one-line state instead of a card:
+
+- **Quiet**: live, nothing fired;
+- **Stale**: late against its cadence;
+- **Unavailable**: no access yet (for example "Airspace closures · awaiting FAA access").
+
+Clicking a card focuses its marker on the map, and a marker opens the same card.
+
+**Briefing.** A "Fired indicators" block at the top, newest first, with filters All, Watchlist and No linked news, and a feed-health strip (one dot per feed: fired, quiet, stale, unavailable). The watchlist parts are samples until the watchlist exists (open decision 1). The hourly brief, priority events, market pulse, escalation tracker and catalysts stay.
+
+**Geopolitics.**
+
+- The map's layers popover has three groups:
+  - **Live layers**, filtered by the range: reported violence (GDELT, country shading by the 6 h ratio to the 7-day average), military aircraft (a badge at 5 or more near a hotspot), incidents at sea (UKMTO), GPS interference (hexagons), airspace closures (N/A until FAA access).
+  - **Background and judgement**: UCDP as the verified background, always shown, with its newest date; curated hotspots with the live score.
+  - **Context, optional**: shipping lanes; social OSINT (discovery only, never alerts; no source chosen yet).
+- Range 6h, 24h, 7d, 30d, with a GDELT events-per-hour histogram.
+- A region strip under the map (derived): the five curated hotspots with the highest live score. Each shows its level word (Critical, High, Elevated, Watch, Easing), the change in GDELT events in its countries over the last 24 h against the 7-day daily average, and daily bars for 14 days. A click selects the hotspot.
+- The indicator panel beside the map; priority incidents, regional timeline and evidence mix below.
+
+**Finance & Crypto.**
+
+- A ticker strip (BTC, Brent, gold, S&P 500, US 10Y) with the 1D change only.
+- A map, "Where markets are moving":
+  - fired and quiet finance indicators pinned at the issuing central bank or exchange (`CENTRAL_BANKS`, `STOCK_EXCHANGES` in `src/config/finance-geo.ts`);
+  - Geopolitics indicators near chokepoints, pipelines and commodity hubs, labelled with the price they moved;
+  - chokepoints (red when a transit rule fires or an incident is linked);
+  - shipping lanes, sanctions and financial centres as context.
+  - The pin marks where a signal is issued, not where it is felt. Crypto stays off the map: ETF flows, depegs and positioning are cards.
+- The indicator panel; market-moving events (each story shows the indicators that moved before or after it); macro calendar with forecast, actual and surprise; the US Treasury curve, today against a week ago.
+- The chart widgets go: BTC volume bars, volatility, liquidations and the correlation matrix.
+
+**Technology & AI.**
+
+- A map, "Infrastructure & cyber map":
+  - DDoS targets (country shading, Cloudflare Radar with the same token);
+  - attack servers (hexagons with counts and the main malware family);
+  - outages (major, partial, minor);
+  - cloud regions (`CLOUD_REGIONS` in `src/config/tech-geo.ts`): a region turns red only when the incident names it, otherwise all of the provider's regions show degraded;
+  - AI data centres (`src/config/ai-datacenters.ts`), amber when an outage is in the same country;
+  - undersea cables (cable health: OK, degraded, fault).
+  - The map notes that DDoS shading shows who is attacked and the hexagons show where attackers' servers are.
+- The indicator panel; material developments; the model and product tracker (SAMPLE); research radar; policy and governance; infrastructure tiles from real counts (active outages, providers degraded, exploited CVEs this week, threat indicators against their average); watched topics.
 
 ### Build order
 
 Each step is its own PR with screenshots, and starts by running its seeders locally. Steps 2 to 4 depend only on step 1, not on one another:
 
 1. The news link rule as one shared Lite module, with tests, used first by the existing Finance price links.
-2. Geopolitics: the GDELT violence layer on the map, filtered by the time range; military aircraft as a layer; incidents at sea and embassy alerts as indicator rows, then airspace closures once FAA access arrives. UCDP becomes the verified background layer.
-3. Finance: macro release surprises, yield moves, bitcoin ETF flows and stablecoin depegs, each with linked news.
-4. Technology and AI: internet, cloud and AI service outages, exploited vulnerabilities and attack infrastructure (all keys in hand); then the model-release tracker.
-5. The Briefing's watch alerts list the fired indicators from Geopolitics, Finance and Technology.
+2. Geopolitics: the GDELT count history, then the violence layer on the map, filtered by the range; military aircraft, sea incidents and GPS interference as layers; chokepoint transits, Taiwan Strait activity and embassy alerts as indicators; the region strip; airspace closures once FAA access arrives. UCDP becomes the verified background layer.
+3. Finance: macro release surprises, yield moves, bitcoin ETF flows, stablecoin depegs, perp positioning and freight, each with linked news; the "Where markets are moving" map.
+4. Technology and AI: the attack-infrastructure history; internet, cloud and AI service outages, exploited vulnerabilities and attack infrastructure (all keys in hand); the infrastructure and cyber map; then the model-release tracker.
+5. The Briefing's fired-indicators block and feed-health strip, across Geopolitics, Finance and Technology.
 
 ## Removed or optional by default
 
@@ -228,6 +302,8 @@ The rules are in `src/config/lite-route.ts`. `vercel.json`, `docker/nginx.conf*`
 | Geopolitics | UCDP events on a MapLibre map (OpenFreeMap tiles, styled from the Lite tokens), clustered by zoom with event cards; priority incidents (digest, medium threat and up) | Curated hotspots coloured by the dashboard's live escalation score (see Owner decisions); region strip from CII and country history; report histogram over the selected time range (1h–30d), which also filters incidents, timeline and evidence mix; timeline tags and incident status from the dashboard's corroboration verdict, with tier 1 marked beside it; evidence mix by source class | Watchlist |
 | Finance | Tickers (DXY from gold drivers); hourly BTC closes; Hyperliquid funding and open interest; spot ETF flow (an estimate); breadth; market-moving stories (one copy per story, asset classes in turns, war stories left to Geopolitics unless the headline names a commodity, then marked "Linked to GEO"); macro calendar | Risk alerts (fixed thresholds); market-event price links (24h change of the instruments a headline names or its tickers, else asset-class benchmarks; "No price impact" under 0.25% or 3bp); 48h realized volatility; 14-day correlation of hourly returns (Oil stands in for DXY, which has no hourly series) | Liquidations; BTC volume bars |
 | Technology & AI | Material developments (tech digest); policy actions (the curated `src/config/ai-regulations.ts` list); arXiv papers; funding and infrastructure stories | Evidence pills (corroboration verdict, "Primary source" when a tier-1 outlet reports alone); research signal (arXiv plus Hacker News); watched-topic counts | Model and product tracker; infrastructure KPI tiles |
+
+The table describes the screens as built. The target screens are in [Screen design](#screen-design); each build step updates its rows.
 
 **Corroboration.** Every Lite status, tag and pill comes from `assessCorroboration` in `server/_shared/corroboration.ts`, the rule the full dashboard's news and insights badges use, applied to each digest item (`corroborationOf` in `src/lite/data/transforms.ts`). It counts publisher families from the digest's origin-aware `corroborationCount`, so one newsroom's feeds and reprints count once:
 
