@@ -1546,7 +1546,7 @@ const SEED_META = {
     key: 'seed-meta:intelligence:gpsjam-high-cells', maxStaleMin: 1440,
     activationKey: 'seed-activated:intelligence:gpsjam-high-cells',
     cutover: {
-      mode: 'activation-marker', fromKey: null, issue: 38,
+      mode: 'activation-marker', fromKey: null, issue: 40,
       activationKey: 'seed-activated:intelligence:gpsjam-high-cells',
     },
   },
