@@ -30,6 +30,7 @@ The owner's priority (2026-11-08) is **early indicators**: see army activity, co
 | Lite map | MapLibre on OpenFreeMap vector tiles, solid land (2026-11-07): free, no key, no usage limits, and already the dashboard's fallback basemap. The style (`src/lite/map/style.ts`) draws only land, water, country borders and place names, colored from the Lite `@theme` tokens; markers, the popup a marker click opens, zoom buttons and the OpenStreetMap credit are Tailwind-styled HTML. No popup is open until a marker is clicked. MapLibre loads only when Geopolitics opens. If OpenFreeMap is down, the map shows the background with markers still placed. |
 | Conflict map design | The owner's design (2026-11-08). UCDP locations are red circles sized by deaths, clustered by zoom (`supercluster`) with the toll printed inside; a click zooms a cluster in or opens a location's event card. Curated hotspots are diamonds with a name, coloured by the dashboard's live escalation score (`src/lite/data/escalation.ts` over `shared/analysis-hotspot-escalation.ts`: news in the last 2 h, CII, unrest, earthquake and military-flight convergence within 150 km, flights within 200 km; no vessels or session history). All curated hotspots are drawn, as on the dashboard; from 3/5 (elevated) they also show their name, and below it they are small grey diamonds labelled watch or stable in their card. Cards open on click beside the marker with a leader line. The dashboard's time range (1h–7d, default 7d) plus 30d (2026-11-08) sits on the map. It filters the digest-driven parts of the screen and the UCDP events, all counted back from now (owner's choice, for consistency across the screen). UCDP dates events by day, so an event counts when any part of its day falls inside the range. UCDP is a delayed release (weeks behind), so short ranges are often empty; the map's subtitle then names UCDP's newest date. A point with two or more UCDP events gets a summary card (date span, violence types, actor pairs, sources), and UCDP's `XXX` codes for actors it cannot identify read "Unidentified group (UCDP XXX100)". |
 | Early indicators | The owner's priority (2026-11-08): indicators that arrive first, each linked to the news around it, so a price move or an event can be understood, not only seen. Each indicator has a written trigger rule, its source and timestamp, and a "reported" or "verified" label. Without linked news it says "No linked news found" and never guesses a cause. The catalogue, the defaults and the build order are in [Early indicators](#early-indicators). |
+| Indicator sources | The owner holds free keys for Cloudflare Radar, NVD, abuse.ch, AbuseIPDB and AlienVault OTX (2026-11-08), so the Technology and AI indicators can be built. FAA NOTAM access is not self-service and has been requested; airspace closures wait for it. Keys live in the deployment's env and, for local seeder runs, in `.env.local`; they are never committed or printed. |
 | Front page | A dedicated Lite UI at `/lite`, built from the owner's designs with Preact and Tailwind CSS. With the flag on it is the default page; the full dashboard stays reachable at `/dashboard?full=1`. See [Lite UI](#lite-ui-lite). |
 
 ### Open decisions
@@ -120,7 +121,7 @@ Defaults are a starting point (open decision 2). Each build PR runs its seeders 
 |---|---|---|---|
 | Reported violence | `seed-gdelt-bulk-materializer` (GDELT events, CAMEO 18–20, every 15 min; no key) | A country's or hotspot's events in the last 6 h reach twice its 7-day average for 6 h, and at least 5 | Reported (news, machine-coded) |
 | Military aircraft | `seed-military-flights` (adsb.lol; no key) | 5 or more military aircraft within 200 km of a curated hotspot | Reported (transponders) |
-| Airspace closures | `seed-notam-nms` (FAA NOTAM service; key `NOTAM_KEY`, `NOTAM_SECRET`) | A new closure over a watchlist country or a curated hotspot | Official notice |
+| Airspace closures | `seed-notam-nms` (FAA NOTAM service; key `NOTAM_KEY`, `NOTAM_SECRET`; access requested from the FAA, so built last in step 2) | A new closure over a watchlist country or a curated hotspot | Official notice |
 | Incidents at sea | `seed-ukmto-incidents` (UKMTO; no key) | Any new incident | Official notice |
 | Taiwan Strait activity | `seed-cross-strait-activity` | Daily activity above its 30-day average | Official report |
 | Embassy security alerts | `seed-security-advisories` (US embassies) | A new alert for a watchlist country | Official notice |
@@ -136,24 +137,24 @@ Defaults are a starting point (open decision 2). Each build PR runs its seeders 
 | Price moves | Seeded quotes (the existing risk alerts) | The existing fixed thresholds and BTC 2 h move over 4σ | Market data |
 | Company material events | `seed-sec-8k-stream` (SEC 8-K filings; no key) | A filing by a watchlist company | Official filing |
 
-**Technology and AI.** Link window: 12 h before.
+**Technology and AI.** Link window: 12 h before. The linked news is the tech digest, which includes Hacker News: an outage, a hack or an exploited vulnerability links to the stories there that name its vendor, network or country.
 
 | Indicator | Feed | Default trigger | Label |
 |---|---|---|---|
 | Internet and power outages | `seed-internet-outages` (Cloudflare Radar; key `CLOUDFLARE_API_TOKEN`) | A new country or network outage; the stated cause (power cut, cable cut, government shutdown) is shown | Reported (Cloudflare) |
 | Exploited vulnerabilities | `seed-cve-reference` (CISA KEV subset of NVD; key `NVD_API_KEY` optional) | A new known-exploited CVE, or one naming a watchlist vendor | Official (CISA) |
-| Attack infrastructure | `seed-cyber-threats` (abuse.ch, AlienVault OTX, AbuseIPDB; keys `OTX_API_KEY`, `ABUSEIPDB_API_KEY`, `URLHAUS_AUTH_KEY`) | A spike against its 7-day average | Reported (threat feeds) |
+| Attack infrastructure | `seed-cyber-threats` (abuse.ch Feodo Tracker and URLhaus, AlienVault OTX, AbuseIPDB, C2IntelFeeds; keys `URLHAUS_AUTH_KEY`, `OTX_API_KEY`, `ABUSEIPDB_API_KEY`) | A spike against its 7-day average | Reported (threat feeds) |
 | Model and product releases | None yet ([gap 5](#gaps-to-build)) | — | — |
 | Live power-grid outages | None yet; `seed-power-reliability` is per-country background, not live | — | — |
 
 ### Build order
 
-Each step is its own PR with screenshots, and starts by running its seeders locally:
+Each step is its own PR with screenshots, and starts by running its seeders locally. Steps 2 to 4 depend only on step 1, not on one another:
 
 1. The news link rule as one shared Lite module, with tests, used first by the existing Finance price links.
-2. Geopolitics: the GDELT violence layer on the map, filtered by the time range; military aircraft as a layer; airspace closures, incidents at sea and embassy alerts as indicator rows. UCDP becomes the verified background layer.
+2. Geopolitics: the GDELT violence layer on the map, filtered by the time range; military aircraft as a layer; incidents at sea and embassy alerts as indicator rows, then airspace closures once FAA access arrives. UCDP becomes the verified background layer.
 3. Finance: macro release surprises and yield moves, each with linked news.
-4. Technology and AI: outages, exploited vulnerabilities and attack infrastructure; then the model-release tracker.
+4. Technology and AI: outages, exploited vulnerabilities and attack infrastructure (all keys in hand); then the model-release tracker.
 5. The Briefing's watch alerts list the fired indicators from Geopolitics, Finance and Technology.
 
 ## Removed or optional by default
