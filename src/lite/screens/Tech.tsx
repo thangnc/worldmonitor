@@ -238,7 +238,7 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
         testId="infra-map"
         right={<LayersPopover groups={groups} onToggle={(id, on) => setLayers((cur) => ({ ...cur, [id]: on }))} footer="DDoS shading shows who is attacked; hexagons show where attackers' servers are." />}
       >
-        <div class="relative h-[320px] overflow-hidden bg-bg/40 md:h-[440px]">
+        <div class="relative h-[320px] overflow-hidden border-t border-line bg-bg/40 md:h-[440px]">
           <LiteMap markers={built.markers} overlays={built.overlays} fit="world" focusId={focusId} onSelect={(id) => { if (!id) onFocus(null); }} />
           {failed.length ? (
             <div class="absolute left-14 right-14 top-4 z-[4] flex flex-wrap gap-2">
