@@ -312,6 +312,8 @@ const EXCLUDED_FROM_MCP = new Map([
     'derived: per-pair readings re-read from the strike, aviation, military flight, Taiwan Strait and sanctions keys, served only as the evidence get-pizzint-status attaches to its tension rows; that dashboard endpoint remains deferred to a future expanded intelligence tool.'],
   ['gdelt:bulk:country-events:v1',
     'intermediate: per-country daily GDELT conflict/protest buckets and baselines that feed the CII Conflict and Unrest components; agents read the result through the risk-score tools.'],
+  ['gdelt:bulk:conflict-counts:v1',
+    'derived display projection: the same GDELT conflict article counts as gdelt:bulk:country-events:v1, cut to 48 hourly and 30 daily buckets for the Lite Geopolitics map; agents read the result through the risk-score tools.'],
   ['intelligence:wsb-tickers:v1',
     'deferred: companion to get_social_velocity (Reddit r/wallstreetbets sentiment). Future expanded social-sentiment tool would bundle this with reddit feed.'],
   ['intelligence:telegram-feed:v1',

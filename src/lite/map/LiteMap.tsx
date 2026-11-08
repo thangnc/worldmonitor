@@ -5,7 +5,8 @@ import Supercluster from 'supercluster';
 import { Locate, Minus, Plus, X } from 'lucide-preact';
 import type { Tone } from '../data/transforms';
 import { BG, BORDER, TEXT, cx } from '../components/ui';
-import { MAP_CREDITS, buildLiteMapStyle, readLiteMapTokens } from './style';
+import { COUNTRY_CODE_PROPERTY, COUNTRY_FILL_LAYER, COUNTRY_FILL_SOURCE, MAP_CREDITS, buildLiteMapStyle, countryFillLayer, readLiteMapTokens } from './style';
+import { getCountriesGeoJson } from '@/services/country-geometry';
 import { LABEL_MIN_RADIUS, WORLD_BOUNDS, compactCount, markerBounds, placeCard, ucdpRadius } from './view';
 
 /**
@@ -90,6 +91,13 @@ export interface GlyphMarker extends MarkerBase {
   hollow?: boolean;
 }
 
+/** A shaded country the user clicked; its card sits at the click point. */
+export interface CountryMarker extends MarkerBase {
+  kind: 'country';
+}
+
+type ShownMarker = MapMarker | CountryMarker;
+
 export type GlyphTone = Tone | 'tech';
 
 export type MapMarker = UcdpMarker | HotspotMarker | PinMarker | GlyphMarker;
@@ -102,6 +110,12 @@ export type MapMarker = UcdpMarker | HotspotMarker | PinMarker | GlyphMarker;
 export interface MapOverlays {
   lines?: { type: 'FeatureCollection'; features: unknown[] };
   fills?: { type: 'FeatureCollection'; features: unknown[] };
+}
+
+/** Country shading: ISO2 → step 1–4 (0 or absent is unshaded), and each shaded country's card. */
+export interface CountryFill {
+  steps: ReadonlyMap<string, number>;
+  card: (code: string) => { title: string; popup: MapCard } | null;
 }
 
 type MapLibre = typeof import('maplibre-gl');
@@ -303,9 +317,11 @@ const LINE_CLASS: Record<NonNullable<CardLine['style']> | 'text', string> = {
   dim: 'text-[11px] leading-[15px] text-dim',
 };
 
-function MapCardView({ marker, onClose }: { marker: MapMarker; onClose: () => void }) {
+function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => void }) {
   const { kind, name, value, lines, score, body } = marker.popup;
-  const tone: GlyphTone = marker.kind === 'ucdp' ? 'crit' : marker.tone;
+  const tone: GlyphTone = marker.kind === 'ucdp' || marker.kind === 'country' ? 'crit' : marker.tone;
+  const country = marker.kind === 'country';
+  const text = country ? 'text-reported' : TONE_TEXT[tone];
   return (
     <div
       class={cx(
@@ -315,8 +331,12 @@ function MapCardView({ marker, onClose }: { marker: MapMarker; onClose: () => vo
       data-map-popup={marker.id}
     >
       <div class="flex items-center justify-between gap-2">
-        <span class={cx('flex min-w-0 items-center gap-[7px] font-mono text-[10px] font-semibold tracking-[1px] uppercase', TONE_TEXT[tone])}>
-          {marker.kind === 'hotspot' ? <Diamond tone={marker.tone} filled={false} size={8} /> : <span class={cx('h-[7px] w-[7px] shrink-0 rounded-full', TONE_BG[tone])} />}
+        <span class={cx('flex min-w-0 items-center gap-[7px] font-mono text-[10px] font-semibold tracking-[1px] uppercase', text)}>
+          {marker.kind === 'hotspot' ? (
+            <Diamond tone={marker.tone} filled={false} size={8} />
+          ) : (
+            <span class={cx('h-[7px] w-[7px] shrink-0', country ? 'rounded-[2px] bg-violence-3' : cx('rounded-full', TONE_BG[tone]))} />
+          )}
           <span class="truncate">{kind}</span>
         </span>
         <button type="button" aria-label="Close" class="-mr-1 text-dim hover:text-ink" onClick={onClose}>
@@ -327,7 +347,7 @@ function MapCardView({ marker, onClose }: { marker: MapMarker; onClose: () => vo
       {body ? null : (
       <div class="mt-[6px] flex items-baseline justify-between gap-3">
         <span class="text-[14px] leading-[19px] font-semibold text-ink">{name}</span>
-        <span class={cx('flex shrink-0 items-center gap-[6px] font-mono text-[12px]', TONE_TEXT[tone])}>
+        <span class={cx('flex shrink-0 items-center gap-[6px] font-mono text-[12px]', text)}>
           {score != null ? (
             <span class="flex gap-[2px]" aria-hidden="true">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -357,6 +377,7 @@ type Shown =
 export function LiteMap({
   markers,
   fit,
+  countries,
   overlays,
   focusId,
   onSelect,
@@ -364,6 +385,8 @@ export function LiteMap({
   markers: readonly MapMarker[];
   /** `world` shows the whole map; `markers` zooms to the markers (a region filter). */
   fit: 'world' | 'markers';
+  /** Country shading (the reported-violence layer); omitted draws none. */
+  countries?: CountryFill;
   overlays?: MapOverlays;
   /** Selects this marker and pans to it (a card elsewhere on the screen was opened). */
   focusId?: string | null;
@@ -381,6 +404,11 @@ export function LiteMap({
   const [view, setView] = useState({ zoom: 0, west: -180, south: -85, east: 180, north: 85 });
   const [point, setPoint] = useState<{ x: number; y: number } | null>(null);
   const [cardSize, setCardSize] = useState(CARD_FALLBACK);
+  const [picked, setPicked] = useState<{ code: string; lat: number; lon: number } | null>(null);
+  const [fillReady, setFillReady] = useState(false);
+  const countriesRef = useRef(countries);
+  countriesRef.current = countries;
+  const shadedRef = useRef(new Set<string>());
 
   const bounds = fit === 'markers' ? markerBounds(markers) : WORLD_BOUNDS;
   const boundsRef = useRef(bounds);
@@ -460,7 +488,19 @@ export function LiteMap({
           });
         };
         map.on('moveend', syncView);
-        map.on('click', () => setSelected(null));
+        // A click on a shaded country opens its card; anywhere else closes the card.
+        map.on('click', (e: { point: { x: number; y: number }; lngLat: { lng: number; lat: number } }) => {
+          const hit = map.getLayer(COUNTRY_FILL_LAYER)
+            ? map.queryRenderedFeatures([e.point.x, e.point.y], { layers: [COUNTRY_FILL_LAYER] })
+            : [];
+          const code = hit.map((f) => String(f.id ?? f.properties?.[COUNTRY_CODE_PROPERTY] ?? '')).find((c) => (countriesRef.current?.steps.get(c) ?? 0) > 0);
+          if (code) {
+            setPicked({ code, lat: e.lngLat.lat, lon: e.lngLat.lng });
+            setSelected(`country:${code}`);
+          } else {
+            setSelected(null);
+          }
+        });
         mapRef.current = map;
         syncView();
         setStatus('ready');
@@ -481,6 +521,50 @@ export function LiteMap({
       mapRef.current = null;
     };
   }, []);
+
+  // The country polygons load once the map is ready and a fill is wanted.
+  const wantsFill = Boolean(countries);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (status !== 'ready' || !map || !wantsFill || fillReady) return;
+    let cancelled = false;
+    const setup = (geo: Awaited<ReturnType<typeof getCountriesGeoJson>>) => {
+      if (cancelled || !geo || mapRef.current !== map) return;
+      if (!map.getSource(COUNTRY_FILL_SOURCE)) {
+        map.addSource(COUNTRY_FILL_SOURCE, { type: 'geojson', data: geo, promoteId: COUNTRY_CODE_PROPERTY });
+        map.addLayer(countryFillLayer(readLiteMapTokens()), 'country-border');
+      }
+      setFillReady(true);
+    };
+    getCountriesGeoJson()
+      .then((geo) => {
+        if (cancelled) return;
+        if (map.isStyleLoaded()) setup(geo);
+        else map.once('load', () => setup(geo));
+      })
+      .catch((err: unknown) => console.warn('[lite-map] country shapes unavailable', err));
+    return () => {
+      cancelled = true;
+    };
+  }, [status, wantsFill, fillReady]);
+
+  // Shading follows the steps through feature state, without reloading the shapes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!fillReady || !map) return;
+    const steps = countries?.steps ?? new Map<string, number>();
+    const shaded = shadedRef.current;
+    for (const code of shaded) {
+      if ((steps.get(code) ?? 0) > 0) continue;
+      map.setFeatureState({ source: COUNTRY_FILL_SOURCE, id: code }, { step: 0 });
+      shaded.delete(code);
+    }
+    for (const [code, step] of steps) {
+      if (step <= 0) continue;
+      map.setFeatureState({ source: COUNTRY_FILL_SOURCE, id: code }, { step });
+      shaded.add(code);
+    }
+  }, [fillReady, countries]);
 
   // One MapLibre marker per shown id; its Preact content re-renders in place.
   useEffect(() => {
@@ -555,7 +639,15 @@ export function LiteMap({
     }
   }, [status, shown, selected, index]);
 
-  const selectedMarker = selected ? byId.get(selected) ?? null : null;
+  const selectedMarker = useMemo((): ShownMarker | null => {
+    if (!selected) return null;
+    if (selected.startsWith('country:')) {
+      if (!picked || `country:${picked.code}` !== selected) return null;
+      const card = (countries?.steps.get(picked.code) ?? 0) > 0 ? countries?.card(picked.code) : null;
+      return card ? { kind: 'country', id: selected, lat: picked.lat, lon: picked.lon, title: card.title, popup: card.popup } : null;
+    }
+    return byId.get(selected) ?? null;
+  }, [selected, picked, countries, byId]);
 
   // Another part of the screen asks for a marker: open it and bring it into view.
   useEffect(() => {
