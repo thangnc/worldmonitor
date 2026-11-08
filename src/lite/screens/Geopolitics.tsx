@@ -5,10 +5,11 @@ import { INTEL_HOTSPOTS } from '@/config/geo';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { BarStrip, StackedBar } from '../components/charts';
 import { BG, BORDER, Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, Switch, TEXT, cx } from '../components/ui';
-import { Diamond, LiteMap, type MapMarker } from '../map/LiteMap';
+import { Diamond, LiteMap, type CountryFill, type MapMarker } from '../map/LiteMap';
+import { HealthDots, IndicatorFeed } from '../components/indicator';
 import {
   selectIncidents,
-  useCountryHistory,
+  useConflictCounts,
   useDigest,
   useEarthquakes,
   useMilitaryFlights,
@@ -17,7 +18,19 @@ import {
   useUnrestEvents,
 } from '../data/hooks';
 import { ESCALATION_REGIONS, leadCountry } from '../data/regions';
-import { ucdpInRange, ucdpMarkers, ucdpWindowLabel } from '../data/ucdp';
+import { ucdpBackgroundLabel, ucdpMarkers, ucdpNewest } from '../data/ucdp';
+import {
+  SHADING_RULE,
+  VIOLENCE_RULE,
+  conflictHistogram,
+  countryName,
+  countryShading,
+  hotspotStrip,
+  violenceFeeds,
+  type HotspotTile,
+} from '../data/conflict';
+import { feedCounts } from '../data/indicators';
+import { LINK_WINDOW_HOURS, linkNews } from '../data/news-link';
 import { FEED_LABEL, escalationLevel, scoreHotspots } from '../data/escalation';
 import { SAMPLE_WATCHLIST } from '../data/fixtures';
 import {
@@ -29,18 +42,15 @@ import {
   confidenceLabel,
   corroborationOf,
   digestItems,
-  escalationStatus,
   evidenceMix,
   inTimeRange,
   isPrimarySource,
-  pctChange,
   phaseLabel,
   publisherCount,
   regionOfCategory,
   regionOfPoint,
   relativeTime,
   threatTone,
-  timeBuckets,
   type GeoRegion,
   type LiteItem,
   type TimeRange,
@@ -56,8 +66,8 @@ const REGION_OPTIONS = [
 ] as const satisfies ReadonlyArray<{ value: GeoRegion; label: string }>;
 
 /**
- * The dashboard's time ranges plus 30 days. They filter the digest-driven parts of the screen and the
- * UCDP events, all counted back from now (see ucdpInRange for UCDP's day-dated events).
+ * 6h, 24h, 7d and 30d (owner's design, 2026-11-08). They filter the GDELT shading and histogram and
+ * the digest-driven parts of the screen. UCDP is the verified background and shows at every range.
  */
 const TIME_RANGE_OPTIONS = (Object.keys(TIME_RANGE_HOURS) as TimeRange[]).map((value) => ({ value, label: value }));
 
@@ -72,7 +82,7 @@ function inRegion(item: LiteItem, region: GeoRegion): boolean {
 export function Geopolitics() {
   const [region, setRegion] = useState<GeoRegion>('all');
   const [search, setSearch] = useState('');
-  const [layers, setLayers] = useState({ conflicts: true, hotspots: true });
+  const [layers, setLayers] = useState<LayerState>({ violence: true, conflicts: true, hotspots: true });
   const [range, setRange] = useState<TimeRange>('7d');
   const digest = useDigest('full');
   const risk = useRiskScores();
@@ -112,6 +122,7 @@ export function Geopolitics() {
           <IncidentsCard state={digest} rows={visible.slice(0, 6)} total={visible.length} />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
+          <GeoIndicators />
           <Timeline incidents={inRange} region={region} />
           <Watchlist />
           <EvidenceMix state={digest} region={region} range={range} />
@@ -122,11 +133,17 @@ export function Geopolitics() {
   );
 }
 
+interface LayerState {
+  violence: boolean;
+  conflicts: boolean;
+  hotspots: boolean;
+}
+
 function ConflictMap({
   region, layers, range, onRange,
 }: {
   region: GeoRegion;
-  layers: { conflicts: boolean; hotspots: boolean };
+  layers: LayerState;
   range: TimeRange;
   onRange: (range: TimeRange) => void;
 }) {
@@ -136,6 +153,8 @@ function ConflictMap({
   const unrest = useUnrestEvents();
   const earthquakes = useEarthquakes();
   const flights = useMilitaryFlights();
+  const conflict = useConflictCounts();
+  const [focus, setFocus] = useState<{ id: string; n: number } | null>(null);
 
   // The dashboard's live hotspot score, from whichever of its inputs have loaded.
   const escalation = useMemo(
@@ -154,13 +173,16 @@ function ConflictMap({
     [digest, risk, unrest, earthquakes, flights],
   );
 
-  const ucdpRange = useMemo(() => (ucdp.status === 'ready' ? ucdpInRange(ucdp.data, range, Date.now()) : null), [ucdp, range]);
+  const counts = conflict.status === 'ready' ? conflict.data : null;
+  const shading = useMemo(() => (counts ? countryShading(counts, range, Date.now()) : null), [counts, range]);
+  const histogram = useMemo(() => (counts ? conflictHistogram(counts, range, Date.now()) : null), [counts, range]);
+  const newest = ucdp.status === 'ready' ? ucdpNewest(ucdp.data) : 0;
 
   const markers = useMemo(() => {
     const out: MapMarker[] = [];
-    if (layers.conflicts && ucdpRange) {
-      // One marker per exact UCDP event location; the map clusters them by zoom.
-      out.push(...ucdpMarkers(ucdpRange.events, region).markers);
+    if (layers.conflicts && ucdp.status === 'ready') {
+      // UCDP is the verified background: every location, whatever the range; the map clusters them by zoom.
+      out.push(...ucdpMarkers(ucdp.data, region).markers);
     }
     if (layers.hotspots) {
       for (const { hotspot: h, score, missing } of escalation) {
@@ -196,31 +218,69 @@ function ConflictMap({
       }
     }
     return out;
-  }, [ucdpRange, escalation, region, layers]);
+  }, [ucdp, escalation, region, layers]);
 
-  const scrub = useMemo(() => {
-    if (digest.status !== 'ready') return null;
-    const stamps = digestItems(digest.data, GEO_CATEGORIES).map((i) => i.publishedAt);
-    return timeBuckets(stamps, Date.now(), TIME_RANGE_HOURS[range], 42);
-  }, [digest, range]);
+  const news = useMemo(() => (digest.status === 'ready' ? digestItems(digest.data) : []), [digest]);
+  const countries = useMemo((): CountryFill | undefined => {
+    if (!layers.violence || !shading) return undefined;
+    const steps = new Map([...shading.byCountry].filter(([, c]) => c.step > 0).map(([code, c]) => [code, c.step]));
+    return {
+      steps,
+      card: (code) => {
+        const shade = shading.byCountry.get(code);
+        if (!shade) return null;
+        const name = countryName(code);
+        const now = Date.now();
+        const stories = linkNews({ countries: [{ name, code }] }, news, now, LINK_WINDOW_HOURS.geo).stories;
+        return {
+          title: `${name}: ${shade.reports} GDELT reports, ${shading.basis}`,
+          popup: {
+            kind: 'Reported violence · GDELT',
+            name,
+            value: `${shade.reports} reports`,
+            lines: [
+              { text: shade.ratio != null ? `×${shade.ratio.toFixed(1)} the country's normal · ${shading.basis}` : `No normal to compare with yet · ${shading.basis}` },
+              ...stories.slice(0, 2).map((st) => ({ text: `${st.item.title} · ${st.item.source}` })),
+              { text: stories.length ? '' : 'No linked news found in the last 24 h', style: 'dim' as const },
+              { text: shading.partial ? 'Some hours or days in this range are incomplete.' : '', style: 'dim' as const },
+              { text: 'Machine-coded news reports, not verified events.', style: 'dim' as const },
+            ].filter((line) => line.text),
+          },
+        };
+      },
+    };
+  }, [layers.violence, shading, news, range]);
+
+  const tiles = useMemo(
+    () =>
+      hotspotStrip(
+        escalation.map(({ hotspot, score }) => ({ hotspot, score: score.combinedScore, level: escalationLevel(score.combinedScore) })),
+        counts,
+        Date.now(),
+      ),
+    [escalation, counts],
+  );
 
   return (
     <Card
       title="Conflict map"
-      sub={
-        ucdpRange?.newest
-          ? `${ucdpWindowLabel(range, ucdpRange.events.length, ucdpRange.newest)} · curated hotspots: live score`
-          : 'UCDP events and curated hotspots (live score)'
-      }
+      sub={`Reported violence (GDELT, against each country's normal) · ${ucdpBackgroundLabel(newest)} · hotspots: live score`}
       testId="conflict-map"
       right={
         <>
           <div class="hidden items-center gap-[16px] md:flex" data-testid="map-legend">
-            <span class="flex items-center gap-[5px] text-[11.5px] text-muted" title="UCDP is a delayed release, weeks behind, so short time ranges may hold no events">
-              {[7, 10, 13].map((size) => (
-                <span key={size} class="rounded-full border border-crit/80 bg-crit/25" style={{ width: size, height: size }} />
-              ))}
-              <span class="ml-[3px]">UCDP events · size = deaths</span>
+            <span class="flex items-center gap-[5px] text-[11.5px] text-muted" title={SHADING_RULE}>
+              <span class="flex gap-px" aria-hidden="true">
+                <span class="h-[9px] w-[7px] rounded-[1px] bg-violence-1" />
+                <span class="h-[9px] w-[7px] rounded-[1px] bg-violence-2" />
+                <span class="h-[9px] w-[7px] rounded-[1px] bg-violence-3" />
+                <span class="h-[9px] w-[7px] rounded-[1px] bg-violence-4" />
+              </span>
+              <span class="ml-[3px]">Reported violence · GDELT</span>
+            </span>
+            <span class="flex items-center gap-[5px] text-[11.5px] text-muted" title="UCDP is a delayed release, weeks behind; it shows at every range as the verified background. Size = deaths.">
+              <span class="h-[10px] w-[10px] rounded-full border border-crit/80 bg-crit/25" aria-hidden="true" />
+              Verified background · UCDP
             </span>
             <span class="flex items-center gap-[4px] text-[11.5px] text-muted" title="All curated hotspots, coloured by the live escalation score: red critical, orange high, yellow elevated, grey watch or stable">
               <Diamond tone="elev" filled={false} size={9} />
@@ -235,28 +295,46 @@ function ConflictMap({
       }
     >
       <div class="relative h-[300px] overflow-hidden bg-bg/40 md:h-[380px]">
-        <LiteMap markers={markers} fit={region === 'all' ? 'world' : 'markers'} />
-        {ucdp.status !== 'ready' && layers.conflicts ? (
-          <div class="absolute left-14 right-14 top-4 flex justify-start">
-            <div class="rounded-[6px] border border-line bg-surface/90 px-2">
-            <SourceState state={ucdp} source="UCDP events (seed-ucdp-events)" pad={false} />
-            </div>
+        <LiteMap markers={markers} fit={region === 'all' ? 'world' : 'markers'} countries={countries} focus={focus} />
+        {(ucdp.status !== 'ready' && layers.conflicts) || (conflict.status !== 'ready' && layers.violence) ? (
+          <div class="pointer-events-none absolute left-14 right-14 top-4 z-[4] flex flex-col items-start gap-1">
+            {conflict.status !== 'ready' && layers.violence ? (
+              <div class="rounded-[6px] border border-line bg-surface/90 px-2">
+                <SourceState state={conflict} source="GDELT conflict counts (seed-gdelt-bulk-materializer)" pad={false} />
+              </div>
+            ) : null}
+            {ucdp.status !== 'ready' && layers.conflicts ? (
+              <div class="rounded-[6px] border border-line bg-surface/90 px-2">
+                <SourceState state={ucdp} source="UCDP events (seed-ucdp-events)" pad={false} />
+              </div>
+            ) : null}
           </div>
         ) : null}
-        {/* The time range sits on the map, as on the dashboard, and filters the screen's digest-driven parts. */}
-        <div class="absolute bottom-4 left-4 right-4 flex h-9 items-center gap-3 rounded-[6px] border border-line bg-surface/90 pr-3 pl-1">
+        {/* The time range sits on the map, as on the dashboard, with GDELT reports per hour or day. */}
+        <div class="absolute bottom-4 left-4 right-4 z-[4] flex h-9 items-center gap-3 rounded-[6px] border border-line bg-surface/90 pr-3 pl-1">
           <TimeRangeControl value={range} onChange={onRange} />
-          {scrub ? (
+          {histogram ? (
             <>
-              <div class="min-w-0 flex-1" title={`Reports per time slice, last ${range}`}>
-                <BarStrip values={scrub} height={16} label={`Reports over the last ${range}`} colorFor={(i) => (i >= scrub.length - 6 ? 'bg-geo' : 'bg-track')} />
+              <span class="hidden shrink-0 font-mono text-[10.5px] text-dim sm:inline">GDELT reports / {histogram.unit}</span>
+              <div class="min-w-0 flex-1" title={`GDELT reports per ${histogram.unit === 'hr' ? 'hour' : 'day'}, last ${range}. Dim bars are incomplete.`} data-testid="gdelt-histogram">
+                <BarStrip
+                  values={histogram.bars.map((b) => b.value)}
+                  height={16}
+                  label={`GDELT reports per ${histogram.unit === 'hr' ? 'hour' : 'day'}, last ${range}`}
+                  colorFor={(i) => (histogram.bars[i]?.partial ? 'bg-faint' : 'bg-violence-3')}
+                />
               </div>
               <span class="font-mono text-[10.5px] text-muted">now</span>
             </>
-          ) : null}
+          ) : (
+            <span class="min-w-0 flex-1" />
+          )}
+          <span class="hidden shrink-0 font-mono text-[10.5px] text-dim md:inline" data-testid="ucdp-reach">
+            {newest ? `UCDP to ${new Date(newest).toISOString().slice(0, 10)}` : 'UCDP'}
+          </span>
         </div>
       </div>
-      <RegionStrip />
+      <HotspotStrip tiles={tiles} onSelect={(id) => setFocus((f) => ({ id: `hotspot:${id}`, n: (f?.n ?? 0) + 1 }))} />
     </Card>
   );
 }
@@ -283,43 +361,64 @@ function TimeRangeControl({ value, onChange }: { value: TimeRange; onChange: (ra
   );
 }
 
-function RegionStrip() {
-  const risk = useRiskScores();
+/** The five curated hotspots with the highest live score; a click opens the hotspot on the map. */
+function HotspotStrip({ tiles, onSelect }: { tiles: HotspotTile[]; onSelect: (id: string) => void }) {
   return (
     <div class="grid grid-cols-2 gap-px border-t border-line bg-line sm:grid-cols-3 md:grid-cols-5" data-testid="region-strip">
-      {ESCALATION_REGIONS.map((r) => {
-        const lead = risk.status === 'ready' ? leadCountry(r.countries, risk.data.ciiScores) : { country: r.countries[0], score: undefined };
-        return <RegionCard key={r.name} name={r.name} country={lead.country} score={lead.score} />;
-      })}
+      {tiles.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          onClick={() => onSelect(t.id)}
+          class="flex flex-col gap-2 bg-surface px-[14px] py-3 text-left hover:bg-surface-2/60"
+          title="Level from the live hotspot score. Change: GDELT reports for the hotspot's countries, last 24 complete hours against the 7-day daily average. Bars: daily reports, 14 days."
+          data-hotspot-tile={t.id}
+        >
+          <span class="flex items-center gap-[6px]">
+            <Dot tone={t.tone} />
+            <span class="truncate text-[12px] font-medium text-ink">{t.name}</span>
+          </span>
+          <span class="flex items-end justify-between gap-2">
+            <span class="flex flex-col gap-px">
+              <span class={cx('font-mono text-[16px] font-medium', t.change != null && t.change < 0 ? 'text-muted' : 'text-ink')}>
+                {t.change != null ? signed(t.change, 0) : '—'}
+              </span>
+              <span class={cx('text-[10.5px]', t.tone === 'muted' ? 'text-dim' : TEXT[t.tone])}>{t.level}</span>
+            </span>
+            {t.bars.length > 1 ? (
+              <BarStrip values={t.bars} height={24} barWidth={3} label={`${t.name}: GDELT reports per day, 14 days`} colorFor={(i) => (i >= t.bars.length - 2 ? BG[t.tone === 'muted' ? 'dim' : t.tone] : 'bg-track')} />
+            ) : null}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }
 
-function RegionCard({ name, country, score }: { name: string; country: string; score: number | null | undefined }) {
-  const history = useCountryHistory(country);
-  const series = history.status === 'ready' ? history.data.points.map((p) => p.cii?.score ?? 0).filter((v) => v > 0) : [];
-  const change = series.length >= 2 ? pctChange(series[series.length - 2] ?? 0, series[series.length - 1] ?? 0) : null;
-  const status = escalationStatus(score);
+/** The screen's indicator panel: in 2a the GDELT violence feed (spec: Early indicators › Catalogue). */
+function GeoIndicators() {
+  const conflict = useConflictCounts();
+  const digest = useDigest('full');
+  const feeds = useMemo(
+    () =>
+      violenceFeeds(
+        conflict.status === 'ready' ? conflict.data : null,
+        conflict.status,
+        digest.status === 'ready' ? digestItems(digest.data) : [],
+        Date.now(),
+      ),
+    [conflict, digest],
+  );
+  const counts = feedCounts(feeds);
   return (
-    <div class="flex flex-col gap-2 bg-surface px-[14px] py-3" title={`CII for ${country}. Change between the last two daily snapshots.`}>
-      <div class="flex items-center gap-[6px]">
-        <Dot tone={status.tone} />
-        <span class="truncate text-[12px] font-medium text-ink">{name}</span>
-      </div>
-      <div class="flex items-end justify-between gap-2">
-        <div class="flex flex-col gap-px">
-          <span class={cx('font-mono text-[16px] font-medium', change != null && change < 0 ? 'text-muted' : 'text-ink')}>
-            {change != null ? signed(change, 0) : score != null ? score.toFixed(0) : '—'}
-          </span>
-          <span class="text-[10.5px] text-dim">
-            {change != null ? '1d' : 'CII'} · {score === undefined ? 'loading' : status.label}
-          </span>
-        </div>
-        {series.length > 1 ? (
-          <BarStrip values={series} height={24} barWidth={3} label={`${name} CII, last ${series.length} days`} colorFor={(i) => (i >= series.length - 2 ? BG[status.tone] : 'bg-track')} />
-        ) : null}
-      </div>
-    </div>
+    <Panel
+      title="Indicators"
+      sub={[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`].filter(Boolean).join(' · ')}
+      right={<><HealthDots feeds={feeds} /><DerivedTag how={`Reported violence: ${VIOLENCE_RULE}, per country, GDELT material-conflict articles. Linked news: digest stories naming the country, 24 h before to 1 h after.`} /></>}
+      testId="geo-indicators"
+    >
+      <IndicatorFeed feeds={feeds} now={Date.now()} />
+    </Panel>
   );
 }
 
@@ -465,7 +564,7 @@ function EvidenceMix({ state, region, range }: { state: ReturnType<typeof useDig
   );
 }
 
-function MapLayers({ layers, onChange }: { layers: { conflicts: boolean; hotspots: boolean }; onChange: (next: { conflicts: boolean; hotspots: boolean }) => void }) {
+function MapLayers({ layers, onChange }: { layers: LayerState; onChange: (next: LayerState) => void }) {
   const row = (icon: ComponentChildren, name: string, hint: string, control: ComponentChildren, active: boolean) => (
     <div class="flex items-center gap-[10px]">
       <span class={active ? 'text-ink' : 'text-dim'}>{icon}</span>
@@ -479,11 +578,11 @@ function MapLayers({ layers, onChange }: { layers: { conflicts: boolean; hotspot
   const icon = { size: 14, strokeWidth: 1.5 } as const;
   return (
     <Panel title="Map layers" sub="optional" testId="map-layers">
-      {row(<Crosshair {...icon} />, 'Active events', 'UCDP georeferenced events', <Switch label="Active events" on={layers.conflicts} onChange={(on) => onChange({ ...layers, conflicts: on })} />, layers.conflicts)}
-      {row(<Flame {...icon} />, 'Escalation hotspots', 'curated, escalation 3/5 and up', <Switch label="Escalation hotspots" on={layers.hotspots} onChange={(on) => onChange({ ...layers, hotspots: on })} />, layers.hotspots)}
+      {row(<Radio {...icon} />, 'Reported violence · GDELT', 'country shading against its own normal', <Switch label="Reported violence" on={layers.violence} onChange={(on) => onChange({ ...layers, violence: on })} />, layers.violence)}
+      {row(<Crosshair {...icon} />, 'Verified background · UCDP', 'weeks behind, every range', <Switch label="Verified background" on={layers.conflicts} onChange={(on) => onChange({ ...layers, conflicts: on })} />, layers.conflicts)}
+      {row(<Flame {...icon} />, 'Curated hotspots', 'live score 1–5', <Switch label="Curated hotspots" on={layers.hotspots} onChange={(on) => onChange({ ...layers, hotspots: on })} />, layers.hotspots)}
       {row(<Ship {...icon} />, 'Shipping lanes', 'soon', <Switch label="Shipping lanes" on={false} disabled />, false)}
       {row(<CloudLightning {...icon} />, 'Aviation, weather & hazards', 'soon', <Switch label="Aviation, weather and hazards" on={false} disabled />, false)}
-      {row(<Radio {...icon} />, 'Social OSINT', 'soon · discovery only', <Switch label="Social OSINT" on={false} disabled />, false)}
     </Panel>
   );
 }

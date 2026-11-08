@@ -68,6 +68,18 @@ export const COUNTRY_EVENTS_STRIKE_DAYS = 27;
 export const COUNTRY_EVENTS_STRIKE_MIN_COHORTS = 16;
 // Same backoff as dyad repair: a failed day waits 24 runs before a retry.
 export const COUNTRY_EVENTS_REPAIR_BACKOFF_MS = 6 * 60 * 60 * 1000;
+// Hourly conflict buckets, for the Lite map's 6h and 24h ranges and its
+// "last 6 hours against the 7-day average" rule. Only live cohorts fill them
+// (the archive repair rebuilds days), so an hour short of its four cohorts is
+// partial and says so; it is never read as calm.
+export const COUNTRY_EVENTS_HOURS = 48;
+export const COHORTS_PER_HOUR = 4;
+const HOUR_MS = 3_600_000;
+// A cohort stamped T covers the 15 minutes ending at T, and GDELT lists it
+// before T (GDELT_PUBLICATION_LEAD_MS). Bucketing by T would put the newest
+// cohort in an hour that has not started, outside the window, and the cursor
+// would then pass it uncounted.
+const COHORT_MS = 15 * 60 * 1000;
 
 function utcDate(ms) {
   return new Date(ms).toISOString().slice(0, 10);
@@ -117,6 +129,15 @@ function historyWindow(nowMs) {
   return Array.from({ length: COUNTRY_EVENTS_HISTORY_DAYS }, (_, i) => utcDate(nowMs - i * DAY_MS));
 }
 
+function utcHour(ms) {
+  return new Date(ms).toISOString().slice(0, 13);
+}
+
+/** The kept hours, newest first: the current UTC hour and the 47 before it. */
+function hourWindow(nowMs) {
+  return Array.from({ length: COUNTRY_EVENTS_HOURS }, (_, i) => utcHour(nowMs - i * HOUR_MS));
+}
+
 /**
  * Add new live cohorts to their UTC day. The cursor travels in the same
  * snapshot as the buckets, so replaying a cohort after a failed cursor write
@@ -127,6 +148,11 @@ export function mergeCountryEventsBuckets(previous, batches, nowMs = Date.now())
   const days = {};
   for (const [date, day] of Object.entries(previous?.days ?? {})) {
     if (keep.has(date)) days[date] = structuredClone(day);
+  }
+  const keepHours = new Set(hourWindow(nowMs));
+  const hours = {};
+  for (const [hour, bucket] of Object.entries(previous?.hours ?? {})) {
+    if (keepHours.has(hour)) hours[hour] = structuredClone(bucket);
   }
   let cursor = typeof previous?.cursor === 'string' ? previous.cursor : '';
   for (const batch of [...batches].sort((a, b) => a.timestamp.localeCompare(b.timestamp))) {
@@ -144,9 +170,18 @@ export function mergeCountryEventsBuckets(previous, batches, nowMs = Date.now())
       day.strikeCohorts = (day.strikeCohorts ?? 0) + 1;
       addCounts(day.countries, batch.countries);
     }
+    const hour = utcHour(timestampMs - COHORT_MS);
+    if (keepHours.has(hour)) {
+      const bucket = hours[hour] ??= { cohorts: 0, countries: {} };
+      bucket.cohorts += 1;
+      for (const [iso2, values] of Object.entries(batch.countries ?? {})) {
+        const conflict = Array.isArray(values) ? Number(values[CONFLICT]) || 0 : 0;
+        if (conflict > 0) bucket.countries[iso2] = (bucket.countries[iso2] ?? 0) + conflict;
+      }
+    }
     cursor = batch.timestamp;
   }
-  return { cursor, days };
+  return { cursor, days, hours };
 }
 
 // Past days that are missing or incomplete and that the live merge can no
@@ -338,5 +373,39 @@ export function summarizeCountryEvents(snapshot, nowMs = Date.now()) {
     minWeekDays: COUNTRY_EVENTS_MIN_WEEK_DAYS,
     // Measured strike days and their cohorts (a day absent here is unknown).
     strikeDays: Object.fromEntries(strikeDates.map((date) => [date, days[date].cohorts])),
+  };
+}
+
+/**
+ * The compact conflict counts the Lite map reads (gdelt:bulk:conflict-counts:v1):
+ * material-conflict article counts per country for the last 48 UTC hours and
+ * the 30 UTC days, oldest first. Each bucket keeps its cohort count, so a
+ * reader can tell a partial bucket from a quiet one; countries with no
+ * conflict-coded article are left out.
+ */
+export function conflictCountsProjection(snapshot, nowMs = Date.now()) {
+  const conflictOf = (countries) => {
+    const out = {};
+    for (const [iso2, values] of Object.entries(countries ?? {})) {
+      const n = Array.isArray(values) ? Number(values[CONFLICT]) || 0 : Number(values) || 0;
+      if (n > 0) out[iso2] = n;
+    }
+    return out;
+  };
+  return {
+    updatedAt: nowMs,
+    cursor: typeof snapshot?.cursor === 'string' ? snapshot.cursor : '',
+    cohortsPerHour: COHORTS_PER_HOUR,
+    cohortsPerDay: COHORTS_PER_DAY,
+    hours: hourWindow(nowMs).reverse().map((hour) => ({
+      hour,
+      cohorts: snapshot?.hours?.[hour]?.cohorts ?? 0,
+      byCountry: conflictOf(snapshot?.hours?.[hour]?.countries),
+    })),
+    days: historyWindow(nowMs).reverse().map((date) => ({
+      date,
+      cohorts: snapshot?.days?.[date]?.cohorts ?? 0,
+      byCountry: conflictOf(snapshot?.days?.[date]?.countries),
+    })),
   };
 }

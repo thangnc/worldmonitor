@@ -426,10 +426,14 @@ export function cleanSnippet(item: Pick<NewsItem, 'snippet' | 'title'>): string 
   return !text || text.toLowerCase().startsWith(title.slice(0, Math.min(40, title.length))) ? '' : text;
 }
 
-/** The dashboard's map time ranges (`TimeRange` in src/components/DeckGLMap.ts), without "all", plus 30 days. */
-export type TimeRange = '1h' | '6h' | '24h' | '48h' | '7d' | '30d';
+/**
+ * The Geopolitics ranges (owner's design, 2026-11-08): the GDELT conflict
+ * counts hold 48 hourly and 30 daily buckets, so 6h and 24h read hours and
+ * 7d and 30d read days.
+ */
+export type TimeRange = '6h' | '24h' | '7d' | '30d';
 
-export const TIME_RANGE_HOURS: Record<TimeRange, number> = { '1h': 1, '6h': 6, '24h': 24, '48h': 48, '7d': 168, '30d': 720 };
+export const TIME_RANGE_HOURS: Record<TimeRange, number> = { '6h': 6, '24h': 24, '7d': 168, '30d': 720 };
 
 /** True when `ts` falls in the last `range` before `now`; an item without a timestamp stays, as on the dashboard. */
 export function inTimeRange(ts: number | null | undefined, now: number, range: TimeRange): boolean {

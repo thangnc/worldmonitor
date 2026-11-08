@@ -75,6 +75,9 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   liveVideoResolved: 'live-video:resolved:v1',
   crossBorderArrivals: 'displacement:cross-border:v1',
   idmcIduDisplacement: 'displacement:idmc-idu:v1',
+  // Lite Geopolitics map: per-country GDELT material-conflict article counts,
+  // 48 hourly and 30 daily buckets (seed-gdelt-bulk-materializer, 15 min).
+  gdeltConflictCounts: 'gdelt:bulk:conflict-counts:v1',
   canadaRoads: 'infra:ontario-511:v1',
   albertaRoads: 'infra:alberta-511:v1',
   manitobaRoads: 'infra:manitoba-511:v1',
@@ -257,6 +260,9 @@ const ON_DEMAND_KEY_NAMES = new Set([
   // IDMC internal displacement events (#9014), about 2.5 MB, read by the
   // displacement panel and map layer only when they are open.
   'idmcIduDisplacement',
+  // GDELT conflict counts for the Lite Geopolitics map, fetched only when that
+  // screen opens.
+  'gdeltConflictCounts',
 ]);
 
 /**
