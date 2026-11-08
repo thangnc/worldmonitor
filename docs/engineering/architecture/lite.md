@@ -14,6 +14,8 @@ Replace the "everything happening" view with three bounded domains. The default 
 
 Start with a low-noise executive view, keep the existing ingestion architecture, and promote an item only when several signals say it matters.
 
+The owner's priority (2026-11-08) is **early indicators**: see army activity, conflict and violence, macro releases and bond moves, hacking, releases and outages as soon as a source reports them, so decisions can be made early. Each indicator is **linked to the news** around it, so a move or an event comes with the reports that may explain it. See [Early indicators](#early-indicators).
+
 ## Owner decisions
 
 | Question | Decision |
@@ -27,6 +29,7 @@ Start with a low-noise executive view, keep the existing ingestion architecture,
 | Conflict data | No ACLED (2026-11-07): API access is hard to obtain. UCDP (`seed-ucdp-events`, `UCDP_ACCESS_TOKEN`) supplies the map events and each country's conflict floor. GDELT country events (`seed-gdelt-bulk-materializer`, no key) supply the realtime conflict and unrest signal; `get-risk-scores.ts` scores them whenever ACLED returns no events. UCDP alone cannot do this, because it is an annual release. Health reports ACLED as `not_configured`, which is not a failure, and the `[CII] ACLED returned 0 events` log line is expected. |
 | Lite map | MapLibre on OpenFreeMap vector tiles, solid land (2026-11-07): free, no key, no usage limits, and already the dashboard's fallback basemap. The style (`src/lite/map/style.ts`) draws only land, water, country borders and place names, colored from the Lite `@theme` tokens; markers, the popup a marker click opens, zoom buttons and the OpenStreetMap credit are Tailwind-styled HTML. No popup is open until a marker is clicked. MapLibre loads only when Geopolitics opens. If OpenFreeMap is down, the map shows the background with markers still placed. |
 | Conflict map design | The owner's design (2026-11-08). UCDP locations are red circles sized by deaths, clustered by zoom (`supercluster`) with the toll printed inside; a click zooms a cluster in or opens a location's event card. Curated hotspots are diamonds with a name, coloured by the dashboard's live escalation score (`src/lite/data/escalation.ts` over `shared/analysis-hotspot-escalation.ts`: news in the last 2 h, CII, unrest, earthquake and military-flight convergence within 150 km, flights within 200 km; no vessels or session history). All curated hotspots are drawn, as on the dashboard; from 3/5 (elevated) they also show their name, and below it they are small grey diamonds labelled watch or stable in their card. Cards open on click beside the marker with a leader line. The dashboard's time range (1h–7d, default 7d) plus 30d (2026-11-08) sits on the map. It filters the digest-driven parts of the screen and the UCDP events, all counted back from now (owner's choice, for consistency across the screen). UCDP dates events by day, so an event counts when any part of its day falls inside the range. UCDP is a delayed release (weeks behind), so short ranges are often empty; the map's subtitle then names UCDP's newest date. A point with two or more UCDP events gets a summary card (date span, violence types, actor pairs, sources), and UCDP's `XXX` codes for actors it cannot identify read "Unidentified group (UCDP XXX100)". |
+| Early indicators | The owner's priority (2026-11-08): indicators that arrive first, each linked to the news around it, so a price move or an event can be understood, not only seen. Each indicator has a written trigger rule, its source and timestamp, and a "reported" or "verified" label. Without linked news it says "No linked news found" and never guesses a cause. The catalogue, the defaults and the build order are in [Early indicators](#early-indicators). |
 | Front page | A dedicated Lite UI at `/lite`, built from the owner's designs with Preact and Tailwind CSS. With the flag on it is the default page; the full dashboard stays reachable at `/dashboard?full=1`. See [Lite UI](#lite-ui-lite). |
 
 ### Open decisions
@@ -34,7 +37,7 @@ Start with a low-noise executive view, keep the existing ingestion architecture,
 These were open in the proposal and are still open:
 
 1. The initial watchlist: countries, conflicts, assets, institutions, companies, AI topics.
-2. Alert latency and false-positive tolerance per domain.
+2. Alert latency and false-positive tolerance per domain. [Early indicators](#early-indicators) sets default triggers for the owner to adjust.
 3. Budget and licensing posture for market, news and specialist data.
 4. Who reviews source policy, corrections and high-impact alert rules (default: the owner).
 
@@ -87,6 +90,71 @@ Material capability, policy and business changes, not product marketing. Refresh
 - Every summary exposes its sources, timestamps, confidence and "why this matters".
 - Progressive disclosure: headline → event card → evidence and timeline → original links.
 - Keep confirmed facts, attributed claims, model inference and open questions visibly distinct.
+
+## Early indicators
+
+The owner's priority (2026-11-08). An indicator is a feed that reports a change before the news digest or the slower datasets explain it. Lite shows an indicator when its trigger rule fires, with its source, its timestamp and the news linked to it.
+
+### News link rule
+
+Every indicator links to the news, in both directions:
+
+- **Indicator → news.** When a trigger fires, Lite lists up to three digest stories published in the link window before it (and up to one hour after it). It matches them on the indicator's subject:
+  - the instrument or its tickers (`shared/ticker-extract.js`, `namedInstruments` in `src/lite/data/prices.ts`);
+  - the instrument's named drivers, from a fixed list per instrument (for example the 10-year yield: Fed, Treasury, CPI, PCE, payrolls, auction);
+  - the country or hotspot (`shared/country-headline-match.ts`, the hotspot keywords used by the escalation score);
+  - named entities (`shared/entity-registry.js`).
+
+  Matches rank by match strength, then closeness in time, then corroboration (`assessCorroboration`). The panel reads "Reported around the move", never "caused by".
+- **News → indicator.** A story shows the indicators that moved around it. Finance already does this for prices (market-event price links); the same link extends to yields, macro releases and the Geopolitics and Tech indicators.
+- **No link.** An indicator with no matching story says "No linked news found". An unexplained move is a signal in itself, so it is not hidden.
+- **AI summaries.** A one-line "why" may be generated only from the linked stories, with citations, through the grounded brief code (`shared/brief-llm-core.js`, `shared/brief-claim-rules.js`), and labelled as model inference.
+
+### Catalogue
+
+Defaults are a starting point (open decision 2). Each build PR runs its seeders locally first and reports how often the trigger would have fired. "Key" names the credential the seeder needs; none is printed or committed.
+
+**Geopolitics and conflicts.** Link window: 24 h before.
+
+| Indicator | Feed | Default trigger | Label |
+|---|---|---|---|
+| Reported violence | `seed-gdelt-bulk-materializer` (GDELT events, CAMEO 18–20, every 15 min; no key) | A country's or hotspot's events in the last 6 h reach twice its 7-day average for 6 h, and at least 5 | Reported (news, machine-coded) |
+| Military aircraft | `seed-military-flights` (adsb.lol; no key) | 5 or more military aircraft within 200 km of a curated hotspot | Reported (transponders) |
+| Airspace closures | `seed-notam-nms` (FAA NOTAM service; key `NOTAM_KEY`, `NOTAM_SECRET`) | A new closure over a watchlist country or a curated hotspot | Official notice |
+| Incidents at sea | `seed-ukmto-incidents` (UKMTO; no key) | Any new incident | Official notice |
+| Taiwan Strait activity | `seed-cross-strait-activity` | Daily activity above its 30-day average | Official report |
+| Embassy security alerts | `seed-security-advisories` (US embassies) | A new alert for a watchlist country | Official notice |
+| Verified violence | `seed-ucdp-events` | None: background, weeks behind | Verified (UCDP) |
+
+**Finance and crypto.** Link window: 6 h before.
+
+| Indicator | Feed | Default trigger | Label |
+|---|---|---|---|
+| Macro release surprise | `seed-economic-calendar`, actuals from FRED (`scripts/_econ-actuals.mjs`: CPI, PCE (`PCEPI`) and others); `seed-us-cpi` (key `FRED_API_KEY`) | Actual minus forecast of 0.1 pt or more for CPI or PCE month on month, 50k or more for payrolls | Official data |
+| Treasury yields | `seed-us-treasury-par-yield` (daily; no key); the intraday 10-year from the `^TNX` quote | The 2-year or 10-year moves 10 bp or more in a day, or the 2s10s spread changes sign | Official data |
+| Other government bonds | `seed-yield-curve-*` (DE, GB, JP and others) | A 10-year moves 10 bp or more in a day | Official data |
+| Price moves | Seeded quotes (the existing risk alerts) | The existing fixed thresholds and BTC 2 h move over 4σ | Market data |
+| Company material events | `seed-sec-8k-stream` (SEC 8-K filings; no key) | A filing by a watchlist company | Official filing |
+
+**Technology and AI.** Link window: 12 h before.
+
+| Indicator | Feed | Default trigger | Label |
+|---|---|---|---|
+| Internet and power outages | `seed-internet-outages` (Cloudflare Radar; key `CLOUDFLARE_API_TOKEN`) | A new country or network outage; the stated cause (power cut, cable cut, government shutdown) is shown | Reported (Cloudflare) |
+| Exploited vulnerabilities | `seed-cve-reference` (CISA KEV subset of NVD; key `NVD_API_KEY` optional) | A new known-exploited CVE, or one naming a watchlist vendor | Official (CISA) |
+| Attack infrastructure | `seed-cyber-threats` (abuse.ch, AlienVault OTX, AbuseIPDB; keys `OTX_API_KEY`, `ABUSEIPDB_API_KEY`, `URLHAUS_AUTH_KEY`) | A spike against its 7-day average | Reported (threat feeds) |
+| Model and product releases | None yet ([gap 5](#gaps-to-build)) | — | — |
+| Live power-grid outages | None yet; `seed-power-reliability` is per-country background, not live | — | — |
+
+### Build order
+
+Each step is its own PR with screenshots, and starts by running its seeders locally:
+
+1. The news link rule as one shared Lite module, with tests, used first by the existing Finance price links.
+2. Geopolitics: the GDELT violence layer on the map, filtered by the time range; military aircraft as a layer; airspace closures, incidents at sea and embassy alerts as indicator rows. UCDP becomes the verified background layer.
+3. Finance: macro release surprises and yield moves, each with linked news.
+4. Technology and AI: outages, exploited vulnerabilities and attack infrastructure; then the model-release tracker.
+5. The Briefing's watch alerts list the fired indicators from Geopolitics, Finance and Technology.
 
 ## Removed or optional by default
 
@@ -189,7 +257,7 @@ Do not add a datastore before its gate is met:
 
 ### Operations
 
-- **Seeder allowlist.** Upstream runs about 250 seeders. The profile runs only those feeding Lite panels. This sets Render cost. It must include `seed-gdelt-bulk-materializer`: without ACLED it is the only realtime conflict input to the risk scores (see [Owner decisions](#owner-decisions)). The hotspots' live score also reads `seed-unrest-events` (runs on GDELT alone without ACLED), `seed-earthquakes` (USGS, no key) and `seed-military-flights` (adsb.lol by default; OpenSky and Wingbits are optional); without them it falls back to news, CII and the curated baseline, and each hotspot card names the missing inputs.
+- **Seeder allowlist.** Upstream runs about 250 seeders. The profile runs only those feeding Lite panels. This sets Render cost. It must include `seed-gdelt-bulk-materializer`: without ACLED it is the only realtime conflict input to the risk scores (see [Owner decisions](#owner-decisions)). The hotspots' live score also reads `seed-unrest-events` (runs on GDELT alone without ACLED), `seed-earthquakes` (USGS, no key) and `seed-military-flights` (adsb.lol by default; OpenSky and Wingbits are optional); without them it falls back to news, CII and the curated baseline, and each hotspot card names the missing inputs. Each [early indicator](#early-indicators) adds its seeder to the allowlist when it is built.
 - **Health.** `api/health.js` grades every registered key. Keys produced only by Railway services or Convex show as stale on the owner's stack, so the profile needs a health key subset matching the allowlist.
 - **Licensing.** `shared/source-attribution-manifest.json` has 1,044 hosts: 735 `terms-review`, 189 `excluded`, 120 `reviewed`. Sixteen are licensed under "the World Monitor agreement", which does not cover the owner. The profile applies a source-policy filter from the manifest's `license` and `status` fields.
 - **AGPL.** A private modified deployment that only the owner uses needs no source offer to others ([self-hosting](../../self-hosting.mdx)); the fork is public anyway.
@@ -222,7 +290,8 @@ The three similarity definitions are separate on purpose (`shared/news-clusterin
 3. A per-source **track record**.
 4. **Crypto risk alerts**: depeg notifications, volatility, funding and open-interest stress. Liquidation data has no source yet.
 5. An **AI/tech event detector** and model-release tracker.
-6. **Numeric alert thresholds** and an alert delivery path that does not need Convex.
+6. **Numeric alert thresholds** and an alert delivery path that does not need Convex. [Early indicators](#early-indicators) gives the default thresholds.
+7. A **move-to-news linker**: from an indicator to the stories around it (see [News link rule](#news-link-rule)). Only the story-to-price direction exists today.
 
 ### Scoring model
 
@@ -250,6 +319,7 @@ Each briefing states the development with its timestamp, keeps confirmed informa
 | 0. Repository review | This document | Done |
 | 1. Profile shell | `VITE_LITE_PROFILE`; Lite panel and layer defaults; Lite Desk preset; the five cross-variant panels; access gate at deploy time | Done in code: the dashboard boots into the Lite layout with the flag on and is unchanged with it off (`tests/lite-profile.test.mts`, `verify-worldmonitor` step `lite-profile.mjs`). The access gate is set up when deploying |
 | 1b. Lite UI | `/lite`: the cross-domain Briefing home and three child screens, real data where a source exists, labelled samples elsewhere (see [Lite UI](#lite-ui-lite)) | Done in code: `tests/lite-ui.test.mts`, `tests/dom/lite-ui.test.mts`, `verify-worldmonitor` step `lite-ui.mjs` with the flag on and off |
+| 1c. Early indicators | The [Early indicators](#early-indicators) catalogue, linked to the news, in its build order | Each indicator renders from its feed with its linked news or "No linked news found"; trigger rates reviewed with the owner |
 | 2. Core feeds on the owner's stack | Render services for the seeder allowlist; health key subset; source-policy filter; verify how much general news the `full` digest still carries | Lite panels fresh in `/api/health`; no unlicensed sources |
 | 3. Event intelligence | Event object and timeline, novelty, crypto-risk and AI-event detectors, non-Convex alerts (Supabase gate) | Sampled cluster and alert quality meet agreed targets |
 | 4. Briefings and trends | Lite brief built on the existing citation-checked brief code | Briefing accuracy and usefulness reviewed |
