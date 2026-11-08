@@ -4,6 +4,7 @@ import { installWebApiRedirect } from '@/services/runtime';
 import { ensureWmSession, installWmSessionFetchInterceptor } from '@/services/wm-session';
 import { App, LITE_ENABLED, ProfileOff } from './App';
 import { startBootstrap } from './data/sources';
+import { initPageScroll } from './components/scroll';
 
 const root = document.getElementById('lite-root');
 
@@ -16,5 +17,6 @@ if (root && !LITE_ENABLED) {
   installWmSessionFetchInterceptor();
   void ensureWmSession();
   void startBootstrap();
+  initPageScroll();
   render(<App />, root);
 }
