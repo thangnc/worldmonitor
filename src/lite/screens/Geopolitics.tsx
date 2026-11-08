@@ -1,26 +1,43 @@
-import type { ComponentChildren } from 'preact';
-import { useMemo, useState } from 'preact/hooks';
-import { CloudLightning, Crosshair, Flame, Layers, Radio, Ship } from 'lucide-preact';
+import { useEffect, useMemo, useState } from 'preact/hooks';
+import { CalendarDays, Radio, Route, SquareSlash } from 'lucide-preact';
 import { INTEL_HOTSPOTS } from '@/config/geo';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { BarStrip, StackedBar } from '../components/charts';
-import { BG, BORDER, Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, Switch, TEXT, cx } from '../components/ui';
-import { Diamond, LiteMap, type CountryFill, type MapMarker } from '../map/LiteMap';
+import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
+import { BG, BORDER, Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
+import { Diamond, LiteMap, PinMark, type CountryFill, type MapMarker, type MapOverlays } from '../map/LiteMap';
+import { LegendRow, MapLegend } from '../map/legend';
 import { HealthDots, IndicatorFeed } from '../components/indicator';
 import {
   selectIncidents,
   useConflictCounts,
   useDigest,
   useEarthquakes,
+  useGpsHighCells,
+  useGpsInterference,
   useMilitaryFlights,
   useRiskScores,
+  useSeaIncidents,
   useUcdpEvents,
   useUnrestEvents,
 } from '../data/hooks';
+import {
+  AIRCRAFT_MIN,
+  AIRCRAFT_RADIUS_KM,
+  GPS_RADIUS_KM,
+  GPS_REGION_RISE,
+  SEA_WINDOW_HOURS,
+  aircraftFeeds,
+  aircraftKind,
+  aircraftNearHotspots,
+  gpsFeeds,
+  gpsHexFills,
+  seaIncidentFeeds,
+} from '../data/geo-layers';
+import { shippingLanes } from '../data/markets-map';
 import { ESCALATION_REGIONS, leadCountry } from '../data/regions';
 import { ucdpBackgroundLabel, ucdpMarkers, ucdpNewest } from '../data/ucdp';
 import {
-  SHADING_RULE,
   VIOLENCE_RULE,
   conflictHistogram,
   countryName,
@@ -29,7 +46,7 @@ import {
   violenceFeeds,
   type HotspotTile,
 } from '../data/conflict';
-import { feedCounts } from '../data/indicators';
+import { feedCounts, sortFeeds, type FeedState } from '../data/indicators';
 import { LINK_WINDOW_HOURS, linkNews } from '../data/news-link';
 import { FEED_LABEL, escalationLevel, scoreHotspots } from '../data/escalation';
 import { SAMPLE_WATCHLIST } from '../data/fixtures';
@@ -82,8 +99,10 @@ function inRegion(item: LiteItem, region: GeoRegion): boolean {
 export function Geopolitics() {
   const [region, setRegion] = useState<GeoRegion>('all');
   const [search, setSearch] = useState('');
-  const [layers, setLayers] = useState<LayerState>({ violence: true, conflicts: true, hotspots: true });
+  const [layers, setLayers] = useState<LayerState>(DEFAULT_LAYERS);
   const [range, setRange] = useState<TimeRange>('7d');
+  // A marker opened from outside the map (a hotspot tile, an indicator card); closing its card clears it.
+  const [focus, setFocus] = useState<string | null>(null);
   const digest = useDigest('full');
   const risk = useRiskScores();
 
@@ -118,34 +137,56 @@ export function Geopolitics() {
       />
       <div class="flex flex-col gap-6 px-4 py-6 wide:flex-row wide:px-7">
         <div class="flex min-w-0 flex-1 flex-col gap-5">
-          <ConflictMap region={region} layers={layers} range={range} onRange={setRange} />
+          <ConflictMap region={region} layers={layers} onLayers={setLayers} range={range} onRange={setRange} focus={focus} onFocus={setFocus} />
           <IncidentsCard state={digest} rows={visible.slice(0, 6)} total={visible.length} />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
-          <GeoIndicators />
+          <GeoIndicators onOpen={(feed) => setFocus(mapIdForFeed(feed))} />
           <Timeline incidents={inRange} region={region} />
           <Watchlist />
           <EvidenceMix state={digest} region={region} range={range} />
-          <MapLayers layers={layers} onChange={setLayers} />
         </div>
       </div>
     </>
   );
 }
 
+/** The layers popover's switches (owner's design, 2026-11-08). Shipping lanes are optional context, off by default. */
 interface LayerState {
   violence: boolean;
+  aircraft: boolean;
+  sea: boolean;
+  gps: boolean;
   conflicts: boolean;
   hotspots: boolean;
+  lanes: boolean;
 }
 
+const DEFAULT_LAYERS: LayerState = { violence: true, aircraft: true, sea: true, gps: true, conflicts: true, hotspots: true, lanes: false };
+
+/** The map marker an indicator card opens: its hotspot or its incident. Country spikes and regions have none. */
+function mapIdForFeed(feed: FeedState): string | null {
+  const [kind, key] = feed.id.split(':');
+  if (!key) return null;
+  if (kind === 'aircraft' || kind === 'gps') return `hotspot:${key}`;
+  if (kind === 'sea') return feed.id;
+  return null;
+}
+
+const HOUR_MS = 3_600_000;
+const MAX_AIRCRAFT_PINS = 150;
+type CellBoundary = (h3: string) => number[][];
+
 function ConflictMap({
-  region, layers, range, onRange,
+  region, layers, onLayers, range, onRange, focus, onFocus,
 }: {
   region: GeoRegion;
   layers: LayerState;
+  onLayers: (next: LayerState) => void;
   range: TimeRange;
   onRange: (range: TimeRange) => void;
+  focus: string | null;
+  onFocus: (id: string | null) => void;
 }) {
   const ucdp = useUcdpEvents();
   const digest = useDigest('full');
@@ -154,8 +195,22 @@ function ConflictMap({
   const earthquakes = useEarthquakes();
   const flights = useMilitaryFlights();
   const conflict = useConflictCounts();
-  // A hotspot tile opens its card on the map; closing the card clears it, so the same tile can open it again.
-  const [focus, setFocus] = useState<string | null>(null);
+  const sea = useSeaIncidents();
+  const gps = useGpsInterference(layers.gps);
+  // h3-js draws the GPS hexagons; it loads with the layer, never with the other screens.
+  const [boundary, setBoundary] = useState<CellBoundary | null>(null);
+  useEffect(() => {
+    if (!layers.gps || boundary) return;
+    let live = true;
+    import('h3-js')
+      .then((h3) => {
+        if (live) setBoundary(() => (cell: string) => h3.cellToBoundary(cell, true));
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [layers.gps, boundary]);
 
   // The dashboard's live hotspot score, from whichever of its inputs have loaded.
   const escalation = useMemo(
@@ -178,6 +233,14 @@ function ConflictMap({
   const shading = useMemo(() => (counts ? countryShading(counts, range, Date.now()) : null), [counts, range]);
   const histogram = useMemo(() => (counts ? conflictHistogram(counts, range, Date.now()) : null), [counts, range]);
   const newest = ucdp.status === 'ready' ? ucdpNewest(ucdp.data) : 0;
+  const inView = (lat: number, lon: number) => region === 'all' || regionOfPoint(lat, lon) === region;
+
+  // Military aircraft near the curated hotspots; 5 or more puts a badge on the hotspot.
+  const clusters = useMemo(() => (flights.status === 'ready' ? aircraftNearHotspots(flights.data, INTEL_HOTSPOTS) : []), [flights]);
+  const badges = useMemo(
+    () => new Map(clusters.filter((c) => c.flights.length >= AIRCRAFT_MIN).map((c) => [c.hotspot.id, c.flights.length])),
+    [clusters],
+  );
 
   const markers = useMemo(() => {
     const out: MapMarker[] = [];
@@ -199,6 +262,7 @@ function ConflictMap({
           tone: level.tone,
           // Below 3/5 the diamond stays, small and grey, without a name, so 29 names do not crowd the map.
           label: level.named ? h.name : '',
+          badge: layers.aircraft ? badges.get(h.id) : undefined,
           title: `${h.name}: live escalation ${live}/5, ${level.label.toLowerCase()} (curated hotspot)`,
           popup: {
             kind: 'Curated hotspot',
@@ -218,8 +282,75 @@ function ConflictMap({
         });
       }
     }
+    if (layers.aircraft) {
+      const seen = new Set<string>();
+      for (const c of clusters) {
+        for (const f of c.flights) {
+          if (seen.has(f.id) || seen.size >= MAX_AIRCRAFT_PINS || !inView(f.location!.latitude, f.location!.longitude)) continue;
+          seen.add(f.id);
+          const name = f.callsign || f.hexCode || 'Unidentified';
+          out.push({
+            kind: 'pin',
+            shape: 'aircraft',
+            id: `aircraft:${f.id}`,
+            lat: f.location!.latitude,
+            lon: f.location!.longitude,
+            heading: f.heading,
+            tone: 'muted',
+            fired: false,
+            title: `${name}: military aircraft near ${c.hotspot.name}`,
+            popup: {
+              kind: 'Military aircraft · transponder',
+              name,
+              value: aircraftKind(f.aircraftType),
+              lines: [
+                { text: [f.aircraftModel, f.operatorCountry].filter(Boolean).join(' · ') },
+                { text: `${Math.round(f.altitude).toLocaleString('en-US')} ft · ${Math.round(f.speed)} kt`, style: 'mono' as const },
+                { text: `Within ${AIRCRAFT_RADIUS_KM} km of ${c.hotspot.name} · live position, adsb.lol`, style: 'dim' as const },
+              ].filter((line) => line.text),
+            },
+          });
+        }
+      }
+    }
+    if (layers.sea && sea.status === 'ready') {
+      const from = Date.now() - TIME_RANGE_HOURS[range] * HOUR_MS;
+      for (const i of sea.data.incidents) {
+        if (i.occurredAt < from || !inView(i.location!.latitude, i.location!.longitude)) continue;
+        const recent = Date.now() - (i.reportedAt || i.occurredAt) <= SEA_WINDOW_HOURS * HOUR_MS;
+        out.push({
+          kind: 'pin',
+          shape: 'sea',
+          id: `sea:${i.id}`,
+          lat: i.location!.latitude,
+          lon: i.location!.longitude,
+          tone: 'ok',
+          fired: recent,
+          title: `UKMTO ${i.incidentNumber}: ${i.incidentType}, ${i.place}`,
+          popup: {
+            kind: 'Incident at sea · UKMTO',
+            name: i.incidentType,
+            value: `No. ${String(i.incidentNumber).padStart(3, '0')}`,
+            lines: [
+              { text: i.place },
+              { text: i.description },
+              { text: `${new Date(i.occurredAt).toISOString().slice(0, 16).replace('T', ' ')} UTC · official notice`, style: 'dim' as const },
+            ],
+          },
+        });
+      }
+    }
     return out;
-  }, [ucdp, escalation, region, layers]);
+  }, [ucdp, escalation, region, layers, clusters, badges, sea, range]);
+
+  // GPS hexagons (the latest gpsjam day) and the optional shipping lanes, drawn under the labels.
+  const overlays = useMemo((): MapOverlays | undefined => {
+    const hexes = layers.gps && gps.status === 'ready' && boundary
+      ? gpsHexFills(gps.data.hexes.filter((h) => inView(h.lat, h.lon)), boundary)
+      : undefined;
+    const lanes = layers.lanes ? shippingLanes(new Set()) : undefined;
+    return hexes || lanes ? { fills: hexes, lines: lanes } : undefined;
+  }, [layers.gps, layers.lanes, gps, boundary, region]);
 
   const news = useMemo(() => (digest.status === 'ready' ? digestItems(digest.data) : []), [digest]);
   const countries = useMemo((): CountryFill | undefined => {
@@ -262,41 +393,47 @@ function ConflictMap({
     [escalation, counts],
   );
 
+  const unavailable = [
+    layers.aircraft && (flights.status === 'error' || flights.status === 'empty') ? 'military aircraft (seed-military-flights)' : '',
+    layers.sea && (sea.status === 'error' || sea.status === 'empty') ? 'incidents at sea (seed-ukmto-incidents)' : '',
+    layers.gps && (gps.status === 'error' || gps.status === 'empty') ? 'GPS interference (fetch-gpsjam)' : '',
+  ].filter(Boolean);
+
   return (
     <Card
       title="Conflict map"
       sub={`Reported violence (GDELT, against each country's normal) · ${ucdpBackgroundLabel(newest)} · hotspots: live score`}
       testId="conflict-map"
       right={
-        <>
-          <div class="hidden items-center gap-[16px] md:flex" data-testid="map-legend">
-            <span class="flex items-center gap-[5px] text-[11.5px] text-muted" title={SHADING_RULE}>
-              <span class="flex gap-px" aria-hidden="true">
-                <span class="h-[9px] w-[7px] rounded-[1px] bg-violence-1" />
-                <span class="h-[9px] w-[7px] rounded-[1px] bg-violence-2" />
-                <span class="h-[9px] w-[7px] rounded-[1px] bg-violence-3" />
-                <span class="h-[9px] w-[7px] rounded-[1px] bg-violence-4" />
-              </span>
-              <span class="ml-[3px]">Reported violence · GDELT</span>
+        <LayersPopover
+          groups={layerGroups(layers, newest)}
+          onToggle={(id, on) => onLayers({ ...layers, [id]: on })}
+          footer={
+            <span class="flex items-center gap-2">
+              <CalendarDays size={13} strokeWidth={1.5} aria-hidden="true" />
+              Range {range} · UCDP always shown as background
             </span>
-            <span class="flex items-center gap-[5px] text-[11.5px] text-muted" title="UCDP is a delayed release, weeks behind; it shows at every range as the verified background. Size = deaths.">
-              <span class="h-[10px] w-[10px] rounded-full border border-crit/80 bg-crit/25" aria-hidden="true" />
-              Verified background · UCDP
-            </span>
-            <span class="flex items-center gap-[4px] text-[11.5px] text-muted" title="All curated hotspots, coloured by the live escalation score: red critical, orange high, yellow elevated, grey watch or stable">
-              <Diamond tone="elev" filled={false} size={9} />
-              Curated hotspot
-            </span>
-          </div>
-          <span class="flex items-center gap-[6px] rounded-[6px] border border-line px-[10px] py-[5px] text-[11.5px] text-muted">
-            <Layers size={13} strokeWidth={1.5} />
-            Layers
-          </span>
-        </>
+          }
+        />
       }
     >
       <div class="relative h-[300px] overflow-hidden bg-bg/40 md:h-[380px]">
-        <LiteMap markers={markers} fit={region === 'all' ? 'world' : 'markers'} countries={countries} focusId={focus} onSelect={(id) => { if (id !== focus) setFocus(null); }} />
+        <LiteMap
+          markers={markers}
+          fit={region === 'all' ? 'world' : 'markers'}
+          countries={countries}
+          overlays={overlays}
+          focusId={focus}
+          onSelect={(id) => {
+            if (id !== focus) onFocus(null);
+          }}
+        />
+        <GeoLegend layers={layers} />
+        {unavailable.length ? (
+          <span class="absolute right-3 top-3 z-[4] rounded-[4px] bg-surface/90 px-2 py-px text-[10.5px] text-dim" data-testid="layers-unavailable">
+            Unavailable: {unavailable.join(', ')}
+          </span>
+        ) : null}
         {(ucdp.status !== 'ready' && layers.conflicts) || (conflict.status !== 'ready' && layers.violence) ? (
           <div class="pointer-events-none absolute left-14 right-14 top-4 z-[4] flex flex-col items-start gap-1">
             {conflict.status !== 'ready' && layers.violence ? (
@@ -335,8 +472,70 @@ function ConflictMap({
           </span>
         </div>
       </div>
-      <HotspotStrip tiles={tiles} onSelect={(id) => setFocus(`hotspot:${id}`)} />
+      <HotspotStrip tiles={tiles} onSelect={(id) => onFocus(`hotspot:${id}`)} />
     </Card>
+  );
+}
+
+/** The four violence steps, as in the legend and the popover. */
+function ViolenceSwatch() {
+  return (
+    <span class="flex gap-px" aria-hidden="true">
+      <span class="h-[9px] w-[6px] rounded-[1px] bg-violence-2" />
+      <span class="h-[9px] w-[6px] rounded-[1px] bg-violence-3" />
+      <span class="h-[9px] w-[6px] rounded-[1px] bg-violence-4" />
+    </span>
+  );
+}
+
+const UcdpMark = () => <span class="block h-[11px] w-[11px] rounded-full border border-crit/80 bg-crit/25" aria-hidden="true" />;
+const HexMark = () => <span class="block h-[10px] w-[12px] border border-crit bg-crit/15 [clip-path:polygon(25%_0,75%_0,100%_50%,75%_100%,25%_100%,0_50%)]" aria-hidden="true" />;
+const AirspaceMark = () => <SquareSlash size={14} strokeWidth={1.5} class="text-dim" aria-hidden="true" />;
+
+/** The popover's three groups (owner's design): live layers, background and judgement, optional context. */
+function layerGroups(layers: LayerState, ucdpNewestAt: number): LayerGroup[] {
+  const ucdpTo = ucdpNewestAt ? ` (to ${new Date(ucdpNewestAt).toISOString().slice(0, 10)})` : '';
+  return [
+    {
+      title: 'Live layers',
+      note: 'filtered by range',
+      rows: [
+        { id: 'violence', mark: <ViolenceSwatch />, name: 'Reported violence · GDELT', sub: "country shading · against each country's normal", on: layers.violence },
+        { id: 'aircraft', mark: <PinMark shape="aircraft" tone="muted" fired={false} />, name: 'Military aircraft', sub: `transponder · badge at ${AIRCRAFT_MIN}+ near a hotspot · live`, on: layers.aircraft },
+        { id: 'sea', mark: <PinMark shape="sea" tone="ok" fired />, name: 'Incidents at sea · UKMTO', sub: `official notices · fires on one in ${SEA_WINDOW_HOURS} h`, on: layers.sea },
+        { id: 'gps', mark: <HexMark />, name: 'GPS interference · gpsjam.org', sub: 'hexagons · latest day, red above 10%', on: layers.gps },
+        { id: 'airspace', mark: <AirspaceMark />, name: 'Airspace closures · NOTAM', sub: 'awaiting FAA access', on: null },
+      ],
+    },
+    {
+      title: 'Background & judgement',
+      rows: [
+        { id: 'conflicts', mark: <UcdpMark />, name: 'Verified · UCDP', sub: `background · weeks behind${ucdpTo}`, on: layers.conflicts },
+        { id: 'hotspots', mark: <Diamond tone="elev" filled={false} size={11} />, name: 'Curated hotspots', sub: 'live score 1–5', on: layers.hotspots },
+      ],
+    },
+    {
+      title: 'Context · optional',
+      rows: [
+        { id: 'lanes', mark: <Route size={14} strokeWidth={1.5} class="text-muted" aria-hidden="true" />, name: 'Shipping lanes', sub: 'useful for the Red Sea watch', on: layers.lanes },
+        { id: 'osint', mark: <Radio size={14} strokeWidth={1.5} class="text-dim" aria-hidden="true" />, name: 'Social OSINT', sub: 'discovery only · never alerts · no source chosen', on: null },
+      ],
+    },
+  ];
+}
+
+/** The in-map legend: the layers that are on, plus airspace as N/A. */
+function GeoLegend({ layers }: { layers: LayerState }) {
+  return (
+    <MapLegend testId="map-legend" place="above-bar">
+      {layers.violence ? <LegendRow mark={<ViolenceSwatch />} name="Reported violence" note="GDELT" /> : null}
+      {layers.conflicts ? <LegendRow mark={<UcdpMark />} name="Verified background" note="UCDP" /> : null}
+      {layers.hotspots ? <LegendRow mark={<Diamond tone="elev" filled={false} size={10} />} name="Curated hotspot" note="1–5" /> : null}
+      {layers.aircraft ? <LegendRow mark={<PinMark shape="aircraft" tone="muted" fired={false} />} name="Military aircraft" note="ADS-B" /> : null}
+      {layers.sea ? <LegendRow mark={<PinMark shape="sea" tone="ok" fired />} name="Sea incident" note="UKMTO" /> : null}
+      {layers.gps ? <LegendRow mark={<HexMark />} name="GPS interference" note="gpsjam" /> : null}
+      <LegendRow mark={<AirspaceMark />} name="Airspace closure" note="N/A" />
+    </MapLegend>
   );
 }
 
@@ -396,29 +595,42 @@ function HotspotStrip({ tiles, onSelect }: { tiles: HotspotTile[]; onSelect: (id
   );
 }
 
-/** The screen's indicator panel: in 2a the GDELT violence feed (spec: Early indicators › Catalogue). */
-function GeoIndicators() {
+/** The airspace row stays unavailable until the FAA grants NOTAM access (spec: Owner decisions). */
+const AIRSPACE_FEED: FeedState = { kind: 'unavailable', id: 'airspace', name: 'Airspace closures · NOTAM', detail: 'Awaiting FAA access' };
+
+/** The screen's indicator panel (spec: Early indicators › Catalogue, geopolitics rows). A card opens its marker on the map. */
+function GeoIndicators({ onOpen }: { onOpen: (feed: FeedState) => void }) {
   const conflict = useConflictCounts();
   const digest = useDigest('full');
-  const feeds = useMemo(
-    () =>
-      violenceFeeds(
-        conflict.status === 'ready' ? conflict.data : null,
-        conflict.status,
-        digest.status === 'ready' ? digestItems(digest.data) : [],
-        Date.now(),
-      ),
-    [conflict, digest],
-  );
+  const flights = useMilitaryFlights();
+  const sea = useSeaIncidents();
+  const gpsCells = useGpsHighCells();
+  const feeds = useMemo(() => {
+    const now = Date.now();
+    const news = digest.status === 'ready' ? digestItems(digest.data) : [];
+    return sortFeeds([
+      ...violenceFeeds(conflict.status === 'ready' ? conflict.data : null, conflict.status, news, now),
+      ...aircraftFeeds(flights, INTEL_HOTSPOTS, news, now),
+      ...seaIncidentFeeds(sea, news, now),
+      ...gpsFeeds(gpsCells, INTEL_HOTSPOTS, news, now),
+      AIRSPACE_FEED,
+    ]);
+  }, [conflict, digest, flights, sea, gpsCells]);
   const counts = feedCounts(feeds);
+  const rules = [
+    `Reported violence: ${VIOLENCE_RULE}, per country, GDELT material-conflict articles.`,
+    `Military aircraft: ${AIRCRAFT_MIN} or more airborne within ${AIRCRAFT_RADIUS_KM} km of a curated hotspot.`,
+    `Incidents at sea: any UKMTO notice in the last ${SEA_WINDOW_HOURS} h.`,
+    `GPS interference: a high cell within ${GPS_RADIUS_KM} km of a hotspot that had none the day before, or a region's high cells up ${Math.round((GPS_REGION_RISE - 1) * 100)}% on the day.`,
+    'Linked news: digest stories naming the country, place or sea area, 24 h before to 1 h after.',
+  ].join(' ');
   return (
-    <Panel
-      title="Indicators"
-      sub={[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`].filter(Boolean).join(' · ')}
-      right={<><HealthDots feeds={feeds} /><DerivedTag how={`Reported violence: ${VIOLENCE_RULE}, per country, GDELT material-conflict articles. Linked news: digest stories naming the country, 24 h before to 1 h after.`} /></>}
-      testId="geo-indicators"
-    >
-      <IndicatorFeed feeds={feeds} now={Date.now()} />
+    <Panel title="Indicators" right={<><HealthDots feeds={feeds} /><DerivedTag how={rules} /></>} testId="geo-indicators">
+      {/* The counts sit under the title, as on Finance: beside it they wrap in the narrow column. */}
+      <p class="-mt-1 text-[11.5px] text-dim" data-testid="indicator-counts">
+        {[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`, 'newest first'].filter(Boolean).join(' · ')}
+      </p>
+      <IndicatorFeed feeds={feeds} now={Date.now()} onOpen={onOpen} />
     </Panel>
   );
 }
@@ -561,29 +773,6 @@ function EvidenceMix({ state, region, range }: { state: ReturnType<typeof useDig
           ))}
         </>
       )}
-    </Panel>
-  );
-}
-
-function MapLayers({ layers, onChange }: { layers: LayerState; onChange: (next: LayerState) => void }) {
-  const row = (icon: ComponentChildren, name: string, hint: string, control: ComponentChildren, active: boolean) => (
-    <div class="flex items-center gap-[10px]">
-      <span class={active ? 'text-ink' : 'text-dim'}>{icon}</span>
-      <span class="flex min-w-0 flex-1 flex-col gap-px">
-        <span class={cx('text-[12.5px]', active ? 'text-ink' : 'text-muted')}>{name}</span>
-        <span class="text-[11px] text-dim">{hint}</span>
-      </span>
-      {control}
-    </div>
-  );
-  const icon = { size: 14, strokeWidth: 1.5 } as const;
-  return (
-    <Panel title="Map layers" sub="optional" testId="map-layers">
-      {row(<Radio {...icon} />, 'Reported violence · GDELT', 'country shading against its own normal', <Switch label="Reported violence" on={layers.violence} onChange={(on) => onChange({ ...layers, violence: on })} />, layers.violence)}
-      {row(<Crosshair {...icon} />, 'Verified background · UCDP', 'weeks behind, every range', <Switch label="Verified background" on={layers.conflicts} onChange={(on) => onChange({ ...layers, conflicts: on })} />, layers.conflicts)}
-      {row(<Flame {...icon} />, 'Curated hotspots', 'live score 1–5', <Switch label="Curated hotspots" on={layers.hotspots} onChange={(on) => onChange({ ...layers, hotspots: on })} />, layers.hotspots)}
-      {row(<Ship {...icon} />, 'Shipping lanes', 'soon', <Switch label="Shipping lanes" on={false} disabled />, false)}
-      {row(<CloudLightning {...icon} />, 'Aviation, weather & hazards', 'soon', <Switch label="Aviation, weather and hazards" on={false} disabled />, false)}
     </Panel>
   );
 }

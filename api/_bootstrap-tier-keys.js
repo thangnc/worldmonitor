@@ -81,6 +81,9 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   // Lite Geopolitics map: per-country GDELT material-conflict article counts,
   // 48 hourly and 30 daily buckets (seed-gdelt-bulk-materializer, 15 min).
   gdeltConflictCounts: 'gdelt:bulk:conflict-counts:v1',
+  // Lite Geopolitics GPS indicator: today's high-interference H3 cells beside
+  // the previous day's (fetch-gpsjam, daily).
+  gpsHighCells: 'intelligence:gpsjam:high-cells:v1',
   canadaRoads: 'infra:ontario-511:v1',
   albertaRoads: 'infra:alberta-511:v1',
   manitobaRoads: 'infra:manitoba-511:v1',
@@ -266,6 +269,9 @@ const ON_DEMAND_KEY_NAMES = new Set([
   // GDELT conflict counts for the Lite Geopolitics map, fetched only when that
   // screen opens.
   'gdeltConflictCounts',
+  // GPS interference history for the Lite Geopolitics indicator, fetched only
+  // when that screen opens.
+  'gpsHighCells',
 ]);
 
 /**

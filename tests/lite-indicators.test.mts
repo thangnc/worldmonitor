@@ -19,6 +19,22 @@ import { TRADE_ROUTES } from '../src/config/trade-routes.ts';
 import type { ChokepointInfo } from '../src/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
 import { STABLECOIN_DEPEG_PCT, financeFeeds } from '../src/lite/data/finance-indicators.ts';
 import type { LiteItem } from '../src/lite/data/transforms.ts';
+import type { MilitaryFlight } from '../src/generated/client/worldmonitor/military/v1/service_client.ts';
+import type { ListUkmtoIncidentsResponse } from '../src/generated/client/worldmonitor/maritime/v1/service_client.ts';
+import {
+  AIRCRAFT_MIN,
+  AIRCRAFT_RADIUS_KM,
+  GPS_REGION_MIN,
+  GPS_REGION_RISE,
+  aircraftFeeds,
+  gpsFeeds,
+  gpsHexFills,
+  gpsIndicators,
+  isGpsHighCells,
+  seaAreas,
+  seaIncidentFeeds,
+  type GpsHighCells,
+} from '../src/lite/data/geo-layers.ts';
 import {
   MIN_REPORTS,
   conflictHistogram,
@@ -628,5 +644,112 @@ describe('Finance markets map', () => {
     ] }, countries);
     assert.deepEqual(fills.features.map((f) => f.properties.id), ['IR']);
     assert.equal(featureIso2({ iso_a2: 'gb' }), 'GB');
+  });
+});
+
+describe('Geopolitics layers: aircraft, sea incidents, GPS interference', () => {
+  const kyiv = { id: 'kyiv', name: 'Kyiv', lat: 50.45, lon: 30.52 };
+  const taipei = { id: 'taipei', name: 'Taipei', lat: 25.03, lon: 121.56 };
+  // About 0.009 degrees of latitude per km.
+  const flight = (id: string, lat: number, lon: number, aircraftType: MilitaryFlight['aircraftType'], onGround = false) =>
+    ({ id, location: { latitude: lat, longitude: lon }, aircraftType, onGround, lastSeenAt: AT - 5 * 60_000 }) as MilitaryFlight;
+  const fighters = (n: number, lat = kyiv.lat) => Array.from({ length: n }, (_, i) => flight(`f${i}`, lat, kyiv.lon, 'MILITARY_AIRCRAFT_TYPE_FIGHTER'));
+
+  it(`fires at ${AIRCRAFT_MIN} airborne aircraft within ${AIRCRAFT_RADIUS_KM} km of a hotspot, split by type`, () => {
+    const flights = [...fighters(3), flight('r', kyiv.lat, kyiv.lon, 'MILITARY_AIRCRAFT_TYPE_RECONNAISSANCE'), flight('a', kyiv.lat, kyiv.lon, 'MILITARY_AIRCRAFT_TYPE_AWACS'), flight('v', kyiv.lat, kyiv.lon, 'MILITARY_AIRCRAFT_TYPE_VIP')];
+    const feeds = aircraftFeeds(ready(flights), [kyiv, taipei], [story('Russian jets over Ukraine, says Kyiv', AT - 2 * H)], AT);
+    assert.equal(feeds.length, 1);
+    const fired = feeds[0];
+    assert.equal(fired?.kind, 'fired');
+    if (fired?.kind !== 'fired') return;
+    assert.equal(fired.indicator.name, 'Military aircraft · Kyiv');
+    assert.equal(fired.indicator.value, '6 aircraft');
+    assert.equal(fired.indicator.change, '3 fighter · 2 ISR');
+    assert.equal(fired.indicator.detail, '3 fighter · 2 ISR · 1 other');
+    assert.equal(fired.indicator.trust.level, 'reported');
+    assert.equal(fired.indicator.links.stories.length, 1);
+  });
+
+  it('does not fire at 4, beyond 200 km, on the ground, or on one aircraft listed twice', () => {
+    assert.equal(aircraftFeeds(ready(fighters(4)), [kyiv], [], AT)[0]?.kind, 'quiet');
+    assert.equal(aircraftFeeds(ready([...fighters(4), fighters(1)[0]!]), [kyiv], [], AT)[0]?.kind, 'quiet', 'a duplicate from overlapping query regions counts once');
+    // 1.82 degrees north is about 202 km.
+    assert.equal(aircraftFeeds(ready(fighters(5, kyiv.lat + 1.82)), [kyiv], [], AT)[0]?.kind, 'quiet');
+    assert.equal(aircraftFeeds(ready(fighters(5, kyiv.lat + 1.75)), [kyiv], [], AT)[0]?.kind, 'fired');
+    const grounded = Array.from({ length: 5 }, (_, i) => flight(`g${i}`, kyiv.lat, kyiv.lon, 'MILITARY_AIRCRAFT_TYPE_FIGHTER', true));
+    assert.equal(aircraftFeeds(ready(grounded), [kyiv], [], AT)[0]?.kind, 'quiet');
+    const quiet = aircraftFeeds(ready(fighters(4)), [kyiv], [], AT)[0];
+    assert.match(quiet?.kind === 'quiet' ? quiet.detail : '', /4 at Kyiv \(fires at 5\)/);
+    assert.equal(aircraftFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [kyiv], [], AT)[0]?.kind, 'unavailable');
+  });
+
+  const incident = (id: string, hoursAgo: number, place = '45nm W of Hodeidah, Yemen') => ({
+    id, incidentNumber: 41, incidentType: 'Explosion near vessel', place, description: 'Master reports an explosion in the vicinity of the vessel.',
+    location: { latitude: 14.8, longitude: 42.3 }, occurredAt: AT - hoursAgo * H, reportedAt: 0,
+  });
+  const ukmto = (incidents: ReturnType<typeof incident>[]) => ready<ListUkmtoIncidentsResponse>({ incidents, fetchedAt: AT - 10 * 60_000, dataAvailable: true, stale: false });
+
+  it('fires on a UKMTO incident in the last 24 h, as an official notice with its sea area', () => {
+    const feeds = seaIncidentFeeds(ukmto([incident('a', 3)]), [story('Ship hit near Hodeidah, UKMTO says', AT - 2 * H)], AT);
+    const fired = feeds[0];
+    assert.equal(fired?.kind, 'fired');
+    if (fired?.kind !== 'fired') return;
+    assert.equal(fired.indicator.name, 'Sea incident · Hodeidah');
+    assert.equal(fired.indicator.change, 'explosion near vessel');
+    assert.equal(fired.indicator.trust.level, 'official');
+    assert.equal(fired.indicator.trust.source, 'UKMTO notice 041');
+    assert.equal(fired.indicator.links.stories.length, 1);
+    assert.deepEqual(seaAreas('Bab el-Mandeb, 20nm off Mokha'), ['Bab el-Mandeb', 'Mokha']);
+  });
+
+  it('is quiet without an incident in 24 h, unavailable when the source is', () => {
+    const quiet = seaIncidentFeeds(ukmto([incident('old', 25)]), [], AT)[0];
+    assert.equal(quiet?.kind, 'quiet');
+    assert.match(quiet?.kind === 'quiet' ? quiet.detail : '', /no incident in the last 24 h/);
+    assert.equal(seaIncidentFeeds({ status: 'empty', data: null, at: AT }, [], AT)[0]?.kind, 'unavailable');
+  });
+
+  const cell = (h3: string, lat: number, lon: number) => ({ h3, lat, lon });
+  const days = (high: GpsHighCells['high'], prevHigh: GpsHighCells['prevHigh'], prevDate: string | null = '2026-11-06') =>
+    ready<GpsHighCells>({ date: '2026-11-07', high, prevDate, prevHigh, updatedAt: AT - 6 * H });
+
+  it('fires on a new high GPS cell within 200 km of a hotspot that had none the day before', () => {
+    const fired = gpsFeeds(days([cell('a', kyiv.lat + 0.5, kyiv.lon)], []), [kyiv], [], AT);
+    assert.equal(fired[0]?.kind, 'fired');
+    if (fired[0]?.kind === 'fired') {
+      assert.equal(fired[0].indicator.name, 'GPS interference · Kyiv');
+      assert.equal(fired[0].indicator.dataDate, 'day 2026-11-07');
+    }
+    // Already high the day before: no new interference.
+    assert.equal(gpsFeeds(days([cell('a', kyiv.lat + 0.5, kyiv.lon)], [cell('b', kyiv.lat - 0.5, kyiv.lon)]), [kyiv], [], AT)[0]?.kind, 'quiet');
+  });
+
+  it(`fires when a region's high cells rise ${Math.round((GPS_REGION_RISE - 1) * 100)}% on the day, with at least ${GPS_REGION_MIN}`, () => {
+    // Asia-Pacific, away from any hotspot passed.
+    const asia = (n: number, tag: string) => Array.from({ length: n }, (_, i) => cell(`${tag}${i}`, 35 + i * 0.1, 140));
+    const up = gpsIndicators(days(asia(9, 't'), asia(6, 'p')).data!, [], [], AT);
+    assert.deepEqual(up.map((i) => [i.name, i.change]), [['GPS interference · Asia-Pacific', '+50% on the day']]);
+    assert.equal(gpsIndicators(days(asia(8, 't'), asia(6, 'p')).data!, [], [], AT).length, 0, '+33% does not fire');
+    assert.equal(gpsIndicators(days(asia(4, 't'), []).data!, [], [], AT).length, 0, 'fewer than 5 does not fire');
+  });
+
+  it('reads a missing or non-adjacent previous day as building history, never quiet', () => {
+    const none = gpsFeeds(days([], [], null), [kyiv], [], AT)[0];
+    assert.equal(none?.kind, 'unavailable');
+    assert.match(none?.kind === 'unavailable' ? none.detail : '', /needs the previous day/);
+    const gap = gpsFeeds(days([], [], '2026-11-04'), [kyiv], [], AT)[0];
+    assert.match(gap?.kind === 'unavailable' ? gap.detail : '', /needs 2026-11-06, has 2026-11-04/);
+    assert.equal(isGpsHighCells({ date: '2026-11-07', high: [], prevDate: null, prevHigh: [], updatedAt: 1 }), true);
+    assert.equal(isGpsHighCells({ date: '2026-11-07', high: ['a'], prevDate: null, prevHigh: [], updatedAt: 1 }), false);
+  });
+
+  it('draws medium hexagons amber and high ones red, leaving out cells across the antimeridian', () => {
+    const square = (lon: number) => [[lon, 0], [lon + 1, 0], [lon + 1, 1], [lon, 1]];
+    const fills = gpsHexFills(
+      [{ h3: 'h', level: 'high' }, { h3: 'm', level: 'medium' }, { h3: 'x', level: 'high' }],
+      (h3) => (h3 === 'x' ? [[179.5, 0], [-179.5, 0], [-179.5, 1]] : square(h3 === 'h' ? 10 : 20)),
+    );
+    assert.deepEqual(fills.features.map((f) => [f.properties.id, f.properties.tone]), [['h', 'crit'], ['m', 'elev']]);
+    assert.equal(fills.features[0]?.geometry.coordinates[0]?.length, 5, 'the ring is closed');
   });
 });

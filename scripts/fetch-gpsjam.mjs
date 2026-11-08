@@ -15,8 +15,19 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { extendExistingTtl } from './_seed-utils.mjs';
+import { extendExistingTtl, loadEnvFile } from './_seed-utils.mjs';
 import { processHexes } from './_gpsjam-parse.mjs';
+import {
+  GPS_HIGH_CELLS_ACTIVATION_KEY,
+  GPS_HIGH_CELLS_KEY,
+  GPS_HIGH_CELLS_META_KEY,
+  GPS_HIGH_CELLS_META_TTL,
+  GPS_HIGH_CELLS_TTL,
+  publishGpsHighCells,
+} from './_gpsjam-high-cells.mjs';
+import { getOptionalUpstashCreds, upstashCommand } from './_upstash-rest.mjs';
+
+loadEnvFile(import.meta.url);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(__dirname, 'data');
@@ -141,6 +152,28 @@ async function seedRedis(output) {
     signal: AbortSignal.timeout(5_000),
   }).catch(() => console.error('[gpsjam] seed-meta write failed'));
   console.error(`[gpsjam] Wrote seed-meta: ${metaKey}`);
+
+  // The Lite indicator's previous-day history (scripts/_gpsjam-high-cells.mjs).
+  // Only after v2 succeeded (an early return above skips it), and its own
+  // seed-meta and activation marker follow its own write.
+  // A failed write leaves its seed-meta unadvanced (health shows it stale);
+  // it must not mark the v2 run, already published, as failed.
+  const highCells = await publishGpsHighCells(output, { activate: writeHighCellsActivation })
+    .catch((error) => ({ written: false, reason: `write failed: ${error?.message || error}` }));
+  console.error(highCells.written
+    ? `[gpsjam] ${GPS_HIGH_CELLS_KEY}: ${highCells.projection.high.length} high cells (previous day ${highCells.projection.prevDate ?? 'none'})`
+    : `[gpsjam] ${GPS_HIGH_CELLS_KEY} not written: ${highCells.reason}`);
+}
+
+// Best-effort, as in seed-gdelt-bulk-materializer: a missed marker costs one
+// more run of "pending" in health, never a wrong verdict.
+async function writeHighCellsActivation() {
+  try {
+    const creds = getOptionalUpstashCreds();
+    if (creds) await upstashCommand(creds, ['SET', GPS_HIGH_CELLS_ACTIVATION_KEY, '1']);
+  } catch (error) {
+    console.error(`[gpsjam] activation marker write failed: ${error?.message || error}`);
+  }
 }
 
 async function main() {
@@ -199,6 +232,11 @@ main()
     console.error(`[gpsjam] Fetch failed: ${err.message} — extending TTL on stale data`);
     await extendExistingTtl([REDIS_KEY_V2, REDIS_KEY_V1, 'seed-meta:intelligence:gpsjam'], REDIS_TTL)
       .catch(e => console.error(`[gpsjam] TTL extend failed: ${e.message}`));
+    // Data and meta separately: the meta keeps its longer TTL (seed-meta outlives its data).
+    await extendExistingTtl([GPS_HIGH_CELLS_KEY], GPS_HIGH_CELLS_TTL)
+      .catch(e => console.error(`[gpsjam] high-cells TTL extend failed: ${e.message}`));
+    await extendExistingTtl([GPS_HIGH_CELLS_META_KEY], GPS_HIGH_CELLS_META_TTL)
+      .catch(e => console.error(`[gpsjam] high-cells meta TTL extend failed: ${e.message}`));
     // Deliberate exit 0, not a crash — say so with the STALE PRESERVED suffix. RE_DONE_OK matches
     // it (only `RETRY FAILED` disqualifies a `=== Done` line), so the run reads as clean rather
     // than unknown, while the suffix keeps the log honest about what actually happened.

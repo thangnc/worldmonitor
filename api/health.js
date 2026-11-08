@@ -431,6 +431,9 @@ const STANDALONE_KEYS = {
   // The compact hourly and daily projection of the same counts, read by the
   // Lite Geopolitics map through the on-demand bootstrap URL.
   gdeltConflictCounts: 'gdelt:bulk:conflict-counts:v1',
+  // Today's and the previous day's high GPS-interference cells, read by the
+  // Lite Geopolitics indicator through the on-demand bootstrap URL.
+  gpsHighCells: 'intelligence:gpsjam:high-cells:v1',
   // 30 days of per-country strike tallies the relay builds from the Middle East
   // strike feed; read only by the CII strike pressure (get-risk-scores), so
   // monitored here. Gated by IRAN_EVENTS_ENABLED like the feed itself.
@@ -1158,7 +1161,7 @@ const SEED_META = {
   // bisExchange + bisCredit: extras written by same BIS script via writeExtraKey, no dedicated seed-meta
   fxYoy:            { key: 'seed-meta:economic:fx-yoy',           maxStaleMin: 1500 }, // daily cron; 25h tolerance + 1h drift
   sharedFxRates:    { key: 'seed-meta:shared:fx-rates',           maxStaleMin: 3600 }, // daily seed; 60h tolerance covers a missed 25h cache refresh
-  gpsjam:           { key: 'seed-meta:intelligence:gpsjam',       maxStaleMin: 1440 }, // Wingbits API (scripts/fetch-gpsjam.mjs); 1440min = 24h tolerance gives operator headroom to handle upstream outages and monthly quota exhaustion (HTTP 402 observed 2026-04-29) without dashboard noise. Seeder catch-block extends TTL on fail without refreshing fetchedAt, so STALE_SEED via age is the only alarm path.
+  gpsjam:           { key: 'seed-meta:intelligence:gpsjam',       maxStaleMin: 1440 }, // gpsjam.org daily CSV (scripts/fetch-gpsjam.mjs; Wingbits until 2026-07); 1440min = 24h tolerance gives operator headroom to handle upstream outages and monthly quota exhaustion (HTTP 402 observed 2026-04-29) without dashboard noise. Seeder catch-block extends TTL on fail without refreshing fetchedAt, so STALE_SEED via age is the only alarm path.
   positiveGeoEvents:{ key: 'seed-meta:positive-events:geo',       maxStaleMin: 60 },
   riskScores:       { key: 'seed-meta:intelligence:risk-scores',  maxStaleMin: 30, minRecordCount: 2 }, // CII warm-ping every 8min; recordCount is realtime signal-density coverage for score-relevant conflict (ACLED or UCDP) and news families, not raw feed availability; quiet-but-fresh feeds may warn COVERAGE_PARTIAL. Per-input availability (seed-meta `inputs`) is graded by composeRiskScoresInputHealth.
   riskScoresHistory: {
@@ -1518,6 +1521,16 @@ const SEED_META = {
     cutover: {
       mode: 'activation-marker', fromKey: null, issue: 35,
       activationKey: 'seed-activated:gdelt:bulk:conflict-counts',
+    },
+  },
+  // fetch-gpsjam (daily) writes it after the v2 key; pending until its first
+  // publish writes the durable marker, strict after it.
+  gpsHighCells: {
+    key: 'seed-meta:intelligence:gpsjam-high-cells', maxStaleMin: 1440,
+    activationKey: 'seed-activated:intelligence:gpsjam-high-cells',
+    cutover: {
+      mode: 'activation-marker', fromKey: null, issue: 38,
+      activationKey: 'seed-activated:intelligence:gpsjam-high-cells',
     },
   },
   // ais-relay strike loop (10min) adds each healthy window to the 30-day tally;
@@ -2730,6 +2743,8 @@ const ON_DEMAND_KEYS = new Set([
   'gdeltDyadTension',
   'gdeltCountryEvents',
   'gdeltConflictCounts',
+  // Written by scripts/fetch-gpsjam.mjs after the high-cells publish.
+  'gpsHighCells',
   // Written by scripts/seed-tension-evidence.mjs after each publish.
   'tensionEvidence',
   // Relay strike-pressure tally: the marker is written after its first healthy publish.
@@ -2951,6 +2966,7 @@ const ACTIVATION_MARKERS = {
   tensionEvidence: SEED_META.tensionEvidence.activationKey,
   gdeltCountryEvents: SEED_META.gdeltCountryEvents.activationKey,
   gdeltConflictCounts: SEED_META.gdeltConflictCounts.activationKey,
+  gpsHighCells: SEED_META.gpsHighCells.activationKey,
   // Written by scripts/ais-relay.cjs after the first healthy strike-pressure publish.
   strikePressure: 'seed-activated:conflict:strike-pressure',
   // Written by scripts/ais-relay.cjs after the first healthy digest warm cycle.
@@ -3272,7 +3288,7 @@ function applyStaleContentGrace(checks, graceEvidenceByName, deadlines, now) {
 }
 
 const EMPTY_DATA_OK_KEYS = new Set([
-  'notamClosures', 'faaDelays', 'intlDelays', 'gpsjam', 'positiveGeoEvents', 'weatherAlerts', 'imdCycloneMarine', 'canadaRoads', 'albertaRoads', 'manitobaRoads', 'torontoRoads', 'bcOpen511', 'canadaAlerts', 'canadaAlertsAbSource', 'canadaAlertsBcSource', 'canadaAlertsSkSource',
+  'notamClosures', 'faaDelays', 'intlDelays', 'gpsjam', 'gpsHighCells', 'positiveGeoEvents', 'weatherAlerts', 'imdCycloneMarine', 'canadaRoads', 'albertaRoads', 'manitobaRoads', 'torontoRoads', 'bcOpen511', 'canadaAlerts', 'canadaAlertsAbSource', 'canadaAlertsBcSource', 'canadaAlertsSkSource',
   'earningsCalendar', 'econCalendar', 'cotPositioning',
   'usniFleet', // usniFleetStale covers the fallback; relay outages → WARN not CRIT
   'newsThreatSummary', // a quiet classify cycle writes `byCountry: {}` (0 records); MISSING_DATA_IS_FAILURE_KEYS makes a payload missing beside fresh seed-meta critical (expiry after the 2h TTL reads STALE_SEED, since seed-meta is stale by then)

@@ -28,6 +28,10 @@ import type { Earthquake } from '@/generated/client/worldmonitor/seismology/v1/s
 import type { MilitaryFlight } from '@/generated/client/worldmonitor/military/v1/service_client';
 import { MILITARY_QUERY_REGIONS } from '@/config/military';
 import { isConflictCounts, type ConflictCounts } from './conflict';
+import { isGpsHighCells, type GpsHighCells } from './geo-layers';
+import type { ListUkmtoIncidentsResponse } from '@/generated/client/worldmonitor/maritime/v1/service_client';
+import { readUkmtoSnapshot } from '../../../shared/ukmto-incidents';
+import { fetchGpsInterference, type GpsJamData } from '@/services/gps-interference';
 import type {
   GetEconomicCalendarResponse,
   GetGovernmentYieldCurveResponse,
@@ -334,6 +338,24 @@ export interface CompactHealth {
   status: string;
   checkedAt?: string;
   summary?: { total?: number; ok?: number; warn?: number; stale?: number; empty?: number; error?: number };
+}
+
+/** UKMTO notices (on-demand bootstrap key `ukmtoIncidents`, 24 h kept). An empty list is a real "none". */
+export async function loadSeaIncidents(): Promise<ListUkmtoIncidentsResponse | null> {
+  const resp = readUkmtoSnapshot(await ensureHydrated('ukmtoIncidents'), Date.now(), Infinity);
+  return resp.dataAvailable ? resp : null;
+}
+
+/** The day's medium and high GPS-interference hexagons (`/api/gpsjam`, the dashboard's reader). */
+export async function loadGpsInterference(): Promise<GpsJamData | null> {
+  const data = await fetchGpsInterference();
+  return data && Array.isArray(data.hexes) ? data : null;
+}
+
+/** Today's and the previous day's high GPS cells (on-demand bootstrap key `gpsHighCells`). */
+export async function loadGpsHighCells(): Promise<GpsHighCells | null> {
+  const value = await ensureHydrated('gpsHighCells');
+  return isGpsHighCells(value) ? value : null;
 }
 
 /** GDELT conflict counts for the Lite map (on-demand bootstrap key, CDN-shielded). */

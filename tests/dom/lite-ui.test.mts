@@ -251,10 +251,12 @@ describe('Lite UI shell', () => {
       expect(root.querySelector('[data-testid="conflict-map"] [data-map-status]')?.getAttribute('data-map-status')).toBe('ready');
     }, { timeout: 5000 });
     expect(root.querySelector('[data-map-credits]')?.textContent).toContain('OpenStreetMap');
-    const legend = root.querySelector('[data-testid="map-legend"]')?.textContent ?? '';
-    expect(legend).toContain('Reported violence · GDELT');
-    expect(legend).toContain('Verified background · UCDP');
-    expect(legend).toContain('Curated hotspot');
+    // The in-map legend lists the layers that are on, and airspace as N/A.
+    const legendRows = [...root.querySelectorAll('[data-testid="map-legend"] [data-legend-row]')].map((r) => r.getAttribute('data-legend-row'));
+    expect(legendRows).toEqual(['Reported violence', 'Verified background', 'Curated hotspot', 'Military aircraft', 'Sea incident', 'GPS interference', 'Airspace closure']);
+    // The layers live in the popover; the old side panel is gone.
+    expect(root.querySelector('[data-testid="map-layers"]')).toBeNull();
+    expect(root.querySelector('[data-testid="layers-chip"]')?.textContent).toContain('Layers · 6');
     // Every curated hotspot is drawn, as on the dashboard, coloured by the live
     // score. Only news and the curated baseline are available here, so only the
     // two baseline-4 hotspots with a 'red sea' keyword, Sana'a and Horn of
@@ -653,6 +655,107 @@ describe('Lite Geopolitics: GDELT reported violence', () => {
       expect(tiles).toHaveLength(5);
       await act(() => tiles[0]!.click());
       expect(root.querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe(`hotspot:${tiles[0]!.getAttribute('data-hotspot-tile')}`);
+    } finally {
+      vi.stubGlobal('fetch', base);
+      vi.mocked(boot.ensureHydrated).mockImplementation(async () => undefined);
+    }
+  });
+});
+
+describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS interference', () => {
+  it('draws the live layers, fires their indicators, and switches them from the popover', async () => {
+    const HOUR = 3_600_000;
+    const DAY = 86_400_000;
+    const now = Date.now();
+    const { INTEL_HOTSPOTS } = await import('../../src/config/geo');
+    const kyiv = INTEL_HOTSPOTS.find((x) => x.id === 'kyiv')!;
+    const ymd = (t: number) => new Date(t).toISOString().slice(0, 10);
+    const CELL = '841f41dffffffff';
+    const sea = {
+      incidents: [{ id: 'u1', incidentNumber: 41, incidentType: 'Explosion near vessel', place: '45nm W of Hodeidah, Yemen', description: 'Master reports an explosion near the vessel.', location: { latitude: 14.8, longitude: 42.3 }, occurredAt: now - 2 * HOUR, reportedAt: 0 }],
+      fetchedAt: now - 60_000, dataAvailable: true, stale: false,
+    };
+    const highCells = {
+      date: ymd(now - DAY), high: [{ h3: CELL, lat: kyiv.lat + 0.5, lon: kyiv.lon }],
+      prevDate: ymd(now - 2 * DAY), prevHigh: [], updatedAt: now - HOUR,
+    };
+    const fighters = Array.from({ length: 6 }, (_, i) => ({
+      id: `f${i}`, callsign: `RCH${i}`, hexCode: `ae00${i}`, aircraftType: 'MILITARY_AIRCRAFT_TYPE_FIGHTER', aircraftModel: 'F-16',
+      operatorCountry: 'PL', location: { latitude: kyiv.lat + i * 0.1, longitude: kyiv.lon }, altitude: 30000, heading: 90, speed: 420,
+      onGround: false, lastSeenAt: now - 60_000,
+    }));
+    const boot = await import('@/services/bootstrap');
+    vi.mocked(boot.ensureHydrated).mockImplementation(async (key: string) => (key === 'ukmtoIncidents' ? sea : key === 'gpsHighCells' ? highCells : undefined));
+    const base = fetch;
+    const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(String(input instanceof Request ? input.url : input), 'http://localhost');
+      if (url.pathname.endsWith('/list-military-flights')) {
+        // Each query region gets only the aircraft inside its box, as the real endpoint does.
+        const n = Number(url.searchParams.get('ne_lat'));
+        const e = Number(url.searchParams.get('ne_lon'));
+        const so = Number(url.searchParams.get('sw_lat'));
+        const w = Number(url.searchParams.get('sw_lon'));
+        const inBox = fighters.filter((f) => f.location.latitude <= n && f.location.latitude >= so && f.location.longitude <= e && f.location.longitude >= w);
+        return json({ flights: inBox, clusters: [], pagination: { nextCursor: '' } });
+      }
+      if (url.pathname === '/api/gpsjam') {
+        return json({ fetchedAt: new Date(now - HOUR).toISOString(), source: 'gpsjam.org', stats: { totalHexes: 1, highCount: 1, mediumCount: 0 }, hexes: [{ h3: CELL, lat: kyiv.lat + 0.5, lon: kyiv.lon, level: 'high', pct: 15, affectedAircraft: 3, totalAircraft: 20 }] });
+      }
+      return base(input, init);
+    }));
+    try {
+      history.replaceState(null, '', '/lite/geopolitics');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const maplib = (await import('maplibre-gl')) as unknown as {
+        __FakeMap: { last: { sources: Map<string, { data: { features: unknown[] } }> } | null };
+      };
+      const panel = () => root.querySelector('[data-testid="geo-indicators"]')!;
+      await vi.waitFor(async () => {
+        await flush();
+        expect(panel().querySelector('[data-indicator="aircraft:kyiv"]')).not.toBeNull();
+        expect(panel().querySelector('[data-indicator="sea:u1"]')).not.toBeNull();
+        expect(panel().querySelector('[data-indicator="gps:kyiv"]')).not.toBeNull();
+        expect(maplib.__FakeMap.last?.sources.get('lite-fills')?.data.features).toHaveLength(1);
+      }, { timeout: 10_000, interval: 50 });
+
+      // Indicators: each fired card, plus airspace waiting for the FAA.
+      expect(panel().querySelector('[data-indicator="aircraft:kyiv"]')?.textContent).toContain('6 aircraft');
+      expect(panel().querySelector('[data-indicator="sea:u1"]')?.textContent).toContain('OFFICIAL');
+      expect(panel().querySelector('[data-feed="airspace"]')?.getAttribute('data-feed-state')).toBe('unavailable');
+      expect(panel().querySelector('[data-feed="airspace"]')?.textContent).toContain('Awaiting FAA access');
+
+      // Map: six aircraft, the badge on Kyiv, the ship mark.
+      expect(root.querySelectorAll('[data-marker^="aircraft:"]')).toHaveLength(6);
+      expect(root.querySelector('[data-marker="hotspot:kyiv"] [data-aircraft-badge]')?.textContent).toContain('6');
+      expect(root.querySelector('[data-marker="sea:u1"]')).not.toBeNull();
+
+      // A sea card opens its marker's card on the map.
+      await act(() => (panel().querySelector('[data-indicator="sea:u1"]') as HTMLButtonElement).click());
+      await flush();
+      expect(root.querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe('sea:u1');
+      expect(root.querySelector('[data-map-popup]')?.textContent).toContain('Incident at sea · UKMTO');
+
+      // The popover: three groups, N/A rows, the range footer.
+      await act(() => (root.querySelector('[data-testid="layers-chip"]') as HTMLButtonElement).click());
+      const popover = root.querySelector('[data-testid="layers-popover"]')!;
+      expect([...popover.querySelectorAll('[data-layer-row]')].map((r) => r.getAttribute('data-layer-row'))).toEqual(['violence', 'aircraft', 'sea', 'gps', 'airspace', 'conflicts', 'hotspots', 'lanes', 'osint']);
+      expect(popover.querySelector('[data-layer-row="airspace"]')?.textContent).toContain('N/A');
+      expect(popover.querySelector('[data-layer-row="osint"]')?.textContent).toContain('N/A');
+      expect(popover.textContent).toContain('UCDP always shown as background');
+
+      // Military aircraft off: pins and badge go. Shipping lanes on: lines appear.
+      await act(() => (popover.querySelector('[data-layer-row="aircraft"] [role="switch"]') as HTMLButtonElement).click());
+      expect(root.querySelectorAll('[data-marker^="aircraft:"]')).toHaveLength(0);
+      expect(root.querySelector('[data-aircraft-badge]')).toBeNull();
+      await act(() => (root.querySelector('[data-testid="layers-popover"] [data-layer-row="lanes"] [role="switch"]') as HTMLButtonElement).click());
+      await flush();
+      expect(maplib.__FakeMap.last?.sources.get('lite-lines')?.data.features.length).toBeGreaterThan(0);
+      // GPS off clears the hexagons.
+      await act(() => (root.querySelector('[data-testid="layers-popover"] [data-layer-row="gps"] [role="switch"]') as HTMLButtonElement).click());
+      await flush();
+      expect(maplib.__FakeMap.last?.sources.get('lite-fills')?.data.features).toHaveLength(0);
     } finally {
       vi.stubGlobal('fetch', base);
       vi.mocked(boot.ensureHydrated).mockImplementation(async () => undefined);

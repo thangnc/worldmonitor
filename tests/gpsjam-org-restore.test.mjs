@@ -15,6 +15,14 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { toWebHex } from '../api/gpsjam.js';
 import { processHexes } from '../scripts/_gpsjam-parse.mjs';
+import {
+  GPS_HIGH_CELLS_KEY,
+  GPS_HIGH_CELLS_META_KEY,
+  GPS_HIGH_CELLS_META_TTL,
+  GPS_HIGH_CELLS_TTL,
+  gpsHighCellsProjection,
+  publishGpsHighCells,
+} from '../scripts/_gpsjam-high-cells.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(repoRoot, p), 'utf8');
@@ -128,5 +136,85 @@ describe('gpsjam.org CSV parser (_gpsjam-parse.mjs)', () => {
     for (let i = 0; i < 4; i++) rows.push(`${VALID_H3},0,10`); // 4 attempts succeed
     const { results } = processHexes(rows.join('\n'), 3);
     assert.equal(results.length, 4); // 1/5 failure < 50% → no abort
+  });
+});
+
+describe('GPS high cells: the previous day kept for the Lite indicator (_gpsjam-high-cells.mjs)', () => {
+  const hex = (h3, level, lat = 1, lon = 2) => ({ h3, level, lat, lon });
+  const cell = (h3, lat = 1, lon = 2) => ({ h3, lat, lon });
+  const NOW = Date.UTC(2026, 10, 8, 6);
+
+  test('a new day moves the stored day to prev; high cells only, with centres, deduplicated and sorted', () => {
+    const stored = { date: '2026-11-06', high: [cell('b'), cell('a')], prevDate: '2026-11-05', prevHigh: [cell('z')] };
+    const out = gpsHighCellsProjection(stored, '2026-11-07', [hex('c', 'high', 30, 40), hex('a', 'high'), hex('a', 'high'), hex('m', 'medium'), { h3: 'x', level: 'high' }], NOW);
+    assert.deepEqual(out, { date: '2026-11-07', high: [cell('a'), cell('c', 30, 40)], prevDate: '2026-11-06', prevHigh: [cell('b'), cell('a')], updatedAt: NOW });
+  });
+
+  test('a rerun of the same day keeps the stored previous day', () => {
+    const stored = { date: '2026-11-07', high: [cell('a')], prevDate: '2026-11-06', prevHigh: [cell('b')] };
+    const out = gpsHighCellsProjection(stored, '2026-11-07', [hex('a', 'high'), hex('d', 'high')], NOW);
+    assert.equal(out.prevDate, '2026-11-06');
+    assert.deepEqual(out.prevHigh, [cell('b')]);
+    assert.deepEqual(out.high, [cell('a'), cell('d')]);
+  });
+
+  test('the first run has no previous day, and an older --date backfill never rewinds the history', () => {
+    assert.deepEqual(gpsHighCellsProjection(null, '2026-11-07', [hex('a', 'high')], NOW), { date: '2026-11-07', high: [cell('a')], prevDate: null, prevHigh: [], updatedAt: NOW });
+    assert.equal(gpsHighCellsProjection({ date: '2026-11-07', high: [] }, '2026-11-01', [], NOW), null);
+    assert.throws(() => gpsHighCellsProjection(null, '07/11/2026', [], NOW));
+  });
+
+  test('publishes data, then seed-meta (one call), then the activation marker; a failed read or write never activates', async () => {
+    const calls = [];
+    const ok = await publishGpsHighCells({ date: '2026-11-07', hexes: [hex('a', 'high')] }, {
+      read: async () => ({ date: '2026-11-06', high: [cell('b')] }),
+      write: async (...args) => { calls.push(['write', ...args]); },
+      activate: async () => { calls.push(['activate']); },
+      nowMs: NOW,
+    });
+    assert.equal(ok.written, true);
+    assert.deepEqual(calls.map((c) => c[0]), ['write', 'activate']);
+    const [, key, data, ttl, recordCount, metaKey] = calls[0];
+    assert.equal(key, GPS_HIGH_CELLS_KEY);
+    assert.equal(metaKey, GPS_HIGH_CELLS_META_KEY);
+    assert.equal(ttl, GPS_HIGH_CELLS_TTL);
+    assert.ok(GPS_HIGH_CELLS_TTL >= 3 * 24 * 60 * 60, 'TTL covers at least three daily runs');
+    assert.equal(recordCount, 1);
+    assert.equal(data.prevDate, '2026-11-06');
+
+    const activated = [];
+    const readFail = await publishGpsHighCells({ date: '2026-11-07', hexes: [] }, {
+      read: async () => { throw new Error('timeout'); },
+      write: async () => { throw new Error('must not write'); },
+      activate: async () => { activated.push('read'); },
+    });
+    assert.equal(readFail.written, false);
+    assert.match(readFail.reason, /read failed/);
+    await assert.rejects(publishGpsHighCells({ date: '2026-11-07', hexes: [] }, {
+      read: async () => null,
+      write: async () => { throw new Error('redis down'); },
+      activate: async () => { activated.push('write'); },
+    }), /redis down/);
+    // A meta write that reports false (writeSeedMeta on a non-OK response) never activates.
+    const metaFail = await publishGpsHighCells({ date: '2026-11-07', hexes: [] }, {
+      read: async () => null,
+      write: async () => false,
+      activate: async () => { activated.push('meta'); },
+    });
+    assert.deepEqual(metaFail, { written: false, reason: 'seed-meta write failed' });
+    assert.deepEqual(activated, []);
+  });
+
+  test('the default read is strict, so an HTTP failure is not read as a first run', () => {
+    assert.match(read('scripts/_gpsjam-high-cells.mjs'), /readCanonicalValue\(key, \{ strict: true \}\)/);
+  });
+
+  test('the fetcher publishes the projection after v2 and extends its TTL on failure', () => {
+    const src = read('scripts/fetch-gpsjam.mjs');
+    assert.ok(src.indexOf('publishGpsHighCells(output') > src.indexOf("['SET', REDIS_KEY_V2"), 'after the v2 write');
+    assert.match(src, /extendExistingTtl\(\[GPS_HIGH_CELLS_KEY\], GPS_HIGH_CELLS_TTL\)/);
+    assert.match(src, /extendExistingTtl\(\[GPS_HIGH_CELLS_META_KEY\], GPS_HIGH_CELLS_META_TTL\)/);
+    assert.ok(GPS_HIGH_CELLS_META_TTL > GPS_HIGH_CELLS_TTL, 'the meta outlives its data');
+    assert.match(src, /loadEnvFile\(import\.meta\.url\)/);
   });
 });
