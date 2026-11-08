@@ -2,6 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
 import { Check, CircleAlert, CircleCheck, TriangleAlert, X } from 'lucide-preact';
 import { Topbar, matchesSearch } from '../components/Topbar';
+import { OverlayScroll } from '../components/scroll';
 import { BORDER, Card, ColLabel, Dot, Panel, SegmentedControl, TEXT, cx } from '../components/ui';
 import { useConnectorRows, useHealth } from '../data/hooks';
 import {
@@ -138,7 +139,7 @@ function Connectors({
       right={<span class="font-mono text-[11px] text-dim">Showing {rows.length} of {total}</span>}
       testId="connectors"
     >
-      <div class="overflow-x-auto border-t border-line">
+      <OverlayScroll axis="x" class="overflow-x-auto border-t border-line">
         <table class="w-full border-collapse text-left sm:min-w-[640px]">
           <thead>
             <tr class="border-b border-line">
@@ -188,7 +189,7 @@ function Connectors({
           </tbody>
         </table>
         {rows.length === 0 ? <p class="px-5 py-4 text-[12px] text-dim">No connector matches.</p> : null}
-      </div>
+      </OverlayScroll>
     </Card>
   );
 }

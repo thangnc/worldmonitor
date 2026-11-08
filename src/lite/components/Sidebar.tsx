@@ -6,6 +6,7 @@ import { navigate } from '../router';
 import { useDigest, useDomainCounts, useHealth } from '../data/hooks';
 import { utcClock } from '../format';
 import { CONNECTORS } from '../data/connectors';
+import { OverlayScroll } from './scroll';
 import { cx } from './ui';
 
 const ICON = { size: 15, strokeWidth: 1.5 } as const;
@@ -95,68 +96,70 @@ function HealthCard() {
 export function Sidebar({ screen }: { screen: LiteScreen }) {
   const counts = useDomainCounts();
   return (
-    <nav
-      aria-label="Lite navigation"
-      class="flex w-full flex-col justify-between gap-4 px-[14px] py-4 wide:sticky wide:gap-7 wide:py-5 wide:top-0 wide:h-screen wide:overflow-y-auto"
-    >
-      <div class="flex flex-col gap-4 wide:gap-7">
-        <div class="flex items-center gap-[10px] px-[6px]">
-          <span class="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] outline-[1.5px] outline-ink outline -outline-offset-[0.75px]">
-            <Globe size={14} strokeWidth={1.5} />
-          </span>
-          <span class="flex flex-col gap-px">
-            <span class="text-[14px] font-semibold text-ink">World Monitor</span>
-            <span class="font-mono text-[9.5px] tracking-[1px] text-dim">LITE · SELF-HOSTED</span>
-          </span>
-        </div>
-
-        <div class="flex flex-col gap-[2px]">
-          <SectionLabel>OVERVIEW</SectionLabel>
-          <NavLink screen="briefing" active={screen === 'briefing'}>
-            <span class={screen === 'briefing' ? 'text-ink' : 'text-dim'}>
-              <LayoutDashboard {...ICON} />
+    <nav aria-label="Lite navigation" class="w-full wide:sticky wide:top-0 wide:h-screen">
+      <OverlayScroll
+        class="wide:h-full wide:overflow-y-auto"
+        contentClass="flex min-h-full flex-col justify-between gap-4 px-[14px] py-4 wide:gap-7 wide:py-5"
+      >
+        <div class="flex flex-col gap-4 wide:gap-7">
+          <div class="flex items-center gap-[10px] px-[6px]">
+            <span class="flex h-[26px] w-[26px] items-center justify-center rounded-[6px] outline-[1.5px] outline-ink outline -outline-offset-[0.75px]">
+              <Globe size={14} strokeWidth={1.5} />
             </span>
-            <span>Briefing</span>
-          </NavLink>
-          <div class="hidden flex-col gap-[2px] wide:flex">
-            <SoonItem icon={<Bell {...ICON} />} label="Alerts" />
-            <SoonItem icon={<Star {...ICON} />} label="Watchlists" />
+            <span class="flex flex-col gap-px">
+              <span class="text-[14px] font-semibold text-ink">World Monitor</span>
+              <span class="font-mono text-[9.5px] tracking-[1px] text-dim">LITE · SELF-HOSTED</span>
+            </span>
+          </div>
+
+          <div class="flex flex-col gap-[2px]">
+            <SectionLabel>OVERVIEW</SectionLabel>
+            <NavLink screen="briefing" active={screen === 'briefing'}>
+              <span class={screen === 'briefing' ? 'text-ink' : 'text-dim'}>
+                <LayoutDashboard {...ICON} />
+              </span>
+              <span>Briefing</span>
+            </NavLink>
+            <div class="hidden flex-col gap-[2px] wide:flex">
+              <SoonItem icon={<Bell {...ICON} />} label="Alerts" />
+              <SoonItem icon={<Star {...ICON} />} label="Watchlists" />
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-[2px]">
+            <SectionLabel>DOMAINS</SectionLabel>
+            <DomainItem screen="geopolitics" active={screen === 'geopolitics'} color="bg-geo" label="Geopolitics" count={counts.geopolitics} />
+            <DomainItem screen="finance" active={screen === 'finance'} color="bg-fin" label="Finance & Crypto" count={counts.finance} />
+            <DomainItem screen="tech" active={screen === 'tech'} color="bg-tech" label="Technology & AI" count={counts.tech} />
+          </div>
+
+          <div class="flex flex-col gap-[2px]">
+            <SectionLabel>SYSTEM</SectionLabel>
+            <NavLink screen="sources" active={screen === 'sources'}>
+              <span class={screen === 'sources' ? 'text-ink' : 'text-dim'}>
+                <Database {...ICON} />
+              </span>
+              <span>Sources</span>
+              <span class="ml-auto font-mono text-[11px] text-dim">{CONNECTORS.length}</span>
+            </NavLink>
+            <div class="hidden flex-col gap-[2px] wide:flex">
+              <SoonItem icon={<SlidersHorizontal {...ICON} />} label="Scoring rules" />
+              <SoonItem icon={<Settings {...ICON} />} label="Settings" />
+            </div>
+          </div>
+          <div class="flex flex-col gap-[2px]">
+            <a
+              href="/dashboard?full=1"
+              class="mt-1 flex w-full items-center gap-[10px] rounded-[6px] px-[10px] py-2 text-[13px] text-muted hover:bg-surface-2/60 hover:text-ink"
+              data-testid="open-full-dashboard"
+            >
+              <ExternalLink {...ICON} />
+              <span>Full dashboard</span>
+            </a>
           </div>
         </div>
-
-        <div class="flex flex-col gap-[2px]">
-          <SectionLabel>DOMAINS</SectionLabel>
-          <DomainItem screen="geopolitics" active={screen === 'geopolitics'} color="bg-geo" label="Geopolitics" count={counts.geopolitics} />
-          <DomainItem screen="finance" active={screen === 'finance'} color="bg-fin" label="Finance & Crypto" count={counts.finance} />
-          <DomainItem screen="tech" active={screen === 'tech'} color="bg-tech" label="Technology & AI" count={counts.tech} />
-        </div>
-
-        <div class="flex flex-col gap-[2px]">
-          <SectionLabel>SYSTEM</SectionLabel>
-          <NavLink screen="sources" active={screen === 'sources'}>
-            <span class={screen === 'sources' ? 'text-ink' : 'text-dim'}>
-              <Database {...ICON} />
-            </span>
-            <span>Sources</span>
-            <span class="ml-auto font-mono text-[11px] text-dim">{CONNECTORS.length}</span>
-          </NavLink>
-          <div class="hidden flex-col gap-[2px] wide:flex">
-            <SoonItem icon={<SlidersHorizontal {...ICON} />} label="Scoring rules" />
-            <SoonItem icon={<Settings {...ICON} />} label="Settings" />
-          </div>
-        </div>
-        <div class="flex flex-col gap-[2px]">
-          <a
-            href="/dashboard?full=1"
-            class="mt-1 flex w-full items-center gap-[10px] rounded-[6px] px-[10px] py-2 text-[13px] text-muted hover:bg-surface-2/60 hover:text-ink"
-            data-testid="open-full-dashboard"
-          >
-            <ExternalLink {...ICON} />
-            <span>Full dashboard</span>
-          </a>
-        </div>
-      </div>
-      <HealthCard />
+        <HealthCard />
+      </OverlayScroll>
     </nav>
   );
 }

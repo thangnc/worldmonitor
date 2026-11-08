@@ -5,6 +5,7 @@
 @import "@fontsource/ibm-plex-mono/400.css";
 @import "@fontsource/ibm-plex-mono/500.css";
 @import "@fontsource/ibm-plex-mono/600.css";
+@import "overlayscrollbars/overlayscrollbars.css";
 @import "tailwindcss";
 
 @theme {
@@ -53,4 +54,20 @@
 		outline: 2px solid var(--color-fin);
 		outline-offset: 2px;
 	}
+}
+
+/* Overlay scrollbars (src/lite/components/scroll.tsx): they float over the
+   content, take no width, and show only while the pointer is over the area. */
+.os-theme-lite {
+	box-sizing: border-box;
+	--os-size: 8px;
+	--os-padding-perpendicular: 2px;
+	--os-padding-axis: 2px;
+	--os-track-bg: transparent;
+	--os-track-border-radius: 8px;
+	--os-handle-border-radius: 8px;
+	--os-handle-interactive-area-offset: 4px;
+	--os-handle-bg: color-mix(in srgb, var(--color-grey) 55%, transparent);
+	--os-handle-bg-hover: color-mix(in srgb, var(--color-grey) 75%, transparent);
+	--os-handle-bg-active: color-mix(in srgb, var(--color-grey) 90%, transparent);
 }
