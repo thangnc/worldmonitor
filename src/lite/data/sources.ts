@@ -37,10 +37,19 @@ import type { GetChokepointStatusResponse, GetShippingRatesResponse } from '@/ge
 import type { ListSanctionsPressureResponse } from '@/generated/client/worldmonitor/sanctions/v1/service_client';
 import type { ListMaterialEventsResponse } from '@/generated/client/worldmonitor/intelligence/v1/service_client';
 import type { ArxivPaper, HackernewsItem } from '@/generated/client/worldmonitor/research/v1/service_client';
-import type { ListInternetOutagesResponse, ListServiceStatusesResponse } from '@/generated/client/worldmonitor/infrastructure/v1/service_client';
+import type {
+  GetCableHealthResponse,
+  ListInternetDdosAttacksResponse,
+  ListInternetOutagesResponse,
+  ListServiceStatusesResponse,
+} from '@/generated/client/worldmonitor/infrastructure/v1/service_client';
+import type { CyberThreat } from '@/generated/client/worldmonitor/cyber/v1/service_client';
+import type { CloudRegion } from '@/config/tech-geo';
+import type { AIDataCenter, UnderseaCable } from '@/types';
 import { decodeRecentKev, decodeThreatHistory, type RecentKev, type ThreatHistory } from './tech-indicators';
 import {
   ConflictServiceClient,
+  CyberServiceClient,
   EconomicServiceClient,
   InfrastructureServiceClient,
   IntelligenceServiceClient,
@@ -68,6 +77,7 @@ const unrest = new UnrestServiceClient(getRpcBaseUrl(), options);
 const seismology = new SeismologyServiceClient(getRpcBaseUrl(), options);
 const military = new MilitaryServiceClient(getRpcBaseUrl(), options);
 const infrastructure = new InfrastructureServiceClient(getRpcBaseUrl(), options);
+const cyber = new CyberServiceClient(getRpcBaseUrl(), options);
 const supplyChain = new SupplyChainServiceClient(getRpcBaseUrl(), options);
 const sanctions = new SanctionsServiceClient(getRpcBaseUrl(), options);
 
@@ -368,6 +378,64 @@ export async function loadThreatHistory(): Promise<ThreatHistory> {
 export async function loadRecentKev(): Promise<RecentKev> {
   await startBootstrap();
   return required('kevRecent', decodeRecentKev(await ensureHydrated('kevRecent')));
+}
+
+// The Technology map's layers.
+
+/** Cloudflare Radar's top DDoS target countries (7 days). An empty list is a ready state. */
+export async function loadDdosAttacks(): Promise<ListInternetDdosAttacksResponse | null> {
+  const boot = await hydrated('ddosAttacks', hasArray('topTargetLocations'));
+  return boot ? (boot as unknown as ListInternetDdosAttacksResponse) : infrastructure.listInternetDdosAttacks({});
+}
+
+const THREAT_PAGE = 1000;
+const THREAT_MAX_PAGES = 3;
+
+/** The attack-infrastructure snapshot: the on-demand bootstrap copy, else the RPC paged to the seeder's cap. */
+export async function loadCyberThreats(): Promise<CyberThreat[] | null> {
+  await startBootstrap();
+  const boot = await ensureHydrated('cyberThreats');
+  if (hasArray('threats')(boot)) return boot.threats as CyberThreat[];
+  const threats: CyberThreat[] = [];
+  let cursor = '';
+  for (let page = 0; page < THREAT_MAX_PAGES; page++) {
+    const resp = await cyber.listCyberThreats({
+      start: 0, end: 0, pageSize: THREAT_PAGE, cursor,
+      type: 'CYBER_THREAT_TYPE_UNSPECIFIED', source: 'CYBER_THREAT_SOURCE_UNSPECIFIED', minSeverity: 'CRITICALITY_LEVEL_UNSPECIFIED',
+    });
+    threats.push(...resp.threats);
+    cursor = resp.pagination?.nextCursor ?? '';
+    if (!cursor) break;
+  }
+  return threats;
+}
+
+/**
+ * Cable health from NGA navigational warnings. `cables: {}` means no active
+ * disruption only with a snapshot: the handler answers `generatedAt: 0` when
+ * the NGA fetch failed and nothing was retained, which is a failure, not
+ * "all cables healthy" (same test as src/services/cable-health.ts).
+ */
+export async function loadCableHealth(): Promise<GetCableHealthResponse | null> {
+  const resp = await infrastructure.getCableHealth({});
+  if (!(resp.generatedAt > 0)) throw new Error('cable health: no snapshot');
+  return resp;
+}
+
+export interface TechGeo {
+  cables: UnderseaCable[];
+  regions: CloudRegion[];
+  datacenters: AIDataCenter[];
+}
+
+/** Static geometry, imported on first use so only the Technology map downloads it. */
+export async function loadTechGeo(): Promise<TechGeo> {
+  const [{ UNDERSEA_CABLES }, { CLOUD_REGIONS }, { AI_DATA_CENTERS }] = await Promise.all([
+    import('@/config/geo-map'),
+    import('@/config/tech-geo'),
+    import('@/config/ai-datacenters'),
+  ]);
+  return { cables: UNDERSEA_CABLES, regions: CLOUD_REGIONS, datacenters: AI_DATA_CENTERS };
 }
 
 // ---- Ingestion health -------------------------------------------------------

@@ -611,6 +611,113 @@ describe('Lite indicator card', () => {
     }
   });
 
+  it('draws the Tech infrastructure map from the feeds, toggles layers, and focuses a marker from its indicator', async () => {
+    const base = fetch;
+    const now = Date.now();
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+      if (url.includes('/api/news/v1/list-feed-digest')) return json(DIGEST);
+      if (url.includes('/api/infrastructure/v1/list-internet-outages')) {
+        return json({ fetchedAt: now - 60_000, outages: [{
+          id: 'cf-1', title: '', link: '', description: '', detectedAt: now - 3_600_000, country: 'Yemen', region: '', location: { latitude: 15.5, longitude: 48 },
+          severity: 'OUTAGE_SEVERITY_TOTAL', categories: ['Cloudflare Radar', 'POWER OUTAGE', 'NATIONWIDE'], cause: 'POWER_OUTAGE', outageType: 'NATIONWIDE', endedAt: 0,
+        }] });
+      }
+      if (url.includes('/api/infrastructure/v1/list-internet-ddos-attacks')) {
+        return json({ protocol: [], vector: [], dateRangeStart: '', dateRangeEnd: '', topTargetLocations: [{ countryCode: 'US', countryName: 'United States', percentage: 11.2, latitude: 39, longitude: -98 }] });
+      }
+      if (url.includes('/api/infrastructure/v1/get-cable-health')) return json({ generatedAt: now, cables: {} });
+      if (url.includes('/api/infrastructure/v1/list-service-statuses')) {
+        return json({ statuses: [{ id: 'cloudflare', name: 'Cloudflare', status: 'SERVICE_OPERATIONAL_STATUS_PARTIAL_OUTAGE', description: 'Partial System Outage', url: '', checkedAt: now - 60_000, latencyMs: 80 }] });
+      }
+      if (url.includes('/data/countries.geojson')) {
+        return json({ type: 'FeatureCollection', features: [
+          { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[-100, 30], [-90, 30], [-90, 40], [-100, 30]]] }, properties: { 'ISO3166-1-Alpha-2': 'US' } },
+          { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] }, properties: { 'ISO3166-1-Alpha-2': 'FR' } },
+        ] });
+      }
+      return base(input, init);
+    }));
+    const bootstrap = await import('@/services/bootstrap');
+    vi.mocked(bootstrap.ensureHydrated).mockImplementation(async (key: string) => (key === 'cyberThreats'
+      ? { threats: [{ id: 'f1', type: 'CYBER_THREAT_TYPE_C2_SERVER', source: 'CYBER_THREAT_SOURCE_FEODO', indicator: '1.2.3.4', indicatorType: 'CYBER_THREAT_INDICATOR_TYPE_IP', location: { latitude: 52.3, longitude: 4.9 }, country: 'NL', severity: 'CRITICALITY_LEVEL_HIGH', malwareFamily: 'QakBot', tags: [], firstSeenAt: 0, lastSeenAt: 0 }] }
+      : undefined));
+    try {
+      history.replaceState(null, '', '/lite/tech');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const map = () => root.querySelector('[data-testid="infra-map"]') as HTMLElement;
+      await vi.waitFor(async () => {
+        await flush();
+        expect(map().querySelector('[data-marker="outage:cf-1"]')).not.toBeNull();
+        expect(map().querySelector('[data-marker^="attack:"]')).not.toBeNull();
+        expect(map().querySelector('[data-marker="ddos:US"]')).not.toBeNull();
+        expect(map().querySelector('[data-marker^="cloud:aws:"]')).not.toBeNull();
+      }, { timeout: 10_000, interval: 50 });
+      // Cables and DDoS shading are GeoJSON overlays: 98 cable lines; the US fill once countries.geojson loads.
+      const { __FakeMap: __fake } = (await import('maplibre-gl')) as unknown as { __FakeMap: { last: { layers: Array<{ id: string }>; sources: Map<string, { data: { features: Array<{ properties: { id: string; tone: string } }> } }> } } };
+      await vi.waitFor(async () => {
+        await flush();
+        expect(__fake.last.sources.get('lite-fills')?.data.features.map((f) => f.properties.id)).toEqual(['US']);
+      }, { timeout: 10_000, interval: 50 });
+      expect(__fake.last.layers.map((l) => l.id)).toEqual(expect.arrayContaining(['lite-fills', 'lite-lines']));
+      expect(__fake.last.sources.get('lite-lines')?.data.features.length).toBeGreaterThan(50);
+      expect(__fake.last.sources.get('lite-fills')?.data.features[0]?.properties.tone).toBe('tech');
+
+      // The layers popover turns a layer off and back on.
+      await act(() => (map().querySelector('[data-testid="layers-chip"]') as HTMLButtonElement).click());
+      expect(map().querySelector('[data-testid="layers-chip"]')?.textContent).toContain('Layers · 6');
+      await act(() => (map().querySelector('[data-layer-row="outages"] [role="switch"]') as HTMLButtonElement).click());
+      expect(map().querySelector('[data-marker="outage:cf-1"]')).toBeNull();
+      expect(map().querySelector('[data-testid="layers-chip"]')?.textContent).toContain('Layers · 5');
+      await act(() => (map().querySelector('[data-layer-row="outages"] [role="switch"]') as HTMLButtonElement).click());
+      await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
+      expect(map().querySelector('[data-testid="layers-popover"]')).toBeNull();
+      expect(map().querySelector('[data-marker="outage:cf-1"]')).not.toBeNull();
+
+      // Expanding the fired outage indicator opens that outage's card on the map.
+      const card = root.querySelector('[data-testid="tech-indicators"] button[data-indicator="internet-outage"]') as HTMLButtonElement;
+      await act(() => card.click());
+      await flush();
+      expect(map().querySelector('[data-map-popup="outage:cf-1"]')?.textContent).toContain('Yemen');
+
+      // A provider outage opens the card of that provider's first region (Cloudflare's ids are cf-*), shown amber: no region named.
+      const service = root.querySelector('[data-testid="tech-indicators"] button[data-indicator="service-outage"]') as HTMLButtonElement;
+      await act(() => service.click());
+      await flush();
+      const regionCard = map().querySelector('[data-map-popup^="cloud:cloudflare:"]') as HTMLElement;
+      expect(regionCard?.textContent).toContain('Degraded');
+      expect(regionCard?.textContent).toContain('Partial System Outage');
+    } finally {
+      vi.stubGlobal('fetch', base);
+      vi.mocked(bootstrap.ensureHydrated).mockImplementation(async () => undefined);
+    }
+  });
+
+  it('shows cable health as unavailable, not healthy, when the handler has no snapshot', async () => {
+    const base = fetch;
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.includes('/api/infrastructure/v1/get-cable-health')) {
+        return new Response(JSON.stringify({ generatedAt: 0, cables: {} }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      return base(input, init);
+    }));
+    try {
+      history.replaceState(null, '', '/lite/tech');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      await vi.waitFor(async () => {
+        await flush();
+        const chips = [...root.querySelectorAll('[data-testid="infra-map"] [data-source-state="error"]')].map((el) => el.textContent);
+        expect(chips).toContain('Cable health: source unavailable · get-cable-health');
+      }, { timeout: 10_000, interval: 50 });
+    } finally {
+      vi.stubGlobal('fetch', base);
+    }
+  });
+
   it('says "No linked news found" with what it searched when no story matches', async () => {
     const { IndicatorCard, IndicatorCardCompact } = await import('../../src/lite/components/indicator');
     const indicator = {

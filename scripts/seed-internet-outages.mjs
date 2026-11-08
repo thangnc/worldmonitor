@@ -204,11 +204,14 @@ async function fetchDdosData(token) {
   }
 
   const topTargetLocations = targetSlice.items.map((item) => {
-    const code = item.clientCountryAlpha2 || '';
+    // Radar's top/locations/target answers targetCountryAlpha2/targetCountryName
+    // (checked live 2026-11-08). Reading only the client* names left every code
+    // empty, so the coords filter below dropped every target country.
+    const code = item.targetCountryAlpha2 || item.clientCountryAlpha2 || '';
     const coords = COUNTRY_COORDS[code] || null;
     return {
       countryCode: code,
-      countryName: item.clientCountryName || code,
+      countryName: item.targetCountryName || item.clientCountryName || code,
       percentage: parseFloat(item.value) || 0,
       latitude: coords ? coords[0] : 0,
       longitude: coords ? coords[1] : 0,

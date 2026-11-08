@@ -627,3 +627,103 @@ describe('Lite market events: price links', () => {
     assert.equal(geoCause(item({ title: 'Gold record' })), null);
   });
 });
+
+describe('Lite tech map', async () => {
+  const { attackHexes, cableLayer, cloudRegionMarkers, datacenterMarkers, ddosLayer, incidentNamesRegion, outageMarkers, HEX_CELL_DEG } = await import('../src/lite/data/tech-map.ts');
+  const NOW = Date.UTC(2026, 10, 8, 12);
+  const H = 3_600_000;
+  type Threat = Parameters<typeof attackHexes>[0][number];
+  const threat = (lat: number, lon: number, source: string, malwareFamily = '', country = 'NL'): Threat =>
+    ({ id: `${lat}:${lon}:${source}`, type: 'CYBER_THREAT_TYPE_C2_SERVER', source, indicator: '1.2.3.4', indicatorType: 'CYBER_THREAT_INDICATOR_TYPE_IP', location: { latitude: lat, longitude: lon }, country, severity: 'CRITICALITY_LEVEL_HIGH', malwareFamily, tags: [], firstSeenAt: 0, lastSeenAt: 0 } as Threat);
+  type Outage = Parameters<typeof outageMarkers>[0][number];
+  const outage = (o: Partial<Outage>): Outage => ({
+    id: 'cf-1', title: '', link: '', description: '', detectedAt: NOW - 2 * H, country: 'Yemen', region: '', location: { latitude: 15.5, longitude: 48 },
+    severity: 'OUTAGE_SEVERITY_TOTAL', categories: ['Cloudflare Radar', 'POWER OUTAGE', 'NATIONWIDE'], cause: 'POWER_OUTAGE', outageType: 'NATIONWIDE', endedAt: 0, ...o,
+  } as Outage);
+
+  it('shades DDoS targets by their share and labels the top ones', () => {
+    const shape = (iso: string) => ({ type: 'Feature' as const, geometry: { type: 'Polygon' as const, coordinates: [] }, properties: { 'ISO3166-1-Alpha-2': iso } });
+    const shapes = { type: 'FeatureCollection' as const, features: [shape('US'), shape('BR'), shape('FR')] };
+    const { fills, tags } = ddosLayer({ protocol: [], vector: [], dateRangeStart: '2026-11-01', dateRangeEnd: '2026-11-08', topTargetLocations: [
+      { countryCode: 'us', countryName: 'United States', percentage: 11.2, latitude: 39, longitude: -98 },
+      { countryCode: 'BR', countryName: 'Brazil', percentage: 5.6, latitude: -10, longitude: -55 },
+      { countryCode: 'XX', countryName: 'None', percentage: 0, latitude: 0, longitude: 0 },
+    ] }, shapes);
+    assert.deepEqual(fills.features.map((f) => [f.properties.id, f.properties.tone]), [['US', 'tech'], ['BR', 'tech']]);
+    assert.ok(fills.features[0]!.properties.opacity > fills.features[1]!.properties.opacity);
+    assert.deepEqual(ddosLayer({ protocol: [], vector: [], dateRangeStart: '', dateRangeEnd: '', topTargetLocations: [] }, null).fills.features, []);
+    assert.deepEqual(tags.map((t) => t.text), ['US 11.2%', 'BR 5.6%']);
+  });
+
+  it(`bins located attack servers into ${HEX_CELL_DEG}° cells with a count and the main family from feeds that name one`, () => {
+    const hexes = attackHexes([
+      threat(52.1, 4.3, 'CYBER_THREAT_SOURCE_FEODO', 'QakBot'),
+      threat(52.4, 4.9, 'CYBER_THREAT_SOURCE_C2INTEL', 'CobaltStrike'),
+      threat(52.3, 4.8, 'CYBER_THREAT_SOURCE_FEODO', 'QakBot'),
+      threat(50.0, 5.0, 'CYBER_THREAT_SOURCE_OTX', 'Pulse: banking campaign'),
+      threat(-33.9, 151.2, 'CYBER_THREAT_SOURCE_ABUSEIPDB', '', 'AU'),
+      { ...threat(0, 0, 'CYBER_THREAT_SOURCE_FEODO'), location: undefined },
+    ]);
+    assert.equal(hexes.length, 2);
+    assert.equal(hexes[0]!.text, '4');
+    assert.equal(hexes[0]!.label, 'QakBot · CobaltStrike', 'OTX pulse titles are not families');
+    assert.equal(hexes[1]!.label, undefined);
+    assert.match(hexes[0]!.popup.lines.at(-1)!.text, /Not who they hit/);
+    // Two cells 9° apart would overlap at world zoom: the smaller joins the busier one, which keeps its place.
+    const merged = attackHexes([threat(10, 10, 'CYBER_THREAT_SOURCE_FEODO'), threat(10.5, 10.5, 'CYBER_THREAT_SOURCE_FEODO'), threat(18.5, 10, 'CYBER_THREAT_SOURCE_OTX')]);
+    assert.equal(merged.length, 1);
+    assert.equal(merged[0]!.text, '3');
+    assert.ok(Math.abs(merged[0]!.lat - 10.25) < 1e-9);
+    assert.equal(attackHexes([threat(10, 10, 'CYBER_THREAT_SOURCE_FEODO'), threat(40, 10, 'CYBER_THREAT_SOURCE_FEODO')]).length, 2);
+  });
+
+  it('places outages of the last 7 days, hollow once they ended over 24 h ago', () => {
+    const markers = outageMarkers([
+      outage({ id: 'live' }),
+      outage({ id: 'old', detectedAt: NOW - 3 * 24 * H, endedAt: NOW - 3 * 24 * H + H, severity: 'OUTAGE_SEVERITY_PARTIAL' }),
+      outage({ id: 'gone', detectedAt: NOW - 9 * 24 * H, endedAt: NOW - 9 * 24 * H + H }),
+    ], NOW);
+    assert.deepEqual(markers.map((m) => [m.id, m.tone, m.hollow]), [['outage:live', 'crit', false], ['outage:old', 'elev', true]]);
+  });
+
+  it('turns every region of a provider with an outage amber, and red only when the incident names it', () => {
+    const regions = [
+      { id: 'aws-us-east-1', provider: 'aws' as const, name: 'US East (N. Virginia)', city: 'Ashburn', country: 'USA', lat: 39, lon: -77 },
+      { id: 'aws-eu-west-1', provider: 'aws' as const, name: 'EU (Ireland)', city: 'Dublin', country: 'Ireland', lat: 53, lon: -6 },
+      { id: 'gcp-us-central1', provider: 'gcp' as const, name: 'Iowa', city: 'Council Bluffs', country: 'USA', lat: 41, lon: -95 },
+    ];
+    const status = (id: string, s: string, description = '') => ({ id, name: id, status: s, description, url: '', checkedAt: NOW, latencyMs: 1 }) as Parameters<typeof cloudRegionMarkers>[1][number];
+    const tones = (statuses: Parameters<typeof cloudRegionMarkers>[1]) => cloudRegionMarkers(regions, statuses).map((m) => m.tone);
+    assert.deepEqual(tones([status('aws', 'SERVICE_OPERATIONAL_STATUS_OPERATIONAL')]), ['muted', 'muted', 'muted']);
+    assert.deepEqual(tones([status('aws', 'SERVICE_OPERATIONAL_STATUS_PARTIAL_OUTAGE', 'Recent incidents reported')]), ['elev', 'elev', 'muted']);
+    assert.deepEqual(tones([status('aws', 'SERVICE_OPERATIONAL_STATUS_MAJOR_OUTAGE', 'Increased error rates in us-east-1')]), ['crit', 'elev', 'muted']);
+    assert.equal(incidentNamesRegion(regions[1]!, 'Connectivity issues in Ireland'), true);
+    assert.equal(incidentNamesRegion(regions[2]!, 'Elevated errors'), false);
+  });
+
+  it('marks an AI data centre amber when an internet outage is live in the same country', () => {
+    const site = (id: string, country: string, chipCount = 50_000, status: 'existing' | 'planned' = 'existing') =>
+      ({ id, name: id, owner: 'Lab', country, lat: 0, lon: 0, status, chipType: 'H100', chipCount });
+    const markers = datacenterMarkers(
+      [site('dc-ye', 'Yemen'), site('dc-us', 'United States of America'), site('dc-small', 'Yemen', 1_000), site('dc-planned', 'Yemen', 90_000, 'planned')],
+      [outage({})],
+      NOW,
+    );
+    assert.deepEqual(markers.map((m) => [m.id, m.tone]), [['dc:dc-ye', 'elev'], ['dc:dc-us', 'muted']]);
+  });
+
+  it('colours cables by health and pins a card on a degraded or faulted one', () => {
+    const cable = (id: string) => ({ id, name: id.toUpperCase(), points: [[0, 0], [10, 10], [20, 20]] as [number, number][], major: true });
+    const { lines, markers } = cableLayer([cable('marea'), cable('faster'), cable('peace')], {
+      generatedAt: NOW,
+      cables: {
+        faster: { status: 'CABLE_HEALTH_STATUS_FAULT', score: 1, confidence: 0.9, lastUpdated: NOW, evidence: [{ source: 'NGA', summary: 'Cable repair ship on station', ts: NOW }] },
+        peace: { status: 'CABLE_HEALTH_STATUS_DEGRADED', score: 0.5, confidence: 0.6, lastUpdated: NOW, evidence: [] },
+      },
+    });
+    assert.deepEqual(lines.features.map((l) => [l.properties.id, l.properties.tone]), [['marea', 'dim'], ['faster', 'crit'], ['peace', 'elev']]);
+    assert.deepEqual(markers.map((m) => [m.id, m.lat, m.lon]), [['cable:faster', 10, 10], ['cable:peace', 10, 10]]);
+    assert.match(markers[0]!.popup.lines[0]!.text, /NGA: Cable repair ship/);
+    assert.deepEqual(cableLayer([cable('marea')], null).markers, [], 'no health data: lines only, no guessed status');
+  });
+});

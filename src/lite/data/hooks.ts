@@ -48,6 +48,10 @@ export const useInternetOutages = () => useResource('internetOutages', src.loadI
 export const useServiceStatuses = () => useResource('serviceStatuses', src.loadServiceStatuses);
 export const useThreatHistory = () => useResource('threatHistory', src.loadThreatHistory);
 export const useRecentKev = () => useResource('recentKev', src.loadRecentKev);
+export const useDdosAttacks = () => useResource('ddosAttacks', src.loadDdosAttacks);
+export const useCyberThreats = () => useResource('cyberThreats', src.loadCyberThreats);
+export const useCableHealth = () => useResource('cableHealth', src.loadCableHealth);
+export const useTechGeo = () => useResource('techGeo', src.loadTechGeo);
 export const useInsights = () => useResource('insights', src.loadInsights);
 
 /** Geopolitics incidents: medium threat or above from the geo buckets, most important first. */

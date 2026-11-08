@@ -78,15 +78,35 @@ export interface PinMarker extends MarkerBase {
   nudge?: [number, number];
 }
 
+/** Technology layer marks: attack-server hexagons, outage dots, cloud-region squares, data-centre sites, tags. */
+export interface GlyphMarker extends MarkerBase {
+  kind: 'glyph';
+  shape: 'hex' | 'dot' | 'square' | 'site' | 'tag';
+  tone: GlyphTone;
+  /** Inside the glyph: a count on a hexagon, the text of a tag. */
+  text?: string;
+  /** Beside the glyph, hidden on phones. */
+  label?: string;
+  /** Outline only: an ended outage, a quiet region. */
+  hollow?: boolean;
+}
+
 /** A shaded country the user clicked; its card sits at the click point. */
 export interface CountryMarker extends MarkerBase {
   kind: 'country';
 }
 
-export type MapMarker = UcdpMarker | HotspotMarker | PinMarker;
 type ShownMarker = MapMarker | CountryMarker;
 
-/** Lines and fills drawn under the labels, coloured by each feature's `tone`. */
+export type GlyphTone = Tone | 'tech';
+
+export type MapMarker = UcdpMarker | HotspotMarker | PinMarker | GlyphMarker;
+
+/**
+ * Lines and fills drawn under the labels, coloured by each feature's `tone`
+ * (elev, crit, tech; anything else is the track grey). A fill feature may set
+ * `opacity` (default 0.14), as the DDoS shading does by share of traffic.
+ */
 export interface MapOverlays {
   lines?: { type: 'FeatureCollection'; features: unknown[] };
   fills?: { type: 'FeatureCollection'; features: unknown[] };
@@ -236,6 +256,61 @@ function Pin({ marker, selected, onClick }: { marker: PinMarker; selected: boole
   );
 }
 
+// Written out in full so Tailwind sees every class (rule: lite-profile.md).
+const TONE_TEXT: Record<GlyphTone, string> = { ...TEXT, tech: 'text-tech' };
+const TONE_BG: Record<GlyphTone, string> = { ...BG, tech: 'bg-tech' };
+const TONE_BORDER: Record<GlyphTone, string> = { ...BORDER, tech: 'border-tech' };
+const TONE_FILL: Record<GlyphTone, string> = {
+  crit: 'bg-crit/30', high: 'bg-high/30', elev: 'bg-elev/30', ok: 'bg-ok/30', muted: 'bg-muted/20', dim: 'bg-dim/20', tech: 'bg-tech/30',
+};
+
+/** The glyph box width, so the mark (not its label) sits on the point. */
+export function glyphWidth(shape: GlyphMarker['shape']): number {
+  return shape === 'hex' ? 24 : shape === 'tag' ? 0 : 18;
+}
+
+/** The mark alone, shared with the map legend. */
+export function GlyphMark({ shape, tone, text, hollow, selected = false }: Pick<GlyphMarker, 'shape' | 'tone' | 'text' | 'hollow'> & { selected?: boolean }) {
+  if (shape === 'hex') {
+    return (
+      <span class="relative flex h-[26px] w-[24px] items-center justify-center">
+        <svg viewBox="0 0 24 26" class={cx('absolute inset-0 h-full w-full', TONE_TEXT[tone])} aria-hidden="true">
+          <polygon points="12,1 23,7 23,19 12,25 1,19 1,7" fill="var(--color-bg)" fill-opacity="0.9" stroke="currentColor" stroke-width={selected ? 2.5 : 1.5} />
+        </svg>
+        <span class="relative font-mono text-[9.5px] font-semibold text-ink">{text}</span>
+      </span>
+    );
+  }
+  if (shape === 'tag') {
+    return <span class={cx('whitespace-nowrap rounded-[3px] border bg-bg/85 px-[5px] py-px font-mono text-[10px] leading-[14px]', TONE_BORDER[tone], TONE_TEXT[tone], selected && 'bg-surface-2')}>{text}</span>;
+  }
+  const inner = shape === 'site'
+    ? <span class={cx('flex h-[14px] w-[14px] items-center justify-center rounded-[3px] border bg-bg/85', TONE_BORDER[tone], selected && 'border-2')}><span class={cx('h-[6px] w-[6px] rounded-[1px]', TONE_BG[tone])} /></span>
+    : <span class={cx('border', shape === 'dot' ? 'h-[12px] w-[12px] rounded-full' : 'h-[9px] w-[9px] rounded-[2px]', TONE_BORDER[tone], hollow ? 'bg-bg/70' : shape === 'dot' ? TONE_BG[tone] : TONE_FILL[tone], selected && 'border-2 border-ink')} />;
+  return <span class="flex h-[18px] w-[18px] items-center justify-center" aria-hidden="true">{inner}</span>;
+}
+
+function Glyph({ marker, selected, onClick }: { marker: GlyphMarker; selected: boolean; onClick: () => void }) {
+  return (
+    <div class="pointer-events-none flex items-center gap-[5px]">
+      <button
+        type="button"
+        aria-label={marker.title}
+        aria-expanded={selected}
+        title={marker.title}
+        class="pointer-events-auto flex cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+      >
+        <GlyphMark shape={marker.shape} tone={marker.tone} text={marker.text} hollow={marker.hollow} selected={selected} />
+      </button>
+      {marker.label ? <span class={cx('hidden whitespace-nowrap rounded-[3px] bg-bg/85 px-[5px] py-px text-[10.5px] leading-4 sm:inline', TONE_TEXT[marker.tone])}>{marker.label}</span> : null}
+    </div>
+  );
+}
+
 const LINE_CLASS: Record<NonNullable<CardLine['style']> | 'text', string> = {
   text: 'text-[11.5px] leading-[16px] text-muted',
   mono: 'font-mono text-[11px] leading-[16px] text-ink',
@@ -244,9 +319,9 @@ const LINE_CLASS: Record<NonNullable<CardLine['style']> | 'text', string> = {
 
 function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => void }) {
   const { kind, name, value, lines, score, body } = marker.popup;
-  const tone: Tone = marker.kind === 'ucdp' || marker.kind === 'country' ? 'crit' : marker.tone;
+  const tone: GlyphTone = marker.kind === 'ucdp' || marker.kind === 'country' ? 'crit' : marker.tone;
   const country = marker.kind === 'country';
-  const text = country ? 'text-reported' : TEXT[tone];
+  const text = country ? 'text-reported' : TONE_TEXT[tone];
   return (
     <div
       class={cx(
@@ -258,9 +333,9 @@ function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => 
       <div class="flex items-center justify-between gap-2">
         <span class={cx('flex min-w-0 items-center gap-[7px] font-mono text-[10px] font-semibold tracking-[1px] uppercase', text)}>
           {marker.kind === 'hotspot' ? (
-            <Diamond tone={tone} filled={false} size={8} />
+            <Diamond tone={marker.tone} filled={false} size={8} />
           ) : (
-            <span class={cx('h-[7px] w-[7px] shrink-0', country ? 'rounded-[2px] bg-violence-3' : cx('rounded-full', BG[tone]))} />
+            <span class={cx('h-[7px] w-[7px] shrink-0', country ? 'rounded-[2px] bg-violence-3' : cx('rounded-full', TONE_BG[tone]))} />
           )}
           <span class="truncate">{kind}</span>
         </span>
@@ -276,7 +351,7 @@ function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => 
           {score != null ? (
             <span class="flex gap-[2px]" aria-hidden="true">
               {[1, 2, 3, 4, 5].map((i) => (
-                <span key={i} class={cx('h-[11px] w-[6px] rounded-[1px]', i <= Math.round(score) ? BG[tone] : 'bg-track')} />
+                <span key={i} class={cx('h-[11px] w-[6px] rounded-[1px]', i <= Math.round(score) ? TONE_BG[tone] : 'bg-track')} />
               ))}
             </span>
           ) : null}
@@ -341,7 +416,7 @@ export function LiteMap({
   const boundsKey = bounds.flat().map((v) => v.toFixed(1)).join(',');
 
   const ucdp = useMemo(() => markers.filter((m): m is UcdpMarker => m.kind === 'ucdp'), [markers]);
-  const hotspots = useMemo(() => markers.filter((m): m is HotspotMarker | PinMarker => m.kind !== 'ucdp'), [markers]);
+  const hotspots = useMemo(() => markers.filter((m): m is HotspotMarker | PinMarker | GlyphMarker => m.kind !== 'ucdp'), [markers]);
   const byId = useMemo(() => new Map(markers.map((m) => [m.id, m])), [markers]);
 
   const index = useMemo(() => {
@@ -516,8 +591,12 @@ export function LiteMap({
         else el.dataset.marker = id;
         const pin = s.type === 'marker' && s.marker.kind === 'pin' ? s.marker : null;
         const [dx, dy] = pin?.nudge ?? [0, 0];
-        const offset: [number, number] = [(pin ? -8 : -9) + dx, dy];
-        const options = hotspot ? { element: el, anchor: 'left' as const, offset } : { element: el };
+        const glyph = s.type === 'marker' && s.marker.kind === 'glyph' ? s.marker : null;
+        const offset: [number, number] = [(glyph ? -glyphWidth(glyph.shape) / 2 : pin ? -8 : -9) + dx, dy];
+        // A tag sits just above its point, so it never hides the mark there.
+        const options = glyph?.shape === 'tag'
+          ? { element: el, anchor: 'bottom' as const, offset: [0, -10] as [number, number] }
+          : hotspot ? { element: el, anchor: 'left' as const, offset } : { element: el };
         entry = { marker: new lib.Marker(options).setLngLat(lngLat).addTo(map), el };
         onMap.set(id, entry);
       } else {
@@ -528,9 +607,12 @@ export function LiteMap({
       // A hotspot's element spans its name too, so only the diamond button inside takes clicks.
       // Pins: signals on top, chokepoints over lanes, centres at the bottom.
       const named = s.type === 'marker' && s.marker.kind !== 'ucdp' && Boolean(s.marker.label);
+      // Glyphs: tags on top (they are small and sit above their point), then attack hexagons.
       const pinLayer = s.type === 'marker' && s.marker.kind === 'pin'
         ? s.marker.shape === 'signal' ? (s.marker.fired ? 'z-[3]' : 'z-[2]') : s.marker.shape === 'chokepoint' ? 'z-[1]' : 'z-0'
-        : null;
+        : s.type === 'marker' && s.marker.kind === 'glyph'
+          ? s.marker.shape === 'tag' ? 'z-[3]' : s.marker.shape === 'hex' ? 'z-[2]' : 'z-[1]'
+          : null;
       entry.el.classList.remove('z-0', 'z-[1]', 'z-[2]', 'z-[3]', 'pointer-events-none');
       entry.el.classList.add(pinLayer ?? (!hotspot ? 'z-[1]' : named ? 'z-[2]' : 'z-0'));
       if (hotspot) entry.el.classList.add('pointer-events-none');
@@ -549,6 +631,8 @@ export function LiteMap({
             <HotspotPin marker={m} selected={selected === m.id} onClick={toggle} />
           ) : m.kind === 'pin' ? (
             <Pin marker={m} selected={selected === m.id} onClick={toggle} />
+          ) : m.kind === 'glyph' ? (
+            <Glyph marker={m} selected={selected === m.id} onClick={toggle} />
           ) : (
             <UcdpCircle deaths={m.deaths} label={m.title} selected={selected === m.id} onClick={toggle} />
           ),
@@ -589,7 +673,7 @@ export function LiteMap({
     const map = mapRef.current;
     if (status !== 'ready' || !map) return;
     const tokens = readLiteMapTokens();
-    const toneColor = ['match', ['get', 'tone'], 'elev', tokens.elev, 'crit', tokens.crit, tokens.track] as unknown as string;
+    const toneColor = ['match', ['get', 'tone'], 'elev', tokens.elev, 'crit', tokens.crit, 'tech', tokens.tech, tokens.track] as unknown as string;
     const empty = { type: 'FeatureCollection' as const, features: [] };
     const sync = () => {
       const fills = (overlays?.fills ?? empty) as GeoJSON.FeatureCollection;
@@ -598,7 +682,7 @@ export function LiteMap({
       if (fillSource) fillSource.setData(fills);
       else {
         map.addSource('lite-fills', { type: 'geojson', data: fills });
-        map.addLayer({ id: 'lite-fills', type: 'fill', source: 'lite-fills', paint: { 'fill-color': toneColor, 'fill-opacity': 0.14 } }, 'country-label');
+        map.addLayer({ id: 'lite-fills', type: 'fill', source: 'lite-fills', paint: { 'fill-color': toneColor, 'fill-opacity': ['coalesce', ['get', 'opacity'], 0.14] as unknown as number } }, 'country-label');
         map.addLayer({ id: 'lite-fills-outline', type: 'line', source: 'lite-fills', paint: { 'line-color': toneColor, 'line-width': 1, 'line-opacity': 0.8 } }, 'country-label');
       }
       const lineSource = map.getSource('lite-lines') as GeoJSONSource | undefined;

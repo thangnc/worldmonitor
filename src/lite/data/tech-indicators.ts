@@ -201,7 +201,7 @@ function outageFeed(state: ResourceState<ListInternetOutagesResponse>, news: rea
       id: 'internet-outage', domain: 'tech', name: `Internet outage · ${newest.country || 'unknown country'}`,
       value: scope, change: cause || undefined, rule: 'new outage',
       detail: facts.join(' · '),
-      trust: { level: 'reported', source: 'Cloudflare Radar' }, at: newest.detectedAt, updatedAt: fetchedAt ?? undefined,
+      trust: { level: 'reported', source: 'Cloudflare Radar' }, at: newest.detectedAt, updatedAt: fetchedAt ?? undefined, focusId: `outage:${newest.id}`,
       links: linkNews(outageSubject(newest), news, newest.detectedAt, LINK_WINDOW_HOURS.tech),
     };
   }
@@ -230,7 +230,7 @@ function serviceFeed(state: ResourceState<ListServiceStatusesResponse>, news: re
       id: 'service-outage', domain: 'tech', name: `Service outage · ${top.name}`,
       value: SERVICE_LEVEL[top.status] ?? 'Outage', change: 'outage', rule: 'partial or major',
       detail: [top.description || 'No incident text on the status page', ...(others.length ? [`also: ${others.join(', ')}`] : [])].join(' · '),
-      trust: { level: 'official', source: `${top.name} status page` }, at, updatedAt: checkedAt ?? undefined,
+      trust: { level: 'official', source: `${top.name} status page` }, at, updatedAt: checkedAt ?? undefined, focusId: `provider:${top.id}`,
       links: linkNews({ drivers: out.flatMap((s) => WATCHED_PROVIDERS[s.id] ?? [s.name]) }, news, at, LINK_WINDOW_HOURS.tech),
     };
   }
@@ -351,7 +351,7 @@ function spikeFeed(state: ResourceState<ThreatHistory>, news: readonly LiteItem[
       id: 'attack-spike', domain: 'tech', name: 'Attack infrastructure spike',
       value: `${total.toLocaleString('en-US')} indicators`, change: `×${base.ratio.toFixed(1)} vs 7d`, rule: `×${SPIKE_RATIO}`,
       detail: [feeds.join(' · '), families ? `top families: ${families}` : null].filter(Boolean).join(' — '),
-      trust: { level: 'reported', source: `${Object.keys(bySource).length} threat feeds` }, at: at ?? now, updatedAt: at ?? undefined,
+      trust: { level: 'reported', source: `${Object.keys(bySource).length} threat feeds` }, at: at ?? now, updatedAt: at ?? undefined, focusId: 'attackers',
       links: linkNews({ drivers: ['botnet', ...Object.keys(byFamily).slice(0, 5)] }, news, at ?? now, LINK_WINDOW_HOURS.tech),
     };
   }
