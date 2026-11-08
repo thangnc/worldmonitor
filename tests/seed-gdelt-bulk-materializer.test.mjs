@@ -10,11 +10,15 @@ const {
   afterPublish,
   COUNTRY_ARTICLES_ACTIVATION_KEY,
   COUNTRY_ARTICLES_META_KEY,
+  CONFLICT_COUNTS_ACTIVATION_KEY,
+  CONFLICT_COUNTS_META_KEY,
+  conflictCountsRecordCount,
   countryIndexRecordCount,
   fetchGdeltBulkFiles,
   fetchMaterializedGdelt,
   GDELT_BULK_MAX_CONTENT_AGE_MIN,
   GDELT_BULK_ARTICLES_KEY,
+  GDELT_BULK_CONFLICT_COUNTS_KEY,
   GDELT_BULK_CONFLICT_KEY,
   GDELT_BULK_COUNTRY_ARTICLES_KEY,
   GDELT_BULK_STATE_KEY,
@@ -338,6 +342,11 @@ function publicationData() {
       }]),
     ),
     _conflict: { events: [{ id: 'c1' }] },
+    _conflictCounts: {
+      updatedAt: Date.parse('2026-07-30T12:05:00Z'), cursor: '20260730120000', cohortsPerHour: 4, cohortsPerDay: 96,
+      hours: [{ hour: '2026-07-30T12', cohorts: 1, byCountry: { SA: 3 } }],
+      days: [{ date: '2026-07-30', cohorts: 49, byCountry: { SA: 40, UA: 90 } }],
+    },
     _unrest: { events: [{ id: 'u1' }] },
     _positive: { events: [{ name: 'p1' }] },
     _reference: { articles: [{ title: 'r1' }] },
@@ -851,6 +860,12 @@ describe('seed-gdelt-bulk-materializer publication cohort', () => {
     assert.equal(dyadWrite.type, 'meta');
     assert.equal(dyadWrite.args[2], 92 * 86_400);
     assert.equal(dyadWrite.args[4], 'seed-meta:gdelt:bulk:dyad-tension');
+    const countsWrite = writes.find(({ key }) => key === GDELT_BULK_CONFLICT_COUNTS_KEY);
+    assert.equal(countsWrite.type, 'meta', 'the Lite conflict counts publish with their own seed-meta');
+    assert.deepEqual(countsWrite.args[1], data._conflictCounts);
+    assert.equal(countsWrite.args[2], 6 * 60 * 60, 'more than 3x the 15-minute cadence');
+    assert.equal(countsWrite.args[3], 2, 'recordCount is the countries with any conflict count');
+    assert.equal(countsWrite.args[4], CONFLICT_COUNTS_META_KEY);
     const countryIndexWrite = writes.find(({ key }) => key === GDELT_BULK_COUNTRY_ARTICLES_KEY);
     assert.equal(countryIndexWrite.type, 'meta', 'the per-country index publishes with its own seed-meta record (#7748)');
     assert.deepEqual(countryIndexWrite.args[1], data._countryIndex);
@@ -899,6 +914,27 @@ describe('seed-gdelt-bulk-materializer publication cohort', () => {
     assert.equal(marked, 1, 'a failed sibling write does not hold the index probe pending');
   });
 
+  it('activates the conflict-counts probe only after its own publish lands', async () => {
+    const data = publicationData();
+    const marked = [];
+    const deps = (metaWrite) => ({
+      _writeExtraKey: async () => undefined,
+      _writeExtraKeyWithMeta: metaWrite,
+      _writeConflictCountsActivationMarker: async () => { marked.push(CONFLICT_COUNTS_ACTIVATION_KEY); },
+    });
+    await afterPublish(data, undefined, deps(async () => true));
+    assert.deepEqual(marked, [CONFLICT_COUNTS_ACTIVATION_KEY]);
+    marked.length = 0;
+    const outcome = await afterPublish(data, undefined, deps(async (key) => key !== GDELT_BULK_CONFLICT_COUNTS_KEY));
+    assert.deepEqual(marked, [], 'a rejected counts write must not activate the probe');
+    assert.equal(outcome.completionState, 'DEGRADED', 'and the cursor is held');
+  });
+
+  it('counts each country once across hours and days', () => {
+    assert.equal(conflictCountsRecordCount({ hours: [{ byCountry: { SA: 1 } }], days: [{ byCountry: { SA: 9, UA: 2 } }] }), 2);
+    assert.equal(conflictCountsRecordCount(undefined), 0);
+  });
+
   it('preserves every derived key with its configured freshness TTL', () => {
     const expected = [
       ...TOPICS.flatMap((topic) => [
@@ -906,6 +942,8 @@ describe('seed-gdelt-bulk-materializer publication cohort', () => {
         { key: `gdelt:intel:vol:${topic}`, ttlSeconds: 7 * 86_400 },
       ]),
       { key: GDELT_BULK_CONFLICT_KEY, ttlSeconds: 6 * 60 * 60 },
+      { key: GDELT_BULK_CONFLICT_COUNTS_KEY, ttlSeconds: 6 * 60 * 60 },
+      { key: CONFLICT_COUNTS_META_KEY, ttlSeconds: 7 * 86_400 },
       { key: GDELT_BULK_UNREST_KEY, ttlSeconds: 4.5 * 60 * 60 },
       { key: GDELT_BULK_ARTICLES_KEY, ttlSeconds: 2 * 86_400 },
       { key: GDELT_BULK_COUNTRY_ARTICLES_KEY, ttlSeconds: 2 * 86_400 },

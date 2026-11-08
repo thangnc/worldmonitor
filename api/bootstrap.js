@@ -99,6 +99,12 @@ const TIER_CDN_CACHE = {
 // budget guarantees the shield outlives a complete seed cycle.
 // tests/bootstrap-on-demand-cache-budget.test.mts enforces the ceiling.
 const ON_DEMAND_CACHE_PROFILES = {
+  // GDELT conflict counts for the Lite map: a 15-minute publisher with a
+  // 45-minute health budget, so the CDN holds one interval.
+  gdeltConflictCounts: {
+    browser: 'max-age=300, stale-while-revalidate=300, stale-if-error=900',
+    cdn: 'public, s-maxage=900, stale-while-revalidate=300, stale-if-error=900',
+  },
   ukmtoIncidents: {
     browser: 'max-age=60, stale-while-revalidate=60, stale-if-error=60',
     cdn: 'public, s-maxage=60, stale-while-revalidate=60, stale-if-error=60',

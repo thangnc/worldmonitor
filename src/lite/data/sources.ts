@@ -27,6 +27,7 @@ import type { UnrestEvent } from '@/generated/client/worldmonitor/unrest/v1/serv
 import type { Earthquake } from '@/generated/client/worldmonitor/seismology/v1/service_client';
 import type { MilitaryFlight } from '@/generated/client/worldmonitor/military/v1/service_client';
 import { MILITARY_QUERY_REGIONS } from '@/config/military';
+import { isConflictCounts, type ConflictCounts } from './conflict';
 import type {
   GetEconomicCalendarResponse,
   GetGovernmentYieldCurveResponse,
@@ -51,7 +52,7 @@ import {
 import { getRpcBaseUrl, rpcFetch } from '@/services/rpc-client';
 import { publicRpcFetch } from '@/services/public-rpc-fetch';
 import { toApiUrl } from '@/services/runtime';
-import { fetchBootstrapData, getHydratedData, waitForBootstrapSlowTier } from '@/services/bootstrap';
+import { ensureHydrated, fetchBootstrapData, getHydratedData, waitForBootstrapSlowTier } from '@/services/bootstrap';
 import { fetchServerInsights, type ServerInsights } from '@/services/insights-loader';
 
 const options = { fetch: rpcFetch };
@@ -333,6 +334,12 @@ export interface CompactHealth {
   status: string;
   checkedAt?: string;
   summary?: { total?: number; ok?: number; warn?: number; stale?: number; empty?: number; error?: number };
+}
+
+/** GDELT conflict counts for the Lite map (on-demand bootstrap key, CDN-shielded). */
+export async function loadConflictCounts(): Promise<ConflictCounts | null> {
+  const value = await ensureHydrated('gdeltConflictCounts');
+  return isConflictCounts(value) ? value : null;
 }
 
 export async function loadHealth(): Promise<CompactHealth | null> {

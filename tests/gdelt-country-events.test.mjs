@@ -1,7 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  conflictCountsProjection,
   countryEventsDayStamps,
+  COUNTRY_EVENTS_HOURS,
   COUNTRY_EVENTS_MIN_BASELINE_DAYS,
   COUNTRY_EVENTS_MIN_WEEK_DAYS,
   COUNTRY_EVENTS_REPAIR_BACKOFF_MS,
@@ -352,5 +354,57 @@ describe('summarizeCountryEvents', () => {
       const summary = summarizeCountryEvents(snapshot, now);
       assert.deepEqual(summary.byCountry.UA.strikes, { [dayOf(now - 3 * DAY)]: [12, 300] });
     });
+  });
+});
+
+describe('hourly conflict buckets and the Lite projection', () => {
+  const now = Date.parse('2026-10-12T20:10:00Z');
+
+  it('adds each live cohort\'s conflict count to the UTC hour it covers, once', () => {
+    const batches = [
+      { timestamp: '20261012191500', countries: { SA: [10, 4, 1, 0], FR: [5, 0, 2, 0] } },
+      { timestamp: '20261012194500', countries: { SA: [8, 3, 0, 0] } },
+      { timestamp: '20261012200000', countries: { UA: [20, 9, 0, 2] } },
+      // Listed before its stamp (now is 20:10): it covers 20:00-20:15.
+      { timestamp: '20261012201500', countries: { IL: [6, 5, 0, 0] } },
+    ];
+    const first = mergeCountryEventsBuckets(null, batches, now);
+    assert.deepEqual(first.hours['2026-10-12T19'], { cohorts: 3, countries: { SA: 7, UA: 9 } }, 'the 20:00 cohort covers 19:45-20:00; protest-only France is not a conflict count');
+    assert.deepEqual(first.hours['2026-10-12T20'], { cohorts: 1, countries: { IL: 5 } }, 'a cohort listed ahead of its stamp is counted, not dropped behind the cursor');
+    assert.equal(first.cursor, '20261012201500');
+    const replay = mergeCountryEventsBuckets(first, batches, now);
+    assert.deepEqual(replay.hours, first.hours, 'a replayed cohort is not counted twice');
+  });
+
+  it(`keeps only the last ${COUNTRY_EVENTS_HOURS} hours`, () => {
+    const previous = { cursor: '20261012190000', days: {}, hours: { '2026-10-10T19': { cohorts: 4, countries: { SA: 1 } }, '2026-10-10T21': { cohorts: 4, countries: { SA: 2 } } } };
+    const merged = mergeCountryEventsBuckets(previous, [], now);
+    assert.deepEqual(Object.keys(merged.hours), ['2026-10-10T21']);
+  });
+
+  it('keeps the hours through a day repair', () => {
+    const snapshot = { cursor: '20261012194500', days: {}, hours: { '2026-10-12T19': { cohorts: 4, countries: { SA: 7 } } } };
+    assert.deepEqual(replaceCountryEventsDays(snapshot, {}, now).hours, snapshot.hours);
+  });
+
+  it('projects 48 hours and 30 days of conflict counts, oldest first, with cohort counts and no zero entries', () => {
+    const snapshot = {
+      cursor: '20261012200000',
+      days: { '2026-10-12': { cohorts: 81, strikeCohorts: 81, countries: { SA: [100, 40, 1, 2], FR: [50, 0, 9, 0] } } },
+      hours: { '2026-10-12T19': { cohorts: 3, countries: { SA: 7 } } },
+    };
+    const out = conflictCountsProjection(snapshot, now);
+    assert.equal(out.updatedAt, now);
+    assert.equal(out.cursor, '20261012200000');
+    assert.equal(out.hours.length, COUNTRY_EVENTS_HOURS);
+    assert.equal(out.hours[0].hour, '2026-10-10T21');
+    assert.equal(out.hours.at(-1).hour, '2026-10-12T20');
+    assert.deepEqual(out.hours.at(-2), { hour: '2026-10-12T19', cohorts: 3, byCountry: { SA: 7 } });
+    assert.deepEqual(out.hours.at(-1), { hour: '2026-10-12T20', cohorts: 0, byCountry: {} }, 'an hour with no cohort reads as unknown, not quiet');
+    assert.equal(out.days.length, 30);
+    assert.equal(out.days[0].date, '2026-09-13');
+    assert.deepEqual(out.days.at(-1), { date: '2026-10-12', cohorts: 81, byCountry: { SA: 40 } });
+    assert.equal(out.cohortsPerHour, 4);
+    assert.equal(out.cohortsPerDay, 96);
   });
 });
