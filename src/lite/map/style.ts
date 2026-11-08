@@ -24,6 +24,9 @@ export interface LiteMapTokens {
   dim: string;
   /** Reported-violence shading steps 1–4. */
   violence: readonly [string, string, string, string];
+  /** Context overlays: amber for disrupted lanes and new sanctions, red for incidents. */
+  elev: string;
+  crit: string;
 }
 
 // Mirrors src/lite/lite.css. Used only when the CSS variables are not
@@ -34,6 +37,8 @@ const FALLBACK_TOKENS: LiteMapTokens = {
   track: '#2e3540',
   dim: '#5f6874',
   violence: ['#1f3a5c', '#24508a', '#2f6fc4', '#5b9cf0'],
+  elev: '#e8c547',
+  crit: '#f2555a',
 };
 
 /** Reads the Lite `@theme` colors from CSS variables. */
@@ -46,6 +51,8 @@ export function readLiteMapTokens(root: Element = document.documentElement): Lit
     surface: read('surface', FALLBACK_TOKENS.surface),
     track: read('track', FALLBACK_TOKENS.track),
     dim: read('dim', FALLBACK_TOKENS.dim),
+    elev: read('elev', FALLBACK_TOKENS.elev),
+    crit: read('crit', FALLBACK_TOKENS.crit),
     violence: [read('violence-1', v[0]), read('violence-2', v[1]), read('violence-3', v[2]), read('violence-4', v[3])],
   };
 }

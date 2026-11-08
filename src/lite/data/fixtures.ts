@@ -59,11 +59,3 @@ export const SAMPLE_WATCHLIST: { group: string; items: SampleWatchItem[] }[] = [
     ],
   },
 ];
-
-export const SAMPLE_LIQUIDATIONS = { value: '$612M', sub: '78% longs' };
-
-/** BTC volume bars from the design, in design pixels (max 30). */
-export const SAMPLE_BTC_VOLUME: number[] = [
-  16, 9, 6, 11, 7, 10, 10, 16, 6, 6, 8, 12, 6, 12, 11, 14, 7, 10, 9, 6, 4, 15, 9, 6,
-  15, 9, 6, 15, 5, 6, 5, 8, 7, 6, 13, 9, 8, 9, 14, 15, 12, 7, 12, 15, 30, 30, 30, 30,
-];

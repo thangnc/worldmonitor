@@ -573,9 +573,11 @@ interface Catalyst {
 function Catalysts() {
   const cal = useMacroCalendar();
   const horizon = Date.now() + 7 * 86_400_000;
+  const today = new Date().toISOString().slice(0, 10);
+  const lastDay = new Date(horizon).toISOString().slice(0, 10);
   const macro: Catalyst[] = cal.status === 'ready'
-    ? cal.data
-        .filter((e) => /high/i.test(e.impact))
+    ? cal.data.events
+        .filter((e) => /high/i.test(e.impact) && e.date.slice(0, 10) >= today && e.date.slice(0, 10) <= lastDay)
         .map((e) => ({
           date: e.date.slice(0, 10),
           title: `${e.country ? `${e.country} ` : ''}${e.event}`,

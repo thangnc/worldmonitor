@@ -56,24 +56,28 @@ function run<T>(entry: Entry<T>): Promise<void> {
   return entry.inflight;
 }
 
-/** Subscribes a component to a keyed loader. The first subscriber starts the load. */
-export function useResource<T>(key: string, loader: () => Promise<T | null>): ResourceState<T> {
+/**
+ * Subscribes a component to a keyed loader. The first enabled subscriber
+ * starts the load; a disabled one waits (for a heavy source not needed yet).
+ */
+export function useResource<T>(key: string, loader: () => Promise<T | null>, enabled = true): ResourceState<T> {
   const entry = entryFor(key, loader);
   const [, setTick] = useState(0);
   useEffect(() => {
     const listener = () => setTick((n) => n + 1);
     entry.listeners.add(listener);
-    if (entry.state.status === 'loading' && !entry.inflight) void run(entry);
+    if (enabled && entry.state.status === 'loading' && !entry.inflight) void run(entry);
     return () => {
       entry.listeners.delete(listener);
     };
-  }, [entry]);
+  }, [entry, enabled]);
   return entry.state;
 }
 
 /** Re-runs every loader that has been used. Called by the 5-minute timer. */
 export async function refreshAll(): Promise<void> {
-  await Promise.all([...entries.values()].map((entry) => run(entry)));
+  // A source still waiting for its first enabled subscriber stays unloaded.
+  await Promise.all([...entries.values()].filter((entry) => entry.state.status !== 'loading' || entry.inflight).map((entry) => run(entry)));
 }
 
 /** Test hook: forget every cached result. */

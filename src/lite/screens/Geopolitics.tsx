@@ -154,7 +154,8 @@ function ConflictMap({
   const earthquakes = useEarthquakes();
   const flights = useMilitaryFlights();
   const conflict = useConflictCounts();
-  const [focus, setFocus] = useState<{ id: string; n: number } | null>(null);
+  // A hotspot tile opens its card on the map; closing the card clears it, so the same tile can open it again.
+  const [focus, setFocus] = useState<string | null>(null);
 
   // The dashboard's live hotspot score, from whichever of its inputs have loaded.
   const escalation = useMemo(
@@ -295,7 +296,7 @@ function ConflictMap({
       }
     >
       <div class="relative h-[300px] overflow-hidden bg-bg/40 md:h-[380px]">
-        <LiteMap markers={markers} fit={region === 'all' ? 'world' : 'markers'} countries={countries} focus={focus} />
+        <LiteMap markers={markers} fit={region === 'all' ? 'world' : 'markers'} countries={countries} focusId={focus} onSelect={(id) => { if (id !== focus) setFocus(null); }} />
         {(ucdp.status !== 'ready' && layers.conflicts) || (conflict.status !== 'ready' && layers.violence) ? (
           <div class="pointer-events-none absolute left-14 right-14 top-4 z-[4] flex flex-col items-start gap-1">
             {conflict.status !== 'ready' && layers.violence ? (
@@ -334,7 +335,7 @@ function ConflictMap({
           </span>
         </div>
       </div>
-      <HotspotStrip tiles={tiles} onSelect={(id) => setFocus((f) => ({ id: `hotspot:${id}`, n: (f?.n ?? 0) + 1 }))} />
+      <HotspotStrip tiles={tiles} onSelect={(id) => setFocus(`hotspot:${id}`)} />
     </Card>
   );
 }

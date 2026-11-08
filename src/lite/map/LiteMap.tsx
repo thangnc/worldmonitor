@@ -1,6 +1,6 @@
-import { render } from 'preact';
+import { render, type ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { Map as MapLibreMap, Marker as MapLibreMarker } from 'maplibre-gl';
+import type { GeoJSONSource, Map as MapLibreMap, Marker as MapLibreMarker } from 'maplibre-gl';
 import Supercluster from 'supercluster';
 import { Locate, Minus, Plus, X } from 'lucide-preact';
 import type { Tone } from '../data/transforms';
@@ -10,13 +10,16 @@ import { getCountriesGeoJson } from '@/services/country-geometry';
 import { LABEL_MIN_RADIUS, WORLD_BOUNDS, compactCount, markerBounds, placeCard, ucdpRadius } from './view';
 
 /**
- * The Lite conflict map: MapLibre on OpenFreeMap vector tiles, styled from the
- * Lite `@theme` tokens (./style.ts). The canvas cannot take Tailwind classes,
- * but everything drawn over it can: markers, the detail card and the controls
- * are Preact elements with Tailwind classes.
+ * The Lite map: MapLibre on OpenFreeMap vector tiles, styled from the Lite
+ * `@theme` tokens (./style.ts). The canvas cannot take Tailwind classes, but
+ * everything drawn over it can: markers, the detail card and the controls are
+ * Preact elements with Tailwind classes. Context geometry (lane lines, country
+ * fills) is drawn as MapLibre layers under the labels, coloured from the same
+ * tokens.
  *
  * UCDP locations cluster by zoom (supercluster), sized by deaths; clicking a
  * cluster zooms in until it splits. Curated hotspots are diamonds with a name.
+ * Pins (Finance signals, chokepoints, financial centres) are never clustered.
  * Clicking a location or hotspot opens one card beside it, joined by a leader
  * line; clicking the map, the close button or Escape closes it. MapLibre is
  * loaded on first use, so the other Lite screens never download it.
@@ -36,6 +39,8 @@ export interface MapCard {
   lines: readonly CardLine[];
   /** Hotspot score on the 1–5 scale, drawn as five segments. */
   score?: number;
+  /** Replaces the value and lines, e.g. the indicator cards a pin carries. */
+  body?: ComponentChildren;
 }
 
 interface MarkerBase {
@@ -60,13 +65,32 @@ export interface HotspotMarker extends MarkerBase {
   label: string;
 }
 
+export interface PinMarker extends MarkerBase {
+  kind: 'pin';
+  /** `signal`: a dot, filled when fired; `chokepoint`: a ring; `centre`: a small square, context only. */
+  shape: 'signal' | 'chokepoint' | 'centre';
+  tone: Tone;
+  fired: boolean;
+  /** Name chip beside the mark, and its second line. Hidden on phones. */
+  label?: string;
+  sub?: string;
+  /** Pixel nudge for a pin that would sit on a neighbour at world zoom (Fed and NYSE). */
+  nudge?: [number, number];
+}
+
 /** A shaded country the user clicked; its card sits at the click point. */
 export interface CountryMarker extends MarkerBase {
   kind: 'country';
 }
 
-export type MapMarker = UcdpMarker | HotspotMarker;
+export type MapMarker = UcdpMarker | HotspotMarker | PinMarker;
 type ShownMarker = MapMarker | CountryMarker;
+
+/** Lines and fills drawn under the labels, coloured by each feature's `tone`. */
+export interface MapOverlays {
+  lines?: { type: 'FeatureCollection'; features: unknown[] };
+  fills?: { type: 'FeatureCollection'; features: unknown[] };
+}
 
 /** Country shading: ISO2 → step 1–4 (0 or absent is unshaded), and each shaded country's card. */
 export interface CountryFill {
@@ -164,6 +188,54 @@ function HotspotPin({ marker, selected, onClick }: { marker: HotspotMarker; sele
   );
 }
 
+const PIN_DOT: Readonly<Record<Tone, string>> = {
+  crit: 'border-crit', high: 'border-high', elev: 'border-elev', ok: 'border-ok', muted: 'border-muted', dim: 'border-dim',
+};
+
+/** The signal, chokepoint and centre marks, shared with the map legend. */
+export function PinMark({ shape, tone, fired }: { shape: PinMarker['shape']; tone: Tone; fired: boolean }) {
+  if (shape === 'centre') return <span class="block h-[5px] w-[5px] bg-dim" aria-hidden="true" />;
+  if (shape === 'chokepoint') {
+    return <span class={cx('block h-[11px] w-[11px] rounded-full border-2', PIN_DOT[tone], tone === 'dim' ? 'bg-bg/70' : 'bg-bg')} aria-hidden="true" />;
+  }
+  // Finance signals always take the Finance domain colour.
+  return fired ? (
+    <span class="block h-[11px] w-[11px] rounded-full border-2 border-ink/80 bg-fin" aria-hidden="true" />
+  ) : (
+    <span class="block h-[11px] w-[11px] rounded-full border-2 border-fin bg-bg" aria-hidden="true" />
+  );
+}
+
+function Pin({ marker, selected, onClick }: { marker: PinMarker; selected: boolean; onClick: () => void }) {
+  if (marker.shape === 'centre') {
+    return <span class="flex h-[16px] w-[16px] items-center justify-center" title={marker.title}><PinMark shape="centre" tone="dim" fired={false} /></span>;
+  }
+  const chip = marker.shape === 'signal' ? (marker.fired ? 'text-fin' : 'text-muted') : marker.tone === 'dim' ? 'text-muted' : TEXT[marker.tone];
+  return (
+    <div class="pointer-events-none flex items-center gap-[5px]">
+      <button
+        type="button"
+        aria-label={marker.title}
+        aria-expanded={selected}
+        title={marker.title}
+        class={cx('pointer-events-auto flex h-[16px] w-[16px] cursor-pointer items-center justify-center rounded-full', selected && 'ring-2 ring-ink/60')}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+      >
+        <PinMark shape={marker.shape} tone={marker.tone} fired={marker.fired} />
+      </button>
+      {marker.label ? (
+        <span class={cx('hidden flex-col rounded-[4px] border bg-bg/85 px-[6px] py-[2px] sm:flex', marker.fired ? 'border-line' : 'border-transparent')}>
+          <span class={cx('whitespace-nowrap text-[11px] font-medium leading-4', chip)}>{marker.label}</span>
+          {marker.sub ? <span class="whitespace-nowrap font-mono text-[10px] leading-[14px] text-muted">{marker.sub}</span> : null}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 const LINE_CLASS: Record<NonNullable<CardLine['style']> | 'text', string> = {
   text: 'text-[11.5px] leading-[16px] text-muted',
   mono: 'font-mono text-[11px] leading-[16px] text-ink',
@@ -171,13 +243,16 @@ const LINE_CLASS: Record<NonNullable<CardLine['style']> | 'text', string> = {
 };
 
 function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => void }) {
-  const { kind, name, value, lines, score } = marker.popup;
-  const tone: Tone = marker.kind === 'hotspot' ? marker.tone : 'crit';
+  const { kind, name, value, lines, score, body } = marker.popup;
+  const tone: Tone = marker.kind === 'ucdp' || marker.kind === 'country' ? 'crit' : marker.tone;
   const country = marker.kind === 'country';
   const text = country ? 'text-reported' : TEXT[tone];
   return (
     <div
-      class="w-[272px] rounded-[8px] border border-line bg-surface/95 px-[14px] py-3 text-left shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+      class={cx(
+        'rounded-[8px] border border-line bg-surface/95 px-[14px] py-3 text-left shadow-[0_8px_24px_rgba(0,0,0,0.35)]',
+        body ? 'max-h-[340px] w-[330px] max-w-[calc(100vw-56px)] overflow-y-auto' : 'w-[272px]',
+      )}
       data-map-popup={marker.id}
     >
       <div class="flex items-center justify-between gap-2">
@@ -193,6 +268,8 @@ function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => 
           <X size={12} strokeWidth={1.5} />
         </button>
       </div>
+      {body ? <div class="mt-[8px] flex flex-col gap-[10px]">{body}</div> : null}
+      {body ? null : (
       <div class="mt-[6px] flex items-baseline justify-between gap-3">
         <span class="text-[14px] leading-[19px] font-semibold text-ink">{name}</span>
         <span class={cx('flex shrink-0 items-center gap-[6px] font-mono text-[12px]', text)}>
@@ -206,8 +283,9 @@ function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => 
           {value}
         </span>
       </div>
+      )}
       {/* No scroll area: cards hold a few clamped lines; a point with several events gets a summary (src/lite/data/ucdp.ts). */}
-      {lines.map((line, i) => (
+      {(body ? [] : lines).map((line, i) => (
         // Lines can repeat, so key by position.
         <p key={i} class={cx('mt-[5px] line-clamp-3', LINE_CLASS[line.style ?? 'text'])}>
           {line.text}
@@ -225,15 +303,20 @@ export function LiteMap({
   markers,
   fit,
   countries,
-  focus,
+  overlays,
+  focusId,
+  onSelect,
 }: {
   markers: readonly MapMarker[];
   /** `world` shows the whole map; `markers` zooms to the markers (a region filter). */
   fit: 'world' | 'markers';
   /** Country shading (the reported-violence layer); omitted draws none. */
   countries?: CountryFill;
-  /** Opens a marker's card from outside the map (the hotspot strip); `n` repeats a request. */
-  focus?: { id: string; n: number } | null;
+  overlays?: MapOverlays;
+  /** Selects this marker and pans to it (a card elsewhere on the screen was opened). */
+  focusId?: string | null;
+  /** Told when the open marker changes, including closing it. */
+  onSelect?: (id: string | null) => void;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -258,7 +341,7 @@ export function LiteMap({
   const boundsKey = bounds.flat().map((v) => v.toFixed(1)).join(',');
 
   const ucdp = useMemo(() => markers.filter((m): m is UcdpMarker => m.kind === 'ucdp'), [markers]);
-  const hotspots = useMemo(() => markers.filter((m): m is HotspotMarker => m.kind === 'hotspot'), [markers]);
+  const hotspots = useMemo(() => markers.filter((m): m is HotspotMarker | PinMarker => m.kind !== 'ucdp'), [markers]);
   const byId = useMemo(() => new Map(markers.map((m) => [m.id, m])), [markers]);
 
   const index = useMemo(() => {
@@ -424,14 +507,17 @@ export function LiteMap({
     for (const s of shown) {
       const id = s.type === 'cluster' ? s.id : s.marker.id;
       const lngLat: [number, number] = s.type === 'cluster' ? [s.lon, s.lat] : [s.marker.lon, s.marker.lat];
-      const hotspot = s.type === 'marker' && s.marker.kind === 'hotspot';
+      const hotspot = s.type === 'marker' && s.marker.kind !== 'ucdp';
       let entry = onMap.get(id);
       if (!entry) {
         const el = document.createElement('div');
         // The diamond, not its name, sits on the point (anchor left, offset by half the 18 px box).
         if (s.type === 'cluster') el.dataset.cluster = String(s.count);
         else el.dataset.marker = id;
-        const options = hotspot ? { element: el, anchor: 'left' as const, offset: [-9, 0] as [number, number] } : { element: el };
+        const pin = s.type === 'marker' && s.marker.kind === 'pin' ? s.marker : null;
+        const [dx, dy] = pin?.nudge ?? [0, 0];
+        const offset: [number, number] = [(pin ? -8 : -9) + dx, dy];
+        const options = hotspot ? { element: el, anchor: 'left' as const, offset } : { element: el };
         entry = { marker: new lib.Marker(options).setLngLat(lngLat).addTo(map), el };
         onMap.set(id, entry);
       } else {
@@ -440,9 +526,13 @@ export function LiteMap({
       // Set on every render: a hotspot's level, and so its layer, can change on refresh.
       // Named hotspots draw above UCDP circles; grey unnamed ones below, so they never cover a death count.
       // A hotspot's element spans its name too, so only the diamond button inside takes clicks.
-      const named = s.type === 'marker' && s.marker.kind === 'hotspot' && Boolean(s.marker.label);
-      entry.el.classList.remove('z-0', 'z-[1]', 'z-[2]', 'pointer-events-none');
-      entry.el.classList.add(!hotspot ? 'z-[1]' : named ? 'z-[2]' : 'z-0');
+      // Pins: signals on top, chokepoints over lanes, centres at the bottom.
+      const named = s.type === 'marker' && s.marker.kind !== 'ucdp' && Boolean(s.marker.label);
+      const pinLayer = s.type === 'marker' && s.marker.kind === 'pin'
+        ? s.marker.shape === 'signal' ? (s.marker.fired ? 'z-[3]' : 'z-[2]') : s.marker.shape === 'chokepoint' ? 'z-[1]' : 'z-0'
+        : null;
+      entry.el.classList.remove('z-0', 'z-[1]', 'z-[2]', 'z-[3]', 'pointer-events-none');
+      entry.el.classList.add(pinLayer ?? (!hotspot ? 'z-[1]' : named ? 'z-[2]' : 'z-0'));
       if (hotspot) entry.el.classList.add('pointer-events-none');
       if (s.type === 'cluster') {
         const zoomIn = () => {
@@ -457,6 +547,8 @@ export function LiteMap({
         render(
           m.kind === 'hotspot' ? (
             <HotspotPin marker={m} selected={selected === m.id} onClick={toggle} />
+          ) : m.kind === 'pin' ? (
+            <Pin marker={m} selected={selected === m.id} onClick={toggle} />
           ) : (
             <UcdpCircle deaths={m.deaths} label={m.title} selected={selected === m.id} onClick={toggle} />
           ),
@@ -476,15 +568,54 @@ export function LiteMap({
     return byId.get(selected) ?? null;
   }, [selected, picked, countries, byId]);
 
-  // A marker opened from outside the map, eased into view.
+  // Another part of the screen asks for a marker: open it and bring it into view.
   useEffect(() => {
-    if (!focus || status !== 'ready') return;
-    const marker = byId.get(focus.id);
+    if (!focusId) return;
+    const marker = byId.get(focusId);
     if (!marker) return;
-    setSelected(focus.id);
-    mapRef.current?.easeTo({ center: [marker.lon, marker.lat], duration: 600 });
-    // byId changes on every data refresh; only a new request should move the map.
-  }, [focus, status]);
+    setSelected(focusId);
+    const map = mapRef.current;
+    if (status === 'ready' && map) map.easeTo({ center: [marker.lon, marker.lat], duration: 500 });
+  }, [focusId, status]);
+
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+  useEffect(() => {
+    onSelectRef.current?.(selected);
+  }, [selected]);
+
+  // Context geometry: one GeoJSON source per kind, drawn under the labels.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (status !== 'ready' || !map) return;
+    const tokens = readLiteMapTokens();
+    const toneColor = ['match', ['get', 'tone'], 'elev', tokens.elev, 'crit', tokens.crit, tokens.track] as unknown as string;
+    const empty = { type: 'FeatureCollection' as const, features: [] };
+    const sync = () => {
+      const fills = (overlays?.fills ?? empty) as GeoJSON.FeatureCollection;
+      const lines = (overlays?.lines ?? empty) as GeoJSON.FeatureCollection;
+      const fillSource = map.getSource('lite-fills') as GeoJSONSource | undefined;
+      if (fillSource) fillSource.setData(fills);
+      else {
+        map.addSource('lite-fills', { type: 'geojson', data: fills });
+        map.addLayer({ id: 'lite-fills', type: 'fill', source: 'lite-fills', paint: { 'fill-color': toneColor, 'fill-opacity': 0.14 } }, 'country-label');
+        map.addLayer({ id: 'lite-fills-outline', type: 'line', source: 'lite-fills', paint: { 'line-color': toneColor, 'line-width': 1, 'line-opacity': 0.8 } }, 'country-label');
+      }
+      const lineSource = map.getSource('lite-lines') as GeoJSONSource | undefined;
+      if (lineSource) lineSource.setData(lines);
+      else {
+        map.addSource('lite-lines', { type: 'geojson', data: lines });
+        // Normal lines stay faint; toned ones (amber, red) stand out.
+        const toned = ['!=', ['get', 'tone'], 'dim'] as unknown as boolean;
+        map.addLayer({
+          id: 'lite-lines', type: 'line', source: 'lite-lines',
+          paint: { 'line-color': toneColor, 'line-width': ['case', toned, 1.4, 0.8] as unknown as number, 'line-opacity': ['case', toned, 0.85, 0.45] as unknown as number },
+        }, 'country-label');
+      }
+    };
+    if (map.isStyleLoaded()) sync();
+    else map.once('load', sync);
+  }, [status, overlays]);
 
   // A selection whose marker is gone (layer off, region changed) closes.
   useEffect(() => {
