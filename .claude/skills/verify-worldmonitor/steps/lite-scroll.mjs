@@ -73,6 +73,8 @@ export default async function ({ page, base, shot, log, expectVisible }) {
   // is wider than its card: it scrolls sideways under its own overlay bar.
   await page.setViewportSize({ width: 650, height: 900 });
   await expectVisible('[data-testid="connectors"] [data-lite-scroll="x"]');
+  // The overlay starts in an effect after the host renders, so wait for it to attach.
+  await page.waitForSelector('[data-testid="connectors"] [data-lite-scroll="x"][data-overlayscrollbars]', { state: 'attached', timeout: 10_000 });
   const table = await page.$eval('[data-testid="connectors"] [data-lite-scroll="x"]', (host) => {
     const vp = host.querySelector('[data-overlayscrollbars-viewport]');
     return { overlay: host.hasAttribute('data-overlayscrollbars'), overflow: vp ? vp.scrollWidth - vp.clientWidth : -1, gutter: vp ? vp.offsetHeight - vp.clientHeight : -1 };
