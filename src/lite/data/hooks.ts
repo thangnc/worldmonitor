@@ -25,6 +25,7 @@ export const useUcdpEvents = () => useResource('ucdpEvents', src.loadUcdpEvents)
 export const useUnrestEvents = () => useResource('unrestEvents', src.loadUnrestEvents);
 export const useEarthquakes = () => useResource('earthquakes', src.loadEarthquakes);
 export const useMilitaryFlights = () => useResource('militaryFlights', src.loadMilitaryFlights);
+export const useConflictCounts = () => useResource('conflictCounts', src.loadConflictCounts);
 export const useCryptoQuotes = () => useResource('cryptoQuotes', src.loadCryptoQuotes);
 export const useMarketQuotes = () => useResource('marketQuotes', src.loadMarketQuotes);
 export const useCommodityQuotes = () => useResource('commodityQuotes', src.loadCommodityQuotes);
@@ -34,7 +35,13 @@ export const useEtfFlows = () => useResource('etfFlows', src.loadEtfFlows);
 export const useStablecoins = () => useResource('stablecoins', src.loadStablecoins);
 export const useFearGreed = () => useResource('fearGreed', src.loadFearGreed);
 export const useMacroCalendar = () => useResource('macroCalendar', src.loadMacroCalendar);
-export const useCorrelationSeries = () => useResource('correlationSeries', src.loadCorrelationSeries);
+export const useTreasuryCurves = () => useResource('treasuryCurves', src.loadTreasuryCurves);
+export const useOtherBonds = () => useResource('otherBonds', src.loadOtherBonds);
+export const useShippingRates = () => useResource('shippingRates', src.loadShippingRates);
+export const useMaterialEvents = () => useResource('materialEvents', src.loadMaterialEvents);
+export const useChokepoints = () => useResource('chokepoints', src.loadChokepoints);
+export const useSanctions = () => useResource('sanctions', src.loadSanctions);
+export const useCountryShapes = (enabled: boolean) => useResource('countryShapes', src.loadCountryShapes, enabled);
 export const useArxiv = () => useResource('arxiv', src.loadArxiv);
 export const useHackerNews = () => useResource('hackerNews', src.loadHackerNews);
 export const useHealth = () => useResource('health', src.loadHealth);
@@ -142,7 +149,7 @@ export function useConnectorRows(): ConnectorRow[] {
         connector,
         status: connector.digest
           ? digestConnectorStatus(digests[connector.digest], now)
-          : healthConnectorStatus(connector.healthKey ?? '', health, now),
+          : healthConnectorStatus(connector.healthKeys ?? [], health, now),
       })),
     );
   }, [health, full, finance, tech]);

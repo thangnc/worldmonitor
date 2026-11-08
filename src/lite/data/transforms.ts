@@ -228,71 +228,6 @@ export function severityFromDeaths(deaths: number): Tone {
   return 'dim';
 }
 
-function logReturns(series: readonly number[]): number[] {
-  const out: number[] = [];
-  for (let i = 1; i < series.length; i++) {
-    const a = series[i - 1];
-    const b = series[i];
-    if (a && b && a > 0 && b > 0) out.push(Math.log(b / a));
-  }
-  return out;
-}
-
-function stdev(values: readonly number[]): number {
-  if (values.length < 2) return Number.NaN;
-  const mean = values.reduce((s, v) => s + v, 0) / values.length;
-  return Math.sqrt(values.reduce((s, v) => s + (v - mean) ** 2, 0) / (values.length - 1));
-}
-
-/** Annualized realized volatility (%) from evenly spaced closes `periodHours` apart. */
-export function realizedVolatility(closes: readonly number[], periodHours = 1): number | null {
-  const sd = stdev(logReturns(closes));
-  if (!Number.isFinite(sd)) return null;
-  return sd * Math.sqrt((24 * 365) / periodHours) * 100;
-}
-
-/** Pearson correlation of the log returns of two aligned series. */
-export function returnCorrelation(a: readonly number[], b: readonly number[]): number | null {
-  const n = Math.min(a.length, b.length);
-  const ra = logReturns(a.slice(-n));
-  const rb = logReturns(b.slice(-n));
-  const m = Math.min(ra.length, rb.length);
-  if (m < 3) return null;
-  const xa = ra.slice(-m);
-  const xb = rb.slice(-m);
-  const ma = xa.reduce((s, v) => s + v, 0) / m;
-  const mb = xb.reduce((s, v) => s + v, 0) / m;
-  let num = 0;
-  let da = 0;
-  let db = 0;
-  for (let i = 0; i < m; i++) {
-    const ea = (xa[i] ?? 0) - ma;
-    const eb = (xb[i] ?? 0) - mb;
-    num += ea * eb;
-    da += ea * ea;
-    db += eb * eb;
-  }
-  if (da === 0 || db === 0) return null;
-  return num / Math.sqrt(da * db);
-}
-
-export interface CloseBar {
-  open: number;
-  close: number;
-  up: boolean;
-}
-
-/** Close-to-close bars: each bar opens at the previous close. No invented highs or lows. */
-export function closeToCloseBars(closes: readonly number[]): CloseBar[] {
-  const out: CloseBar[] = [];
-  for (let i = 1; i < closes.length; i++) {
-    const open = closes[i - 1] ?? 0;
-    const close = closes[i] ?? 0;
-    out.push({ open, close, up: close >= open });
-  }
-  return out;
-}
-
 export type AlertState = 'triggered' | 'watching' | 'normal';
 
 /** One threshold rule: |value| at or past `trigger` fires, past `watch` is watched. */
@@ -426,10 +361,14 @@ export function cleanSnippet(item: Pick<NewsItem, 'snippet' | 'title'>): string 
   return !text || text.toLowerCase().startsWith(title.slice(0, Math.min(40, title.length))) ? '' : text;
 }
 
-/** The dashboard's map time ranges (`TimeRange` in src/components/DeckGLMap.ts), without "all", plus 30 days. */
-export type TimeRange = '1h' | '6h' | '24h' | '48h' | '7d' | '30d';
+/**
+ * The Geopolitics ranges (owner's design, 2026-11-08): the GDELT conflict
+ * counts hold 48 hourly and 30 daily buckets, so 6h and 24h read hours and
+ * 7d and 30d read days.
+ */
+export type TimeRange = '6h' | '24h' | '7d' | '30d';
 
-export const TIME_RANGE_HOURS: Record<TimeRange, number> = { '1h': 1, '6h': 6, '24h': 24, '48h': 48, '7d': 168, '30d': 720 };
+export const TIME_RANGE_HOURS: Record<TimeRange, number> = { '6h': 6, '24h': 24, '7d': 168, '30d': 720 };
 
 /** True when `ts` falls in the last `range` before `now`; an item without a timestamp stays, as on the dashboard. */
 export function inTimeRange(ts: number | null | undefined, now: number, range: TimeRange): boolean {

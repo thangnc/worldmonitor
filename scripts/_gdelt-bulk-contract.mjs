@@ -5,6 +5,11 @@ export const GDELT_BULK_DYAD_KEY = 'gdelt:bulk:dyad-tension:v1';
 // baseline, for every country (scripts/_gdelt-country-events.mjs). Read by
 // the CII conflict component (server/worldmonitor/intelligence/v1/get-risk-scores.ts).
 export const GDELT_BULK_COUNTRY_EVENTS_KEY = 'gdelt:bulk:country-events:v1';
+// Compact material-conflict article counts per country, 48 hourly and 30 daily
+// buckets (conflictCountsProjection in scripts/_gdelt-country-events.mjs). Read
+// by the Lite Geopolitics map through the on-demand bootstrap key
+// `gdeltConflictCounts`.
+export const GDELT_BULK_CONFLICT_COUNTS_KEY = 'gdelt:bulk:conflict-counts:v1';
 export const GDELT_BULK_CONFLICT_KEY = 'gdelt:bulk:conflict-events:v1';
 export const GDELT_BULK_UNREST_KEY = 'gdelt:bulk:unrest-events:v1';
 export const GDELT_BULK_ARTICLES_KEY = 'gdelt:bulk:articles:v1';

@@ -52,18 +52,18 @@ function coinSymbol(symbol: string): string {
   return STABLECOIN_SYMBOL[symbol.toLowerCase()] ?? symbol.toUpperCase();
 }
 
-function parseTime(value: string | undefined): number | null {
+export function parseTime(value: string | number | undefined): number | null {
   if (!value) return null;
-  const t = Number.isNaN(Number(value)) ? Date.parse(value) : Number(value);
+  const t = typeof value === 'number' ? value : Number.isNaN(Number(value)) ? Date.parse(value) : Number(value);
   return Number.isFinite(t) && t > 0 ? t : null;
 }
 
-function nearDetail(state: ReturnType<typeof thresholdState>, reading: string): string {
+export function nearDetail(state: ReturnType<typeof thresholdState>, reading: string): string {
   return state === 'watching' ? `${reading} · near the trigger` : reading;
 }
 
 /** A quiet feed shows its current reading instead of the generic line. */
-function quietDetail(feed: FeedState, detail: string | null): FeedState {
+export function quietDetail(feed: FeedState, detail: string | null): FeedState {
   return feed.kind === 'quiet' && detail ? { ...feed, detail } : feed;
 }
 

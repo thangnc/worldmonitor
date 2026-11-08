@@ -9,7 +9,6 @@ import {
   shouldRedirectToLite,
 } from '../src/config/lite-route.ts';
 import {
-  closeToCloseBars,
   corroborationOf,
   decodeEntities,
   digestItems,
@@ -20,18 +19,16 @@ import {
   publisherCount,
   interleaveByMarketTag,
   isWarStory,
-  realizedVolatility,
   regionOfCategory,
   regionOfPoint,
   relativeTime,
-  returnCorrelation,
   thresholdState,
   timeBuckets,
 } from '../src/lite/data/transforms.ts';
-import { actorName, eventDates, eventSpan, formatCoordinates, ucdpInRange, ucdpMarkers, ucdpWindowLabel } from '../src/lite/data/ucdp.ts';
+import { actorName, eventDates, eventSpan, formatCoordinates, ucdpBackgroundLabel, ucdpMarkers, ucdpNewest } from '../src/lite/data/ucdp.ts';
 import { CONVERGENCE_RADIUS_KM, MILITARY_RADIUS_KM, escalationLevel, scoreHotspots } from '../src/lite/data/escalation.ts';
 import { computeEscalationScore } from '../shared/analysis-hotspot-escalation.ts';
-import { TIME_RANGE_HOURS, inTimeRange, type TimeRange } from '../src/lite/data/transforms.ts';
+import { TIME_RANGE_HOURS, inTimeRange } from '../src/lite/data/transforms.ts';
 import type { Hotspot } from '../src/types/index.ts';
 import type { UcdpViolenceEvent } from '../src/generated/client/worldmonitor/conflict/v1/service_client.ts';
 import { OPENFREEMAP_TILEJSON, buildLiteMapStyle } from '../src/lite/map/style.ts';
@@ -275,23 +272,6 @@ describe('Lite transforms', () => {
     assert.deepEqual(buckets, [0, 1, 0, 1]);
   });
 
-  it('computes realized volatility and return correlation', () => {
-    assert.equal(realizedVolatility([100]), null);
-    assert.equal(realizedVolatility([100, 100, 100]), 0);
-    const up = [100, 101, 103, 102, 105, 107];
-    assert.ok((realizedVolatility(up) ?? 0) > 0);
-    assert.ok(Math.abs((returnCorrelation(up, up) ?? 0) - 1) < 1e-9);
-    assert.ok((returnCorrelation(up, up.map((v) => 1 / v)) ?? 0) < -0.99);
-    assert.equal(returnCorrelation([1, 2], [1, 2]), null);
-  });
-
-  it('builds close-to-close bars without inventing highs or lows', () => {
-    assert.deepEqual(closeToCloseBars([10, 12, 11]), [
-      { open: 10, close: 12, up: true },
-      { open: 12, close: 11, up: false },
-    ]);
-  });
-
   it('grades thresholds and sentiment extremes, and reports missing data as null', () => {
     assert.equal(thresholdState(-4.8, 2.5, 4), 'triggered');
     assert.equal(thresholdState(3, 2.5, 4), 'watching');
@@ -480,25 +460,11 @@ describe('Lite conflict map', () => {
     assert.equal(eventSpan([{ dateStart: Date.UTC(2026, 8, 3), dateEnd: Date.UTC(2026, 8, 5) }, { dateStart: Date.UTC(2026, 8, 1), dateEnd: 0 }]), '2026-09-01 to 2026-09-05');
   });
 
-  it('filters UCDP by range counted back from now, by whole UCDP days', () => {
-    const now = Date.UTC(2026, 10, 8, 10);
-    const today = Date.UTC(2026, 10, 8);
-    const events = [0, 1, 2, 5, 10, 40].map((back) => ucdpEvent({ id: String(back), dateStart: today - back * 86_400_000 }));
-    const ids = (range: TimeRange) => ucdpInRange(events, range, now).events.map((e) => e.id);
-    // Day-dated: an event counts when any part of its day is inside the range.
-    assert.deepEqual(ids('1h'), ['0']);
-    assert.deepEqual(ids('24h'), ['0', '1']);
-    assert.deepEqual(ids('48h'), ['0', '1', '2']);
-    assert.deepEqual(ids('7d'), ['0', '1', '2', '5']);
-    assert.deepEqual(ids('30d'), ['0', '1', '2', '5', '10']);
-    // A multi-day event counts through its last day; a future one does not.
-    const spanning = ucdpEvent({ id: 's', dateStart: today - 9 * 86_400_000, dateEnd: today - 3 * 86_400_000 });
-    assert.deepEqual(ucdpInRange([spanning, ucdpEvent({ id: 'f', dateStart: today + 86_400_000 })], '7d', now).events.map((e) => e.id), ['s']);
-    // UCDP lags by weeks: a range newer than its newest event is empty, and the subtitle says why.
-    const old = ucdpInRange([ucdpEvent({ dateStart: Date.UTC(2026, 8, 30) })], '7d', now);
-    assert.equal(old.events.length, 0);
-    assert.equal(ucdpWindowLabel('7d', old.events.length, old.newest), "No UCDP events in the last 7d; UCDP's newest is 2026-09-30 (a delayed release)");
-    assert.equal(ucdpWindowLabel('48h', 3, old.newest), 'UCDP events: the last 48h');
+  it('labels UCDP as the verified background with its newest date, whatever the range', () => {
+    const events = [ucdpEvent({ dateStart: Date.UTC(2026, 8, 30) }), ucdpEvent({ dateStart: Date.UTC(2026, 8, 3) }), ucdpEvent({ dateStart: 0 })];
+    assert.equal(ucdpNewest(events), Date.UTC(2026, 8, 30));
+    assert.equal(ucdpBackgroundLabel(ucdpNewest(events)), 'UCDP to 2026-09-30 · verified background');
+    assert.equal(ucdpBackgroundLabel(0), 'UCDP · verified background');
   });
 
   it('filters UCDP markers by region and keeps every location, deadliest first', () => {
@@ -615,15 +581,15 @@ describe('Lite conflict map layout', () => {
 });
 
 describe('Lite time range', () => {
-  it('keeps items inside the dashboard ranges, and items without a time', () => {
+  it('keeps items inside the owner ranges (6h, 24h, 7d, 30d), and items without a time', () => {
     const now = Date.UTC(2026, 10, 8, 12);
-    assert.deepEqual(TIME_RANGE_HOURS, { '1h': 1, '6h': 6, '24h': 24, '48h': 48, '7d': 168, '30d': 720 });
+    assert.deepEqual(TIME_RANGE_HOURS, { '6h': 6, '24h': 24, '7d': 168, '30d': 720 });
     assert.equal(inTimeRange(now - 29 * 24 * 3_600_000, now, '30d'), true);
-    assert.equal(inTimeRange(now - 59 * 60_000, now, '1h'), true);
-    assert.equal(inTimeRange(now - 61 * 60_000, now, '1h'), false);
-    assert.equal(inTimeRange(now - 47 * 3_600_000, now, '48h'), true);
+    assert.equal(inTimeRange(now - 5 * 3_600_000, now, '6h'), true);
+    assert.equal(inTimeRange(now - 7 * 3_600_000, now, '6h'), false);
+    assert.equal(inTimeRange(now - 23 * 3_600_000, now, '24h'), true);
     assert.equal(inTimeRange(now - 8 * 24 * 3_600_000, now, '7d'), false);
-    assert.equal(inTimeRange(0, now, '1h'), true);
+    assert.equal(inTimeRange(0, now, '6h'), true);
   });
 });
 
@@ -688,12 +654,15 @@ describe('Lite Sources connectors', () => {
     for (const c of CONNECTORS) {
       assert.ok(!ids.has(c.id), `duplicate id ${c.id}`);
       ids.add(c.id);
-      // A connector reads either a health check or a digest, never both.
-      assert.equal(Boolean(c.healthKey), !c.digest, c.id);
-      if (!c.healthKey) continue;
-      const meta = SEED_META[c.healthKey];
-      assert.ok(meta, `${c.id}: ${c.healthKey} is not in SEED_META`);
-      assert.equal(c.maxStaleMin, meta.maxStaleMin, `${c.id}: maxStaleMin`);
+      // A connector reads either health checks or a digest, never both.
+      assert.equal(Boolean(c.healthKeys?.length), !c.digest, c.id);
+      if (!c.healthKeys) continue;
+      const ages = c.healthKeys.map((key) => {
+        const meta = SEED_META[key];
+        assert.ok(meta, `${c.id}: ${key} is not in SEED_META`);
+        return meta.maxStaleMin;
+      });
+      assert.equal(c.maxStaleMin, Math.max(...(ages as number[])), `${c.id}: maxStaleMin is the longest check's`);
     }
   });
 
@@ -735,6 +704,11 @@ describe('Lite Sources connectors', () => {
     const passing = healthConnectorStatus('hyperliquidFlow', health, NOW);
     assert.equal(passing.kind, 'live');
     assert.equal(passing.ageMin, undefined);
+    // Several checks: the worst one sets the status and is named.
+    const several = healthConnectorStatus(['hyperliquidFlow', 'stablecoinMarkets', 'econCalendar'], health, NOW);
+    assert.equal(several.kind, 'degraded');
+    assert.equal(several.detail, 'Stale seed · stablecoinMarkets');
+    assert.equal(healthConnectorStatus(['hyperliquidFlow', 'econCalendar'], health, NOW).kind, 'live');
   });
 
   it('never claims live when the health check is loading or unavailable', () => {
@@ -768,7 +742,7 @@ describe('Lite Sources connectors', () => {
     const tally = licenceTally();
     const hosts = new Set(CONNECTORS.flatMap((c) => c.hosts.map((h) => h.host)));
     assert.equal(tally.reviewed.length + tally['terms-review'].length + tally.excluded.length, hosts.size);
-    assert.deepEqual(tally.reviewed, ['api.adsb.lol']);
+    assert.deepEqual(tally.reviewed, ['api.adsb.lol', 'www.sec.gov']);
     const tiers = tierRows();
     assert.deepEqual(tiers.map((t) => t.tier), [1, 2, 3, 4]);
     assert.equal(tiers.reduce((sum, t) => sum + t.outlets, 0), Object.values(SOURCE_TIERS).filter((t) => t >= 1 && t <= 4).length);

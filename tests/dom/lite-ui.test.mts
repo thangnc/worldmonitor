@@ -12,12 +12,34 @@ import { act } from 'preact/test-utils';
 // src/lite/map/LiteMap.tsx calls, and places a marker by appending its element.
 vi.mock('maplibre-gl', () => {
   class FakeMap {
+    static last: FakeMap | null = null;
     touchZoomRotate = { disableRotation: () => undefined };
-    private handlers = new Map<string, Array<() => void>>();
-    constructor(readonly options: { container: HTMLElement }) {}
+    handlers = new Map<string, Array<(e?: unknown) => void>>();
+    // GeoJSON sources (the country fill and the context overlays) and the layers that draw them.
+    sources = new Map<string, { data: unknown; setData: (d: unknown) => void }>();
+    layers: Array<{ id: string; before?: string }> = [];
+    featureState = new Map<string, Record<string, unknown>>();
+    constructor(readonly options: { container: HTMLElement }) { FakeMap.last = this; }
     getContainer(): HTMLElement { return this.options.container; }
-    on(type: string, fn: () => void): this { this.handlers.set(type, [...(this.handlers.get(type) ?? []), fn]); return this; }
-    off(type: string, fn: () => void): this { this.handlers.set(type, (this.handlers.get(type) ?? []).filter((f) => f !== fn)); return this; }
+    on(type: string, fn: (e?: unknown) => void): this { this.handlers.set(type, [...(this.handlers.get(type) ?? []), fn]); return this; }
+    once(type: string, fn: (e?: unknown) => void): this { return this.on(type, fn); }
+    off(type: string, fn: (e?: unknown) => void): this { this.handlers.set(type, (this.handlers.get(type) ?? []).filter((f) => f !== fn)); return this; }
+    fire(type: string, e?: unknown): void { for (const fn of this.handlers.get(type) ?? []) fn(e); }
+    isStyleLoaded(): boolean { return true; }
+    addSource(id: string, spec: { data: unknown }): this {
+      const source = { data: spec.data, setData(d: unknown) { source.data = d; } };
+      this.sources.set(id, source);
+      return this;
+    }
+    getSource(id: string): unknown { return this.sources.get(id); }
+    addLayer(layer: { id: string }, before?: string): this { this.layers.push({ id: layer.id, before }); return this; }
+    getLayer(id: string): unknown { return this.layers.find((l) => l.id === id); }
+    setFeatureState(target: { id: string | number }, state: Record<string, unknown>): void { this.featureState.set(String(target.id), state); }
+    // The fill layer is hit wherever the test clicks: it names the country to hit in `clickCountry`.
+    clickCountry = '';
+    queryRenderedFeatures(): Array<{ id: string; properties: Record<string, string> }> {
+      return this.clickCountry ? [{ id: this.clickCountry, properties: { 'ISO3166-1-Alpha-2': this.clickCountry } }] : [];
+    }
     getZoom(): number { return 1; }
     getBounds() { return { getWest: () => -180, getSouth: () => -85, getEast: () => 180, getNorth: () => 85 }; }
     project(): { x: number; y: number } { return { x: 0, y: 0 }; }
@@ -33,8 +55,16 @@ vi.mock('maplibre-gl', () => {
     addTo(map: FakeMap): this { map.getContainer().appendChild(this.options.element); return this; }
     remove(): this { this.options.element.remove(); return this; }
   }
-  return { Map: FakeMap, Marker: FakeMarker, setWorkerUrl: () => undefined };
+  return { Map: FakeMap, Marker: FakeMarker, setWorkerUrl: () => undefined, __FakeMap: FakeMap };
 });
+
+// The country shapes: one feature is enough for the shading layer to start.
+vi.mock('@/services/country-geometry', () => ({
+  getCountriesGeoJson: vi.fn(async () => ({
+    type: 'FeatureCollection',
+    features: [{ type: 'Feature', properties: { 'ISO3166-1-Alpha-2': 'UA', name: 'Ukraine' }, geometry: { type: 'Polygon', coordinates: [[[22, 44], [40, 44], [40, 52], [22, 52], [22, 44]]] } }],
+  })),
+}));
 vi.mock('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url', () => ({ default: '/maplibre-worker.js' }));
 
 // The bootstrap tiers are out of scope here: resolve them at once and hydrate
@@ -229,7 +259,8 @@ describe('Lite UI shell', () => {
     }, { timeout: 5000 });
     expect(root.querySelector('[data-map-credits]')?.textContent).toContain('OpenStreetMap');
     const legend = root.querySelector('[data-testid="map-legend"]')?.textContent ?? '';
-    expect(legend).toContain('UCDP events · size = deaths');
+    expect(legend).toContain('Reported violence · GDELT');
+    expect(legend).toContain('Verified background · UCDP');
     expect(legend).toContain('Curated hotspot');
     // Every curated hotspot is drawn, as on the dashboard, coloured by the live
     // score. Only news and the curated baseline are available here, so only the
@@ -266,14 +297,15 @@ describe('Lite UI shell', () => {
     });
     expect(root.querySelector('[data-map-popup]')).toBeNull();
 
-    // The time range filters the digest-driven parts: the hour-old incident leaves at 1h.
-    const pick = (range: string) => [...root.querySelectorAll('[data-testid="time-range"] button')].find((b) => b.textContent === range) as HTMLButtonElement;
-    await act(() => pick('1h').click());
-    expect(root.querySelector('h1 + p')?.textContent).toContain('0 active events in 1h');
-    expect(root.querySelector('[data-incident]')).toBeNull();
-    await act(() => pick('7d').click());
-    expect(root.querySelector('h1 + p')?.textContent).toContain('1 active events in 7d');
+    // The owner's ranges; they filter the digest-driven parts (the hour-old incident stays in all of them).
+    const buttons = [...root.querySelectorAll('[data-testid="time-range"] button')];
+    expect(buttons.map((b) => b.textContent)).toEqual(['6h', '24h', '7d', '30d']);
+    const pick = (range: string) => buttons.find((b) => b.textContent === range) as HTMLButtonElement;
+    await act(() => pick('6h').click());
+    expect(root.querySelector('h1 + p')?.textContent).toContain('1 active events in 6h');
     expect(root.querySelector('[data-incident]')?.textContent).toContain('Naval incident near Bab el-Mandeb');
+    // No GDELT counts here: the violence feed names its seeder instead of guessing.
+    expect(root.querySelector('[data-testid="geo-indicators"] [data-feed="violence"]')?.getAttribute('data-feed-state')).toBe('unavailable');
 
     // The sidebar's Briefing link returns home.
     await act(() => (root.querySelector('[data-nav="briefing"]') as HTMLAnchorElement).click());
@@ -299,7 +331,11 @@ describe('Lite UI shell', () => {
       expect(states()).not.toContain('loading');
     }, { timeout: 10_000, interval: 50 });
     expect(states()).toContain('error');
-    expect(root.querySelector('[data-testid="derivatives"] [data-sample="true"]')).not.toBeNull();
+    // Step 3b: the chart widgets and their samples are gone; five 1D tickers and the markets map remain.
+    for (const gone of ['btc-detail', 'derivatives', 'correlation']) expect(root.querySelector(`[data-testid="${gone}"]`)).toBeNull();
+    expect(root.querySelector('[data-lite-screen] [data-sample="true"]')).toBeNull();
+    expect([...root.querySelectorAll('[data-testid="ticker-strip"] [data-ticker]')].map((t) => t.getAttribute('data-ticker'))).toEqual(['BTC', 'Brent', 'Gold', 'S&P 500', 'US 10Y']);
+    expect(root.querySelector('[data-testid="markets-map"]')).not.toBeNull();
 
     await act(() => (root.querySelector('[data-nav="tech"]') as HTMLAnchorElement).click());
     await flush();
@@ -376,6 +412,134 @@ describe('Lite indicator card', () => {
       await act(() => { full.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
       expect(panel().querySelector('article[data-indicator="stablecoin-depeg"]')).toBeNull();
       expect(panel().querySelector('button[data-indicator="stablecoin-depeg"]')).not.toBeNull();
+    } finally {
+      vi.stubGlobal('fetch', base);
+    }
+  });
+
+  it('renders the step-3 Finance feeds with their detail line, and the Treasury curve today against a week ago', async () => {
+    const base = fetch;
+    const now = Date.now();
+    const day = (offset: number) => Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate()) + offset * 86_400_000;
+    const curve = (date: number, twoYear: number, tenYear: number) => ({ date, threeMonth: 4.19, twoYear, fiveYear: 4.64, tenYear, thirtyYear: 5.26 });
+    const filingsDigest = {
+      ...DIGEST,
+      categories: {
+        ...DIGEST.categories,
+        // The Treasury rule fires at the 16:00 New York close of the curve's date.
+        markets: { items: [{ source: 'Reuters', title: 'Treasury yields jump as traders reprice Fed path', link: 'https://example.com/ust', publishedAt: day(0) + 20 * 3_600_000, isAlert: false, locationName: '', importanceScore: 60, corroborationCount: 3, snippet: '', tickers: [], credibilityScore: 70 }] },
+      },
+    };
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+      if (url.includes('/api/news/v1/list-feed-digest')) return json(filingsDigest);
+      if (url.includes('/api/economic/v1/get-us-treasury-par-yield-curve')) {
+        return json({ unavailable: false, curves: [curve(day(-8), 4.56, 4.94), curve(day(-1), 4.4, 4.75), curve(day(0), 4.51, 4.86)] });
+      }
+      if (url.includes('/api/intelligence/v1/list-material-events')) {
+        return json({
+          unavailable: false, fetchedAtMs: now - 60_000,
+          events: [{ company: 'APPLE INC', cik: '0000320193', form: '8-K', accession: 'a', filedAtMs: now - 2 * 3_600_000, url: 'https://www.sec.gov/a', items: [{ code: '1.05', description: 'Material Cybersecurity Incidents' }] }],
+        });
+      }
+      return base(input, init);
+    }));
+    try {
+      history.replaceState(null, '', '/lite/finance');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const panel = () => root.querySelector('[data-testid="risk-alerts"]') as HTMLElement;
+      await vi.waitFor(async () => {
+        await flush();
+        expect(panel().querySelector('[data-indicator="treasury"]')).not.toBeNull();
+        expect(panel().querySelector('[data-indicator="sec-8k"]')).not.toBeNull();
+      }, { timeout: 10_000, interval: 50 });
+
+      const treasury = panel().querySelector('[data-indicator="treasury"]') as HTMLButtonElement;
+      expect(treasury.textContent).toContain('4.51 / 4.86%');
+      expect(treasury.textContent).toContain('+11 / +11 bp');
+      expect(treasury.querySelector('[data-testid="indicator-detail"]')?.textContent).toContain('2s10s +35 bp');
+      expect(treasury.textContent).toContain('OFFICIAL');
+      expect(treasury.textContent).toContain('1 linked');
+      const filing = panel().querySelector('[data-indicator="sec-8k"]') as HTMLButtonElement;
+      expect(filing.textContent).toContain('8-K filing · APPLE INC');
+      expect(filing.textContent).toContain('Item 1.05');
+      // Feeds this test left unanswered name their seeders.
+      expect(panel().querySelector('[data-feed="freight-scfi"]')?.textContent).toContain('seed-supply-chain-trade');
+      expect(panel().querySelector('[data-feed="other-bonds"]')?.textContent).toContain('seed-bundle-yield-curves');
+
+      const curveCard = root.querySelector('[data-testid="treasury-curve"]') as HTMLElement;
+      expect(curveCard.querySelector('[data-series="latest"]')).not.toBeNull();
+      expect(curveCard.querySelector('[data-series="week-ago"]')).not.toBeNull();
+      expect(curveCard.textContent).toContain('2s10s +35 bp (−3 bp w/w)');
+    } finally {
+      vi.stubGlobal('fetch', base);
+    }
+  });
+
+  it('pins Finance signals where they are issued, opens their card from the map and from the panel, and toggles layers', async () => {
+    const base = fetch;
+    const now = Date.now();
+    const day = (offset: number) => Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate()) + offset * 86_400_000;
+    const curve = (date: number, twoYear: number, tenYear: number) => ({ date, threeMonth: 4.19, twoYear, fiveYear: 4.64, tenYear, thirtyYear: 5.26 });
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+      if (url.includes('/api/economic/v1/get-us-treasury-par-yield-curve')) {
+        return json({ unavailable: false, curves: [curve(day(-8), 4.56, 4.94), curve(day(-1), 4.4, 4.75), curve(day(0), 4.51, 4.86)] });
+      }
+      if (url.includes('/api/supply-chain/v1/get-chokepoint-status')) {
+        return json({ fetchedAt: new Date(now).toISOString(), upstreamUnavailable: false, chokepoints: [{ id: 'bab_el_mandeb', name: 'BAB EL-MANDEB', lat: 12.5, lon: 43.3, disruptionScore: 72, status: 'red', activeWarnings: 3, congestionLevel: '', affectedRoutes: [], description: '', aisDisruptions: 0, directions: [], directionalDwt: [], warRiskTier: 'WAR_RISK_TIER_UNSPECIFIED', navigationalWarningsAvailable: true, aisSnapshotAvailable: true }] });
+      }
+      return base(input, init);
+    }));
+    try {
+      history.replaceState(null, '', '/lite/finance');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const map = () => root.querySelector('[data-testid="markets-map"]') as HTMLElement;
+      await vi.waitFor(async () => {
+        await flush();
+        expect(map().querySelector('[data-map-status]')?.getAttribute('data-map-status')).toBe('ready');
+        expect(map().querySelector('[data-marker="signal:fed"]')).not.toBeNull();
+        expect(map().querySelector('[data-marker="chokepoint:bab_el_mandeb"]')).not.toBeNull();
+      }, { timeout: 10_000, interval: 50 });
+
+      // Crypto feeds have no pin; the fired Treasury feed is a labelled pin at the Fed.
+      const drawn = [...map().querySelectorAll('[data-marker^="signal:"]')].map((m) => m.getAttribute('data-marker'));
+      expect(drawn).not.toContain('signal:btc');
+      const fed = map().querySelector('[data-marker="signal:fed"]') as HTMLElement;
+      expect(fed.textContent).toContain('Fed · UST 10Y 4.86% +11 bp');
+      expect(map().querySelector('[data-marker="chokepoint:bab_el_mandeb"]')?.textContent).toContain('Bab El-Mandeb');
+      // A chokepoint the source did not report is drawn grey, without a name chip.
+      expect(map().querySelector('[data-marker="chokepoint:panama"]')?.textContent).toBe('');
+
+      // The pin opens the same indicator card the panel shows.
+      await act(() => (fed.querySelector('button') as HTMLButtonElement).click());
+      const popup = map().querySelector('[data-map-popup="signal:fed"]') as HTMLElement;
+      expect(popup.querySelector('article[data-indicator="treasury"]')).not.toBeNull();
+      await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
+      expect(map().querySelector('[data-map-popup]')).toBeNull();
+
+      // Opening the card in the panel focuses its pin.
+      await act(() => (root.querySelector('[data-testid="risk-alerts"] button[data-indicator="treasury"]') as HTMLButtonElement).click());
+      await flush();
+      expect(map().querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe('signal:fed');
+
+      // The layers popover turns a layer off and closes on Escape, back to its chip.
+      const chip = map().querySelector('[data-testid="layers-chip"]') as HTMLButtonElement;
+      expect(chip.textContent).toContain('Layers · 5');
+      await act(() => chip.click());
+      const popover = map().querySelector('[data-testid="layers-popover"]') as HTMLElement;
+      expect(popover.querySelector('[data-layer-row="geo"]')?.textContent).toContain('N/A');
+      await act(() => (popover.querySelector('[data-layer-row="centres"] [role="switch"]') as HTMLButtonElement).click());
+      await flush();
+      expect(map().querySelector('[data-marker^="centre:"]')).toBeNull();
+      expect(chip.textContent).toContain('Layers · 4');
+      await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
+      expect(map().querySelector('[data-testid="layers-popover"]')).toBeNull();
+      expect(document.activeElement).toBe(chip);
     } finally {
       vi.stubGlobal('fetch', base);
     }
@@ -459,5 +623,106 @@ describe('Lite Sources screen', () => {
     }, { timeout: 10_000, interval: 50 });
     expect(root.querySelector('tr[data-connector="digest-world"]')?.getAttribute('data-status')).toBe('live');
     expect(root.querySelector('header p')?.textContent).toContain('health check unavailable');
+  });
+});
+
+describe('Lite Geopolitics: GDELT reported violence', () => {
+  it('shades spiking countries, fires the violence indicator with its linked news, and opens a country card', async () => {
+    const HOUR = 3_600_000;
+    const DAY = 86_400_000;
+    const now = Date.now();
+    const currentHour = Math.floor(now / HOUR) * HOUR;
+    const today = Math.floor(now / DAY) * DAY;
+    // Ukraine: 40 reports a day for a week; 5 an hour over the last six complete hours (×3).
+    const counts = {
+      updatedAt: now - 60_000, cursor: '', cohortsPerHour: 4, cohortsPerDay: 96,
+      hours: Array.from({ length: 48 }, (_, i) => currentHour - (47 - i) * HOUR).map((start) => ({
+        hour: new Date(start).toISOString().slice(0, 13),
+        cohorts: start === currentHour ? 1 : 4,
+        byCountry: start >= currentHour - 6 * HOUR && start < currentHour ? { UA: 5 } : { UA: 1 },
+      })),
+      days: Array.from({ length: 30 }, (_, i) => today - (29 - i) * DAY).map((start) => ({
+        date: new Date(start).toISOString().slice(0, 10),
+        cohorts: start === today ? 40 : 96,
+        byCountry: { UA: 40 },
+      })),
+    };
+    const boot = await import('@/services/bootstrap');
+    vi.mocked(boot.ensureHydrated).mockImplementation(async (key: string) => (key === 'gdeltConflictCounts' ? counts : undefined));
+    const base = fetch;
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.includes('/api/news/v1/list-feed-digest')) {
+        const digest = {
+          ...DIGEST,
+          categories: {
+            ...DIGEST.categories,
+            europe: { items: [{ source: 'Reuters', title: 'Ukraine reports drone strikes on Kharkiv', link: 'https://example.com/ua', publishedAt: now - 2 * HOUR, isAlert: false, locationName: '', importanceScore: 40, corroborationCount: 2, snippet: '', tickers: [], credibilityScore: 70 }] },
+          },
+        };
+        return new Response(JSON.stringify(digest), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      return base(input, init);
+    }));
+    try {
+      history.replaceState(null, '', '/lite/geopolitics');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const maplib = (await import('maplibre-gl')) as unknown as {
+        __FakeMap: { last: { sources: Map<string, unknown>; layers: Array<{ id: string; before?: string }>; featureState: Map<string, Record<string, unknown>>; clickCountry: string; fire: (type: string, e?: unknown) => void } | null };
+      };
+      await vi.waitFor(async () => {
+        await flush();
+        expect(root.querySelector('[data-testid="geo-indicators"] [data-indicator="violence:UA"]')).not.toBeNull();
+        expect(maplib.__FakeMap.last?.sources.has('lite-countries')).toBe(true);
+      }, { timeout: 10_000, interval: 50 });
+      // At 7d Ukraine is at its normal, so nothing is shaded; the last 6 h are at ×3.
+      expect(maplib.__FakeMap.last?.featureState.get('UA')?.step ?? 0).toBe(0);
+      const range = (r: string) => [...root.querySelectorAll('[data-testid="time-range"] button')].find((b) => b.textContent === r) as HTMLButtonElement;
+      await act(() => range('6h').click());
+      await flush();
+      expect(maplib.__FakeMap.last?.featureState.get('UA')?.step).toBe(3);
+      const map = maplib.__FakeMap.last!;
+      // The shading is a fill under the borders and labels.
+      expect(map.sources.has('lite-countries')).toBe(true);
+      expect(map.layers).toContainEqual({ id: 'lite-country-fill', before: 'country-border' });
+
+      const card = root.querySelector('[data-testid="geo-indicators"] [data-indicator="violence:UA"]') as HTMLElement;
+      expect(card.textContent).toContain('Violence spike · Ukraine');
+      expect(card.textContent).toContain('30 reports');
+      expect(card.textContent).toContain('REPORTED');
+      expect(card.textContent).toContain('1 linked');
+      await act(() => (card as HTMLButtonElement).click());
+      expect(root.querySelector('[data-testid="geo-indicators"] [data-testid="linked-news"]')?.textContent).toContain('Ukraine reports drone strikes on Kharkiv');
+
+      // The 6h histogram has one bar per complete hour.
+      expect(root.querySelector('[data-testid="gdelt-histogram"]')).not.toBeNull();
+
+      // Clicking the shaded country opens its card at the click point.
+      map.clickCountry = 'UA';
+      await act(() => map.fire('click', { point: { x: 10, y: 10 }, lngLat: { lng: 31, lat: 48 } }));
+      const popup = root.querySelector('[data-map-popup="country:UA"]');
+      expect(popup?.textContent).toContain('Reported violence · GDELT');
+      expect(popup?.textContent).toContain('Ukraine');
+      expect(popup?.textContent).toContain('reports');
+      expect(popup?.textContent).toContain('Machine-coded news reports, not verified events.');
+      // Clicking where no shaded country is closes it.
+      map.clickCountry = '';
+      await act(() => map.fire('click', { point: { x: 1, y: 1 }, lngLat: { lng: 0, lat: 0 } }));
+      expect(root.querySelector('[data-map-popup]')).toBeNull();
+      // Back at 7d the shading clears through feature state.
+      await act(() => range('7d').click());
+      await flush();
+      expect(map.featureState.get('UA')?.step).toBe(0);
+
+      // The strip shows five hotspots; a tile opens its hotspot's card.
+      const tiles = [...root.querySelectorAll('[data-hotspot-tile]')] as HTMLButtonElement[];
+      expect(tiles).toHaveLength(5);
+      await act(() => tiles[0]!.click());
+      expect(root.querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe(`hotspot:${tiles[0]!.getAttribute('data-hotspot-tile')}`);
+    } finally {
+      vi.stubGlobal('fetch', base);
+      vi.mocked(boot.ensureHydrated).mockImplementation(async () => undefined);
+    }
   });
 });

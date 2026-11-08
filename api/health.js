@@ -428,6 +428,9 @@ const STANDALONE_KEYS = {
   // Per-country GDELT conflict counts and own-baseline medians, read only by the
   // CII conflict component (get-risk-scores), so monitored here.
   gdeltCountryEvents: 'gdelt:bulk:country-events:v1',
+  // The compact hourly and daily projection of the same counts, read by the
+  // Lite Geopolitics map through the on-demand bootstrap URL.
+  gdeltConflictCounts: 'gdelt:bulk:conflict-counts:v1',
   // 30 days of per-country strike tallies the relay builds from the Middle East
   // strike feed; read only by the CII strike pressure (get-risk-scores), so
   // monitored here. Gated by IRAN_EVENTS_ENABLED like the feed itself.
@@ -1505,6 +1508,16 @@ const SEED_META = {
     cutover: {
       mode: 'activation-marker', fromKey: null, issue: 7582,
       activationKey: 'seed-activated:gdelt:bulk:country-events',
+    },
+  },
+  // Same materializer tick and snapshot; pending until its first publish writes
+  // the durable marker, strict after it.
+  gdeltConflictCounts: {
+    key: 'seed-meta:gdelt:bulk:conflict-counts', maxStaleMin: 45,
+    activationKey: 'seed-activated:gdelt:bulk:conflict-counts',
+    cutover: {
+      mode: 'activation-marker', fromKey: null, issue: 35,
+      activationKey: 'seed-activated:gdelt:bulk:conflict-counts',
     },
   },
   // ais-relay strike loop (10min) adds each healthy window to the 30-day tally;
@@ -2716,6 +2729,7 @@ const ON_DEMAND_KEYS = new Set([
   'gdeltCountryArticles',
   'gdeltDyadTension',
   'gdeltCountryEvents',
+  'gdeltConflictCounts',
   // Written by scripts/seed-tension-evidence.mjs after each publish.
   'tensionEvidence',
   // Relay strike-pressure tally: the marker is written after its first healthy publish.
@@ -2936,6 +2950,7 @@ const ACTIVATION_MARKERS = {
   gdeltDyadTension: SEED_META.gdeltDyadTension.activationKey,
   tensionEvidence: SEED_META.tensionEvidence.activationKey,
   gdeltCountryEvents: SEED_META.gdeltCountryEvents.activationKey,
+  gdeltConflictCounts: SEED_META.gdeltConflictCounts.activationKey,
   // Written by scripts/ais-relay.cjs after the first healthy strike-pressure publish.
   strikePressure: 'seed-activated:conflict:strike-pressure',
   // Written by scripts/ais-relay.cjs after the first healthy digest warm cycle.

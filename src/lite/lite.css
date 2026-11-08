@@ -28,6 +28,11 @@
 	/* Indicator card: REPORTED trust label, and the "No linked news found" accent. */
 	--color-reported: #7fb2ff;
 	--color-nolink: #ff7ac6;
+	/* Reported violence (GDELT) shading on the Geopolitics map, light to strong. */
+	--color-violence-1: #1f3a5c;
+	--color-violence-2: #24508a;
+	--color-violence-3: #2f6fc4;
+	--color-violence-4: #5b9cf0;
 
 	--font-sans: "IBM Plex Sans Variable", "IBM Plex Sans", system-ui, sans-serif;
 	--font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;

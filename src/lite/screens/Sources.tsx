@@ -276,7 +276,7 @@ function ConnectorDetail({ row }: { row: ConnectorRow }) {
           </ul>
         ) : (
           <p class="text-[12px] text-dim">
-            {connector.digest ? 'The digest’s RSS publishers; see the tier policy.' : 'Computed from other Lite sources.'}
+            {connector.digest ? 'The digest’s RSS publishers; see the tier policy.' : 'Computed server-side from other datasets.'}
           </p>
         )}
       </div>

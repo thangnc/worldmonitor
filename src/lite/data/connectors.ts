@@ -9,7 +9,7 @@
  *   passed its `maxStaleMin` gate;
  * - a news digest connector reads the digest the screens load.
  *
- * `tests/lite-ui.test.mts` keeps `healthKey` and `maxStaleMin` equal to
+ * `tests/lite-ui.test.mts` keeps `healthKeys` and `maxStaleMin` equal to
  * `SEED_META` in api/health.js, and each host's `licence` equal to its row in
  * shared/source-attribution-manifest.json.
  */
@@ -37,9 +37,9 @@ export interface Connector {
   method: ConnectorMethod;
   /** The seeder, relay or handler that writes it. */
   producer: string;
-  /** The check name in api/health.js SEED_META. */
-  healthKey?: string;
-  /** That check's `maxStaleMin`: older data fails the health gate. */
+  /** The check names in api/health.js SEED_META; the worst one sets the status. */
+  healthKeys?: readonly string[];
+  /** The checks' longest `maxStaleMin`: older data fails the health gate. */
   maxStaleMin?: number;
   /** A news digest connector reads the digest itself instead of a health check. */
   digest?: DigestEdition;
@@ -58,23 +58,29 @@ export const CONNECTORS: readonly Connector[] = [
   {
     id: 'digest-world', name: 'News digest · world', domain: 'geo', kind: 'News aggregate', method: 'RSS',
     producer: 'list-feed-digest', digest: 'full', hosts: [],
-    usedBy: ['Geopolitics priority incidents', 'Briefing priority events', 'Hotspot escalation score'],
+    usedBy: ['Priority incidents', 'Briefing priority events', 'Hotspot escalation score', 'Indicator news links'],
+  },
+  {
+    id: 'gdelt-conflict', name: 'GDELT conflict counts', domain: 'geo', kind: 'Reported events', method: 'API',
+    producer: 'seed-gdelt-bulk-materializer', healthKeys: ['gdeltConflictCounts'], maxStaleMin: 45,
+    hosts: [{ host: 'storage.googleapis.com', licence: 'terms-review' }],
+    usedBy: ['Conflict map violence shading', 'Reported violence indicator', 'Report histogram', 'Hotspot strip'],
   },
   {
     id: 'ucdp', name: 'UCDP georeferenced events', domain: 'geo', kind: 'Verified dataset', method: 'API',
-    producer: 'seed-ucdp-events', healthKey: 'ucdpEvents', maxStaleMin: 420,
+    producer: 'seed-ucdp-events', healthKeys: ['ucdpEvents'], maxStaleMin: 420,
     hosts: [{ host: 'ucdpapi.pcr.uu.se', licence: 'terms-review' }],
-    usedBy: ['Geopolitics map'],
+    usedBy: ['Conflict map (verified background)'],
   },
   {
     id: 'unrest', name: 'Protests and unrest', domain: 'geo', kind: 'Event dataset', method: 'API',
-    producer: 'seed-unrest-events', healthKey: 'unrestEvents', maxStaleMin: 120,
+    producer: 'seed-unrest-events', healthKeys: ['unrestEvents'], maxStaleMin: 120,
     hosts: [{ host: 'acleddata.com', licence: 'terms-review' }, { host: 'api.gdeltproject.org', licence: 'terms-review' }],
     usedBy: ['Hotspot escalation score'],
   },
   {
     id: 'military-flights', name: 'Military aircraft', domain: 'geo', kind: 'ADS-B tracking', method: 'API',
-    producer: 'seed-military-flights', healthKey: 'militaryFlights', maxStaleMin: 30,
+    producer: 'seed-military-flights', healthKeys: ['militaryFlights'], maxStaleMin: 30,
     hosts: [
       { host: 'api.adsb.lol', licence: 'reviewed' },
       { host: 'api.airplanes.live', licence: 'terms-review' },
@@ -86,83 +92,117 @@ export const CONNECTORS: readonly Connector[] = [
   },
   {
     id: 'earthquakes', name: 'USGS earthquakes', domain: 'geo', kind: 'Official dataset', method: 'API',
-    producer: 'seed-earthquakes', healthKey: 'earthquakes', maxStaleMin: 30,
+    producer: 'seed-earthquakes', healthKeys: ['earthquakes'], maxStaleMin: 30,
     hosts: [{ host: 'earthquake.usgs.gov', licence: 'terms-review' }],
     usedBy: ['Hotspot escalation score'],
   },
   {
     id: 'cii', name: 'Country instability index', domain: 'geo', kind: 'Derived score', method: 'Derived',
-    producer: 'get-risk-scores (warm ping)', healthKey: 'riskScores', maxStaleMin: 30, hosts: [],
-    usedBy: ['Hotspot escalation score', 'Region strip', 'Escalation tracker'],
+    producer: 'get-risk-scores (warm ping)', healthKeys: ['riskScores'], maxStaleMin: 30, hosts: [],
+    usedBy: ['Hotspot escalation score', 'Escalation tracker'],
   },
   // ---- Finance & Crypto ----
   {
     id: 'digest-finance', name: 'News digest · finance', domain: 'fin', kind: 'News aggregate', method: 'RSS',
     producer: 'list-feed-digest', digest: 'finance', hosts: [],
-    usedBy: ['Market-moving events', 'Finance indicator news links'],
+    usedBy: ['Market-moving events', 'Indicator news links'],
   },
   {
     id: 'crypto', name: 'Crypto spot quotes', domain: 'fin', kind: 'Market data', method: 'API',
-    producer: 'seed-crypto-quotes', healthKey: 'cryptoQuotes', maxStaleMin: 30, hosts: [coingecko, coinpaprika],
-    usedBy: ['Tickers', 'BTC 24h move indicator', 'Market event price links'],
+    producer: 'seed-crypto-quotes', healthKeys: ['cryptoQuotes'], maxStaleMin: 30, hosts: [coingecko, coinpaprika],
+    usedBy: ['Tickers', 'Price move · BTC 24h indicator', 'Market pulse', 'Market event price links'],
   },
   {
     id: 'stocks', name: 'Stocks and indices', domain: 'fin', kind: 'Market data', method: 'API',
-    producer: 'seed-market-quotes', healthKey: 'marketQuotes', maxStaleMin: 30, hosts: [yahoo],
-    usedBy: ['Tickers', 'Market event price links'],
+    producer: 'seed-market-quotes', healthKeys: ['marketQuotes'], maxStaleMin: 30, hosts: [yahoo],
+    usedBy: ['Tickers', 'Market pulse', 'Market event price links'],
   },
   {
     id: 'commodities', name: 'Commodities and FX', domain: 'fin', kind: 'Market data', method: 'API',
-    producer: 'seed-commodity-quotes', healthKey: 'commodityQuotes', maxStaleMin: 30, hosts: [yahoo],
-    usedBy: ['Tickers', 'Market event price links'],
+    producer: 'seed-commodity-quotes', healthKeys: ['commodityQuotes'], maxStaleMin: 30, hosts: [yahoo],
+    usedBy: ['Tickers', 'Market pulse', 'Market event price links'],
   },
   {
     id: 'gold', name: 'Gold and dollar drivers', domain: 'fin', kind: 'Market data', method: 'API',
-    producer: 'seed-commodity-quotes', healthKey: 'goldExtended', maxStaleMin: 30, hosts: [yahoo],
-    usedBy: ['DXY ticker', 'Market pulse'],
+    producer: 'seed-commodity-quotes', healthKeys: ['goldExtended'], maxStaleMin: 30, hosts: [yahoo],
+    usedBy: ['Market pulse', 'Market event price links'],
   },
   {
-    id: 'hyperliquid', name: 'Hyperliquid perps', domain: 'fin', kind: 'Market data · one venue', method: 'API',
-    producer: 'seed-hyperliquid-flow', healthKey: 'hyperliquidFlow', maxStaleMin: 30,
-    hosts: [{ host: 'api.hyperliquid.xyz', licence: 'terms-review' }],
-    usedBy: ['BTC perp funding indicator', 'Perp funding and open interest'],
+    id: 'treasury', name: 'US Treasury par yields', domain: 'fin', kind: 'Official rates', method: 'API',
+    producer: 'seed-us-treasury-par-yield', healthKeys: ['usTreasuryParYield'], maxStaleMin: 4320,
+    hosts: [{ host: 'home.treasury.gov', licence: 'terms-review' }],
+    usedBy: ['US Treasury curve', 'Treasury yields · 2Y / 10Y indicator'],
   },
   {
-    id: 'stablecoins', name: 'Stablecoin pegs', domain: 'fin', kind: 'Market data', method: 'API',
-    producer: 'seed-stablecoin-markets', healthKey: 'stablecoinMarkets', maxStaleMin: 60, hosts: [coingecko, coinpaprika],
-    usedBy: ['Stablecoin depeg indicator'],
-  },
-  {
-    id: 'etf-flows', name: 'Spot bitcoin ETF flows', domain: 'fin', kind: 'Market data · estimate', method: 'API',
-    producer: 'seed-etf-flows', healthKey: 'etfFlows', maxStaleMin: 60, hosts: [yahoo],
-    usedBy: ['Spot ETF net flow'],
-  },
-  {
-    id: 'fear-greed', name: 'Fear & greed index', domain: 'fin', kind: 'Composite sentiment', method: 'API',
-    producer: 'seed-fear-greed', healthKey: 'fearGreedIndex', maxStaleMin: 720,
+    id: 'other-bonds', name: 'Bond curves · DE GB JP', domain: 'fin', kind: 'Official rates', method: 'API',
+    producer: 'seed-bundle-yield-curves', healthKeys: ['yieldCurveDe', 'yieldCurveGb', 'yieldCurveJp'], maxStaleMin: 4460,
     hosts: [
-      { host: 'production.dataviz.cnn.io', licence: 'terms-review' },
-      yahoo,
-      { host: 'www.aaii.com', licence: 'terms-review' },
-      { host: 'www.barchart.com', licence: 'terms-review' },
+      { host: 'api.statistiken.bundesbank.de', licence: 'terms-review' },
+      { host: 'www.bankofengland.co.uk', licence: 'terms-review' },
+      { host: 'www.mof.go.jp', licence: 'terms-review' },
     ],
-    usedBy: ['Fear & greed indicator'],
+    usedBy: ['Other 10y bonds indicator'],
   },
   {
     id: 'macro-calendar', name: 'Central-bank and macro calendar', domain: 'fin', kind: 'Official releases', method: 'API',
-    producer: 'seed-economic-calendar', healthKey: 'econCalendar', maxStaleMin: 1440,
+    producer: 'seed-economic-calendar', healthKeys: ['econCalendar'], maxStaleMin: 1440,
     hosts: [
       { host: 'api.stlouisfed.org', licence: 'terms-review' },
       { host: 'www.federalreserve.gov', licence: 'terms-review' },
       { host: 'www.ecb.europa.eu', licence: 'terms-review' },
       { host: 'ec.europa.eu', licence: 'terms-review' },
     ],
-    usedBy: ['Macro calendar', 'Upcoming catalysts'],
+    usedBy: ['Macro calendar', 'Macro prints · US indicator', 'Upcoming catalysts'],
   },
   {
-    id: 'correlation-series', name: 'Hourly price series', domain: 'fin', kind: 'Market data', method: 'API',
-    producer: 'seed-market-correlation-series', healthKey: 'marketCorrelationSeries', maxStaleMin: 45, hosts: [yahoo],
-    usedBy: ['Realized volatility', 'Correlation'],
+    id: 'hyperliquid', name: 'Hyperliquid perps', domain: 'fin', kind: 'Market data · one venue', method: 'API',
+    producer: 'seed-hyperliquid-flow', healthKeys: ['hyperliquidFlow'], maxStaleMin: 30,
+    hosts: [{ host: 'api.hyperliquid.xyz', licence: 'terms-review' }],
+    usedBy: ['Perp funding · BTC indicator', 'Perp positioning · Hyperliquid indicator'],
+  },
+  {
+    id: 'stablecoins', name: 'Stablecoin pegs', domain: 'fin', kind: 'Market data', method: 'API',
+    producer: 'seed-stablecoin-markets', healthKeys: ['stablecoinMarkets'], maxStaleMin: 60, hosts: [coingecko, coinpaprika],
+    usedBy: ['Stablecoin peg indicator', 'Market pulse'],
+  },
+  {
+    id: 'etf-flows', name: 'Spot bitcoin ETF flows', domain: 'fin', kind: 'Market data · estimate', method: 'API',
+    producer: 'seed-etf-flows', healthKeys: ['etfFlows'], maxStaleMin: 60, hosts: [yahoo],
+    usedBy: ['Bitcoin ETF flows indicator'],
+  },
+  {
+    id: 'fear-greed', name: 'Fear & greed index', domain: 'fin', kind: 'Composite sentiment', method: 'API',
+    producer: 'seed-fear-greed', healthKeys: ['fearGreedIndex'], maxStaleMin: 720,
+    hosts: [
+      { host: 'production.dataviz.cnn.io', licence: 'terms-review' },
+      yahoo,
+      { host: 'www.aaii.com', licence: 'terms-review' },
+      { host: 'www.barchart.com', licence: 'terms-review' },
+    ],
+    usedBy: ['Sentiment · fear & greed indicator'],
+  },
+  {
+    id: 'freight', name: 'Freight indices · SCFI, Baltic Dry', domain: 'fin', kind: 'Market data', method: 'API',
+    producer: 'seed-supply-chain-trade', healthKeys: ['shippingRates'], maxStaleMin: 1140,
+    hosts: [{ host: 'en.sse.net.cn', licence: 'terms-review' }, { host: 'www.handybulk.com', licence: 'terms-review' }],
+    usedBy: ['Container freight · SCFI indicator', 'Dry bulk · Baltic Dry indicator'],
+  },
+  {
+    id: 'sec-8k', name: 'SEC 8-K filings', domain: 'fin', kind: 'Official filings', method: 'API',
+    producer: 'seed-sec-8k-stream', healthKeys: ['sec8kStream'], maxStaleMin: 120,
+    hosts: [{ host: 'www.sec.gov', licence: 'reviewed' }],
+    usedBy: ['Company filings · 8-K indicator'],
+  },
+  {
+    id: 'chokepoints', name: 'Chokepoint status', domain: 'fin', kind: 'Derived status', method: 'Derived',
+    producer: 'get-chokepoint-status', healthKeys: ['chokepoints'], maxStaleMin: 60, hosts: [],
+    usedBy: ['Where markets are moving map'],
+  },
+  {
+    id: 'sanctions', name: 'OFAC sanctions pressure', domain: 'fin', kind: 'Official list', method: 'API',
+    producer: 'seed-sanctions-pressure', healthKeys: ['sanctionsPressure'], maxStaleMin: 720,
+    hosts: [{ host: 'sanctionslistservice.ofac.treas.gov', licence: 'terms-review' }],
+    usedBy: ['Where markets are moving map'],
   },
   // ---- Technology & AI ----
   {
@@ -172,14 +212,14 @@ export const CONNECTORS: readonly Connector[] = [
   },
   {
     id: 'research', name: 'arXiv and Hacker News', domain: 'tech', kind: 'Research', method: 'API',
-    producer: 'seed-research', healthKey: 'researchArxivHnTrending', maxStaleMin: 150,
+    producer: 'seed-research', healthKeys: ['researchArxivHnTrending'], maxStaleMin: 150,
     hosts: [{ host: 'export.arxiv.org', licence: 'terms-review' }, { host: 'hacker-news.firebaseio.com', licence: 'terms-review' }],
     usedBy: ['Research radar'],
   },
   // ---- Cross-domain ----
   {
     id: 'insights', name: 'AI world brief', domain: 'all', kind: 'LLM summary of the digest', method: 'LLM',
-    producer: 'seed-insights', healthKey: 'newsInsights', maxStaleMin: 30,
+    producer: 'seed-insights', healthKeys: ['newsInsights'], maxStaleMin: 30,
     hosts: [{ host: 'openrouter.ai', licence: 'excluded' }],
     usedBy: ['Hourly brief'],
   },
@@ -228,22 +268,34 @@ function fromCheck(check: CompactHealthCheck, kind: ConnectorStatusKind, now: nu
   };
 }
 
-/**
- * A seeded connector's status from the compact health check. A problem check
- * is failing when it has no usable data (error, missing or empty) and degraded
- * otherwise; a pending warning or a check that is not listed is live.
- */
-export function healthConnectorStatus(healthKey: string, health: ResourceState<CompactHealth>, now: number): ConnectorStatus {
-  if (health.status === 'loading') return { kind: 'loading', detail: 'Checking…' };
-  if (health.status !== 'ready') return { kind: 'unknown', detail: 'Health check unavailable' };
-  const problem = health.data.problems?.[healthKey];
+function checkStatus(healthKey: string, health: CompactHealth, now: number): ConnectorStatus {
+  const problem = health.problems?.[healthKey];
   if (problem) {
     if (problem.status === 'EMPTY_ON_DEMAND') return { ...fromCheck(problem, 'live', now), detail: 'Waiting for its first run' };
     return fromCheck(problem, FAILING_STATUS.test(problem.status) ? 'failing' : 'degraded', now);
   }
-  const pending = health.data.pending?.[healthKey];
+  const pending = health.pending?.[healthKey];
   if (pending) return fromCheck(pending, 'live', now);
   return { kind: 'live', detail: 'Passed its freshness gate' };
+}
+
+/**
+ * A seeded connector's status from the compact health check. A problem check
+ * is failing when it has no usable data (error, missing or empty) and degraded
+ * otherwise; a pending warning or a check that is not listed is live. With
+ * several checks the worst one sets the status, and its detail names it.
+ */
+export function healthConnectorStatus(healthKeys: string | readonly string[], health: ResourceState<CompactHealth>, now: number): ConnectorStatus {
+  if (health.status === 'loading') return { kind: 'loading', detail: 'Checking…' };
+  if (health.status !== 'ready') return { kind: 'unknown', detail: 'Health check unavailable' };
+  const keys = typeof healthKeys === 'string' ? [healthKeys] : healthKeys;
+  let worst: ConnectorStatus | null = null;
+  for (const key of keys) {
+    const status = checkStatus(key, health.data, now);
+    const named = keys.length > 1 && status.kind !== 'live' ? { ...status, detail: `${status.detail} · ${key}` } : status;
+    if (!worst || STATUS_ORDER[named.kind] < STATUS_ORDER[worst.kind]) worst = named;
+  }
+  return worst ?? { kind: 'unknown', detail: 'No health check named' };
 }
 
 /** A news digest connector's status from the digest the screens load. */
