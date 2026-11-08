@@ -695,6 +695,29 @@ describe('Lite indicator card', () => {
     }
   });
 
+  it('shows cable health as unavailable, not healthy, when the handler has no snapshot', async () => {
+    const base = fetch;
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.includes('/api/infrastructure/v1/get-cable-health')) {
+        return new Response(JSON.stringify({ generatedAt: 0, cables: {} }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      return base(input, init);
+    }));
+    try {
+      history.replaceState(null, '', '/lite/tech');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      await vi.waitFor(async () => {
+        await flush();
+        const chips = [...root.querySelectorAll('[data-testid="infra-map"] [data-source-state="error"]')].map((el) => el.textContent);
+        expect(chips).toContain('Cable health: source unavailable · get-cable-health');
+      }, { timeout: 10_000, interval: 50 });
+    } finally {
+      vi.stubGlobal('fetch', base);
+    }
+  });
+
   it('says "No linked news found" with what it searched when no story matches', async () => {
     const { IndicatorCard, IndicatorCardCompact } = await import('../../src/lite/components/indicator');
     const indicator = {

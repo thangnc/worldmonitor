@@ -410,9 +410,16 @@ export async function loadCyberThreats(): Promise<CyberThreat[] | null> {
   return threats;
 }
 
-/** Cable health from NGA navigational warnings. `cables: {}` means no active disruption. */
+/**
+ * Cable health from NGA navigational warnings. `cables: {}` means no active
+ * disruption only with a snapshot: the handler answers `generatedAt: 0` when
+ * the NGA fetch failed and nothing was retained, which is a failure, not
+ * "all cables healthy" (same test as src/services/cable-health.ts).
+ */
 export async function loadCableHealth(): Promise<GetCableHealthResponse | null> {
-  return infrastructure.getCableHealth({});
+  const resp = await infrastructure.getCableHealth({});
+  if (!(resp.generatedAt > 0)) throw new Error('cable health: no snapshot');
+  return resp;
 }
 
 export interface TechGeo {
