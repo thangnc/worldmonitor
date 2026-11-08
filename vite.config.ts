@@ -885,6 +885,43 @@ function healthDevPlugin(): Plugin {
   };
 }
 
+// Dev only: run api/bootstrap.js instead of serving it as a module. Without
+// it, `ensureHydrated` gets JavaScript source for the on-demand keys and the
+// Lite feeds that read only from bootstrap (UKMTO incidents, GDELT conflict
+// counts, GPS high cells) read "No data yet" although the local Redis has
+// them. The handler keeps its own gates: public single-key URLs, origin check,
+// key or session auth for the rest.
+function bootstrapDevPlugin(): Plugin {
+  return {
+    name: 'bootstrap-dev',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url?.split('?')[0] !== '/api/bootstrap') return next();
+        try {
+          const { default: handler } = await server.ssrLoadModule('/api/bootstrap.js');
+          const headers = new Headers();
+          for (const name of ['origin', 'authorization', 'x-worldmonitor-key', 'x-api-key']) {
+            const value = req.headers[name];
+            if (typeof value === 'string') headers.set(name, value);
+          }
+          const response: Response = await handler(
+            new Request(`http://localhost${req.url}`, { method: req.method, headers }),
+            { waitUntil: (work: Promise<unknown>) => { work.catch(() => {}); } },
+          );
+          res.statusCode = response.status;
+          response.headers.forEach((value, key) => res.setHeader(key, value));
+          res.end(req.method === 'HEAD' ? undefined : await response.text());
+        } catch (error) {
+          console.error('[bootstrap-dev]', error);
+          res.statusCode = 502;
+          res.end();
+        }
+      });
+    },
+  };
+}
+
 function rssProxyPlugin(): Plugin {
   return {
     name: 'rss-proxy',
@@ -1121,6 +1158,7 @@ export default defineConfig(({ mode }) => {
       rssProxyPlugin(),
       miitNewsPlugin(),
       healthDevPlugin(),
+      bootstrapDevPlugin(),
       gpsjamDevPlugin(),
       sebufApiPlugin(),
       brotliPrecompressPlugin(),
