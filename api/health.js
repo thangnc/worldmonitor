@@ -931,8 +931,18 @@ const SEED_META = {
     activationKey: 'seed-activated:cyber:cve-reference',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 6229, activationKey: 'seed-activated:cyber:cve-reference' },
   }, // daily NVD KEV sync; 2880 = 2x interval; KEV has held above 1,300 CVEs since 2024
-  cyberThreatHistory: { key: 'seed-meta:cyber:threats:history', maxStaleMin: 240 }, // written after each 2h cyber snapshot; 240 = 2x interval
-  kevRecent:        { key: 'seed-meta:cyber:kev-recent',        maxStaleMin: 2880 }, // extra key of the daily NVD KEV sync; 2880 = 2x interval
+  // Lite Tech indicators (thangnc/worldmonitor#34). Each seeder writes its marker
+  // after the key and seed-meta publish; absence is pending until then.
+  cyberThreatHistory: {
+    key: 'seed-meta:cyber:threats:history', maxStaleMin: 240, // written after each 2h cyber snapshot; 240 = 2x interval
+    activationKey: 'seed-activated:cyber:threats-history',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 34, activationKey: 'seed-activated:cyber:threats-history' },
+  },
+  kevRecent: {
+    key: 'seed-meta:cyber:kev-recent', maxStaleMin: 2880, // extra key of the daily NVD KEV sync; 2880 = 2x interval
+    activationKey: 'seed-activated:cyber:kev-recent',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 34, activationKey: 'seed-activated:cyber:kev-recent' },
+  },
   cryptoQuotes:     { key: 'seed-meta:market:crypto',           maxStaleMin: 30 },
   etfFlows:         { key: 'seed-meta:market:etf-flows',        maxStaleMin: 60 },
   gulfQuotes:       { key: 'seed-meta:market:gulf-quotes',      maxStaleMin: 30 },
@@ -2717,6 +2727,8 @@ const ON_DEMAND_KEYS = new Set([
   // projection and its seed metadata publish successfully.
   'predictionCountryMarkets',
   'cveReference',
+  // Lite Tech indicator keys: pending until their seeders write the activation marker.
+  'cyberThreatHistory', 'kevRecent',
   // Per-country GDELT article index (#7748). The 15-minute materializer
   // writes the marker after the index and its seed-meta publish; absence is
   // pending until that first tick and strict afterward.
@@ -2937,6 +2949,8 @@ const ACTIVATION_MARKERS = {
   torontoTps: SEED_META.torontoTps.activationKey,
   predictionCountryMarkets: SEED_META.predictionCountryMarkets.activationKey,
   cveReference: SEED_META.cveReference.activationKey,
+  cyberThreatHistory: SEED_META.cyberThreatHistory.activationKey,
+  kevRecent: SEED_META.kevRecent.activationKey,
   // Written by scripts/seed-gdelt-bulk-materializer.mjs after the per-country
   // article index publishes with its seed-meta (#7748).
   gdeltCountryArticles: SEED_META.gdeltCountryArticles.activationKey,
