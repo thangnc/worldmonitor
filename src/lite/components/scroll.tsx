@@ -39,7 +39,7 @@ export function OverlayScroll({
   axis?: Axis;
   class?: string;
   contentClass?: string;
-  children: ComponentChildren;
+  children?: ComponentChildren;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
