@@ -37,6 +37,10 @@ export const useCorrelationSeries = () => useResource('correlationSeries', src.l
 export const useArxiv = () => useResource('arxiv', src.loadArxiv);
 export const useHackerNews = () => useResource('hackerNews', src.loadHackerNews);
 export const useHealth = () => useResource('health', src.loadHealth);
+export const useInternetOutages = () => useResource('internetOutages', src.loadInternetOutages);
+export const useServiceStatuses = () => useResource('serviceStatuses', src.loadServiceStatuses);
+export const useThreatHistory = () => useResource('threatHistory', src.loadThreatHistory);
+export const useRecentKev = () => useResource('recentKev', src.loadRecentKev);
 export const useInsights = () => useResource('insights', src.loadInsights);
 
 /** Geopolitics incidents: medium threat or above from the geo buckets, most important first. */

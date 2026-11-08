@@ -154,6 +154,7 @@ export function IndicatorCard({ indicator, now, onCollapse }: { indicator: Indic
           <span class="font-mono text-[11px] text-muted">rule: {indicator.rule}</span>
         </span>
       </div>
+      {indicator.detail ? <p class="text-[12px] leading-[17px] text-muted" data-indicator-detail>{indicator.detail}</p> : null}
       <div class="flex flex-wrap items-center gap-[10px]">
         <TrustChip trust={indicator.trust} />
         <span class="text-[11px] text-dim">{timeLine(indicator, now)}</span>
@@ -197,6 +198,7 @@ export function IndicatorCardCompact({ indicator, onExpand }: { indicator: Indic
         {indicator.change ? <span class="whitespace-nowrap font-mono text-[11.5px] font-semibold leading-4 text-ink">{indicator.change}</span> : null}
         <span class="ml-auto whitespace-nowrap font-mono text-[10px] leading-[15px] text-dim">rule {indicator.rule}</span>
       </span>
+      {indicator.detail ? <span class="line-clamp-2 w-full text-[11.5px] leading-4 text-muted" data-indicator-detail>{indicator.detail}</span> : null}
       <span class="flex w-full items-center gap-2">
         <TrustChip trust={indicator.trust} compact />
         {linked ? (

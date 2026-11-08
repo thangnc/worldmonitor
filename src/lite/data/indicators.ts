@@ -36,6 +36,8 @@ export interface Indicator {
   change?: string;
   /** "±10 bp", "> 0.5% from $1". */
   rule: string;
+  /** One plain line of facts from the feed: scope, stated cause, per-feed counts. Never a guessed cause. */
+  detail?: string;
   trust: { level: Trust; source: string };
   /** When the rule fired: the time of the data it read. */
   at: number;

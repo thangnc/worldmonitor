@@ -22,19 +22,6 @@ export const SAMPLE_MODELS: SampleModelRow[] = [
   { name: 'Sable Vision 1.2', org: 'Sable', released: '21 Oct', access: 'Open weights', claimed: 'Document parsing', evalLabel: 'Mixed', evalTone: 'muted' },
 ];
 
-export interface SampleKpi {
-  key: string;
-  value: string;
-  delta: string;
-  tone: 'ok' | 'muted';
-}
-
-export const SAMPLE_INFRA_KPIS: SampleKpi[] = [
-  { key: 'AI capex', value: '$41B', delta: '+18% m/m', tone: 'ok' },
-  { key: 'GPU lead time', value: '22 wk', delta: '−4 wk', tone: 'ok' },
-  { key: 'Deals & M&A', value: '9', delta: '3 > $1B', tone: 'muted' },
-];
-
 export interface SampleWatchItem {
   name: string;
   state: 'alerting' | 'watching';

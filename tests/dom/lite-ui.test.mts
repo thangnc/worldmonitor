@@ -374,6 +374,79 @@ describe('Lite indicator card', () => {
     }
   });
 
+  it('renders the Tech indicators and infrastructure tiles from real feeds, and a failed feed as its state', async () => {
+    const base = fetch;
+    const now = Date.now();
+    const day = (offset: number) => new Date(now - offset * 86_400_000).toISOString().slice(0, 10);
+    const techDigest = {
+      ...DIGEST,
+      categories: {
+        ...DIGEST.categories,
+        security: { items: [{ source: 'BleepingComputer', title: 'Yemen internet goes dark after power grid failure', link: 'https://example.com/ye', publishedAt: now - 3_600_000, isAlert: false, locationName: '', importanceScore: 40, corroborationCount: 1, snippet: '', tickers: [], credibilityScore: 60 }] },
+      },
+    };
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+      if (url.includes('/api/news/v1/list-feed-digest')) return json(techDigest);
+      if (url.includes('/api/infrastructure/v1/list-internet-outages')) {
+        return json({
+          fetchedAt: now - 10 * 60_000,
+          outages: [{
+            id: 'cf-1', title: 'Internet disruption in Yemen', link: '', description: '', detectedAt: now - 2 * 3_600_000, country: 'Yemen', region: '',
+            severity: 'OUTAGE_SEVERITY_TOTAL', categories: ['Cloudflare Radar', 'POWER OUTAGE', 'NATIONWIDE', 'YemenNet'], cause: 'POWER_OUTAGE', outageType: 'NATIONWIDE', endedAt: 0,
+          }],
+        });
+      }
+      if (url.includes('/api/infrastructure/v1/list-service-statuses')) {
+        return json({ statuses: [
+          { id: 'aws', name: 'AWS', status: 'SERVICE_OPERATIONAL_STATUS_OPERATIONAL', description: '', url: '', checkedAt: now - 60_000, latencyMs: 90 },
+          { id: 'azure', name: 'Azure', status: 'SERVICE_OPERATIONAL_STATUS_DEGRADED', description: 'Recent incidents reported', url: '', checkedAt: now - 60_000, latencyMs: 90 },
+        ] });
+      }
+      return base(input, init);
+    }));
+    // The cyber keys ride the on-demand bootstrap path: KEV answers, the history misses.
+    const bootstrap = await import('@/services/bootstrap');
+    vi.mocked(bootstrap.ensureHydrated).mockImplementation(async (key: string) => (key === 'kevRecent'
+      ? { fetchedAt: now - 3_600_000, days: 30, attribution: '', items: [
+          { id: 'CVE-2026-0002', addedAt: day(10), dueAt: '', name: 'Old entry', vendorProduct: '', cvssScore: 7.5, cvssSeverity: 'HIGH', description: '' },
+        ] }
+      : undefined));
+    try {
+      history.replaceState(null, '', '/lite/tech');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const panel = () => root.querySelector('[data-testid="tech-indicators"]') as HTMLElement;
+      const tile = (key: string) => root.querySelector(`[data-infra-tile="${key}"]`) as HTMLElement;
+      await vi.waitFor(async () => {
+        await flush();
+        expect(panel().querySelector('[data-indicator="internet-outage"]')).not.toBeNull();
+        expect(panel().querySelector('[data-feed="attack-spike"]')?.getAttribute('data-feed-state')).toBe('unavailable');
+        expect(tile('Threat indicators').textContent).toContain('source unavailable');
+      }, { timeout: 10_000, interval: 50 });
+
+      const card = panel().querySelector('[data-indicator="internet-outage"]') as HTMLElement;
+      expect(card.textContent).toContain('Internet outage · Yemen');
+      expect(card.textContent).toContain('Nationwide');
+      expect(card.textContent).toContain('REPORTED');
+      expect(card.querySelector('[data-indicator-detail]')?.textContent).toContain('stated cause: power outage');
+      expect(card.textContent).toContain('1 linked');
+      expect(panel().querySelector('[data-feed="service-outage"]')?.textContent).toContain('degraded: Azure');
+      expect(panel().querySelector('[data-feed="kev-new"]')?.getAttribute('data-feed-state')).toBe('quiet');
+      expect(panel().querySelector('[data-feed="attack-spike"]')?.textContent).toContain('seed-cyber-threats');
+
+      expect(tile('Active outages').textContent).toContain('1 nationwide');
+      expect(tile('Providers degraded').textContent).toContain('1 / 2');
+      expect(tile('Exploited CVEs · week').textContent).toContain('vs last week');
+      // The tiles are real or a stated state now: no sample badge on the panel.
+      expect(root.querySelector('[data-testid="infra-business"] [data-sample="true"]')).toBeNull();
+    } finally {
+      vi.stubGlobal('fetch', base);
+      vi.mocked(bootstrap.ensureHydrated).mockImplementation(async () => undefined);
+    }
+  });
+
   it('says "No linked news found" with what it searched when no story matches', async () => {
     const { IndicatorCard, IndicatorCardCompact } = await import('../../src/lite/components/indicator');
     const indicator = {

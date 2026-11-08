@@ -171,7 +171,7 @@ A slow feed shows the date its data covers ("data to 3 Nov", "week to 7 Nov"), n
 Rules measured against a normal need history that some feeds do not keep. It is kept in Redis as rolling count keys with a TTL longer than the window, so no new datastore is needed (the Supabase gate covers history longer than Redis TTLs):
 
 - **GDELT conflict events**: the key holds only the last 24 h (`GDELT_ROLLING_WINDOW_MS`). Keep hourly global counts and daily counts per country for 30 days. They feed the violence rule, the report histogram, the 30d range and the region strip.
-- **Attack infrastructure**: `seed-cyber-threats` keeps the latest snapshot. Keep daily counts per source and malware family for 30 days.
+- **Attack infrastructure** (built in step 4a): after each snapshot, `seed-cyber-threats` folds the run's counts into `cyber:threats:history:v1` (`scripts/_cyber-threat-history.mjs`). It keeps the total, the count per feed and the top 10 malware families for each of the last 30 UTC days, with the larger count of two runs on the same day. Families come from Feodo, URLhaus and C2Intel only: OTX carries a pulse title in that field and AbuseIPDB leaves it empty. A failed read of the previous history skips the write rather than replace the stored days.
 - **GPS interference**: keep the previous day's high cells.
 
 Feeds that already keep history: Taiwan Strait activity, Treasury par yields (the curve against a week ago), chokepoint transits and the Hyperliquid baselines.
@@ -195,6 +195,7 @@ Built in step 1:
 - **Linking:** `src/lite/data/news-link.ts` applies the news link rule.
 - **Colours:** MARKET DATA, which the design system lacks, uses the muted ink with a chart icon. REPORTED uses `--color-reported`, and the no-link accent uses `--color-nolink`.
 - **AI line:** shown only when the card has linked stories and a grounded "why", which no feed produces yet.
+- **Detail line** (step 4a): an optional line of facts from the feed, such as scope, stated cause or counts per feed. It never states a guessed cause.
 
 **Briefing.** A "Fired indicators" block at the top, newest first, with filters All, Watchlist and No linked news, and a feed-health strip (one dot per feed: fired, quiet, stale, unavailable). The watchlist parts are samples until the watchlist exists (open decision 1). The hourly brief, priority events, market pulse, escalation tracker and catalysts stay.
 
@@ -231,6 +232,23 @@ Built in step 1:
   - undersea cables (cable health: OK, degraded, fault).
   - The map notes that DDoS shading shows who is attacked and the hexagons show where attackers' servers are.
 - The indicator panel; material developments; the model and product tracker (SAMPLE); research radar; policy and governance; infrastructure tiles from real counts (active outages, providers degraded, exploited CVEs this week, threat indicators against their average); watched topics.
+
+Built in step 4a (`src/lite/data/tech-indicators.ts`):
+
+| Feed | Fires when | Label | Read path |
+|---|---|---|---|
+| Internet outages | A Cloudflare outage that is ongoing or was detected in the last 24 h. The card shows scope (nationwide, regional, network) and the stated cause | Reported (Cloudflare Radar) | `ListInternetOutages` (carries `fetchedAt`) |
+| Cloud and AI services | AWS, Azure, Google Cloud, Cloudflare, GitHub, Vercel, OpenAI, Anthropic or Replicate reports a partial or major outage; degraded shows in the quiet line | Official (status page) | `serviceStatuses` bootstrap, else `ListServiceStatuses` |
+| Exploited vulnerabilities | CISA added a CVE to KEV in the last 3 days. A date-only feed: the link window runs from 12 h before the added day to its end | Official (CISA KEV) | on-demand bootstrap key `kevRecent` (`cyber:kev-recent:v1`, the last 30 days of additions, an extra key of `seed-cve-reference`) |
+| Attack infrastructure | The latest run's indicators reach 2× the average of up to 7 complete days before today. It needs 3 days of history, and until then reads "building baseline" | Reported (threat feeds) | on-demand bootstrap key `cyberThreatHistory` (`cyber:threats:history:v1`) |
+
+The two cyber keys use the on-demand bootstrap path, not new RPCs. Two more operations would push the public `openapi.json` past its 950 KB scanner budget. The watchlist-vendor part of the KEV rule waits for the watchlist.
+
+Trigger rates measured on 2026-11-08, when the seeders first ran on the owner's stack:
+
+- Cloudflare listed 9 outages in 28 days, about one every three days, and none in the last 24 h.
+- CISA added 30 CVEs in 30 days, on 14 separate days, so the 3-day rule fires on most days.
+- The threat feeds held 1,045 deduplicated indicators: AbuseIPDB 500, OTX 319 and C2Intel 226. Feodo and URLhaus contributed none in that run. The spike rule needs 3 days of history before it can fire.
 
 ### Build order
 
@@ -309,7 +327,7 @@ The rules are in `src/config/lite-route.ts`. `vercel.json`, `docker/nginx.conf*`
 | Briefing | Hourly AI brief: lead, cited lines and their sources (`insights`, seed-insights); market pulse tickers; macro calendar and AI regulation deadlines as catalysts | Priority events: each child screen's main list merged, importance ≥ 50, ranked by importance × credibility; momentum from story phase; the corroboration and attributed-claims columns from the dashboard's corroboration verdict; "since" counts; market regime (five 24h moves); escalation trend from CII history (±10% is stable); watch alerts from built-in rules (impact, BTC 2h move > 4σ, primary-source AI policy) | None. Open questions, Pin, Split cluster, Mute, Manage and Generate brief are SOON |
 | Geopolitics | UCDP events on a MapLibre map (OpenFreeMap tiles, styled from the Lite tokens), clustered by zoom with event cards; priority incidents (digest, medium threat and up) | Curated hotspots coloured by the dashboard's live escalation score (see Owner decisions); region strip from CII and country history; report histogram over the selected time range (1h–30d), which also filters incidents, timeline and evidence mix; timeline tags and incident status from the dashboard's corroboration verdict, with tier 1 marked beside it; evidence mix by source class | Watchlist |
 | Finance | Tickers (DXY from gold drivers); hourly BTC closes; Hyperliquid funding and open interest; spot ETF flow (an estimate); breadth; market-moving stories (one copy per story, asset classes in turns, war stories left to Geopolitics unless the headline names a commodity, then marked "Linked to GEO"); macro calendar | Indicators panel on the shared indicator card: BTC 24h move ≥ 4%, BTC perp funding ≥ 0.01%/h, a stablecoin more than 0.5% from $1, fear & greed ≤ 20 or ≥ 80, each fired rule with its linked news; market-event price links (24h change of the instruments a headline names or its tickers, else asset-class benchmarks; "No price impact" under 0.25% or 3bp); 48h realized volatility; 14-day correlation of hourly returns (Oil stands in for DXY, which has no hourly series) | Liquidations; BTC volume bars |
-| Technology & AI | Material developments (tech digest); policy actions (the curated `src/config/ai-regulations.ts` list); arXiv papers; funding and infrastructure stories | Evidence pills (corroboration verdict, "Primary source" when a tier-1 outlet reports alone); research signal (arXiv plus Hacker News); watched-topic counts | Model and product tracker; infrastructure KPI tiles |
+| Technology & AI | Material developments (tech digest); policy actions (the curated `src/config/ai-regulations.ts` list); arXiv papers; funding and infrastructure stories | Indicators panel on the shared indicator card, each fired rule with its linked tech-digest news (rules below); infrastructure tiles from the same feeds (active outages, providers degraded, exploited CVEs this week against last, threat indicators against their 7-day average); evidence pills (corroboration verdict, "Primary source" when a tier-1 outlet reports alone); research signal (arXiv plus Hacker News); watched-topic counts | Model and product tracker |
 
 The table describes the screens as built. The target screens are in [Screen design](#screen-design); each build step updates its rows.
 
@@ -345,7 +363,7 @@ Do not add a datastore before its gate is met:
 
 ### Operations
 
-- **Seeder allowlist.** Upstream runs about 250 seeders. The profile runs only those feeding Lite panels. This sets Render cost. It must include `seed-gdelt-bulk-materializer`: without ACLED it is the only realtime conflict input to the risk scores (see [Owner decisions](#owner-decisions)). The hotspots' live score also reads `seed-unrest-events` (runs on GDELT alone without ACLED), `seed-earthquakes` (USGS, no key) and `seed-military-flights` (adsb.lol by default; OpenSky and Wingbits are optional); without them it falls back to news, CII and the curated baseline, and each hotspot card names the missing inputs. Each [early indicator](#early-indicators) adds its seeder to the allowlist when it is built.
+- **Seeder allowlist.** Upstream runs about 250 seeders. The profile runs only those feeding Lite panels. This sets Render cost. It must include `seed-gdelt-bulk-materializer`: without ACLED it is the only realtime conflict input to the risk scores (see [Owner decisions](#owner-decisions)). The hotspots' live score also reads `seed-unrest-events` (runs on GDELT alone without ACLED), `seed-earthquakes` (USGS, no key) and `seed-military-flights` (adsb.lol by default; OpenSky and Wingbits are optional); without them it falls back to news, CII and the curated baseline, and each hotspot card names the missing inputs. Each [early indicator](#early-indicators) adds its seeder to the allowlist when it is built. Step 4a adds `seed-internet-outages` (Cloudflare Radar, every 30 min), `seed-cyber-threats` (every 2 h) and `seed-cve-reference` (daily). Service statuses need no seeder: the handler fetches the status pages on a cache miss, so the Lite page's own request fills `infra:service-statuses:v1`.
 - **Health.** `api/health.js` grades every registered key. Keys produced only by Railway services or Convex show as stale on the owner's stack, so the profile needs a health key subset matching the allowlist.
 - **Licensing.** `shared/source-attribution-manifest.json` has 1,044 hosts: 735 `terms-review`, 189 `excluded`, 120 `reviewed`. Sixteen are licensed under "the World Monitor agreement", which does not cover the owner. The profile applies a source-policy filter from the manifest's `license` and `status` fields.
 - **AGPL.** A private modified deployment that only the owner uses needs no source offer to others ([self-hosting](../../self-hosting.mdx)); the fork is public anyway.
