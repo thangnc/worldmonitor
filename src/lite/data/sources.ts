@@ -32,7 +32,8 @@ import type {
   GetGovernmentYieldCurveResponse,
   UsTreasuryParYieldCurve,
 } from '@/generated/client/worldmonitor/economic/v1/service_client';
-import type { GetShippingRatesResponse } from '@/generated/client/worldmonitor/supply_chain/v1/service_client';
+import type { GetChokepointStatusResponse, GetShippingRatesResponse } from '@/generated/client/worldmonitor/supply_chain/v1/service_client';
+import type { ListSanctionsPressureResponse } from '@/generated/client/worldmonitor/sanctions/v1/service_client';
 import type { ListMaterialEventsResponse } from '@/generated/client/worldmonitor/intelligence/v1/service_client';
 import type { ArxivPaper, HackernewsItem } from '@/generated/client/worldmonitor/research/v1/service_client';
 import {
@@ -42,6 +43,7 @@ import {
   MarketServiceClient,
   MilitaryServiceClient,
   ResearchServiceClient,
+  SanctionsServiceClient,
   SeismologyServiceClient,
   SupplyChainServiceClient,
   UnrestServiceClient,
@@ -49,8 +51,7 @@ import {
 import { getRpcBaseUrl, rpcFetch } from '@/services/rpc-client';
 import { publicRpcFetch } from '@/services/public-rpc-fetch';
 import { toApiUrl } from '@/services/runtime';
-import { ensureHydrated, fetchBootstrapData, getHydratedData, waitForBootstrapSlowTier } from '@/services/bootstrap';
-import { isMarketCorrelationPayload } from '@/services/news-market-correlation';
+import { fetchBootstrapData, getHydratedData, waitForBootstrapSlowTier } from '@/services/bootstrap';
 import { fetchServerInsights, type ServerInsights } from '@/services/insights-loader';
 
 const options = { fetch: rpcFetch };
@@ -63,6 +64,7 @@ const unrest = new UnrestServiceClient(getRpcBaseUrl(), options);
 const seismology = new SeismologyServiceClient(getRpcBaseUrl(), options);
 const military = new MilitaryServiceClient(getRpcBaseUrl(), options);
 const supplyChain = new SupplyChainServiceClient(getRpcBaseUrl(), options);
+const sanctions = new SanctionsServiceClient(getRpcBaseUrl(), options);
 
 let bootstrapReady: Promise<void> | null = null;
 
@@ -285,16 +287,33 @@ export async function loadMaterialEvents(): Promise<ListMaterialEventsResponse |
   return resp.unavailable ? null : resp;
 }
 
-/** Hourly closes per symbol, 14 days (on-demand bootstrap key `marketCorrelationSeries`). */
-export async function loadCorrelationSeries(): Promise<Record<string, number[]> | null> {
-  const payload = await ensureHydrated('marketCorrelationSeries');
-  if (!isMarketCorrelationPayload(payload)) return null;
-  const out: Record<string, number[]> = {};
-  for (const series of payload.series) {
-    const values = series.points.map((p) => p.value).filter((v) => Number.isFinite(v));
-    if (values.length > 2) out[series.symbol] = values;
-  }
-  return Object.keys(out).length ? out : null;
+// ---- Finance map context ----------------------------------------------------
+
+/** Chokepoint status (disruption score, warnings): bootstrap key `chokepoints`, else the RPC. */
+export async function loadChokepoints(): Promise<GetChokepointStatusResponse | null> {
+  const boot = await hydrated('chokepoints', hasArray('chokepoints'));
+  const resp = boot ? (boot as unknown as GetChokepointStatusResponse) : await supplyChain.getChokepointStatus({});
+  return resp.chokepoints.length ? resp : null;
+}
+
+/** OFAC sanctions pressure by country, with new designations: bootstrap key `sanctionsPressure`, else the RPC. */
+export async function loadSanctions(): Promise<ListSanctionsPressureResponse | null> {
+  const boot = await hydrated('sanctionsPressure', hasArray('countries'));
+  const resp = boot ? (boot as unknown as ListSanctionsPressureResponse) : await sanctions.listSanctionsPressure({ maxItems: 0 });
+  return resp.countries.length ? resp : null;
+}
+
+export interface CountryShapes {
+  type: 'FeatureCollection';
+  features: Array<{ type: 'Feature'; geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: unknown }; properties: Record<string, unknown> | null }>;
+}
+
+/** Country polygons (`public/data/countries.geojson`, about 200 KB), loaded only when a layer shades countries. */
+export async function loadCountryShapes(): Promise<CountryShapes | null> {
+  const resp = await fetch('/data/countries.geojson', { signal: AbortSignal.timeout(15_000) });
+  if (!resp.ok) throw new Error(`countries.geojson: HTTP ${resp.status}`);
+  const data = (await resp.json()) as CountryShapes;
+  return data?.type === 'FeatureCollection' && Array.isArray(data.features) ? data : null;
 }
 
 // ---- Technology & AI --------------------------------------------------------

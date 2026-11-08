@@ -43,17 +43,3 @@ export function StackedBar({ parts }: { parts: ReadonlyArray<{ key: string; shar
     </div>
   );
 }
-
-/** A thin line sparkline, used for the funding and open-interest tabs. */
-export function LineChart({ values, height, stroke }: { values: readonly number[]; height: number; stroke: string }) {
-  if (values.length < 2) return null;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
-  const points = values.map((v, i) => `${(i / (values.length - 1)) * 100},${(1 - (v - min) / span) * 100}`).join(' ');
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="w-full" style={{ height }} role="img" aria-label="Series chart">
-      <polyline points={points} fill="none" stroke={stroke} stroke-width={1.5} vector-effect="non-scaling-stroke" />
-    </svg>
-  );
-}

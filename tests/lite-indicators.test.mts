@@ -10,7 +10,13 @@ import type {
   ListStablecoinMarketsResponse,
 } from '../src/generated/client/worldmonitor/market/v1/service_client.ts';
 import { LINK_WINDOW_HOURS, MAX_LINKED_STORIES, linkNews, matchReason, offsetLabel } from '../src/lite/data/news-link.ts';
-import { STALE_FACTOR, feedCounts, feedState, sortFeeds, type Indicator } from '../src/lite/data/indicators.ts';
+import { STALE_FACTOR, feedCounts, feedState, sortFeeds, type FeedState, type Indicator } from '../src/lite/data/indicators.ts';
+import { chokepointPins, featureIso2, newSanctionCountries, pinIdForFeed, sanctionFills, shippingLanes, signalPins } from '../src/lite/data/markets-map.ts';
+import { buildPriceBoard } from '../src/lite/data/prices.ts';
+import { CENTRAL_BANKS } from '../src/config/finance-geo.ts';
+import { STRATEGIC_WATERWAYS } from '../src/config/geo.ts';
+import { TRADE_ROUTES } from '../src/config/trade-routes.ts';
+import type { ChokepointInfo } from '../src/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
 import { STABLECOIN_DEPEG_PCT, financeFeeds } from '../src/lite/data/finance-indicators.ts';
 import type { LiteItem } from '../src/lite/data/transforms.ts';
 import type {
@@ -403,5 +409,76 @@ describe('Finance indicator rules, step 3', () => {
     const feeds = financeMacroFeeds({ calendar: failed, curves: failed, bonds: failed, etf: failed, flow: failed, rates: failed, filings: failed, ...ctx });
     assert.deepEqual(feeds.map((f) => f.id), ['macro-print', 'treasury', 'other-bonds', 'etf-flows', 'perp-positioning', 'freight-scfi', 'freight-bdi', 'sec-8k']);
     assert.ok(feeds.every((f) => f.kind === 'unavailable' && /seed-/.test(f.detail)));
+  });
+});
+
+describe('Finance markets map', () => {
+  const fired = (id: string, name: string, reading: string): FeedState => ({
+    kind: 'fired', id, name, reading,
+    indicator: { id, domain: 'fin', name, value: '1', rule: 'r', trust: { level: 'official', source: 's' }, at: AT, links: { stories: [], searched: 0, windowHours: 6 } },
+  });
+  const quiet = (id: string, reading: string): FeedState => ({ kind: 'quiet', id, name: id, detail: 'Live', reading });
+
+  it('pins Finance signals at their issuer and keeps crypto off the map', () => {
+    const feeds = [
+      fired('macro-print', 'Macro print · US payrolls', 'payrolls +105k vs prior'),
+      quiet('treasury', 'UST 10Y 4.86% +2 bp'),
+      quiet('sec-8k', '8-K · 62 filings, none matched'),
+      fired('etf-flows', 'Bitcoin ETF flows', 'ETF'),
+      quiet('btc-move', 'BTC'),
+    ];
+    const bonds = [{ country: 'GB', source: 'BoE', level: 4.6, moveBp: 12, date: AT }, { country: 'DE', source: 'Bundesbank', level: 2.7, moveBp: 3, date: AT }];
+    const pins = signalPins(feeds, bonds, 10);
+    assert.deepEqual(pins.map((p) => p.id).sort(), ['signal:boe', 'signal:ecb', 'signal:fed', 'signal:nyse']);
+    const fed = pins.find((p) => p.id === 'signal:fed')!;
+    assert.equal(fed.fired, true);
+    assert.deepEqual(fed.signals.map((s) => s.text), ['payrolls +105k vs prior', 'UST 10Y 4.86% +2 bp']);
+    assert.equal(pins.find((p) => p.id === 'signal:boe')?.fired, true);
+    assert.equal(pins.find((p) => p.id === 'signal:ecb')?.fired, false);
+    assert.equal(fed.issuer.lat, CENTRAL_BANKS.find((b) => b.id === 'fed')?.lat);
+    assert.equal(pinIdForFeed(feeds[3]!), null);
+    assert.equal(pinIdForFeed(fired('other-bonds', 'Other 10y bonds · JP', 'x')), 'signal:boj');
+  });
+
+  it('draws every strategic waterway, coloured only when a status was read', () => {
+    const board = buildPriceBoard([[{ symbol: 'BZ=F', price: 84.1, change: 2.9 }]]);
+    const info = (id: string, status: string) => ({ id, name: id.toUpperCase(), lat: 1, lon: 2, status, disruptionScore: 70 } as unknown as ChokepointInfo);
+    const pins = chokepointPins([info('bab_el_mandeb', 'red'), info('malacca_strait', 'yellow'), info('suez', 'green')], board, 6);
+    assert.equal(pins.length, STRATEGIC_WATERWAYS.length);
+    const by = (id: string) => pins.find((p) => p.id === `chokepoint:${id}`)!;
+    assert.equal(by('bab_el_mandeb').tone, 'crit');
+    assert.equal(by('bab_el_mandeb').moved, 'Brent +2.9% 24h');
+    assert.equal(by('malacca_strait').moved, 'SCFI +6.0% w/w');
+    assert.equal(by('suez').moved, null);
+    assert.equal(by('panama').tone, 'dim');
+    assert.equal(by('panama').info, null);
+  });
+
+  it('turns a lane amber when it passes a red chokepoint', () => {
+    const calm = shippingLanes(new Set());
+    const red = shippingLanes(new Set(['bab_el_mandeb']));
+    const amber = (fc: ReturnType<typeof shippingLanes>) => new Set(fc.features.filter((f) => f.properties.tone === 'elev').map((f) => f.properties.id.split(':')[0]));
+    const viaRedSea = TRADE_ROUTES.filter((r) => r.waypoints.includes('bab_el_mandeb') && r.status === 'active').map((r) => r.id);
+    assert.ok(viaRedSea.length > 0);
+    for (const id of viaRedSea) {
+      assert.ok(!amber(calm).has(id));
+      assert.ok(amber(red).has(id));
+    }
+  });
+
+  it('shades only countries with new designations', () => {
+    const countries = newSanctionCountries([
+      { countryCode: 'ir', countryName: 'Iran', entryCount: 900, newEntryCount: 9, vesselCount: 0, aircraftCount: 0 },
+      { countryCode: 'RU', countryName: 'Russia', entryCount: 4000, newEntryCount: 0, vesselCount: 0, aircraftCount: 0 },
+    ]);
+    assert.deepEqual([...countries.keys()], ['IR']);
+    const square = { type: 'Polygon' as const, coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] };
+    const fills = sanctionFills({ features: [
+      { geometry: square, properties: { 'ISO3166-1-Alpha-2': 'IR', name: 'Iran' } },
+      { geometry: square, properties: { ISO_A2: 'RU' } },
+      { geometry: square, properties: { ISO_A2: '-99' } },
+    ] }, countries);
+    assert.deepEqual(fills.features.map((f) => f.properties.id), ['IR']);
+    assert.equal(featureIso2({ iso_a2: 'gb' }), 'GB');
   });
 });

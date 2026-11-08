@@ -37,7 +37,9 @@ export const useTreasuryCurves = () => useResource('treasuryCurves', src.loadTre
 export const useOtherBonds = () => useResource('otherBonds', src.loadOtherBonds);
 export const useShippingRates = () => useResource('shippingRates', src.loadShippingRates);
 export const useMaterialEvents = () => useResource('materialEvents', src.loadMaterialEvents);
-export const useCorrelationSeries = () => useResource('correlationSeries', src.loadCorrelationSeries);
+export const useChokepoints = () => useResource('chokepoints', src.loadChokepoints);
+export const useSanctions = () => useResource('sanctions', src.loadSanctions);
+export const useCountryShapes = (enabled: boolean) => useResource('countryShapes', src.loadCountryShapes, enabled);
 export const useArxiv = () => useResource('arxiv', src.loadArxiv);
 export const useHackerNews = () => useResource('hackerNews', src.loadHackerNews);
 export const useHealth = () => useResource('health', src.loadHealth);
