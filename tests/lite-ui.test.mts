@@ -9,7 +9,6 @@ import {
   shouldRedirectToLite,
 } from '../src/config/lite-route.ts';
 import {
-  closeToCloseBars,
   corroborationOf,
   decodeEntities,
   digestItems,
@@ -20,11 +19,9 @@ import {
   publisherCount,
   interleaveByMarketTag,
   isWarStory,
-  realizedVolatility,
   regionOfCategory,
   regionOfPoint,
   relativeTime,
-  returnCorrelation,
   thresholdState,
   timeBuckets,
 } from '../src/lite/data/transforms.ts';
@@ -257,23 +254,6 @@ describe('Lite transforms', () => {
     const now = 100 * 3_600_000;
     const buckets = timeBuckets([now - 1, now - 3_600_000 * 2.5, now + 5, now - 3_600_000 * 10], now, 4, 4);
     assert.deepEqual(buckets, [0, 1, 0, 1]);
-  });
-
-  it('computes realized volatility and return correlation', () => {
-    assert.equal(realizedVolatility([100]), null);
-    assert.equal(realizedVolatility([100, 100, 100]), 0);
-    const up = [100, 101, 103, 102, 105, 107];
-    assert.ok((realizedVolatility(up) ?? 0) > 0);
-    assert.ok(Math.abs((returnCorrelation(up, up) ?? 0) - 1) < 1e-9);
-    assert.ok((returnCorrelation(up, up.map((v) => 1 / v)) ?? 0) < -0.99);
-    assert.equal(returnCorrelation([1, 2], [1, 2]), null);
-  });
-
-  it('builds close-to-close bars without inventing highs or lows', () => {
-    assert.deepEqual(closeToCloseBars([10, 12, 11]), [
-      { open: 10, close: 12, up: true },
-      { open: 12, close: 11, up: false },
-    ]);
   });
 
   it('grades thresholds and sentiment extremes, and reports missing data as null', () => {

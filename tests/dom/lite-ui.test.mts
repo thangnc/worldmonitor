@@ -21,6 +21,18 @@ vi.mock('maplibre-gl', () => {
     getZoom(): number { return 1; }
     getBounds() { return { getWest: () => -180, getSouth: () => -85, getEast: () => 180, getNorth: () => 85 }; }
     project(): { x: number; y: number } { return { x: 0, y: 0 }; }
+    // Context overlays: GeoJSON sources and the layers that draw them.
+    readonly sources = new Map<string, { data: unknown; setData: (d: unknown) => void }>();
+    readonly layers: string[] = [];
+    isStyleLoaded(): boolean { return true; }
+    once(type: string, fn: () => void): this { return this.on(type, fn); }
+    getSource(id: string) { return this.sources.get(id); }
+    addSource(id: string, spec: { data: unknown }): this {
+      const source = { data: spec.data, setData(d: unknown) { source.data = d; } };
+      this.sources.set(id, source);
+      return this;
+    }
+    addLayer(layer: { id: string }): this { this.layers.push(layer.id); return this; }
     easeTo(): this { return this; }
     fitBounds(): this { return this; }
     zoomIn(): this { return this; }
@@ -292,7 +304,11 @@ describe('Lite UI shell', () => {
       expect(states()).not.toContain('loading');
     }, { timeout: 10_000, interval: 50 });
     expect(states()).toContain('error');
-    expect(root.querySelector('[data-testid="derivatives"] [data-sample="true"]')).not.toBeNull();
+    // Step 3b: the chart widgets and their samples are gone; five 1D tickers and the markets map remain.
+    for (const gone of ['btc-detail', 'derivatives', 'correlation']) expect(root.querySelector(`[data-testid="${gone}"]`)).toBeNull();
+    expect(root.querySelector('[data-lite-screen] [data-sample="true"]')).toBeNull();
+    expect([...root.querySelectorAll('[data-testid="ticker-strip"] [data-ticker]')].map((t) => t.getAttribute('data-ticker'))).toEqual(['BTC', 'Brent', 'Gold', 'S&P 500', 'US 10Y']);
+    expect(root.querySelector('[data-testid="markets-map"]')).not.toBeNull();
 
     await act(() => (root.querySelector('[data-nav="tech"]') as HTMLAnchorElement).click());
     await flush();
@@ -374,6 +390,134 @@ describe('Lite indicator card', () => {
     }
   });
 
+  it('renders the step-3 Finance feeds with their detail line, and the Treasury curve today against a week ago', async () => {
+    const base = fetch;
+    const now = Date.now();
+    const day = (offset: number) => Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate()) + offset * 86_400_000;
+    const curve = (date: number, twoYear: number, tenYear: number) => ({ date, threeMonth: 4.19, twoYear, fiveYear: 4.64, tenYear, thirtyYear: 5.26 });
+    const filingsDigest = {
+      ...DIGEST,
+      categories: {
+        ...DIGEST.categories,
+        // The Treasury rule fires at the 16:00 New York close of the curve's date.
+        markets: { items: [{ source: 'Reuters', title: 'Treasury yields jump as traders reprice Fed path', link: 'https://example.com/ust', publishedAt: day(0) + 20 * 3_600_000, isAlert: false, locationName: '', importanceScore: 60, corroborationCount: 3, snippet: '', tickers: [], credibilityScore: 70 }] },
+      },
+    };
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+      if (url.includes('/api/news/v1/list-feed-digest')) return json(filingsDigest);
+      if (url.includes('/api/economic/v1/get-us-treasury-par-yield-curve')) {
+        return json({ unavailable: false, curves: [curve(day(-8), 4.56, 4.94), curve(day(-1), 4.4, 4.75), curve(day(0), 4.51, 4.86)] });
+      }
+      if (url.includes('/api/intelligence/v1/list-material-events')) {
+        return json({
+          unavailable: false, fetchedAtMs: now - 60_000,
+          events: [{ company: 'APPLE INC', cik: '0000320193', form: '8-K', accession: 'a', filedAtMs: now - 2 * 3_600_000, url: 'https://www.sec.gov/a', items: [{ code: '1.05', description: 'Material Cybersecurity Incidents' }] }],
+        });
+      }
+      return base(input, init);
+    }));
+    try {
+      history.replaceState(null, '', '/lite/finance');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const panel = () => root.querySelector('[data-testid="risk-alerts"]') as HTMLElement;
+      await vi.waitFor(async () => {
+        await flush();
+        expect(panel().querySelector('[data-indicator="treasury"]')).not.toBeNull();
+        expect(panel().querySelector('[data-indicator="sec-8k"]')).not.toBeNull();
+      }, { timeout: 10_000, interval: 50 });
+
+      const treasury = panel().querySelector('[data-indicator="treasury"]') as HTMLButtonElement;
+      expect(treasury.textContent).toContain('4.51 / 4.86%');
+      expect(treasury.textContent).toContain('+11 / +11 bp');
+      expect(treasury.querySelector('[data-testid="indicator-detail"]')?.textContent).toContain('2s10s +35 bp');
+      expect(treasury.textContent).toContain('OFFICIAL');
+      expect(treasury.textContent).toContain('1 linked');
+      const filing = panel().querySelector('[data-indicator="sec-8k"]') as HTMLButtonElement;
+      expect(filing.textContent).toContain('8-K filing · APPLE INC');
+      expect(filing.textContent).toContain('Item 1.05');
+      // Feeds this test left unanswered name their seeders.
+      expect(panel().querySelector('[data-feed="freight-scfi"]')?.textContent).toContain('seed-supply-chain-trade');
+      expect(panel().querySelector('[data-feed="other-bonds"]')?.textContent).toContain('seed-bundle-yield-curves');
+
+      const curveCard = root.querySelector('[data-testid="treasury-curve"]') as HTMLElement;
+      expect(curveCard.querySelector('[data-series="latest"]')).not.toBeNull();
+      expect(curveCard.querySelector('[data-series="week-ago"]')).not.toBeNull();
+      expect(curveCard.textContent).toContain('2s10s +35 bp (−3 bp w/w)');
+    } finally {
+      vi.stubGlobal('fetch', base);
+    }
+  });
+
+  it('pins Finance signals where they are issued, opens their card from the map and from the panel, and toggles layers', async () => {
+    const base = fetch;
+    const now = Date.now();
+    const day = (offset: number) => Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate()) + offset * 86_400_000;
+    const curve = (date: number, twoYear: number, tenYear: number) => ({ date, threeMonth: 4.19, twoYear, fiveYear: 4.64, tenYear, thirtyYear: 5.26 });
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+      if (url.includes('/api/economic/v1/get-us-treasury-par-yield-curve')) {
+        return json({ unavailable: false, curves: [curve(day(-8), 4.56, 4.94), curve(day(-1), 4.4, 4.75), curve(day(0), 4.51, 4.86)] });
+      }
+      if (url.includes('/api/supply-chain/v1/get-chokepoint-status')) {
+        return json({ fetchedAt: new Date(now).toISOString(), upstreamUnavailable: false, chokepoints: [{ id: 'bab_el_mandeb', name: 'BAB EL-MANDEB', lat: 12.5, lon: 43.3, disruptionScore: 72, status: 'red', activeWarnings: 3, congestionLevel: '', affectedRoutes: [], description: '', aisDisruptions: 0, directions: [], directionalDwt: [], warRiskTier: 'WAR_RISK_TIER_UNSPECIFIED', navigationalWarningsAvailable: true, aisSnapshotAvailable: true }] });
+      }
+      return base(input, init);
+    }));
+    try {
+      history.replaceState(null, '', '/lite/finance');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const map = () => root.querySelector('[data-testid="markets-map"]') as HTMLElement;
+      await vi.waitFor(async () => {
+        await flush();
+        expect(map().querySelector('[data-map-status]')?.getAttribute('data-map-status')).toBe('ready');
+        expect(map().querySelector('[data-marker="signal:fed"]')).not.toBeNull();
+        expect(map().querySelector('[data-marker="chokepoint:bab_el_mandeb"]')).not.toBeNull();
+      }, { timeout: 10_000, interval: 50 });
+
+      // Crypto feeds have no pin; the fired Treasury feed is a labelled pin at the Fed.
+      const drawn = [...map().querySelectorAll('[data-marker^="signal:"]')].map((m) => m.getAttribute('data-marker'));
+      expect(drawn).not.toContain('signal:btc');
+      const fed = map().querySelector('[data-marker="signal:fed"]') as HTMLElement;
+      expect(fed.textContent).toContain('Fed · UST 10Y 4.86% +11 bp');
+      expect(map().querySelector('[data-marker="chokepoint:bab_el_mandeb"]')?.textContent).toContain('Bab El-Mandeb');
+      // A chokepoint the source did not report is drawn grey, without a name chip.
+      expect(map().querySelector('[data-marker="chokepoint:panama"]')?.textContent).toBe('');
+
+      // The pin opens the same indicator card the panel shows.
+      await act(() => (fed.querySelector('button') as HTMLButtonElement).click());
+      const popup = map().querySelector('[data-map-popup="signal:fed"]') as HTMLElement;
+      expect(popup.querySelector('article[data-indicator="treasury"]')).not.toBeNull();
+      await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
+      expect(map().querySelector('[data-map-popup]')).toBeNull();
+
+      // Opening the card in the panel focuses its pin.
+      await act(() => (root.querySelector('[data-testid="risk-alerts"] button[data-indicator="treasury"]') as HTMLButtonElement).click());
+      await flush();
+      expect(map().querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe('signal:fed');
+
+      // The layers popover turns a layer off and closes on Escape, back to its chip.
+      const chip = map().querySelector('[data-testid="layers-chip"]') as HTMLButtonElement;
+      expect(chip.textContent).toContain('Layers · 5');
+      await act(() => chip.click());
+      const popover = map().querySelector('[data-testid="layers-popover"]') as HTMLElement;
+      expect(popover.querySelector('[data-layer-row="geo"]')?.textContent).toContain('N/A');
+      await act(() => (popover.querySelector('[data-layer-row="centres"] [role="switch"]') as HTMLButtonElement).click());
+      await flush();
+      expect(map().querySelector('[data-marker^="centre:"]')).toBeNull();
+      expect(chip.textContent).toContain('Layers · 4');
+      await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
+      expect(map().querySelector('[data-testid="layers-popover"]')).toBeNull();
+      expect(document.activeElement).toBe(chip);
+    } finally {
+      vi.stubGlobal('fetch', base);
+    }
+  });
+
   it('renders the Tech indicators and infrastructure tiles from real feeds, and a failed feed as its state', async () => {
     const base = fetch;
     const now = Date.now();
@@ -430,7 +574,7 @@ describe('Lite indicator card', () => {
       expect(card.textContent).toContain('Internet outage · Yemen');
       expect(card.textContent).toContain('Nationwide');
       expect(card.textContent).toContain('REPORTED');
-      expect(card.querySelector('[data-indicator-detail]')?.textContent).toContain('stated cause: power outage');
+      expect(card.querySelector('[data-testid="indicator-detail"]')?.textContent).toContain('stated cause: power outage');
       expect(card.textContent).toContain('1 linked');
       expect(panel().querySelector('[data-feed="service-outage"]')?.textContent).toContain('degraded: Azure');
       expect(panel().querySelector('[data-feed="kev-new"]')?.getAttribute('data-feed-state')).toBe('quiet');

@@ -36,7 +36,7 @@ export interface Indicator {
   change?: string;
   /** "±10 bp", "> 0.5% from $1". */
   rule: string;
-  /** One plain line of facts from the feed: scope, stated cause, per-feed counts. Never a guessed cause. */
+  /** One supporting line: "2s10s +41 bp · no sign flip", "Others normal: …". */
   detail?: string;
   trust: { level: Trust; source: string };
   /** When the rule fired: the time of the data it read. */
@@ -51,10 +51,15 @@ export interface Indicator {
 }
 
 export type FeedState =
-  | { kind: 'fired'; id: string; name: string; indicator: Indicator }
-  | { kind: 'quiet' | 'stale' | 'unavailable' | 'loading'; id: string; name: string; detail: string };
+  | { kind: 'fired'; id: string; name: string; indicator: Indicator; reading?: string }
+  | { kind: 'quiet' | 'stale' | 'unavailable' | 'loading'; id: string; name: string; detail: string; reading?: string };
 
 export type FeedKind = FeedState['kind'];
+
+/** Attaches a short reading ("UST 10Y 4.86% +2 bp") for map labels. */
+export function withReading(feed: FeedState, reading: string | null | undefined): FeedState {
+  return reading ? { ...feed, reading } : feed;
+}
 
 /** Late means older than this many cadences. */
 export const STALE_FACTOR = 2;
