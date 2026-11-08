@@ -9,7 +9,7 @@ import type {
   GetHyperliquidFlowResponse,
   ListStablecoinMarketsResponse,
 } from '../src/generated/client/worldmonitor/market/v1/service_client.ts';
-import { LINK_WINDOW_HOURS, MAX_LINKED_STORIES, linkNews, matchReason, offsetLabel } from '../src/lite/data/news-link.ts';
+import { DRIVERS, LINK_WINDOW_HOURS, MAX_LINKED_STORIES, linkNews, matchReason, offsetLabel } from '../src/lite/data/news-link.ts';
 import { STALE_FACTOR, feedCounts, feedState, sortFeeds, type FeedState, type Indicator } from '../src/lite/data/indicators.ts';
 import { chokepointPins, featureIso2, newSanctionCountries, pinIdForFeed, sanctionFills, shippingLanes, signalPins } from '../src/lite/data/markets-map.ts';
 import { buildPriceBoard } from '../src/lite/data/prices.ts';
@@ -123,6 +123,8 @@ describe('news link rule', () => {
 
   it('names why each story matched: ticker, country, entity or driver', () => {
     assert.deepEqual(matchReason({ instruments: ['^TNX'] }, story('Treasury yields jump after payrolls', AT)), { kind: 'ticker', label: 'ticker: US10Y' });
+    // A savings-account "yield" is not the 10-year: no link at all.
+    assert.equal(matchReason({ instruments: ['^TNX'], drivers: DRIVERS['^TNX'] }, story('Best High-Yield Savings Accounts of November 2026: Up to 5%', AT)), null);
     assert.deepEqual(matchReason({ instruments: ['NVDA'] }, story('Chipmaker beats estimates', AT, { tickers: ['nvda'] })), { kind: 'ticker', label: 'ticker: NVDA' });
     assert.deepEqual(matchReason({ countries: [{ name: 'Yemen', code: 'YE' }] }, story('Yemen port struck overnight', AT)), { kind: 'country', label: 'country: Yemen' });
     assert.deepEqual(matchReason({ entities: ['bitcoin'] }, story('Spot BTC funds see outflows', AT, { title: 'Spot funds see outflows', snippet: 'Bitcoin products lost $200M' })), { kind: 'entity', label: 'entity: Bitcoin' });

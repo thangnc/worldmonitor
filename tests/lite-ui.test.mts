@@ -611,6 +611,31 @@ describe('Lite market events: price links', () => {
     assert.deepEqual(namedInstruments(item({ title: 'Bank of Japan holds rates' })), []);
   });
 
+  it('names US10Y only for US government debt, not any yield or the Treasury department', () => {
+    const us10y = (title: string) => namedInstruments(item({ title })).some((i) => i.symbol === '^TNX');
+    // Headlines from the live digest, 2026-11-08.
+    for (const title of [
+      'OCBC Sees US Treasury Yields At Lower Levels After Bond Rally',
+      'Treasury Yields Down Following Democrats Midterm Win',
+      'Treasuries rally as traders price in a December cut',
+      '10-year Treasury yield tops 4.6%',
+      'U.S. 10-year yield climbs after payrolls',
+    ]) {
+      assert.equal(us10y(title), true, title);
+    }
+    for (const title of [
+      'Best High-Yield Savings Accounts of November 2026: Up to 5%',
+      '5 High-Yield Stocks (Up To 11%) That Have Been Left For Dead',
+      'The AI ‘credit card’ is getting costlier as CoreWeave bond yield tops 16%',
+      'US Treasury sanctions Canadian money services firms over Iran-related transactions',
+      'U.S. Treasury Certifies 6,576 Opportunity Zone Census Tracts',
+      'Japan 10-year yield hits highest since 2008',
+      'Wheat yields fall in drought-hit Kansas',
+    ]) {
+      assert.equal(us10y(title), false, title);
+    }
+  });
+
   it('pairs a named instrument with its companion, else uses the asset-class benchmarks', () => {
     assert.deepEqual(linkPriceMoves(story('Brent +2.9% as carriers reroute around the Cape', 'commodities'), board).map((m) => m.text), ['Brent +2.9%', 'WTI +2.6%']);
     assert.deepEqual(linkPriceMoves(story('Long-liquidation cascade after perp funding turns negative', 'crypto'), board).map((m) => m.text), ['BTC −4.8%', 'ETH −6.1%']);
