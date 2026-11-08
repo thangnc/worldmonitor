@@ -29,6 +29,7 @@ import {
   getChunkSizeWarning,
   isExpectedEmptyRpcClientWarning,
 } from './scripts/vite-build-warning-policy.mts';
+import { createDevHealthCache, type DevHealthResponse } from './scripts/vite-dev-health-cache.mts';
 
 // Env-dependent constants moved inside defineConfig function
 
@@ -854,7 +855,10 @@ function miitNewsPlugin(): Plugin {
 // Dev only: run api/health.js instead of serving it as a module, so the Lite
 // sidebar card and Sources screen read real verdicts from the local Redis.
 // The handler keeps its own gate: compact mode is public, full mode needs a key.
+// The local Redis proxy refuses the handler's EVAL scripts, so compact verdicts
+// are kept in memory instead (scripts/vite-dev-health-cache.mts).
 function healthDevPlugin(): Plugin {
+  const cache = createDevHealthCache();
   return {
     name: 'health-dev',
     apply: 'serve',
@@ -862,19 +866,25 @@ function healthDevPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         if (req.url?.split('?')[0] !== '/api/health') return next();
         try {
-          const { default: handler } = await server.ssrLoadModule('/api/health.js');
           const headers = new Headers();
           for (const name of ['origin', 'x-worldmonitor-key', 'x-api-key']) {
             const value = req.headers[name];
             if (typeof value === 'string') headers.set(name, value);
           }
-          const response: Response = await handler(
-            new Request(`http://localhost${req.url}`, { method: req.method, headers }),
-            { waitUntil: (work: Promise<unknown>) => { work.catch(() => {}); } },
-          );
+          const url = new URL(`http://localhost${req.url}`);
+          const method = req.method === 'HEAD' ? 'GET' : (req.method ?? 'GET');
+          const run = async (): Promise<DevHealthResponse> => {
+            const { default: handler } = await server.ssrLoadModule('/api/health.js');
+            const answer: Response = await handler(
+              new Request(url, { method, headers }),
+              { waitUntil: (work: Promise<unknown>) => { work.catch(() => {}); } },
+            );
+            return { status: answer.status, headers: [...answer.headers], body: await answer.text() };
+          };
+          const response = method === 'GET' ? await cache.handle(url, headers.get('origin') ?? '', run) : await run();
           res.statusCode = response.status;
-          response.headers.forEach((value, key) => res.setHeader(key, value));
-          res.end(req.method === 'HEAD' ? undefined : await response.text());
+          for (const [key, value] of response.headers) res.setHeader(key, value);
+          res.end(req.method === 'HEAD' ? undefined : response.body);
         } catch (error) {
           console.error('[health-dev]', error);
           res.statusCode = 502;
