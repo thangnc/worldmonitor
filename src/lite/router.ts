@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { LITE_SCREEN_PATHS, parseLiteScreen, type LiteScreen } from '@/config/lite-route';
+import { scrollPageToTop } from './components/scroll';
 
 // A three-route history router. The screens share one data store, so moving
 // between them is a re-render, not a page load.
@@ -15,7 +16,7 @@ export function navigate(screen: LiteScreen): void {
   const path = LITE_SCREEN_PATHS[screen];
   if (location.pathname !== path) history.pushState(null, '', path);
   notify();
-  window.scrollTo(0, 0);
+  scrollPageToTop();
 }
 
 export function useRoute(): LiteScreen {

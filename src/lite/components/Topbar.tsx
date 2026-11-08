@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { Plus, Search } from 'lucide-preact';
+import { OverlayScroll } from './scroll';
 
 /**
  * Page header: title and computed subtitle, the screen's filter, a search box
@@ -38,7 +39,11 @@ export function Topbar({
         <h1 class="text-[18px] font-semibold text-ink">{title}</h1>
         <p class="text-[12px] text-dim">{subtitle}</p>
       </div>
-      {filter ? <div class="max-w-full overflow-x-auto">{filter}</div> : null}
+      {filter ? (
+        <OverlayScroll axis="x" class="max-w-full overflow-x-auto">
+          {filter}
+        </OverlayScroll>
+      ) : null}
       <label
         class="flex items-center gap-2 rounded-[7px] border border-line bg-surface px-3 py-2 text-dim focus-within:border-muted"
         style={{ width: searchWidth }}

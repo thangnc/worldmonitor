@@ -4,6 +4,7 @@ import type { GeoJSONSource, Map as MapLibreMap, Marker as MapLibreMarker } from
 import Supercluster from 'supercluster';
 import { Locate, Minus, Plane, Plus, Ship, X } from 'lucide-preact';
 import type { Tone } from '../data/transforms';
+import { OverlayScroll } from '../components/scroll';
 import { BG, BORDER, TEXT, cx } from '../components/ui';
 import { COUNTRY_CODE_PROPERTY, COUNTRY_FILL_LAYER, COUNTRY_FILL_SOURCE, MAP_CREDITS, buildLiteMapStyle, countryFillLayer, readLiteMapTokens } from './style';
 import { getCountriesGeoJson } from '@/services/country-geometry';
@@ -332,14 +333,8 @@ function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => 
   const tone: GlyphTone = marker.kind === 'ucdp' || marker.kind === 'country' ? 'crit' : marker.tone;
   const country = marker.kind === 'country';
   const text = country ? 'text-reported' : TONE_TEXT[tone];
-  return (
-    <div
-      class={cx(
-        'rounded-[8px] border border-line bg-surface/95 px-[14px] py-3 text-left shadow-[0_8px_24px_rgba(0,0,0,0.35)]',
-        body ? 'max-h-[340px] w-[330px] max-w-[calc(100vw-56px)] overflow-y-auto' : 'w-[272px]',
-      )}
-      data-map-popup={marker.id}
-    >
+  const content = (
+    <>
       <div class="flex items-center justify-between gap-2">
         <span class={cx('flex min-w-0 items-center gap-[7px] font-mono text-[10px] font-semibold tracking-[1px] uppercase', text)}>
           {marker.kind === 'hotspot' ? (
@@ -376,6 +371,19 @@ function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => 
           {line.text}
         </p>
       ))}
+    </>
+  );
+  const frame = 'rounded-[8px] border border-line bg-surface/95 text-left shadow-[0_8px_24px_rgba(0,0,0,0.35)]';
+  // A card with a body can run long: it scrolls under an overlay scrollbar.
+  return body ? (
+    <div class={cx(frame, 'flex max-h-[340px] w-[330px] max-w-[calc(100vw-56px)] flex-col')} data-map-popup={marker.id}>
+      <OverlayScroll class="min-h-0 flex-1 overflow-y-auto" contentClass="px-[14px] py-3">
+        {content}
+      </OverlayScroll>
+    </div>
+  ) : (
+    <div class={cx(frame, 'w-[272px] px-[14px] py-3')} data-map-popup={marker.id}>
+      {content}
     </div>
   );
 }
