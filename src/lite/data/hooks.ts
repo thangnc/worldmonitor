@@ -45,6 +45,14 @@ export const useCountryShapes = (enabled: boolean) => useResource('countryShapes
 export const useArxiv = () => useResource('arxiv', src.loadArxiv);
 export const useHackerNews = () => useResource('hackerNews', src.loadHackerNews);
 export const useHealth = () => useResource('health', src.loadHealth);
+export const useInternetOutages = () => useResource('internetOutages', src.loadInternetOutages);
+export const useServiceStatuses = () => useResource('serviceStatuses', src.loadServiceStatuses);
+export const useThreatHistory = () => useResource('threatHistory', src.loadThreatHistory);
+export const useRecentKev = () => useResource('recentKev', src.loadRecentKev);
+export const useDdosAttacks = () => useResource('ddosAttacks', src.loadDdosAttacks);
+export const useCyberThreats = () => useResource('cyberThreats', src.loadCyberThreats);
+export const useCableHealth = () => useResource('cableHealth', src.loadCableHealth);
+export const useTechGeo = () => useResource('techGeo', src.loadTechGeo);
 export const useInsights = () => useResource('insights', src.loadInsights);
 
 /** Geopolitics incidents: medium threat or above from the geo buckets, most important first. */

@@ -6,11 +6,12 @@
  * from data the Lite UI already loads, with no new endpoint:
  * - a seeded connector reads the compact health check (`/api/health?compact=1`),
  *   which lists only problem and pending checks, so a check that is not listed
- *   passed its `maxStaleMin` gate;
+ *   passed its gate: `maxStaleMin` for a seeded key, presence for an on-demand
+ *   key with no seed-meta (`serviceStatuses`);
  * - a news digest connector reads the digest the screens load.
  *
  * `tests/lite-ui.test.mts` keeps `healthKeys` and `maxStaleMin` equal to
- * `SEED_META` in api/health.js, and each host's `licence` equal to its row in
+ * `SEED_META` in api/health.js (or its `ON_DEMAND_KEYS` for a presence check), and each host's `licence` equal to its row in
  * shared/source-attribution-manifest.json.
  */
 import type { ListFeedDigestResponse } from '@/generated/client/worldmonitor/news/v1/service_client';
@@ -39,7 +40,7 @@ export interface Connector {
   producer: string;
   /** The check names in api/health.js SEED_META; the worst one sets the status. */
   healthKeys?: readonly string[];
-  /** The checks' longest `maxStaleMin`: older data fails the health gate. */
+  /** The checks' longest `maxStaleMin`: older data fails the health gate. None for presence-only checks. */
   maxStaleMin?: number;
   /** A news digest connector reads the digest itself instead of a health check. */
   digest?: DigestEdition;
@@ -216,6 +217,60 @@ export const CONNECTORS: readonly Connector[] = [
     hosts: [{ host: 'export.arxiv.org', licence: 'terms-review' }, { host: 'hacker-news.firebaseio.com', licence: 'terms-review' }],
     usedBy: ['Research radar'],
   },
+  {
+    id: 'internet-outages', name: 'Internet outages', domain: 'tech', kind: 'Outage reports', method: 'API',
+    producer: 'seed-internet-outages', healthKeys: ['outages'], maxStaleMin: 30,
+    hosts: [{ host: 'api.cloudflare.com', licence: 'terms-review' }],
+    usedBy: ['Internet outages indicator', 'Infrastructure map: outages and AI data centres', 'Infrastructure & business tiles'],
+  },
+  {
+    id: 'service-status', name: 'Cloud and AI status pages', domain: 'tech', kind: 'Official status', method: 'API',
+    producer: 'list-service-statuses (on demand)', healthKeys: ['serviceStatuses'],
+    hosts: [
+      { host: 'health.aws.amazon.com', licence: 'terms-review' },
+      { host: 'azure.status.microsoft', licence: 'terms-review' },
+      { host: 'status.cloud.google.com', licence: 'terms-review' },
+      { host: 'www.cloudflarestatus.com', licence: 'terms-review' },
+      { host: 'www.githubstatus.com', licence: 'terms-review' },
+      { host: 'www.vercel-status.com', licence: 'terms-review' },
+      { host: 'status.openai.com', licence: 'terms-review' },
+      { host: 'status.claude.com', licence: 'terms-review' },
+      { host: 'www.replicatestatus.com', licence: 'terms-review' },
+    ],
+    usedBy: ['Cloud and AI services indicator', 'Infrastructure map: cloud regions', 'Infrastructure & business tiles'],
+  },
+  {
+    id: 'kev', name: 'CISA KEV additions', domain: 'tech', kind: 'Official advisory', method: 'API',
+    producer: 'seed-cve-reference', healthKeys: ['kevRecent'], maxStaleMin: 2880,
+    hosts: [{ host: 'services.nvd.nist.gov', licence: 'reviewed' }, { host: 'nvd.nist.gov', licence: 'reviewed' }],
+    usedBy: ['Exploited vulnerabilities indicator', 'Infrastructure & business tiles'],
+  },
+  {
+    id: 'cyber-threats', name: 'Attack infrastructure', domain: 'tech', kind: 'Threat feeds', method: 'API',
+    producer: 'seed-cyber-threats', healthKeys: ['cyberThreats', 'cyberThreatHistory'], maxStaleMin: 240,
+    hosts: [
+      { host: 'api.abuseipdb.com', licence: 'terms-review' },
+      { host: 'otx.alienvault.com', licence: 'terms-review' },
+      { host: 'feodotracker.abuse.ch', licence: 'terms-review' },
+      { host: 'urlhaus-api.abuse.ch', licence: 'terms-review' },
+      { host: 'raw.githubusercontent.com', licence: 'terms-review' },
+      { host: 'ipinfo.io', licence: 'terms-review' },
+      { host: 'freeipapi.com', licence: 'terms-review' },
+    ],
+    usedBy: ['Attack infrastructure indicator', 'Infrastructure map: attack servers', 'Infrastructure & business tiles'],
+  },
+  {
+    id: 'ddos', name: 'DDoS targets', domain: 'tech', kind: 'Attack telemetry', method: 'API',
+    producer: 'seed-internet-outages', healthKeys: ['ddosAttacks'], maxStaleMin: 60,
+    hosts: [{ host: 'api.cloudflare.com', licence: 'terms-review' }],
+    usedBy: ['Infrastructure map: DDoS targets'],
+  },
+  {
+    id: 'cable-health', name: 'Undersea cable health', domain: 'tech', kind: 'Navigational warnings', method: 'API',
+    producer: 'ais-relay (get-cable-health)', healthKeys: ['cableHealth'], maxStaleMin: 90,
+    hosts: [{ host: 'msi.nga.mil', licence: 'terms-review' }],
+    usedBy: ['Infrastructure map: undersea cables'],
+  },
   // ---- Cross-domain ----
   {
     id: 'insights', name: 'AI world brief', domain: 'all', kind: 'LLM summary of the digest', method: 'LLM',
@@ -276,7 +331,7 @@ function checkStatus(healthKey: string, health: CompactHealth, now: number): Con
   }
   const pending = health.pending?.[healthKey];
   if (pending) return fromCheck(pending, 'live', now);
-  return { kind: 'live', detail: 'Passed its freshness gate' };
+  return { kind: 'live', detail: 'Passed its health check' };
 }
 
 /**

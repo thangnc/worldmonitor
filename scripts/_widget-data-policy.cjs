@@ -204,6 +204,8 @@ const RPCS = [
 
 // Every other registry key and GET route, with the reason the widget does not use it.
 const EXCLUDED_BOOTSTRAP_KEYS = {
+  cyberThreatHistory: 'Lite indicator baseline (daily attack-infrastructure counts); not reviewed for the widget catalog',
+  kevRecent: 'Lite indicator feed (recent CISA KEV additions, NVD attribution required); not reviewed for the widget catalog',
   ukmtoIncidents: 'Publisher claims requiring source attribution and freshness; use the UKMTO panel',
   iranEvents: "Disabled in production (IRAN_EVENTS_ENABLED off); returns nothing",
   liveVideoResolved: "Internal: live-video channel to video-ID map",

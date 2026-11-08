@@ -27,6 +27,8 @@ export interface LiteMapTokens {
   /** Context overlays: amber for disrupted lanes and new sanctions, red for incidents. */
   elev: string;
   crit: string;
+  /** Technology overlays: DDoS target shading. */
+  tech: string;
 }
 
 // Mirrors src/lite/lite.css. Used only when the CSS variables are not
@@ -39,6 +41,7 @@ const FALLBACK_TOKENS: LiteMapTokens = {
   violence: ['#1f3a5c', '#24508a', '#2f6fc4', '#5b9cf0'],
   elev: '#e8c547',
   crit: '#f2555a',
+  tech: '#b18cff',
 };
 
 /** Reads the Lite `@theme` colors from CSS variables. */
@@ -53,6 +56,7 @@ export function readLiteMapTokens(root: Element = document.documentElement): Lit
     dim: read('dim', FALLBACK_TOKENS.dim),
     elev: read('elev', FALLBACK_TOKENS.elev),
     crit: read('crit', FALLBACK_TOKENS.crit),
+    tech: read('tech', FALLBACK_TOKENS.tech),
     violence: [read('violence-1', v[0]), read('violence-2', v[1]), read('violence-3', v[2]), read('violence-4', v[3])],
   };
 }
