@@ -885,6 +885,53 @@ function healthDevPlugin(): Plugin {
   };
 }
 
+// Dev only: run api/bootstrap.js instead of serving it as a module. Without
+// it, `ensureHydrated` gets JavaScript source for the on-demand keys and the
+// Lite feeds that read only from bootstrap (UKMTO incidents, GDELT conflict
+// counts, GPS high cells) read "No data yet" although the local Redis has
+// them.
+//
+// Only the public on-demand URLs (`?keys=<name>&public=1`, what
+// `ensureHydrated` asks for), and only when a Redis is configured. Everything
+// else falls through to the old behaviour:
+// - keyed and session URLs (the dashboard's `?keys=insights`) would answer 401,
+//   since the dev server has neither;
+// - the fast and slow tiers would hydrate the whole dashboard from the local
+//   Redis and bypass the e2e specs' fixtures;
+// - with no Redis (CI, the e2e smokes) the handler answers 503 where the specs
+//   expect the dev fallback.
+function bootstrapDevPlugin(): Plugin {
+  return {
+    name: 'bootstrap-dev',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const url = new URL(req.url ?? '/', 'http://localhost');
+        const redis = Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+        const onDemand = url.searchParams.has('keys') && !url.searchParams.has('tier') && url.searchParams.get('public') === '1';
+        if (url.pathname !== '/api/bootstrap' || !onDemand || !redis) return next();
+        try {
+          const { default: handler } = await server.ssrLoadModule('/api/bootstrap.js');
+          // Public URLs need only the origin; the handler's own CORS check reads it.
+          const headers = new Headers();
+          if (typeof req.headers.origin === 'string') headers.set('origin', req.headers.origin);
+          const response: Response = await handler(
+            new Request(`http://localhost${req.url}`, { method: req.method, headers }),
+            { waitUntil: (work: Promise<unknown>) => { work.catch(() => {}); } },
+          );
+          res.statusCode = response.status;
+          response.headers.forEach((value, key) => res.setHeader(key, value));
+          res.end(req.method === 'HEAD' ? undefined : await response.text());
+        } catch (error) {
+          console.error('[bootstrap-dev]', error);
+          res.statusCode = 502;
+          res.end();
+        }
+      });
+    },
+  };
+}
+
 function rssProxyPlugin(): Plugin {
   return {
     name: 'rss-proxy',
@@ -1121,6 +1168,7 @@ export default defineConfig(({ mode }) => {
       rssProxyPlugin(),
       miitNewsPlugin(),
       healthDevPlugin(),
+      bootstrapDevPlugin(),
       gpsjamDevPlugin(),
       sebufApiPlugin(),
       brotliPrecompressPlugin(),
