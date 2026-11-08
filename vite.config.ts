@@ -851,6 +851,40 @@ function miitNewsPlugin(): Plugin {
   };
 }
 
+// Dev only: run api/health.js instead of serving it as a module, so the Lite
+// sidebar card and Sources screen read real verdicts from the local Redis.
+// The handler keeps its own gate: compact mode is public, full mode needs a key.
+function healthDevPlugin(): Plugin {
+  return {
+    name: 'health-dev',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url?.split('?')[0] !== '/api/health') return next();
+        try {
+          const { default: handler } = await server.ssrLoadModule('/api/health.js');
+          const headers = new Headers();
+          for (const name of ['origin', 'x-worldmonitor-key', 'x-api-key']) {
+            const value = req.headers[name];
+            if (typeof value === 'string') headers.set(name, value);
+          }
+          const response: Response = await handler(
+            new Request(`http://localhost${req.url}`, { method: req.method, headers }),
+            { waitUntil: (work: Promise<unknown>) => { work.catch(() => {}); } },
+          );
+          res.statusCode = response.status;
+          response.headers.forEach((value, key) => res.setHeader(key, value));
+          res.end(req.method === 'HEAD' ? undefined : await response.text());
+        } catch (error) {
+          console.error('[health-dev]', error);
+          res.statusCode = 502;
+          res.end();
+        }
+      });
+    },
+  };
+}
+
 function rssProxyPlugin(): Plugin {
   return {
     name: 'rss-proxy',
@@ -1086,6 +1120,7 @@ export default defineConfig(({ mode }) => {
       polymarketPlugin(),
       rssProxyPlugin(),
       miitNewsPlugin(),
+      healthDevPlugin(),
       gpsjamDevPlugin(),
       sebufApiPlugin(),
       brotliPrecompressPlugin(),

@@ -489,8 +489,19 @@ export async function loadConflictCounts(): Promise<ConflictCounts | null> {
   return isConflictCounts(value) ? value : null;
 }
 
-export async function loadHealth(): Promise<CompactHealth | null> {
-  const resp = await fetch(toApiUrl('/api/health?compact=1'), { cache: 'no-cache', signal: AbortSignal.timeout(10_000) });
+/** Attempts while health answers 503 REFRESH_PENDING (a verdict is being built). */
+const HEALTH_PENDING_ATTEMPTS = 3;
+
+export async function loadHealth(wait = (ms: number) => new Promise((r) => setTimeout(r, ms))): Promise<CompactHealth | null> {
+  let resp = await fetch(toApiUrl('/api/health?compact=1'), { cache: 'no-cache', signal: AbortSignal.timeout(10_000) });
+  // A refresh in flight with no cached verdict answers 503 with retryAfterSeconds.
+  // Retry as told rather than reading it as an unavailable health check.
+  for (let attempt = 1; resp.status === 503 && attempt < HEALTH_PENDING_ATTEMPTS; attempt += 1) {
+    const body = (await resp.json().catch(() => null)) as { status?: string; retryAfterSeconds?: number } | null;
+    if (body?.status !== 'REFRESH_PENDING') break;
+    await wait(Math.min(Math.max(body.retryAfterSeconds ?? 3, 1), 5) * 1000);
+    resp = await fetch(toApiUrl('/api/health?compact=1'), { cache: 'no-cache', signal: AbortSignal.timeout(10_000) });
+  }
   if (!resp.ok) throw new Error(`health: HTTP ${resp.status}`);
   if (!(resp.headers.get('content-type') ?? '').includes('json')) throw new Error('health: endpoint not served here');
   const data = (await resp.json()) as CompactHealth;
