@@ -62,8 +62,8 @@ export interface UcdpMarker extends MarkerBase {
 export interface HotspotMarker extends MarkerBase {
   kind: 'hotspot';
   tone: Tone;
-  /** Name shown beside the diamond; empty draws a smaller diamond without one. */
-  label: string;
+  /** A larger diamond drawn above UCDP circles (3/5 or more); the name is in the card. */
+  named: boolean;
   /** Military aircraft near the hotspot, drawn as a "✈ N" chip when the indicator fired. */
   badge?: number;
 }
@@ -184,8 +184,9 @@ export function Diamond({ tone, filled, size = 12 }: { tone: Tone; filled: boole
 }
 
 function HotspotPin({ marker, selected, onClick }: { marker: HotspotMarker; selected: boolean; onClick: () => void }) {
-  // Only the diamond takes clicks. The name beside it lets clicks through, so a
-  // UCDP circle under a name stays clickable.
+  // Only the diamond takes clicks: the aircraft badge beside it lets clicks
+  // through, so a UCDP circle under it stays clickable. No name chip: the
+  // name opens in the card on click.
   return (
     <div class="pointer-events-none flex items-center gap-[5px]">
       <button
@@ -201,7 +202,7 @@ function HotspotPin({ marker, selected, onClick }: { marker: HotspotMarker; sele
       >
         {/* A fixed 18 px box, so the marker's offset puts every diamond's centre on its point. */}
         <span class="flex h-[18px] w-[18px] items-center justify-center">
-          <Diamond tone={marker.tone} filled={selected} size={marker.label ? 12 : 9} />
+          <Diamond tone={marker.tone} filled={selected} size={marker.named ? 12 : 9} />
         </span>
       </button>
       {marker.badge ? (
@@ -209,10 +210,6 @@ function HotspotPin({ marker, selected, onClick }: { marker: HotspotMarker; sele
           <Plane size={10} strokeWidth={2} aria-hidden="true" />
           {marker.badge}
         </span>
-      ) : null}
-      {/* Names are hidden on phones, where they would cover the small map. */}
-      {marker.label ? (
-        <span class={cx('hidden rounded-[4px] bg-bg/85 px-[6px] py-px text-[11px] leading-4 sm:inline', TEXT[marker.tone])}>{marker.label}</span>
       ) : null}
     </div>
   );
@@ -624,7 +621,7 @@ export function LiteMap({
       // Named hotspots draw above UCDP circles; grey unnamed ones below, so they never cover a death count.
       // A hotspot's element spans its name too, so only the diamond button inside takes clicks.
       // Pins: signals and sea incidents on top, chokepoints over lanes, centres and aircraft at the bottom.
-      const named = s.type === 'marker' && s.marker.kind === 'hotspot' && Boolean(s.marker.label);
+      const named = s.type === 'marker' && s.marker.kind === 'hotspot' && s.marker.named;
       // Glyphs: tags on top (they are small and sit above their point), then attack hexagons.
       const pinLayer = s.type === 'marker' && s.marker.kind === 'pin'
         ? s.marker.shape === 'signal' ? (s.marker.fired ? 'z-[3]' : 'z-[2]')

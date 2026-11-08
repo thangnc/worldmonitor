@@ -260,8 +260,8 @@ function ConflictMap({
           lat: h.lat,
           lon: h.lon,
           tone: level.tone,
-          // Below 3/5 the diamond stays, small and grey, without a name, so 29 names do not crowd the map.
-          label: level.named ? h.name : '',
+          // Below 3/5 the diamond stays, small and grey; from 3/5 it is larger and drawn on top.
+          named: level.named,
           badge: layers.aircraft ? badges.get(h.id) : undefined,
           title: `${h.name}: live escalation ${live}/5, ${level.label.toLowerCase()} (curated hotspot)`,
           popup: {
@@ -417,7 +417,7 @@ function ConflictMap({
         />
       }
     >
-      <div class="relative h-[300px] overflow-hidden bg-bg/40 md:h-[380px]">
+      <div class="relative h-[300px] overflow-hidden border-t border-line bg-bg/40 md:h-[380px]">
         <LiteMap
           markers={markers}
           fit={region === 'all' ? 'world' : 'markers'}
@@ -527,7 +527,7 @@ function layerGroups(layers: LayerState, ucdpNewestAt: number): LayerGroup[] {
 /** The in-map legend: the layers that are on, plus airspace as N/A. */
 function GeoLegend({ layers }: { layers: LayerState }) {
   return (
-    <MapLegend testId="map-legend" place="above-bar">
+    <MapLegend testId="map-legend" place="above-bar" collapsible>
       {layers.violence ? <LegendRow mark={<ViolenceSwatch />} name="Reported violence" note="GDELT" /> : null}
       {layers.conflicts ? <LegendRow mark={<UcdpMark />} name="Verified background" note="UCDP" /> : null}
       {layers.hotspots ? <LegendRow mark={<Diamond tone="elev" filled={false} size={10} />} name="Curated hotspot" note="1–5" /> : null}

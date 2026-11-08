@@ -265,22 +265,31 @@ describe('Lite UI shell', () => {
       expect(root.querySelector('[data-testid="conflict-map"] [data-map-status]')?.getAttribute('data-map-status')).toBe('ready');
     }, { timeout: 5000 });
     expect(root.querySelector('[data-map-credits]')?.textContent).toContain('OpenStreetMap');
-    // The in-map legend lists the layers that are on, and airspace as N/A.
+    // The legend waits behind its button; opened, it lists the layers that are on, and airspace as N/A.
+    expect(root.querySelector('[data-testid="map-legend"]')).toBeNull();
+    const legendToggle = root.querySelector('[data-testid="map-legend-toggle"]') as HTMLButtonElement;
+    expect(legendToggle.getAttribute('aria-expanded')).toBe('false');
+    await act(() => legendToggle.click());
     const legendRows = [...root.querySelectorAll('[data-testid="map-legend"] [data-legend-row]')].map((r) => r.getAttribute('data-legend-row'));
     expect(legendRows).toEqual(['Reported violence', 'Verified background', 'Curated hotspot', 'Military aircraft', 'Sea incident', 'GPS interference', 'Airspace closure']);
+    await act(() => legendToggle.click());
+    expect(root.querySelector('[data-testid="map-legend"]')).toBeNull();
     // The layers live in the popover; the old side panel is gone.
     expect(root.querySelector('[data-testid="map-layers"]')).toBeNull();
     expect(root.querySelector('[data-testid="layers-chip"]')?.textContent).toContain('Layers · 6');
     // Every curated hotspot is drawn, as on the dashboard, coloured by the live
     // score. Only news and the curated baseline are available here, so only the
     // two baseline-4 hotspots with a 'red sea' keyword, Sana'a and Horn of
-    // Africa, reach elevated from the one fresh headline, and only they carry a
-    // name; Kyiv (baseline 5, no news) is at watch.
+    // Africa, reach elevated from the one fresh headline, and only they are
+    // drawn large; Kyiv (baseline 5, no news) is at watch. No hotspot shows its
+    // name beside the diamond: it is in the card.
     const { INTEL_HOTSPOTS } = await import('../../src/config/geo');
     const drawn = [...root.querySelectorAll('[data-marker]')].map((m) => m.getAttribute('data-marker'));
     expect(drawn.sort()).toEqual(INTEL_HOTSPOTS.map((h) => `hotspot:${h.id}`).sort());
-    const named = [...root.querySelectorAll('[data-marker] span.rounded-\\[4px\\]')].map((n) => n.textContent);
-    expect(named.sort()).toEqual(['Horn of Africa', "Sana'a"]);
+    const large = [...root.querySelectorAll('[data-marker]')].filter((m) => (m.querySelector('span.rotate-45') as HTMLElement | null)?.style.width === '12px').map((m) => m.getAttribute('data-marker'));
+    expect(large).toHaveLength(2);
+    expect(large.sort()).toEqual(INTEL_HOTSPOTS.filter((h) => h.name === 'Horn of Africa' || h.name === "Sana'a").map((h) => `hotspot:${h.id}`).sort());
+    expect([...root.querySelectorAll('[data-marker^="hotspot:"]')].every((m) => m.textContent === '')).toBe(true);
     expect(root.querySelector('[data-marker="hotspot:kyiv"] button')?.getAttribute('aria-label')).toContain('live escalation 2.4/5, watch');
     const diamond = root.querySelector('[data-marker="hotspot:sanaa"] button') as HTMLButtonElement;
     expect(diamond.getAttribute('aria-label')).toContain('live escalation 2.6/5, elevated');
