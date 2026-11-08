@@ -188,6 +188,14 @@ The owner's designs (2026-11-08). The design exports stay out of the repository.
 
 Clicking a card focuses its marker on the map, and a marker opens the same card.
 
+Built in step 1:
+
+- **Components:** `src/lite/components/indicator.tsx` has the full card, the compact card (it expands in place to the full one; Escape collapses it), the state rows and the health dots.
+- **Model:** `src/lite/data/indicators.ts` holds the indicator model and `feedState`. A failed or empty source is unavailable and names its seeder. Data older than twice its cadence is stale. A feed without a data timestamp never claims stale.
+- **Linking:** `src/lite/data/news-link.ts` applies the news link rule.
+- **Colours:** MARKET DATA, which the design system lacks, uses the muted ink with a chart icon. REPORTED uses `--color-reported`, and the no-link accent uses `--color-nolink`.
+- **AI line:** shown only when the card has linked stories and a grounded "why", which no feed produces yet.
+
 **Briefing.** A "Fired indicators" block at the top, newest first, with filters All, Watchlist and No linked news, and a feed-health strip (one dot per feed: fired, quiet, stale, unavailable). The watchlist parts are samples until the watchlist exists (open decision 1). The hourly brief, priority events, market pulse, escalation tracker and catalysts stay.
 
 **Geopolitics.**
@@ -300,7 +308,7 @@ The rules are in `src/config/lite-route.ts`. `vercel.json`, `docker/nginx.conf*`
 |---|---|---|---|
 | Briefing | Hourly AI brief: lead, cited lines and their sources (`insights`, seed-insights); market pulse tickers; macro calendar and AI regulation deadlines as catalysts | Priority events: each child screen's main list merged, importance ≥ 50, ranked by importance × credibility; momentum from story phase; the corroboration and attributed-claims columns from the dashboard's corroboration verdict; "since" counts; market regime (five 24h moves); escalation trend from CII history (±10% is stable); watch alerts from built-in rules (impact, BTC 2h move > 4σ, primary-source AI policy) | None. Open questions, Pin, Split cluster, Mute, Manage and Generate brief are SOON |
 | Geopolitics | UCDP events on a MapLibre map (OpenFreeMap tiles, styled from the Lite tokens), clustered by zoom with event cards; priority incidents (digest, medium threat and up) | Curated hotspots coloured by the dashboard's live escalation score (see Owner decisions); region strip from CII and country history; report histogram over the selected time range (1h–30d), which also filters incidents, timeline and evidence mix; timeline tags and incident status from the dashboard's corroboration verdict, with tier 1 marked beside it; evidence mix by source class | Watchlist |
-| Finance | Tickers (DXY from gold drivers); hourly BTC closes; Hyperliquid funding and open interest; spot ETF flow (an estimate); breadth; market-moving stories (one copy per story, asset classes in turns, war stories left to Geopolitics unless the headline names a commodity, then marked "Linked to GEO"); macro calendar | Risk alerts (fixed thresholds); market-event price links (24h change of the instruments a headline names or its tickers, else asset-class benchmarks; "No price impact" under 0.25% or 3bp); 48h realized volatility; 14-day correlation of hourly returns (Oil stands in for DXY, which has no hourly series) | Liquidations; BTC volume bars |
+| Finance | Tickers (DXY from gold drivers); hourly BTC closes; Hyperliquid funding and open interest; spot ETF flow (an estimate); breadth; market-moving stories (one copy per story, asset classes in turns, war stories left to Geopolitics unless the headline names a commodity, then marked "Linked to GEO"); macro calendar | Indicators panel on the shared indicator card: BTC 24h move ≥ 4%, BTC perp funding ≥ 0.01%/h, a stablecoin more than 0.5% from $1, fear & greed ≤ 20 or ≥ 80, each fired rule with its linked news; market-event price links (24h change of the instruments a headline names or its tickers, else asset-class benchmarks; "No price impact" under 0.25% or 3bp); 48h realized volatility; 14-day correlation of hourly returns (Oil stands in for DXY, which has no hourly series) | Liquidations; BTC volume bars |
 | Technology & AI | Material developments (tech digest); policy actions (the curated `src/config/ai-regulations.ts` list); arXiv papers; funding and infrastructure stories | Evidence pills (corroboration verdict, "Primary source" when a tier-1 outlet reports alone); research signal (arXiv plus Hacker News); watched-topic counts | Model and product tracker; infrastructure KPI tiles |
 
 The table describes the screens as built. The target screens are in [Screen design](#screen-design); each build step updates its rows.
@@ -371,7 +379,7 @@ The three similarity definitions are separate on purpose (`shared/news-clusterin
 4. **Crypto risk alerts**: depeg notifications, volatility, funding and open-interest stress. Liquidation data has no source yet.
 5. An **AI/tech event detector** and model-release tracker.
 6. **Numeric alert thresholds** and an alert delivery path that does not need Convex. [Early indicators](#early-indicators) gives the default thresholds.
-7. A **move-to-news linker**: from an indicator to the stories around it (see [News link rule](#news-link-rule)). Only the story-to-price direction exists today.
+7. A **move-to-news linker**: from an indicator to the stories around it (see [News link rule](#news-link-rule)). Built for the Lite UI in `src/lite/data/news-link.ts` (step 1); the story-to-indicator direction exists for prices only.
 
 ### Scoring model
 
