@@ -63,7 +63,7 @@ http {
 
     # World Monitor Lite UI: /lite and its screens serve lite.html with the
     # shared security headers of the location below.
-    rewrite ^/lite(?:/(?:geopolitics|finance|tech))?/?$ /lite.html last;
+    rewrite ^/lite(?:/(?:geopolitics|finance|tech|sources))?/?$ /lite.html last;
 
     location / {
       include /etc/nginx/security_headers.conf;

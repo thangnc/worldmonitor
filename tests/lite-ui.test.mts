@@ -35,6 +35,21 @@ import { TIME_RANGE_HOURS, inTimeRange, type TimeRange } from '../src/lite/data/
 import type { Hotspot } from '../src/types/index.ts';
 import type { UcdpViolenceEvent } from '../src/generated/client/worldmonitor/conflict/v1/service_client.ts';
 import { OPENFREEMAP_TILEJSON, buildLiteMapStyle } from '../src/lite/map/style.ts';
+import {
+  CONNECTORS,
+  digestConnectorStatus,
+  healthConnectorStatus,
+  licenceTally,
+  minutesLabel,
+  sortConnectorRows,
+  tierRows,
+  type ConnectorRow,
+} from '../src/lite/data/connectors.ts';
+import type { CompactHealth } from '../src/lite/data/sources.ts';
+import type { ResourceState } from '../src/lite/data/store.ts';
+import { SOURCE_TIERS } from '../server/_shared/source-tiers.ts';
+import { __testing__ as healthTesting } from '../api/health.js';
+import attributionManifest from '../shared/source-attribution-manifest.json' with { type: 'json' };
 import { WORLD_BOUNDS, compactCount, markerBounds, placeCard, ucdpRadius } from '../src/lite/map/view.ts';
 import type { ListFeedDigestResponse, NewsItem } from '../src/generated/client/worldmonitor/news/v1/service_client.ts';
 import {
@@ -87,6 +102,7 @@ describe('Lite routes', () => {
     assert.equal(parseLiteScreen('/lite/geopolitics'), 'geopolitics');
     assert.equal(parseLiteScreen('/lite/finance'), 'finance');
     assert.equal(parseLiteScreen('/lite/tech/'), 'tech');
+    assert.equal(parseLiteScreen('/lite/sources'), 'sources');
     assert.equal(parseLiteScreen('/lite/unknown'), 'briefing');
     for (const [screen, path] of Object.entries(LITE_SCREEN_PATHS)) assert.equal(parseLiteScreen(path), screen);
   });
@@ -156,9 +172,9 @@ describe('Lite default route (middleware.ts)', () => {
     }
   });
 
-  it('lets exactly the four Lite paths through the unknown-page 404 gate', () => {
+  it('lets exactly the five Lite paths through the unknown-page 404 gate', () => {
     delete process.env.VITE_LITE_PROFILE;
-    for (const path of ['/lite', '/lite/', '/lite/geopolitics', '/lite/finance', '/lite/tech']) {
+    for (const path of ['/lite', '/lite/', '/lite/geopolitics', '/lite/finance', '/lite/tech', '/lite/sources']) {
       const resp = middleware(request(path)) as Response | undefined;
       assert.notEqual(resp?.status, 404, path);
     }
@@ -659,5 +675,110 @@ describe('Lite market events: price links', () => {
     assert.equal(geoCause(item({ title: 'Oil jumps after tanker hit', threat: war, locationName: 'Yemen' })), 'Yemen conflict');
     assert.equal(geoCause(item({ title: 'Oil jumps after tanker hit', threat: war })), 'Conflict');
     assert.equal(geoCause(item({ title: 'Gold record' })), null);
+  });
+});
+
+describe('Lite Sources connectors', () => {
+  const NOW = Date.parse('2026-11-08T12:00:00Z');
+  const ready = (data: CompactHealth): ResourceState<CompactHealth> => ({ status: 'ready', data, at: NOW });
+  const { SEED_META } = healthTesting as unknown as { SEED_META: Record<string, { maxStaleMin?: number }> };
+
+  it('names each health check and its max age exactly as api/health.js does', () => {
+    const ids = new Set<string>();
+    for (const c of CONNECTORS) {
+      assert.ok(!ids.has(c.id), `duplicate id ${c.id}`);
+      ids.add(c.id);
+      // A connector reads either a health check or a digest, never both.
+      assert.equal(Boolean(c.healthKey), !c.digest, c.id);
+      if (!c.healthKey) continue;
+      const meta = SEED_META[c.healthKey];
+      assert.ok(meta, `${c.id}: ${c.healthKey} is not in SEED_META`);
+      assert.equal(c.maxStaleMin, meta.maxStaleMin, `${c.id}: maxStaleMin`);
+    }
+  });
+
+  it('records each upstream host with its licence status from the attribution manifest', () => {
+    const byHost = new Map(attributionManifest.entries.map((e) => [e.host, e.status]));
+    for (const c of CONNECTORS) {
+      for (const h of c.hosts) {
+        assert.ok(byHost.has(h.host), `${c.id}: ${h.host} is not in the manifest`);
+        assert.equal(h.licence, byHost.get(h.host), `${c.id}: ${h.host}`);
+      }
+    }
+  });
+
+  it('reads a seeded connector from the compact health check: problems fail or degrade, the rest are live', () => {
+    const health = ready({
+      status: 'DEGRADED',
+      problems: {
+        ucdpEvents: { status: 'SEED_ERROR', records: 38, seedAgeMin: 52, errorCode: 'UCDP_HTTP_429', consecutiveSourceFailures: 4 },
+        cryptoQuotes: { status: 'EMPTY', records: 0 },
+        stablecoinMarkets: { status: 'STALE_SEED', records: 12, seedAgeMin: 74 },
+        etfFlows: { status: 'EMPTY_ON_DEMAND', records: 0 },
+        marketQuotes: { status: 'REDIS_PARTIAL', records: null },
+      },
+      pending: { econCalendar: { status: 'CONTENT_AGE_PREWARNING', seedAgeMin: 200 } },
+    });
+    const failing = healthConnectorStatus('ucdpEvents', health, NOW);
+    assert.equal(failing.kind, 'failing');
+    assert.equal(failing.detail, 'Seed error');
+    assert.equal(failing.errorCode, 'UCDP_HTTP_429');
+    assert.equal(failing.consecutiveFailures, 4);
+    assert.equal(failing.updatedAt, NOW - 52 * 60_000);
+    assert.equal(healthConnectorStatus('cryptoQuotes', health, NOW).kind, 'failing');
+    assert.equal(healthConnectorStatus('marketQuotes', health, NOW).kind, 'failing');
+    assert.equal(healthConnectorStatus('stablecoinMarkets', health, NOW).kind, 'degraded');
+    // On-demand and pending warnings are not problems.
+    assert.equal(healthConnectorStatus('etfFlows', health, NOW).kind, 'live');
+    assert.equal(healthConnectorStatus('econCalendar', health, NOW).kind, 'live');
+    assert.equal(healthConnectorStatus('econCalendar', health, NOW).ageMin, 200);
+    const passing = healthConnectorStatus('hyperliquidFlow', health, NOW);
+    assert.equal(passing.kind, 'live');
+    assert.equal(passing.ageMin, undefined);
+  });
+
+  it('never claims live when the health check is loading or unavailable', () => {
+    assert.equal(healthConnectorStatus('ucdpEvents', { status: 'loading', data: null, at: 0 }, NOW).kind, 'loading');
+    assert.equal(healthConnectorStatus('ucdpEvents', { status: 'error', data: null, at: NOW, error: 'x' }, NOW).kind, 'unknown');
+    assert.equal(healthConnectorStatus('ucdpEvents', { status: 'empty', data: null, at: NOW }, NOW).kind, 'unknown');
+  });
+
+  it('reads a digest connector from the digest: feed coverage and generation time', () => {
+    const digest = { generatedAt: '2026-11-08T11:45:00Z', coverage: { feedCompleted: 274, feedTotal: 308 }, categories: {} } as unknown as ListFeedDigestResponse;
+    const live = digestConnectorStatus({ status: 'ready', data: digest, at: NOW }, NOW);
+    assert.equal(live.kind, 'live');
+    assert.equal(live.ageMin, 15);
+    assert.deepEqual(live.feeds, { completed: 274, total: 308 });
+    assert.equal(live.detail, '274 of 308 feeds answered');
+    assert.equal(digestConnectorStatus({ status: 'error', data: null, at: NOW, error: 'x' }, NOW).kind, 'failing');
+    assert.equal(digestConnectorStatus({ status: 'empty', data: null, at: NOW }, NOW).kind, 'degraded');
+  });
+
+  it('sorts failing first, then degraded, then by domain, keeping catalogue order', () => {
+    const row = (id: string, kind: ConnectorRow['status']['kind']): ConnectorRow => ({
+      connector: CONNECTORS.find((c) => c.id === id)!, status: { kind, detail: '' },
+    });
+    const sorted = sortConnectorRows([
+      row('insights', 'live'), row('crypto', 'live'), row('stablecoins', 'degraded'), row('ucdp', 'live'), row('research', 'failing'), row('stocks', 'live'),
+    ]);
+    assert.deepEqual(sorted.map((r) => r.connector.id), ['research', 'stablecoins', 'ucdp', 'crypto', 'stocks', 'insights']);
+  });
+
+  it('tallies distinct hosts by licence and counts outlets per declared tier', () => {
+    const tally = licenceTally();
+    const hosts = new Set(CONNECTORS.flatMap((c) => c.hosts.map((h) => h.host)));
+    assert.equal(tally.reviewed.length + tally['terms-review'].length + tally.excluded.length, hosts.size);
+    assert.deepEqual(tally.reviewed, ['api.adsb.lol']);
+    const tiers = tierRows();
+    assert.deepEqual(tiers.map((t) => t.tier), [1, 2, 3, 4]);
+    assert.equal(tiers.reduce((sum, t) => sum + t.outlets, 0), Object.values(SOURCE_TIERS).filter((t) => t >= 1 && t <= 4).length);
+    assert.deepEqual(tierRows({ a: 1, b: 4, c: 4, d: 9 }).map((t) => t.outlets), [1, 0, 0, 2]);
+  });
+
+  it('labels max ages in minutes, hours and days', () => {
+    assert.equal(minutesLabel(30), '30 min');
+    assert.equal(minutesLabel(150), '2.5 h');
+    assert.equal(minutesLabel(1440), '24 h');
+    assert.equal(minutesLabel(2880), '2 d');
   });
 });

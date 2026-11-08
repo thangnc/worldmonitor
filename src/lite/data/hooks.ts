@@ -16,6 +16,7 @@ import {
 import type { ListFeedDigestResponse } from '@/generated/client/worldmonitor/news/v1/service_client';
 import { buildPriceBoard, isMarketMovingWarStory, type PriceBoard } from './prices';
 import { rankPriorityEvents, type PriorityEvent } from './briefing';
+import { CONNECTORS, digestConnectorStatus, healthConnectorStatus, sortConnectorRows, type ConnectorRow } from './connectors';
 
 export const useDigest = (edition: src.DigestEdition) => useResource(`digest:${edition}`, () => src.loadDigest(edition));
 export const useRiskScores = () => useResource('riskScores', src.loadRiskScores);
@@ -121,4 +122,28 @@ export function usePriorityEvents(): { ready: boolean; failed: boolean; ranked: 
     [full, finance, tech],
   );
   return { ready, failed, ranked, below };
+}
+
+/**
+ * The Sources screen's connector rows, sorted failing first. Seeded connectors
+ * read the compact health check; digest connectors read the digests, which the
+ * sidebar counts load anyway.
+ */
+export function useConnectorRows(): ConnectorRow[] {
+  const health = useHealth();
+  const full = useDigest('full');
+  const finance = useDigest('finance');
+  const tech = useDigest('tech');
+  return useMemo(() => {
+    const now = Date.now();
+    const digests = { full, finance, tech };
+    return sortConnectorRows(
+      CONNECTORS.map((connector) => ({
+        connector,
+        status: connector.digest
+          ? digestConnectorStatus(digests[connector.digest], now)
+          : healthConnectorStatus(connector.healthKey ?? '', health, now),
+      })),
+    );
+  }, [health, full, finance, tech]);
 }
