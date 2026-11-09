@@ -16,8 +16,9 @@
  * A tick is `runBundle` (scripts/_bundle-runner.mjs): a section runs only when
  * its seed-meta is older than 0.8x its interval, so keys the relay already
  * keeps fresh are skipped, and each source keeps its production cadence.
- * Seeders skip or degrade on their own when an optional key is missing, so no
- * section declares `requiredEnv`.
+ * Seeders skip or degrade on their own when an optional key is missing, so a
+ * section declares `requiredEnv` only when its production bundle does (the
+ * cross-strait proxy); `--status` names any such variable that is unset.
  *
  * A new Lite seeder joins LITE_SEED_SECTIONS; tests/lite-local-seeders.test.mts
  * fails when the Lite UI names a seeder that is not listed here.
@@ -51,6 +52,10 @@ export const LITE_SEED_SECTIONS = [
   { label: 'UKMTO-Incidents', script: 'seed-ukmto-incidents.mjs', seedMetaKey: 'maritime:ukmto-incidents', intervalMs: 30 * MIN, timeoutMs: 120_000 },
   // gpsjam.org publishes one file a day; 12 h keeps it inside the 24 h health gate.
   { label: 'GPSJam', script: 'fetch-gpsjam.mjs', seedMetaKey: 'intelligence:gpsjam', intervalMs: 12 * HOUR, timeoutMs: 300_000 },
+  { label: 'PortWatch', script: 'seed-portwatch.mjs', seedMetaKey: 'supply_chain:portwatch', intervalMs: 6 * HOUR, timeoutMs: 300_000 },
+  // Japan MoD needs a proxy; without one the tick reports a config error for this section only.
+  { label: 'Cross-Strait-Activity', script: 'seed-cross-strait-activity.mjs', useBundledCa: true, seedMetaKey: 'military:cross-strait-activity:complete', sourceRetryMetaKey: 'seed-meta:military:cross-strait-activity:taiwan-mnd', sourceRetryDelayMs: 30 * MIN, intervalMs: 3 * HOUR, timeoutMs: 300_000, requiredEnv: [['JAPAN_MOD_PROXY_URL', 'PROXY_URL']] },
+  { label: 'Security-Advisories', script: 'seed-security-advisories.mjs', seedMetaKey: 'intelligence:advisories', intervalMs: 60 * MIN, timeoutMs: 300_000 },
 
   // Finance & Crypto
   { label: 'Crypto-Quotes', script: 'seed-crypto-quotes.mjs', seedMetaKey: 'market:crypto', intervalMs: 5 * MIN, timeoutMs: 120_000 },
@@ -97,7 +102,12 @@ async function printStatus() {
     const age = freshness?.fetchedAt ? now - freshness.fetchedAt : null;
     const isDue = age == null || age >= section.intervalMs * ELIGIBLE_FRACTION;
     if (isDue) due++;
-    console.log(`${section.label.padEnd(22)} ${(isDue ? 'DUE' : 'fresh').padEnd(6)} age ${ageLabel(age).padEnd(9)} every ${ageLabel(section.intervalMs)}`);
+    const unset = (section.requiredEnv ?? [])
+      .map((group) => (Array.isArray(group) ? group : [group]))
+      .filter((group) => !group.some((name) => String(process.env[name] ?? '').trim()))
+      .map((group) => group.join(' or '));
+    const note = unset.length ? `  needs ${unset.join(', ')}` : '';
+    console.log(`${section.label.padEnd(22)} ${(isDue ? 'DUE' : 'fresh').padEnd(6)} age ${ageLabel(age).padEnd(9)} every ${ageLabel(section.intervalMs)}${note}`);
   }
   console.log(`\n${due} of ${LITE_SEED_SECTIONS.length} due. Run \`npm run seed:lite\` for one tick or \`npm run seed:lite:watch\` to keep them fresh.`);
 }
