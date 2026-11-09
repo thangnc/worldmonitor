@@ -76,6 +76,7 @@ npm run test:sidecar             # api/ node suites + src-tauri sidecar
 
 make generate                    # regenerate src/generated/ + docs/api/ from proto/
 npm run generate                 # regenerate committed derived files (product facts, llms, AI search, catalogs)
+npm run seed:lite:watch          # keep the Lite seeders fresh in local Redis (seed:lite once, seed:lite:status read-only)
 npm run docs:check               # required after CI workflow changes
 ```
 
