@@ -97,6 +97,22 @@ import {
   watchCompany,
 } from '../src/lite/data/finance-macro-indicators.ts';
 import type { ResourceState } from '../src/lite/data/store.ts';
+import {
+  CHOKEPOINT_TRANSIT_SHARE,
+  TAIWAN_RATIO,
+  chokepointFeeds,
+  chokepointIndicators,
+  embassyAlertFeeds,
+  embassyAlertIndicators,
+  embassyCoverage,
+  isCrossStraitSnapshot,
+  taiwanStraitFeeds,
+  taiwanStraitIndicators,
+  type EmbassyAlerts,
+} from '../src/lite/data/geo-watch.ts';
+import type { GetChokepointStatusResponse } from '../src/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
+import type { SecurityAdvisoryItem } from '../src/generated/client/worldmonitor/intelligence/v1/service_client.ts';
+import type { CrossStraitActivitySnapshot } from '../src/types/cross-strait-activity.ts';
 
 const H = 3_600_000;
 const AT = Date.UTC(2026, 10, 8, 12);
@@ -905,5 +921,161 @@ describe('Technology & AI indicator rules', () => {
     assert.match(out?.kind === 'unavailable' ? out.detail : '', /seed-internet-outages/);
     assert.equal(find(list, 'kev-new')?.kind, 'stale');
     assert.equal(find(list, 'attack-spike')?.kind, 'unavailable');
+  });
+});
+
+describe('Geopolitics watch feeds: chokepoint transits, Taiwan Strait, embassy alerts', () => {
+  const HOTSPOTS = [
+    { id: 'kyiv', name: 'Kyiv', lat: 50.45, lon: 30.52 },
+    { id: 'taipei', name: 'Taipei', lat: 25.03, lon: 121.56 },
+    { id: 'mexico', name: 'Mexico City', lat: 19.43, lon: -99.13 },
+  ];
+
+  // ---- chokepoints
+  const cp = (id: string, avg7d: number | undefined, normal: number, extra: Partial<ChokepointInfo> = {}) => ({
+    id, name: id === 'hormuz_strait' ? 'Strait of Hormuz' : id, lat: 0, lon: 0, status: 'green', disruptionScore: 0,
+    transitSummary: {
+      officialLatestDate: '2026-11-03', officialLatestTotal: 30, officialAvg7d: avg7d,
+      baselineAvgDaily: normal, baselineFrom: normal > 0 ? '2024-11-08' : '', baselineTo: normal > 0 ? '2025-11-08' : '',
+    },
+    ...extra,
+  } as unknown as ChokepointInfo);
+  const status = (chokepoints: ChokepointInfo[], upstreamUnavailable = false): GetChokepointStatusResponse =>
+    ({ chokepoints, fetchedAt: new Date(AT - 5 * 60_000).toISOString(), upstreamUnavailable } as GetChokepointStatusResponse);
+
+  it('fires at 75% of the year-earlier normal, not at 76%, and never without a baseline', () => {
+    const fired = chokepointIndicators(status([cp('hormuz_strait', 75, 100), cp('suez', 76, 100), cp('panama', 5, 0)]), [], AT);
+    assert.deepEqual(fired.map((i) => i.id), ['chokepoint:hormuz_strait']);
+    const card = fired[0]!;
+    assert.equal(card.name, 'Chokepoint · Strait of Hormuz');
+    assert.equal(card.value, '75 transits/day');
+    assert.equal(card.change, '−25% vs year-earlier');
+    assert.equal(card.trust.level, 'estimated');
+    assert.equal(card.dataDate, 'data to 3 Nov');
+    // The news window ends with the PortWatch day.
+    assert.equal(card.at, Date.UTC(2026, 10, 3, 23, 59, 59, 999));
+    assert.equal(CHOKEPOINT_TRANSIT_SHARE, 0.75);
+  });
+
+  it('fires on the tanker-flow disrupted flag alone and links news naming the chokepoint', () => {
+    const flow = { currentMbd: 12.4, baselineMbd: 17, flowRatio: 0.73, disrupted: true } as ChokepointInfo['flowEstimate'];
+    const news = [story('Tankers avoid Hormuz after drone strike', Date.UTC(2026, 10, 3, 10))];
+    const fired = chokepointIndicators(status([cp('hormuz_strait', 98, 100, { flowEstimate: flow })]), news, AT);
+    assert.equal(fired.length, 1);
+    assert.equal(fired[0]!.value, '12.4 mb/d');
+    assert.equal(fired[0]!.change, 'tanker flow 73% of 90-day normal');
+    assert.equal(fired[0]!.links.stories.length, 1);
+  });
+
+  it('reads quiet with the data date, stale after 14 days, and unavailable without baselines', () => {
+    const quiet = chokepointFeeds(ready(status([cp('suez', 90, 100)])), [], AT);
+    assert.equal(quiet[0]!.kind, 'quiet');
+    assert.match((quiet[0] as { detail: string }).detail, /1 chokepoint within normal · data to 3 Nov/);
+    const stale = chokepointFeeds(ready(status([cp('suez', 90, 100)])), [], AT + 14 * 24 * H);
+    assert.equal(stale[0]!.kind, 'stale');
+    assert.match((stale[0] as { detail: string }).detail, /PortWatch data to 3 Nov/);
+    // No year-earlier window: the seeder sends baselineAvgDaily 0 and no baselineFrom.
+    const none = chokepointFeeds(ready(status([cp('suez', undefined, 0), cp('panama', 40, 0)])), [], AT);
+    assert.equal(none[0]!.kind, 'unavailable');
+    const down = chokepointFeeds(ready(status([cp('suez', 50, 100)], true)), [], AT);
+    assert.equal(down[0]!.kind, 'unavailable');
+    const failed = chokepointFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT);
+    assert.match((failed[0] as { detail: string }).detail, /seed-portwatch/);
+  });
+
+  // ---- Taiwan Strait
+  const window30 = (median: number | null, sufficient = true, sampleSize = 30) =>
+    ({ windowDays: 30, state: sufficient ? 'sufficient' : 'insufficient_data', statistic: 'median', value: median, sampleSize, requiredSampleSize: 30 });
+  const strait = (aircraft: number | null, ships: number | null, opts: { median?: [number, number]; sufficient?: boolean; sampleSize?: number } = {}) => {
+    const [ma, ms] = opts.median ?? [10, 6];
+    const day = '2026-11-08';
+    return {
+      schemaVersion: 1,
+      generatedAt: new Date(AT - H).toISOString(),
+      status: 'healthy',
+      sources: [],
+      coverage: { usableMndReportingDays: 120, earliestMndReportingDay: '2026-07-01', latestMndReportingDay: day, backfillComplete: true },
+      observations: [{
+        sourceId: 'taiwan-mnd', observationKind: 'official_daily_claim', reportingDay: day,
+        reportingPeriod: { start: '2026-11-07T06:00:00+08:00', end: '2026-11-08T06:00:00+08:00', timezone: 'Asia/Taipei' },
+        publicationTime: '2026-11-08T09:00:00+08:00',
+        categories: { plaAircraftSorties: aircraft, planShips: ships, officialShips: 2, medianLineCrossings: 11, adizEntries: null },
+      }],
+      baselines: {
+        sourceId: 'taiwan-mnd',
+        semantics: 'prior-usable-reporting-days-excluding-current',
+        categories: {
+          plaAircraftSorties: { current: { value: aircraft, reportingDay: day }, windows: { 30: window30(ma, opts.sufficient, opts.sampleSize), 90: window30(ma) } },
+          planShips: { current: { value: ships, reportingDay: day }, windows: { 30: window30(ms, opts.sufficient, opts.sampleSize), 90: window30(ms) } },
+        },
+      },
+    } as unknown as CrossStraitActivitySnapshot;
+  };
+
+  it('fires at 1.5× the 30-day median with the minimum count, not at 1.4× or under the minimum', () => {
+    assert.equal(TAIWAN_RATIO, 1.5);
+    const fired = taiwanStraitIndicators(strait(15, 6), [], AT);
+    assert.equal(fired.length, 1);
+    assert.equal(fired[0]!.id, 'taiwan');
+    assert.equal(fired[0]!.value, '15 aircraft · 6 ships');
+    assert.equal(fired[0]!.change, 'aircraft 1.5× the 30-day median');
+    assert.equal(fired[0]!.detail, '11 median-line crossings · 2 official ships');
+    assert.equal(fired[0]!.trust.level, 'official');
+    assert.equal(fired[0]!.dataDate, 'day 2026-11-08');
+    assert.equal(fired[0]!.at, Date.parse('2026-11-08T06:00:00+08:00'));
+    assert.equal(taiwanStraitIndicators(strait(14, 8), [], AT).length, 0, '1.4× aircraft, 1.33× ships');
+    // 1.5× a median of 4 is 6, but under the 10-aircraft minimum.
+    assert.equal(taiwanStraitIndicators(strait(8, 2, { median: [4, 6] }), [], AT).length, 0);
+    assert.equal(taiwanStraitIndicators(strait(4, 9), [], AT)[0]!.change, 'ships 1.5× the 30-day median');
+  });
+
+  it('treats a null count as unknown and an insufficient window as building history', () => {
+    assert.equal(taiwanStraitIndicators(strait(null, null), [], AT).length, 0);
+    const building = taiwanStraitFeeds(ready(strait(40, 20, { sufficient: false, sampleSize: 12 })), [], AT);
+    assert.equal(building[0]!.kind, 'unavailable');
+    assert.equal((building[0] as { detail: string }).detail, 'Building history · 12 of 30 reporting days');
+    const quiet = taiwanStraitFeeds(ready(strait(9, 5)), [], AT);
+    assert.equal(quiet[0]!.kind, 'quiet');
+    assert.match((quiet[0] as { detail: string }).detail, /day 2026-11-08: 9 aircraft · 5 ships, under 1.5×/);
+    const stale = taiwanStraitFeeds(ready(strait(9, 5)), [], AT + 3 * 24 * H);
+    assert.equal(stale[0]!.kind, 'stale');
+    assert.ok(isCrossStraitSnapshot(strait(1, 1)));
+    assert.ok(!isCrossStraitSnapshot({ schemaVersion: 1, observations: [] }));
+  });
+
+  // ---- embassy alerts
+  const advisory = (source: string, country: string, ageH: number, title = 'Security alert: demonstrations'): SecurityAdvisoryItem => ({
+    title, link: `https://example.gov/${source}/${country}/${ageH}`, pubDate: new Date(AT - ageH * H).toISOString(),
+    source, sourceCountry: 'US', level: 'info', country,
+  });
+  const alerts = (items: SecurityAdvisoryItem[]): EmbassyAlerts => ({ advisories: items, fetchedAt: AT - 10 * 60_000 });
+
+  it('fires on a US embassy alert for a hotspot country within 24 h only', () => {
+    const data = alerts([
+      advisory('US Embassy Ukraine', 'UA', 2),
+      advisory('US Embassy Mexico', 'MX', 25),
+      advisory('US Embassy Germany', 'DE', 1),
+      advisory('US State Dept', 'UA', 1, 'Ukraine - Level 4: Do Not Travel'),
+    ]);
+    const fired = embassyAlertIndicators(data, HOTSPOTS, [story('Kyiv embassy warns of air strikes', AT - 3 * H)], AT);
+    assert.equal(fired.length, 1);
+    assert.match(fired[0]!.id, /^embassy:kyiv:/);
+    assert.equal(fired[0]!.name, 'Embassy alert · Ukraine');
+    assert.equal(fired[0]!.value, 'US Embassy Ukraine');
+    assert.equal(fired[0]!.detail, 'Security alert: demonstrations');
+    assert.equal(fired[0]!.trust.level, 'official');
+    assert.equal(fired[0]!.links.stories.length, 1);
+    assert.deepEqual(embassyCoverage(data, HOTSPOTS), ['MX', 'UA']);
+  });
+
+  it('names the covered hotspot countries when quiet, and the seeder when unavailable', () => {
+    const quiet = embassyAlertFeeds(ready(alerts([advisory('US Embassy Mexico', 'MX', 30)])), HOTSPOTS, [], AT);
+    assert.equal(quiet[0]!.kind, 'quiet');
+    assert.equal((quiet[0] as { detail: string }).detail, 'Live · no alert in 24 h · embassy feeds cover MX of the hotspot countries');
+    const empty = embassyAlertFeeds({ status: 'empty', data: null, at: AT }, HOTSPOTS, [], AT);
+    assert.equal(empty[0]!.kind, 'unavailable');
+    assert.match((empty[0] as { detail: string }).detail, /seed-security-advisories/);
+    const stale = embassyAlertFeeds(ready(alerts([])), HOTSPOTS, [], AT + 3 * H);
+    assert.equal(stale[0]!.kind, 'stale');
   });
 });

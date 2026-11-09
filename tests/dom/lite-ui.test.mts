@@ -169,6 +169,8 @@ beforeEach(async () => {
   healthPendingResponses = 0;
   const { resetResourcesForTests } = await import('../../src/lite/data/store');
   resetResourcesForTests();
+  const { resetSourcesForTests } = await import('../../src/lite/data/sources');
+  resetSourcesForTests();
   const { __resetServerInsightsCacheForTests } = await import('../../src/services/insights-loader');
   __resetServerInsightsCacheForTests();
   root = document.createElement('div');
@@ -255,8 +257,8 @@ describe('Lite UI shell', () => {
     expect(incident?.textContent).toContain('Naval incident near Bab el-Mandeb');
     expect(incident?.textContent).toContain('Corroborated');
     expect(incident?.textContent).toContain('3 · T1');
-    // The watchlist has no source yet, so it is badged.
-    expect(root.querySelector('[data-testid="watchlist"] [data-sample="true"]')).not.toBeNull();
+    // The Watchlist design sample is gone (step 2c); watch rules arrive with the alerts phase.
+    expect(root.querySelector('[data-testid="watchlist"]')).toBeNull();
     expect(root.querySelector('[data-testid="regional-timeline"]')?.textContent).toContain('Naval incident');
     // The MapLibre map starts, credits its tiles and shows the design's legend.
     // MapLibre loads through three lazy imports, which can outlast one flush on a busy CI runner.
@@ -1055,6 +1057,115 @@ describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS inte
     } finally {
       vi.stubGlobal('fetch', base);
       vi.mocked(boot.ensureHydrated).mockImplementation(async () => undefined);
+    }
+  });
+});
+
+describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alerts', () => {
+  const HOUR = 3_600_000;
+  const DAY = 86_400_000;
+  const ymd = (t: number) => new Date(t).toISOString().slice(0, 10);
+
+  function fixtures(now: number) {
+    const day = ymd(now - DAY);
+    const chokepoints = {
+      fetchedAt: new Date(now - 5 * 60_000).toISOString(),
+      upstreamUnavailable: false,
+      chokepoints: [
+        { id: 'hormuz_strait', name: 'Strait of Hormuz', lat: 26.6, lon: 56.3, status: 'yellow', disruptionScore: 40, activeWarnings: 0,
+          transitSummary: { officialLatestDate: ymd(now - 4 * DAY), officialLatestTotal: 20, officialAvg7d: 60, baselineAvgDaily: 100, baselineFrom: '2024-11-01', baselineTo: '2025-11-01' } },
+        { id: 'suez', name: 'Suez Canal', lat: 30.5, lon: 32.3, status: 'green', disruptionScore: 5, activeWarnings: 0,
+          transitSummary: { officialLatestDate: ymd(now - 4 * DAY), officialLatestTotal: 50, officialAvg7d: 52, baselineAvgDaily: 55, baselineFrom: '2024-11-01', baselineTo: '2025-11-01' } },
+      ],
+    };
+    const window30 = (value: number) => ({ windowDays: 30, state: 'sufficient', statistic: 'median', value, sampleSize: 30, requiredSampleSize: 30 });
+    const strait = {
+      schemaVersion: 1, generatedAt: new Date(now - HOUR).toISOString(), status: 'healthy', sources: [],
+      coverage: { usableMndReportingDays: 90, earliestMndReportingDay: '2026-08-01', latestMndReportingDay: day, backfillComplete: true },
+      observations: [{ sourceId: 'taiwan-mnd', observationKind: 'official_daily_claim', reportingDay: day,
+        reportingPeriod: { start: new Date(now - 30 * HOUR).toISOString(), end: new Date(now - 6 * HOUR).toISOString(), timezone: 'Asia/Taipei' },
+        publicationTime: new Date(now - 4 * HOUR).toISOString(),
+        categories: { plaAircraftSorties: 32, planShips: 9, officialShips: 1, medianLineCrossings: 18, adizEntries: 24 } }],
+      baselines: { sourceId: 'taiwan-mnd', semantics: 'prior-usable-reporting-days-excluding-current', categories: {
+        plaAircraftSorties: { current: { value: 32, reportingDay: day }, windows: { 30: window30(12), 90: window30(12) } },
+        planShips: { current: { value: 9, reportingDay: day }, windows: { 30: window30(7), 90: window30(7) } },
+      } },
+    };
+    const advisories = {
+      fetchedAt: new Date(now - 10 * 60_000).toISOString(),
+      byCountry: {},
+      advisories: [
+        { title: 'Security Alert: air raid warnings in Kyiv', link: 'https://ua.usembassy.gov/alert-1', pubDate: new Date(now - 3 * HOUR).toISOString(), source: 'US Embassy Ukraine', sourceCountry: 'US', level: 'info', country: 'UA' },
+        { title: 'Demonstration alert', link: 'https://de.usembassy.gov/alert-2', pubDate: new Date(now - HOUR).toISOString(), source: 'US Embassy Germany', sourceCountry: 'US', level: 'info', country: 'DE' },
+      ],
+    };
+    return { chokepoints, strait, advisories };
+  }
+
+  it('fires the three feeds from the bootstrap and opens Taipei from the Taiwan card', async () => {
+    const data = fixtures(Date.now());
+    const boot = await import('@/services/bootstrap');
+    vi.mocked(boot.getHydratedData).mockImplementation((key: string) =>
+      key === 'chokepoints' ? data.chokepoints : key === 'crossStraitActivity' ? data.strait : key === 'securityAdvisories' ? data.advisories : undefined);
+    try {
+      history.replaceState(null, '', '/lite/geopolitics');
+      const { App } = await import('../../src/lite/App');
+      await act(() => render(h(App, null), root));
+      const panel = () => root.querySelector('[data-testid="geo-indicators"]')!;
+      await vi.waitFor(async () => {
+        await flush();
+        expect(panel().querySelector('[data-indicator="chokepoint:hormuz_strait"]')).not.toBeNull();
+        expect(panel().querySelector('[data-indicator="taiwan"]')).not.toBeNull();
+        expect(panel().querySelector('[data-indicator^="embassy:kyiv:"]')).not.toBeNull();
+      }, { timeout: 10_000, interval: 50 });
+
+      expect(panel().querySelector('[data-indicator="chokepoint:hormuz_strait"]')?.textContent).toContain('60 transits/day');
+      expect(panel().querySelector('[data-indicator="chokepoint:hormuz_strait"]')?.textContent).toContain('ESTIMATED');
+      expect(panel().querySelector('[data-indicator="chokepoint:suez"]')).toBeNull();
+      expect(panel().querySelector('[data-indicator="taiwan"]')?.textContent).toContain('32 aircraft');
+      expect(panel().querySelector('[data-indicator^="embassy:kyiv:"]')?.textContent).toContain('Embassy alert · Ukraine');
+      // Germany is not a curated hotspot country.
+      expect(panel().textContent).not.toContain('Embassy alert · Germany');
+
+      // The Taiwan Strait card opens the Taipei hotspot on the map.
+      await vi.waitFor(async () => {
+        await flush();
+        expect(root.querySelector('[data-marker="hotspot:taipei"]')).not.toBeNull();
+      }, { timeout: 10_000, interval: 50 });
+      await act(() => (panel().querySelector('[data-indicator="taiwan"]') as HTMLButtonElement).click());
+      await flush();
+      expect(root.querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe('hotspot:taipei');
+    } finally {
+      vi.mocked(boot.getHydratedData).mockImplementation(() => undefined);
+    }
+  });
+
+  it('reads the three feeds unavailable without data, naming each seeder', async () => {
+    history.replaceState(null, '', '/lite/geopolitics');
+    const { App } = await import('../../src/lite/App');
+    await act(() => render(h(App, null), root));
+    const panel = () => root.querySelector('[data-testid="geo-indicators"]')!;
+    await vi.waitFor(async () => {
+      await flush();
+      for (const id of ['chokepoints', 'taiwan', 'embassy']) {
+        expect(panel().querySelector(`[data-feed="${id}"]`)?.getAttribute('data-feed-state')).toBe('unavailable');
+      }
+    }, { timeout: 10_000, interval: 50 });
+    expect(panel().querySelector('[data-feed="taiwan"]')?.textContent).toContain('seed-cross-strait-activity');
+  });
+
+  it('keeps the Taiwan Strait snapshot after the bootstrap key is taken', async () => {
+    const data = fixtures(Date.now());
+    const boot = await import('@/services/bootstrap');
+    const src = await import('../../src/lite/data/sources');
+    vi.mocked(boot.getHydratedData).mockImplementation((key: string) => (key === 'crossStraitActivity' ? data.strait : undefined));
+    try {
+      const first = await src.loadCrossStraitActivity();
+      vi.mocked(boot.getHydratedData).mockImplementation(() => undefined);
+      expect(first).not.toBeNull();
+      expect(await src.loadCrossStraitActivity()).toBe(first);
+    } finally {
+      vi.mocked(boot.getHydratedData).mockImplementation(() => undefined);
     }
   });
 });

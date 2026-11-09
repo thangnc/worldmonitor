@@ -29,6 +29,8 @@ import type { MilitaryFlight } from '@/generated/client/worldmonitor/military/v1
 import { MILITARY_QUERY_REGIONS } from '@/config/military';
 import { isConflictCounts, type ConflictCounts } from './conflict';
 import { isGpsHighCells, type GpsHighCells } from './geo-layers';
+import { isCrossStraitSnapshot, type EmbassyAlerts } from './geo-watch';
+import type { CrossStraitActivitySnapshot } from '@/types/cross-strait-activity';
 import type { ListUkmtoIncidentsResponse } from '@/generated/client/worldmonitor/maritime/v1/service_client';
 import { readUkmtoSnapshot } from '../../../shared/ukmto-incidents';
 import { fetchGpsInterference, type GpsJamData } from '@/services/gps-interference';
@@ -97,6 +99,14 @@ export function startBootstrap(): Promise<void> {
 }
 
 const consumed = new Set<string>();
+/** The last Taiwan Strait snapshot taken from the bootstrap (see loadCrossStraitActivity). */
+let crossStrait: CrossStraitActivitySnapshot | null = null;
+
+/** Test-only: forget which bootstrap keys were taken and the kept Taiwan Strait snapshot. */
+export function resetSourcesForTests(): void {
+  consumed.clear();
+  crossStrait = null;
+}
 
 /** The bootstrap value for `key`, at most once per page load. */
 async function hydrated<T>(key: string, accept: (value: unknown) => value is T): Promise<T | null> {
@@ -481,6 +491,29 @@ export async function loadGpsInterference(): Promise<GpsJamData | null> {
 export async function loadGpsHighCells(): Promise<GpsHighCells | null> {
   const value = await ensureHydrated('gpsHighCells');
   return isGpsHighCells(value) ? value : null;
+}
+
+/**
+ * Taiwan Strait activity (slow bootstrap key `crossStraitActivity`; no RPC).
+ * The bootstrap hands a key out once per page load, so later refreshes keep
+ * the last snapshot: the feed then ages to stale by its reporting day instead
+ * of reading empty.
+ */
+export async function loadCrossStraitActivity(): Promise<CrossStraitActivitySnapshot | null> {
+  const boot = await hydrated('crossStraitActivity', isCrossStraitSnapshot);
+  if (boot) crossStrait = boot;
+  return crossStrait;
+}
+
+/** Security advisories for the embassy-alert feed: slow bootstrap key `securityAdvisories`, else the RPC. */
+export async function loadEmbassyAlerts(): Promise<EmbassyAlerts | null> {
+  const boot = await hydrated('securityAdvisories', hasArray('advisories'));
+  if (boot) {
+    const fetchedAt = Date.parse(String((boot as Record<string, unknown>).fetchedAt ?? ''));
+    return { advisories: boot.advisories as EmbassyAlerts['advisories'], fetchedAt: Number.isFinite(fetchedAt) ? fetchedAt : null };
+  }
+  const resp = await intelligence.listSecurityAdvisories({});
+  return resp.advisories.length ? { advisories: resp.advisories, fetchedAt: null } : null;
 }
 
 /** GDELT conflict counts for the Lite map (on-demand bootstrap key, CDN-shielded). */

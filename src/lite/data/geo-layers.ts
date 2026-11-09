@@ -18,16 +18,16 @@ import { GEO_REGION_LABEL, regionOfPoint, type LiteItem } from './transforms';
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
 
-type Place = Pick<Hotspot, 'id' | 'name' | 'lat' | 'lon'>;
+export type Place = Pick<Hotspot, 'id' | 'name' | 'lat' | 'lon'>;
 
-function hotspotSubject(hotspot: Place): LinkSubject {
+export function hotspotSubject(hotspot: Place): LinkSubject {
   const mapped = HOTSPOT_COUNTRY_MAP[hotspot.id];
   const codes = mapped == null ? [] : typeof mapped === 'string' ? [mapped] : [...mapped];
   return { countries: codes.map((code) => ({ code, name: countryName(code) })), drivers: [hotspot.name] };
 }
 
 /** Fired indicators, or the feed's one state row whose quiet line says what was checked. */
-function feeds(base: FeedState, fired: readonly Indicator[], quietDetail: string): FeedState[] {
+export function feeds(base: FeedState, fired: readonly Indicator[], quietDetail: string): FeedState[] {
   if (base.kind !== 'quiet') return [base];
   if (fired.length) return fired.map((indicator) => ({ kind: 'fired' as const, id: indicator.id, name: indicator.name, indicator }));
   return [{ ...base, detail: quietDetail }];
