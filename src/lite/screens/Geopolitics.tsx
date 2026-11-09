@@ -504,12 +504,13 @@ function layerGroups(layers: LayerState, ucdpNewestAt: number): LayerGroup[] {
   return [
     {
       title: 'Live layers',
-      note: 'filtered by range',
+      // Aircraft are a live snapshot and gpsjam publishes one file a day, so only these two follow the range (owner, 2026-11-10).
+      note: 'range: violence · sea',
       rows: [
         { id: 'violence', mark: <ViolenceSwatch />, name: 'Reported violence · GDELT', sub: "country shading · against each country's normal", on: layers.violence },
-        { id: 'aircraft', mark: <PinMark shape="aircraft" tone="muted" fired={false} />, name: 'Military aircraft', sub: `transponder · badge at ${AIRCRAFT_MIN}+ near a hotspot · live`, on: layers.aircraft },
-        { id: 'sea', mark: <PinMark shape="sea" tone="ok" fired />, name: 'Incidents at sea · UKMTO', sub: `official notices · fires on one in ${SEA_WINDOW_HOURS} h`, on: layers.sea },
-        { id: 'gps', mark: <HexMark />, name: 'GPS interference · gpsjam.org', sub: 'hexagons · latest day, red above 10%', on: layers.gps },
+        { id: 'aircraft', mark: <PinMark shape="aircraft" tone="muted" fired={false} />, name: 'Military aircraft', sub: `live snapshot, ignores range · badge at ${AIRCRAFT_MIN}+ near a hotspot`, on: layers.aircraft },
+        { id: 'sea', mark: <PinMark shape="sea" tone="ok" fired />, name: 'Incidents at sea · UKMTO', sub: `official notices, by range · fires on one in ${SEA_WINDOW_HOURS} h`, on: layers.sea },
+        { id: 'gps', mark: <HexMark />, name: 'GPS interference · gpsjam.org', sub: 'latest day, ignores range · red above 10%', on: layers.gps },
         { id: 'airspace', mark: <AirspaceMark />, name: 'Airspace closures · NOTAM', sub: 'awaiting FAA access', on: null },
       ],
     },

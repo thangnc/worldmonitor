@@ -207,7 +207,7 @@ Built in step 1:
 **Geopolitics.**
 
 - The map's layers popover has three groups:
-  - **Live layers**, filtered by the range: reported violence (GDELT, country shading by the 6 h ratio to the 7-day average), military aircraft (a badge at 5 or more near a hotspot), incidents at sea (UKMTO), GPS interference (hexagons), airspace closures (N/A until FAA access).
+  - **Live layers**: reported violence (GDELT, country shading by the 6 h ratio to the 7-day average), military aircraft (a badge at 5 or more near a hotspot), incidents at sea (UKMTO), GPS interference (hexagons), airspace closures (N/A until FAA access).
   - **Background and judgement**: UCDP as the verified background, always shown, with its newest date; curated hotspots with the live score.
   - **Context, optional**: shipping lanes; social OSINT (discovery only, never alerts; no source chosen yet).
 - Range 6h, 24h, 7d, 30d, with a GDELT events-per-hour histogram.
@@ -221,7 +221,8 @@ Built in step 2b (`src/lite/data/geo-layers.ts`):
 - **Layers popover** with the design's three groups; the old side panel is gone. GPS interference joins the live layers (the design left it out; the catalogue has it). Airspace closures and social OSINT read N/A.
 - **Military aircraft**: airborne aircraft within 200 km of a hotspot as plane marks turned to their heading, and a "✈ N" badge on the hotspot at 5 or more. A live snapshot: the range cannot show past positions.
 - **Incidents at sea**: UKMTO notices as ship marks, filtered by the range; the mark is green while the notice is under 24 h old.
-- **GPS interference**: the latest gpsjam day's medium and high cells as hexagons through `LiteMap`'s `overlays` (h3-js loads with the layer).
+- **GPS interference**: the latest gpsjam day's medium and high cells as hexagons through `LiteMap`'s `overlays` (h3-js loads with the layer). gpsjam publishes one file per UTC day and only the latest day is kept, so the range does not change it.
+- **Range and the live layers** (owner's decision, 2026-11-10): reported violence and incidents at sea follow the range; military aircraft and GPS interference ignore it, and their rows say so ("ignores range"). Range history for them (gpsjam's daily archive, a per-hotspot aircraft count) was considered and not built.
 - **Shipping lanes**: optional context, off by default.
 - **Indicators**: aircraft, sea and GPS feeds join the violence feed, and the airspace row reads "Awaiting FAA access". A card opens its hotspot or incident on the map.
 - **Legend**: behind a "Legend" button on the map, closed by default, listing the layers that are on.

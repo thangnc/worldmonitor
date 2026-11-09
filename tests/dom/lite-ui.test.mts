@@ -1042,6 +1042,11 @@ describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS inte
       expect(popover.querySelector('[data-layer-row="airspace"]')?.textContent).toContain('N/A');
       expect(popover.querySelector('[data-layer-row="osint"]')?.textContent).toContain('N/A');
       expect(popover.textContent).toContain('UCDP always shown as background');
+      // Only violence and sea follow the range; aircraft and GPS say they ignore it.
+      expect(popover.textContent).toContain('range: violence · sea');
+      expect(popover.querySelector('[data-layer-row="aircraft"]')?.textContent).toContain('ignores range');
+      expect(popover.querySelector('[data-layer-row="gps"]')?.textContent).toContain('ignores range');
+      expect(popover.querySelector('[data-layer-row="sea"]')?.textContent).toContain('by range');
 
       // Military aircraft off: pins and badge go. Shipping lanes on: lines appear.
       await act(() => (popover.querySelector('[data-layer-row="aircraft"] [role="switch"]') as HTMLButtonElement).click());
