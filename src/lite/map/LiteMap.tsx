@@ -8,7 +8,7 @@ import { OverlayScroll } from '../components/scroll';
 import { BG, BORDER, TEXT, cx } from '../components/ui';
 import { COUNTRY_CODE_PROPERTY, COUNTRY_FILL_LAYER, COUNTRY_FILL_SOURCE, MAP_CREDITS, buildLiteMapStyle, countryFillLayer, readLiteMapTokens } from './style';
 import { getCountriesGeoJson } from '@/services/country-geometry';
-import { LABEL_MIN_RADIUS, WORLD_BOUNDS, compactCount, markerBounds, placeCard, ucdpRadius } from './view';
+import { type Bounds, LABEL_MIN_RADIUS, WORLD_BOUNDS, compactCount, markerBounds, placeCard, ucdpRadius } from './view';
 
 /**
  * The Lite map: MapLibre on OpenFreeMap vector tiles, styled from the Lite
@@ -398,8 +398,8 @@ export function LiteMap({
   onSelect,
 }: {
   markers: readonly MapMarker[];
-  /** `world` shows the whole map; `markers` zooms to the markers (a region filter). */
-  fit: 'world' | 'markers';
+  /** `world` shows the whole map; `markers` zooms to the markers (a region filter); bounds zoom to that area (a region tile). */
+  fit: 'world' | 'markers' | Bounds;
   /** Country shading (the reported-violence layer); omitted draws none. */
   countries?: CountryFill;
   overlays?: MapOverlays;
@@ -425,7 +425,7 @@ export function LiteMap({
   countriesRef.current = countries;
   const shadedRef = useRef(new Set<string>());
 
-  const bounds = fit === 'markers' ? markerBounds(markers) : WORLD_BOUNDS;
+  const bounds = Array.isArray(fit) ? fit : fit === 'markers' ? markerBounds(markers) : WORLD_BOUNDS;
   const boundsRef = useRef(bounds);
   boundsRef.current = bounds;
   const boundsKey = bounds.flat().map((v) => v.toFixed(1)).join(',');
