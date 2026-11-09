@@ -525,7 +525,7 @@ function layerGroups(layers: LayerState, ucdpNewestAt: number, range: TimeRange)
     {
       title: 'Background & judgement',
       rows: [
-        { id: 'conflicts', mark: <UcdpMark />, name: 'Verified · UCDP', sub: `background · weeks behind${ucdpTo}`, range: layerRangeNote('conflicts', range), on: layers.conflicts },
+        { id: 'conflicts', mark: <UcdpMark />, name: 'Verified · UCDP', sub: `verified background${ucdpTo}`, range: layerRangeNote('conflicts', range), on: layers.conflicts },
         { id: 'hotspots', mark: <Diamond tone="elev" filled={false} size={11} />, name: 'Curated hotspots', sub: 'live score 1–5', range: layerRangeNote('hotspots', range), on: layers.hotspots },
       ],
     },

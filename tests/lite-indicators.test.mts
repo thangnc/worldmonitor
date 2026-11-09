@@ -691,6 +691,7 @@ describe('Geopolitics layers: aircraft, sea incidents, GPS interference', () => 
     // The violence note is the shading's own basis, so the label cannot drift from the computation.
     for (const r of ranges) assert.ok(layerRangeNote('violence', r)?.startsWith(shadingBasis(r)));
     assert.deepEqual(notes('sea'), ['notices from the last 6 h', 'notices from the last 24 h', 'notices from the last 7 days']);
+    assert.match(layerRangeNote('conflicts', '7d') ?? '', /released monthly/);
     for (const id of ['aircraft', 'gps', 'conflicts', 'hotspots']) {
       const [first, ...rest] = notes(id);
       assert.ok(first, `${id} has a note`);

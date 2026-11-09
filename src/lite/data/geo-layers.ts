@@ -364,7 +364,8 @@ export function layerRangeNote(id: string, range: TimeRange): string | undefined
     case 'gps':
       return 'latest gpsjam day; the range does not apply';
     case 'conflicts':
-      return 'every event, whatever the range';
+      // GED Candidate is released monthly with up to a month's lag: a 6h-7d window would be empty.
+      return 'released monthly, a month or more behind; the range does not apply';
     case 'hotspots':
       return 'score now; the range does not apply';
     default:
