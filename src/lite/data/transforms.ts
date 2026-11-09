@@ -362,13 +362,14 @@ export function cleanSnippet(item: Pick<NewsItem, 'snippet' | 'title'>): string 
 }
 
 /**
- * The Geopolitics ranges (owner's design, 2026-11-08): the GDELT conflict
- * counts hold 48 hourly and 30 daily buckets, so 6h and 24h read hours and
- * 7d and 30d read days.
+ * The Geopolitics ranges (owner's decision, 2026-11-10; 30d dropped because
+ * its shading was the 7d comparison again): the GDELT conflict counts hold 48
+ * hourly and 30 daily buckets, so 6h and 24h read hours and 7d reads days,
+ * against the 22 days before.
  */
-export type TimeRange = '6h' | '24h' | '7d' | '30d';
+export type TimeRange = '6h' | '24h' | '7d';
 
-export const TIME_RANGE_HOURS: Record<TimeRange, number> = { '6h': 6, '24h': 24, '7d': 168, '30d': 720 };
+export const TIME_RANGE_HOURS: Record<TimeRange, number> = { '6h': 6, '24h': 24, '7d': 168 };
 
 /** True when `ts` falls in the last `range` before `now`; an item without a timestamp stays, as on the dashboard. */
 export function inTimeRange(ts: number | null | undefined, now: number, range: TimeRange): boolean {

@@ -17,6 +17,8 @@ export interface LayerRow {
   mark: ComponentChildren;
   name: string;
   sub: string;
+  /** What the layer shows at the map's selected time range, when the map has one. */
+  range?: string;
   /** Null: no source yet, shown as N/A. */
   on: boolean | null;
 }
@@ -128,6 +130,7 @@ export function LayersPopover({
                     <span class="flex min-w-0 flex-1 flex-col">
                       <span class="text-[13px] font-medium text-ink">{r.name}</span>
                       <span class="text-[11.5px] text-dim">{r.sub}</span>
+                      {r.range ? <span class="text-[11.5px] text-muted" data-range-note>{r.range}</span> : null}
                     </span>
                     {r.on === null ? (
                       <span class="rounded-[4px] border border-line px-[6px] py-px font-mono text-[10px] text-dim">N/A</span>

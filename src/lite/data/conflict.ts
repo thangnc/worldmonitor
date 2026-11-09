@@ -42,7 +42,7 @@ const BASELINE_DAYS = 7;
 export const CONFLICT_COUNTS_CADENCE_MIN = 15;
 export const VIOLENCE_RULE = `≥ ${MIN_REPORTS} reports in ${SPIKE_HOURS} h and ×${SPIKE_RATIO} the 7-day average`;
 export const SHADING_RULE =
-  'GDELT articles coded as material conflict (CAMEO 18–20) per country, against the country’s own normal: 6h and 24h against the 7-day average, 7d and 30d the last 7 days against the 22 before. Never raw volume. Machine-coded news reports, not verified events.';
+  'GDELT articles coded as material conflict (CAMEO 18–20) per country, against the country’s own normal: 6h and 24h against the 7-day average, 7d the last 7 days against the 22 before. Never raw volume. Machine-coded news reports, not verified events.';
 
 /** The shading steps' lower bounds: ratio against the country's normal. */
 const RATIO_STEPS = [1.5, 2, 3, 5] as const;
@@ -147,13 +147,17 @@ export interface Shading {
   partial: boolean;
 }
 
+/** What each range compares, as the map and the layers popover say it. */
+export function shadingBasis(range: TimeRange): string {
+  return range === '7d' ? 'last 7 days against the 22 before' : `last ${range} against the 7-day average`;
+}
+
 /**
  * Country shading: a country is shaded only above its own normal, never by
  * raw volume (GDELT codes so much US crime as conflict that volume would rank
  * the US first). 6h and 24h read the last complete hours against the 7 days
  * through yesterday; 7d reads the 7 complete days through yesterday against
- * the 22 before them. 30 days hold no earlier normal, so 30d keeps the 7-day
- * comparison and says so.
+ * the 22 before them.
  */
 export function countryShading(counts: ConflictCounts, range: TimeRange, now: number): Shading {
   let window: Array<ConflictBucket | null>;
@@ -167,7 +171,7 @@ export function countryShading(counts: ConflictCounts, range: TimeRange, now: nu
     partial = hours.some((h) => (h.bucket?.cohorts ?? 0) < counts.cohortsPerHour);
     normalDays = baselineDays(counts, now);
     days = hours.length / 24;
-    basis = `last ${range} against the 7-day average`;
+    basis = shadingBasis(range);
   } else {
     const week = daysThrough(counts, now - DAY_MS, 7);
     window = week.map((d) => d.bucket);
@@ -176,9 +180,7 @@ export function countryShading(counts: ConflictCounts, range: TimeRange, now: nu
       .map((d) => d.bucket)
       .filter((b): b is ConflictBucket & { date: string } => Boolean(b) && (b?.cohorts ?? 0) >= counts.cohortsPerDay);
     days = 7;
-    basis = range === '7d'
-      ? 'last 7 days against the 22 before'
-      : 'last 7 days against the 22 before (30 days hold no earlier normal)';
+    basis = shadingBasis(range);
   }
   const totals = new Map<string, number>();
   for (const b of window) for (const [code, n] of Object.entries(b?.byCountry ?? {})) totals.set(code, (totals.get(code) ?? 0) + n);
@@ -199,7 +201,7 @@ export interface HistogramBar {
   partial: boolean;
 }
 
-/** Reports per hour (6h, 24h) or per day (7d, 30d), all countries, oldest first. */
+/** Reports per hour (6h, 24h) or per day (7d), all countries, oldest first. */
 export function conflictHistogram(counts: ConflictCounts, range: TimeRange, now: number): { bars: HistogramBar[]; unit: 'hr' | 'day' } {
   if (range === '6h' || range === '24h') {
     const hours = hoursBefore(counts, now, range === '6h' ? 6 : 24);
@@ -208,7 +210,7 @@ export function conflictHistogram(counts: ConflictCounts, range: TimeRange, now:
       bars: hours.map((h) => ({ value: Object.values(h.bucket?.byCountry ?? {}).reduce((a, b) => a + b, 0), partial: (h.bucket?.cohorts ?? 0) < counts.cohortsPerHour })),
     };
   }
-  const days = daysThrough(counts, now, range === '7d' ? 7 : 30);
+  const days = daysThrough(counts, now, 7);
   return {
     unit: 'day',
     bars: days.map((d, i) => ({

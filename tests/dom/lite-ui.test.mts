@@ -319,7 +319,9 @@ describe('Lite UI shell', () => {
 
     // The owner's ranges; they filter the digest-driven parts (the hour-old incident stays in all of them).
     const buttons = [...root.querySelectorAll('[data-testid="time-range"] button')];
-    expect(buttons.map((b) => b.textContent)).toEqual(['6h', '24h', '7d', '30d']);
+    expect(buttons.map((b) => b.textContent)).toEqual(['6h', '24h', '7d']);
+    // Each range says what it is for.
+    expect(buttons.map((b) => b.getAttribute('title')?.split('?')[0])).toEqual(['Is something spiking now', 'What happened today', 'A sudden spike or a week-long build-up']);
     const pick = (range: string) => buttons.find((b) => b.textContent === range) as HTMLButtonElement;
     await act(() => pick('6h').click());
     expect(root.querySelector('h1 + p')?.textContent).toContain('1 active events in 6h');
@@ -1042,6 +1044,20 @@ describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS inte
       expect(popover.querySelector('[data-layer-row="airspace"]')?.textContent).toContain('N/A');
       expect(popover.querySelector('[data-layer-row="osint"]')?.textContent).toContain('N/A');
       expect(popover.textContent).toContain('UCDP always shown as background');
+      // Each layer says what it shows at the selected range; only violence and sea change with it.
+      const note = (id: string) => root.querySelector(`[data-testid="layers-popover"] [data-layer-row="${id}"] [data-range-note]`)?.textContent;
+      expect(popover.textContent).toContain('at 7d');
+      expect(note('violence')).toBe('last 7 days against the 22 before: slow build-ups');
+      expect(note('sea')).toBe('notices from the last 7 days');
+      expect(note('aircraft')).toBe('positions now; the range does not apply');
+      expect(note('gps')).toBe('latest gpsjam day; the range does not apply');
+      expect(note('airspace')).toBeUndefined();
+      await act(() => ([...root.querySelectorAll('[data-testid="time-range"] button')].find((b) => b.textContent === '6h') as HTMLButtonElement).click());
+      expect(root.querySelector('[data-testid="layers-popover"]')?.textContent).toContain('at 6h');
+      expect(note('violence')).toBe('last 6h against the 7-day average: sudden spikes');
+      expect(note('sea')).toBe('notices from the last 6 h');
+      expect(note('aircraft')).toBe('positions now; the range does not apply');
+      await act(() => ([...root.querySelectorAll('[data-testid="time-range"] button')].find((b) => b.textContent === '7d') as HTMLButtonElement).click());
 
       // Military aircraft off: pins and badge go. Shipping lanes on: lines appear.
       await act(() => (popover.querySelector('[data-layer-row="aircraft"] [role="switch"]') as HTMLButtonElement).click());

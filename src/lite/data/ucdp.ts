@@ -167,7 +167,7 @@ export function ucdpNewest(events: readonly UcdpViolenceEvent[]): number {
 
 /**
  * UCDP is the map's verified background (owner's design, 2026-11-08): a
- * delayed release, weeks behind, shown whatever the time range, so the label
+ * monthly release, up to a month behind, shown whatever the time range, so the label
  * names how far it reaches.
  */
 export function ucdpBackgroundLabel(newest: number): string {

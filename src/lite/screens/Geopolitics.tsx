@@ -35,6 +35,7 @@ import {
   aircraftNearHotspots,
   gpsFeeds,
   gpsHexFills,
+  layerRangeNote,
   seaIncidentFeeds,
 } from '../data/geo-layers';
 import { shippingLanes } from '../data/markets-map';
@@ -86,10 +87,17 @@ const REGION_OPTIONS = [
 ] as const satisfies ReadonlyArray<{ value: GeoRegion; label: string }>;
 
 /**
- * 6h, 24h, 7d and 30d (owner's design, 2026-11-08). They filter the GDELT shading and histogram and
- * the digest-driven parts of the screen. UCDP is the verified background and shows at every range.
+ * 6h, 24h and 7d (owner's decision, 2026-11-10; 30d dropped). They filter the GDELT shading and
+ * histogram, incidents at sea and the digest-driven parts of the screen. UCDP is the verified
+ * background and shows at every range. Each layer row in the popover says what it shows at the
+ * selected range (`layerRangeNote`).
  */
-const TIME_RANGE_OPTIONS = (Object.keys(TIME_RANGE_HOURS) as TimeRange[]).map((value) => ({ value, label: value }));
+const RANGE_PURPOSE: Record<TimeRange, string> = {
+  '6h': 'Is something spiking now? The last 6 hours against each country\'s 7-day average.',
+  '24h': 'What happened today? The last 24 hours against each country\'s 7-day average.',
+  '7d': 'A sudden spike or a week-long build-up? The last 7 days against the 22 before.',
+};
+const TIME_RANGE_OPTIONS = (Object.keys(TIME_RANGE_HOURS) as TimeRange[]).map((value) => ({ value, label: value, title: RANGE_PURPOSE[value] }));
 
 /**
  * Escalation regions. The card follows the first listed country that has a
@@ -412,7 +420,7 @@ function ConflictMap({
       testId="conflict-map"
       right={
         <LayersPopover
-          groups={layerGroups(layers, newest)}
+          groups={layerGroups(layers, newest, range)}
           onToggle={(id, on) => onLayers({ ...layers, [id]: on })}
           footer={
             <span class="flex items-center gap-2">
@@ -499,25 +507,26 @@ const HexMark = () => <span class="block h-[10px] w-[12px] border border-crit bg
 const AirspaceMark = () => <SquareSlash size={14} strokeWidth={1.5} class="text-dim" aria-hidden="true" />;
 
 /** The popover's three groups (owner's design): live layers, background and judgement, optional context. */
-function layerGroups(layers: LayerState, ucdpNewestAt: number): LayerGroup[] {
+function layerGroups(layers: LayerState, ucdpNewestAt: number, range: TimeRange): LayerGroup[] {
   const ucdpTo = ucdpNewestAt ? ` (to ${new Date(ucdpNewestAt).toISOString().slice(0, 10)})` : '';
   return [
     {
       title: 'Live layers',
-      note: 'filtered by range',
+      // Aircraft are a live snapshot and gpsjam publishes one file a day, so only violence and sea follow the range (owner, 2026-11-10).
+      note: `at ${range}`,
       rows: [
-        { id: 'violence', mark: <ViolenceSwatch />, name: 'Reported violence · GDELT', sub: "country shading · against each country's normal", on: layers.violence },
-        { id: 'aircraft', mark: <PinMark shape="aircraft" tone="muted" fired={false} />, name: 'Military aircraft', sub: `transponder · badge at ${AIRCRAFT_MIN}+ near a hotspot · live`, on: layers.aircraft },
-        { id: 'sea', mark: <PinMark shape="sea" tone="ok" fired />, name: 'Incidents at sea · UKMTO', sub: `official notices · fires on one in ${SEA_WINDOW_HOURS} h`, on: layers.sea },
-        { id: 'gps', mark: <HexMark />, name: 'GPS interference · gpsjam.org', sub: 'hexagons · latest day, red above 10%', on: layers.gps },
+        { id: 'violence', mark: <ViolenceSwatch />, name: 'Reported violence · GDELT', sub: "country shading · against each country's normal", range: layerRangeNote('violence', range), on: layers.violence },
+        { id: 'aircraft', mark: <PinMark shape="aircraft" tone="muted" fired={false} />, name: 'Military aircraft', sub: `transponder · badge at ${AIRCRAFT_MIN}+ near a hotspot`, range: layerRangeNote('aircraft', range), on: layers.aircraft },
+        { id: 'sea', mark: <PinMark shape="sea" tone="ok" fired />, name: 'Incidents at sea · UKMTO', sub: `official notices · fires on one in ${SEA_WINDOW_HOURS} h`, range: layerRangeNote('sea', range), on: layers.sea },
+        { id: 'gps', mark: <HexMark />, name: 'GPS interference · gpsjam.org', sub: 'hexagons · red above 10%', range: layerRangeNote('gps', range), on: layers.gps },
         { id: 'airspace', mark: <AirspaceMark />, name: 'Airspace closures · NOTAM', sub: 'awaiting FAA access', on: null },
       ],
     },
     {
       title: 'Background & judgement',
       rows: [
-        { id: 'conflicts', mark: <UcdpMark />, name: 'Verified · UCDP', sub: `background · weeks behind${ucdpTo}`, on: layers.conflicts },
-        { id: 'hotspots', mark: <Diamond tone="elev" filled={false} size={11} />, name: 'Curated hotspots', sub: 'live score 1–5', on: layers.hotspots },
+        { id: 'conflicts', mark: <UcdpMark />, name: 'Verified · UCDP', sub: `verified background${ucdpTo}`, range: layerRangeNote('conflicts', range), on: layers.conflicts },
+        { id: 'hotspots', mark: <Diamond tone="elev" filled={false} size={11} />, name: 'Curated hotspots', sub: 'live score 1–5', range: layerRangeNote('hotspots', range), on: layers.hotspots },
       ],
     },
     {
@@ -557,6 +566,7 @@ function TimeRangeControl({ value, onChange }: { value: TimeRange; onChange: (ra
             type="button"
             aria-pressed={active}
             onClick={() => onChange(o.value)}
+            title={o.title}
             class={cx('rounded-[4px] px-[7px] py-[3px] font-mono text-[10.5px]', active ? 'bg-surface-2 text-ink' : 'text-dim hover:text-muted')}
           >
             {o.label}
