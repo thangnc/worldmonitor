@@ -48,7 +48,7 @@ import type { ResourceState } from '../src/lite/data/store.ts';
 import { SOURCE_TIERS } from '../server/_shared/source-tiers.ts';
 import { __testing__ as healthTesting } from '../api/health.js';
 import attributionManifest from '../shared/source-attribution-manifest.json' with { type: 'json' };
-import { WORLD_BOUNDS, compactCount, markerBounds, placeCard, ucdpRadius } from '../src/lite/map/view.ts';
+import { AGGREGATE_LABEL_MIN, AGGREGATE_MAX, AGGREGATE_MIN, WORLD_BOUNDS, aggregateDiameter, compactCount, markerBounds, placeCard } from '../src/lite/map/view.ts';
 import type { ListFeedDigestResponse, NewsItem } from '../src/generated/client/worldmonitor/news/v1/service_client.ts';
 import {
   PRIORITY_THRESHOLD,
@@ -419,7 +419,11 @@ describe('Lite conflict map', () => {
     assert.equal(first?.popup.kind, 'UCDP · State-based violence');
     assert.equal(first?.popup.name, 'Yemen (North Yemen)');
     assert.equal(first?.popup.value, '3 deaths');
-    assert.equal(first?.deaths, 3);
+    // The verified background: a faint red aggregate counting deaths, merging by zoom.
+    assert.equal(first?.kind, 'aggregate');
+    assert.equal(first?.count, 3);
+    assert.deepEqual([first?.state, first?.fill], ['crit', 'background']);
+    assert.ok(first?.cluster);
     // The design's event card: actors, then date and coordinates in mono, then small print.
     assert.deepEqual(first?.popup.lines, [
       { text: 'Government of Yemen (North Yemen) vs Forces of the Presidential Leadership Council' },
@@ -558,10 +562,17 @@ describe('Lite hotspot live escalation', () => {
 });
 
 describe('Lite conflict map layout', () => {
-  it('sizes UCDP circles by deaths and labels them compactly', () => {
-    assert.equal(ucdpRadius(0), 6);
-    assert.ok(ucdpRadius(412) > ucdpRadius(58));
-    assert.equal(ucdpRadius(1_000_000), 26);
+  it('sizes aggregates by count on a square-root scale, 12 to 40 px, and labels them compactly', () => {
+    assert.equal(aggregateDiameter(0, 400), AGGREGATE_MIN);
+    assert.equal(aggregateDiameter(400, 400), AGGREGATE_MAX);
+    assert.equal(aggregateDiameter(1_000_000, 400), AGGREGATE_MAX);
+    // Area ∝ count: a quarter of the full count draws at half the full diameter.
+    assert.equal(aggregateDiameter(100, 400), AGGREGATE_MAX / 2);
+    assert.ok(aggregateDiameter(412, 1000) > aggregateDiameter(58, 1000));
+    // The count is printed from 22 px: about 120 UCDP deaths, and 5 aircraft at full size 10.
+    assert.ok(aggregateDiameter(130, 400) >= AGGREGATE_LABEL_MIN);
+    assert.ok(aggregateDiameter(100, 400) < AGGREGATE_LABEL_MIN);
+    assert.ok(aggregateDiameter(5, 10) >= AGGREGATE_LABEL_MIN);
     assert.deepEqual([412, 1200, 6998, 15_400].map(compactCount), ['412', '1.2k', '7k', '15k']);
   });
 
@@ -813,8 +824,8 @@ describe('Lite tech map', async () => {
       { countryCode: 'BR', countryName: 'Brazil', percentage: 5.6, latitude: -10, longitude: -55 },
       { countryCode: 'XX', countryName: 'None', percentage: 0, latitude: 0, longitude: 0 },
     ] }, shapes);
-    assert.deepEqual(fills.features.map((f) => [f.properties.id, f.properties.tone]), [['US', 'tech'], ['BR', 'tech']]);
-    assert.ok(fills.features[0]!.properties.opacity > fills.features[1]!.properties.opacity);
+    // The shared blue ramp, not the Tech violet: the busiest is step 4, half its share step 2.
+    assert.deepEqual(fills.features.map((f) => [f.properties.id, f.properties.tone]), [['US', 'ramp-4'], ['BR', 'ramp-2']]);
     assert.deepEqual(ddosLayer({ protocol: [], vector: [], dateRangeStart: '', dateRangeEnd: '', topTargetLocations: [] }, null).fills.features, []);
     assert.deepEqual(tags.map((t) => t.text), ['US 11.2%', 'BR 5.6%']);
   });
@@ -829,40 +840,55 @@ describe('Lite tech map', async () => {
       { ...threat(0, 0, 'CYBER_THREAT_SOURCE_FEODO'), location: undefined },
     ]);
     assert.equal(hexes.length, 2);
-    assert.equal(hexes[0]!.text, '4');
+    assert.deepEqual([hexes[0]!.kind, hexes[0]!.count, hexes[0]!.state, hexes[0]!.fill], ['aggregate', 4, 'normal', 'reported']);
+    // The busiest cell draws at full size.
+    assert.equal(hexes[0]!.fullAt, 4);
     assert.equal(hexes[0]!.popup.lines[1]!.text, 'Families: QakBot 2, CobaltStrike 1', 'OTX pulse titles are not families');
     assert.equal(hexes[1]!.popup.lines[1]!.text, 'No family named (OTX and AbuseIPDB carry none)');
     assert.match(hexes[0]!.popup.lines.at(-1)!.text, /Not who they hit/);
     // Two cells 9° apart would overlap at world zoom: the smaller joins the busier one, which keeps its place.
     const merged = attackHexes([threat(10, 10, 'CYBER_THREAT_SOURCE_FEODO'), threat(10.5, 10.5, 'CYBER_THREAT_SOURCE_FEODO'), threat(18.5, 10, 'CYBER_THREAT_SOURCE_OTX')]);
     assert.equal(merged.length, 1);
-    assert.equal(merged[0]!.text, '3');
+    assert.equal(merged[0]!.count, 3);
     assert.ok(Math.abs(merged[0]!.lat - 10.25) < 1e-9);
     assert.equal(attackHexes([threat(10, 10, 'CYBER_THREAT_SOURCE_FEODO'), threat(40, 10, 'CYBER_THREAT_SOURCE_FEODO')]).length, 2);
   });
 
-  it('places outages of the last 7 days, hollow once they ended over 24 h ago', () => {
+  it('places outages of the last 7 days as events with the cause glyph, faint once they ended over 24 h ago', () => {
     const markers = outageMarkers([
       outage({ id: 'live' }),
-      outage({ id: 'old', detectedAt: NOW - 3 * 24 * H, endedAt: NOW - 3 * 24 * H + H, severity: 'OUTAGE_SEVERITY_PARTIAL' }),
+      outage({ id: 'major', severity: 'OUTAGE_SEVERITY_MAJOR', cause: 'GOVERNMENT_DIRECTED' }),
+      outage({ id: 'old', detectedAt: NOW - 3 * 24 * H, endedAt: NOW - 3 * 24 * H + H, severity: 'OUTAGE_SEVERITY_PARTIAL', cause: '' }),
       outage({ id: 'gone', detectedAt: NOW - 9 * 24 * H, endedAt: NOW - 9 * 24 * H + H }),
     ], NOW);
-    assert.deepEqual(markers.map((m) => [m.id, m.tone, m.hollow]), [['outage:live', 'crit', false], ['outage:old', 'elev', true]]);
+    // No orange on the map: a major outage is red, a partial one amber.
+    assert.deepEqual(markers.map((m) => [m.id, m.kind, m.glyph, m.state, m.fill]), [
+      ['outage:live', 'event', 'zap', 'crit', 'solid'],
+      ['outage:major', 'event', 'ban', 'crit', 'solid'],
+      ['outage:old', 'event', 'wifi-off', 'elev', 'background'],
+    ]);
   });
 
-  it('turns every region of a provider with an outage amber, and red only when the incident names it', () => {
+  it('draws one cloud asset per city at its worst status, amber on a provider outage and red only when the incident names a region there', () => {
     const regions = [
       { id: 'aws-us-east-1', provider: 'aws' as const, name: 'US East (N. Virginia)', city: 'Ashburn', country: 'USA', lat: 39, lon: -77 },
+      { id: 'gcp-us-east4', provider: 'gcp' as const, name: 'N. Virginia', city: 'Ashburn', country: 'USA', lat: 39, lon: -77 },
       { id: 'aws-eu-west-1', provider: 'aws' as const, name: 'EU (Ireland)', city: 'Dublin', country: 'Ireland', lat: 53, lon: -6 },
       { id: 'gcp-us-central1', provider: 'gcp' as const, name: 'Iowa', city: 'Council Bluffs', country: 'USA', lat: 41, lon: -95 },
     ];
     const status = (id: string, s: string, description = '') => ({ id, name: id, status: s, description, url: '', checkedAt: NOW, latencyMs: 1 }) as Parameters<typeof cloudRegionMarkers>[1][number];
-    const tones = (statuses: Parameters<typeof cloudRegionMarkers>[1]) => cloudRegionMarkers(regions, statuses).map((m) => m.tone);
-    assert.deepEqual(tones([status('aws', 'SERVICE_OPERATIONAL_STATUS_OPERATIONAL')]), ['muted', 'muted', 'muted']);
-    assert.deepEqual(tones([status('aws', 'SERVICE_OPERATIONAL_STATUS_PARTIAL_OUTAGE', 'Recent incidents reported')]), ['elev', 'elev', 'muted']);
-    assert.deepEqual(tones([status('aws', 'SERVICE_OPERATIONAL_STATUS_MAJOR_OUTAGE', 'Increased error rates in us-east-1')]), ['crit', 'elev', 'muted']);
-    assert.equal(incidentNamesRegion(regions[1]!, 'Connectivity issues in Ireland'), true);
-    assert.equal(incidentNamesRegion(regions[2]!, 'Elevated errors'), false);
+    const states = (statuses: Parameters<typeof cloudRegionMarkers>[1]) => cloudRegionMarkers(regions, statuses).map((m) => [m.id, m.state]);
+    assert.deepEqual(states([status('aws', 'SERVICE_OPERATIONAL_STATUS_OPERATIONAL')]), [['cloud:ashburn-usa', 'normal'], ['cloud:dublin-ireland', 'normal'], ['cloud:council-bluffs-usa', 'normal']]);
+    assert.deepEqual(states([status('aws', 'SERVICE_OPERATIONAL_STATUS_PARTIAL_OUTAGE', 'Recent incidents reported')]), [['cloud:ashburn-usa', 'elev'], ['cloud:dublin-ireland', 'elev'], ['cloud:council-bluffs-usa', 'normal']]);
+    assert.deepEqual(states([status('aws', 'SERVICE_OPERATIONAL_STATUS_MAJOR_OUTAGE', 'Increased error rates in us-east-1')]), [['cloud:ashburn-usa', 'crit'], ['cloud:dublin-ireland', 'elev'], ['cloud:council-bluffs-usa', 'normal']]);
+    // Both providers in Ashburn share one asset: both are focus keys and both are listed in the card, the worst first.
+    const [ashburn] = cloudRegionMarkers(regions, [status('aws', 'SERVICE_OPERATIONAL_STATUS_MAJOR_OUTAGE', 'Increased error rates in us-east-1'), status('gcp', 'SERVICE_OPERATIONAL_STATUS_OPERATIONAL')]);
+    assert.deepEqual([ashburn!.kind, ashburn!.glyph], ['asset', 'cloud']);
+    assert.deepEqual(ashburn!.keys, ['provider:aws', 'provider:gcp']);
+    assert.match(ashburn!.popup.lines[0]!.text, /^AWS US East \(N\. Virginia\): incident names this region/);
+    assert.match(ashburn!.popup.lines[1]!.text, /^Google Cloud N\. Virginia: operational/);
+    assert.equal(incidentNamesRegion(regions[2]!, 'Connectivity issues in Ireland'), true);
+    assert.equal(incidentNamesRegion(regions[3]!, 'Elevated errors'), false);
   });
 
   it('marks an AI data centre amber when an internet outage is live in the same country', () => {
@@ -873,7 +899,7 @@ describe('Lite tech map', async () => {
       [outage({})],
       NOW,
     );
-    assert.deepEqual(markers.map((m) => [m.id, m.tone]), [['dc:dc-ye', 'elev'], ['dc:dc-us', 'muted']]);
+    assert.deepEqual(markers.map((m) => [m.id, m.kind, m.glyph, m.state]), [['dc:dc-ye', 'asset', 'cpu', 'elev'], ['dc:dc-us', 'asset', 'cpu', 'normal']]);
   });
 
   it('colours cables by health and pins a card on a degraded or faulted one', () => {
@@ -886,8 +912,75 @@ describe('Lite tech map', async () => {
       },
     });
     assert.deepEqual(lines.features.map((l) => [l.properties.id, l.properties.tone]), [['marea', 'dim'], ['faster', 'crit'], ['peace', 'elev']]);
-    assert.deepEqual(markers.map((m) => [m.id, m.lat, m.lon]), [['cable:faster', 10, 10], ['cable:peace', 10, 10]]);
+    assert.deepEqual(markers.map((m) => [m.id, m.lat, m.lon, m.kind, m.glyph, m.state]), [['cable:faster', 10, 10, 'event', 'cable', 'crit'], ['cable:peace', 10, 10, 'event', 'cable', 'elev']]);
     assert.match(markers[0]!.popup.lines[0]!.text, /NGA: Cable repair ship/);
     assert.deepEqual(cableLayer([cable('marea')], null).markers, [], 'no health data: lines only, no guessed status');
+  });
+});
+
+describe('Lite map marker grammar (design "Spec — Map markers")', async () => {
+  const marks = await import('../src/lite/map/marks.tsx');
+  const { hotspotState, seaIncidentState } = await import('../src/lite/data/geo-layers.ts');
+  const { signalMark, chokepointState, ISSUERS } = await import('../src/lite/data/markets-map.ts');
+  const { rampTone, outageGlyph } = await import('../src/lite/data/tech-map.ts');
+  const { feedsStale } = await import('../src/lite/data/indicators.ts');
+
+  it('carries the spec glyph catalogue, Lucide only, one glyph each', () => {
+    assert.deepEqual(Object.keys(marks.MARK_GLYPHS).sort(), [
+      'activity', 'anchor', 'ban', 'building-2', 'cable', 'chart-candlestick', 'cloud', 'cloud-alert', 'cpu', 'file-text',
+      'flame', 'fuel', 'landmark', 'plane', 'radar', 'shield-alert', 'ship', 'siren', 'wifi-off', 'zap',
+    ]);
+  });
+
+  it('colours every shape by state from the mark tokens, never by domain', () => {
+    const classes = [
+      ...Object.values(marks.EVENT_CLASS).flatMap((byState) => Object.values(byState)),
+      ...Object.values(marks.AGGREGATE_CLASS).flatMap((byState) => Object.values(byState)),
+      ...Object.values(marks.ASSET_CLASS),
+      ...Object.values(marks.JUDGEMENT_BORDER),
+    ].join(' ');
+    assert.doesNotMatch(classes, /\b(?:bg|border|text)-(?:geo|fin|tech|high|ok)\b/);
+    for (const state of marks.MARK_STATES) {
+      // Solid: state fill (the glyph is always dark ink). Reported: 35% fill with the outline. Background: 10% fill, 30% outline.
+      assert.match(marks.EVENT_CLASS.solid[state], new RegExp(`border-mark-${state} bg-mark-${state}$`));
+      assert.match(marks.EVENT_CLASS.reported[state], new RegExp(`border-mark-${state} bg-mark-${state}/35`));
+      assert.match(marks.EVENT_CLASS.background[state], new RegExp(`border-mark-${state}/30 bg-mark-${state}/10`));
+      assert.match(marks.AGGREGATE_CLASS.reported[state], new RegExp(`bg-mark-${state}/20`));
+    }
+    assert.equal(marks.SELECTED_RING, 'ring-2 ring-mark-ring');
+    assert.equal(marks.STALE, 'opacity-45');
+  });
+
+  it('maps each layer onto the grammar states', () => {
+    // Hotspots: 5 red, 3–4 amber (owner, 2026-11-10), below grey.
+    assert.deepEqual(['crit', 'high', 'elev', 'muted'].map((t) => hotspotState(t as Parameters<typeof hotspotState>[0])), ['crit', 'elev', 'elev', 'normal']);
+    // UKMTO: an attack or hijack is red, suspicious activity amber, an advisory grey.
+    assert.deepEqual(['Attack', 'Hijack', 'Explosion near vessel', 'Suspicious Activity', 'Advisory'].map(seaIncidentState), ['crit', 'crit', 'crit', 'elev', 'normal']);
+    assert.deepEqual(['crit', 'elev', 'dim'].map((t) => chokepointState(t as Parameters<typeof chokepointState>[0])), ['crit', 'elev', 'normal']);
+    // Intensity areas: four steps of the shared blue ramp.
+    assert.deepEqual([10, 26, 50, 51, 100].map((share) => rampTone(share, 100)), ['ramp-1', 'ramp-2', 'ramp-2', 'ramp-3', 'ramp-4']);
+    assert.deepEqual(['POWER_OUTAGE', 'CABLE CUT', 'GOVERNMENT_DIRECTED', 'MILITARY_ACTION', 'CYBER_ATTACK', 'WEATHER', ''].map(outageGlyph), ['zap', 'cable', 'ban', 'flame', 'shield-alert', 'wifi-off', 'wifi-off']);
+  });
+
+  it('draws a fired finance signal as an amber event and a quiet one as an asset', () => {
+    const signal = (feedId: string, fired: boolean) => ({ feedId, text: feedId, fired });
+    assert.deepEqual(signalMark({ issuer: ISSUERS.fed!, signals: [signal('treasury', true)], fired: true }), { kind: 'event', glyph: 'landmark', state: 'elev' });
+    assert.deepEqual(signalMark({ issuer: ISSUERS.nyse!, signals: [signal('sec-8k', true)], fired: true }), { kind: 'event', glyph: 'file-text', state: 'elev' });
+    assert.deepEqual(signalMark({ issuer: ISSUERS.london!, signals: [signal('freight-bdi', true)], fired: true }), { kind: 'event', glyph: 'chart-candlestick', state: 'elev' });
+    assert.deepEqual(signalMark({ issuer: ISSUERS.ecb!, signals: [signal('other-bonds', false)], fired: false }), { kind: 'asset', glyph: 'landmark', state: 'normal' });
+    assert.deepEqual(signalMark({ issuer: ISSUERS.nyse!, signals: [signal('sec-8k', false)], fired: false }), { kind: 'asset', glyph: 'building-2', state: 'normal' });
+  });
+
+  it('draws a layer stale only when all of its feeds are late', async () => {
+    const state = (kind: 'stale' | 'quiet') => ({ kind, id: kind, name: kind, detail: '' });
+    assert.equal(feedsStale([state('stale')]), true);
+    assert.equal(feedsStale([state('stale'), state('quiet')]), false);
+    assert.equal(feedsStale([]), false);
+    // A finance pin is stale when every feed behind it is late.
+    const { signalPins } = await import('../src/lite/data/markets-map.ts');
+    const late = { kind: 'stale' as const, id: 'treasury', name: 'Treasury', detail: '' };
+    const live = { kind: 'quiet' as const, id: 'macro-print', name: 'Macro', detail: '' };
+    assert.deepEqual(signalPins([late], [], 10).map((p) => [p.id, p.stale]), [['signal:fed', true]]);
+    assert.deepEqual(signalPins([late, live], [], 10).map((p) => [p.id, p.stale]), [['signal:fed', false]]);
   });
 });

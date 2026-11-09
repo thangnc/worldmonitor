@@ -15,6 +15,7 @@ import type { BondMove } from './finance-macro-indicators';
 import type { FeedState, Indicator } from './indicators';
 import type { PriceBoard } from './prices';
 import type { Tone } from './transforms';
+import type { MarkGlyph, MarkState } from '../map/marks';
 
 export interface Issuer {
   id: string;
@@ -64,6 +65,8 @@ export interface PinSignal {
   text: string;
   fired: boolean;
   indicator?: Indicator;
+  /** The feed is late. */
+  stale?: boolean;
 }
 
 export interface SignalPin {
@@ -71,6 +74,23 @@ export interface SignalPin {
   issuer: Issuer;
   signals: PinSignal[];
   fired: boolean;
+  /** Every feed behind the pin is late: the marker draws at 45% opacity. */
+  stale: boolean;
+}
+
+const CENTRAL_BANK_ISSUERS = new Set(['fed', 'ecb', 'boe', 'boj']);
+
+/**
+ * The pin's mark (spec grammar): a fired signal is an amber event, an 8-K
+ * with the filing glyph, a central bank with the landmark, an exchange with
+ * the candlestick; a quiet pin is an asset, the landmark for a central bank
+ * and the financial-centre building for an exchange.
+ */
+export function signalMark(pin: Pick<SignalPin, 'issuer' | 'signals' | 'fired'>): { kind: 'event' | 'asset'; glyph: MarkGlyph; state: MarkState } {
+  const bank = CENTRAL_BANK_ISSUERS.has(pin.issuer.id);
+  if (!pin.fired) return { kind: 'asset', glyph: bank ? 'landmark' : 'building-2', state: 'normal' };
+  const filing = pin.signals.some((s) => s.fired && s.feedId === 'sec-8k');
+  return { kind: 'event', glyph: filing ? 'file-text' : bank ? 'landmark' : 'chart-candlestick', state: 'elev' };
 }
 
 /** The pin id a feed's card focuses, or null for a feed with no place. */
@@ -102,7 +122,7 @@ export function signalPins(feeds: readonly FeedState[], bonds: readonly BondMove
     const issuer = FEED_ISSUER[feed.id];
     if (!issuer || feed.kind === 'loading') continue;
     if (feed.kind === 'fired') add(issuer, { feedId: feed.id, text: feed.reading ?? `${feed.indicator.value} ${feed.indicator.change ?? ''}`.trim(), fired: true, indicator: feed.indicator });
-    else add(issuer, { feedId: feed.id, text: feed.kind === 'quiet' ? feed.reading ?? feed.name : `${feed.name} · ${feed.kind}`, fired: false });
+    else add(issuer, { feedId: feed.id, text: feed.kind === 'quiet' ? feed.reading ?? feed.name : `${feed.name} · ${feed.kind}`, fired: false, stale: feed.kind === 'stale' });
   }
   const bondFeed = feeds.find((f) => f.id === 'other-bonds');
   for (const move of bonds) {
@@ -110,14 +130,14 @@ export function signalPins(feeds: readonly FeedState[], bonds: readonly BondMove
     if (!market) continue;
     const fired = Math.abs(move.moveBp) + 1e-9 >= bondThresholdBp;
     const indicator = fired && bondFeed?.kind === 'fired' && bondFeed.indicator.name.endsWith(`· ${move.country}`) ? bondFeed.indicator : undefined;
-    add(market.issuer, { feedId: 'other-bonds', text: `${market.bond} 10y ${move.level.toFixed(2)}% ${bp(move.moveBp)}`, fired, indicator });
+    add(market.issuer, { feedId: 'other-bonds', text: `${market.bond} 10y ${move.level.toFixed(2)}% ${bp(move.moveBp)}`, fired, indicator, stale: bondFeed?.kind === 'stale' });
   }
   const pins: SignalPin[] = [];
   for (const [id, signals] of byIssuer) {
     const issuer = ISSUERS[id];
     if (!issuer) continue;
     signals.sort((a, b) => Number(b.fired) - Number(a.fired));
-    pins.push({ id: `signal:${id}`, issuer, signals, fired: signals.some((s) => s.fired) });
+    pins.push({ id: `signal:${id}`, issuer, signals, fired: signals.some((s) => s.fired), stale: signals.every((s) => s.stale) });
   }
   return pins;
 }
@@ -143,6 +163,11 @@ export interface ChokepointPin {
 /** Red at a disruption score of 50 or more (status `red`), amber at 20. */
 export function chokepointTone(status: string): Tone {
   return status === 'red' ? 'crit' : status === 'yellow' ? 'elev' : 'dim';
+}
+
+/** The chokepoint asset's state: red when an incident is linked (status red), amber at 20, else grey. */
+export function chokepointState(tone: Tone): MarkState {
+  return tone === 'crit' ? 'crit' : tone === 'elev' ? 'elev' : 'normal';
 }
 
 const titleCase = (s: string) => s.toLowerCase().replace(/\b\p{L}/gu, (c) => c.toUpperCase());

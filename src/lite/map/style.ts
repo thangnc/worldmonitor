@@ -22,13 +22,11 @@ export interface LiteMapTokens {
   surface: string;
   track: string;
   dim: string;
-  /** Reported-violence shading steps 1–4. */
-  violence: readonly [string, string, string, string];
-  /** Context overlays: amber for disrupted lanes and new sanctions, red for incidents. */
+  /** The shared blue intensity ramp, steps 1–4: reported violence and DDoS shading. */
+  ramp: readonly [string, string, string, string];
+  /** State colours for status areas and lines: amber for disrupted lanes and new sanctions, red for incidents. */
   elev: string;
   crit: string;
-  /** Technology overlays: DDoS target shading. */
-  tech: string;
 }
 
 // Mirrors src/lite/lite.css. Used only when the CSS variables are not
@@ -38,26 +36,24 @@ const FALLBACK_TOKENS: LiteMapTokens = {
   surface: '#111419',
   track: '#2e3540',
   dim: '#5f6874',
-  violence: ['#1f3a5c', '#24508a', '#2f6fc4', '#5b9cf0'],
+  ramp: ['#26385a', '#3e6bb0', '#7fb2ff', '#cfe2ff'],
   elev: '#e8c547',
   crit: '#f2555a',
-  tech: '#b18cff',
 };
 
 /** Reads the Lite `@theme` colors from CSS variables. */
 export function readLiteMapTokens(root: Element = document.documentElement): LiteMapTokens {
   const css = getComputedStyle(root);
   const read = (name: string, fallback: string) => css.getPropertyValue(`--color-${name}`).trim() || fallback;
-  const v = FALLBACK_TOKENS.violence;
+  const r = FALLBACK_TOKENS.ramp;
   return {
     bg: read('bg', FALLBACK_TOKENS.bg),
     surface: read('surface', FALLBACK_TOKENS.surface),
     track: read('track', FALLBACK_TOKENS.track),
     dim: read('dim', FALLBACK_TOKENS.dim),
-    elev: read('elev', FALLBACK_TOKENS.elev),
-    crit: read('crit', FALLBACK_TOKENS.crit),
-    tech: read('tech', FALLBACK_TOKENS.tech),
-    violence: [read('violence-1', v[0]), read('violence-2', v[1]), read('violence-3', v[2]), read('violence-4', v[3])],
+    elev: read('mark-elev', FALLBACK_TOKENS.elev),
+    crit: read('mark-crit', FALLBACK_TOKENS.crit),
+    ramp: [read('ramp-1', r[0]), read('ramp-2', r[1]), read('ramp-3', r[2]), read('ramp-4', r[3])],
   };
 }
 
@@ -73,7 +69,7 @@ export const COUNTRY_CODE_PROPERTY = 'ISO3166-1-Alpha-2';
  * over the map stays a Preact element.
  */
 export function countryFillLayer(tokens: LiteMapTokens = FALLBACK_TOKENS) {
-  const [s1, s2, s3, s4] = tokens.violence;
+  const [s1, s2, s3, s4] = tokens.ramp;
   return {
     id: COUNTRY_FILL_LAYER,
     type: 'fill' as const,

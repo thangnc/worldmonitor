@@ -288,13 +288,17 @@ describe('Lite UI shell', () => {
     const { INTEL_HOTSPOTS } = await import('../../src/config/geo');
     const drawn = [...root.querySelectorAll('[data-marker]')].map((m) => m.getAttribute('data-marker'));
     expect(drawn.sort()).toEqual(INTEL_HOTSPOTS.map((h) => `hotspot:${h.id}`).sort());
-    const large = [...root.querySelectorAll('[data-marker]')].filter((m) => (m.querySelector('span.rotate-45') as HTMLElement | null)?.style.width === '12px').map((m) => m.getAttribute('data-marker'));
+    // Every hotspot is a 16 px judgement diamond; from 3/5 it is amber and drawn above the aggregates.
+    expect([...root.querySelectorAll('[data-marker^="hotspot:"] [data-mark-kind]')].every((m) => m.getAttribute('data-mark-kind') === 'judgement')).toBe(true);
+    const large = [...root.querySelectorAll('[data-marker][data-named="true"]')].map((m) => m.getAttribute('data-marker'));
     expect(large).toHaveLength(2);
     expect(large.sort()).toEqual(INTEL_HOTSPOTS.filter((h) => h.name === 'Horn of Africa' || h.name === "Sana'a").map((h) => `hotspot:${h.id}`).sort());
     expect([...root.querySelectorAll('[data-marker^="hotspot:"]')].every((m) => m.textContent === '')).toBe(true);
     expect(root.querySelector('[data-marker="hotspot:kyiv"] button')?.getAttribute('aria-label')).toContain('live escalation 2.4/5, watch');
     const diamond = root.querySelector('[data-marker="hotspot:sanaa"] button') as HTMLButtonElement;
     expect(diamond.getAttribute('aria-label')).toContain('live escalation 2.6/5, elevated');
+    expect(root.querySelector('[data-marker="hotspot:sanaa"] [data-mark-kind]')?.getAttribute('data-mark-state')).toBe('elev');
+    expect(root.querySelector('[data-marker="hotspot:kyiv"] [data-mark-kind]')?.getAttribute('data-mark-state')).toBe('normal');
 
     // No card until the diamond is clicked; then that hotspot's live score.
     expect(root.querySelector('[data-map-popup]')).toBeNull();
@@ -691,10 +695,15 @@ describe('Lite indicator card', () => {
         expect(map().querySelector('[data-marker="outage:cf-1"]')).not.toBeNull();
         expect(map().querySelector('[data-marker^="attack:"]')).not.toBeNull();
         expect(map().querySelector('[data-marker="ddos:US"]')).not.toBeNull();
-        expect(map().querySelector('[data-marker^="cloud:aws:"]')).not.toBeNull();
+        expect(map().querySelector('[data-marker^="cloud:"]')).not.toBeNull();
       }, { timeout: 10_000, interval: 50 });
       // Nothing opens by itself: no names beside the glyphs, no card, and the legend waits behind its button.
       expect(map().querySelector('[data-marker="outage:cf-1"]')?.textContent).toBe('');
+      // The grammar: an outage is an event with its cause glyph, attack servers a grey aggregate, cloud regions assets.
+      const mark = (sel: string) => map().querySelector(`${sel} [data-mark-kind]`);
+      expect([mark('[data-marker="outage:cf-1"]')?.getAttribute('data-mark-kind'), mark('[data-marker="outage:cf-1"]')?.getAttribute('data-mark-glyph')]).toEqual(['event', 'zap']);
+      expect([mark('[data-marker^="attack:"]')?.getAttribute('data-mark-kind'), mark('[data-marker^="attack:"]')?.getAttribute('data-mark-state')]).toEqual(['aggregate', 'normal']);
+      expect(mark('[data-marker^="cloud:"]')?.getAttribute('data-mark-kind')).toBe('asset');
       expect(map().querySelector('[data-map-popup]')).toBeNull();
       expect(map().querySelector('[data-testid="infra-map-legend"]')).toBeNull();
       await act(() => (map().querySelector('[data-testid="infra-map-legend-toggle"]') as HTMLButtonElement).click());
@@ -710,7 +719,8 @@ describe('Lite indicator card', () => {
       }, { timeout: 10_000, interval: 50 });
       expect(__fake.last.layers.map((l) => l.id)).toEqual(expect.arrayContaining(['lite-fills', 'lite-lines']));
       expect(__fake.last.sources.get('lite-lines')?.data.features.length).toBeGreaterThan(50);
-      expect(__fake.last.sources.get('lite-fills')?.data.features[0]?.properties.tone).toBe('tech');
+      // The shared blue ramp, not the Tech violet.
+      expect(__fake.last.sources.get('lite-fills')?.data.features[0]?.properties.tone).toBe('ramp-4');
 
       // The layers popover turns a layer off and back on.
       await act(() => (map().querySelector('[data-testid="layers-chip"]') as HTMLButtonElement).click());
@@ -729,11 +739,12 @@ describe('Lite indicator card', () => {
       await flush();
       expect(map().querySelector('[data-map-popup="outage:cf-1"]')?.textContent).toContain('Yemen');
 
-      // A provider outage opens the card of that provider's first region (Cloudflare's ids are cf-*), shown amber: no region named.
+      // A provider outage opens the card of that provider's worst city, shown amber: no region named.
       const service = root.querySelector('[data-testid="tech-indicators"] button[data-indicator="service-outage"]') as HTMLButtonElement;
       await act(() => service.click());
       await flush();
-      const regionCard = map().querySelector('[data-map-popup^="cloud:cloudflare:"]') as HTMLElement;
+      const regionCard = map().querySelector('[data-map-popup^="cloud:"]') as HTMLElement;
+      expect(regionCard?.textContent).toContain('Cloudflare');
       expect(regionCard?.textContent).toContain('Degraded');
       expect(regionCard?.textContent).toContain('Partial System Outage');
     } finally {
@@ -1026,16 +1037,21 @@ describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS inte
       expect(panel().querySelector('[data-feed="airspace"]')?.getAttribute('data-feed-state')).toBe('unavailable');
       expect(panel().querySelector('[data-feed="airspace"]')?.textContent).toContain('Awaiting FAA access');
 
-      // Map: six aircraft, the badge on Kyiv, the ship mark.
-      expect(root.querySelectorAll('[data-marker^="aircraft:"]')).toHaveLength(6);
-      expect(root.querySelector('[data-marker="hotspot:kyiv"] [data-aircraft-badge]')?.textContent).toContain('6');
-      expect(root.querySelector('[data-marker="sea:u1"]')).not.toBeNull();
+      // Map: six aircraft near Kyiv collapse into one aggregate with the count; the ship is an event in its state colour.
+      expect(root.querySelectorAll('[data-marker^="aircraft:"]')).toHaveLength(0);
+      const group = root.querySelector('[data-marker="aircraft-group:kyiv"] [data-mark-kind]');
+      expect([group?.getAttribute('data-mark-kind'), group?.getAttribute('data-mark-fill'), group?.textContent]).toEqual(['aggregate', 'reported', '6']);
+      const ship = root.querySelector('[data-marker="sea:u1"] [data-mark-kind]');
+      expect([ship?.getAttribute('data-mark-kind'), ship?.getAttribute('data-mark-glyph'), ship?.getAttribute('data-mark-fill'), ship?.getAttribute('data-mark-state')]).toEqual(['event', 'ship', 'solid', 'crit']);
+      expect(ship?.classList.contains('ring-2')).toBe(false);
 
       // A sea card opens its marker's card on the map.
       await act(() => (panel().querySelector('[data-indicator="sea:u1"]') as HTMLButtonElement).click());
       await flush();
       expect(root.querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe('sea:u1');
       expect(root.querySelector('[data-map-popup]')?.textContent).toContain('Incident at sea · UKMTO');
+      // Selected: the 2 px white ring.
+      expect(root.querySelector('[data-marker="sea:u1"] [data-mark-kind]')?.className).toContain('ring-2 ring-mark-ring');
 
       // The popover: three groups, N/A rows, the range footer.
       await act(() => (root.querySelector('[data-testid="layers-chip"]') as HTMLButtonElement).click());
@@ -1059,10 +1075,9 @@ describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS inte
       expect(note('aircraft')).toBe('positions now; the range does not apply');
       await act(() => ([...root.querySelectorAll('[data-testid="time-range"] button')].find((b) => b.textContent === '7d') as HTMLButtonElement).click());
 
-      // Military aircraft off: pins and badge go. Shipping lanes on: lines appear.
+      // Military aircraft off: the aggregate goes. Shipping lanes on: lines appear.
       await act(() => (popover.querySelector('[data-layer-row="aircraft"] [role="switch"]') as HTMLButtonElement).click());
-      expect(root.querySelectorAll('[data-marker^="aircraft:"]')).toHaveLength(0);
-      expect(root.querySelector('[data-aircraft-badge]')).toBeNull();
+      expect(root.querySelectorAll('[data-marker^="aircraft"]')).toHaveLength(0);
       await act(() => (root.querySelector('[data-testid="layers-popover"] [data-layer-row="lanes"] [role="switch"]') as HTMLButtonElement).click());
       await flush();
       expect(maplib.__FakeMap.last?.sources.get('lite-lines')?.data.features.length).toBeGreaterThan(0);

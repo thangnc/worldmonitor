@@ -2,13 +2,25 @@ import { render, type ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { GeoJSONSource, Map as MapLibreMap, Marker as MapLibreMarker } from 'maplibre-gl';
 import Supercluster from 'supercluster';
-import { Locate, Minus, Plane, Plus, Ship, X } from 'lucide-preact';
-import type { Tone } from '../data/transforms';
+import { Locate, Minus, Plus, X } from 'lucide-preact';
 import { OverlayScroll } from '../components/scroll';
-import { BG, BORDER, TEXT, cx } from '../components/ui';
+import { cx } from '../components/ui';
 import { COUNTRY_CODE_PROPERTY, COUNTRY_FILL_LAYER, COUNTRY_FILL_SOURCE, MAP_CREDITS, buildLiteMapStyle, countryFillLayer, readLiteMapTokens } from './style';
 import { getCountriesGeoJson } from '@/services/country-geometry';
-import { LABEL_MIN_RADIUS, WORLD_BOUNDS, compactCount, markerBounds, placeCard, ucdpRadius } from './view';
+import { WORLD_BOUNDS, markerBounds, placeCard } from './view';
+import {
+  AggregateMark,
+  AssetMark,
+  EventMark,
+  JudgementMark,
+  SELECTED_RING,
+  STALE,
+  STATE_BG,
+  STATE_TEXT,
+  type MarkFill,
+  type MarkGlyph,
+  type MarkState,
+} from './marks';
 
 /**
  * The Lite map: MapLibre on OpenFreeMap vector tiles, styled from the Lite
@@ -18,10 +30,11 @@ import { LABEL_MIN_RADIUS, WORLD_BOUNDS, compactCount, markerBounds, placeCard, 
  * fills) is drawn as MapLibre layers under the labels, coloured from the same
  * tokens.
  *
- * UCDP locations cluster by zoom (supercluster), sized by deaths; clicking a
- * cluster zooms in until it splits. Curated hotspots are diamonds with a name.
- * Pins (Finance signals, chokepoints, financial centres) are never clustered.
- * Clicking a location or hotspot opens one card beside it, joined by a leader
+ * Every marker uses the one grammar in ./marks.tsx: events, assets,
+ * aggregates and judgements, coloured by state. Aggregates marked `cluster`
+ * (UCDP locations) merge by zoom (supercluster), summing their count; clicking
+ * a merged circle zooms in until it splits. Nothing else is clustered.
+ * Clicking a marker opens one card beside it, joined by a leader
  * line; clicking the map, the close button or Escape closes it. MapLibre is
  * loaded on first use, so the other Lite screens never download it.
  */
@@ -51,48 +64,55 @@ interface MarkerBase {
   /** Hover text and the marker button's accessible name. */
   title: string;
   popup: MapCard;
-}
-
-export interface UcdpMarker extends MarkerBase {
-  kind: 'ucdp';
-  /** Best-estimate deaths at this location; sizes the circle. */
-  deaths: number;
-}
-
-export interface HotspotMarker extends MarkerBase {
-  kind: 'hotspot';
-  tone: Tone;
-  /** A larger diamond drawn above UCDP circles (3/5 or more); the name is in the card. */
-  named: boolean;
-  /** Military aircraft near the hotspot, drawn as a "✈ N" chip when the indicator fired. */
-  badge?: number;
-}
-
-export interface PinMarker extends MarkerBase {
-  kind: 'pin';
-  /**
-   * `signal`: a dot, filled when fired; `chokepoint`: a ring; `centre`: a small
-   * square, context only; `aircraft`: a plane turned to its heading; `sea`: a
-   * ship (an incident at sea).
-   */
-  shape: 'signal' | 'chokepoint' | 'centre' | 'aircraft' | 'sea';
-  /** Degrees from north, for `aircraft`. */
-  heading?: number;
-  tone: Tone;
-  fired: boolean;
-  /** Pixel nudge for a pin that would sit on a neighbour at world zoom (Fed and NYSE). */
+  /** The layer's feed is late: the marker draws at 45% opacity. */
+  stale?: boolean;
+  /** Pixel nudge for a marker that would sit on a neighbour at world zoom (Fed and NYSE). */
   nudge?: [number, number];
 }
 
-/** Technology layer marks: attack-server hexagons, outage dots, cloud-region squares, data-centre sites, tags. */
-export interface GlyphMarker extends MarkerBase {
-  kind: 'glyph';
-  shape: 'hex' | 'dot' | 'square' | 'site' | 'tag';
-  tone: GlyphTone;
-  /** Inside the glyph: a count on a hexagon, the text of a tag. */
-  text?: string;
-  /** Outline only: an ended outage, a quiet region. */
-  hollow?: boolean;
+/** One thing happened here: a sea incident, an outage, a fired signal (spec grammar: event). */
+export interface EventMarker extends MarkerBase {
+  kind: 'event';
+  glyph: MarkGlyph;
+  state: MarkState;
+  fill: MarkFill;
+}
+
+/** A place we watch: a cloud region, a data centre, a chokepoint, a bank (spec grammar: asset). */
+export interface AssetMarker extends MarkerBase {
+  kind: 'asset';
+  glyph: MarkGlyph;
+  state: MarkState;
+  /** Context only: drawn without a card (financial centres). */
+  inert?: boolean;
+  /** Other keys an indicator may focus this marker by, e.g. each cloud provider in a city. */
+  keys?: readonly string[];
+}
+
+/** Many things: a count in a circle, area ∝ count (spec grammar: aggregate). */
+export interface AggregateMarker extends MarkerBase {
+  kind: 'aggregate';
+  count: number;
+  /** The count at which the circle reaches its 40 px maximum. */
+  fullAt: number;
+  state: MarkState;
+  fill: 'reported' | 'background';
+  /** Nearby ones merge by zoom, summing `count` (UCDP locations); a click on a merged circle zooms in. */
+  cluster?: { noun: string; unit: string };
+}
+
+/** An analyst's call: a curated hotspot (spec grammar: judgement). */
+export interface JudgementMarker extends MarkerBase {
+  kind: 'judgement';
+  state: MarkState;
+  /** 3/5 or more: drawn above aggregates; below it the grey diamond sits under them. */
+  named: boolean;
+}
+
+/** A short label for one of the top few by impact (DDoS share). */
+export interface LabelMarker extends MarkerBase {
+  kind: 'label';
+  text: string;
 }
 
 /** A shaded country the user clicked; its card sits at the click point. */
@@ -102,14 +122,13 @@ export interface CountryMarker extends MarkerBase {
 
 type ShownMarker = MapMarker | CountryMarker;
 
-export type GlyphTone = Tone | 'tech';
-
-export type MapMarker = UcdpMarker | HotspotMarker | PinMarker | GlyphMarker;
+export type MapMarker = EventMarker | AssetMarker | AggregateMarker | JudgementMarker | LabelMarker;
 
 /**
- * Lines and fills drawn under the labels, coloured by each feature's `tone`
- * (elev, crit, tech; anything else is the track grey). A fill feature may set
- * `opacity` (default 0.14), as the DDoS shading does by share of traffic.
+ * Lines and fills drawn under the labels, coloured by each feature's `tone`:
+ * a state (elev, crit; anything else is the track grey) or a step of the
+ * shared blue ramp (ramp-1 to ramp-4) for an intensity area. A fill feature
+ * may set `opacity` (default 0.14), as the DDoS ramp does.
  */
 export interface MapOverlays {
   lines?: { type: 'FeatureCollection'; features: unknown[] };
@@ -148,175 +167,61 @@ function loadMapLibre(): Promise<MapLibre> {
   return libPromise;
 }
 
-/** A UCDP location or cluster: red, sized by deaths, the toll printed once it fits. */
-function UcdpCircle({ deaths, label, selected, onClick }: { deaths: number; label: string; selected: boolean; onClick: () => void }) {
-  const r = ucdpRadius(deaths);
+function MarkButton({ title, selected, onClick, children }: { title: string; selected: boolean; onClick: () => void; children: ComponentChildren }) {
+  // No name chip beside the mark: what it stands for opens in its card on click.
   return (
     <button
       type="button"
-      aria-label={label}
+      aria-label={title}
       aria-expanded={selected}
-      title={label}
-      class={cx(
-        'flex cursor-pointer items-center justify-center rounded-full font-mono font-semibold text-ink',
-        selected ? 'border-2 border-ink/80 bg-crit' : 'border border-crit/80 bg-crit/25 hover:bg-crit/40',
-      )}
-      style={{ width: r * 2, height: r * 2, fontSize: r >= 18 ? 11 : 10 }}
+      title={title}
+      class="pointer-events-auto flex cursor-pointer"
       onClick={(e) => {
         // Keep the click off the map, which would close the card again.
         e.stopPropagation();
         onClick();
       }}
     >
-      {r >= LABEL_MIN_RADIUS ? compactCount(deaths) : null}
+      {children}
     </button>
   );
 }
 
-/** The curated-hotspot mark, shared with the map legend. */
-export function Diamond({ tone, filled, size = 12 }: { tone: Tone; filled: boolean; size?: number }) {
-  return (
-    <span class="relative flex shrink-0 items-center justify-center" style={{ width: size * 1.5, height: size * 1.5 }} aria-hidden="true">
-      <span class={cx('absolute rotate-45 border-2', BORDER[tone], filled ? BG[tone] : 'bg-bg/70')} style={{ width: size, height: size }} />
-      {filled ? null : <span class={cx('relative h-[4px] w-[4px] rounded-full', BG[tone])} />}
-    </span>
-  );
-}
-
-function HotspotPin({ marker, selected, onClick }: { marker: HotspotMarker; selected: boolean; onClick: () => void }) {
-  // Only the diamond takes clicks: the aircraft badge beside it lets clicks
-  // through, so a UCDP circle under it stays clickable. No name chip: the
-  // name opens in the card on click.
-  return (
-    <div class="pointer-events-none flex items-center gap-[5px]">
-      <button
-        type="button"
-        aria-label={marker.title}
-        aria-expanded={selected}
-        title={marker.title}
-        class="pointer-events-auto flex cursor-pointer"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick();
-        }}
-      >
-        {/* A fixed 18 px box, so the marker's offset puts every diamond's centre on its point. */}
-        <span class="flex h-[18px] w-[18px] items-center justify-center">
-          <Diamond tone={marker.tone} filled={selected} size={marker.named ? 12 : 9} />
+/** The mark alone, in the shared grammar (./marks.tsx). */
+function MarkerMark({ marker, selected }: { marker: MapMarker; selected: boolean }) {
+  const stale = marker.stale;
+  switch (marker.kind) {
+    case 'event':
+      return <EventMark glyph={marker.glyph} state={marker.state} fill={marker.fill} selected={selected} stale={stale} />;
+    case 'asset':
+      return <AssetMark glyph={marker.glyph} state={marker.state} selected={selected} stale={stale} />;
+    case 'aggregate':
+      return <AggregateMark count={marker.count} fullAt={marker.fullAt} state={marker.state} fill={marker.fill} selected={selected} stale={stale} />;
+    case 'judgement':
+      return <JudgementMark state={marker.state} selected={selected} stale={stale} />;
+    case 'label':
+      return (
+        <span class={cx('whitespace-nowrap rounded-[3px] border border-line bg-bg/85 px-[5px] py-px font-mono text-[10px] leading-[14px] text-ink', selected && SELECTED_RING, stale && STALE)}>
+          {marker.text}
         </span>
-      </button>
-      {marker.badge ? (
-        <span class="flex items-center gap-[3px] rounded-[5px] bg-ink px-[5px] py-px font-mono text-[10.5px] font-semibold leading-4 text-bg" data-aircraft-badge={marker.badge}>
-          <Plane size={10} strokeWidth={2} aria-hidden="true" />
-          {marker.badge}
-        </span>
-      ) : null}
-    </div>
-  );
+      );
+  }
 }
 
-const PIN_DOT: Readonly<Record<Tone, string>> = {
-  crit: 'border-crit', high: 'border-high', elev: 'border-elev', ok: 'border-ok', muted: 'border-muted', dim: 'border-dim',
-};
-
-/** The signal, chokepoint and centre marks, shared with the map legend. */
-export function PinMark({ shape, tone, fired, heading }: { shape: PinMarker['shape']; tone: Tone; fired: boolean; heading?: number }) {
-  if (shape === 'centre') return <span class="block h-[5px] w-[5px] bg-dim" aria-hidden="true" />;
-  // lucide's plane points north-east, so a heading of 45° draws it as is.
-  if (shape === 'aircraft') {
-    return <Plane size={12} strokeWidth={1.75} class="block text-ink/80" style={{ transform: `rotate(${(heading ?? 45) - 45}deg)` }} aria-hidden="true" />;
+/** Events on top, then assets and named hotspots, aggregates, and grey hotspots at the bottom; labels above all. */
+function markerLayer(m: MapMarker): string {
+  switch (m.kind) {
+    case 'label':
+      return 'z-[4]';
+    case 'event':
+      return 'z-[3]';
+    case 'asset':
+      return 'z-[2]';
+    case 'judgement':
+      return m.named ? 'z-[2]' : 'z-0';
+    case 'aggregate':
+      return 'z-[1]';
   }
-  if (shape === 'sea') {
-    return (
-      <span class={cx('flex h-[16px] w-[16px] items-center justify-center rounded-[4px] border bg-bg', fired ? 'border-ok text-ok' : 'border-dim text-dim')} aria-hidden="true">
-        <Ship size={11} strokeWidth={1.75} />
-      </span>
-    );
-  }
-  if (shape === 'chokepoint') {
-    return <span class={cx('block h-[11px] w-[11px] rounded-full border-2', PIN_DOT[tone], tone === 'dim' ? 'bg-bg/70' : 'bg-bg')} aria-hidden="true" />;
-  }
-  // Finance signals always take the Finance domain colour.
-  return fired ? (
-    <span class="block h-[11px] w-[11px] rounded-full border-2 border-ink/80 bg-fin" aria-hidden="true" />
-  ) : (
-    <span class="block h-[11px] w-[11px] rounded-full border-2 border-fin bg-bg" aria-hidden="true" />
-  );
-}
-
-function Pin({ marker, selected, onClick }: { marker: PinMarker; selected: boolean; onClick: () => void }) {
-  if (marker.shape === 'centre') {
-    return <span class="flex h-[16px] w-[16px] items-center justify-center" title={marker.title}><PinMark shape="centre" tone="dim" fired={false} /></span>;
-  }
-  // No name chip beside the mark: what a pin says opens in its card on click.
-  return (
-    <button
-      type="button"
-      aria-label={marker.title}
-      aria-expanded={selected}
-      title={marker.title}
-      class={cx('pointer-events-auto flex h-[16px] w-[16px] cursor-pointer items-center justify-center rounded-full', selected && 'ring-2 ring-ink/60')}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-    >
-      <PinMark shape={marker.shape} tone={marker.tone} fired={marker.fired} heading={marker.heading} />
-    </button>
-  );
-}
-
-// Written out in full so Tailwind sees every class (rule: lite-profile.md).
-const TONE_TEXT: Record<GlyphTone, string> = { ...TEXT, tech: 'text-tech' };
-const TONE_BG: Record<GlyphTone, string> = { ...BG, tech: 'bg-tech' };
-const TONE_BORDER: Record<GlyphTone, string> = { ...BORDER, tech: 'border-tech' };
-const TONE_FILL: Record<GlyphTone, string> = {
-  crit: 'bg-crit/30', high: 'bg-high/30', elev: 'bg-elev/30', ok: 'bg-ok/30', muted: 'bg-muted/20', dim: 'bg-dim/20', tech: 'bg-tech/30',
-};
-
-/** The glyph box width, so the mark (not its label) sits on the point. */
-export function glyphWidth(shape: GlyphMarker['shape']): number {
-  return shape === 'hex' ? 24 : shape === 'tag' ? 0 : 18;
-}
-
-/** The mark alone, shared with the map legend. */
-export function GlyphMark({ shape, tone, text, hollow, selected = false }: Pick<GlyphMarker, 'shape' | 'tone' | 'text' | 'hollow'> & { selected?: boolean }) {
-  if (shape === 'hex') {
-    return (
-      <span class="relative flex h-[26px] w-[24px] items-center justify-center">
-        <svg viewBox="0 0 24 26" class={cx('absolute inset-0 h-full w-full', TONE_TEXT[tone])} aria-hidden="true">
-          <polygon points="12,1 23,7 23,19 12,25 1,19 1,7" fill="var(--color-bg)" fill-opacity="0.9" stroke="currentColor" stroke-width={selected ? 2.5 : 1.5} />
-        </svg>
-        <span class="relative font-mono text-[9.5px] font-semibold text-ink">{text}</span>
-      </span>
-    );
-  }
-  if (shape === 'tag') {
-    return <span class={cx('whitespace-nowrap rounded-[3px] border bg-bg/85 px-[5px] py-px font-mono text-[10px] leading-[14px]', TONE_BORDER[tone], TONE_TEXT[tone], selected && 'bg-surface-2')}>{text}</span>;
-  }
-  const inner = shape === 'site'
-    ? <span class={cx('flex h-[14px] w-[14px] items-center justify-center rounded-[3px] border bg-bg/85', TONE_BORDER[tone], selected && 'border-2')}><span class={cx('h-[6px] w-[6px] rounded-[1px]', TONE_BG[tone])} /></span>
-    : <span class={cx('border', shape === 'dot' ? 'h-[12px] w-[12px] rounded-full' : 'h-[9px] w-[9px] rounded-[2px]', TONE_BORDER[tone], hollow ? 'bg-bg/70' : shape === 'dot' ? TONE_BG[tone] : TONE_FILL[tone], selected && 'border-2 border-ink')} />;
-  return <span class="flex h-[18px] w-[18px] items-center justify-center" aria-hidden="true">{inner}</span>;
-}
-
-function Glyph({ marker, selected, onClick }: { marker: GlyphMarker; selected: boolean; onClick: () => void }) {
-  // No name beside the glyph: what it stands for opens in its card on click.
-  return (
-    <button
-      type="button"
-      aria-label={marker.title}
-      aria-expanded={selected}
-      title={marker.title}
-      class="pointer-events-auto flex cursor-pointer"
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-    >
-      <GlyphMark shape={marker.shape} tone={marker.tone} text={marker.text} hollow={marker.hollow} selected={selected} />
-    </button>
-  );
 }
 
 const LINE_CLASS: Record<NonNullable<CardLine['style']> | 'text', string> = {
@@ -327,17 +232,17 @@ const LINE_CLASS: Record<NonNullable<CardLine['style']> | 'text', string> = {
 
 function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => void }) {
   const { kind, name, value, lines, score, body } = marker.popup;
-  const tone: GlyphTone = marker.kind === 'ucdp' || marker.kind === 'country' ? 'crit' : marker.tone;
+  const state: MarkState = marker.kind === 'country' || marker.kind === 'label' ? 'normal' : marker.state;
   const country = marker.kind === 'country';
-  const text = country ? 'text-reported' : TONE_TEXT[tone];
+  const text = country ? 'text-reported' : STATE_TEXT[state];
   const content = (
     <>
       <div class="flex items-center justify-between gap-2">
         <span class={cx('flex min-w-0 items-center gap-[7px] font-mono text-[10px] font-semibold tracking-[1px] uppercase', text)}>
-          {marker.kind === 'hotspot' ? (
-            <Diamond tone={marker.tone} filled={false} size={8} />
+          {marker.kind === 'judgement' ? (
+            <JudgementMark state={state} size={11} />
           ) : (
-            <span class={cx('h-[7px] w-[7px] shrink-0', country ? 'rounded-[2px] bg-violence-3' : cx('rounded-full', TONE_BG[tone]))} />
+            <span class={cx('h-[7px] w-[7px] shrink-0', country ? 'rounded-[2px] bg-ramp-2' : cx('rounded-full', STATE_BG[state]))} />
           )}
           <span class="truncate">{kind}</span>
         </span>
@@ -353,7 +258,7 @@ function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => 
           {score != null ? (
             <span class="flex gap-[2px]" aria-hidden="true">
               {[1, 2, 3, 4, 5].map((i) => (
-                <span key={i} class={cx('h-[11px] w-[6px] rounded-[1px]', i <= Math.round(score) ? TONE_BG[tone] : 'bg-track')} />
+                <span key={i} class={cx('h-[11px] w-[6px] rounded-[1px]', i <= Math.round(score) ? STATE_BG[state] : 'bg-track')} />
               ))}
             </span>
           ) : null}
@@ -387,7 +292,7 @@ function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => 
 
 type Shown =
   | { type: 'marker'; marker: MapMarker }
-  | { type: 'cluster'; id: string; clusterId: number; lat: number; lon: number; deaths: number; count: number };
+  | { type: 'cluster'; id: string; clusterId: number; lat: number; lon: number; total: number; count: number; like: AggregateMarker };
 
 export function LiteMap({
   markers,
@@ -430,41 +335,44 @@ export function LiteMap({
   boundsRef.current = bounds;
   const boundsKey = bounds.flat().map((v) => v.toFixed(1)).join(',');
 
-  const ucdp = useMemo(() => markers.filter((m): m is UcdpMarker => m.kind === 'ucdp'), [markers]);
-  const hotspots = useMemo(() => markers.filter((m): m is HotspotMarker | PinMarker | GlyphMarker => m.kind !== 'ucdp'), [markers]);
+  const clustered = useMemo(() => markers.filter((m): m is AggregateMarker => m.kind === 'aggregate' && Boolean(m.cluster)), [markers]);
+  const single = useMemo(() => markers.filter((m) => !(m.kind === 'aggregate' && m.cluster)), [markers]);
   const byId = useMemo(() => new Map(markers.map((m) => [m.id, m])), [markers]);
 
   const index = useMemo(() => {
-    const cluster = new Supercluster<{ id: string; deaths: number }, { deaths: number }>({
+    const cluster = new Supercluster<{ id: string; total: number }, { total: number }>({
       radius: 52,
       maxZoom: CLUSTER_MAX_ZOOM,
-      map: (p) => ({ deaths: p.deaths }),
+      map: (p) => ({ total: p.total }),
       reduce: (acc, p) => {
-        acc.deaths += p.deaths;
+        acc.total += p.total;
       },
     });
     cluster.load(
-      ucdp.map((m) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [m.lon, m.lat] }, properties: { id: m.id, deaths: m.deaths } })),
+      clustered.map((m) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [m.lon, m.lat] }, properties: { id: m.id, total: m.count } })),
     );
     return cluster;
-  }, [ucdp]);
+  }, [clustered]);
 
   const shown = useMemo((): Shown[] => {
     const out: Shown[] = [];
     const z = Math.max(0, Math.floor(view.zoom));
-    for (const f of index.getClusters([view.west, view.south, view.east, view.north], z)) {
-      const [lon = 0, lat = 0] = f.geometry.coordinates;
-      const p = f.properties as { cluster?: boolean; cluster_id?: number; point_count?: number; deaths: number; id?: string };
-      if (p.cluster && p.cluster_id != null) {
-        out.push({ type: 'cluster', id: `ucdp-cluster:${p.cluster_id}`, clusterId: p.cluster_id, lat, lon, deaths: p.deaths, count: p.point_count ?? 0 });
-      } else if (p.id) {
-        const marker = byId.get(p.id);
-        if (marker) out.push({ type: 'marker', marker });
+    const like = clustered[0];
+    if (like) {
+      for (const f of index.getClusters([view.west, view.south, view.east, view.north], z)) {
+        const [lon = 0, lat = 0] = f.geometry.coordinates;
+        const p = f.properties as { cluster?: boolean; cluster_id?: number; point_count?: number; total: number; id?: string };
+        if (p.cluster && p.cluster_id != null) {
+          out.push({ type: 'cluster', id: `cluster:${p.cluster_id}`, clusterId: p.cluster_id, lat, lon, total: p.total, count: p.point_count ?? 0, like });
+        } else if (p.id) {
+          const marker = byId.get(p.id);
+          if (marker) out.push({ type: 'marker', marker });
+        }
       }
     }
-    for (const h of hotspots) out.push({ type: 'marker', marker: h });
+    for (const m of single) out.push({ type: 'marker', marker: m });
     return out;
-  }, [index, view, hotspots, byId]);
+  }, [index, view, clustered, single, byId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -597,61 +505,48 @@ export function LiteMap({
     for (const s of shown) {
       const id = s.type === 'cluster' ? s.id : s.marker.id;
       const lngLat: [number, number] = s.type === 'cluster' ? [s.lon, s.lat] : [s.marker.lon, s.marker.lat];
-      const hotspot = s.type === 'marker' && s.marker.kind !== 'ucdp';
       let entry = onMap.get(id);
       if (!entry) {
         const el = document.createElement('div');
-        // The diamond, not its name, sits on the point (anchor left, offset by half the 18 px box).
         if (s.type === 'cluster') el.dataset.cluster = String(s.count);
         else el.dataset.marker = id;
-        const pin = s.type === 'marker' && s.marker.kind === 'pin' ? s.marker : null;
-        const [dx, dy] = pin?.nudge ?? [0, 0];
-        const glyph = s.type === 'marker' && s.marker.kind === 'glyph' ? s.marker : null;
-        const offset: [number, number] = [(glyph ? -glyphWidth(glyph.shape) / 2 : pin ? -8 : -9) + dx, dy];
-        // A tag sits just above its point, so it never hides the mark there.
-        const options = glyph?.shape === 'tag'
+        // Every mark is centred on its point; a label sits just above it, so it never hides the mark there.
+        const options = s.type === 'marker' && s.marker.kind === 'label'
           ? { element: el, anchor: 'bottom' as const, offset: [0, -10] as [number, number] }
-          : hotspot ? { element: el, anchor: 'left' as const, offset } : { element: el };
+          : { element: el, offset: s.type === 'marker' ? s.marker.nudge : undefined };
         entry = { marker: new lib.Marker(options).setLngLat(lngLat).addTo(map), el };
         onMap.set(id, entry);
       } else {
         entry.marker.setLngLat(lngLat);
       }
       // Set on every render: a hotspot's level, and so its layer, can change on refresh.
-      // Named hotspots draw above UCDP circles; grey unnamed ones below, so they never cover a death count.
-      // A hotspot's element spans its name too, so only the diamond button inside takes clicks.
-      // Pins: signals and sea incidents on top, chokepoints over lanes, centres and aircraft at the bottom.
-      const named = s.type === 'marker' && s.marker.kind === 'hotspot' && s.marker.named;
-      // Glyphs: tags on top (they are small and sit above their point), then attack hexagons.
-      const pinLayer = s.type === 'marker' && s.marker.kind === 'pin'
-        ? s.marker.shape === 'signal' ? (s.marker.fired ? 'z-[3]' : 'z-[2]')
-          : s.marker.shape === 'sea' ? 'z-[3]'
-          : s.marker.shape === 'chokepoint' ? 'z-[1]' : 'z-0'
-        : s.type === 'marker' && s.marker.kind === 'glyph'
-          ? s.marker.shape === 'tag' ? 'z-[3]' : s.marker.shape === 'hex' ? 'z-[2]' : 'z-[1]'
-          : null;
-      entry.el.classList.remove('z-0', 'z-[1]', 'z-[2]', 'z-[3]', 'pointer-events-none');
-      entry.el.classList.add(pinLayer ?? (!hotspot ? 'z-[1]' : named ? 'z-[2]' : 'z-0'));
-      if (hotspot) entry.el.classList.add('pointer-events-none');
+      entry.el.classList.remove('z-0', 'z-[1]', 'z-[2]', 'z-[3]', 'z-[4]');
+      entry.el.classList.add(s.type === 'cluster' ? 'z-[1]' : markerLayer(s.marker));
+      if (s.type === 'marker' && s.marker.kind === 'judgement') entry.el.dataset.named = String(s.marker.named);
       if (s.type === 'cluster') {
         const zoomIn = () => {
           const zoom = Math.min(MAP_MAX_ZOOM, index.getClusterExpansionZoom(s.clusterId));
           map.easeTo({ center: [s.lon, s.lat], zoom });
         };
-        const label = `${s.count} UCDP locations, ${s.deaths.toLocaleString('en-US')} deaths. Zoom in`;
-        render(<UcdpCircle deaths={s.deaths} label={label} selected={false} onClick={zoomIn} />, entry.el);
+        const { noun, unit } = s.like.cluster!;
+        const label = `${s.count} ${noun}, ${s.total.toLocaleString('en-US')} ${unit}. Zoom in`;
+        render(
+          <MarkButton title={label} selected={false} onClick={zoomIn}>
+            <AggregateMark count={s.total} fullAt={s.like.fullAt} state={s.like.state} fill={s.like.fill} stale={s.like.stale} />
+          </MarkButton>,
+          entry.el,
+        );
       } else {
         const m = s.marker;
-        const toggle = () => setSelected((cur) => (cur === m.id ? null : m.id));
+        const isSelected = selected === m.id;
+        const mark = <MarkerMark marker={m} selected={isSelected} />;
         render(
-          m.kind === 'hotspot' ? (
-            <HotspotPin marker={m} selected={selected === m.id} onClick={toggle} />
-          ) : m.kind === 'pin' ? (
-            <Pin marker={m} selected={selected === m.id} onClick={toggle} />
-          ) : m.kind === 'glyph' ? (
-            <Glyph marker={m} selected={selected === m.id} onClick={toggle} />
+          m.kind === 'asset' && m.inert ? (
+            <span class="flex" title={m.title}>{mark}</span>
           ) : (
-            <UcdpCircle deaths={m.deaths} label={m.title} selected={selected === m.id} onClick={toggle} />
+            <MarkButton title={m.title} selected={isSelected} onClick={() => setSelected((cur) => (cur === m.id ? null : m.id))}>
+              {mark}
+            </MarkButton>
           ),
           entry.el,
         );
@@ -690,7 +585,8 @@ export function LiteMap({
     const map = mapRef.current;
     if (status !== 'ready' || !map) return;
     const tokens = readLiteMapTokens();
-    const toneColor = ['match', ['get', 'tone'], 'elev', tokens.elev, 'crit', tokens.crit, 'tech', tokens.tech, tokens.track] as unknown as string;
+    const [r1, r2, r3, r4] = tokens.ramp;
+    const toneColor = ['match', ['get', 'tone'], 'elev', tokens.elev, 'crit', tokens.crit, 'ramp-1', r1, 'ramp-2', r2, 'ramp-3', r3, 'ramp-4', r4, tokens.track] as unknown as string;
     const empty = { type: 'FeatureCollection' as const, features: [] };
     const sync = () => {
       const fills = (overlays?.fills ?? empty) as GeoJSON.FeatureCollection;

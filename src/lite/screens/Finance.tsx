@@ -5,7 +5,8 @@ import { Topbar, matchesSearch } from '../components/Topbar';
 import { Card, ColLabel, DerivedTag, Panel, SourceState, cx } from '../components/ui';
 import { HealthDots, IndicatorCard, IndicatorFeed } from '../components/indicator';
 import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
-import { LiteMap, PinMark, type MapMarker } from '../map/LiteMap';
+import { LiteMap, type MapMarker } from '../map/LiteMap';
+import { AssetMark, EventMark, LineSwatch, StatusAreaSwatch, SwatchRun } from '../map/marks';
 import { LegendRow, MapLegend } from '../map/legend';
 import {
   selectMarketEvents,
@@ -33,10 +34,12 @@ import { MACRO_RULES, YIELD_MOVE_BP, bondMoves, financeMacroFeeds, macroValue, s
 import {
   FINANCIAL_CENTRE_POINTS,
   chokepointPins,
+  chokepointState,
   newSanctionCountries,
   pinIdForFeed,
   sanctionFills,
   shippingLanes,
+  signalMark,
   signalPins,
 } from '../data/markets-map';
 import { PRICE_LINK_RULE, eventTag, geoCause, linkPriceMoves, priceMoveLabel } from '../data/prices';
@@ -202,13 +205,13 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
     const out: MapMarker[] = [];
     if (layers.centres) {
       for (const c of FINANCIAL_CENTRE_POINTS) {
-        out.push({ kind: 'pin', shape: 'centre', tone: 'dim', fired: false, id: c.id, lat: c.lat, lon: c.lon, title: `${c.name} · financial centre`, popup: { kind: 'Financial centre', name: c.name, value: '', lines: [] } });
+        out.push({ kind: 'asset', glyph: 'building-2', state: 'normal', inert: true, id: c.id, lat: c.lat, lon: c.lon, title: `${c.name} · financial centre`, popup: { kind: 'Financial centre', name: c.name, value: '', lines: [] } });
       }
     }
     if (layers.chokepoints) {
       for (const c of chokes) {
         out.push({
-          kind: 'pin', shape: 'chokepoint', tone: c.tone, fired: c.tone !== 'dim', id: c.id, lat: c.lat, lon: c.lon,
+          kind: 'asset', glyph: 'anchor', state: chokepointState(c.tone), id: c.id, lat: c.lat, lon: c.lon,
           title: `${c.name} · ${c.info ? c.status : 'no status read'}`,
           popup: {
             kind: 'Chokepoint',
@@ -228,10 +231,11 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
     if (layers.signals) {
       for (const p of pins) {
         const fired = p.signals.filter((s) => s.fired && s.indicator);
+        const mark = signalMark(p);
+        // New York sits on Washington at world zoom: lift the NYSE mark clear of the Fed's.
+        const at = { id: p.id, lat: p.issuer.lat, lon: p.issuer.lon, stale: p.stale, nudge: p.issuer.id === 'nyse' ? ([6, -14] as [number, number]) : undefined };
         out.push({
-          kind: 'pin', shape: 'signal', tone: 'muted', fired: p.fired, id: p.id, lat: p.issuer.lat, lon: p.issuer.lon,
-          // New York sits on Washington at world zoom: lift the NYSE pin clear of the Fed's.
-          nudge: p.issuer.id === 'nyse' ? [6, -14] : undefined,
+          ...(mark.kind === 'event' ? { kind: 'event' as const, glyph: mark.glyph, state: mark.state, fill: 'solid' as const, ...at } : { kind: 'asset' as const, glyph: mark.glyph, state: mark.state, ...at }),
           title: `${p.issuer.short} · ${p.signals.map((s) => s.text).join(' · ')}`,
           popup: {
             kind: p.issuer.name,
@@ -266,24 +270,24 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
       title: 'Signals',
       note: 'where issued',
       rows: [
-        { id: 'signals', mark: <PinMark shape="signal" tone="muted" fired />, name: 'Finance signals', sub: `${fired} fired · ${pins.length - fired} quiet · crypto stays off the map`, on: layers.signals },
-        { id: 'chokepoints', mark: <PinMark shape="chokepoint" tone="crit" fired />, name: 'Chokepoints', sub: 'red at disruption score 50 · with the price it moves', on: layers.chokepoints },
-        { id: 'geo', mark: <MapPin size={14} class="text-geo" aria-hidden="true" />, name: 'Market-moving geopolitics', sub: 'arrives with the Geopolitics indicators (step 2)', on: null },
+        { id: 'signals', mark: <EventMark glyph="landmark" state="elev" />, name: 'Finance signals', sub: `${fired} fired · ${pins.length - fired} quiet · crypto stays off the map`, on: layers.signals },
+        { id: 'chokepoints', mark: <AssetMark glyph="anchor" state="crit" />, name: 'Chokepoints', sub: 'red at disruption score 50 · with the price it moves', on: layers.chokepoints },
+        { id: 'geo', mark: <EventMark glyph="flame" state="crit" />, name: 'Market-moving geopolitics', sub: 'arrives with the Geopolitics indicators (step 2)', on: null },
       ],
     },
     {
       title: 'Context',
       note: 'optional',
       rows: [
-        { id: 'lanes', mark: <span class="block h-[2px] w-4 bg-elev" aria-hidden="true" />, name: 'Shipping lanes', sub: 'amber = disrupted, high risk or via a red chokepoint', on: layers.lanes },
+        { id: 'lanes', mark: <LineSwatch state="elev" />, name: 'Shipping lanes', sub: 'amber = disrupted, high risk or via a red chokepoint', on: layers.lanes },
         {
-          id: 'sanctions', mark: <span class="block h-[10px] w-[14px] border border-elev bg-elev/15" aria-hidden="true" />, name: 'New sanctions',
+          id: 'sanctions', mark: <StatusAreaSwatch state="elev" />, name: 'New sanctions',
           sub: sanctions.status === 'ready'
             ? `${sanctioned.size ? `${sanctioned.size} countr${sanctioned.size === 1 ? 'y' : 'ies'}` : 'none'} in OFAC data to ${dayMonthUtc(Number(sanctions.data.datasetDate) || sanctions.data.datasetDate)}`
             : 'OFAC · seed-sanctions-pressure',
           on: layers.sanctions,
         },
-        { id: 'centres', mark: <PinMark shape="centre" tone="dim" fired={false} />, name: 'Financial centres', sub: 'context only', on: layers.centres },
+        { id: 'centres', mark: <AssetMark glyph="building-2" state="normal" />, name: 'Financial centres', sub: 'context only', on: layers.centres },
       ],
     },
   ];
@@ -303,11 +307,11 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
       <div class="relative h-[320px] border-t border-line md:h-[400px]">
         <LiteMap markers={markers} fit="world" overlays={overlays} focusId={focus} onSelect={(id) => { if (!id) onFocus(null); }} />
         <MapLegend testId="markets-legend" collapsible>
-          <LegendRow mark={<span class="flex gap-[3px]"><PinMark shape="signal" tone="muted" fired /><PinMark shape="signal" tone="muted" fired={false} /></span>} name="Finance signals" note="fired · quiet" />
-          <LegendRow mark={<span class="flex gap-[3px]"><PinMark shape="chokepoint" tone="dim" fired={false} /><PinMark shape="chokepoint" tone="crit" fired /></span>} name="Chokepoints" note="red = disrupted" />
-          <LegendRow mark={<span class="flex gap-[3px]"><span class="mt-[5px] block h-[2px] w-[10px] bg-track" /><span class="mt-[5px] block h-[2px] w-[10px] bg-elev" /></span>} name="Shipping lanes" note="amber = at risk" />
-          <LegendRow mark={<span class="block h-[10px] w-[14px] border border-elev bg-elev/15" />} name="New sanctions" note="by country" />
-          <LegendRow mark={<PinMark shape="centre" tone="dim" fired={false} />} name="Financial centres" note="context only" />
+          <LegendRow mark={<SwatchRun><AssetMark glyph="landmark" state="normal" /><EventMark glyph="landmark" state="elev" /></SwatchRun>} name="Finance signals" note="quiet · fired" />
+          <LegendRow mark={<SwatchRun><AssetMark glyph="anchor" state="normal" /><AssetMark glyph="anchor" state="elev" /><AssetMark glyph="anchor" state="crit" /></SwatchRun>} name="Chokepoints" note="red = incident linked" />
+          <LegendRow mark={<SwatchRun><LineSwatch state="normal" /><LineSwatch state="elev" /></SwatchRun>} name="Shipping lanes" note="amber = at risk" />
+          <LegendRow mark={<StatusAreaSwatch state="elev" />} name="New sanctions" note="by country" />
+          <LegendRow mark={<AssetMark glyph="building-2" state="normal" />} name="Financial centres" note="context only" />
         </MapLegend>
         {failed.length ? (
           <span class="absolute right-3 top-10 z-[4] rounded-[4px] bg-surface/90 px-2 py-px text-[10.5px] text-dim">Unavailable: {failed.join(', ')}</span>

@@ -108,6 +108,11 @@ export function feedState(input: {
   return { kind: 'quiet', id, name, detail: `Live · no trigger${updated}` };
 }
 
+/** A layer's feeds are all late: its map markers draw at 45% opacity. */
+export function feedsStale(feeds: readonly FeedState[]): boolean {
+  return feeds.length > 0 && feeds.every((f) => f.kind === 'stale');
+}
+
 const ORDER: Readonly<Record<FeedKind, number>> = { fired: 0, quiet: 1, stale: 2, unavailable: 3, loading: 4 };
 
 /** Fired first (newest first), then quiet, stale and unavailable. */
