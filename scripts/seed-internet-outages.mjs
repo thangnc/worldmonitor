@@ -9,6 +9,7 @@ import {
   resolveSeedMetaTtl,
 } from './_seed-utils.mjs';
 import { COUNTRY_COORDS, mapTrafficAnomaly, toEpochMs } from './lib/radar-country-coords.mjs';
+import { getOptionalUpstashCreds, upstashCommand } from './_upstash-rest.mjs';
 
 loadEnvFile(import.meta.url);
 
@@ -20,6 +21,9 @@ const DDOS_KEY = 'cf:radar:ddos:v1';
 // 24 h, so its 6h/24h/7d range shades real windows (owner's decision,
 // 2026-11-10). Each window is a fresh snapshot, never a history.
 const DDOS_WINDOWS_KEY = 'cf:radar:ddos-windows:v1';
+// Durable (no TTL): api/health.js grants the new key its pre-activation grace
+// until this exists, then grades it strictly (ACTIVATION_MARKERS.ddosWindows).
+const DDOS_WINDOWS_ACTIVATION_KEY = 'seed-activated:cf:radar:ddos-windows';
 const TRAFFIC_ANOMALIES_KEY = 'cf:radar:traffic-anomalies:v1';
 const CACHE_TTL = 10800; // 3h — 6x the 30 min cron interval (was 1x = key expired on any missed run)
 const DDOS_TTL = 10800;
@@ -324,6 +328,7 @@ const COMPANIONS = [
     label: 'DDoS windows',
     key: DDOS_WINDOWS_KEY,
     ttlSeconds: DDOS_TTL,
+    activationKey: DDOS_WINDOWS_ACTIVATION_KEY,
     fetch: (token) => fetchDdosWindows(token),
     // A quiet window has no target rows; that is a confirmed empty result, not a failure.
     recordCount: (data) => Object.values(data.windows).reduce((n, w) => n + w.topTargetLocations.length, 0),
@@ -338,6 +343,21 @@ const COMPANIONS = [
     recordCount: (data) => data.totalCount,
   },
 ];
+
+/**
+ * Mark a companion's first confirmed publish. Written only after the payload
+ * and its clock landed, so health never leaves its pre-activation grace for a
+ * key that was never published. A failed write is logged and retried next run.
+ */
+async function writeActivationMarker(key) {
+  try {
+    const creds = getOptionalUpstashCreds();
+    if (!creds) return;
+    await upstashCommand(creds, ['SET', key, '1']);
+  } catch (err) {
+    console.warn(`  WARN: ${key} activation marker write failed: ${err?.message || err}`);
+  }
+}
 
 /** The seed-meta key writeExtraKeyWithMeta derives for a companion. */
 function companionMetaKey(companion) {
@@ -400,6 +420,7 @@ async function runCompanion(companion, token) {
       return { published: true, clockAdvanced: false };
     }
     console.log(`  CF Radar ${companion.label}: published ${recordCount} record(s)`);
+    if (companion.activationKey) await writeActivationMarker(companion.activationKey);
     return { published: true, clockAdvanced: true };
   } catch (err) {
     console.warn(`  CF Radar ${companion.label} update failed: ${err?.message || err}`);

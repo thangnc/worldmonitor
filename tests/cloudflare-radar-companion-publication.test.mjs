@@ -684,6 +684,33 @@ test('when every DDoS window fails, last-good windows and their clock are retain
   assert.ok(JSON.parse(run.store.get(DDOS_KEY)).topTargetLocations.length, 'the 7d DDoS key is independent of the windows');
 });
 
+test('the DDoS windows activation marker is written only after a confirmed publish', () => {
+  const ok = runSeeder({ plan: { payload: 'full' } });
+  assert.equal(ok.store.get('seed-activated:cf:radar:ddos-windows'), '1');
+  assert.ok(!ok.redisCommands.some((c) => c[0] === 'SET' && c[1] === 'seed-activated:cf:radar:ddos-windows' && c.length > 3), 'durable: no TTL');
+  const failed = runSeeder({ plan: { payload: 'full', target6h: 'http-503', target24h: 'http-503' } });
+  assert.equal(failed.store.get('seed-activated:cf:radar:ddos-windows'), undefined, 'no marker without a published window');
+});
+
+test('health gives the DDoS windows grace only before activation, then grades them strictly', () => {
+  const run = runSeeder({ plan: { payload: 'full' } });
+  const vanished = new Map(run.store);
+  vanished.delete(DDOS_WINDOWS_KEY);
+  const grade = (activated, meta) => health.classifyKey('ddosWindows', DDOS_WINDOWS_KEY, { allowOnDemand: true }, {
+    keyStrens: new Map(),
+    keyErrors: new Map(),
+    keyMetaErrors: new Map(),
+    keyMetaValues: new Map([[DDOS_WINDOWS_META_KEY, meta]]),
+    activationStates: new Map([['ddosWindows', activated]]),
+    now: NOW + 1_000,
+  }).status;
+  // Deployed before the first seed: no payload, no clock, no marker.
+  assert.match(grade(false, undefined), /ON_DEMAND/, 'no alarm before the first publish');
+  // Once activated, a vanished payload under a fresh clock is a failure, never softened.
+  assert.doesNotMatch(grade(true, vanished.get(DDOS_WINDOWS_META_KEY)), /ON_DEMAND|^OK$/);
+  assert.doesNotMatch(grade(true, undefined), /ON_DEMAND|^OK$/, 'and so is a seeder that stopped after activation');
+});
+
 test('health grades the DDoS windows strictly: a published key is OK, a vanished one under a fresh clock is a failure', () => {
   const run = runSeeder({ plan: { payload: 'full' } });
   assert.equal(classifyCompanion('ddosWindows', DDOS_WINDOWS_KEY, DDOS_WINDOWS_META_KEY, run.store).status, 'OK');

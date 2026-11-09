@@ -2488,7 +2488,13 @@ const SEED_META = {
     cutover: { mode: 'activation-marker', fromKey: null, issue: 10051, activationKey: 'seed-activated:energy:regional-ursea' } },
   cryptoSectors:        { key: 'seed-meta:market:crypto-sectors',             maxStaleMin: 120 }, // relay loop every ~30min; 120min = 2h = 4x interval
   ddosAttacks:          { key: 'seed-meta:cf:radar:ddos',                    maxStaleMin: 60 }, // seed-internet-outages publishes the payload before advancing this clock; outages cron ~15min; 60 = 4x interval
-  ddosWindows:          { key: 'seed-meta:cf:radar:ddos-windows',            maxStaleMin: 60 }, // the same seed-internet-outages companion path as ddosAttacks; TTL 3h > 60
+  // The same seed-internet-outages companion path as ddosAttacks (TTL 3h > 60).
+  // On-demand until the seeder writes its activation marker, then strict.
+  ddosWindows: {
+    key: 'seed-meta:cf:radar:ddos-windows', maxStaleMin: 60,
+    activationKey: 'seed-activated:cf:radar:ddos-windows',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 53, activationKey: 'seed-activated:cf:radar:ddos-windows' },
+  },
   economicStress:       { key: 'seed-meta:economic:stress-index',            maxStaleMin: 180 }, // computed in seed-economy afterPublish; cron ~1h; 180min = 3x interval
   marketImplications:   {
     key: 'seed-meta:intelligence:market-implications',
@@ -2768,6 +2774,8 @@ const ON_DEMAND_KEYS = new Set([
   'gdeltConflictCounts',
   // Written by scripts/fetch-gpsjam.mjs after the high-cells publish.
   'gpsHighCells',
+  // Written by scripts/seed-internet-outages.mjs after the DDoS windows publish.
+  'ddosWindows',
   // Written by scripts/seed-tension-evidence.mjs after each publish.
   'tensionEvidence',
   // Relay strike-pressure tally: the marker is written after its first healthy publish.
@@ -2992,6 +3000,7 @@ const ACTIVATION_MARKERS = {
   gdeltCountryEvents: SEED_META.gdeltCountryEvents.activationKey,
   gdeltConflictCounts: SEED_META.gdeltConflictCounts.activationKey,
   gpsHighCells: SEED_META.gpsHighCells.activationKey,
+  ddosWindows: SEED_META.ddosWindows.activationKey,
   // Written by scripts/ais-relay.cjs after the first healthy strike-pressure publish.
   strikePressure: 'seed-activated:conflict:strike-pressure',
   // Written by scripts/ais-relay.cjs after the first healthy digest warm cycle.
