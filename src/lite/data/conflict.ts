@@ -11,7 +11,8 @@ import { HOTSPOT_COUNTRY_MAP } from '../../../shared/hotspot-country-map';
 import type { Hotspot } from '@/types';
 import type { FeedState, Indicator } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews } from './news-link';
-import type { LiteItem, TimeRange, Tone } from './transforms';
+import type { EscalationRegion } from './regions';
+import type { GeoRegion, LiteItem, TimeRange, Tone } from './transforms';
 
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
@@ -280,11 +281,15 @@ export function violenceFeeds(
   return [{ kind: 'quiet', id, name, detail: `No country at ${VIOLENCE_RULE}` }];
 }
 
-export interface HotspotTile {
+export interface RegionTile {
   id: string;
   name: string;
+  /** The region selector's area that holds this region. */
+  area: Exclude<GeoRegion, 'all'>;
   level: string;
   tone: Tone;
+  /** The region's highest-scoring curated hotspot, which sets the level; null when none is scored. */
+  lead: { name: string; score: number } | null;
   /** Reports in the last 24 complete hours against the 7-day daily average, in %; null when unknown. */
   change: number | null;
   /** Daily reports, 14 days through today (today partial). */
@@ -297,33 +302,48 @@ function hotspotCountries(id: string): string[] {
 }
 
 /**
- * The region strip: the five curated hotspots with the highest live score,
- * each with its level, the change in GDELT reports for its countries (last 24
- * complete hours against the 7-day daily average) and 14 daily bars. A
- * negative change reads "Easing" whatever the level.
+ * The region strip (owner's decision, 2026-11-10): one tile per named region,
+ * in list order. The level is the highest live score among the curated
+ * hotspots in the region's countries, so a tile matches the diamonds on the
+ * map. The change sums GDELT reports over the region's countries (last 24
+ * complete hours against the 7-day daily average), with 14 daily bars. A
+ * negative change reads "Easing" whatever the level; any incomplete hour in
+ * the 24 leaves the change unknown, never calm.
  */
-export function hotspotStrip(
+export function regionStrip(
+  regions: ReadonlyArray<Pick<EscalationRegion, 'id' | 'name' | 'countries' | 'area'>>,
   scored: ReadonlyArray<{ hotspot: Pick<Hotspot, 'id' | 'name'>; score: number; level: { tone: Tone; label: string } }>,
   counts: ConflictCounts | null,
   now: number,
-  max = 5,
-): HotspotTile[] {
-  return [...scored]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, max)
-    .map(({ hotspot, level }) => {
-      const codes = hotspotCountries(hotspot.id);
-      let change: number | null = null;
-      let bars: number[] = [];
-      if (counts && codes.length) {
-        const hours = hoursBefore(counts, now, 24);
-        const normal = dailyNormal(counts, codes, now);
-        if (normal != null && normal > 0 && hours.every((h) => (h.bucket?.cohorts ?? 0) >= counts.cohortsPerHour)) {
-          change = ((sumCountries(hours.map((h) => h.bucket), codes) - normal) / normal) * 100;
-        }
-        bars = daysThrough(counts, now, 14).map((d) => sumCountries([d.bucket], codes));
+): RegionTile[] {
+  return regions.map((region) => {
+    const codes = new Set(region.countries);
+    let top: (typeof scored)[number] | null = null;
+    for (const s of scored) {
+      if (!hotspotCountries(s.hotspot.id).some((c) => codes.has(c))) continue;
+      if (!top || s.score > top.score) top = s;
+    }
+    let change: number | null = null;
+    let bars: number[] = [];
+    if (counts) {
+      const hours = hoursBefore(counts, now, 24);
+      const normal = dailyNormal(counts, region.countries, now);
+      if (normal != null && normal > 0 && hours.every((h) => (h.bucket?.cohorts ?? 0) >= counts.cohortsPerHour)) {
+        change = ((sumCountries(hours.map((h) => h.bucket), region.countries) - normal) / normal) * 100;
       }
-      const easing = change != null && change < 0;
-      return { id: hotspot.id, name: hotspot.name, level: easing ? 'Easing' : level.label, tone: easing ? 'muted' : level.tone, change, bars };
-    });
+      bars = daysThrough(counts, now, 14).map((d) => sumCountries([d.bucket], region.countries));
+    }
+    const easing = change != null && change < 0;
+    const level = top ? top.level : { tone: 'muted' as const, label: 'No score' };
+    return {
+      id: region.id,
+      name: region.name,
+      area: region.area,
+      level: easing ? 'Easing' : level.label,
+      tone: easing ? 'muted' : level.tone,
+      lead: top ? { name: top.hotspot.name, score: top.score } : null,
+      change,
+      bars,
+    };
+  });
 }

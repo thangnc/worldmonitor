@@ -46,9 +46,9 @@ import {
   conflictHistogram,
   countryName,
   countryShading,
-  hotspotStrip,
+  regionStrip,
   violenceFeeds,
-  type HotspotTile,
+  type RegionTile,
 } from '../data/conflict';
 import { feedCounts, sortFeeds, type FeedState } from '../data/indicators';
 import { LINK_WINDOW_HOURS, linkNews } from '../data/news-link';
@@ -99,16 +99,14 @@ const RANGE_PURPOSE: Record<TimeRange, string> = {
 };
 const TIME_RANGE_OPTIONS = (Object.keys(TIME_RANGE_HOURS) as TimeRange[]).map((value) => ({ value, label: value, title: RANGE_PURPOSE[value] }));
 
-/**
- * Escalation regions. The card follows the first listed country that has a
- * CII score; CII covers a tiered country list, not every country.
- */
 function inRegion(item: LiteItem, region: GeoRegion): boolean {
   return region === 'all' || regionOfCategory(item.category) === region;
 }
 
 export function Geopolitics() {
   const [region, setRegion] = useState<GeoRegion>('all');
+  // The named region a strip tile zoomed the map to; the selector clears it.
+  const [area, setArea] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [layers, setLayers] = useState<LayerState>(DEFAULT_LAYERS);
   const [range, setRange] = useState<TimeRange>('7d');
@@ -141,14 +139,33 @@ export function Geopolitics() {
             {escalating != null ? ` · ${escalating} regions at high CII` : ''} · refresh 5 min
           </>
         }
-        filter={<SegmentedControl label="Region" options={REGION_OPTIONS} value={region} onChange={setRegion} />}
+        filter={
+          <SegmentedControl
+            label="Region"
+            options={REGION_OPTIONS}
+            value={region}
+            onChange={(next) => {
+              setRegion(next);
+              setArea(null);
+            }}
+          />
+        }
         search={search}
         onSearch={setSearch}
         actionLabel="New watch rule"
       />
       <div class="flex flex-col gap-6 px-4 py-6 wide:flex-row wide:px-7">
         <div class="flex min-w-0 flex-1 flex-col gap-5">
-          <ConflictMap region={region} layers={layers} onLayers={setLayers} range={range} onRange={setRange} focus={focus} onFocus={setFocus} />
+          <ConflictMap
+            region={region}
+            area={area}
+            onArea={(id) => {
+              const picked = ESCALATION_REGIONS.find((r) => r.id === id);
+              // A tile outside the selected area switches the selector to the tile's area, so its markers show.
+              if (picked && region !== 'all' && picked.area !== region) setRegion(picked.area);
+              setArea(id);
+            }}
+            layers={layers} onLayers={setLayers} range={range} onRange={setRange} focus={focus} onFocus={setFocus} />
           <IncidentsCard state={digest} rows={visible.slice(0, 6)} total={visible.length} />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
@@ -192,9 +209,13 @@ const MAX_AIRCRAFT_PINS = 150;
 type CellBoundary = (h3: string) => number[][];
 
 function ConflictMap({
-  region, layers, onLayers, range, onRange, focus, onFocus,
+  region, area, onArea, layers, onLayers, range, onRange, focus, onFocus,
 }: {
   region: GeoRegion;
+  /** The named region a strip tile zoomed to, or null. */
+  area: string | null;
+  /** A strip tile was clicked: zoom to its region, or back out when it was the zoomed one. */
+  onArea: (id: string | null) => void;
   layers: LayerState;
   onLayers: (next: LayerState) => void;
   range: TimeRange;
@@ -399,13 +420,15 @@ function ConflictMap({
 
   const tiles = useMemo(
     () =>
-      hotspotStrip(
+      regionStrip(
+        ESCALATION_REGIONS,
         escalation.map(({ hotspot, score }) => ({ hotspot, score: score.combinedScore, level: escalationLevel(score.combinedScore) })),
         counts,
         Date.now(),
       ),
     [escalation, counts],
   );
+  const zoomed = ESCALATION_REGIONS.find((r) => r.id === area);
 
   const unavailable = [
     layers.aircraft && (flights.status === 'error' || flights.status === 'empty') ? 'military aircraft (seed-military-flights)' : '',
@@ -434,7 +457,7 @@ function ConflictMap({
       <div class="relative h-[300px] overflow-hidden border-t border-line bg-bg/40 md:h-[380px]">
         <LiteMap
           markers={markers}
-          fit={region === 'all' ? 'world' : 'markers'}
+          fit={zoomed ? zoomed.bounds : region === 'all' ? 'world' : 'markers'}
           countries={countries}
           overlays={overlays}
           focusId={focus}
@@ -486,7 +509,7 @@ function ConflictMap({
           </span>
         </div>
       </div>
-      <HotspotStrip tiles={tiles} onSelect={(id) => onFocus(`hotspot:${id}`)} />
+      <RegionStrip tiles={tiles} region={region} area={area} onSelect={(id) => onArea(id === area ? null : id)} />
     </Card>
   );
 }
@@ -577,36 +600,51 @@ function TimeRangeControl({ value, onChange }: { value: TimeRange; onChange: (ra
   );
 }
 
-/** The five curated hotspots with the highest live score; a click opens the hotspot on the map. */
-function HotspotStrip({ tiles, onSelect }: { tiles: HotspotTile[]; onSelect: (id: string) => void }) {
+/**
+ * One tile per named region (owner's decision, 2026-11-10). Tiles outside the
+ * selected area stay in place but dim; a click zooms the map to the region,
+ * and a second click on the zoomed tile zooms back out.
+ */
+function RegionStrip({ tiles, region, area, onSelect }: { tiles: RegionTile[]; region: GeoRegion; area: string | null; onSelect: (id: string) => void }) {
   return (
-    <div class="grid grid-cols-2 gap-px border-t border-line bg-line sm:grid-cols-3 md:grid-cols-5" data-testid="region-strip">
-      {tiles.map((t) => (
-        <button
-          key={t.id}
-          type="button"
-          onClick={() => onSelect(t.id)}
-          class="flex flex-col gap-2 bg-surface px-[14px] py-3 text-left hover:bg-surface-2/60"
-          title="Level from the live hotspot score. Change: GDELT reports for the hotspot's countries, last 24 complete hours against the 7-day daily average. Bars: daily reports, 14 days."
-          data-hotspot-tile={t.id}
-        >
-          <span class="flex items-center gap-[6px]">
-            <Dot tone={t.tone} />
-            <span class="truncate text-[12px] font-medium text-ink">{t.name}</span>
-          </span>
-          <span class="flex items-end justify-between gap-2">
-            <span class="flex flex-col gap-px">
-              <span class={cx('font-mono text-[16px] font-medium', t.change != null && t.change < 0 ? 'text-muted' : 'text-ink')}>
-                {t.change != null ? signed(t.change, 0) : '—'}
-              </span>
-              <span class={cx('text-[10.5px]', t.tone === 'muted' ? 'text-dim' : TEXT[t.tone])}>{t.level}</span>
+    <div class="grid grid-cols-2 gap-px border-t border-line bg-line sm:grid-cols-3" data-testid="region-strip">
+      {tiles.map((t) => {
+        const outside = region !== 'all' && t.area !== region;
+        const lead = t.lead ? `Level from the region's highest live hotspot score: ${t.lead.name} ${Math.round(t.lead.score)}/5.` : 'No curated hotspot in this region is scored yet.';
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onSelect(t.id)}
+            aria-pressed={area === t.id}
+            class={cx(
+              'flex flex-col gap-2 px-[14px] py-3 text-left hover:bg-surface-2/60',
+              area === t.id ? 'bg-surface-2' : 'bg-surface',
+              outside ? 'opacity-50' : '',
+            )}
+            title={`${lead} Change: GDELT reports for its countries (${t.name}), last 24 complete hours against the 7-day daily average; — while any of those hours is incomplete. Bars: daily reports, 14 days. Click to zoom the map to the region.`}
+            data-region-tile={t.id}
+            data-area={t.area}
+            data-outside={outside ? 'true' : undefined}
+          >
+            <span class="flex items-center gap-[6px]">
+              <Dot tone={t.tone} />
+              <span class="truncate text-[12px] font-medium text-ink">{t.name}</span>
             </span>
-            {t.bars.length > 1 ? (
-              <BarStrip values={t.bars} height={24} barWidth={3} label={`${t.name}: GDELT reports per day, 14 days`} colorFor={(i) => (i >= t.bars.length - 2 ? BG[t.tone === 'muted' ? 'dim' : t.tone] : 'bg-track')} />
-            ) : null}
-          </span>
-        </button>
-      ))}
+            <span class="flex items-end justify-between gap-2">
+              <span class="flex flex-col gap-px">
+                <span class={cx('font-mono text-[16px] font-medium', t.change != null && t.change < 0 ? 'text-muted' : 'text-ink')}>
+                  {t.change != null ? signed(t.change, 0) : '—'}
+                </span>
+                <span class={cx('text-[10.5px]', t.tone === 'muted' ? 'text-dim' : TEXT[t.tone])}>{t.level}</span>
+              </span>
+              {t.bars.length > 1 ? (
+                <BarStrip values={t.bars} height={24} barWidth={3} label={`${t.name}: GDELT reports per day, 14 days`} colorFor={(i) => (i >= t.bars.length - 2 ? BG[t.tone === 'muted' ? 'dim' : t.tone] : 'bg-track')} />
+              ) : null}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

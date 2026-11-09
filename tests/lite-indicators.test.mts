@@ -56,7 +56,7 @@ import {
   countryShading,
   shadingBasis,
   historyReady,
-  hotspotStrip,
+  regionStrip,
   violenceFeeds,
   violenceIndicators,
   violenceSpike,
@@ -412,22 +412,37 @@ describe('GDELT reported violence', () => {
     assert.equal(week.bars[0]?.partial, false);
   });
 
-  it('builds the hotspot strip from the five highest live scores, easing on a fall', () => {
-    const scored = [
-      { hotspot: { id: 'kyiv', name: 'Kyiv' }, score: 4.2, level: { tone: 'high' as const, label: 'High' } },
-      { hotspot: { id: 'sanaa', name: "Sana'a" }, score: 3.1, level: { tone: 'elev' as const, label: 'Elevated' } },
-      { hotspot: { id: 'moscow', name: 'Moscow' }, score: 1.2, level: { tone: 'muted' as const, label: 'Stable' } },
+  it('builds the region strip: level from the region\'s top hotspot, change over its countries, easing on a fall', () => {
+    const regions = [
+      { id: 'eastern-europe', name: 'Eastern Europe', countries: ['UA', 'RU', 'PL'], area: 'europe' as const },
+      { id: 'red-sea', name: 'Red Sea / Aden', countries: ['YE', 'SA', 'EG'], area: 'middleeast' as const },
+      { id: 'nowhere', name: 'Nowhere', countries: ['AQ'], area: 'asia' as const },
     ];
-    // Ukraine: 24 h at 4/h = 96 against 40 a day (+140%); Yemen: 24 h at 0 against 10 a day (−100%).
-    const c = build({ day: () => ({ UA: 40, YE: 10 }), hour: () => ({ UA: 4 }) });
-    const tiles = hotspotStrip(scored, c, NOW, 2);
-    assert.deepEqual(tiles.map((t) => t.id), ['kyiv', 'sanaa']);
-    assert.equal(tiles[0]?.level, 'High');
+    const scored = [
+      { hotspot: { id: 'moscow', name: 'Moscow' }, score: 3.1, level: { tone: 'elev' as const, label: 'Elevated' } },
+      { hotspot: { id: 'kyiv', name: 'Kyiv' }, score: 4.2, level: { tone: 'high' as const, label: 'High' } },
+      { hotspot: { id: 'sanaa', name: "Sana'a" }, score: 3.4, level: { tone: 'elev' as const, label: 'Elevated' } },
+      { hotspot: { id: 'dc', name: 'DC' }, score: 4.9, level: { tone: 'crit' as const, label: 'Critical' } },
+    ];
+    // Eastern Europe: 24 h at 4/h (UA 3, RU 1) = 96 against 40 a day (+140%); Red Sea: 24 h at 0 against 10 a day (−100%).
+    const c = build({ day: () => ({ UA: 30, RU: 10, YE: 10 }), hour: () => ({ UA: 3, RU: 1 }) });
+    const tiles = regionStrip(regions, scored, c, NOW);
+    assert.deepEqual(tiles.map((t) => t.id), ['eastern-europe', 'red-sea', 'nowhere'], 'list order, every region');
+    assert.equal(tiles[0]?.level, 'High', "Kyiv's 4.2 beats Moscow's 3.1");
+    assert.deepEqual(tiles[0]?.lead, { name: 'Kyiv', score: 4.2 });
+    assert.equal(tiles[0]?.area, 'europe');
     assert.equal(Math.round(tiles[0]?.change ?? 0), 140);
+    assert.equal(tiles[0]?.bars.length, 14);
+    assert.equal(tiles[0]?.bars.at(-2), 40, 'bars sum the region\'s countries');
     assert.equal(tiles[1]?.level, 'Easing');
     assert.equal(tiles[1]?.tone, 'muted');
-    assert.equal(tiles[0]?.bars.length, 14);
-    assert.equal(hotspotStrip(scored, null, NOW)[0]?.change, null, 'no counts: change unknown');
+    assert.equal(tiles[1]?.lead?.name, "Sana'a", 'a hotspot outside the region (DC) never sets its level');
+    assert.equal(tiles[2]?.lead, null);
+    assert.equal(tiles[2]?.level, 'No score');
+    assert.equal(regionStrip(regions, scored, null, NOW)[0]?.change, null, 'no counts: change unknown');
+    // One incomplete hour in the 24 leaves the change unknown, never calm.
+    const gap = build({ day: () => ({ UA: 40 }), hour: () => ({ UA: 4 }), hourCohorts: (start) => (start === Math.floor(NOW / HOUR) * HOUR - 5 * HOUR ? 1 : 4) });
+    assert.equal(regionStrip(regions, scored, gap, NOW)[0]?.change, null);
   });
 });
 

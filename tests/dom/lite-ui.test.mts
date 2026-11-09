@@ -44,7 +44,9 @@ vi.mock('maplibre-gl', () => {
     getBounds() { return { getWest: () => -180, getSouth: () => -85, getEast: () => 180, getNorth: () => 85 }; }
     project(): { x: number; y: number } { return { x: 0, y: 0 }; }
     easeTo(): this { return this; }
-    fitBounds(): this { return this; }
+    // The last view the map was fitted to, [[west, south], [east, north]].
+    fitted: unknown = null;
+    fitBounds(bounds: unknown): this { this.fitted = bounds; return this; }
     zoomIn(): this { return this; }
     zoomOut(): this { return this; }
     remove(): void {}
@@ -950,11 +952,34 @@ describe('Lite Geopolitics: GDELT reported violence', () => {
       await flush();
       expect(map.featureState.get('UA')?.step).toBe(0);
 
-      // The strip shows five hotspots; a tile opens its hotspot's card.
-      const tiles = [...root.querySelectorAll('[data-hotspot-tile]')] as HTMLButtonElement[];
-      expect(tiles).toHaveLength(5);
-      await act(() => tiles[0]!.click());
-      expect(root.querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe(`hotspot:${tiles[0]!.getAttribute('data-hotspot-tile')}`);
+      // The strip shows the named regions, not curated hotspots; a tile zooms the map to its region.
+      const tile = (id: string) => root.querySelector(`[data-region-tile="${id}"]`) as HTMLButtonElement;
+      expect([...root.querySelectorAll('[data-region-tile]')].map((t) => t.getAttribute('data-region-tile'))).toEqual(
+        ['red-sea', 'eastern-europe', 'levant', 'gulf-iran', 'sahel', 'taiwan-strait'],
+      );
+      expect(root.querySelector('[data-hotspot-tile]')).toBeNull();
+      expect(tile('eastern-europe').textContent).toContain('Eastern Europe');
+      const fitted = () => (maplib.__FakeMap.last as unknown as { fitted: unknown }).fitted;
+      await act(() => tile('eastern-europe').click());
+      await flush();
+      expect(tile('eastern-europe').getAttribute('aria-pressed')).toBe('true');
+      expect(fitted()).toEqual([[14, 43], [46, 60]]);
+      // A second click zooms back out to the world.
+      await act(() => tile('eastern-europe').click());
+      await flush();
+      expect(tile('eastern-europe').getAttribute('aria-pressed')).toBe('false');
+      expect(fitted()).toEqual([[-170, -55], [180, 75]]);
+      // The selector dims the regions outside its area; a dimmed tile switches the selector to its area.
+      const selector = (label: string) => [...root.querySelectorAll('button')].find((b) => b.textContent === label) as HTMLButtonElement;
+      await act(() => selector('Europe').click());
+      await flush();
+      expect([...root.querySelectorAll('[data-region-tile]:not([data-outside])')].map((t) => t.getAttribute('data-region-tile'))).toEqual(['eastern-europe']);
+      expect(tile('sahel').getAttribute('data-outside')).toBe('true');
+      await act(() => tile('sahel').click());
+      await flush();
+      expect(selector('Africa').getAttribute('aria-pressed')).toBe('true');
+      expect(tile('sahel').getAttribute('data-outside')).toBeNull();
+      expect(fitted()).toEqual([[-18, 8], [25, 22]]);
     } finally {
       vi.stubGlobal('fetch', base);
       vi.mocked(boot.ensureHydrated).mockImplementation(async () => undefined);
