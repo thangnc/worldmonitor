@@ -85,6 +85,7 @@ Ready-made steps, one per mapped feature:
 | `steps/lite-ui.mjs` | [Lite UI](features/lite-ui.md) at `/lite`; same launch and `WM_VERIFY_EXPECT` switch as `lite-profile.mjs` |
 | `steps/lite-sources.mjs` | Lite Sources screen at `/lite/sources`; routes the compact health check to a labelled test fixture ([recipe](features/lite-ui.md)) |
 | `steps/lite-scroll.mjs` | Lite overlay scrollbars: no gutter, shown only on hover, sticky sidebar, scroll reset on screen switch, the Sources table's own bar ([recipe](features/lite-ui.md)) |
+| `steps/lite-layers-popover.mjs` | Lite map layers popover on Geopolitics, Finance and Technology, desktop and mobile: stays inside the map card, footer included, and its rows scroll to the last one ([recipe](features/lite-ui.md)) |
 | `steps/lite-profile.mjs` | Lite deployment profile ([spec](../../../docs/engineering/architecture/lite.md)); launch with `VITE_LITE_PROFILE=true` and drive with `WM_VERIFY_EXPECT=lite`, or without the flag and `WM_VERIFY_EXPECT=full` |
 | `steps/_inspect.mjs` | not a feature — dumps live panel keys, layer handles, header ids, and the map renderer when a handle in the map has drifted |
 
