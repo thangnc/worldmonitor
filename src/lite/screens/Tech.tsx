@@ -5,6 +5,7 @@ import { Topbar, matchesSearch } from '../components/Topbar';
 import { Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
 import { HealthDots, IndicatorFeed } from '../components/indicator';
 import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
+import { TimeRangeControl } from '../components/TimeRange';
 import { LiteMap, type MapMarker, type MapOverlays } from '../map/LiteMap';
 import { AggregateMark, AssetMark, EventMark, LineSwatch, RampSwatch, SwatchRun } from '../map/marks';
 import { LegendRow, MapLegend } from '../map/legend';
@@ -15,6 +16,7 @@ import {
   useCountryShapes,
   useCyberThreats,
   useDdosAttacks,
+  useDdosWindows,
   useDigest,
   useTechGeo,
   useHackerNews,
@@ -28,13 +30,16 @@ import { MINUS } from '../format';
 import { feedCounts, type FeedState } from '../data/indicators';
 import {
   DATACENTER_MIN_CHIPS,
-  MAP_OUTAGE_DAYS,
   attackHexes,
   cableLayer,
   cloudRegionMarkers,
   datacenterMarkers,
+  ddosForRange,
   ddosLayer,
   outageMarkers,
+  rangeWords,
+  techLayerRangeNote,
+  threatsInRange,
   type TechLayer,
 } from '../data/tech-map';
 import type { ResourceState } from '../data/store';
@@ -62,6 +67,7 @@ import {
   topicCounts,
   type LiteItem,
   type TechFilter,
+  type TimeRange,
   type Tone,
 } from '../data/transforms';
 
@@ -153,8 +159,8 @@ const LEGEND: ReadonlyArray<{ key: TechLayer; mark: preact.JSX.Element; label: s
   { key: 'ddos', mark: <RampSwatch />, label: 'DDoS targets', sub: 'who is attacked' },
   { key: 'attackers', mark: <AggregateMark count={0} fullAt={1} state="normal" size={12} />, label: 'Attack servers', sub: 'where attackers sit' },
   { key: 'outages', mark: <SwatchRun><EventMark glyph="wifi-off" state="elev" /><EventMark glyph="zap" state="crit" /></SwatchRun>, label: 'Outages', sub: 'partial · major, glyph = cause' },
-  { key: 'cloud', mark: <SwatchRun><AssetMark glyph="cloud" state="normal" /><AssetMark glyph="cloud" state="elev" /><AssetMark glyph="cloud" state="crit" /></SwatchRun>, label: 'Cloud regions', sub: 'worst status per city' },
-  { key: 'datacenters', mark: <SwatchRun><AssetMark glyph="cpu" state="normal" /><AssetMark glyph="cpu" state="elev" /></SwatchRun>, label: 'AI data centres', sub: 'amber = outage in country' },
+  { key: 'cloud', mark: <SwatchRun><AssetMark glyph="cloud" state="normal" /><AssetMark glyph="cloud" state="elev" /><AssetMark glyph="cloud" state="crit" /></SwatchRun>, label: 'Cloud regions', sub: 'grey quiet · worst status per city' },
+  { key: 'datacenters', mark: <SwatchRun><AssetMark glyph="cpu" state="normal" /><AssetMark glyph="cpu" state="elev" /></SwatchRun>, label: 'AI data centres', sub: 'grey quiet · amber = outage in country' },
   { key: 'cables', mark: <SwatchRun><LineSwatch state="normal" /><LineSwatch state="elev" /><LineSwatch state="crit" /></SwatchRun>, label: 'Undersea cables', sub: 'ok · degraded · fault' },
 ];
 
@@ -169,9 +175,21 @@ const POPOVER_MARK: Record<TechLayer, preact.JSX.Element> = {
 };
 
 
+/**
+ * 6h, 24h and 7d (owner's decision, 2026-11-10), as on Geopolitics: they filter DDoS targets,
+ * attack servers and outages; cloud regions, AI data centres and cables show their status now.
+ */
+const RANGE_PURPOSE: Record<TimeRange, string> = {
+  '6h': 'What is hitting now? DDoS share, attack servers and outages of the last 6 hours.',
+  '24h': 'What happened today? DDoS share, attack servers and outages of the last 24 hours.',
+  '7d': 'The week: who was attacked most, and which outages ran.',
+};
+
 function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: string | null) => void }) {
   const [layers, setLayers] = useState<Record<TechLayer, boolean>>(ALL_ON);
+  const [range, setRange] = useState<TimeRange>('7d');
   const ddos = useDdosAttacks();
+  const ddosWindows = useDdosWindows(layers.ddos && range !== '7d');
   const shapes = useCountryShapes(layers.ddos);
   const threats = useCyberThreats();
   const outages = useInternetOutages();
@@ -184,8 +202,9 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
     const now = Date.now();
     const markers: MapMarker[] = [];
     const overlays: MapOverlays = {};
-    if (layers.ddos && ddos.status === 'ready') {
-      const d = ddosLayer(ddos.data, shapes.status === 'ready' ? shapes.data : null);
+    const shares = layers.ddos ? ddosForRange(range, ddos.status === 'ready' ? ddos.data : null, ddosWindows.status === 'ready' ? ddosWindows.data : null) : null;
+    if (shares) {
+      const d = ddosLayer(shares, shapes.status === 'ready' ? shapes.data : null, range);
       overlays.fills = d.fills;
       markers.push(...d.tags);
     }
@@ -196,10 +215,10 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
     }
     if (layers.cloud && geo.status === 'ready') markers.push(...cloudRegionMarkers(geo.data.regions, services.status === 'ready' ? services.data.statuses : []));
     if (layers.datacenters && geo.status === 'ready') markers.push(...datacenterMarkers(geo.data.datacenters, outages.status === 'ready' ? outages.data.outages : [], now));
-    if (layers.outages && outages.status === 'ready') markers.push(...outageMarkers(outages.data.outages, now));
-    if (layers.attackers && threats.status === 'ready') markers.push(...attackHexes(threats.data));
+    if (layers.outages && outages.status === 'ready') markers.push(...outageMarkers(outages.data.outages, now, range));
+    if (layers.attackers && threats.status === 'ready') markers.push(...attackHexes(threatsInRange(threats.data, range, now)));
     return { markers, overlays };
-  }, [layers, ddos, shapes, threats, outages, services, cables, geo]);
+  }, [layers, range, ddos, ddosWindows, shapes, threats, outages, services, cables, geo]);
 
   // Resolve an indicator's focus key against the markers on the map.
   const focusId = useMemo(() => {
@@ -217,31 +236,36 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
     if (focusId) card.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [focusId]);
 
+  // A 6h or 24h window that is missing names its source; the 7-day shares are never shown in its place.
+  const windowMissing = range !== '7d' && (ddosWindows.status === 'empty' || (ddosWindows.status === 'ready' && !ddosWindows.data.windows[range]));
+  const ddosState = range === '7d' ? ddos : windowMissing ? { status: 'error' as const } : ddosWindows;
   const failed = [
-    { state: ddos, name: 'DDoS targets', source: 'seed-internet-outages' },
+    { state: ddosState, name: range === '7d' ? 'DDoS targets' : `DDoS targets ${range}`, source: 'seed-internet-outages' },
     { state: threats, name: 'Attack servers', source: 'seed-cyber-threats' },
     { state: outages, name: 'Outages', source: 'seed-internet-outages' },
     { state: services, name: 'Cloud status', source: 'list-service-statuses' },
     { state: cables, name: 'Cable health', source: 'get-cable-health' },
   ].filter((f) => f.state.status === 'error');
 
-  const located = threats.status === 'ready' ? threats.data.filter((t) => t.location).length : null;
+  const located = threats.status === 'ready' ? threatsInRange(threats.data, range, Date.now()).filter((t) => t.location).length : null;
+  const note = (id: TechLayer) => techLayerRangeNote(id, range);
   const groups: LayerGroup[] = [
     {
-      title: 'Cyber',
-      note: 'targets vs attackers',
+      title: 'Live layers',
+      note: `at ${range}`,
       rows: [
-        { id: 'ddos', mark: POPOVER_MARK.ddos, name: 'DDoS targets · Cloudflare Radar', sub: 'country shading by share of attack traffic, 7 days', on: layers.ddos },
-        { id: 'attackers', mark: POPOVER_MARK.attackers, name: 'Attack servers · threat feeds', sub: `${located != null ? `${located.toLocaleString('en-US')} located indicators · ` : ''}8° cells`, on: layers.attackers },
+        { id: 'ddos', mark: POPOVER_MARK.ddos, name: 'DDoS targets · Cloudflare Radar', sub: 'country shading: who is attacked', range: note('ddos'), on: layers.ddos },
+        { id: 'attackers', mark: POPOVER_MARK.attackers, name: 'Attack servers · threat feeds', sub: `${located != null ? `${located.toLocaleString('en-US')} located · ` : ''}8° cells: where attackers sit`, range: note('attackers'), on: layers.attackers },
+        { id: 'outages', mark: POPOVER_MARK.outages, name: 'Internet outages · Cloudflare Radar', sub: 'glyph = cause · faint once ended over 24 h ago', range: note('outages'), on: layers.outages },
       ],
     },
     {
-      title: 'Infrastructure',
+      title: 'Background & status',
+      note: 'grey = quiet',
       rows: [
-        { id: 'outages', mark: POPOVER_MARK.outages, name: 'Internet outages · Cloudflare Radar', sub: `last ${MAP_OUTAGE_DAYS} days; faint once ended over 24 h ago`, on: layers.outages },
-        { id: 'cloud', mark: POPOVER_MARK.cloud, name: 'Cloud regions', sub: 'one per city · red only when the incident names a region there', on: layers.cloud },
-        { id: 'datacenters', mark: POPOVER_MARK.datacenters, name: 'AI data centres · Epoch AI', sub: `existing, ${DATACENTER_MIN_CHIPS.toLocaleString('en-US')}+ chips`, on: layers.datacenters },
-        { id: 'cables', mark: POPOVER_MARK.cables, name: 'Undersea cables · NGA warnings', sub: 'health: ok, degraded, fault', on: layers.cables },
+        { id: 'cloud', mark: POPOVER_MARK.cloud, name: 'Cloud regions', sub: 'amber on a provider outage · red when it names a region there', range: note('cloud'), on: layers.cloud },
+        { id: 'datacenters', mark: POPOVER_MARK.datacenters, name: 'AI data centres · Epoch AI', sub: `${DATACENTER_MIN_CHIPS.toLocaleString('en-US')}+ chips · amber on an outage in its country`, range: note('datacenters'), on: layers.datacenters },
+        { id: 'cables', mark: POPOVER_MARK.cables, name: 'Undersea cables · NGA warnings', sub: 'health: ok, degraded, fault', range: note('cables'), on: layers.cables },
       ],
     },
   ];
@@ -265,9 +289,14 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
               ))}
             </div>
           ) : null}
-          <MapLegend testId="infra-map-legend" collapsible>
+          <MapLegend testId="infra-map-legend" place="above-bar" collapsible>
             {LEGEND.filter((l) => layers[l.key]).map((l) => <LegendRow key={l.key} mark={l.mark} name={l.label} note={l.sub} />)}
           </MapLegend>
+          {/* The time range sits on the map, as on Geopolitics. */}
+          <div class="absolute bottom-4 left-4 right-4 z-[4] flex h-9 items-center gap-3 rounded-[6px] border border-line bg-surface/90 pr-3 pl-1">
+            <TimeRangeControl value={range} onChange={setRange} titles={RANGE_PURPOSE} />
+            <span class="min-w-0 truncate font-mono text-[10.5px] text-dim" data-testid="infra-range-note">DDoS, attack servers and outages: {rangeWords(range)}</span>
+          </div>
         </div>
         <div class="grid grid-cols-1 border-t border-line md:grid-cols-2">
           <div class="flex gap-[10px] px-5 py-3 md:border-r md:border-line">

@@ -29,6 +29,7 @@ import type { MilitaryFlight } from '@/generated/client/worldmonitor/military/v1
 import { MILITARY_QUERY_REGIONS } from '@/config/military';
 import { isConflictCounts, type ConflictCounts } from './conflict';
 import { isGpsHighCells, type GpsHighCells } from './geo-layers';
+import { isDdosWindows, type DdosWindows } from './tech-map';
 import { isCrossStraitSnapshot, type EmbassyAlerts } from './geo-watch';
 import type { CrossStraitActivitySnapshot } from '@/types/cross-strait-activity';
 import type { ListUkmtoIncidentsResponse } from '@/generated/client/worldmonitor/maritime/v1/service_client';
@@ -485,6 +486,16 @@ export async function loadSeaIncidents(): Promise<ListUkmtoIncidentsResponse | n
 export async function loadGpsInterference(): Promise<GpsJamData | null> {
   const data = await fetchGpsInterference();
   return data && Array.isArray(data.hexes) ? data : null;
+}
+
+/**
+ * DDoS target shares over the last 6 h and 24 h (on-demand bootstrap key
+ * `ddosWindows`), for the Tech map's shorter ranges. Null when the key is absent:
+ * the map then names the source rather than shading the 7-day data.
+ */
+export async function loadDdosWindows(): Promise<DdosWindows | null> {
+  const value = await ensureHydrated('ddosWindows');
+  return isDdosWindows(value) ? value : null;
 }
 
 /** Today's and the previous day's high GPS cells (on-demand bootstrap key `gpsHighCells`). */

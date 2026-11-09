@@ -5,15 +5,20 @@
  * Marks follow the one map grammar (src/lite/map/marks.tsx):
  *
  * - DDoS targets: country shading on the shared blue ramp by share of attack
- *   traffic (who is attacked), with the top few labelled.
- * - Attack servers: threat indicators binned into 8° cells (where attackers'
- *   servers sit), each a grey aggregate with its count.
- * - Outages: Cloudflare outages of the last 7 days at the country centroid,
- *   an event with the cause's glyph.
+ *   traffic over the selected range (who is attacked), with the top few labelled.
+ * - Attack servers: threat indicators seen in the selected range, binned into
+ *   8° cells (where attackers' servers sit), each a grey aggregate with its count.
+ * - Outages: Cloudflare outages active in the selected range at the country
+ *   centroid, an event with the cause's glyph.
  * - Cloud regions: one asset per city. A provider's partial or major outage
  *   turns its cities amber; a city turns red only when the incident text
  *   names its region.
- * - AI data centres: an asset, amber when an internet outage is in the same country.
+ * - AI data centres: an asset, amber when an internet outage is in the same
+ *   country (its card names the outage's type and cause).
+ *
+ * The 6h/24h/7d range (owner's decision, 2026-11-10) filters the three time
+ * layers; cloud regions, AI data centres and cables show their status now,
+ * grey and underneath until a signal turns them amber or red.
  * - Undersea cables: lines coloured by cable health (ok, degraded, fault),
  *   with an event at the middle of a degraded or faulted one.
  */
@@ -34,11 +39,13 @@ import type { CountryShapes } from './sources';
 import { featureIso2, type FeatureCollectionOf } from './markets-map';
 import { compactCount } from '../map/view';
 import { THREAT_FEED_LABEL, isOutageLive } from './tech-indicators';
+import { TIME_RANGE_HOURS, type TimeRange } from './transforms';
 
-const DAY_MS = 86_400_000;
+const HOUR_MS = 3_600_000;
+const RANGE_WORDS: Readonly<Record<TimeRange, string>> = { '6h': 'last 6 h', '24h': 'last 24 h', '7d': 'last 7 days' };
+/** "last 6 h", "last 24 h", "last 7 days". */
+export const rangeWords = (range: TimeRange): string => RANGE_WORDS[range];
 
-/** Outages on the map: detected in this many days, or still ongoing. */
-export const MAP_OUTAGE_DAYS = 7;
 /** Attack-server cells, in degrees. */
 export const HEX_CELL_DEG = 8;
 /**
@@ -100,7 +107,34 @@ export interface DdosFill {
   properties: { tone: RampTone; id: string; name: string; opacity: number };
 }
 
-export function ddosLayer(resp: ListInternetDdosAttacksResponse, shapes: CountryShapes | null): { fills: FeatureCollectionOf<DdosFill>; tags: LabelMarker[] } {
+/** One window of DDoS target shares: Cloudflare's 7-day aggregate or a 6h/24h window from `cf:radar:ddos-windows:v1`. */
+export type DdosShares = Pick<ListInternetDdosAttacksResponse, 'topTargetLocations' | 'dateRangeStart' | 'dateRangeEnd'>;
+
+/** The 6 h and 24 h windows the seeder publishes beside the 7-day aggregate; a failed window is absent. */
+export interface DdosWindows {
+  windows: Partial<Record<'6h' | '24h', DdosShares>>;
+}
+
+const isShares = (v: unknown): v is DdosShares =>
+  typeof v === 'object' && v !== null && Array.isArray((v as DdosShares).topTargetLocations)
+  && typeof (v as DdosShares).dateRangeStart === 'string' && typeof (v as DdosShares).dateRangeEnd === 'string';
+
+export function isDdosWindows(value: unknown): value is DdosWindows {
+  const w = (value as DdosWindows | null)?.windows;
+  return typeof w === 'object' && w !== null && Object.entries(w).every(([k, v]) => (k === '6h' || k === '24h') && isShares(v));
+}
+
+/**
+ * The shares for `range`: 7d is Cloudflare's 7-day aggregate; 6h and 24h come
+ * only from their own window. Null when that window is not available: the map
+ * then names the source instead of shading another window's data.
+ */
+export function ddosForRange(range: TimeRange, sevenDay: DdosShares | null, windows: DdosWindows | null): DdosShares | null {
+  if (range === '7d') return sevenDay;
+  return windows?.windows[range] ?? null;
+}
+
+export function ddosLayer(resp: DdosShares, shapes: CountryShapes | null, range: TimeRange = '7d'): { fills: FeatureCollectionOf<DdosFill>; tags: LabelMarker[] } {
   const hits = resp.topTargetLocations.filter((h) => h.countryCode && h.percentage > 0);
   const max = hits.reduce((m, h) => Math.max(m, h.percentage), 0) || 1;
   const share = new Map(hits.map((h) => [h.countryCode.toUpperCase(), h]));
@@ -111,7 +145,9 @@ export function ddosLayer(resp: ListInternetDdosAttacksResponse, shapes: Country
     if (!iso || !hit) continue;
     features.push({ type: 'Feature', geometry: f.geometry, properties: { tone: rampTone(hit.percentage, max), id: iso, name: hit.countryName, opacity: 0.85 } });
   }
-  const range = resp.dateRangeStart && resp.dateRangeEnd ? `${resp.dateRangeStart.slice(0, 10)} to ${resp.dateRangeEnd.slice(0, 10)}` : 'last 7 days';
+  const span = resp.dateRangeStart && resp.dateRangeEnd
+    ? `${resp.dateRangeStart.slice(0, 16).replace('T', ' ')} to ${resp.dateRangeEnd.slice(0, 16).replace('T', ' ')} UTC`
+    : RANGE_WORDS[range];
   const tags = [...hits]
     .sort((a, b) => b.percentage - a.percentage)
     .slice(0, DDOS_LABELS)
@@ -122,7 +158,7 @@ export function ddosLayer(resp: ListInternetDdosAttacksResponse, shapes: Country
       title: `${h.countryName}: ${pct(h.percentage)} of layer 3 DDoS attack traffic targets it (Cloudflare Radar)`,
       popup: {
         kind: 'DDoS target · Cloudflare Radar', name: h.countryName, value: pct(h.percentage),
-        lines: [{ text: 'Share of layer 3 DDoS attack traffic Cloudflare saw aimed at this country. It shows who is attacked, not where attacks come from.' }, { text: range, style: 'dim' }],
+        lines: [{ text: 'Share of layer 3 DDoS attack traffic Cloudflare saw aimed at this country. It shows who is attacked, not where attacks come from.' }, { text: span, style: 'dim' }],
       },
     }));
   return { fills: { type: 'FeatureCollection', features }, tags };
@@ -134,6 +170,18 @@ const FAMILY_SOURCES = new Set(['CYBER_THREAT_SOURCE_FEODO', 'CYBER_THREAT_SOURC
 
 function feedLabel(source: string): string {
   return THREAT_FEED_LABEL[source.replace('CYBER_THREAT_SOURCE_', '').toLowerCase()] ?? source;
+}
+
+/**
+ * Indicators last seen inside `range` (first seen when no last-seen time).
+ * One with no time at all stays at every range, as digest items without a time do.
+ */
+export function threatsInRange(threats: readonly CyberThreat[], range: TimeRange, now: number): CyberThreat[] {
+  const from = now - TIME_RANGE_HOURS[range] * HOUR_MS;
+  return threats.filter((t) => {
+    const seen = t.lastSeenAt || t.firstSeenAt;
+    return !seen || seen >= from;
+  });
 }
 
 /** Indicators with a location, binned into HEX_CELL_DEG cells; the aggregate sits at the cell's mean point and reaches full size at the busiest cell. */
@@ -203,9 +251,11 @@ export function attackHexes(threats: readonly CyberThreat[]): AggregateMarker[] 
 
 // ---- Outages ----------------------------------------------------------------
 
-export function outageMarkers(outages: readonly InternetOutage[], now: number): EventMarker[] {
+/** Ongoing, or ended inside the range: an outage active at any point in it. */
+export function outageMarkers(outages: readonly InternetOutage[], now: number, range: TimeRange = '7d'): EventMarker[] {
+  const from = now - TIME_RANGE_HOURS[range] * HOUR_MS;
   return outages
-    .filter((o) => o.location && (!o.endedAt || o.detectedAt >= now - MAP_OUTAGE_DAYS * DAY_MS))
+    .filter((o) => o.location && (!o.endedAt || o.endedAt >= from))
     .map((o): EventMarker => {
       const live = isOutageLive(o, now);
       const ongoing = !o.endedAt;
@@ -295,12 +345,27 @@ export function cloudRegionMarkers(regions: readonly CloudRegion[], statuses: re
 
 // ---- AI data centres -----------------------------------------------------------
 
+const SEVERITY_RANK: Readonly<Record<string, number>> = { OUTAGE_SEVERITY_TOTAL: 3, OUTAGE_SEVERITY_MAJOR: 2, OUTAGE_SEVERITY_PARTIAL: 1 };
+
+/** "nationwide, power outage": the outage's type and stated cause, as a data centre's card names them. */
+export function outageSummary(o: InternetOutage): string {
+  const cause = o.cause ? o.cause.replace(/_/g, ' ').toLowerCase() : 'no stated cause';
+  return `${(SEVERITY_WORD[o.severity] ?? 'internet').toLowerCase()}, ${cause}`;
+}
+
+/**
+ * A background asset (owner's decision, 2026-11-10): grey and underneath,
+ * amber when a live internet outage is in the same country. Never red: no
+ * source names the site itself, only its country.
+ */
 export function datacenterMarkers(sites: readonly AIDataCenter[], outages: readonly InternetOutage[], now: number): AssetMarker[] {
   const outageCountries = new Map<string, InternetOutage>();
   for (const o of outages) {
     if (!isOutageLive(o, now)) continue;
     const code = resolveCountryCode(o.country);
-    if (code) outageCountries.set(code, o);
+    if (!code) continue;
+    const held = outageCountries.get(code);
+    if (!held || (SEVERITY_RANK[o.severity] ?? 0) > (SEVERITY_RANK[held.severity] ?? 0)) outageCountries.set(code, o);
   }
   return sites
     .filter((d) => d.status === 'existing' && d.chipCount >= DATACENTER_MIN_CHIPS)
@@ -309,12 +374,13 @@ export function datacenterMarkers(sites: readonly AIDataCenter[], outages: reado
       const nearby = code ? outageCountries.get(code) : undefined;
       return {
         kind: 'asset', glyph: 'cpu', state: nearby ? 'elev' : 'normal', id: `dc:${d.id}`, lat: d.lat, lon: d.lon,
-        title: `${d.name}${nearby ? `: internet outage in ${nearby.country}` : ''}`,
+        title: `${d.name}${nearby ? `: internet outage in ${nearby.country} (${outageSummary(nearby)})` : ''}`,
         popup: {
           kind: 'AI data centre · Epoch AI', name: d.name, value: `${compactCount(d.chipCount)} chips`,
           lines: [
             { text: `${d.owner} · ${d.country}${d.chipType ? ` · ${d.chipType}` : ''}${d.powerMW ? ` · ${d.powerMW} MW` : ''}` },
-            { text: nearby ? `Internet outage in the same country: ${(SEVERITY_WORD[nearby.severity] ?? 'outage').toLowerCase()}, started ${day(nearby.detectedAt)}` : 'No internet outage in the same country' },
+            { text: nearby ? `Internet outage in the same country: ${outageSummary(nearby)}, started ${day(nearby.detectedAt)} ${hhmm(nearby.detectedAt)} UTC` : 'No internet outage in the same country' },
+            { text: 'Amber means an outage in its country (Cloudflare Radar), not at the site itself.', style: 'dim' },
             { text: 'Epoch AI GPU clusters dataset (CC BY), existing sites with 20,000 chips or more.', style: 'dim' },
           ],
         },
@@ -362,4 +428,27 @@ export function cableLayer(cables: readonly UnderseaCable[], health: GetCableHea
     }
   }
   return { lines: { type: 'FeatureCollection', features: lines }, markers };
+}
+
+// ---- What each layer shows at the selected range ---------------------------------
+
+/**
+ * One line per Tech map layer saying what it shows at `range`: the three time
+ * layers change with it, the background assets and cables say they do not
+ * (owner's decision, 2026-11-10).
+ */
+export function techLayerRangeNote(id: TechLayer, range: TimeRange): string {
+  switch (id) {
+    case 'ddos':
+      return `share of attack traffic, ${RANGE_WORDS[range]}`;
+    case 'attackers':
+      return `indicators seen in the ${RANGE_WORDS[range]}`;
+    case 'outages':
+      return `outages active in the ${RANGE_WORDS[range]}`;
+    case 'cloud':
+    case 'datacenters':
+      return 'status now; the range does not apply';
+    case 'cables':
+      return 'warnings in force now; the range does not apply';
+  }
 }

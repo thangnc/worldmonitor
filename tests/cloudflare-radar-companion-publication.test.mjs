@@ -30,6 +30,8 @@ import { resolveSeedMetaTtl, SEED_META_MIN_TTL_SECONDS } from '../scripts/_seed-
 const OUTAGES_KEY = 'infra:outages:v1';
 const DDOS_KEY = 'cf:radar:ddos:v1';
 const TRAFFIC_KEY = 'cf:radar:traffic-anomalies:v1';
+const DDOS_WINDOWS_KEY = 'cf:radar:ddos-windows:v1';
+const DDOS_WINDOWS_META_KEY = 'seed-meta:cf:radar:ddos-windows';
 const DDOS_META_KEY = 'seed-meta:cf:radar:ddos';
 const TRAFFIC_META_KEY = 'seed-meta:cf:radar:traffic-anomalies';
 // Parsed from the seeder rather than retyped: the suite asserts these exact
@@ -58,6 +60,7 @@ async function seedFixture(entries, plan, now, redisOrigin) {
   Date.now = () => now;
   const store = new Map(entries);
   const radarCalls = [];
+  const radarQueries = [];
   const redisCommands = [];
   let rejectedWrites = 0;
 
@@ -162,16 +165,22 @@ async function seedFixture(entries, plan, now, redisOrigin) {
 
     if (url.hostname !== 'api.cloudflare.com') throw new Error(`unexpected host ${url.hostname}`);
     radarCalls.push(url.pathname);
+    radarQueries.push(`${url.pathname}${url.search}`);
     if (url.pathname.endsWith('/annotations/outages')) return radar(plan.annotations, bodyFor('annotations'));
     if (url.pathname.endsWith('/summary/protocol')) return radar(plan.protocol, bodyFor('protocol'));
     if (url.pathname.endsWith('/summary/vector')) return radar(plan.vector, bodyFor('vector'));
-    if (url.pathname.endsWith('/top/locations/target')) return radar(plan.target, bodyFor('target'));
+    if (url.pathname.endsWith('/top/locations/target')) {
+      // The 7d slice, the 24h window (dateRange=1d) and the 6h window (dateStart/dateEnd).
+      if (url.searchParams.has('dateStart')) return radar(plan.target6h ?? plan.target, bodyFor('target'));
+      if (url.searchParams.get('dateRange') === '1d') return radar(plan.target24h ?? plan.target, bodyFor('target'));
+      return radar(plan.target, bodyFor('target'));
+    }
     if (url.pathname.endsWith('/traffic_anomalies')) return radar(plan.traffic, bodyFor('traffic'));
     throw new Error(`unexpected Radar path ${url.pathname}`);
   };
 
   process.on('exit', () => {
-    console.log(`FIXTURE_RESULT=${JSON.stringify({ store: [...store], radarCalls, redisCommands })}`);
+    console.log(`FIXTURE_RESULT=${JSON.stringify({ store: [...store], radarCalls, radarQueries, redisCommands })}`);
   });
   await import(process.env.TEST_SEED_URL);
 }
@@ -388,7 +397,8 @@ test('successful companions publish even when the annotations fetch fails', () =
   assert.deepEqual(JSON.parse(run.store.get(TRAFFIC_KEY)), { anomalies: [], totalCount: 0 });
   assert.equal(run.store.get(OUTAGES_KEY), before.get(OUTAGES_KEY), 'the canonical outages payload is retained');
   assert.equal(
-    radarPaths(run.radarCalls).filter((path) => path !== 'annotations/outages').length, 4,
+    // protocol, vector and the 7d target slice (DDoS), the 6h and 24h target windows, traffic anomalies.
+    radarPaths(run.radarCalls).filter((path) => path !== 'annotations/outages').length, 6,
     'already-successful companion work is never replayed by the annotations retry',
   );
 });
@@ -597,7 +607,7 @@ test('a total Radar failure retains every companion payload and clock', () => {
     assert.equal(run.store.get(key), before.get(key), `${key} must survive a total source failure`);
   }
   assert.equal(
-    radarPaths(run.radarCalls).filter((path) => path !== 'annotations/outages').length, 4,
+    radarPaths(run.radarCalls).filter((path) => path !== 'annotations/outages').length, 6,
     'a failed companion pass is bounded to one attempt per run',
   );
 });
@@ -629,4 +639,61 @@ test('healthy to empty to source error to recovery never resurrects an old event
 
   const served = await readThroughRpcs(recovered.store);
   assert.deepEqual(served.traffic.anomalies, []);
+});
+
+test('the DDoS windows companion publishes the 6h and 24h target shares from their own windows', () => {
+  const run = runSeeder({ plan: { payload: 'full' } });
+
+  const targetQueries = run.radarQueries.filter((q) => q.endsWith('/top/locations/target') || q.includes('/top/locations/target?'));
+  assert.ok(targetQueries.some((q) => q.includes('dateRange=7d')), 'the 7d slice is unchanged');
+  assert.ok(targetQueries.some((q) => q.includes('dateRange=1d')), '24h reads dateRange=1d');
+  const sixHour = targetQueries.find((q) => q.includes('dateStart='));
+  assert.ok(sixHour, '6h reads dateStart/dateEnd: Radar has no hourly dateRange');
+  const params = new URLSearchParams(sixHour.split('?')[1]);
+  assert.equal(params.get('dateEnd'), '2026-09-07T12:00:00Z');
+  assert.equal(params.get('dateStart'), '2026-09-07T06:00:00Z');
+
+  const payload = JSON.parse(run.store.get(DDOS_WINDOWS_KEY));
+  assert.deepEqual(Object.keys(payload.windows).sort(), ['24h', '6h']);
+  for (const id of ['6h', '24h']) {
+    assert.deepEqual(payload.windows[id].topTargetLocations.map((l) => [l.countryCode, l.percentage]), [['US', 55]], `${id} carries the target rows`);
+  }
+  assert.equal(payload._degradedWindows, undefined, 'producer diagnostics stay off the payload');
+  assert.ok(run.store.get(DDOS_WINDOWS_META_KEY), 'the windows key has its own success clock');
+  assert.ok(JSON.parse(run.store.get(DDOS_KEY)).topTargetLocations.length, 'the 7d DDoS key still publishes');
+});
+
+test('a failed DDoS window is left out and recorded, never filled from another window', () => {
+  const run = runSeeder({ plan: { payload: 'full', target6h: 'http-503' } });
+
+  const payload = JSON.parse(run.store.get(DDOS_WINDOWS_KEY));
+  assert.deepEqual(Object.keys(payload.windows), ['24h'], 'the 6h window is absent, not copied from 24h or 7d');
+  assert.deepEqual(JSON.parse(run.store.get(DDOS_WINDOWS_META_KEY)).degradedWindows, ['6h']);
+});
+
+test('when every DDoS window fails, last-good windows and their clock are retained', () => {
+  const entries = [
+    [DDOS_WINDOWS_KEY, JSON.stringify({ windows: { '24h': { dateRangeStart: 'OLD', dateRangeEnd: 'OLD', topTargetLocations: [] } } })],
+    [DDOS_WINDOWS_META_KEY, JSON.stringify({ fetchedAt: NOW - 30 * 60_000, recordCount: 0 })],
+  ];
+  const before = new Map(entries);
+  const run = runSeeder({ entries, plan: { payload: 'full', target6h: 'http-503', target24h: 'success-false' } });
+
+  assert.equal(run.store.get(DDOS_WINDOWS_KEY), before.get(DDOS_WINDOWS_KEY));
+  assert.equal(run.store.get(DDOS_WINDOWS_META_KEY), before.get(DDOS_WINDOWS_META_KEY));
+  assert.ok(JSON.parse(run.store.get(DDOS_KEY)).topTargetLocations.length, 'the 7d DDoS key is independent of the windows');
+});
+
+test('health grades the DDoS windows strictly: a published key is OK, a vanished one under a fresh clock is a failure', () => {
+  const run = runSeeder({ plan: { payload: 'full' } });
+  assert.equal(classifyCompanion('ddosWindows', DDOS_WINDOWS_KEY, DDOS_WINDOWS_META_KEY, run.store).status, 'OK');
+  // A confirmed empty run (no target rows in any window) is still OK.
+  const quiet = runSeeder();
+  assert.equal(classifyCompanion('ddosWindows', DDOS_WINDOWS_KEY, DDOS_WINDOWS_META_KEY, quiet.store).status, 'OK');
+  // The payload evicted while seed-meta still reads fresh: never softened to OK or on-demand.
+  const vanished = new Map(run.store);
+  vanished.delete(DDOS_WINDOWS_KEY);
+  const entry = classifyCompanion('ddosWindows', DDOS_WINDOWS_KEY, DDOS_WINDOWS_META_KEY, vanished);
+  assert.notEqual(entry.status, 'OK');
+  assert.ok(!String(entry.status).includes('ON_DEMAND'), `strict, not on-demand: ${entry.status}`);
 });

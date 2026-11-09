@@ -439,6 +439,9 @@ const STANDALONE_KEYS = {
   // Today's and the previous day's high GPS-interference cells, read by the
   // Lite Geopolitics indicator through the on-demand bootstrap URL.
   gpsHighCells: 'intelligence:gpsjam:high-cells:v1',
+  // DDoS target shares over the last 6 h and 24 h, read by the Lite Technology
+  // map's shorter ranges through the on-demand bootstrap URL.
+  ddosWindows: 'cf:radar:ddos-windows:v1',
   // 30 days of per-country strike tallies the relay builds from the Middle East
   // strike feed; read only by the CII strike pressure (get-risk-scores), so
   // monitored here. Gated by IRAN_EVENTS_ENABLED like the feed itself.
@@ -2485,6 +2488,7 @@ const SEED_META = {
     cutover: { mode: 'activation-marker', fromKey: null, issue: 10051, activationKey: 'seed-activated:energy:regional-ursea' } },
   cryptoSectors:        { key: 'seed-meta:market:crypto-sectors',             maxStaleMin: 120 }, // relay loop every ~30min; 120min = 2h = 4x interval
   ddosAttacks:          { key: 'seed-meta:cf:radar:ddos',                    maxStaleMin: 60 }, // seed-internet-outages publishes the payload before advancing this clock; outages cron ~15min; 60 = 4x interval
+  ddosWindows:          { key: 'seed-meta:cf:radar:ddos-windows',            maxStaleMin: 60 }, // the same seed-internet-outages companion path as ddosAttacks; TTL 3h > 60
   economicStress:       { key: 'seed-meta:economic:stress-index',            maxStaleMin: 180 }, // computed in seed-economy afterPublish; cron ~1h; 180min = 3x interval
   marketImplications:   {
     key: 'seed-meta:intelligence:market-implications',
@@ -3309,7 +3313,7 @@ function applyStaleContentGrace(checks, graceEvidenceByName, deadlines, now) {
 }
 
 const EMPTY_DATA_OK_KEYS = new Set([
-  'notamClosures', 'faaDelays', 'intlDelays', 'gpsjam', 'gpsHighCells', 'positiveGeoEvents', 'weatherAlerts', 'imdCycloneMarine', 'canadaRoads', 'albertaRoads', 'manitobaRoads', 'torontoRoads', 'bcOpen511', 'canadaAlerts', 'canadaAlertsAbSource', 'canadaAlertsBcSource', 'canadaAlertsSkSource',
+  'notamClosures', 'faaDelays', 'intlDelays', 'gpsjam', 'gpsHighCells', 'ddosWindows', 'positiveGeoEvents', 'weatherAlerts', 'imdCycloneMarine', 'canadaRoads', 'albertaRoads', 'manitobaRoads', 'torontoRoads', 'bcOpen511', 'canadaAlerts', 'canadaAlertsAbSource', 'canadaAlertsBcSource', 'canadaAlertsSkSource',
   'earningsCalendar', 'econCalendar', 'cotPositioning',
   'usniFleet', // usniFleetStale covers the fallback; relay outages → WARN not CRIT
   'newsThreatSummary', // a quiet classify cycle writes `byCountry: {}` (0 records); MISSING_DATA_IS_FAILURE_KEYS makes a payload missing beside fresh seed-meta critical (expiry after the 2h TTL reads STALE_SEED, since seed-meta is stale by then)
@@ -3349,6 +3353,8 @@ const MISSING_DATA_IS_FAILURE_KEYS = new Set([
   // therefore cannot excuse a vanished data key.
   'cableHealth',
   'ddosAttacks',
+  // The 6 h and 24 h DDoS windows: the same companion path, so a vanished key is a failure too.
+  'ddosWindows',
   'trafficAnomalies',
   'notamClosures',
   'thermalEscalationBootstrap',
