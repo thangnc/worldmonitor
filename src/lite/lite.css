@@ -29,11 +29,21 @@
 	/* Indicator card: REPORTED trust label, and the "No linked news found" accent. */
 	--color-reported: #7fb2ff;
 	--color-nolink: #ff7ac6;
-	/* Reported violence (GDELT) shading on the Geopolitics map, light to strong. */
-	--color-violence-1: #1f3a5c;
-	--color-violence-2: #24508a;
-	--color-violence-3: #2f6fc4;
-	--color-violence-4: #5b9cf0;
+	/* Map markers (design "Spec — Map markers"; src/lite/map/marks.tsx). Colour is
+	   state, never domain: grey normal, amber elevated, red critical. Glyph ink
+	   sits on a solid event and fills assets, judgements and aggregates; the
+	   white ring marks the selected marker. */
+	--color-mark-normal: #9aa2ae;
+	--color-mark-elev: #e8c547;
+	--color-mark-crit: #f2555a;
+	--color-mark-ink: #0a0c0f;
+	--color-mark-ring: #ffffff;
+	/* The one shared blue ramp for every intensity area (GDELT reported
+	   violence, DDoS share), light to strong. */
+	--color-ramp-1: #26385a;
+	--color-ramp-2: #3e6bb0;
+	--color-ramp-3: #7fb2ff;
+	--color-ramp-4: #cfe2ff;
 
 	--font-sans: "IBM Plex Sans Variable", "IBM Plex Sans", system-ui, sans-serif;
 	--font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;

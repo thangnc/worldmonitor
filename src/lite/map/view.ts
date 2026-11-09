@@ -22,13 +22,19 @@ export function markerBounds(points: ReadonlyArray<{ lat: number; lon: number }>
   ];
 }
 
-/** UCDP circle radius in pixels: area grows with deaths, capped so a large toll does not cover a region. */
-export function ucdpRadius(deaths: number): number {
-  return Math.min(26, 6 + Math.sqrt(Math.max(0, deaths)) * 0.9);
-}
+/** Aggregate diameter bounds in px, and the size from which the count is printed inside. */
+export const AGGREGATE_MIN = 12;
+export const AGGREGATE_MAX = 40;
+export const AGGREGATE_LABEL_MIN = 22;
 
-/** Deaths printed inside a UCDP circle once it is large enough to hold them. */
-export const LABEL_MIN_RADIUS = 12;
+/**
+ * Aggregate diameter: area ∝ count (square-root scale), reaching the 40 px
+ * maximum at `fullAt`, never below 12 px.
+ */
+export function aggregateDiameter(count: number, fullAt: number): number {
+  const d = AGGREGATE_MAX * Math.sqrt(Math.max(0, count) / Math.max(1, fullAt));
+  return Math.round(Math.min(AGGREGATE_MAX, Math.max(AGGREGATE_MIN, d)));
+}
 
 /** `412`, `1.2k`, `15k`. */
 export function compactCount(n: number): string {

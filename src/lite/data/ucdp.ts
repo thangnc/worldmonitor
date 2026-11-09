@@ -1,5 +1,5 @@
 import type { UcdpViolenceEvent, UcdpViolenceType } from '@/generated/client/worldmonitor/conflict/v1/service_client';
-import type { UcdpMarker } from '../map/LiteMap';
+import type { AggregateMarker } from '../map/LiteMap';
 import { regionOfPoint, type GeoRegion } from './transforms';
 
 /**
@@ -9,6 +9,12 @@ import { regionOfPoint, type GeoRegion } from './transforms';
  * locations by zoom (src/lite/map/LiteMap.tsx), so only visible ones become
  * DOM elements and no location is dropped.
  */
+
+/**
+ * Deaths at which a UCDP circle reaches the 40 px maximum. The toll is printed
+ * from 22 px, about 120 deaths.
+ */
+export const UCDP_FULL_AT = 400;
 
 /** Sources named in a shared-location card before "and N more". */
 const LISTED_SOURCES = 2;
@@ -83,7 +89,7 @@ interface Location {
 export function ucdpMarkers(
   events: readonly UcdpViolenceEvent[],
   region: GeoRegion,
-): { markers: UcdpMarker[]; locations: number } {
+): { markers: AggregateMarker[]; locations: number } {
   const byPoint = new Map<string, Location>();
   for (const e of events) {
     const lat = e.location?.latitude;
@@ -100,10 +106,14 @@ export function ucdpMarkers(
 
   const ranked = [...byPoint.entries()].sort((a, b) => b[1].deaths - a[1].deaths || b[1].latest - a[1].latest);
 
-  const markers = ranked.map(([key, loc]): UcdpMarker => {
+  const markers = ranked.map(([key, loc]): AggregateMarker => {
     const where = formatCoordinates(loc.lat, loc.lon);
     const sorted = [...loc.events].sort((a, b) => (b.dateStart || 0) - (a.dateStart || 0));
-    const base = { kind: 'ucdp' as const, id: `ucdp:${key}`, lat: loc.lat, lon: loc.lon, deaths: loc.deaths };
+    // The verified background: a faint red aggregate, sized by deaths, merging with its neighbours by zoom.
+    const base = {
+      kind: 'aggregate' as const, id: `ucdp:${key}`, lat: loc.lat, lon: loc.lon, count: loc.deaths, fullAt: UCDP_FULL_AT,
+      state: 'crit' as const, fill: 'background' as const, cluster: { noun: 'UCDP locations', unit: 'deaths' },
+    };
     const [only] = sorted;
     if (only && sorted.length === 1) {
       return {

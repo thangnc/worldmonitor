@@ -13,7 +13,8 @@ import { countryName, shadingBasis } from './conflict';
 import { feedState, type FeedState, type Indicator } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';
 import type { ResourceState } from './store';
-import { GEO_REGION_LABEL, regionOfPoint, type LiteItem, type TimeRange } from './transforms';
+import { GEO_REGION_LABEL, regionOfPoint, type LiteItem, type TimeRange, type Tone } from './transforms';
+import type { MarkState } from '../map/marks';
 
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
@@ -36,6 +37,13 @@ export function feeds(base: FeedState, fired: readonly Indicator[], quietDetail:
 // ---- Military aircraft ------------------------------------------------------
 
 export const AIRCRAFT_MIN = 5;
+/** Aircraft at which an aircraft aggregate reaches the 40 px maximum (5 draws at 28 px, count inside). */
+export const AIRCRAFT_FULL_AT = 10;
+
+/** A curated hotspot's diamond: red at 5/5, amber at 3–4 (orange folds into amber), grey below (owner, 2026-11-10). */
+export function hotspotState(tone: Tone): MarkState {
+  return tone === 'crit' ? 'crit' : tone === 'high' || tone === 'elev' ? 'elev' : 'normal';
+}
 export const AIRCRAFT_RADIUS_KM = 200;
 export const MILITARY_FLIGHTS_CADENCE_MIN = 10;
 
@@ -144,6 +152,14 @@ export function aircraftFeeds(
 // ---- Incidents at sea (UKMTO) -----------------------------------------------
 
 export const SEA_WINDOW_HOURS = 24;
+
+/** A UKMTO notice's map state: red for an attack, hijack, boarding or explosion, amber for suspicious activity, grey for an advisory. */
+export function seaIncidentState(incidentType: string): MarkState {
+  const t = incidentType.toLowerCase();
+  if (/attack|hijack|board|explosion/.test(t)) return 'crit';
+  if (t.includes('suspicious')) return 'elev';
+  return 'normal';
+}
 export const UKMTO_CADENCE_MIN = 30;
 
 /** Sea areas named in UKMTO notices, matched in the place line and in headlines. */

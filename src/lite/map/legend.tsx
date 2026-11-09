@@ -58,7 +58,7 @@ export function MapLegend({
 export function LegendRow({ mark, name, note }: { mark: ComponentChildren; name: string; note: string }) {
   return (
     <span class="flex items-center gap-2" data-legend-row={name}>
-      <span class="flex w-[30px] items-center">{mark}</span>
+      <span class="flex w-[56px] shrink-0 items-center">{mark}</span>
       <span class="text-[11.5px] text-ink">{name}</span>
       <span class="text-[10.5px] text-dim">{note}</span>
     </span>

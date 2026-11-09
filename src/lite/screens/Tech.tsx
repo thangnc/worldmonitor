@@ -5,7 +5,8 @@ import { Topbar, matchesSearch } from '../components/Topbar';
 import { Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
 import { HealthDots, IndicatorFeed } from '../components/indicator';
 import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
-import { GlyphMark, LiteMap, type GlyphMarker, type MapOverlays } from '../map/LiteMap';
+import { LiteMap, type MapMarker, type MapOverlays } from '../map/LiteMap';
+import { AggregateMark, AssetMark, EventMark, LineSwatch, RampSwatch, SwatchRun } from '../map/marks';
 import { LegendRow, MapLegend } from '../map/legend';
 import {
   selectTechDevelopments,
@@ -147,16 +148,26 @@ export function Tech() {
 
 const ALL_ON: Record<TechLayer, boolean> = { ddos: true, attackers: true, outages: true, cloud: true, datacenters: true, cables: true };
 
+// The same swatches as the map, states in the spec's order: normal, elevated, critical.
 const LEGEND: ReadonlyArray<{ key: TechLayer; mark: preact.JSX.Element; label: string; sub: string }> = [
-  { key: 'ddos', mark: <span class="flex gap-[2px]">{['bg-tech/30', 'bg-tech/55', 'bg-tech/80'].map((c) => <span key={c} class={cx('h-[9px] w-[5px] rounded-[1px]', c)} />)}</span>, label: 'DDoS targets', sub: 'who is attacked' },
-  { key: 'attackers', mark: <GlyphMark shape="hex" tone="muted" text="" />, label: 'Attack servers', sub: 'where attackers sit' },
-  { key: 'outages', mark: <span class="flex gap-[2px]">{['bg-crit', 'bg-high', 'bg-elev'].map((c) => <span key={c} class={cx('h-[7px] w-[7px] rounded-full', c)} />)}</span>, label: 'Outages', sub: 'nationwide · regional · network' },
-  { key: 'cloud', mark: <span class="flex gap-[2px]">{['border-muted', 'border-elev bg-elev/30', 'border-crit bg-crit/30'].map((c) => <span key={c} class={cx('h-[7px] w-[7px] rounded-[2px] border', c)} />)}</span>, label: 'Cloud regions', sub: 'AWS · Azure · GCP · Cloudflare' },
-  { key: 'datacenters', mark: <GlyphMark shape="site" tone="muted" />, label: 'AI data centres', sub: 'amber = outage in country' },
-  { key: 'cables', mark: <span class="flex items-center gap-[2px]">{['bg-dim', 'bg-elev', 'bg-crit'].map((c) => <span key={c} class={cx('h-[2px] w-[6px]', c)} />)}</span>, label: 'Undersea cables', sub: 'ok · degraded · fault' },
+  { key: 'ddos', mark: <RampSwatch />, label: 'DDoS targets', sub: 'who is attacked' },
+  { key: 'attackers', mark: <AggregateMark count={0} fullAt={1} state="normal" size={12} />, label: 'Attack servers', sub: 'where attackers sit' },
+  { key: 'outages', mark: <SwatchRun><EventMark glyph="wifi-off" state="elev" /><EventMark glyph="zap" state="crit" /></SwatchRun>, label: 'Outages', sub: 'partial · major, glyph = cause' },
+  { key: 'cloud', mark: <SwatchRun><AssetMark glyph="cloud" state="normal" /><AssetMark glyph="cloud" state="elev" /><AssetMark glyph="cloud" state="crit" /></SwatchRun>, label: 'Cloud regions', sub: 'worst status per city' },
+  { key: 'datacenters', mark: <SwatchRun><AssetMark glyph="cpu" state="normal" /><AssetMark glyph="cpu" state="elev" /></SwatchRun>, label: 'AI data centres', sub: 'amber = outage in country' },
+  { key: 'cables', mark: <SwatchRun><LineSwatch state="normal" /><LineSwatch state="elev" /><LineSwatch state="crit" /></SwatchRun>, label: 'Undersea cables', sub: 'ok · degraded · fault' },
 ];
 
-const LEGEND_MARK: Record<TechLayer, preact.JSX.Element> = Object.fromEntries(LEGEND.map((l) => [l.key, l.mark])) as Record<TechLayer, preact.JSX.Element>;
+/** The popover's one mark per layer. */
+const POPOVER_MARK: Record<TechLayer, preact.JSX.Element> = {
+  ddos: <RampSwatch steps={[2, 3, 4]} />,
+  attackers: <AggregateMark count={0} fullAt={1} state="normal" size={12} />,
+  outages: <EventMark glyph="wifi-off" state="crit" />,
+  cloud: <AssetMark glyph="cloud" state="normal" />,
+  datacenters: <AssetMark glyph="cpu" state="normal" />,
+  cables: <LineSwatch state="normal" />,
+};
+
 
 function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: string | null) => void }) {
   const [layers, setLayers] = useState<Record<TechLayer, boolean>>(ALL_ON);
@@ -171,7 +182,7 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
 
   const built = useMemo(() => {
     const now = Date.now();
-    const markers: GlyphMarker[] = [];
+    const markers: MapMarker[] = [];
     const overlays: MapOverlays = {};
     if (layers.ddos && ddos.status === 'ready') {
       const d = ddosLayer(ddos.data, shapes.status === 'ready' ? shapes.data : null);
@@ -193,7 +204,12 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
   // Resolve an indicator's focus key against the markers on the map.
   const focusId = useMemo(() => {
     if (!focus) return null;
-    if (focus.startsWith('provider:')) return built.markers.find((m) => m.id.startsWith(`cloud:${focus.slice('provider:'.length)}:`))?.id ?? null;
+    if (focus.startsWith('provider:')) {
+      // The provider's worst city: red before amber before grey.
+      const rank = { crit: 0, elev: 1, normal: 2 } as const;
+      const cities = built.markers.filter((m) => m.kind === 'asset' && m.keys?.includes(focus));
+      return cities.sort((a, b) => (a.kind === 'asset' && b.kind === 'asset' ? rank[a.state] - rank[b.state] : 0))[0]?.id ?? null;
+    }
     if (focus === 'attackers') return built.markers.find((m) => m.id.startsWith('attack:'))?.id ?? null;
     return built.markers.find((m) => m.id === focus)?.id ?? null;
   }, [focus, built]);
@@ -215,17 +231,17 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
       title: 'Cyber',
       note: 'targets vs attackers',
       rows: [
-        { id: 'ddos', mark: LEGEND_MARK.ddos, name: 'DDoS targets · Cloudflare Radar', sub: 'country shading by share of attack traffic, 7 days', on: layers.ddos },
-        { id: 'attackers', mark: LEGEND_MARK.attackers, name: 'Attack servers · threat feeds', sub: `${located != null ? `${located.toLocaleString('en-US')} located indicators · ` : ''}8° hexagons`, on: layers.attackers },
+        { id: 'ddos', mark: POPOVER_MARK.ddos, name: 'DDoS targets · Cloudflare Radar', sub: 'country shading by share of attack traffic, 7 days', on: layers.ddos },
+        { id: 'attackers', mark: POPOVER_MARK.attackers, name: 'Attack servers · threat feeds', sub: `${located != null ? `${located.toLocaleString('en-US')} located indicators · ` : ''}8° cells`, on: layers.attackers },
       ],
     },
     {
       title: 'Infrastructure',
       rows: [
-        { id: 'outages', mark: LEGEND_MARK.outages, name: 'Internet outages · Cloudflare Radar', sub: `last ${MAP_OUTAGE_DAYS} days; hollow once ended over 24 h ago`, on: layers.outages },
-        { id: 'cloud', mark: LEGEND_MARK.cloud, name: 'Cloud regions', sub: 'red only when the incident names the region', on: layers.cloud },
-        { id: 'datacenters', mark: LEGEND_MARK.datacenters, name: 'AI data centres · Epoch AI', sub: `existing, ${DATACENTER_MIN_CHIPS.toLocaleString('en-US')}+ chips`, on: layers.datacenters },
-        { id: 'cables', mark: LEGEND_MARK.cables, name: 'Undersea cables · NGA warnings', sub: 'health: ok, degraded, fault', on: layers.cables },
+        { id: 'outages', mark: POPOVER_MARK.outages, name: 'Internet outages · Cloudflare Radar', sub: `last ${MAP_OUTAGE_DAYS} days; faint once ended over 24 h ago`, on: layers.outages },
+        { id: 'cloud', mark: POPOVER_MARK.cloud, name: 'Cloud regions', sub: 'one per city · red only when the incident names a region there', on: layers.cloud },
+        { id: 'datacenters', mark: POPOVER_MARK.datacenters, name: 'AI data centres · Epoch AI', sub: `existing, ${DATACENTER_MIN_CHIPS.toLocaleString('en-US')}+ chips`, on: layers.datacenters },
+        { id: 'cables', mark: POPOVER_MARK.cables, name: 'Undersea cables · NGA warnings', sub: 'health: ok, degraded, fault', on: layers.cables },
       ],
     },
   ];
@@ -236,7 +252,7 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
         title="Infrastructure & cyber map"
         sub="live · Cloudflare Radar every 30 min · threat feeds every 2 h"
         testId="infra-map"
-        right={<LayersPopover groups={groups} onToggle={(id, on) => setLayers((cur) => ({ ...cur, [id]: on }))} footer="DDoS shading shows who is attacked; hexagons show where attackers' servers are." />}
+        right={<LayersPopover groups={groups} onToggle={(id, on) => setLayers((cur) => ({ ...cur, [id]: on }))} footer="DDoS shading shows who is attacked; grey circles show where attackers' servers are." />}
       >
         <div class="relative h-[320px] overflow-hidden border-t border-line bg-bg/40 md:h-[440px]">
           <LiteMap markers={built.markers} overlays={built.overlays} fit="world" focusId={focusId} onSelect={(id) => { if (!id) onFocus(null); }} />
@@ -258,14 +274,14 @@ function InfraMap({ focus, onFocus }: { focus: string | null; onFocus: (key: str
             <Waypoints size={14} strokeWidth={1.5} class="mt-[2px] shrink-0 text-muted" />
             <span class="flex flex-col gap-[2px]">
               <span class="text-[12.5px] font-medium text-ink">Targets vs attackers</span>
-              <span class="text-[11.5px] leading-4 text-dim">Violet countries are where DDoS traffic lands. Hexagons are where attacking servers are hosted, not who they hit.</span>
+              <span class="text-[11.5px] leading-4 text-dim">Blue countries are where DDoS traffic lands. Grey circles are where attacking servers are hosted, not who they hit.</span>
             </span>
           </div>
           <div class="flex gap-[10px] border-t border-line px-5 py-3 md:border-t-0">
             <Server size={14} strokeWidth={1.5} class="mt-[2px] shrink-0 text-muted" />
             <span class="flex flex-col gap-[2px]">
               <span class="text-[12.5px] font-medium text-ink">Cloud outages are usually company-wide</span>
-              <span class="text-[11.5px] leading-4 text-dim">A region turns red only when the incident names it. Otherwise all of a provider's regions show amber. Status pages rarely name one.</span>
+              <span class="text-[11.5px] leading-4 text-dim">A city turns red only when the incident names a region there. Otherwise every city of that provider shows amber. Status pages rarely name one.</span>
             </span>
           </div>
         </div>

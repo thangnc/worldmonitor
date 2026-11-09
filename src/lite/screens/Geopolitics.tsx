@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { CalendarDays, Radio, Route, SquareSlash } from 'lucide-preact';
+import { CalendarDays, Radio } from 'lucide-preact';
 import { INTEL_HOTSPOTS } from '@/config/geo';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { BarStrip, StackedBar } from '../components/charts';
 import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
 import { BG, BORDER, Card, ColLabel, DerivedTag, Dot, Panel, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
-import { Diamond, LiteMap, PinMark, type CountryFill, type MapMarker, type MapOverlays } from '../map/LiteMap';
+import { LiteMap, type CountryFill, type MapMarker, type MapOverlays } from '../map/LiteMap';
+import { AggregateMark, EventMark, HatchSwatch, JudgementMark, LineSwatch, RampSwatch, StatusAreaSwatch, SwatchRun } from '../map/marks';
 import { LegendRow, MapLegend } from '../map/legend';
 import { HealthDots, IndicatorFeed } from '../components/indicator';
 import {
@@ -25,6 +26,7 @@ import {
   useUnrestEvents,
 } from '../data/hooks';
 import {
+  AIRCRAFT_FULL_AT,
   AIRCRAFT_MIN,
   AIRCRAFT_RADIUS_KM,
   GPS_RADIUS_KM,
@@ -35,8 +37,11 @@ import {
   aircraftNearHotspots,
   gpsFeeds,
   gpsHexFills,
+  hotspotState,
+  kindSplit,
   layerRangeNote,
   seaIncidentFeeds,
+  seaIncidentState,
 } from '../data/geo-layers';
 import { shippingLanes } from '../data/markets-map';
 import { ESCALATION_REGIONS, leadCountry } from '../data/regions';
@@ -50,7 +55,7 @@ import {
   violenceFeeds,
   type RegionTile,
 } from '../data/conflict';
-import { feedCounts, sortFeeds, type FeedState } from '../data/indicators';
+import { feedCounts, feedsStale, sortFeeds, type FeedState } from '../data/indicators';
 import { LINK_WINDOW_HOURS, linkNews } from '../data/news-link';
 import { FEED_LABEL, escalationLevel, scoreHotspots } from '../data/escalation';
 import { CHOKEPOINT_TRANSIT_SHARE, EMBASSY_WINDOW_HOURS, TAIWAN_MIN, TAIWAN_RATIO, chokepointFeeds, embassyAlertFeeds, taiwanStraitFeeds } from '../data/geo-watch';
@@ -270,12 +275,13 @@ function ConflictMap({
   const newest = ucdp.status === 'ready' ? ucdpNewest(ucdp.data) : 0;
   const inView = (lat: number, lon: number) => region === 'all' || regionOfPoint(lat, lon) === region;
 
-  // Military aircraft near the curated hotspots; 5 or more puts a badge on the hotspot.
+  // Military aircraft near the curated hotspots; 5 or more near one collapse into an aggregate with the count.
   const clusters = useMemo(() => (flights.status === 'ready' ? aircraftNearHotspots(flights.data, INTEL_HOTSPOTS) : []), [flights]);
-  const badges = useMemo(
-    () => new Map(clusters.filter((c) => c.flights.length >= AIRCRAFT_MIN).map((c) => [c.hotspot.id, c.flights.length])),
-    [clusters],
-  );
+  // A late feed draws its markers at 45% opacity (spec grammar: stale).
+  const stale = useMemo(() => {
+    const now = Date.now();
+    return { aircraft: feedsStale(aircraftFeeds(flights, INTEL_HOTSPOTS, [], now)), sea: feedsStale(seaIncidentFeeds(sea, [], now)) };
+  }, [flights, sea]);
 
   const markers = useMemo(() => {
     const out: MapMarker[] = [];
@@ -290,14 +296,13 @@ function ConflictMap({
         const live = score.combinedScore.toFixed(1);
         const c = score.components;
         out.push({
-          kind: 'hotspot',
+          kind: 'judgement',
           id: `hotspot:${h.id}`,
           lat: h.lat,
           lon: h.lon,
-          tone: level.tone,
-          // Below 3/5 the diamond stays, small and grey; from 3/5 it is larger and drawn on top.
+          state: hotspotState(level.tone),
+          // Below 3/5 the diamond stays grey, under the aggregates; from 3/5 it is drawn on top.
           named: level.named,
-          badge: layers.aircraft ? badges.get(h.id) : undefined,
           title: `${h.name}: live escalation ${live}/5, ${level.label.toLowerCase()} (curated hotspot)`,
           popup: {
             kind: 'Curated hotspot',
@@ -319,20 +324,55 @@ function ConflictMap({
     }
     if (layers.aircraft) {
       const seen = new Set<string>();
+      // A hotspot with AIRCRAFT_MIN or more nearby: one aggregate at their centre, carrying them all.
+      for (const c of clusters) {
+        if (c.flights.length < AIRCRAFT_MIN || !inView(c.hotspot.lat, c.hotspot.lon)) continue;
+        const fresh = c.flights.filter((f) => !seen.has(f.id));
+        for (const f of c.flights) seen.add(f.id);
+        const pts = fresh.length ? fresh : c.flights;
+        const lat = pts.reduce((t, f) => t + f.location!.latitude, 0) / pts.length;
+        const lon = pts.reduce((t, f) => t + f.location!.longitude, 0) / pts.length;
+        const names = c.flights.map((f) => f.callsign || f.hexCode).filter(Boolean);
+        out.push({
+          kind: 'aggregate',
+          id: `aircraft-group:${c.hotspot.id}`,
+          lat,
+          lon,
+          count: c.flights.length,
+          fullAt: AIRCRAFT_FULL_AT,
+          state: 'normal',
+          fill: 'reported',
+          stale: stale.aircraft,
+          title: `${c.flights.length} military aircraft near ${c.hotspot.name}`,
+          popup: {
+            kind: 'Military aircraft · transponders',
+            name: `Near ${c.hotspot.name}`,
+            value: `${c.flights.length} aircraft`,
+            lines: [
+              { text: kindSplit(c.byKind) },
+              { text: names.slice(0, 8).join(' · ') + (names.length > 8 ? ` · and ${names.length - 8} more` : ''), style: 'mono' as const },
+              { text: `Within ${AIRCRAFT_RADIUS_KM} km of ${c.hotspot.name} · live positions, adsb.lol`, style: 'dim' as const },
+            ].filter((line) => line.text),
+          },
+        });
+      }
+      let pins = 0;
       for (const c of clusters) {
         for (const f of c.flights) {
-          if (seen.has(f.id) || seen.size >= MAX_AIRCRAFT_PINS || !inView(f.location!.latitude, f.location!.longitude)) continue;
+          if (seen.has(f.id) || pins >= MAX_AIRCRAFT_PINS || !inView(f.location!.latitude, f.location!.longitude)) continue;
           seen.add(f.id);
+          pins += 1;
           const name = f.callsign || f.hexCode || 'Unidentified';
           out.push({
-            kind: 'pin',
-            shape: 'aircraft',
+            // A transponder position is reported, not verified: a translucent grey event.
+            kind: 'event',
+            glyph: 'plane',
+            state: 'normal',
+            fill: 'reported',
+            stale: stale.aircraft,
             id: `aircraft:${f.id}`,
             lat: f.location!.latitude,
             lon: f.location!.longitude,
-            heading: f.heading,
-            tone: 'muted',
-            fired: false,
             title: `${name}: military aircraft near ${c.hotspot.name}`,
             popup: {
               kind: 'Military aircraft · transponder',
@@ -340,7 +380,7 @@ function ConflictMap({
               value: aircraftKind(f.aircraftType),
               lines: [
                 { text: [f.aircraftModel, f.operatorCountry].filter(Boolean).join(' · ') },
-                { text: `${Math.round(f.altitude).toLocaleString('en-US')} ft · ${Math.round(f.speed)} kt`, style: 'mono' as const },
+                { text: `${Math.round(f.altitude).toLocaleString('en-US')} ft · ${Math.round(f.speed)} kt${Number.isFinite(f.heading) ? ` · heading ${Math.round(f.heading)}°` : ''}`, style: 'mono' as const },
                 { text: `Within ${AIRCRAFT_RADIUS_KM} km of ${c.hotspot.name} · live position, adsb.lol`, style: 'dim' as const },
               ].filter((line) => line.text),
             },
@@ -354,13 +394,15 @@ function ConflictMap({
         if (i.occurredAt < from || !inView(i.location!.latitude, i.location!.longitude)) continue;
         const recent = Date.now() - (i.reportedAt || i.occurredAt) <= SEA_WINDOW_HOURS * HOUR_MS;
         out.push({
-          kind: 'pin',
-          shape: 'sea',
+          // An official notice: solid in its state colour; older than the fire window, the faint background.
+          kind: 'event',
+          glyph: 'ship',
+          state: seaIncidentState(i.incidentType),
+          fill: recent ? 'solid' : 'background',
+          stale: stale.sea,
           id: `sea:${i.id}`,
           lat: i.location!.latitude,
           lon: i.location!.longitude,
-          tone: 'ok',
-          fired: recent,
           title: `UKMTO ${i.incidentNumber}: ${i.incidentType}, ${i.place}`,
           popup: {
             kind: 'Incident at sea · UKMTO',
@@ -376,7 +418,7 @@ function ConflictMap({
       }
     }
     return out;
-  }, [ucdp, escalation, region, layers, clusters, badges, sea, range]);
+  }, [ucdp, escalation, region, layers, clusters, stale, sea, range]);
 
   // GPS hexagons (the latest gpsjam day) and the optional shipping lanes, drawn under the labels.
   const overlays = useMemo((): MapOverlays | undefined => {
@@ -496,7 +538,7 @@ function ConflictMap({
                   values={histogram.bars.map((b) => b.value)}
                   height={16}
                   label={`GDELT reports per ${histogram.unit === 'hr' ? 'hour' : 'day'}, last ${range}`}
-                  colorFor={(i) => (histogram.bars[i]?.partial ? 'bg-faint' : 'bg-violence-3')}
+                  colorFor={(i) => (histogram.bars[i]?.partial ? 'bg-faint' : 'bg-ramp-2')}
                 />
               </div>
               <span class="font-mono text-[10.5px] text-muted">now</span>
@@ -514,20 +556,9 @@ function ConflictMap({
   );
 }
 
-/** The four violence steps, as in the legend and the popover. */
-function ViolenceSwatch() {
-  return (
-    <span class="flex gap-px" aria-hidden="true">
-      <span class="h-[9px] w-[6px] rounded-[1px] bg-violence-2" />
-      <span class="h-[9px] w-[6px] rounded-[1px] bg-violence-3" />
-      <span class="h-[9px] w-[6px] rounded-[1px] bg-violence-4" />
-    </span>
-  );
-}
-
-const UcdpMark = () => <span class="block h-[11px] w-[11px] rounded-full border border-crit/80 bg-crit/25" aria-hidden="true" />;
-const HexMark = () => <span class="block h-[10px] w-[12px] border border-crit bg-crit/15 [clip-path:polygon(25%_0,75%_0,100%_50%,75%_100%,25%_100%,0_50%)]" aria-hidden="true" />;
-const AirspaceMark = () => <SquareSlash size={14} strokeWidth={1.5} class="text-dim" aria-hidden="true" />;
+// The same swatches as the map (src/lite/map/marks.tsx), states in the spec's order.
+const UcdpMark = () => <AggregateMark count={0} fullAt={1} state="crit" fill="background" size={12} />;
+const GpsMark = () => <SwatchRun><StatusAreaSwatch state="elev" /><StatusAreaSwatch state="crit" /></SwatchRun>;
 
 /** The popover's three groups (owner's design): live layers, background and judgement, optional context. */
 function layerGroups(layers: LayerState, ucdpNewestAt: number, range: TimeRange): LayerGroup[] {
@@ -538,24 +569,24 @@ function layerGroups(layers: LayerState, ucdpNewestAt: number, range: TimeRange)
       // Aircraft are a live snapshot and gpsjam publishes one file a day, so only violence and sea follow the range (owner, 2026-11-10).
       note: `at ${range}`,
       rows: [
-        { id: 'violence', mark: <ViolenceSwatch />, name: 'Reported violence · GDELT', sub: "country shading · against each country's normal", range: layerRangeNote('violence', range), on: layers.violence },
-        { id: 'aircraft', mark: <PinMark shape="aircraft" tone="muted" fired={false} />, name: 'Military aircraft', sub: `transponder · badge at ${AIRCRAFT_MIN}+ near a hotspot`, range: layerRangeNote('aircraft', range), on: layers.aircraft },
-        { id: 'sea', mark: <PinMark shape="sea" tone="ok" fired />, name: 'Incidents at sea · UKMTO', sub: `official notices · fires on one in ${SEA_WINDOW_HOURS} h`, range: layerRangeNote('sea', range), on: layers.sea },
-        { id: 'gps', mark: <HexMark />, name: 'GPS interference · gpsjam.org', sub: 'hexagons · red above 10%', range: layerRangeNote('gps', range), on: layers.gps },
-        { id: 'airspace', mark: <AirspaceMark />, name: 'Airspace closures · NOTAM', sub: 'awaiting FAA access', on: null },
+        { id: 'violence', mark: <RampSwatch steps={[2, 3, 4]} />, name: 'Reported violence · GDELT', sub: "country shading · against each country's normal", range: layerRangeNote('violence', range), on: layers.violence },
+        { id: 'aircraft', mark: <EventMark glyph="plane" state="normal" fill="reported" />, name: 'Military aircraft', sub: `transponder · grouped at ${AIRCRAFT_MIN}+ near a hotspot`, range: layerRangeNote('aircraft', range), on: layers.aircraft },
+        { id: 'sea', mark: <EventMark glyph="ship" state="crit" />, name: 'Incidents at sea · UKMTO', sub: `official notices · fires on one in ${SEA_WINDOW_HOURS} h`, range: layerRangeNote('sea', range), on: layers.sea },
+        { id: 'gps', mark: <StatusAreaSwatch state="crit" />, name: 'GPS interference · gpsjam.org', sub: 'hexagons · red above 10%', range: layerRangeNote('gps', range), on: layers.gps },
+        { id: 'airspace', mark: <HatchSwatch />, name: 'Airspace closures · NOTAM', sub: 'awaiting FAA access', on: null },
       ],
     },
     {
       title: 'Background & judgement',
       rows: [
         { id: 'conflicts', mark: <UcdpMark />, name: 'Verified · UCDP', sub: `verified background${ucdpTo}`, range: layerRangeNote('conflicts', range), on: layers.conflicts },
-        { id: 'hotspots', mark: <Diamond tone="elev" filled={false} size={11} />, name: 'Curated hotspots', sub: 'live score 1–5', range: layerRangeNote('hotspots', range), on: layers.hotspots },
+        { id: 'hotspots', mark: <JudgementMark state="elev" />, name: 'Curated hotspots', sub: 'live score 1–5', range: layerRangeNote('hotspots', range), on: layers.hotspots },
       ],
     },
     {
       title: 'Context · optional',
       rows: [
-        { id: 'lanes', mark: <Route size={14} strokeWidth={1.5} class="text-muted" aria-hidden="true" />, name: 'Shipping lanes', sub: 'useful for the Red Sea watch', on: layers.lanes },
+        { id: 'lanes', mark: <LineSwatch state="normal" />, name: 'Shipping lanes', sub: 'useful for the Red Sea watch', on: layers.lanes },
         { id: 'osint', mark: <Radio size={14} strokeWidth={1.5} class="text-dim" aria-hidden="true" />, name: 'Social OSINT', sub: 'discovery only · never alerts · no source chosen', on: null },
       ],
     },
@@ -566,13 +597,13 @@ function layerGroups(layers: LayerState, ucdpNewestAt: number, range: TimeRange)
 function GeoLegend({ layers }: { layers: LayerState }) {
   return (
     <MapLegend testId="map-legend" place="above-bar" collapsible>
-      {layers.violence ? <LegendRow mark={<ViolenceSwatch />} name="Reported violence" note="GDELT" /> : null}
+      {layers.violence ? <LegendRow mark={<RampSwatch />} name="Reported violence" note="GDELT" /> : null}
       {layers.conflicts ? <LegendRow mark={<UcdpMark />} name="Verified background" note="UCDP" /> : null}
-      {layers.hotspots ? <LegendRow mark={<Diamond tone="elev" filled={false} size={10} />} name="Curated hotspot" note="1–5" /> : null}
-      {layers.aircraft ? <LegendRow mark={<PinMark shape="aircraft" tone="muted" fired={false} />} name="Military aircraft" note="ADS-B" /> : null}
-      {layers.sea ? <LegendRow mark={<PinMark shape="sea" tone="ok" fired />} name="Sea incident" note="UKMTO" /> : null}
-      {layers.gps ? <LegendRow mark={<HexMark />} name="GPS interference" note="gpsjam" /> : null}
-      <LegendRow mark={<AirspaceMark />} name="Airspace closure" note="N/A" />
+      {layers.hotspots ? <LegendRow mark={<SwatchRun><JudgementMark state="normal" /><JudgementMark state="elev" /><JudgementMark state="crit" /></SwatchRun>} name="Curated hotspot" note="1–5" /> : null}
+      {layers.aircraft ? <LegendRow mark={<SwatchRun><EventMark glyph="plane" state="normal" fill="reported" /><AggregateMark count={AIRCRAFT_MIN} fullAt={AIRCRAFT_FULL_AT} state="normal" size={16} /></SwatchRun>} name="Military aircraft" note={`ADS-B · ${AIRCRAFT_MIN}+ grouped`} /> : null}
+      {layers.sea ? <LegendRow mark={<SwatchRun><EventMark glyph="ship" state="normal" /><EventMark glyph="ship" state="elev" /><EventMark glyph="ship" state="crit" /></SwatchRun>} name="Sea incident" note="UKMTO" /> : null}
+      {layers.gps ? <LegendRow mark={<GpsMark />} name="GPS interference" note="gpsjam" /> : null}
+      <LegendRow mark={<HatchSwatch />} name="Airspace closure" note="N/A" />
     </MapLegend>
   );
 }
