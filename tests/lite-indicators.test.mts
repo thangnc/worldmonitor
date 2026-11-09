@@ -45,6 +45,7 @@ import {
   gpsHexFills,
   gpsIndicators,
   isGpsHighCells,
+  layerRangeNote,
   seaAreas,
   seaIncidentFeeds,
   type GpsHighCells,
@@ -53,6 +54,7 @@ import {
   MIN_REPORTS,
   conflictHistogram,
   countryShading,
+  shadingBasis,
   historyReady,
   hotspotStrip,
   violenceFeeds,
@@ -389,18 +391,16 @@ describe('GDELT reported violence', () => {
     assert.equal(shade.byCountry.get('UA')?.step, 2);
     assert.equal(shade.byCountry.get('FR')?.step, 0);
     assert.equal(shade.byCountry.get('YE')?.step, 3);
-    // The US files ten times Ukraine's volume at its normal: unshaded at 7d and 30d.
+    // The US files ten times Ukraine's volume at its normal: unshaded at 7d.
     const week = build({ day: (start) => ({ US: 400, UA: start >= today - 7 * DAY ? 120 : 40 }) });
-    for (const range of ['7d', '30d'] as const) {
-      const s = countryShading(week, range, NOW);
-      assert.equal(s.byCountry.get('US')?.step, 0, `${range}: volume alone never shades`);
-      assert.equal(s.byCountry.get('UA')?.step, 3, `${range}: Ukraine's week at ×3 its normal`);
-    }
-    assert.match(countryShading(week, '30d', NOW).basis, /30 days hold no earlier normal/);
+    const s = countryShading(week, '7d', NOW);
+    assert.equal(s.byCountry.get('US')?.step, 0, 'volume alone never shades');
+    assert.equal(s.byCountry.get('UA')?.step, 3, "Ukraine's week at ×3 its normal");
+    assert.equal(s.basis, 'last 7 days against the 22 before');
     assert.equal(countryShading(build({ hourCohorts: () => 3 }), '6h', NOW).partial, true);
   });
 
-  it('draws hourly bars for 6h and 24h and daily bars for 7d and 30d, today partial', () => {
+  it('draws hourly bars for 6h and 24h and daily bars for 7d, today partial', () => {
     const c = build({ hour: () => ({ UA: 2, FR: 1 }), day: () => ({ UA: 10 }) });
     const six = conflictHistogram(c, '6h', NOW);
     assert.equal(six.unit, 'hr');
@@ -680,6 +680,25 @@ describe('Finance markets map', () => {
 });
 
 describe('Geopolitics layers: aircraft, sea incidents, GPS interference', () => {
+  it('says what each layer shows at 6h, 24h and 7d; only violence and sea change', () => {
+    const ranges = ['6h', '24h', '7d'] as const;
+    const notes = (id: string) => ranges.map((r) => layerRangeNote(id, r));
+    assert.deepEqual(notes('violence'), [
+      'last 6h against the 7-day average: sudden spikes',
+      'last 24h against the 7-day average: sudden spikes',
+      'last 7 days against the 22 before: slow build-ups',
+    ]);
+    // The violence note is the shading's own basis, so the label cannot drift from the computation.
+    for (const r of ranges) assert.ok(layerRangeNote('violence', r)?.startsWith(shadingBasis(r)));
+    assert.deepEqual(notes('sea'), ['notices from the last 6 h', 'notices from the last 24 h', 'notices from the last 7 days']);
+    for (const id of ['aircraft', 'gps', 'conflicts', 'hotspots']) {
+      const [first, ...rest] = notes(id);
+      assert.ok(first, `${id} has a note`);
+      assert.ok(rest.every((n) => n === first), `${id} is the same at every range`);
+    }
+    for (const id of ['airspace', 'lanes', 'osint']) assert.equal(layerRangeNote(id, '7d'), undefined);
+  });
+
   const kyiv = { id: 'kyiv', name: 'Kyiv', lat: 50.45, lon: 30.52 };
   const taipei = { id: 'taipei', name: 'Taipei', lat: 25.03, lon: 121.56 };
   // About 0.009 degrees of latitude per km.

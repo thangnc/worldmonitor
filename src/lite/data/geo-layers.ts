@@ -9,11 +9,11 @@ import { haversineKm } from '../../../shared/geo-distance';
 import type { Hotspot } from '@/types';
 import type { MilitaryAircraftType, MilitaryFlight } from '@/generated/client/worldmonitor/military/v1/service_client';
 import type { ListUkmtoIncidentsResponse, UkmtoIncident } from '@/generated/client/worldmonitor/maritime/v1/service_client';
-import { countryName } from './conflict';
+import { countryName, shadingBasis } from './conflict';
 import { feedState, type FeedState, type Indicator } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';
 import type { ResourceState } from './store';
-import { GEO_REGION_LABEL, regionOfPoint, type LiteItem } from './transforms';
+import { GEO_REGION_LABEL, regionOfPoint, type LiteItem, type TimeRange } from './transforms';
 
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
@@ -341,4 +341,33 @@ export function gpsHexFills(
     });
   }
   return { type: 'FeatureCollection', features };
+}
+
+// ---- What each layer shows at the selected range ----------------------------
+
+const RANGE_WORDS: Record<TimeRange, string> = { '6h': 'last 6 h', '24h': 'last 24 h', '7d': 'last 7 days' };
+
+/**
+ * One line per Geopolitics layer saying what it shows at `range`. Only
+ * reported violence and incidents at sea change with it; the others say they
+ * do not (owner's decision, 2026-11-10). Undefined for layers with no data yet
+ * and for optional context.
+ */
+export function layerRangeNote(id: string, range: TimeRange): string | undefined {
+  switch (id) {
+    case 'violence':
+      return range === '7d' ? `${shadingBasis(range)}: slow build-ups` : `${shadingBasis(range)}: sudden spikes`;
+    case 'sea':
+      return `notices from the ${RANGE_WORDS[range]}`;
+    case 'aircraft':
+      return 'positions now; the range does not apply';
+    case 'gps':
+      return 'latest gpsjam day; the range does not apply';
+    case 'conflicts':
+      return 'every event, whatever the range';
+    case 'hotspots':
+      return 'score now; the range does not apply';
+    default:
+      return undefined;
+  }
 }

@@ -582,10 +582,10 @@ describe('Lite conflict map layout', () => {
 });
 
 describe('Lite time range', () => {
-  it('keeps items inside the owner ranges (6h, 24h, 7d, 30d), and items without a time', () => {
+  it('keeps items inside the owner ranges (6h, 24h, 7d), and items without a time', () => {
     const now = Date.UTC(2026, 10, 8, 12);
-    assert.deepEqual(TIME_RANGE_HOURS, { '6h': 6, '24h': 24, '7d': 168, '30d': 720 });
-    assert.equal(inTimeRange(now - 29 * 24 * 3_600_000, now, '30d'), true);
+    assert.deepEqual(TIME_RANGE_HOURS, { '6h': 6, '24h': 24, '7d': 168 });
+    assert.equal(inTimeRange(now - 6 * 24 * 3_600_000, now, '7d'), true);
     assert.equal(inTimeRange(now - 5 * 3_600_000, now, '6h'), true);
     assert.equal(inTimeRange(now - 7 * 3_600_000, now, '6h'), false);
     assert.equal(inTimeRange(now - 23 * 3_600_000, now, '24h'), true);
