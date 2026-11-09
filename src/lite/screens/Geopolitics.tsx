@@ -4,15 +4,18 @@ import { INTEL_HOTSPOTS } from '@/config/geo';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { BarStrip, StackedBar } from '../components/charts';
 import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
-import { BG, BORDER, Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
+import { BG, BORDER, Card, ColLabel, DerivedTag, Dot, Panel, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
 import { Diamond, LiteMap, PinMark, type CountryFill, type MapMarker, type MapOverlays } from '../map/LiteMap';
 import { LegendRow, MapLegend } from '../map/legend';
 import { HealthDots, IndicatorFeed } from '../components/indicator';
 import {
   selectIncidents,
+  useChokepoints,
   useConflictCounts,
+  useCrossStraitActivity,
   useDigest,
   useEarthquakes,
+  useEmbassyAlerts,
   useGpsHighCells,
   useGpsInterference,
   useMilitaryFlights,
@@ -49,7 +52,7 @@ import {
 import { feedCounts, sortFeeds, type FeedState } from '../data/indicators';
 import { LINK_WINDOW_HOURS, linkNews } from '../data/news-link';
 import { FEED_LABEL, escalationLevel, scoreHotspots } from '../data/escalation';
-import { SAMPLE_WATCHLIST } from '../data/fixtures';
+import { CHOKEPOINT_TRANSIT_SHARE, EMBASSY_WINDOW_HOURS, TAIWAN_MIN, TAIWAN_RATIO, chokepointFeeds, embassyAlertFeeds, taiwanStraitFeeds } from '../data/geo-watch';
 import {
   CORROBORATION_RULE,
   CORROBORATION_VIEW,
@@ -143,7 +146,6 @@ export function Geopolitics() {
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
           <GeoIndicators onOpen={(feed) => setFocus(mapIdForFeed(feed))} />
           <Timeline incidents={inRange} region={region} />
-          <Watchlist />
           <EvidenceMix state={digest} region={region} range={range} />
         </div>
       </div>
@@ -164,11 +166,15 @@ interface LayerState {
 
 const DEFAULT_LAYERS: LayerState = { violence: true, aircraft: true, sea: true, gps: true, conflicts: true, hotspots: true, lanes: false };
 
-/** The map marker an indicator card opens: its hotspot or its incident. Country spikes and regions have none. */
+/**
+ * The map marker an indicator card opens: its hotspot or its incident (Taiwan
+ * Strait opens Taipei). Country spikes, regions and chokepoints have none.
+ */
 function mapIdForFeed(feed: FeedState): string | null {
+  if (feed.id === 'taiwan') return 'hotspot:taipei';
   const [kind, key] = feed.id.split(':');
   if (!key) return null;
-  if (kind === 'aircraft' || kind === 'gps') return `hotspot:${key}`;
+  if (kind === 'aircraft' || kind === 'gps' || kind === 'embassy') return `hotspot:${key}`;
   if (kind === 'sea') return feed.id;
   return null;
 }
@@ -605,6 +611,9 @@ function GeoIndicators({ onOpen }: { onOpen: (feed: FeedState) => void }) {
   const flights = useMilitaryFlights();
   const sea = useSeaIncidents();
   const gpsCells = useGpsHighCells();
+  const chokepoints = useChokepoints();
+  const strait = useCrossStraitActivity();
+  const embassy = useEmbassyAlerts();
   const feeds = useMemo(() => {
     const now = Date.now();
     const news = digest.status === 'ready' ? digestItems(digest.data) : [];
@@ -613,15 +622,21 @@ function GeoIndicators({ onOpen }: { onOpen: (feed: FeedState) => void }) {
       ...aircraftFeeds(flights, INTEL_HOTSPOTS, news, now),
       ...seaIncidentFeeds(sea, news, now),
       ...gpsFeeds(gpsCells, INTEL_HOTSPOTS, news, now),
+      ...chokepointFeeds(chokepoints, news, now),
+      ...taiwanStraitFeeds(strait, news, now),
+      ...embassyAlertFeeds(embassy, INTEL_HOTSPOTS, news, now),
       AIRSPACE_FEED,
     ]);
-  }, [conflict, digest, flights, sea, gpsCells]);
+  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy]);
   const counts = feedCounts(feeds);
   const rules = [
     `Reported violence: ${VIOLENCE_RULE}, per country, GDELT material-conflict articles.`,
     `Military aircraft: ${AIRCRAFT_MIN} or more airborne within ${AIRCRAFT_RADIUS_KM} km of a curated hotspot.`,
     `Incidents at sea: any UKMTO notice in the last ${SEA_WINDOW_HOURS} h.`,
     `GPS interference: a high cell within ${GPS_RADIUS_KM} km of a hotspot that had none the day before, or a region's high cells up ${Math.round((GPS_REGION_RISE - 1) * 100)}% on the day.`,
+    `Chokepoint transits: 7-day transits at or below ${Math.round(CHOKEPOINT_TRANSIT_SHARE * 100)}% of the year-earlier normal, or tanker flow below 85% of its 90-day normal 3 days running (IMF PortWatch, days behind).`,
+    `Taiwan Strait: PLA aircraft or PLAN ships at ${TAIWAN_RATIO}× their 30-day median or more (at least ${TAIWAN_MIN.plaAircraftSorties} aircraft or ${TAIWAN_MIN.planShips} ships), Taiwan MND.`,
+    `Embassy alerts: a US embassy alert in the last ${EMBASSY_WINDOW_HOURS} h for a curated hotspot's country (the watchlist stand-in).`,
     'Linked news: digest stories naming the country, place or sea area, 24 h before to 1 h after.',
   ].join(' ');
   return (
@@ -727,26 +742,6 @@ function Timeline({ incidents, region }: { incidents: LiteItem[]; region: GeoReg
           })}
         </ol>
       )}
-    </Panel>
-  );
-}
-
-function Watchlist() {
-  const count = SAMPLE_WATCHLIST.reduce((n, g) => n + g.items.length, 0);
-  return (
-    <Panel title="Watchlist" sub={`${count} items`} right={<SampleBadge title="Watch rules arrive with the alerts phase. These are the design sample items." />} testId="watchlist">
-      {SAMPLE_WATCHLIST.map((group) => (
-        <div key={group.group} class="flex flex-col gap-2">
-          <ColLabel>{group.group}</ColLabel>
-          {group.items.map((item) => (
-            <div key={item.name} class="flex items-center gap-2">
-              <Dot tone={item.tone} />
-              <span class="text-[12.5px] text-ink">{item.name}</span>
-              <span class={cx('ml-auto text-[11px]', item.state === 'alerting' ? 'text-crit' : 'text-dim')}>{item.state}</span>
-            </div>
-          ))}
-        </div>
-      ))}
     </Panel>
   );
 }

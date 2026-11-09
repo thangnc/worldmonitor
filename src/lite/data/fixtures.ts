@@ -21,28 +21,3 @@ export const SAMPLE_MODELS: SampleModelRow[] = [
   { name: 'Atlas Code 3', org: 'Helio', released: '28 Oct', access: 'API · beta', claimed: 'Agentic SWE tasks', evalLabel: 'Replicated', evalTone: 'ok' },
   { name: 'Sable Vision 1.2', org: 'Sable', released: '21 Oct', access: 'Open weights', claimed: 'Document parsing', evalLabel: 'Mixed', evalTone: 'muted' },
 ];
-
-export interface SampleWatchItem {
-  name: string;
-  state: 'alerting' | 'watching';
-  tone: 'crit' | 'high' | 'elev';
-}
-
-export const SAMPLE_WATCHLIST: { group: string; items: SampleWatchItem[] }[] = [
-  {
-    group: 'WATERWAYS',
-    items: [
-      { name: 'Bab el-Mandeb', state: 'alerting', tone: 'crit' },
-      { name: 'Suez Canal', state: 'watching', tone: 'high' },
-    ],
-  },
-  { group: 'INFRASTRUCTURE', items: [{ name: 'Regional power grid', state: 'watching', tone: 'high' }] },
-  {
-    group: 'COUNTRIES & ACTORS',
-    items: [
-      { name: 'Yemen', state: 'alerting', tone: 'crit' },
-      { name: 'Ukraine', state: 'watching', tone: 'high' },
-      { name: 'Mali', state: 'watching', tone: 'elev' },
-    ],
-  },
-];
