@@ -105,6 +105,12 @@ const ON_DEMAND_CACHE_PROFILES = {
     browser: 'max-age=300, stale-while-revalidate=300, stale-if-error=900',
     cdn: 'public, s-maxage=900, stale-while-revalidate=300, stale-if-error=900',
   },
+  // DDoS windows for the Lite Technology map: seed-internet-outages every
+  // 30 minutes with a 60-minute health budget, so the CDN holds half an interval.
+  ddosWindows: {
+    browser: 'max-age=300, stale-while-revalidate=300, stale-if-error=900',
+    cdn: 'public, s-maxage=900, stale-while-revalidate=300, stale-if-error=900',
+  },
   ukmtoIncidents: {
     browser: 'max-age=60, stale-while-revalidate=60, stale-if-error=60',
     cdn: 'public, s-maxage=60, stale-while-revalidate=60, stale-if-error=60',

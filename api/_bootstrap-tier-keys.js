@@ -87,6 +87,9 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   // Lite Geopolitics GPS indicator: today's high-interference H3 cells beside
   // the previous day's (fetch-gpsjam, daily).
   gpsHighCells: 'intelligence:gpsjam:high-cells:v1',
+  // Lite Technology map: DDoS target-country shares over the last 6 h and 24 h
+  // (seed-internet-outages, every 30 min).
+  ddosWindows: 'cf:radar:ddos-windows:v1',
   canadaRoads: 'infra:ontario-511:v1',
   albertaRoads: 'infra:alberta-511:v1',
   manitobaRoads: 'infra:manitoba-511:v1',
@@ -278,6 +281,9 @@ const ON_DEMAND_KEY_NAMES = new Set([
   // GPS interference history for the Lite Geopolitics indicator, fetched only
   // when that screen opens.
   'gpsHighCells',
+  // DDoS windows for the Lite Technology map's 6h and 24h ranges, fetched only
+  // when that range is picked.
+  'ddosWindows',
 ]);
 
 /**

@@ -439,6 +439,9 @@ const STANDALONE_KEYS = {
   // Today's and the previous day's high GPS-interference cells, read by the
   // Lite Geopolitics indicator through the on-demand bootstrap URL.
   gpsHighCells: 'intelligence:gpsjam:high-cells:v1',
+  // DDoS target shares over the last 6 h and 24 h, read by the Lite Technology
+  // map's shorter ranges through the on-demand bootstrap URL.
+  ddosWindows: 'cf:radar:ddos-windows:v1',
   // 30 days of per-country strike tallies the relay builds from the Middle East
   // strike feed; read only by the CII strike pressure (get-risk-scores), so
   // monitored here. Gated by IRAN_EVENTS_ENABLED like the feed itself.
@@ -2485,6 +2488,13 @@ const SEED_META = {
     cutover: { mode: 'activation-marker', fromKey: null, issue: 10051, activationKey: 'seed-activated:energy:regional-ursea' } },
   cryptoSectors:        { key: 'seed-meta:market:crypto-sectors',             maxStaleMin: 120 }, // relay loop every ~30min; 120min = 2h = 4x interval
   ddosAttacks:          { key: 'seed-meta:cf:radar:ddos',                    maxStaleMin: 60 }, // seed-internet-outages publishes the payload before advancing this clock; outages cron ~15min; 60 = 4x interval
+  // The same seed-internet-outages companion path as ddosAttacks (TTL 3h > 60).
+  // On-demand until the seeder writes its activation marker, then strict.
+  ddosWindows: {
+    key: 'seed-meta:cf:radar:ddos-windows', maxStaleMin: 60,
+    activationKey: 'seed-activated:cf:radar:ddos-windows',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 53, activationKey: 'seed-activated:cf:radar:ddos-windows' },
+  },
   economicStress:       { key: 'seed-meta:economic:stress-index',            maxStaleMin: 180 }, // computed in seed-economy afterPublish; cron ~1h; 180min = 3x interval
   marketImplications:   {
     key: 'seed-meta:intelligence:market-implications',
@@ -2764,6 +2774,8 @@ const ON_DEMAND_KEYS = new Set([
   'gdeltConflictCounts',
   // Written by scripts/fetch-gpsjam.mjs after the high-cells publish.
   'gpsHighCells',
+  // Written by scripts/seed-internet-outages.mjs after the DDoS windows publish.
+  'ddosWindows',
   // Written by scripts/seed-tension-evidence.mjs after each publish.
   'tensionEvidence',
   // Relay strike-pressure tally: the marker is written after its first healthy publish.
@@ -2988,6 +3000,7 @@ const ACTIVATION_MARKERS = {
   gdeltCountryEvents: SEED_META.gdeltCountryEvents.activationKey,
   gdeltConflictCounts: SEED_META.gdeltConflictCounts.activationKey,
   gpsHighCells: SEED_META.gpsHighCells.activationKey,
+  ddosWindows: SEED_META.ddosWindows.activationKey,
   // Written by scripts/ais-relay.cjs after the first healthy strike-pressure publish.
   strikePressure: 'seed-activated:conflict:strike-pressure',
   // Written by scripts/ais-relay.cjs after the first healthy digest warm cycle.
@@ -3309,7 +3322,7 @@ function applyStaleContentGrace(checks, graceEvidenceByName, deadlines, now) {
 }
 
 const EMPTY_DATA_OK_KEYS = new Set([
-  'notamClosures', 'faaDelays', 'intlDelays', 'gpsjam', 'gpsHighCells', 'positiveGeoEvents', 'weatherAlerts', 'imdCycloneMarine', 'canadaRoads', 'albertaRoads', 'manitobaRoads', 'torontoRoads', 'bcOpen511', 'canadaAlerts', 'canadaAlertsAbSource', 'canadaAlertsBcSource', 'canadaAlertsSkSource',
+  'notamClosures', 'faaDelays', 'intlDelays', 'gpsjam', 'gpsHighCells', 'ddosWindows', 'positiveGeoEvents', 'weatherAlerts', 'imdCycloneMarine', 'canadaRoads', 'albertaRoads', 'manitobaRoads', 'torontoRoads', 'bcOpen511', 'canadaAlerts', 'canadaAlertsAbSource', 'canadaAlertsBcSource', 'canadaAlertsSkSource',
   'earningsCalendar', 'econCalendar', 'cotPositioning',
   'usniFleet', // usniFleetStale covers the fallback; relay outages → WARN not CRIT
   'newsThreatSummary', // a quiet classify cycle writes `byCountry: {}` (0 records); MISSING_DATA_IS_FAILURE_KEYS makes a payload missing beside fresh seed-meta critical (expiry after the 2h TTL reads STALE_SEED, since seed-meta is stale by then)
@@ -3349,6 +3362,8 @@ const MISSING_DATA_IS_FAILURE_KEYS = new Set([
   // therefore cannot excuse a vanished data key.
   'cableHealth',
   'ddosAttacks',
+  // The 6 h and 24 h DDoS windows: the same companion path, so a vanished key is a failure too.
+  'ddosWindows',
   'trafficAnomalies',
   'notamClosures',
   'thermalEscalationBootstrap',

@@ -804,7 +804,7 @@ describe('Lite Sources connectors', () => {
 });
 
 describe('Lite tech map', async () => {
-  const { attackHexes, cableLayer, cloudRegionMarkers, datacenterMarkers, ddosLayer, incidentNamesRegion, outageMarkers, HEX_CELL_DEG } = await import('../src/lite/data/tech-map.ts');
+  const { attackHexes, cableLayer, cloudRegionMarkers, datacenterMarkers, ddosForRange, ddosLayer, incidentNamesRegion, isDdosWindows, outageMarkers, techLayerRangeNote, threatsInRange, HEX_CELL_DEG } = await import('../src/lite/data/tech-map.ts');
   const NOW = Date.UTC(2026, 10, 8, 12);
   const H = 3_600_000;
   type Threat = Parameters<typeof attackHexes>[0][number];
@@ -854,19 +854,62 @@ describe('Lite tech map', async () => {
     assert.equal(attackHexes([threat(10, 10, 'CYBER_THREAT_SOURCE_FEODO'), threat(40, 10, 'CYBER_THREAT_SOURCE_FEODO')]).length, 2);
   });
 
-  it('places outages of the last 7 days as events with the cause glyph, faint once they ended over 24 h ago', () => {
-    const markers = outageMarkers([
+  it('places outages active in the range as events with the cause glyph, faint once they ended over 24 h ago', () => {
+    const list = [
       outage({ id: 'live' }),
       outage({ id: 'major', severity: 'OUTAGE_SEVERITY_MAJOR', cause: 'GOVERNMENT_DIRECTED' }),
       outage({ id: 'old', detectedAt: NOW - 3 * 24 * H, endedAt: NOW - 3 * 24 * H + H, severity: 'OUTAGE_SEVERITY_PARTIAL', cause: '' }),
       outage({ id: 'gone', detectedAt: NOW - 9 * 24 * H, endedAt: NOW - 9 * 24 * H + H }),
-    ], NOW);
+      // Started ten days ago, ended four hours ago: active inside every range.
+      outage({ id: 'long', detectedAt: NOW - 10 * 24 * H, endedAt: NOW - 4 * H, severity: 'OUTAGE_SEVERITY_PARTIAL' }),
+    ];
+    // An outage counts when it is ongoing or ended inside the range.
+    assert.deepEqual(outageMarkers(list, NOW, '6h').map((m) => m.id), ['outage:live', 'outage:major', 'outage:long']);
+    assert.deepEqual(outageMarkers(list, NOW, '24h').map((m) => m.id), ['outage:live', 'outage:major', 'outage:long']);
+    const markers = outageMarkers(list.slice(0, 4), NOW, '7d');
     // No orange on the map: a major outage is red, a partial one amber.
     assert.deepEqual(markers.map((m) => [m.id, m.kind, m.glyph, m.state, m.fill]), [
       ['outage:live', 'event', 'zap', 'crit', 'solid'],
       ['outage:major', 'event', 'ban', 'crit', 'solid'],
       ['outage:old', 'event', 'wifi-off', 'elev', 'background'],
     ]);
+  });
+
+  it('keeps attack-server indicators seen inside the range, and undated ones at every range', () => {
+    const seen = (id: string, hoursAgo: number, first = 0) => ({ ...threat(10, 10, 'CYBER_THREAT_SOURCE_URLHAUS'), id, firstSeenAt: first, lastSeenAt: hoursAgo < 0 ? 0 : NOW - hoursAgo * H });
+    const list = [seen('fresh', 2), seen('day', 20), seen('week', 100), seen('old', 200), seen('undated', -1), { ...seen('first-only', -1), firstSeenAt: NOW - 3 * H }];
+    assert.deepEqual(threatsInRange(list, '6h', NOW).map((t) => t.id), ['fresh', 'undated', 'first-only']);
+    assert.deepEqual(threatsInRange(list, '24h', NOW).map((t) => t.id), ['fresh', 'day', 'undated', 'first-only']);
+    assert.deepEqual(threatsInRange(list, '7d', NOW).map((t) => t.id), ['fresh', 'day', 'week', 'undated', 'first-only']);
+  });
+
+  it('shades DDoS at 6h and 24h only from their own window, never from the 7-day share', () => {
+    const shares = (code: string) => ({ dateRangeStart: '2026-11-08T06:00:00Z', dateRangeEnd: '2026-11-08T12:00:00Z', topTargetLocations: [{ countryCode: code, countryName: code, percentage: 10, latitude: 1, longitude: 1 }] });
+    const seven = shares('US');
+    const windows = { windows: { '6h': shares('FR') } };
+    assert.equal(ddosForRange('7d', seven, windows), seven);
+    assert.equal(ddosForRange('6h', seven, windows)?.topTargetLocations[0]?.countryCode, 'FR');
+    assert.equal(ddosForRange('24h', seven, windows), null, 'a missing window is null, not the 7-day share');
+    assert.equal(ddosForRange('6h', seven, null), null);
+    // The card names the window it shows, to the minute.
+    assert.equal(ddosLayer(shares('FR'), null, '6h').tags[0]!.popup.lines[1]!.text, '2026-11-08 06:00 to 2026-11-08 12:00 UTC');
+    assert.equal(ddosLayer({ ...shares('FR'), dateRangeStart: '', dateRangeEnd: '' }, null, '24h').tags[0]!.popup.lines[1]!.text, 'last 24 h');
+    assert.equal(isDdosWindows(windows), true);
+    assert.equal(isDdosWindows({ windows: { '30d': shares('FR') } }), false);
+    assert.equal(isDdosWindows({ windows: { '6h': { topTargetLocations: 'x' } } }), false);
+    assert.equal(isDdosWindows(null), false);
+  });
+
+  it('says what each Tech layer shows at 6h, 24h and 7d; only the time layers change', () => {
+    const ranges = ['6h', '24h', '7d'] as const;
+    const notes = (id: Parameters<typeof techLayerRangeNote>[0]) => ranges.map((r) => techLayerRangeNote(id, r));
+    assert.deepEqual(notes('ddos'), ['share of attack traffic, last 6 h', 'share of attack traffic, last 24 h', 'share of attack traffic, last 7 days']);
+    assert.deepEqual(notes('attackers'), ['indicators seen in the last 6 h', 'indicators seen in the last 24 h', 'indicators seen in the last 7 days']);
+    assert.deepEqual(notes('outages'), ['outages active in the last 6 h', 'outages active in the last 24 h', 'outages active in the last 7 days']);
+    for (const id of ['cloud', 'datacenters', 'cables'] as const) {
+      assert.equal(new Set(notes(id)).size, 1, `${id} is the same at every range`);
+      assert.match(notes(id)[0]!, /the range does not apply$/);
+    }
   });
 
   it('draws one cloud asset per city at its worst status, amber on a provider outage and red only when the incident names a region there', () => {
@@ -900,6 +943,15 @@ describe('Lite tech map', async () => {
       NOW,
     );
     assert.deepEqual(markers.map((m) => [m.id, m.kind, m.glyph, m.state]), [['dc:dc-ye', 'asset', 'cpu', 'elev'], ['dc:dc-us', 'asset', 'cpu', 'normal']]);
+    // The card names the outage's type and stated cause, and that the signal is the country, not the site.
+    assert.match(markers[0]!.popup.lines[1]!.text, /^Internet outage in the same country: nationwide, power outage, started /);
+    assert.match(markers[0]!.popup.lines[2]!.text, /not at the site itself/);
+    // With two live outages in the country, the worst one is named; amber either way, never red.
+    const two = datacenterMarkers([site('dc-ye', 'Yemen')], [outage({ id: 'a', severity: 'OUTAGE_SEVERITY_PARTIAL', cause: 'CABLE_CUT' }), outage({ id: 'b' }), outage({ id: 'c', severity: 'OUTAGE_SEVERITY_MAJOR' })], NOW);
+    assert.equal(two[0]!.state, 'elev');
+    assert.match(two[0]!.popup.lines[1]!.text, /nationwide, power outage/);
+    // An outage that ended over a day ago is no longer a signal.
+    assert.equal(datacenterMarkers([site('dc-ye', 'Yemen')], [outage({ detectedAt: NOW - 3 * 24 * H, endedAt: NOW - 2 * 24 * H })], NOW)[0]!.state, 'normal');
   });
 
   it('colours cables by health and pins a card on a degraded or faulted one', () => {
