@@ -312,6 +312,10 @@ describe('Lite UI shell', () => {
     expect(card[0]?.textContent).toContain('2.6/5');
     expect(card[0]?.textContent).toContain('live score, baseline 4/5');
     expect(card[0]?.textContent).toContain('Not available: country risk, unrest events, earthquakes, military flights');
+    // Lines show in full, never clamped; a long card scrolls instead of cutting text off.
+    expect(card[0]?.querySelector('[class*="line-clamp"]')).toBeNull();
+    expect(card[0]?.querySelector('[data-lite-scroll="y"]')).not.toBeNull();
+    expect(card[0]?.className).toContain('max-h-[340px]');
     expect(diamond.getAttribute('aria-expanded')).toBe('true');
     // The close button and Escape both dismiss it.
     await act(() => (root.querySelector('[data-map-popup] button[aria-label="Close"]') as HTMLButtonElement).click());
@@ -552,10 +556,13 @@ describe('Lite indicator card', () => {
       await act(() => legendToggle.click());
       expect(map().querySelector('[data-testid="markets-legend"]')).toBeNull();
 
-      // The pin opens the same indicator card the panel shows.
+      // The pin opens a plain card, one line per signal, as every map card reads;
+      // the full indicator card stays in the panel.
       await act(() => (fed.querySelector('button') as HTMLButtonElement).click());
       const popup = map().querySelector('[data-map-popup="signal:fed"]') as HTMLElement;
-      expect(popup.querySelector('article[data-indicator="treasury"]')).not.toBeNull();
+      expect(popup.querySelector('article')).toBeNull();
+      expect(popup.textContent).toContain('1 fired');
+      expect(popup.textContent).toContain('Source and linked news: in the indicator card.');
       await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
       expect(map().querySelector('[data-map-popup]')).toBeNull();
 
@@ -563,6 +570,15 @@ describe('Lite indicator card', () => {
       await act(() => (root.querySelector('[data-testid="risk-alerts"] button[data-indicator="treasury"]') as HTMLButtonElement).click());
       await flush();
       expect(map().querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe('signal:fed');
+
+      // A financial centre opens a card like any other marker: the curated entry, labelled context only.
+      await act(() => (map().querySelector('[data-marker="centre:fc-london"] button') as HTMLButtonElement).click());
+      const centre = map().querySelector('[data-map-popup="centre:fc-london"]') as HTMLElement;
+      expect(centre.textContent).toContain('GFCI #2');
+      expect(centre.textContent).toContain('Global centre · United Kingdom');
+      expect(centre.textContent).toContain('FX · Insurance · Commodities · Fintech');
+      expect(centre.textContent).toContain('Context only: curated reference list, no live signal.');
+      await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
 
       // The layers popover turns a layer off and closes on Escape, back to its chip.
       const chip = map().querySelector('[data-testid="layers-chip"]') as HTMLButtonElement;
