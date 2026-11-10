@@ -53,8 +53,6 @@ export interface MapCard {
   lines: readonly CardLine[];
   /** Hotspot score on the 1–5 scale, drawn as five segments. */
   score?: number;
-  /** Replaces the value and lines, e.g. the indicator cards a pin carries. */
-  body?: ComponentChildren;
 }
 
 interface MarkerBase {
@@ -231,7 +229,7 @@ const LINE_CLASS: Record<NonNullable<CardLine['style']> | 'text', string> = {
 };
 
 function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => void }) {
-  const { kind, name, value, lines, score, body } = marker.popup;
+  const { kind, name, value, lines, score } = marker.popup;
   const state: MarkState = marker.kind === 'country' || marker.kind === 'label' ? 'normal' : marker.state;
   const country = marker.kind === 'country';
   const text = country ? 'text-reported' : STATE_TEXT[state];
@@ -250,8 +248,6 @@ function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => 
           <X size={12} strokeWidth={1.5} />
         </button>
       </div>
-      {body ? <div class="mt-[8px] flex flex-col gap-[10px]">{body}</div> : null}
-      {body ? null : (
       <div class="mt-[6px] flex items-baseline justify-between gap-3">
         <span class="text-[14px] leading-[19px] font-semibold text-ink">{name}</span>
         <span class={cx('flex shrink-0 items-center gap-[6px] font-mono text-[12px]', text)}>
@@ -265,27 +261,22 @@ function MapCardView({ marker, onClose }: { marker: ShownMarker; onClose: () => 
           {value}
         </span>
       </div>
-      )}
-      {/* No scroll area: cards hold a few clamped lines; a point with several events gets a summary (src/lite/data/ucdp.ts). */}
-      {(body ? [] : lines).map((line, i) => (
+      {/* Lines show in full, never clamped: a long one scrolls with the card. */}
+      {lines.map((line, i) => (
         // Lines can repeat, so key by position.
-        <p key={i} class={cx('mt-[5px] line-clamp-3', LINE_CLASS[line.style ?? 'text'])}>
+        <p key={i} class={cx('mt-[5px]', LINE_CLASS[line.style ?? 'text'])}>
           {line.text}
         </p>
       ))}
     </>
   );
   const frame = 'rounded-[8px] border border-line bg-surface/95 text-left shadow-[0_8px_24px_rgba(0,0,0,0.35)]';
-  // A card with a body can run long: it scrolls under an overlay scrollbar.
-  return body ? (
-    <div class={cx(frame, 'flex max-h-[340px] w-[330px] max-w-[calc(100vw-56px)] flex-col')} data-map-popup={marker.id}>
+  // A long card scrolls past 340px under an overlay scrollbar.
+  return (
+    <div class={cx(frame, 'flex max-h-[340px] w-[272px] max-w-[calc(100vw-56px)] flex-col')} data-map-popup={marker.id}>
       <OverlayScroll class="min-h-0 flex-1 overflow-y-auto" contentClass="px-[14px] py-3">
         {content}
       </OverlayScroll>
-    </div>
-  ) : (
-    <div class={cx(frame, 'w-[272px] px-[14px] py-3')} data-map-popup={marker.id}>
-      {content}
     </div>
   );
 }

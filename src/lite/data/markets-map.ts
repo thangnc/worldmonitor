@@ -15,6 +15,7 @@ import type { BondMove } from './finance-macro-indicators';
 import type { FeedState, Indicator } from './indicators';
 import type { PriceBoard } from './prices';
 import type { Tone } from './transforms';
+import type { MapCard } from '../map/LiteMap';
 import type { MarkGlyph, MarkState } from '../map/marks';
 
 export interface Issuer {
@@ -140,6 +141,27 @@ export function signalPins(feeds: readonly FeedState[], bonds: readonly BondMove
     pins.push({ id: `signal:${id}`, issuer, signals, fired: signals.some((s) => s.fired), stale: signals.every((s) => s.stale) });
   }
   return pins;
+}
+
+/**
+ * The map card for a signal pin: one plain line per signal, as every map card
+ * reads. The full indicator card, with its source and linked news, stays in
+ * the panel beside the map.
+ */
+export function signalCard(pin: SignalPin): MapCard {
+  const fired = pin.signals.filter((s) => s.fired).length;
+  return {
+    kind: pin.issuer.name,
+    name: pin.issuer.short,
+    value: fired ? `${fired} fired` : 'quiet',
+    lines: [
+      ...pin.signals.map((s) => ({
+        text: `${s.text}${s.fired ? '' : ' · quiet'}${s.stale ? ' · late' : ''}`,
+        style: s.fired ? ('mono' as const) : ('dim' as const),
+      })),
+      ...(pin.signals.some((s) => s.indicator) ? [{ text: 'Source and linked news: in the indicator card.', style: 'dim' as const }] : []),
+    ],
+  };
 }
 
 // ---- Chokepoints ------------------------------------------------------------
