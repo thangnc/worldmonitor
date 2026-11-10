@@ -571,6 +571,15 @@ describe('Lite indicator card', () => {
       await flush();
       expect(map().querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe('signal:fed');
 
+      // A financial centre opens a card like any other marker: the curated entry, labelled context only.
+      await act(() => (map().querySelector('[data-marker="centre:fc-london"] button') as HTMLButtonElement).click());
+      const centre = map().querySelector('[data-map-popup="centre:fc-london"]') as HTMLElement;
+      expect(centre.textContent).toContain('GFCI #2');
+      expect(centre.textContent).toContain('Global centre · United Kingdom');
+      expect(centre.textContent).toContain('FX · Insurance · Commodities · Fintech');
+      expect(centre.textContent).toContain('Context only: curated reference list, no live signal.');
+      await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
+
       // The layers popover turns a layer off and closes on Escape, back to its chip.
       const chip = map().querySelector('[data-testid="layers-chip"]') as HTMLButtonElement;
       expect(chip.textContent).toContain('Layers · 5');

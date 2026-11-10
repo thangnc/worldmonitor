@@ -81,8 +81,6 @@ export interface AssetMarker extends MarkerBase {
   kind: 'asset';
   glyph: MarkGlyph;
   state: MarkState;
-  /** Context only: drawn without a card (financial centres). */
-  inert?: boolean;
   /** Other keys an indicator may focus this marker by, e.g. each cloud provider in a city. */
   keys?: readonly string[];
 }
@@ -532,13 +530,9 @@ export function LiteMap({
         const isSelected = selected === m.id;
         const mark = <MarkerMark marker={m} selected={isSelected} />;
         render(
-          m.kind === 'asset' && m.inert ? (
-            <span class="flex" title={m.title}>{mark}</span>
-          ) : (
-            <MarkButton title={m.title} selected={isSelected} onClick={() => setSelected((cur) => (cur === m.id ? null : m.id))}>
-              {mark}
-            </MarkButton>
-          ),
+          <MarkButton title={m.title} selected={isSelected} onClick={() => setSelected((cur) => (cur === m.id ? null : m.id))}>
+            {mark}
+          </MarkButton>,
           entry.el,
         );
       }

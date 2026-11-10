@@ -251,11 +251,11 @@ Built in step 2c (`src/lite/data/geo-watch.ts`):
   - fired and quiet finance indicators pinned at the issuing central bank or exchange (`CENTRAL_BANKS`, `STOCK_EXCHANGES` in `src/config/finance-geo.ts`);
   - Geopolitics indicators near chokepoints, pipelines and commodity hubs, with the price they moved in their card;
   - chokepoints (red when a transit rule fires or an incident is linked);
-  - shipping lanes, sanctions and financial centres as context.
+  - shipping lanes, sanctions and financial centres as context. A financial centre opens a plain card from the curated list (`src/config/finance-geo.ts`): type, place, GFCI rank, specialties and description, labelled "Context only: curated reference list, no live signal" (owner's request, 2026-11-10).
   - The pin marks where a signal is issued, not where it is felt. Crypto stays off the map: ETF flows, depegs and positioning are cards.
 - The indicator panel; market-moving events (each story shows the indicators that moved before or after it); macro calendar with forecast, actual and surprise (built with prior, actual and change until a forecast source exists); the US Treasury curve, today against a week ago.
 - The chart widgets go: BTC volume bars, volatility, liquidations and the correlation matrix. Done in step 3b; funding, open interest and ETF flows remain as indicator cards.
-- Marks (map marker grammar, 2026-11-10): a fired signal is an amber event (the landmark for a central bank, the candlestick for an exchange, the filing glyph for an 8-K); a quiet issuer is an asset (landmark for a central bank, building for an exchange); chokepoints are anchor assets, red when an incident is linked; financial centres are grey building assets with no card.
+- Marks (map marker grammar, 2026-11-10): a fired signal is an amber event (the landmark for a central bank, the candlestick for an exchange, the filing glyph for an 8-K); a quiet issuer is an asset (landmark for a central bank, building for an exchange); chokepoints are anchor assets, red when an incident is linked; financial centres are grey building assets that open a context card.
 - Built in step 3b: until the Geopolitics indicators exist, chokepoints carry the supply-chain disruption score and the map's "market-moving geopolitics" layer reads N/A. A pin shows its reading on hover and opens a plain map card on click, one line per signal, while the full indicator card stays in the panel (owner's decision, 2026-11-10); no pin carries a name chip, and the legend opens from its button. Opening a card in the panel opens its pin.
 
 **Technology & AI.**

@@ -205,7 +205,7 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
     const out: MapMarker[] = [];
     if (layers.centres) {
       for (const c of FINANCIAL_CENTRE_POINTS) {
-        out.push({ kind: 'asset', glyph: 'building-2', state: 'normal', inert: true, id: c.id, lat: c.lat, lon: c.lon, title: `${c.name} · financial centre`, popup: { kind: 'Financial centre', name: c.name, value: '', lines: [] } });
+        out.push({ kind: 'asset', glyph: 'building-2', state: 'normal', id: c.id, lat: c.lat, lon: c.lon, title: `${c.name} · financial centre`, popup: c.card });
       }
     }
     if (layers.chokepoints) {
