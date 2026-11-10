@@ -276,6 +276,9 @@ describe('Lite UI shell', () => {
     await act(() => legendToggle.click());
     const legendRows = [...root.querySelectorAll('[data-testid="map-legend"] [data-legend-row]')].map((r) => r.getAttribute('data-legend-row'));
     expect(legendRows).toEqual(['Reported violence', 'Verified background', 'Curated hotspot', 'Military aircraft', 'Sea incident', 'GPS interference', 'Airspace closure']);
+    // GPS cells are H3 hexagons on the map, so the legend draws hexagons too (amber, red).
+    const gpsLegend = [...root.querySelectorAll('[data-legend-row="GPS interference"] [data-mark-kind="area"]')];
+    expect(gpsLegend.map((m) => `${m.getAttribute('data-mark-shape')}:${m.getAttribute('data-mark-state')}`)).toEqual(['hex:elev', 'hex:crit']);
     await act(() => legendToggle.click());
     expect(root.querySelector('[data-testid="map-legend"]')).toBeNull();
     // The layers live in the popover; the old side panel is gone.
@@ -1158,6 +1161,8 @@ describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS inte
       expect(note('sea')).toBe('notices from the last 7 days');
       expect(note('aircraft')).toBe('positions now; the range does not apply');
       expect(note('gps')).toBe('latest gpsjam day; the range does not apply');
+      // The popover row matches the map and the legend: a hexagon, not a box.
+      expect(popover.querySelector('[data-layer-row="gps"] [data-mark-kind="area"]')?.getAttribute('data-mark-shape')).toBe('hex');
       expect(note('airspace')).toBeUndefined();
       await act(() => ([...root.querySelectorAll('[data-testid="time-range"] button')].find((b) => b.textContent === '6h') as HTMLButtonElement).click());
       expect(root.querySelector('[data-testid="layers-popover"]')?.textContent).toContain('at 6h');

@@ -230,9 +230,26 @@ const STATUS_AREA: Readonly<Record<MarkState, string>> = {
   crit: 'border-mark-crit bg-mark-crit/15',
 };
 
-/** A status area: state-colour outline over a faint fill (sanctions, GPS cells). */
-export function StatusAreaSwatch({ state }: { state: MarkState }) {
-  return <span class={cx('block h-[10px] w-[14px] rounded-[2px] border', STATUS_AREA[state])} aria-hidden="true" data-mark-kind="area" data-mark-state={state} />;
+const STATUS_HEX: Readonly<Record<MarkState, string>> = {
+  normal: 'fill-mark-normal/15 stroke-mark-normal',
+  elev: 'fill-mark-elev/15 stroke-mark-elev',
+  crit: 'fill-mark-crit/15 stroke-mark-crit',
+};
+
+/**
+ * A status area: state-colour outline over a faint fill. `box` for country
+ * areas (sanctions); `hex` for layers the map draws as H3 cells (GPS), so the
+ * swatch has the shape the map shows.
+ */
+export function StatusAreaSwatch({ state, shape = 'box' }: { state: MarkState; shape?: 'box' | 'hex' }) {
+  if (shape === 'hex') {
+    return (
+      <svg class={cx('block shrink-0', STATUS_HEX[state])} width="14" height="12" viewBox="0 0 14 12" aria-hidden="true" data-mark-kind="area" data-mark-state={state} data-mark-shape="hex">
+        <polygon points="3.5,0.5 10.5,0.5 13.5,6 10.5,11.5 3.5,11.5 0.5,6" stroke-width="1" stroke-linejoin="round" />
+      </svg>
+    );
+  }
+  return <span class={cx('block h-[10px] w-[14px] rounded-[2px] border', STATUS_AREA[state])} aria-hidden="true" data-mark-kind="area" data-mark-state={state} data-mark-shape="box" />;
 }
 
 /** A hatched outline: an area layer with no data (airspace closures). */

@@ -558,7 +558,8 @@ function ConflictMap({
 
 // The same swatches as the map (src/lite/map/marks.tsx), states in the spec's order.
 const UcdpMark = () => <AggregateMark count={0} fullAt={1} state="crit" fill="background" size={12} />;
-const GpsMark = () => <SwatchRun><StatusAreaSwatch state="elev" /><StatusAreaSwatch state="crit" /></SwatchRun>;
+/** Amber and red H3 cells, as the map draws them (medium 2–10 %, high above 10 %). */
+const GpsMark = () => <SwatchRun><StatusAreaSwatch state="elev" shape="hex" /><StatusAreaSwatch state="crit" shape="hex" /></SwatchRun>;
 
 /** The popover's three groups (owner's design): live layers, background and judgement, optional context. */
 function layerGroups(layers: LayerState, ucdpNewestAt: number, range: TimeRange): LayerGroup[] {
@@ -572,7 +573,7 @@ function layerGroups(layers: LayerState, ucdpNewestAt: number, range: TimeRange)
         { id: 'violence', mark: <RampSwatch steps={[2, 3, 4]} />, name: 'Reported violence · GDELT', sub: "country shading · against each country's normal", range: layerRangeNote('violence', range), on: layers.violence },
         { id: 'aircraft', mark: <EventMark glyph="plane" state="normal" fill="reported" />, name: 'Military aircraft', sub: `transponder · grouped at ${AIRCRAFT_MIN}+ near a hotspot`, range: layerRangeNote('aircraft', range), on: layers.aircraft },
         { id: 'sea', mark: <EventMark glyph="ship" state="crit" />, name: 'Incidents at sea · UKMTO', sub: `official notices · fires on one in ${SEA_WINDOW_HOURS} h`, range: layerRangeNote('sea', range), on: layers.sea },
-        { id: 'gps', mark: <StatusAreaSwatch state="crit" />, name: 'GPS interference · gpsjam.org', sub: 'hexagons · red above 10%', range: layerRangeNote('gps', range), on: layers.gps },
+        { id: 'gps', mark: <StatusAreaSwatch state="crit" shape="hex" />, name: 'GPS interference · gpsjam.org', sub: 'hexagons · amber 2–10%, red above 10%', range: layerRangeNote('gps', range), on: layers.gps },
         { id: 'airspace', mark: <HatchSwatch />, name: 'Airspace closures · NOTAM', sub: 'awaiting FAA access', on: null },
       ],
     },
