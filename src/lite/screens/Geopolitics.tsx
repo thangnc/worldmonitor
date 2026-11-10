@@ -4,6 +4,7 @@ import { INTEL_HOTSPOTS } from '@/config/geo';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { BarStrip, StackedBar } from '../components/charts';
 import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
+import { TimeRangeControl } from '../components/TimeRange';
 import { BG, BORDER, Card, ColLabel, DerivedTag, Dot, Panel, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
 import { LiteMap, type CountryFill, type MapMarker, type MapOverlays } from '../map/LiteMap';
 import { AggregateMark, EventMark, HatchSwatch, JudgementMark, LineSwatch, RampSwatch, StatusAreaSwatch, SwatchRun } from '../map/marks';
@@ -102,7 +103,6 @@ const RANGE_PURPOSE: Record<TimeRange, string> = {
   '24h': 'What happened today? The last 24 hours against each country\'s 7-day average.',
   '7d': 'A sudden spike or a week-long build-up? The last 7 days against the 22 before.',
 };
-const TIME_RANGE_OPTIONS = (Object.keys(TIME_RANGE_HOURS) as TimeRange[]).map((value) => ({ value, label: value, title: RANGE_PURPOSE[value] }));
 
 function inRegion(item: LiteItem, region: GeoRegion): boolean {
   return region === 'all' || regionOfCategory(item.category) === region;
@@ -529,7 +529,7 @@ function ConflictMap({
         ) : null}
         {/* The time range sits on the map, as on the dashboard, with GDELT reports per hour or day. */}
         <div class="absolute bottom-4 left-4 right-4 z-[4] flex h-9 items-center gap-3 rounded-[6px] border border-line bg-surface/90 pr-3 pl-1">
-          <TimeRangeControl value={range} onChange={onRange} />
+          <TimeRangeControl value={range} onChange={onRange} titles={RANGE_PURPOSE} />
           {histogram ? (
             <>
               <span class="hidden shrink-0 font-mono text-[10.5px] text-dim sm:inline">GDELT reports / {histogram.unit}</span>
@@ -605,29 +605,6 @@ function GeoLegend({ layers }: { layers: LayerState }) {
       {layers.gps ? <LegendRow mark={<GpsMark />} name="GPS interference" note="gpsjam" /> : null}
       <LegendRow mark={<HatchSwatch />} name="Airspace closure" note="N/A" />
     </MapLegend>
-  );
-}
-
-/** The dashboard's time buttons, compact enough for the map's bottom bar. */
-function TimeRangeControl({ value, onChange }: { value: TimeRange; onChange: (range: TimeRange) => void }) {
-  return (
-    <fieldset aria-label="Time range" class="m-0 flex shrink-0 gap-px border-0 p-0" data-testid="time-range">
-      {TIME_RANGE_OPTIONS.map((o) => {
-        const active = o.value === value;
-        return (
-          <button
-            key={o.value}
-            type="button"
-            aria-pressed={active}
-            onClick={() => onChange(o.value)}
-            title={o.title}
-            class={cx('rounded-[4px] px-[7px] py-[3px] font-mono text-[10.5px]', active ? 'bg-surface-2 text-ink' : 'text-dim hover:text-muted')}
-          >
-            {o.label}
-          </button>
-        );
-      })}
-    </fieldset>
   );
 }
 

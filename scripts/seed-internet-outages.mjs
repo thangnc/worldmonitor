@@ -9,6 +9,7 @@ import {
   resolveSeedMetaTtl,
 } from './_seed-utils.mjs';
 import { COUNTRY_COORDS, mapTrafficAnomaly, toEpochMs } from './lib/radar-country-coords.mjs';
+import { getOptionalUpstashCreds, upstashCommand } from './_upstash-rest.mjs';
 
 loadEnvFile(import.meta.url);
 
@@ -16,6 +17,13 @@ const CF_RADAR_URL = 'https://api.cloudflare.com/client/v4/radar/annotations/out
 const CF_RADAR_BASE = 'https://api.cloudflare.com/client/v4';
 const CANONICAL_KEY = 'infra:outages:v1';
 const DDOS_KEY = 'cf:radar:ddos:v1';
+// Lite Technology map: the same target-country shares over the last 6 h and
+// 24 h, so its 6h/24h/7d range shades real windows (owner's decision,
+// 2026-11-10). Each window is a fresh snapshot, never a history.
+const DDOS_WINDOWS_KEY = 'cf:radar:ddos-windows:v1';
+// Durable (no TTL): api/health.js grants the new key its pre-activation grace
+// until this exists, then grades it strictly (ACTIVATION_MARKERS.ddosWindows).
+const DDOS_WINDOWS_ACTIVATION_KEY = 'seed-activated:cf:radar:ddos-windows';
 const TRAFFIC_ANOMALIES_KEY = 'cf:radar:traffic-anomalies:v1';
 const CACHE_TTL = 10800; // 3h — 6x the 30 min cron interval (was 1x = key expired on any missed run)
 const DDOS_TTL = 10800;
@@ -142,6 +150,74 @@ async function fetchOutages() {
   return { outages, pagination: undefined };
 }
 
+/** One `top/locations/target` request: its rows and the window Radar answered for. */
+async function fetchTargetLocations(headers, query, source) {
+  const resp = await fetch(`${CF_RADAR_BASE}/radar/attacks/layer3/top/locations/target?${query}`, { headers, signal: AbortSignal.timeout(15_000) });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const result = requireRadarResult(await resp.json(), source);
+  return {
+    items: requireRadarArray(result, 'top_0', source)
+      .filter((item) => item && typeof item === 'object' && !Array.isArray(item)),
+    window: result.meta?.dateRange?.[0] ?? null,
+  };
+}
+
+/** Radar target rows as the published location shape; rows without coordinates are dropped. */
+function toTargetLocations(items) {
+  return items.map((item) => {
+    // Radar's top/locations/target answers targetCountryAlpha2/targetCountryName
+    // (checked live 2026-11-08). Reading only the client* names left every code
+    // empty, so the coords filter below dropped every target country.
+    const code = item.targetCountryAlpha2 || item.clientCountryAlpha2 || '';
+    const coords = COUNTRY_COORDS[code] || null;
+    return {
+      countryCode: code,
+      countryName: item.targetCountryName || item.clientCountryName || code,
+      percentage: parseFloat(item.value) || 0,
+      latitude: coords ? coords[0] : 0,
+      longitude: coords ? coords[1] : 0,
+    };
+  }).filter((item) => item.latitude !== 0 || item.longitude !== 0);
+}
+
+/** Radar's ISO form: no milliseconds. It floors both ends to 15 minutes itself. */
+const radarTime = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+/**
+ * DDoS target shares for the Lite map's shorter ranges: 24 h (`dateRange=1d`)
+ * and 6 h (`dateStart`/`dateEnd`; Radar has no hourly `dateRange`). A window
+ * that fails is left out and recorded on seed-meta, never filled from another
+ * window; when both fail the companion fails and last-good is retained.
+ */
+async function fetchDdosWindows(token, now = Date.now()) {
+  const headers = {
+    'User-Agent': CHROME_UA,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  const specs = [
+    { id: '6h', query: `dateStart=${radarTime(now - 6 * 3_600_000)}&dateEnd=${radarTime(now)}` },
+    { id: '24h', query: 'dateRange=1d' },
+  ];
+  const settled = await Promise.allSettled(specs.map((spec) => fetchTargetLocations(headers, spec.query, `DDoS target locations ${spec.id}`)));
+  const windows = {};
+  const degraded = [];
+  settled.forEach((outcome, i) => {
+    const { id } = specs[i];
+    if (outcome.status === 'rejected') {
+      console.warn(`  CF Radar DDoS ${id} window unavailable: ${outcome.reason?.message || outcome.reason}`);
+      degraded.push(id);
+      return;
+    }
+    windows[id] = {
+      dateRangeStart: outcome.value.window?.startTime || '',
+      dateRangeEnd: outcome.value.window?.endTime || '',
+      topTargetLocations: toTargetLocations(outcome.value.items),
+    };
+  });
+  if (!Object.keys(windows).length) throw new Error('CF Radar DDoS windows: every window failed');
+  return { windows, _degradedWindows: degraded };
+}
+
 /**
  * DDoS slice contract.
  *
@@ -169,14 +245,8 @@ async function fetchDdosData(token) {
   // forever while recordCount (protocol+vector) never moves and health stays OK.
   const fetchOptionalTargetLocations = async () => {
     try {
-      const resp = await fetch(`${CF_RADAR_BASE}/radar/attacks/layer3/top/locations/target?dateRange=7d`, { headers, signal: AbortSignal.timeout(15_000) });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const result = requireRadarResult(await resp.json(), 'DDoS target locations');
-      return {
-        items: requireRadarArray(result, 'top_0', 'DDoS target locations')
-          .filter((item) => item && typeof item === 'object' && !Array.isArray(item)),
-        degraded: false,
-      };
+      const { items } = await fetchTargetLocations(headers, 'dateRange=7d', 'DDoS target locations');
+      return { items, degraded: false };
     } catch (err) {
       console.warn(`  CF Radar DDoS target locations unavailable (optional slice): ${err?.message || err}`);
       return { items: [], degraded: true };
@@ -203,20 +273,7 @@ async function fetchDdosData(token) {
       .sort((a, b) => b.percentage - a.percentage);
   }
 
-  const topTargetLocations = targetSlice.items.map((item) => {
-    // Radar's top/locations/target answers targetCountryAlpha2/targetCountryName
-    // (checked live 2026-11-08). Reading only the client* names left every code
-    // empty, so the coords filter below dropped every target country.
-    const code = item.targetCountryAlpha2 || item.clientCountryAlpha2 || '';
-    const coords = COUNTRY_COORDS[code] || null;
-    return {
-      countryCode: code,
-      countryName: item.targetCountryName || item.clientCountryName || code,
-      percentage: parseFloat(item.value) || 0,
-      latitude: coords ? coords[0] : 0,
-      longitude: coords ? coords[1] : 0,
-    };
-  }).filter((item) => item.latitude !== 0 || item.longitude !== 0);
+  const topTargetLocations = toTargetLocations(targetSlice.items);
 
   const meta = protocolResult.meta;
   return {
@@ -251,8 +308,8 @@ async function fetchTrafficAnomalies(token) {
 }
 
 
-// The two Radar companion products. Each owns its consumer key, its TTL and its
-// own success clock; neither is derived from the canonical outage annotations.
+// The Radar companion products (DDoS summaries, the Lite map's DDoS windows,
+// traffic anomalies). Each owns its consumer key, its TTL and its own success clock; neither is derived from the canonical outage annotations.
 //
 // `toPayload` strips producer diagnostics (leading underscore) so the published
 // value stays exactly the shape the RPC reads; `metaExtra` carries them onto
@@ -268,6 +325,17 @@ const COMPANIONS = [
     metaExtra: (data) => (data._targetLocationsDegraded ? { targetLocationsDegraded: true } : undefined),
   },
   {
+    label: 'DDoS windows',
+    key: DDOS_WINDOWS_KEY,
+    ttlSeconds: DDOS_TTL,
+    activationKey: DDOS_WINDOWS_ACTIVATION_KEY,
+    fetch: (token) => fetchDdosWindows(token),
+    // A quiet window has no target rows; that is a confirmed empty result, not a failure.
+    recordCount: (data) => Object.values(data.windows).reduce((n, w) => n + w.topTargetLocations.length, 0),
+    toPayload: ({ _degradedWindows, ...payload }) => payload,
+    metaExtra: (data) => (data._degradedWindows.length ? { degradedWindows: data._degradedWindows } : undefined),
+  },
+  {
     label: 'traffic anomalies',
     key: TRAFFIC_ANOMALIES_KEY,
     ttlSeconds: ANOMALIES_TTL,
@@ -275,6 +343,21 @@ const COMPANIONS = [
     recordCount: (data) => data.totalCount,
   },
 ];
+
+/**
+ * Mark a companion's first confirmed publish. Written only after the payload
+ * and its clock landed, so health never leaves its pre-activation grace for a
+ * key that was never published. A failed write is logged and retried next run.
+ */
+async function writeActivationMarker(key) {
+  try {
+    const creds = getOptionalUpstashCreds();
+    if (!creds) return;
+    await upstashCommand(creds, ['SET', key, '1']);
+  } catch (err) {
+    console.warn(`  WARN: ${key} activation marker write failed: ${err?.message || err}`);
+  }
+}
 
 /** The seed-meta key writeExtraKeyWithMeta derives for a companion. */
 function companionMetaKey(companion) {
@@ -337,6 +420,7 @@ async function runCompanion(companion, token) {
       return { published: true, clockAdvanced: false };
     }
     console.log(`  CF Radar ${companion.label}: published ${recordCount} record(s)`);
+    if (companion.activationKey) await writeActivationMarker(companion.activationKey);
     return { published: true, clockAdvanced: true };
   } catch (err) {
     console.warn(`  CF Radar ${companion.label} update failed: ${err?.message || err}`);
@@ -364,7 +448,7 @@ async function runCompanion(companion, token) {
  * Companion attempts, memoized for the life of the process.
  *
  * runSeed wraps fetchAll in withRetry, so a retryable annotations failure
- * re-enters fetchAll. Without this memo each retry would replay four Radar
+ * re-enters fetchAll. Without this memo each retry would replay the companion Radar
  * requests that already succeeded and republish keys that already published.
  * One bounded pass per companion per run; the cron tick is the retry for a
  * companion that failed.
@@ -381,7 +465,7 @@ function publishCompanion(companion, token) {
 // NOTE: runSeed() writes only the canonical key and its own extraKeys, and the
 // canonical publish is skipped whenever the annotations leg fails. The companion
 // keys MUST therefore be published here, before the annotations rejection is
-// rethrown, or an annotations outage would withhold two healthy sibling updates.
+// rethrown, or an annotations outage would withhold the healthy sibling updates.
 async function fetchAll() {
   const token = process.env.CLOUDFLARE_API_TOKEN;
 

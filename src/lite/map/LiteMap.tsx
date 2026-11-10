@@ -204,15 +204,20 @@ function MarkerMark({ marker, selected }: { marker: MapMarker; selected: boolean
   }
 }
 
-/** Events on top, then assets and named hotspots, aggregates, and grey hotspots at the bottom; labels above all. */
-function markerLayer(m: MapMarker): string {
+/**
+ * Events on top, then signalled assets and named hotspots, aggregates, and
+ * the background at the bottom (grey hotspots, and assets in their normal
+ * state: a quiet cloud region or data centre sits under everything until a
+ * signal turns it amber or red); labels above all.
+ */
+export function markerLayer(m: MapMarker): string {
   switch (m.kind) {
     case 'label':
       return 'z-[4]';
     case 'event':
       return 'z-[3]';
     case 'asset':
-      return 'z-[2]';
+      return m.state === 'normal' ? 'z-0' : 'z-[2]';
     case 'judgement':
       return m.named ? 'z-[2]' : 'z-0';
     case 'aggregate':
