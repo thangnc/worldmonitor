@@ -76,6 +76,9 @@ const NOTES_HTML = gunzipSync(readFileSync(resolve(FIXTURES, 'chapter99-notes-su
 const HEADINGS = JSON.parse(readFileSync(resolve(FIXTURES, 'chapter99-headings.json'), 'utf8'));
 const exportList = (hs6: string) => JSON.parse(readFileSync(resolve(FIXTURES, `exportList-${hs6}.json`), 'utf8'));
 const NOW = new Date('2026-10-10T12:00:00Z');
+// The resolver drops a measure past its end date (several fixture exclusions end
+// 2026-11-09), so every lookup runs on the fixture's day, never the real clock.
+const TODAY = NOW.toISOString().slice(0, 10);
 const RELEASE = { name: '2026HTSRev21', startDate: '10/09/2026' };
 const resolveCountry = makeCountryResolver(countryNameToIso2, UN_TO_ISO2);
 
@@ -92,7 +95,7 @@ function duties(hs6: string, partner: string, line?: string) {
   const target = line ? lines.find((l) => l.htsCode === line)! : lines[0]!;
   const shard = INDEX.coverage[hs6.slice(0, 2)] ?? {};
   const base = resolveBaseRate(target, partner, columnTwoOverride(CATALOG, shard, target.htsCode, partner));
-  const list = resolveAdditionalDuties(CATALOG, shard, target.htsCode, partner, base.adValorem);
+  const list = resolveAdditionalDuties(CATALOG, shard, target.htsCode, partner, base.adValorem, TODAY);
   return { line: target, base, list, estimate: estimateRate(base.adValorem, list) };
 }
 

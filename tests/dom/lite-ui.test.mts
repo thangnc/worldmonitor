@@ -315,6 +315,10 @@ describe('Lite UI shell', () => {
     expect(card[0]?.textContent).toContain('2.6/5');
     expect(card[0]?.textContent).toContain('live score, baseline 4/5');
     expect(card[0]?.textContent).toContain('Not available: country risk, unrest events, earthquakes, military flights');
+    // Lines show in full, never clamped; a long card scrolls instead of cutting text off.
+    expect(card[0]?.querySelector('[class*="line-clamp"]')).toBeNull();
+    expect(card[0]?.querySelector('[data-lite-scroll="y"]')).not.toBeNull();
+    expect(card[0]?.className).toContain('max-h-[340px]');
     expect(diamond.getAttribute('aria-expanded')).toBe('true');
     // The close button and Escape both dismiss it.
     await act(() => (root.querySelector('[data-map-popup] button[aria-label="Close"]') as HTMLButtonElement).click());
@@ -555,10 +559,13 @@ describe('Lite indicator card', () => {
       await act(() => legendToggle.click());
       expect(map().querySelector('[data-testid="markets-legend"]')).toBeNull();
 
-      // The pin opens the same indicator card the panel shows.
+      // The pin opens a plain card, one line per signal, as every map card reads;
+      // the full indicator card stays in the panel.
       await act(() => (fed.querySelector('button') as HTMLButtonElement).click());
       const popup = map().querySelector('[data-map-popup="signal:fed"]') as HTMLElement;
-      expect(popup.querySelector('article[data-indicator="treasury"]')).not.toBeNull();
+      expect(popup.querySelector('article')).toBeNull();
+      expect(popup.textContent).toContain('1 fired');
+      expect(popup.textContent).toContain('Source and linked news: in the indicator card.');
       await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
       expect(map().querySelector('[data-map-popup]')).toBeNull();
 
@@ -566,6 +573,15 @@ describe('Lite indicator card', () => {
       await act(() => (root.querySelector('[data-testid="risk-alerts"] button[data-indicator="treasury"]') as HTMLButtonElement).click());
       await flush();
       expect(map().querySelector('[data-map-popup]')?.getAttribute('data-map-popup')).toBe('signal:fed');
+
+      // A financial centre opens a card like any other marker: the curated entry, labelled context only.
+      await act(() => (map().querySelector('[data-marker="centre:fc-london"] button') as HTMLButtonElement).click());
+      const centre = map().querySelector('[data-map-popup="centre:fc-london"]') as HTMLElement;
+      expect(centre.textContent).toContain('GFCI #2');
+      expect(centre.textContent).toContain('Global centre · United Kingdom');
+      expect(centre.textContent).toContain('FX · Insurance · Commodities · Fintech');
+      expect(centre.textContent).toContain('Context only: curated reference list, no live signal.');
+      await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
 
       // The layers popover turns a layer off and closes on Escape, back to its chip.
       const chip = map().querySelector('[data-testid="layers-chip"]') as HTMLButtonElement;
@@ -669,6 +685,10 @@ describe('Lite indicator card', () => {
         return json({ fetchedAt: now - 60_000, outages: [{
           id: 'cf-1', title: '', link: '', description: '', detectedAt: now - 3_600_000, country: 'Yemen', region: '', location: { latitude: 15.5, longitude: 48 },
           severity: 'OUTAGE_SEVERITY_TOTAL', categories: ['Cloudflare Radar', 'POWER OUTAGE', 'NATIONWIDE'], cause: 'POWER_OUTAGE', outageType: 'NATIONWIDE', endedAt: 0,
+        }, {
+          // Ended two days ago: on the map at 7d only.
+          id: 'cf-2', title: '', link: '', description: '', detectedAt: now - 3 * 86_400_000, country: 'Iraq', region: '', location: { latitude: 33, longitude: 44 },
+          severity: 'OUTAGE_SEVERITY_MAJOR', categories: ['Cloudflare Radar'], cause: 'CABLE_CUT', outageType: 'REGIONAL', endedAt: now - 2 * 86_400_000,
         }] });
       }
       if (url.includes('/api/infrastructure/v1/list-internet-ddos-attacks')) {
@@ -688,8 +708,15 @@ describe('Lite indicator card', () => {
     }));
     const bootstrap = await import('@/services/bootstrap');
     vi.mocked(bootstrap.ensureHydrated).mockImplementation(async (key: string) => (key === 'cyberThreats'
-      ? { threats: [{ id: 'f1', type: 'CYBER_THREAT_TYPE_C2_SERVER', source: 'CYBER_THREAT_SOURCE_FEODO', indicator: '1.2.3.4', indicatorType: 'CYBER_THREAT_INDICATOR_TYPE_IP', location: { latitude: 52.3, longitude: 4.9 }, country: 'NL', severity: 'CRITICALITY_LEVEL_HIGH', malwareFamily: 'QakBot', tags: [], firstSeenAt: 0, lastSeenAt: 0 }] }
-      : undefined));
+      ? { threats: [
+        { id: 'f1', type: 'CYBER_THREAT_TYPE_C2_SERVER', source: 'CYBER_THREAT_SOURCE_FEODO', indicator: '1.2.3.4', indicatorType: 'CYBER_THREAT_INDICATOR_TYPE_IP', location: { latitude: 52.3, longitude: 4.9 }, country: 'NL', severity: 'CRITICALITY_LEVEL_HIGH', malwareFamily: 'QakBot', tags: [], firstSeenAt: 0, lastSeenAt: 0 },
+        // Last seen three days ago, far from f1: its cell shows at 7d only.
+        { id: 'u1', type: 'CYBER_THREAT_TYPE_MALWARE_HOST', source: 'CYBER_THREAT_SOURCE_URLHAUS', indicator: '5.6.7.8', indicatorType: 'CYBER_THREAT_INDICATOR_TYPE_IP', location: { latitude: -23.5, longitude: -46.6 }, country: 'BR', severity: 'CRITICALITY_LEVEL_HIGH', malwareFamily: '', tags: [], firstSeenAt: now - 4 * 86_400_000, lastSeenAt: now - 3 * 86_400_000 },
+      ] }
+      // Only the 6h window arrived; the 24h one failed at the seeder.
+      : key === 'ddosWindows'
+        ? { windows: { '6h': { dateRangeStart: '2026-11-09T12:00:00Z', dateRangeEnd: '2026-11-09T18:00:00Z', topTargetLocations: [{ countryCode: 'FR', countryName: 'France', percentage: 30, latitude: 46, longitude: 2 }] } } }
+        : undefined));
     try {
       history.replaceState(null, '', '/lite/tech');
       const { App } = await import('../../src/lite/App');
@@ -737,6 +764,45 @@ describe('Lite indicator card', () => {
       await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
       expect(map().querySelector('[data-testid="layers-popover"]')).toBeNull();
       expect(map().querySelector('[data-marker="outage:cf-1"]')).not.toBeNull();
+
+      // Background assets: a quiet one sits under everything, a signalled one on top.
+      expect(map().querySelector('[data-marker^="dc:"]')?.classList.contains('z-0')).toBe(true);
+      const cloudLayers = [...map().querySelectorAll('[data-marker^="cloud:"]')].map((el) => [el.querySelector('[data-mark-kind]')?.getAttribute('data-mark-state'), el.classList.contains('z-0') ? 'z-0' : el.classList.contains('z-[2]') ? 'z-[2]' : '?']);
+      expect(new Set(cloudLayers.map(String))).toEqual(new Set(['normal,z-0', 'elev,z-[2]']));
+
+      // The range, as on Geopolitics: each button says what it is for, and each layer row what it shows.
+      const rangeButton = (label: string) => [...map().querySelectorAll('[data-testid="time-range"] button')].find((b) => b.textContent === label) as HTMLButtonElement;
+      expect([...map().querySelectorAll('[data-testid="time-range"] button')].map((b) => b.textContent)).toEqual(['6h', '24h', '7d']);
+      expect(rangeButton('6h').getAttribute('title')).toMatch(/^What is hitting now\?/);
+      expect(map().querySelector('[data-marker="outage:cf-2"]')).not.toBeNull();
+      expect(map().querySelectorAll('[data-marker^="attack:"]').length).toBe(2);
+      await act(() => (map().querySelector('[data-testid="layers-chip"]') as HTMLButtonElement).click());
+      const rangeNote = (id: string) => map().querySelector(`[data-layer-row="${id}"] [data-range-note]`)?.textContent;
+      expect(map().querySelector('[data-testid="layers-popover"]')?.textContent).toContain('at 7d');
+      expect([rangeNote('ddos'), rangeNote('attackers'), rangeNote('outages'), rangeNote('cloud'), rangeNote('datacenters'), rangeNote('cables')]).toEqual([
+        'share of attack traffic, last 7 days', 'indicators seen in the last 7 days', 'outages active in the last 7 days',
+        'status now; the range does not apply', 'status now; the range does not apply', 'warnings in force now; the range does not apply',
+      ]);
+      await act(() => rangeButton('6h').click());
+      await vi.waitFor(async () => {
+        await flush();
+        expect(__fake.last.sources.get('lite-fills')?.data.features.map((f) => f.properties.id)).toEqual(['FR']);
+      }, { timeout: 10_000, interval: 50 });
+      expect(rangeNote('ddos')).toBe('share of attack traffic, last 6 h');
+      expect(rangeNote('cloud')).toBe('status now; the range does not apply');
+      // At 6h the ended outage and the three-day-old attack server drop out; the ongoing outage stays.
+      expect(map().querySelector('[data-marker="outage:cf-2"]')).toBeNull();
+      expect(map().querySelector('[data-marker="outage:cf-1"]')).not.toBeNull();
+      expect(map().querySelectorAll('[data-marker^="attack:"]').length).toBe(1);
+      // The 24h window is missing: its source is named and nothing is shaded, never the 7-day data.
+      await act(() => rangeButton('24h').click());
+      await vi.waitFor(async () => {
+        await flush();
+        expect([...map().querySelectorAll('[data-source-state="error"]')].map((el) => el.textContent)).toContain('DDoS targets 24h: source unavailable · seed-internet-outages');
+      }, { timeout: 10_000, interval: 50 });
+      expect(__fake.last.sources.get('lite-fills')?.data.features ?? []).toEqual([]);
+      await act(() => rangeButton('7d').click());
+      await act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
 
       // Expanding the fired outage indicator opens that outage's card on the map.
       const card = root.querySelector('[data-testid="tech-indicators"] button[data-indicator="internet-outage"]') as HTMLButtonElement;

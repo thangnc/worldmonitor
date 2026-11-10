@@ -11,7 +11,7 @@ import type {
 } from '../src/generated/client/worldmonitor/market/v1/service_client.ts';
 import { DRIVERS, LINK_WINDOW_HOURS, MAX_LINKED_STORIES, linkNews, matchReason, offsetLabel } from '../src/lite/data/news-link.ts';
 import { STALE_FACTOR, feedCounts, feedState, sortFeeds, type FeedState, type Indicator } from '../src/lite/data/indicators.ts';
-import { chokepointPins, featureIso2, newSanctionCountries, pinIdForFeed, sanctionFills, shippingLanes, signalPins } from '../src/lite/data/markets-map.ts';
+import { centreCard, chokepointPins, featureIso2, newSanctionCountries, pinIdForFeed, sanctionFills, shippingLanes, signalCard, signalPins } from '../src/lite/data/markets-map.ts';
 import { buildPriceBoard } from '../src/lite/data/prices.ts';
 import { CENTRAL_BANKS } from '../src/config/finance-geo.ts';
 import { STRATEGIC_WATERWAYS } from '../src/config/geo.ts';
@@ -649,6 +649,34 @@ describe('Finance markets map', () => {
     assert.equal(fed.issuer.lat, CENTRAL_BANKS.find((b) => b.id === 'fed')?.lat);
     assert.equal(pinIdForFeed(feeds[3]!), null);
     assert.equal(pinIdForFeed(fired('other-bonds', 'Other 10y bonds · JP', 'x')), 'signal:boj');
+
+    // The map card is plain lines, fired first; the indicator card stays in the panel.
+    const card = signalCard(fed);
+    assert.equal(card.kind, fed.issuer.name);
+    assert.equal(card.value, '1 fired');
+    assert.deepEqual(card.lines.map((l) => [l.text, l.style]), [
+      ['payrolls +105k vs prior', 'mono'],
+      ['UST 10Y 4.86% +2 bp · quiet', 'dim'],
+      ['Source and linked news: in the indicator card.', 'dim'],
+    ]);
+    const ecb = signalCard(pins.find((p) => p.id === 'signal:ecb')!);
+    assert.equal(ecb.value, 'quiet');
+    assert.equal(ecb.lines.some((l) => l.text.startsWith('Source and linked news')), false);
+  });
+
+  it('gives a financial centre a plain card from the curated entry, labelled context only', () => {
+    const card = centreCard({ id: 'fc-x', name: 'Zurich', city: 'Zurich', country: 'CH', lat: 0, lon: 0, type: 'regional', gfciRank: 9, specialties: ['Private Banking', 'Insurance'], description: 'Wealth hub' });
+    assert.equal(card.value, 'GFCI #9');
+    assert.deepEqual(card.lines.map((l) => [l.text, l.style]), [
+      ['Regional centre · Switzerland', undefined],
+      ['Private Banking · Insurance', 'mono'],
+      ['Wealth hub', undefined],
+      ['Context only: curated reference list, no live signal.', 'dim'],
+    ]);
+    // An offshore centre named apart from its city, with no rank, specialties or description.
+    const bare = centreCard({ id: 'fc-y', name: 'Cayman Islands', city: 'George Town', country: 'KY', lat: 0, lon: 0, type: 'offshore' });
+    assert.equal(bare.value, '');
+    assert.deepEqual(bare.lines.map((l) => l.text), ['Offshore centre · George Town, Cayman Islands', 'Context only: curated reference list, no live signal.']);
   });
 
   it('draws every strategic waterway, coloured only when a status was read', () => {

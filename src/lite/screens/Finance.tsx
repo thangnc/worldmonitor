@@ -3,7 +3,7 @@ import { useMemo, useState } from 'preact/hooks';
 import { Bitcoin, MapPin } from 'lucide-preact';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { Card, ColLabel, DerivedTag, Panel, SourceState, cx } from '../components/ui';
-import { HealthDots, IndicatorCard, IndicatorFeed } from '../components/indicator';
+import { HealthDots, IndicatorFeed } from '../components/indicator';
 import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
 import { LiteMap, type MapMarker } from '../map/LiteMap';
 import { AssetMark, EventMark, LineSwatch, StatusAreaSwatch, SwatchRun } from '../map/marks';
@@ -39,6 +39,7 @@ import {
   pinIdForFeed,
   sanctionFills,
   shippingLanes,
+  signalCard,
   signalMark,
   signalPins,
 } from '../data/markets-map';
@@ -182,7 +183,6 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
   const sanctions = useSanctions();
   const rates = useShippingRates();
   const board = usePriceBoard();
-  const now = Date.now();
 
   const moves = useMemo(() => (bonds.status === 'ready' ? bondMoves(bonds.data) : []), [bonds]);
   const pins = useMemo(() => signalPins(feeds, moves, YIELD_MOVE_BP), [feeds, moves]);
@@ -205,7 +205,7 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
     const out: MapMarker[] = [];
     if (layers.centres) {
       for (const c of FINANCIAL_CENTRE_POINTS) {
-        out.push({ kind: 'asset', glyph: 'building-2', state: 'normal', inert: true, id: c.id, lat: c.lat, lon: c.lon, title: `${c.name} · financial centre`, popup: { kind: 'Financial centre', name: c.name, value: '', lines: [] } });
+        out.push({ kind: 'asset', glyph: 'building-2', state: 'normal', id: c.id, lat: c.lat, lon: c.lon, title: `${c.name} · financial centre`, popup: c.card });
       }
     }
     if (layers.chokepoints) {
@@ -230,34 +230,18 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
     }
     if (layers.signals) {
       for (const p of pins) {
-        const fired = p.signals.filter((s) => s.fired && s.indicator);
         const mark = signalMark(p);
         // New York sits on Washington at world zoom: lift the NYSE mark clear of the Fed's.
         const at = { id: p.id, lat: p.issuer.lat, lon: p.issuer.lon, stale: p.stale, nudge: p.issuer.id === 'nyse' ? ([6, -14] as [number, number]) : undefined };
         out.push({
           ...(mark.kind === 'event' ? { kind: 'event' as const, glyph: mark.glyph, state: mark.state, fill: 'solid' as const, ...at } : { kind: 'asset' as const, glyph: mark.glyph, state: mark.state, ...at }),
           title: `${p.issuer.short} · ${p.signals.map((s) => s.text).join(' · ')}`,
-          popup: {
-            kind: p.issuer.name,
-            name: p.issuer.short,
-            value: '',
-            lines: [],
-            body: (
-              <>
-                {fired.map((s) => <IndicatorCard key={s.feedId} indicator={s.indicator!} now={now} />)}
-                {p.signals.filter((s) => !s.indicator).map((s) => (
-                  <p key={`${s.feedId}${s.text}`} class={cx('font-mono text-[11.5px]', s.fired ? 'text-ink' : 'text-muted')}>
-                    {s.text}{s.fired ? '' : ' · quiet'}
-                  </p>
-                ))}
-              </>
-            ),
-          },
+          popup: signalCard(p),
         });
       }
     }
     return out;
-  }, [layers, pins, chokes, now]);
+  }, [layers, pins, chokes]);
 
   const overlays = useMemo(
     () => ({ lines: layers.lanes ? lanes : undefined, fills: layers.sanctions ? fills : undefined }),

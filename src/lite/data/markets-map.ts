@@ -7,14 +7,16 @@
  */
 import type { ChokepointInfo } from '@/generated/client/worldmonitor/supply_chain/v1/service_client';
 import type { CountrySanctionsPressure } from '@/generated/client/worldmonitor/sanctions/v1/service_client';
-import { CENTRAL_BANKS, FINANCIAL_CENTERS, STOCK_EXCHANGES } from '@/config/finance-geo';
+import { CENTRAL_BANKS, FINANCIAL_CENTERS, STOCK_EXCHANGES, type FinancialCenter } from '@/config/finance-geo';
 import { TRADE_ROUTES, resolveTradeRouteSegments } from '@/config/trade-routes';
 import { STRATEGIC_WATERWAYS } from '@/config/geo';
 import { signed } from '../format';
+import { countryName } from './conflict';
 import type { BondMove } from './finance-macro-indicators';
 import type { FeedState, Indicator } from './indicators';
 import type { PriceBoard } from './prices';
 import type { Tone } from './transforms';
+import type { MapCard } from '../map/LiteMap';
 import type { MarkGlyph, MarkState } from '../map/marks';
 
 export interface Issuer {
@@ -142,6 +144,27 @@ export function signalPins(feeds: readonly FeedState[], bonds: readonly BondMove
   return pins;
 }
 
+/**
+ * The map card for a signal pin: one plain line per signal, as every map card
+ * reads. The full indicator card, with its source and linked news, stays in
+ * the panel beside the map.
+ */
+export function signalCard(pin: SignalPin): MapCard {
+  const fired = pin.signals.filter((s) => s.fired).length;
+  return {
+    kind: pin.issuer.name,
+    name: pin.issuer.short,
+    value: fired ? `${fired} fired` : 'quiet',
+    lines: [
+      ...pin.signals.map((s) => ({
+        text: `${s.text}${s.fired ? '' : ' · quiet'}${s.stale ? ' · late' : ''}`,
+        style: s.fired ? ('mono' as const) : ('dim' as const),
+      })),
+      ...(pin.signals.some((s) => s.indicator) ? [{ text: 'Source and linked news: in the indicator card.', style: 'dim' as const }] : []),
+    ],
+  };
+}
+
 // ---- Chokepoints ------------------------------------------------------------
 
 const OIL_CHOKEPOINTS = new Set(['hormuz_strait', 'bab_el_mandeb', 'suez']);
@@ -262,5 +285,23 @@ export function sanctionFills(
   return { type: 'FeatureCollection', features };
 }
 
+const CENTRE_TYPE: Record<FinancialCenter['type'], string> = { global: 'Global', regional: 'Regional', offshore: 'Offshore' };
+
+/** The map card for a financial centre: the curated reference entry, labelled as context, not a live signal. */
+export function centreCard(c: FinancialCenter): MapCard {
+  const place = c.city && c.city !== c.name ? `${c.city}, ${countryName(c.country)}` : countryName(c.country);
+  return {
+    kind: 'Financial centre',
+    name: c.name,
+    value: c.gfciRank ? `GFCI #${c.gfciRank}` : '',
+    lines: [
+      { text: `${CENTRE_TYPE[c.type]} centre · ${place}` },
+      ...(c.specialties?.length ? [{ text: c.specialties.join(' · '), style: 'mono' as const }] : []),
+      ...(c.description ? [{ text: c.description }] : []),
+      { text: 'Context only: curated reference list, no live signal.', style: 'dim' as const },
+    ],
+  };
+}
+
 /** Financial centres, context only. */
-export const FINANCIAL_CENTRE_POINTS = FINANCIAL_CENTERS.map((c) => ({ id: `centre:${c.id}`, name: c.name, lat: c.lat, lon: c.lon }));
+export const FINANCIAL_CENTRE_POINTS = FINANCIAL_CENTERS.map((c) => ({ id: `centre:${c.id}`, name: c.name, lat: c.lat, lon: c.lon, card: centreCard(c) }));
