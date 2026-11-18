@@ -139,10 +139,15 @@ interface ScoreLevelCutoff {
   level: string;
 }
 
-interface ParsedScoreLevelFunction {
-  cutoffs: ScoreLevelCutoff[];
-  fallback: string;
-}
+// The dashboard's getScoreLevel (src/services/cached-risk-scores.ts) was removed
+// with the legacy UI. Its cutoffs stay pinned here so the version-keyed protocol
+// snapshot hash below is unchanged.
+const CII_UI_SCORE_LEVEL_CUTOFFS: ScoreLevelCutoff[] = [
+  { min: 81, level: 'critical' },
+  { min: 66, level: 'high' },
+  { min: 51, level: 'elevated' },
+  { min: 31, level: 'normal' },
+];
 
 function findFunctionDeclaration(sourceFile: ts.SourceFile, functionName: string): ts.FunctionDeclaration {
   let found: ts.FunctionDeclaration | null = null;
@@ -174,67 +179,6 @@ function findTopLevelConstDeclaration(
     }
   }
   return null;
-}
-
-function getReturnString(statement: ts.Statement): string | null {
-  const returnStatement = ts.isBlock(statement)
-    ? statement.statements.length === 1 && ts.isReturnStatement(statement.statements[0])
-      ? statement.statements[0]
-      : null
-    : ts.isReturnStatement(statement)
-      ? statement
-      : null;
-
-  const expression = returnStatement?.expression;
-  if (!expression) return null;
-  return ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)
-    ? expression.text
-    : null;
-}
-
-function getScoreCutoff(expression: ts.Expression): number | null {
-  if (!ts.isBinaryExpression(expression)) return null;
-  if (expression.operatorToken.kind !== ts.SyntaxKind.GreaterThanEqualsToken) return null;
-  if (!ts.isIdentifier(expression.left) || expression.left.text !== 'score') return null;
-  return ts.isNumericLiteral(expression.right) ? Number(expression.right.text) : null;
-}
-
-function parseScoreLevelFunction(source: string, functionName: string): ParsedScoreLevelFunction {
-  const sourceFile = ts.createSourceFile(
-    `${functionName}.ts`,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
-  const fn = findFunctionDeclaration(sourceFile, functionName);
-  assert.ok(fn.body, `${functionName} must have a function body`);
-
-  const cutoffs: ScoreLevelCutoff[] = [];
-  let fallback: string | null = null;
-
-  for (const statement of fn.body.statements) {
-    if (ts.isIfStatement(statement)) {
-      const min = getScoreCutoff(statement.expression);
-      const level = getReturnString(statement.thenStatement);
-      assert.notEqual(min, null, `${functionName} has an unsupported cutoff condition`);
-      assert.notEqual(level, null, `${functionName} cutoff ${min} must return a string literal`);
-      cutoffs.push({ min, level });
-      continue;
-    }
-
-    if (ts.isReturnStatement(statement)) {
-      fallback = getReturnString(statement);
-    }
-  }
-
-  assert.ok(cutoffs.length > 0, `${functionName} must declare score >= cutoff returns`);
-  assert.ok(fallback, `${functionName} must end with a string fallback return`);
-  return { cutoffs, fallback };
-}
-
-function extractScoreLevelCutoffs(source: string, functionName: string): ScoreLevelCutoff[] {
-  return parseScoreLevelFunction(source, functionName).cutoffs;
 }
 
 type ScoreHelperSnapshotValue = string | number | ScoreHelperSnapshotValue[] | {
@@ -558,13 +502,6 @@ function assertFormulaLiteralCovered(
     )),
     `CII formula snapshot must cover ${region} literal ${value} in context: ${contextSnippet}`,
   );
-}
-
-function evaluateScoreLevel(parsed: ParsedScoreLevelFunction, score: number): string {
-  for (const cutoff of parsed.cutoffs) {
-    if (score >= cutoff.min) return cutoff.level;
-  }
-  return parsed.fallback;
 }
 
 function hashJson(value: unknown): string {
@@ -1847,7 +1784,6 @@ describe('CII scoring', () => {
       `No CII protocol snapshot for ${CII_FORMULA_VERSION}. Add a new snapshot hash when bumping CII_FORMULA_VERSION.`,
     );
 
-    const cachedRiskSource = readRepoFile('src/services/cached-risk-scores.ts');
     const getRiskScoresSource = readRepoFile('server/worldmonitor/intelligence/v1/get-risk-scores.ts');
     const climateZoneSource = readRepoFile('shared/cii-climate-zones.ts');
     const scoreFormulaLiterals = extractScoreFormulaLiterals(getRiskScoresSource);
@@ -1913,7 +1849,7 @@ describe('CII scoring', () => {
       },
       scoreFormulaLiterals,
       scoreHelperInputs,
-      scoreLevelCutoffs: extractScoreLevelCutoffs(cachedRiskSource, 'getScoreLevel'),
+      scoreLevelCutoffs: CII_UI_SCORE_LEVEL_CUTOFFS,
       // Coordinate attribution: which Tier-1 country a fire, jamming hex, quake or strike scores to.
       countryBordersSha256: createHash('sha256').update(readRepoFile('scripts/shared/cii-country-borders.data.mjs')).digest('hex'),
     };
@@ -2003,30 +1939,6 @@ describe('CII scoring', () => {
       Europe: ['DE', 'FR'],
       'Middle East': ['IR', 'IL', 'SA'],
     });
-  });
-
-  it('getScoreLevel uses canonical CII UI bands at 81/66/51/31', () => {
-    const cachedRiskSource = readRepoFile('src/services/cached-risk-scores.ts');
-    const cachedScoreLevel = parseScoreLevelFunction(cachedRiskSource, 'getScoreLevel');
-    const expectedCutoffs = [
-      { min: 81, level: 'critical' },
-      { min: 66, level: 'high' },
-      { min: 51, level: 'elevated' },
-      { min: 31, level: 'normal' },
-    ];
-
-    assert.deepEqual(cachedScoreLevel.cutoffs, expectedCutoffs);
-    assert.equal(cachedScoreLevel.fallback, 'low');
-
-    for (const [score, level] of [
-      [81, 'critical'], [80, 'high'],
-      [66, 'high'], [65, 'elevated'],
-      [51, 'elevated'], [50, 'normal'],
-      [31, 'normal'], [30, 'low'],
-    ] as const) {
-      assert.equal(evaluateScoreLevel(cachedScoreLevel, score), level,
-        `cached getScoreLevel(${score}) should be ${level}`);
-    }
   });
 
   // ===== Strategic risk roll-up (issue #3725) =====

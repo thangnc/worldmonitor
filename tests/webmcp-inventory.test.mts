@@ -381,33 +381,16 @@ const HOMEPAGE_VALID_INPUTS: Record<string, Record<string, unknown>> = {
 const WEBMCP_MAINTAINER_SOURCES = [
   'src/config/webmcp.ts',
   'src/services/webmcp.ts',
-  'src/services/followed-countries.ts',
   'src/services/webmcp-map-layer-catalog.ts',
   'src/services/webmcp-panel-catalog.ts',
   'src/services/webmcp-mission-preset-catalog.ts',
-  'src/main.ts',
-  'src/App.ts',
-  'src/app/webmcp-dashboard.ts',
-  'src/app/dashboard-action-binding.ts',
   'shared/agent-bus-actions.ts',
   'shared/agent-bus-contract.ts',
-  'src/app/agent-bus-applier.ts',
-  'src/app/country-map-focus.ts',
-  'src/app/map-dimension-control.ts',
   'src/config/panel-enablement.ts',
-  'src/app/panel-enablement.ts',
-  'src/app/webmcp-access.ts',
-  'src/services/webmcp-access-snapshot.ts',
   'src/services/clerk.ts',
-  'src/app/webmcp-search-controller.ts',
-  'src/app/webmcp-search-effects.ts',
-  'src/app/search-selection-dispatcher.ts',
   'src/services/panel-layout-actions.ts',
-  'src/app/panel-layout.ts',
-  'src/components/PanelTabBar.ts',
   'src/services/tab-store.ts',
   'src/services/dashboard-tab-actions.ts',
-  'src/components/GlobalProcurementPanel.ts',
   'pro-test/welcome.html',
   'vercel.json',
   'docker/nginx-security-headers.conf',
@@ -415,13 +398,9 @@ const WEBMCP_MAINTAINER_SOURCES = [
   'vite.config.ts',
   'pro-test/vite.config.ts',
   'tests/webmcp*.test.*',
-  'tests/dom/*webmcp*.test.*',
   'tests/deploy-config.test.mjs',
   'tests/fixtures/webmcp/evals.v1.json',
   'scripts/evaluate-webmcp-evals.mjs',
-  'e2e/webmcp.spec.ts',
-  'e2e/webmcp-cancellation.spec.ts',
-  'e2e/embed.spec.ts',
 ] as const;
 
 const WEBMCP_FOCUSED_VERIFICATION_TESTS = [
@@ -429,20 +408,12 @@ const WEBMCP_FOCUSED_VERIFICATION_TESTS = [
   'tests/webmcp-inventory.test.mts',
   'tests/webmcp.test.mjs',
   'tests/webmcp-map-layer-catalog.test.mts',
-  'tests/webmcp-search-effects.test.mts',
-  'tests/webmcp-dashboard.test.mts',
   'tests/dashboard-tab-actions.test.mts',
   'tests/panel-layout-actions.test.mts',
   'tests/webmcp-panel-catalog.test.mts',
-  'tests/webmcp-mission-presets.test.mts',
   'tests/agent-bus-actions.test.mts',
-  'tests/agent-bus-applier.test.mts',
-  'tests/country-map-focus.test.mts',
-  'tests/webmcp-runtime.test.mjs',
   'tests/webmcp-analytics-policy.test.mjs',
   'tests/webmcp-evals.test.mjs',
-  'tests/webmcp-access.test.mts',
-  'tests/webmcp-panel-enablement.test.mts',
   'tests/deploy-config.test.mjs',
 ] as const;
 
@@ -766,7 +737,7 @@ describe('WebMCP canonical inventories', () => {
     ));
     assert.throws(() => assertGuideContract(
       publicGuide,
-      maintainerGuide.replace(/^\| [^\n]*`src\/App\.ts`.*$/m, ''),
+      maintainerGuide.replace(/^\| [^\n]*`src\/services\/webmcp\.ts`.*$/m, ''),
       headings,
     ));
     assert.throws(() =>
@@ -786,7 +757,7 @@ describe('WebMCP canonical inventories', () => {
     assert.throws(() =>
       assertGuideContract(
         publicGuide,
-        maintainerGuide.replace(/^\| ([^\n]*`src\/App\.ts`.*)$/m, '{/* | $1 */}'),
+        maintainerGuide.replace(/^\| ([^\n]*`src\/services\/webmcp\.ts`.*)$/m, '{/* | $1 */}'),
         headings,
       ),
     );
@@ -813,7 +784,7 @@ describe('WebMCP canonical inventories', () => {
     assert.throws(() =>
       assertGuideContract(
         publicGuide,
-        maintainerGuide.replace(/^\s{2}tests\/webmcp-dashboard\.test\.mts \\\n/m, ''),
+        maintainerGuide.replace(/^\s{2}tests\/webmcp-map-layer-catalog\.test\.mts \\\n/m, ''),
         headings,
       ),
     );

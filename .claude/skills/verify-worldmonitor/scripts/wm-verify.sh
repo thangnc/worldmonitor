@@ -61,10 +61,9 @@ cmd_launch() {
   rm -f "$EVIDENCE_ROOT/.pid"
 
   local waited=0
-  # /tests/map-harness.html is the same readiness probe playwright.config.ts uses:
-  # it forces Vite to transform a real module graph, so a 200 means "can serve the
+  # /lite.html makes Vite transform the Lite entry, so a 200 means "can serve the
   # app", not just "socket is open".
-  until curl -sf -o /dev/null "http://127.0.0.1:$port/tests/map-harness.html"; do
+  until curl -sf -o /dev/null "http://127.0.0.1:$port/lite.html"; do
     if ! kill -0 "$pid" 2>/dev/null; then
       echo "[wm-verify] dev server died during startup. Last log lines:" >&2
       tail -30 "$LOG_FILE" >&2
@@ -91,7 +90,7 @@ cmd_launch() {
     }, null, 2) + '\n');
   " "$INSTANCE_FILE" "$pid" "$port" "$variant" "$LOG_FILE"
 
-  echo "[wm-verify] ready in ${waited}s — http://127.0.0.1:$port/dashboard (pid $pid)"
+  echo "[wm-verify] ready in ${waited}s — http://127.0.0.1:$port/lite (pid $pid)"
   cat "$INSTANCE_FILE"
 }
 
@@ -135,13 +134,13 @@ cmd_doctor() {
   fi
 
   local code
-  code="$(curl -s -o /dev/null -w '%{http_code}' "$base/dashboard" || echo 000)"
-  if [ "$code" = "200" ]; then echo "doctor: $base/dashboard -> 200"; else echo "doctor: FAIL — $base/dashboard -> $code"; ok=1; fi
+  code="$(curl -s -o /dev/null -w '%{http_code}' "$base/lite" || echo 000)"
+  if [ "$code" = "200" ]; then echo "doctor: $base/lite -> 200"; else echo "doctor: FAIL — $base/lite -> $code"; ok=1; fi
 
-  if curl -sf "$base/dashboard" | grep -q "skeleton-shell"; then
-    echo "doctor: dashboard shell markup served"
+  if curl -sf "$base/lite" | grep -q 'id="lite-root"'; then
+    echo "doctor: Lite app shell served"
   else
-    echo "doctor: FAIL — dashboard HTML is not the app shell"; ok=1
+    echo "doctor: FAIL — /lite HTML is not the Lite app shell"; ok=1
   fi
 
   # Every drive waits on the data-wm-* readiness markers, and only VITE_E2E=1

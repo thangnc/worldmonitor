@@ -2,8 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync as originalReadFileSync, existsSync, readdirSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
+import { readFileSync as originalReadFileSync, existsSync, readdirSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { MACHINE_READABLE_URLS } from '../scripts/build-sitemap.mjs';
 import { nonDefaultLandingLocales } from '../shared/indexable-landing-locales.ts';
@@ -64,18 +63,8 @@ const packageJson = JSON.parse(readFileSync(resolve(__dirname, '../package.json'
 const vercelConfig = JSON.parse(readFileSync(resolve(__dirname, '../vercel.json'), 'utf-8'));
 const viteConfigSource = readFileSync(resolve(__dirname, '../vite.config.ts'), 'utf-8');
 const proViteConfigSource = readFileSync(resolve(__dirname, '../pro-test/vite.config.ts'), 'utf-8');
-const playwrightConfigSource = readFileSync(resolve(__dirname, '../playwright.config.ts'), 'utf-8');
-const embedE2eSource = readFileSync(resolve(__dirname, '../e2e/embed.spec.ts'), 'utf-8');
-const webMcpE2eSource = readFileSync(resolve(__dirname, '../e2e/webmcp.spec.ts'), 'utf-8');
-const webMcpCancellationE2eSource = readFileSync(
-  resolve(__dirname, '../e2e/helpers/webmcp-cancellation.ts'),
-  'utf-8',
-);
-const testWorkflowSource = readFileSync(resolve(__dirname, '../.github/workflows/test.yml'), 'utf-8');
 const sitemapSource = readFileSync(resolve(__dirname, '../public/sitemap-main.xml'), 'utf-8');
 const robotsSource = readFileSync(resolve(__dirname, '../public/robots.www.txt'), 'utf-8');
-const mainSource = readFileSync(resolve(__dirname, '../src/main.ts'), 'utf-8');
-const zodCspSource = readFileSync(resolve(__dirname, '../src/bootstrap/zod-csp.ts'), 'utf-8');
 const proIndexCssSource = readFileSync(resolve(__dirname, '../pro-test/src/index.css'), 'utf-8');
 const middlewareSource = readFileSync(resolve(__dirname, '../middleware.ts'), 'utf-8');
 const dockerfileSource = readFileSync(resolve(__dirname, '../Dockerfile'), 'utf-8');
@@ -83,7 +72,6 @@ const dockerNginxSource = readFileSync(resolve(__dirname, '../docker/nginx.conf'
 const frontendDockerfileSource = readFileSync(resolve(__dirname, '../docker/Dockerfile'), 'utf-8');
 const dockerignoreSource = readFileSync(resolve(__dirname, '../.dockerignore'), 'utf-8');
 const vercelIgnoreSource = readFileSync(resolve(__dirname, '../scripts/vercel-ignore.sh'), 'utf-8');
-const variantDashboardSource = readFileSync(resolve(__dirname, '../src/config/variant-dashboard-html.ts'), 'utf-8');
 const SPA_HTML_CACHE_SOURCE = '/((?!api|mcp|a2a|ask|oauth|assets|blog|docs|country-instability-index|countries|chokepoints|compare|crises|tools|research|reference|changelog|sources|use-cases|accuracy|monitor-the-situation|src|tmp|server|embed|embed\\.html|favico|map-styles|data|textures|pro|sw\\.js|workbox-[a-f0-9]+\\.js|manifest\\.webmanifest|offline\\.html|robots\\.txt|robots\\.www\\.txt|robots\\.variant\\.txt|robots\\.api\\.txt|sitemap\\.xml|sitemap-main\\.xml|schemamap\\.xml|sandbox|llms\\.txt|llms-full\\.txt|llms\\*\\.txt|openapi\\.yaml|openapi\\.json|plugin\\.json|auth\\.md|pricing\\.md|support\\.md|ai-search\\.md|agents\\.md|developers\\.md|developers/llms\\.txt|mcp-server\\.md|openapi\\.md|sdks\\.md|world-monitor\\.md|api-versioning\\.md|agent\\.txt|\\.well-known|wm-widget-sandbox\\.html|mcp-grant\\.html|mcp-grant|desktop-sign-in\\.html|desktop-sign-in|.*\\.md$).*)';
 const GLOBAL_SECURITY_HEADER_SOURCE = '/((?!docs|embed|embed\\.html|wm-widget-sandbox\\.html).*)';
 const APP_ROOT_HOST_PATTERN = '^(?:(?:www|tech|finance|commodity|happy|energy)\\.)?worldmonitor\\.app$';
@@ -107,70 +95,17 @@ const WEBMCP_TOKEN_SHA256_BY_HOST = {
   'energy.worldmonitor.app': '49eb184a6eb92c01c868c97620168f8a2881b0106416955b4309512decd7b71f',
 };
 const GLOBAL_CSP_INLINE_SCRIPT_HTML_FILES = [
-  'index.html',
   'lite.html',
-  'settings.html',
-  'live-channels.html',
-  'mcp-grant.html',
-  'desktop-sign-in.html',
-  'verify.html',
   'public/offline.html',
   'public/pro/index.html',
   'public/pro/welcome.html',
 ];
 const GLOBAL_CSP_EXTERNAL_SCRIPT_HTML_FILES = [
-  'index.html',
   'lite.html',
-  'settings.html',
-  'live-channels.html',
-  'mcp-grant.html',
-  'desktop-sign-in.html',
-  'verify.html',
   'public/pro/index.html',
   'public/pro/welcome.html',
 ];
 const STATIC_SCRIPT_NONCE = 'wm-static-bootstrap';
-const WEBMCP_PLAYWRIGHT_ENV_KEYS = [
-  'WM_REQUIRE_WEBMCP',
-  'WM_WEBMCP_PRODUCTION',
-  'WM_WEBMCP_PRODUCTION_URL',
-  'WM_WEBMCP_DEPLOYED_SHA',
-  'WM_WEBMCP_CHROME_CHANNEL',
-  'WM_WEBMCP_CHROME_EXECUTABLE_PATH',
-];
-
-function probePlaywrightWebMcpEnvironment(overrides = {}) {
-  const env = { ...process.env, NODE_NO_WARNINGS: '1' };
-  for (const key of WEBMCP_PLAYWRIGHT_ENV_KEYS) delete env[key];
-  Object.assign(env, overrides);
-
-  const probe = spawnSync(
-    process.execPath,
-    [
-      '--import',
-      'tsx',
-      '--input-type=module',
-      '-e',
-      [
-        "const { default: config } = await import('./playwright.config.ts');",
-        "const chromium = config.projects?.find(({ name }) => name === 'chromium');",
-        'console.log(JSON.stringify({',
-        '  baseURL: config.use?.baseURL ?? null,',
-        '  hasWebServer: Boolean(config.webServer),',
-        '  launchArgs: chromium?.use?.launchOptions?.args ?? [],',
-        '  testMatch: config.testMatch ?? null,',
-        '}));',
-      ].join('\n'),
-    ],
-    {
-      cwd: resolve(__dirname, '..'),
-      encoding: 'utf8',
-      env,
-    },
-  );
-  assert.ifError(probe.error);
-  return probe;
-}
 
 const HTML_ENTRY_BROWSER_CACHE = 'public, max-age=0, must-revalidate';
 const HTML_ENTRY_EDGE_CACHE = 'public, s-maxage=600, stale-while-revalidate=60';
@@ -432,20 +367,16 @@ const getExternalScriptTags = (htmlSource) => {
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const getVariantHosts = () => {
-  const variantMetaSource = readFileSync(resolve(__dirname, '../src/config/variant-meta.ts'), 'utf-8');
-  return [...variantMetaSource.matchAll(/url:\s*'https:\/\/([^/']+)\//g)]
-    .map((match) => match[1])
-    .sort();
-};
-
-const getVariantUrls = () => {
-  const variantMetaSource = readFileSync(resolve(__dirname, '../src/config/variant-meta.ts'), 'utf-8');
-  return Object.fromEntries(
-    [...variantMetaSource.matchAll(/\n\s{2}([a-z]+):\s*\{[\s\S]*?url:\s*'([^']+)'/g)]
-      .map((match) => [match[1], match[2]])
-  );
-};
+// Every product web host. src/config/variant-meta.ts listed them until the
+// legacy dashboard was deleted; the CSP framing allowlists still cover them all.
+const VARIANT_HOSTS = [
+  'commodity.worldmonitor.app',
+  'energy.worldmonitor.app',
+  'finance.worldmonitor.app',
+  'happy.worldmonitor.app',
+  'tech.worldmonitor.app',
+  'www.worldmonitor.app',
+];
 
 
 // `sourceToRegExp` is this suite's model of how Vercel compiles a `source`.
@@ -542,12 +473,9 @@ describe('crawlable content corpus deployment contracts', () => {
     '/reference/changelog/page/2/',
   ];
 
-  // #6575: the negative-lookahead SPA catch-all is gone. The dashboard
-  // document is only served by the explicit /dashboard rewrites plus the
-  // enumerated client-side History routes (/stocks, /stocks/:symbol, /story).
-  const getSpaFallbackRewrites = () => vercelConfig.rewrites.filter((r) =>
-    r.destination === DASHBOARD_HTML_DESTINATION && r.source !== '/dashboard'
-  );
+  // #6575: the negative-lookahead SPA catch-all is gone. The only app shell
+  // left is lite.html, served by its five enumerated /lite rewrites.
+  const getSpaFallbackRewrites = () => vercelConfig.rewrites.filter((r) => r.destination === '/lite.html');
 
   const writeFixturePage = (publicDir, relativePath, head = '') => {
     const target = join(publicDir, relativePath);
@@ -555,52 +483,31 @@ describe('crawlable content corpus deployment contracts', () => {
     writeFileSync(target, '<!doctype html><html><head>' + head + '</head><body>fixture</body></html>');
   };
 
-  it('pins the deploy build command in vercel.json to a script that builds /pro', () => {
+  it('pins the deploy build command in vercel.json to the Lite build', () => {
     // vercel.json overrides the dashboard's Build Command, which is where this
-    // used to live -- invisible to the repo and changeable without a diff. Since
-    // #6898 stopped committing public/pro/, a dashboard edit away from a
-    // build:pro-chaining script no longer ships a STALE /pro, it ships no /pro:
-    // a 404 on www, and the dashboard SPA shell at 200 in the root Docker image.
-    //
-    // Deliberately resolved through package.json rather than string-matched
-    // against 'npm run build:full'. The property that matters is "the deploy
-    // builds /pro before Vite copies public/ into dist/", so pointing
-    // buildCommand at any other script (build:tech, a bare `vite build`) has to
-    // fail here -- a literal comparison would pass anything spelled right and
-    // prove nothing about what that script does.
-    const buildCommand = vercelConfig.buildCommand;
+    // used to live -- invisible to the repo and changeable without a diff.
+    // The Lite UI is the only web app: the deploy build is the secrets check,
+    // the OpenAPI copy and the /pro build (both still served until refactor
+    // Phase 1b), the browser typecheck, the Lite Vite build and the source-map gate.
+    // build:full stays as an alias so older callers build the same thing.
     assert.equal(
-      typeof buildCommand,
-      'string',
+      vercelConfig.buildCommand,
+      'npm run build',
       'vercel.json must pin buildCommand so the deploy contract lives in the repo, not the dashboard',
     );
-
-    const scriptName = buildCommand.match(/^npm run ([\w:-]+)$/)?.[1];
-    assert.ok(
-      scriptName,
-      `vercel.json buildCommand must be a plain "npm run <script>" this test can resolve, got: ${buildCommand}`,
+    assert.equal(
+      packageJson.scripts.build,
+      'npm run security:vite-env-secrets -- --strict-local && npm run build:openapi && npm run build:pro && tsc && vite build && npm run check:source-maps',
     );
-
-    const script = packageJson.scripts[scriptName];
-    assert.ok(script, `vercel.json buildCommand names scripts["${scriptName}"], which does not exist`);
-    assert.ok(
-      script.includes('npm run build:pro'),
-      `the deploy build command (${buildCommand}) must chain build:pro — public/pro/ is gitignored, so nothing else produces /pro`,
-    );
-    assert.ok(
-      script.indexOf('npm run build:pro') < script.indexOf('vite build'),
-      `the deploy build command (${buildCommand}) must build /pro before Vite copies public/ into dist/`,
-    );
+    assert.equal(packageJson.scripts['build:full'], 'npm run build');
+    assert.equal(packageJson.scripts.prebuild, undefined, 'the deploy build must not run hidden prebuild generators');
   });
 
-  it('runs content corpus sitemap integration after generated blog pages but before Vite builds', () => {
+  it('keeps the corpus, sitemap and /pro build scripts, and builds /pro in the Docker images', () => {
     // #8604 prepends the country slug generator. api/story.js canonicalises
     // every share stub against api/_country-corpus-slugs.generated.js, which is
     // derived from the same resilience snapshot this builder reads, so the map
-    // has to be regenerated in the same step that republishes the pages -- a
-    // map that lags the corpus emits a canonical to a slug that 404s. The
-    // corpus builder stays the tail of the command, so the ordering assertions
-    // below still describe where the pages are produced.
+    // has to be regenerated in the same step that republishes the pages.
     assert.match(
       packageJson.scripts['build:crawlable-corpus'],
       /^npm run corpus:country-slugs && node --import tsx scripts\/build-crawlable-corpus\.mjs$/
@@ -609,68 +516,29 @@ describe('crawlable content corpus deployment contracts', () => {
       packageJson.scripts['build:sitemap'],
       'node --import tsx scripts/build-sitemap.mjs'
     );
-
-    for (const scriptName of ['build', 'build:full']) {
-      const script = packageJson.scripts[scriptName];
-      assert.ok(script.includes('npm run build:blog'), scriptName + ' must build the Astro blog first');
-      assert.ok(script.includes('npm run build:crawlable-corpus'), scriptName + ' must build the static corpus');
-      assert.ok(script.includes('npm run build:sitemap'), scriptName + ' must run root sitemap generation');
-      assert.ok(
-        script.indexOf('npm run build:blog') < script.indexOf('npm run build:crawlable-corpus'),
-        scriptName + ' must build /blog first so existing /blog/glossary remains delegated to the blog sitemap'
-      );
-      assert.ok(
-        script.indexOf('npm run build:crawlable-corpus') < script.indexOf('npm run build:sitemap'),
-        scriptName + ' must scan the corpus only after the page generator runs'
-      );
-      assert.ok(
-        script.indexOf('npm run build:sitemap') < script.indexOf('vite build'),
-        scriptName + ' must update the public sitemap index and urlset before Vite copies public/ into dist/'
-      );
-      // public/pro/ is a BUILD PRODUCT, not committed bytes (#6898). Vercel's
-      // build command is `npm run build:full`, so if that chain stops running
-      // build:pro the deploy ships a dist/ with no /pro at all -- a 404 on the
-      // pricing page rather than the stale-bundle class this replaced.
-      assert.ok(
-        script.includes('npm run build:pro'),
-        scriptName + ' must build pro-test -- public/pro/ is gitignored, so nothing else produces /pro'
-      );
-      // The ordering checks above only prove the STRING is chained. Without this,
-      // build:pro could be rewritten to a no-op and every assertion here stays
-      // green while the deploy quietly stops producing /pro. Accept either
-      // `cd pro-test && npm run build` or `npm --prefix pro-test run build`.
-      assert.match(
-        packageJson.scripts['build:pro'],
-        /(?:cd pro-test\b[\s\S]*npm run build\b|npm --prefix pro-test run build\b)/,
-        'build:pro must actually run pro-test\'s build, not just exist as a chained name'
-      );
-      assert.ok(
-        script.indexOf('npm run build:pro') < script.indexOf('vite build'),
-        scriptName + ' must build /pro before Vite copies public/ into dist/'
-      );
-    }
+    // build:pro could be rewritten to a no-op while every caller stays green.
+    // Accept either `cd pro-test && npm run build` or `npm --prefix pro-test run build`.
+    assert.match(
+      packageJson.scripts['build:pro'],
+      /(?:cd pro-test\b[\s\S]*npm run build\b|npm --prefix pro-test run build\b)/,
+      'build:pro must actually run pro-test\'s build, not just exist as a chained name'
+    );
 
     for (const [name, source] of [
       ['Dockerfile', dockerfileSource],
       ['docker/Dockerfile', frontendDockerfileSource],
     ]) {
-      assert.ok(source.includes('npm run build:crawlable-corpus'), name + ' must build the static corpus');
-      assert.ok(source.includes('npm run build:sitemap'), name + ' must generate the root sitemap');
-      assert.ok(
-        source.indexOf('npm run build:crawlable-corpus') < source.indexOf('npm run build:sitemap'),
-        name + ' must scan the sitemap only after corpus pages exist'
-      );
-      assert.ok(
-        source.indexOf('npm run build:sitemap') < source.indexOf('npx vite build'),
-        name + ' must update the public sitemap index and urlset before Vite copies public/ into dist/'
-      );
+      // The images build only the Lite entry: no second Vite config, and no
+      // corpus or sitemap generation inside the image.
+      assert.match(source, /^RUN npx tsc && npx vite build$/m, name + ' must run the Lite Vite build');
+      assert.deepEqual(source.match(/^RUN .*vite build.*$/gm), ['RUN npx tsc && npx vite build'], name + ' must run exactly one Vite build');
+      assert.doesNotMatch(source, /--config vite\.lite\.config\.ts/, name + ' must not build a second Vite config');
+      assert.doesNotMatch(source, /npm run build:crawlable-corpus/, name + ' must not build the static corpus');
+      assert.doesNotMatch(source, /npm run build:sitemap/, name + ' must not generate the root sitemap');
       // Unlike /blog (deliberately skipped in the images), docker/nginx.conf.template
       // routes `location ^~ /pro` and `/pro/assets/`, so a self-hosted image that
       // never builds pro-test serves a 404 behind a live route.
-      assert.ok(
-        source.includes('npm run build:pro'),
-        name + ' must build pro-test -- nginx.conf.template routes /pro and public/pro/ is gitignored'
-      );
+      assert.match(source, /^RUN npm run build:pro$/m, name + ' must build pro-test -- nginx routes /pro and public/pro/ is gitignored');
       assert.ok(
         source.indexOf('npm run build:pro') < source.indexOf('npx vite build'),
         name + ' must build /pro before Vite copies public/ into dist/'
@@ -679,23 +547,15 @@ describe('crawlable content corpus deployment contracts', () => {
         source.indexOf('node scripts/generate-inventory-facts.mjs') < source.indexOf('npx vite build'),
         name + ' must generate ignored inventory assets in a clean build context before Vite runs',
       );
-      // generate-inventory-facts and build-handlers write untracked .js into
-      // SOURCE_ROOTS. The corpus step runs the attribution drift gate against
-      // those same roots, so it must see the pristine tree (#7435).
-      assert.ok(
-        source.indexOf('npm run build:crawlable-corpus') < source.indexOf('node scripts/generate-inventory-facts.mjs'),
-        name + ' must run the attribution gate before inventory-facts writes untracked JS into api/',
-      );
     }
     assert.ok(
       dockerfileSource.indexOf('node scripts/generate-inventory-facts.mjs') < dockerfileSource.indexOf('node docker/build-handlers.mjs'),
       'the self-host image must generate the Edge inventory module before handler bundling',
     );
-    assert.ok(
-      dockerfileSource.indexOf('npm run build:crawlable-corpus') < dockerfileSource.indexOf('node docker/build-handlers.mjs'),
-      'the self-host image must run the attribution gate before build-handlers writes compiled .js into api/',
-    );
     assert.match(frontendDockerfileSource, /RUN test -s dist\/product-facts\.json/);
+    // nginx serves the Lite routes from lite.html, so the image must ship it.
+    assert.match(frontendDockerfileSource, /^RUN test -s dist\/lite\.html$/m);
+    assert.doesNotMatch(frontendDockerfileSource, /dist\/dashboard\.html/);
     assert.ok(!packageJson.scripts['build:full'].includes('npm run build:blog &&'), 'build:full must not regenerate inventory facts inside build:blog');
   });
 
@@ -734,6 +594,15 @@ describe('crawlable content corpus deployment contracts', () => {
       'scripts/related-reading.mjs',
     ]) {
       assert.equal(vercelIgnoreSource.split(`'${path}'`).length - 1, 2, `${path} must trigger main and preview builds`);
+    }
+  });
+
+  it('builds Vercel when the Lite entry or its Vite config changes, and watches no deleted entry', () => {
+    for (const path of ['lite.html', 'vite.config.ts', 'vite.dev-api.ts']) {
+      assert.equal(vercelIgnoreSource.split(`'${path}'`).length - 1, 2, `${path} must trigger main and preview builds`);
+    }
+    for (const path of ['index.html', 'vite.lite.config.ts']) {
+      assert.equal(vercelIgnoreSource.includes(`'${path}'`), false, `${path} was deleted and must not be watched`);
     }
   });
 
@@ -947,7 +816,7 @@ describe('crawlable content corpus deployment contracts', () => {
     }
   });
 
-  it('marks stock workspaces and their markdown twins noindex without breaking deep links (#7905)', () => {
+  it('marks stock workspaces and their markdown twins noindex, and sends stock deep links to /lite (#7905)', () => {
     for (const path of ['/stocks', '/stocks/', '/stocks.md', '/stocks/AAPL', '/stocks/ZZZZFAKE',
       '/stocks/aapl/', '/stocks/BRK.B', '/stocks/7203.T', '/stocks/AAPL.md', '/stocks/ZZZZFAKE.md']) {
       assert.equal(effectiveHeader(path, 'X-Robots-Tag'), 'noindex, follow', path);
@@ -956,7 +825,8 @@ describe('crawlable content corpus deployment contracts', () => {
       assert.equal(effectiveHeader(path, 'X-Robots-Tag'), null, path);
     }
     for (const symbol of ['AAPL', 'ZZZZFAKE', 'BRK.B', '7203.T']) {
-      assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path: `/stocks/${symbol}` })?.destination, DASHBOARD_HTML_DESTINATION);
+      assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path: `/stocks/${symbol}` })?.destination, '/lite');
+      assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path: `/stocks/${symbol}` }), null);
     }
   });
 
@@ -1053,15 +923,15 @@ describe('crawlable content corpus deployment contracts', () => {
     }
   });
 
-  it('serves no SPA fallback for generated corpus paths while keeping real client deep links', () => {
+  it('serves no SPA fallback for generated corpus paths, and redirects the old client deep links to /lite', () => {
     // #6575: unknown paths must fall through to the filesystem (404), so the
-    // only dashboard-serving rewrites left are the explicit client History
-    // routes. Corpus HTML keeps resolving as raw static files.
+    // only app-shell rewrites left are the Lite routes. Corpus HTML keeps
+    // resolving as raw static files.
     const fallbacks = getSpaFallbackRewrites();
     assert.deepEqual(
-      fallbacks.map((r) => r.source).sort(),
-      ['/stocks', '/stocks/:symbol', '/story'],
-      'the SPA fallback inventory must stay enumerable — every entry is a real client-side route'
+      fallbacks.map((r) => r.source),
+      ['/lite', '/lite/geopolitics', '/lite/finance', '/lite/tech', '/lite/sources'],
+      'the app-shell rewrite inventory must stay enumerable'
     );
 
     for (const path of [...staticCorpusPaths, '/blog/glossary/country-instability-index/']) {
@@ -1069,13 +939,16 @@ describe('crawlable content corpus deployment contracts', () => {
       assert.equal(
         matched,
         undefined,
-        path + ' must resolve as raw static HTML, not /dashboard.html'
+        path + ' must resolve as raw static HTML, not /lite.html'
       );
+      assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path }), null, path + ' must not redirect');
     }
 
-    assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path: '/stocks' })?.destination, DASHBOARD_HTML_DESTINATION);
-    assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path: '/stocks/AAPL' })?.destination, DASHBOARD_HTML_DESTINATION);
-    assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path: '/story' })?.destination, DASHBOARD_HTML_DESTINATION);
+    for (const path of ['/stocks', '/stocks/AAPL', '/story']) {
+      assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path })?.destination, '/lite', path);
+      assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path }), null, path);
+    }
+    assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path: '/stocks/foo/bar' }), null);
     assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path: '/stocks/foo/bar' }), null);
     assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path: '/story/' })?.destination, '/story');
     assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path: '/dashboard/' })?.destination, '/dashboard');
@@ -1427,152 +1300,18 @@ describe('deploy/cache configuration guardrails', () => {
     );
   });
 
-  it('keeps PWA precache glob free of HTML files', () => {
-    assert.match(viteConfigSource, /includeManifestIcons:\s*false/);
-    assert.match(
-      viteConfigSource,
-      /globPatterns:\s*\['assets\/\*\*\/\*\.\{js,css\}'\]/
-    );
-    assert.match(viteConfigSource, /manifestTransforms:\s*\[dashboardPrecache\.manifestTransform\]/);
-  });
-
-  it('routes sourcemap output through the policy that keeps production maps Sentry-only (#7382)', () => {
-    assert.match(viteConfigSource, /const emitPublicSourceMaps = shouldEmitPublicSourceMaps\(process\.env\)/);
-    assert.match(viteConfigSource, /sourcemap:\s*viteSourcemapSetting\(process\.env\)/);
-    assert.match(viteConfigSource, /emitPublicSourceMaps \? \[\] : \[stripPrivateSourceMapsPlugin\(\)\]/);
-  });
-
-
-  it('assigns a stable chunk name to the Clerk SDK', () => {
-    assert.match(
-      viteConfigSource,
-      /if\s*\(\s*id\.includes\('\/@clerk\/clerk-js\/'\)\s*\)\s*\{[^{}]*\breturn 'clerk';\s*\}/
-    );
-  });
-
-  const swPath = resolve(__dirname, '../dist/sw.js');
-  guardBuiltOutput(swPath);
-  function readPwaWorker() {
-    let manifest;
-    let appChunkCache;
-    function workboxStub() {} // Used as both a constructor and an ordinary helper.
-    const workbox = new Proxy({
-      precacheAndRoute(entries) { manifest = entries; },
-      ExpirationPlugin: class {
-        constructor(options) { Object.assign(this, options); }
-      },
-      StaleWhileRevalidate: class {
-        constructor(options) {
-          if (options.cacheName === 'app-chunks') appChunkCache = options;
-        }
-      },
-    }, { get: (target, name) => target[name] ?? workboxStub });
-    const define = (_dependencies, factory) => factory(workbox);
-    runInNewContext(readFileSync(swPath, 'utf8'), {
-      define,
-      self: { define, skipWaiting() {}, addEventListener() {} },
-      importScripts() {},
-    }, { timeout: 5_000 });
-    assert.ok(Array.isArray(manifest) && manifest.length > 0, 'generated SW must register a precache');
-    return { manifest, appChunkCache };
-  }
-
-  function assertPwaPrecache(manifest) {
-    const urls = Array.from(manifest, ({ url }) => url);
-    assert.ok(urls.length <= 32, `PWA precache has ${urls.length} entries; budget is 32`);
-    let totalBytes = 0;
-    const dist = dirname(swPath);
-    for (const url of urls) {
-      const path = resolve(dist, url);
-      assert.ok(path.startsWith(`${dist}${sep}`), `precache URL escapes dist: ${url}`);
-      totalBytes += statSync(path).size;
-      assert.doesNotMatch(url, /^(?:pro|blog|textures|trust|research-assets)\//);
-      if (!url.startsWith('favico/')) assert.doesNotMatch(url, /\.(?:woff2?|png|svg)$/i);
-      assert.doesNotMatch(url, /(?:^|\/)(?:App-|MapContainer-|GlobeMap-|maplibre-|protomaps-|deck-stack-|h3-js-|UnifiedSettings-|settings-window-|checkout-|rpc-client-|panel-support-|panels-(?:economy|markets|risk|energy|defense|news|intel)-)/, `Optional chunk must stay out of precache: ${url}`);
-      if (/\.html$/.test(url)) assert.equal(url, 'offline.html');
-    }
-    assert.ok(totalBytes <= 2 * 1024 * 1024, `PWA precache is ${totalBytes} bytes; budget is 2 MiB`);
-    for (const url of ['offline.html', 'manifest.webmanifest', 'favico/favicon.ico', 'favico/apple-touch-icon.png', 'favico/favicon-32x32.png']) {
-      assert.ok(urls.includes(url), `missing required precache file: ${url}`);
-    }
-    assert.ok(urls.some((url) => /^assets\/main-.*\.js$/.test(url)), 'dashboard entry is missing');
-  }
-
-  it('bounds the generated PWA precache and excludes optional/off-page assets (#5373)', {
-    skip: shouldSkipBuiltOutput(swPath),
-  }, () => {
-    assertPwaPrecache(readPwaWorker().manifest);
-  });
-
-  it('keeps enough runtime-cache capacity for the emitted JS/CSS build (#5373)', {
-    skip: shouldSkipBuiltOutput(swPath),
-  }, () => {
-    const { appChunkCache } = readPwaWorker();
-    assert.ok(appChunkCache, 'generated SW must register the app chunk runtime cache');
-    const expiration = appChunkCache.plugins.find((plugin) => Number.isFinite(plugin.maxEntries));
-    assert.ok(expiration, 'app chunk runtime cache must have bounded capacity');
-    // Counting every chunk is conservative: shell and locale routes own some of them.
-    const assets = readdirSync(resolve(dirname(swPath), 'assets')).filter((name) => /\.(?:js|css)$/i.test(name));
-    assert.ok(expiration.maxEntries >= assets.length,
-      `Runtime cache holds ${expiration.maxEntries} entries but the build emits ${assets.length} JS/CSS files; normal use can evict the app entry`);
-  });
-
-  it('rejects forbidden map and panel chunks even when they fit the precache budgets (#5373)', {
-    skip: shouldSkipBuiltOutput(swPath),
-  }, () => {
-    const { manifest } = readPwaWorker();
-    const dist = dirname(swPath);
-    const assets = readdirSync(resolve(dist, 'assets'));
-    for (const prefix of [
-      'protomaps-', 'h3-js-', 'UnifiedSettings-', 'settings-window-', 'checkout-',
-      'panel-support-', 'panels-news-', 'panels-intel-',
-    ]) {
-      const asset = assets.find((name) => name.startsWith(prefix) && name.endsWith('.js'));
-      assert.ok(asset, `missing built chunk for negative test: ${prefix}`);
-      const polluted = [...manifest, { url: `assets/${asset}`, revision: null }];
-      assert.ok(polluted.length <= 32, 'negative test must stay within the entry budget');
-      const bytes = polluted.reduce((sum, { url }) => sum + statSync(resolve(dist, url)).size, 0);
-      assert.ok(bytes <= 2 * 1024 * 1024, 'negative test must stay within the byte budget');
-      assert.throws(() => assertPwaPrecache(polluted), /Optional chunk must stay out of precache/);
-    }
-  });
-
-  it('explicitly disables navigateFallback when HTML is not precached', () => {
-    assert.match(viteConfigSource, /navigateFallback:\s*null/);
-    assert.doesNotMatch(viteConfigSource, /navigateFallbackDenylist:\s*\[/);
-  });
-
-  it('delegates navigation requests to the SW script with an offline fallback', () => {
-    // Navigations are handled by public/sw-navigation.js: network-first with
-    // NO cache write (a cached index.html outlives its hashed chunks across
-    // deploys -> blank offline reloads), falling back to the precached
-    // offline.html when the network is unreachable.
-    assert.match(viteConfigSource, /importScripts:\s*\[[^\]]*'\/sw-navigation\.js'/);
-    assert.doesNotMatch(viteConfigSource, /html-navigation/);
-    const navScript = readFileSync(resolve(__dirname, '../public/sw-navigation.js'), 'utf-8');
-    assert.match(navScript, /request\.mode !== 'navigate'/);
-    assert.match(navScript, /OFFLINE_URL = '\/offline\.html'/);
-    assert.match(navScript, /caches\.match\(OFFLINE_URL/);
-  });
-
-  it('contains variant-specific metadata fields used by html replacement and manifest', () => {
-    const variantMetaSource = readFileSync(resolve(__dirname, '../src/config/variant-meta.ts'), 'utf-8');
-    assert.match(variantMetaSource, /shortName:\s*'/);
-    assert.match(variantMetaSource, /subject:\s*'/);
-    assert.match(variantMetaSource, /classification:\s*'/);
-    assert.match(variantMetaSource, /categories:\s*\[/);
-    assert.match(
-      viteConfigSource,
-      /\.replace\(\/<meta name="subject" content="\.\*\?" \\\/>\/,\s*`<meta name="subject"/
-    );
-    assert.match(
-      viteConfigSource,
-      /\.replace\(\/<meta name="classification" content="\.\*\?" \\\/>\/,\s*`<meta name="classification"/
-    );
+  it('publishes no production source maps and gates the build on the source-map check (#7382)', () => {
+    assert.match(viteConfigSource, /^\s*sourcemap: false,$/m);
+    assert.equal(viteConfigSource.match(/sourcemap:/g)?.length, 1, 'vite.config.ts must set sourcemap in exactly one place');
+    assert.doesNotMatch(viteConfigSource, /sentryVitePlugin|stripPrivateSourceMapsPlugin|viteSourcemapSetting/);
+    assert.match(packageJson.scripts.build, / && npm run check:source-maps$/);
+    assert.equal(packageJson.scripts['check:source-maps'], 'node --import tsx scripts/check-no-public-source-maps.mjs dist');
   });
 });
 
-const DASHBOARD_HTML_DESTINATION = '/dashboard.html';
+// The only app shell. Guards below assert that no rewrite to it shadows a
+// static or API path.
+const APP_SHELL_HTML_DESTINATION = '/lite.html';
 
 // Root marketing landing page — a second HTML entry in the pro-test bundle
 // (vite rollupOptions.input), served from public/pro/welcome.html on the full
@@ -1666,21 +1405,23 @@ describe('welcome landing page routing', () => {
     assert.equal(vercelConfig.rewrites.filter((r) => r.source === '/index.md').length, 1);
   });
 
-  it('routes app roots to welcome; unknown-host and variant roots never soft-404 the dashboard', () => {
+  it('keeps the welcome rewrite host-scoped and sends variant roots through /dashboard to /lite', () => {
     assert.equal(rootDestinationForHost('worldmonitor.app'), '/pro/welcome.html');
     assert.equal(rootDestinationForHost('www.worldmonitor.app'), '/pro/welcome.html');
-    // #6575: a host outside the product family gets a real 404 at /.
+    // #6575: a host outside the product family gets no welcome rewrite at /.
     assert.equal(rootDestinationForHost('worldmonitor.app.evil.example'), null);
 
-    const variantHosts = getVariantHosts().filter((host) => host !== 'www.worldmonitor.app');
-    for (const host of variantHosts) {
+    for (const host of ['commodity.worldmonitor.app', 'energy.worldmonitor.app', 'finance.worldmonitor.app',
+      'happy.worldmonitor.app', 'tech.worldmonitor.app']) {
       const redirect = firstRedirectFor({ host, path: '/' });
       assert.equal(redirect?.destination, '/dashboard', `${host}/ must 308 to /dashboard in production`);
+      assert.equal(redirect.permanent, true);
+      assert.equal(firstRedirectFor({ host, path: '/dashboard' })?.destination, '/lite', `${host}/dashboard must land on /lite`);
       assert.equal(rootDestinationForHost(host), null, `${host}/ must not also match the www welcome rewrite`);
     }
   });
 
-  it('opens deployment and branch preview roots through the dashboard route', () => {
+  it('opens deployment and branch preview roots through the dashboard route, which redirects to /lite', () => {
     for (const host of [
       'worldmonitor-h0zk88n4l-eliewm.vercel.app',
       'worldmonitor-git-perf-defer-dashboard-app-eliewm.vercel.app',
@@ -1688,32 +1429,29 @@ describe('welcome landing page routing', () => {
       const redirect = firstRedirectFor({ host, path: '/' });
       assert.equal(redirect?.destination, '/dashboard');
       assert.equal(redirect.permanent, false);
-      assert.equal(firstRewriteFor({ host, path: redirect.destination })?.destination, DASHBOARD_HTML_DESTINATION);
+      // /dashboard is no longer served; it redirects on to the Lite UI.
+      assert.equal(firstRewriteFor({ host, path: redirect.destination }), null);
+      const lite = firstRedirectFor({ host, path: redirect.destination });
+      assert.equal(lite?.destination, '/lite');
+      assert.equal(lite.permanent, false);
+      assert.equal(firstRewriteFor({ host, path: lite.destination })?.destination, '/lite.html');
       assert.equal(firstRedirectFor({ host, path: '/', query: { mode: 'agent' } }), null);
       assert.equal(firstRewriteFor({ host, path: '/', query: { mode: 'agent' } })?.destination, '/agent-view.json');
     }
   });
 
   it('keeps preview root routing off production homepages, unknown pages, and lookalike hosts', () => {
+    // These roots take the host-agnostic Lite redirect, not the preview
+    // /dashboard redirect.
     for (const host of ['worldmonitor.app', 'www.worldmonitor.app', 'example.com', 'preview.vercel.app.evil.example']) {
-      assert.equal(firstRedirectFor({ host, path: '/' }), null);
+      assert.deepEqual(firstRedirectFor({ host, path: '/' }), {
+        source: '/',
+        missing: [{ type: 'query', key: 'mode', value: 'agent' }],
+        destination: '/lite',
+        permanent: false,
+      });
     }
     assert.equal(firstRedirectFor({ host: 'preview.vercel.app', path: '/missing-page' }), null);
-  });
-
-  it('keeps variant canonicals aligned with the /dashboard routing strategy', () => {
-    const variantUrls = getVariantUrls();
-    assert.equal(variantUrls.full, 'https://www.worldmonitor.app/dashboard');
-
-    const nonFullUrls = Object.entries(variantUrls).filter(([variant]) => variant !== 'full');
-    assert.ok(nonFullUrls.length >= 5, 'expected non-full variant metadata entries');
-    for (const [variant, url] of nonFullUrls) {
-      assert.equal(
-        new URL(url).pathname,
-        '/dashboard',
-        `${variant} canonical must point at /dashboard while the root serves welcome`
-      );
-    }
   });
 
   it('redirects legacy root map-state deep links to /dashboard before welcome routing', () => {
@@ -1754,12 +1492,35 @@ describe('welcome landing page routing', () => {
     );
   });
 
-  it('rewrites /dashboard to the existing SPA shell', () => {
-    // Host-conditioned variant rules (#4996) sit in front; the fallback for
-    // every other host is the un-conditioned rule.
-    const rewrite = vercelConfig.rewrites.find((r) => r.source === '/dashboard' && !r.has);
-    assert.ok(rewrite, 'expected an un-conditioned rewrite for /dashboard');
-    assert.equal(rewrite.destination, DASHBOARD_HTML_DESTINATION);
+  it('redirects / and the old dashboard routes to /lite temporarily, and serves no dashboard document', () => {
+    assert.deepEqual(vercelConfig.redirects.filter((r) => r.destination === '/lite'), [
+      { source: '/', missing: [{ type: 'query', key: 'mode', value: 'agent' }], destination: '/lite', permanent: false },
+      { source: '/dashboard', destination: '/lite', permanent: false },
+      { source: '/stocks', destination: '/lite', permanent: false },
+      { source: '/stocks/:symbol', destination: '/lite', permanent: false },
+      { source: '/story', destination: '/lite', permanent: false },
+      { source: '/lite/', destination: '/lite', permanent: true },
+    ]);
+    for (const host of ['www.worldmonitor.app', 'worldmonitor.app']) {
+      for (const path of ['/', '/dashboard', '/stocks', '/stocks/AAPL', '/stocks/BRK.B', '/story']) {
+        assert.equal(firstRedirectFor({ host, path })?.destination, '/lite', `${host}${path} must redirect to /lite`);
+      }
+      // The agent-view discovery URL keeps its own rewrite.
+      assert.equal(firstRedirectFor({ host, path: '/', query: { mode: 'agent' } }), null);
+      assert.equal(firstRewriteFor({ host, path: '/', query: { mode: 'agent' } })?.destination, '/agent-view.json');
+    }
+    // Trailing-slash forms canonicalise first, then take the redirect above.
+    assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path: '/dashboard/' })?.destination, '/dashboard');
+    assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path: '/story/' })?.destination, '/story');
+    // No rewrite targets a deleted dashboard document, or the deleted
+    // /embed, /mcp-grant, /desktop-sign-in and /verify pages.
+    assert.deepEqual(
+      vercelConfig.rewrites.filter((r) => /^\/(?:dashboard[\w-]*|embed|mcp-grant|desktop-sign-in|verify|index)\.html$/.test(r.destination)),
+      [],
+    );
+    for (const path of ['/dashboard', '/stocks', '/stocks/AAPL', '/story', '/embed', '/mcp-grant', '/desktop-sign-in', '/verify']) {
+      assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path }), null, `${path} must not be rewritten`);
+    }
   });
 
   it('does not point any rewrite at root index.html', () => {
@@ -1771,32 +1532,30 @@ describe('welcome landing page routing', () => {
     );
   });
 
-  it('renames the web dashboard HTML output away from root index.html', () => {
-    // Assert the build's OUTPUT, not the plugin's internals. Vercel's
-    // filesystem precedence serves a root index.html at / ahead of every
-    // rewrite above, so what matters is that the web build emits
-    // dashboard.html and leaves no index.html behind — however the plugin
-    // happens to accomplish it.
+  it('emits dist/lite.html and no root index.html or dashboard HTML', () => {
+    // Vercel's filesystem precedence serves a root index.html at / ahead of
+    // every redirect and rewrite, so the build must not emit one.
     const distDir = resolve(__dirname, '../dist');
-    const dashboardHtml = join(distDir, 'dashboard.html');
-    if (shouldSkipBuiltOutput(dashboardHtml)) return;
-    guardBuiltOutput(dashboardHtml);
+    const liteHtml = join(distDir, 'lite.html');
+    if (shouldSkipBuiltOutput(liteHtml)) return;
+    guardBuiltOutput(liteHtml);
 
-    assert.ok(existsSync(dashboardHtml), 'web build must emit dist/dashboard.html');
+    assert.ok(existsSync(liteHtml), 'web build must emit dist/lite.html');
     assert.ok(
       !existsSync(join(distDir, 'index.html')),
-      'web build must not leave a root dist/index.html — Vercel would serve it at / ahead of the dashboard rewrite',
+      'web build must not leave a root dist/index.html — Vercel would serve it at / ahead of the /lite redirect',
     );
+    assert.deepEqual(readdirSync(distDir).filter((name) => /^dashboard.*\.html$/.test(name)), []);
   });
 
   it('does not reintroduce a negative-lookahead SPA catch-all rewrite', () => {
     const catchAll = vercelConfig.rewrites.find((r) =>
-      r.destination === DASHBOARD_HTML_DESTINATION && r.source.startsWith('/((?!')
+      r.source.startsWith('/((?!') && r.destination.endsWith('.html')
     );
     assert.equal(
       catchAll,
       undefined,
-      'unknown paths must 404 instead of soft-404ing the dashboard (#6575); the fallback inventory is /dashboard, /stocks, /stocks/:symbol, /story only'
+      'unknown paths must 404 instead of soft-404ing an app shell (#6575)'
     );
   });
 
@@ -1907,12 +1666,6 @@ describe('welcome landing page routing', () => {
     }
   });
 
-  it('starts installed PWAs on /dashboard, not the public welcome page', () => {
-    // The only exception is the owner's Lite profile build, which starts on
-    // /lite (docs/engineering/architecture/lite.md). Upstream builds leave the flag unset.
-    assert.match(viteConfigSource, /start_url:\s*env\.VITE_LITE_PROFILE === 'true' \? '\/lite' : '\/dashboard'/);
-  });
-
   it('serves the Lite UI at /lite, its three child screens and Sources, and nothing else under it', () => {
     const rewrites = vercelConfig.rewrites.filter((r) => r.source.startsWith('/lite'));
     assert.deepEqual(rewrites, [
@@ -1923,13 +1676,15 @@ describe('welcome landing page routing', () => {
       { source: '/lite/sources', destination: '/lite.html' },
     ]);
     assert.ok(vercelConfig.redirects.some((r) => r.source === '/lite/' && r.destination === '/lite' && r.permanent === true));
-    // Built on its own (vite.lite.config.ts, npm run build:lite) so it shares
-    // no chunks with the dashboard; build:full runs it after the main build.
-    const liteConfigSource = readFileSync(resolve(__dirname, '../vite.lite.config.ts'), 'utf-8');
-    assert.match(liteConfigSource, /lite: resolve\(__dirname, 'lite\.html'\)/);
-    assert.match(liteConfigSource, /emptyOutDir: false/);
-    assert.doesNotMatch(viteConfigSource, /lite: resolve\(__dirname, 'lite\.html'\)/);
-    assert.match(JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8')).scripts['build:full'], /vite build\\?" && npm run build:lite && npm run build:plugin/);
+    // vite.config.ts is the Lite build: lite.html is its only input, its
+    // assets live under assets/lite/, and there is no PWA service worker.
+    assert.match(viteConfigSource, /input: \{ lite: resolve\(__dirname, 'lite\.html'\) \}/);
+    assert.match(viteConfigSource, /entryFileNames: 'assets\/lite\/\[name\]-\[hash\]\.js'/);
+    assert.match(viteConfigSource, /chunkFileNames: 'assets\/lite\/\[name\]-\[hash\]\.js'/);
+    assert.match(viteConfigSource, /assetFileNames: 'assets\/lite\/\[name\]-\[hash\]\[extname\]'/);
+    assert.doesNotMatch(viteConfigSource, /VitePWA|workbox/);
+    assert.ok(!existsSync(resolve(__dirname, '../vite.lite.config.ts')), 'there is one Vite config');
+    assert.equal(packageJson.scripts['build:lite'], undefined);
   });
 
   it('sitemap lists dashboard routes and does not list legacy /welcome', () => {
@@ -1950,10 +1705,9 @@ describe('welcome landing page routing', () => {
     );
   });
 
-  it('pins welcome and dashboard SEO canonicals to their new routes', { skip: shouldSkipProBuiltOutput() }, () => {
+  it('pins welcome SEO canonicals to their routes', { skip: shouldSkipProBuiltOutput() }, () => {
     const welcomeHtml = readFileSync(resolve(__dirname, '../pro-test/welcome.html'), 'utf-8');
     const generatedWelcomeHtml = readFileSync(resolve(__dirname, '../public/pro/welcome.html'), 'utf-8');
-    const dashboardHtml = readFileSync(resolve(__dirname, '../index.html'), 'utf-8');
     assert.ok(
       welcomeHtml.includes('<link rel="canonical" href="https://www.worldmonitor.app/" />'),
       'welcome source must canonicalize to root'
@@ -1973,10 +1727,6 @@ describe('welcome landing page routing', () => {
     assert.ok(
       generatedWelcomeHtml.includes('https://www.worldmonitor.app/dashboard'),
       'generated welcome HTML must launch the dashboard at /dashboard'
-    );
-    assert.ok(
-      dashboardHtml.includes('<link rel="canonical" href="https://www.worldmonitor.app/dashboard" />'),
-      'dashboard shell must canonicalize to /dashboard'
     );
   });
 
@@ -2507,15 +2257,7 @@ describe('security header guardrails', () => {
     assert.doesNotMatch(policy, /tools=\(\*\)/, 'WebMCP tools must never be exposed to every origin');
   });
 
-  it('mirrors WebMCP origin isolation and embed denial in local development without enrolling localhost', () => {
-    const pluginSource = viteConfigSource.match(
-      /function webMcpDevSecurityHeadersPlugin\(\): Plugin \{[\s\S]*?\n\}/,
-    )?.[0] ?? '';
-    assert.ok(pluginSource, 'Vite must define the local WebMCP security-header plugin');
-    assert.match(pluginSource, /res\.setHeader\('Origin-Agent-Cluster', '\?1'\)/);
-    assert.match(pluginSource, /isEmbedDocument \? 'tools=\(\)' : 'tools=\(self\)'/);
-    assert.doesNotMatch(pluginSource, /Origin-Trial/, 'localhost must use Chrome testing mode, not a trial token');
-    assert.match(viteConfigSource, /\n\s+webMcpDevSecurityHeadersPlugin\(\),/);
+  it('mirrors WebMCP origin isolation on the local homepage without enrolling localhost', () => {
     assert.match(proViteConfigSource, /'Origin-Agent-Cluster': '\?1'/);
     assert.match(proViteConfigSource, /'Permissions-Policy': 'tools=\(self\)'/);
     assert.doesNotMatch(
@@ -2523,243 +2265,6 @@ describe('security header guardrails', () => {
       /Origin-Trial/,
       'the local homepage must use Chrome testing mode, not a trial token',
     );
-  });
-
-  it('keeps local suites local unless the complete production-smoke environment is present', () => {
-    const deployedSha = 'a'.repeat(40);
-    const matrix = [
-      {
-        name: 'ordinary suite',
-        env: {},
-        expected: {
-          baseURL: 'http://127.0.0.1:4173',
-          hasWebServer: true,
-          testingFlag: false,
-          testMatch: null,
-        },
-      },
-      {
-        name: 'strict local WebMCP suite',
-        env: { WM_REQUIRE_WEBMCP: '1' },
-        expected: {
-          baseURL: 'http://127.0.0.1:4173',
-          hasWebServer: true,
-          testingFlag: true,
-          testMatch: null,
-        },
-      },
-      {
-        name: 'strict local WebMCP evidence with a deployed SHA',
-        env: {
-          WM_REQUIRE_WEBMCP: '1',
-          WM_WEBMCP_DEPLOYED_SHA: deployedSha,
-        },
-        expected: {
-          baseURL: 'http://127.0.0.1:4173',
-          hasWebServer: true,
-          testingFlag: true,
-          testMatch: null,
-        },
-      },
-      {
-        name: 'bounded production smoke',
-        env: {
-          WM_REQUIRE_WEBMCP: '1',
-          WM_WEBMCP_PRODUCTION: '1',
-          WM_WEBMCP_PRODUCTION_URL: 'https://www.worldmonitor.app',
-          WM_WEBMCP_DEPLOYED_SHA: deployedSha,
-        },
-        expected: {
-          baseURL: 'https://www.worldmonitor.app',
-          hasWebServer: false,
-          testingFlag: false,
-          testMatch: '**/webmcp.spec.ts',
-        },
-      },
-    ];
-
-    for (const entry of matrix) {
-      const probe = probePlaywrightWebMcpEnvironment(entry.env);
-      assert.equal(
-        probe.status,
-        0,
-        `${entry.name} should load playwright.config.ts:\n${probe.stderr}`,
-      );
-      const resolved = JSON.parse(probe.stdout.trim());
-      assert.equal(resolved.baseURL, entry.expected.baseURL, `${entry.name} baseURL`);
-      assert.equal(resolved.hasWebServer, entry.expected.hasWebServer, `${entry.name} webServer`);
-      assert.equal(resolved.testMatch, entry.expected.testMatch, `${entry.name} testMatch`);
-      assert.equal(
-        resolved.launchArgs.includes('--enable-features=WebMCPTesting'),
-        entry.expected.testingFlag,
-        `${entry.name} testing flag`,
-      );
-    }
-  });
-
-  it('rejects every incomplete or inconsistent WebMCP evidence environment', () => {
-    const deployedSha = 'b'.repeat(40);
-    const matrix = [
-      {
-        name: 'URL without production mode',
-        env: { WM_WEBMCP_PRODUCTION_URL: 'https://www.worldmonitor.app' },
-        error: /WM_WEBMCP_PRODUCTION_URL requires WM_WEBMCP_PRODUCTION=1/,
-      },
-      {
-        name: 'local SHA without strict WebMCP mode',
-        env: { WM_WEBMCP_DEPLOYED_SHA: deployedSha },
-        error: /WM_WEBMCP_DEPLOYED_SHA requires WM_REQUIRE_WEBMCP=1 outside production mode/,
-      },
-      {
-        name: 'explicit local mode with a remote URL',
-        env: {
-          WM_WEBMCP_PRODUCTION: '0',
-          WM_WEBMCP_PRODUCTION_URL: 'https://www.worldmonitor.app',
-        },
-        error: /WM_WEBMCP_PRODUCTION_URL requires WM_WEBMCP_PRODUCTION=1/,
-      },
-      {
-        name: 'strict local mode with a malformed deployed SHA',
-        env: {
-          WM_REQUIRE_WEBMCP: '1',
-          WM_WEBMCP_DEPLOYED_SHA: 'not-a-sha',
-        },
-        error: /WM_WEBMCP_DEPLOYED_SHA must record an exact 40-character hexadecimal SHA/,
-      },
-      {
-        name: 'strict local mode with an empty deployed SHA',
-        env: {
-          WM_REQUIRE_WEBMCP: '1',
-          WM_WEBMCP_DEPLOYED_SHA: '',
-        },
-        error: /WM_WEBMCP_DEPLOYED_SHA must record an exact 40-character hexadecimal SHA/,
-      },
-      {
-        name: 'strict local mode with a whitespace-only deployed SHA',
-        env: {
-          WM_REQUIRE_WEBMCP: '1',
-          WM_WEBMCP_DEPLOYED_SHA: '   ',
-        },
-        error: /WM_WEBMCP_DEPLOYED_SHA must record an exact 40-character hexadecimal SHA/,
-      },
-      {
-        name: 'production mode without strict WebMCP mode',
-        env: {
-          WM_WEBMCP_PRODUCTION: '1',
-          WM_WEBMCP_PRODUCTION_URL: 'https://www.worldmonitor.app',
-          WM_WEBMCP_DEPLOYED_SHA: deployedSha,
-        },
-        error: /WM_WEBMCP_PRODUCTION=1 requires WM_REQUIRE_WEBMCP=1/,
-      },
-      {
-        name: 'production mode without a URL',
-        env: {
-          WM_REQUIRE_WEBMCP: '1',
-          WM_WEBMCP_PRODUCTION: '1',
-          WM_WEBMCP_DEPLOYED_SHA: deployedSha,
-        },
-        error: /WM_WEBMCP_PRODUCTION_URL must be https:\/\/www\.worldmonitor\.app/,
-      },
-      {
-        name: 'production mode with a different URL',
-        env: {
-          WM_REQUIRE_WEBMCP: '1',
-          WM_WEBMCP_PRODUCTION: '1',
-          WM_WEBMCP_PRODUCTION_URL: 'https://tech.worldmonitor.app',
-          WM_WEBMCP_DEPLOYED_SHA: deployedSha,
-        },
-        error: /WM_WEBMCP_PRODUCTION_URL must be https:\/\/www\.worldmonitor\.app/,
-      },
-      {
-        name: 'production mode without a deployed SHA',
-        env: {
-          WM_REQUIRE_WEBMCP: '1',
-          WM_WEBMCP_PRODUCTION: '1',
-          WM_WEBMCP_PRODUCTION_URL: 'https://www.worldmonitor.app',
-        },
-        error: /WM_WEBMCP_DEPLOYED_SHA must record the exact 40-character SHA/,
-      },
-      {
-        name: 'production mode with a malformed deployed SHA',
-        env: {
-          WM_REQUIRE_WEBMCP: '1',
-          WM_WEBMCP_PRODUCTION: '1',
-          WM_WEBMCP_PRODUCTION_URL: 'https://www.worldmonitor.app',
-          WM_WEBMCP_DEPLOYED_SHA: 'not-a-sha',
-        },
-        error: /WM_WEBMCP_DEPLOYED_SHA must record the exact 40-character SHA/,
-      },
-    ];
-
-    for (const entry of matrix) {
-      const probe = probePlaywrightWebMcpEnvironment(entry.env);
-      assert.notEqual(probe.status, 0, `${entry.name} must fail closed`);
-      assert.match(`${probe.stdout}\n${probe.stderr}`, entry.error, entry.name);
-    }
-  });
-
-  it('runs strict WebMCP invocation and iframe probes in an enabled Chrome milestone', () => {
-    const script = packageJson.scripts?.['test:e2e:webmcp'] ?? '';
-    const productionScript = packageJson.scripts?.['test:e2e:webmcp:production'] ?? '';
-    const variantSmokeJob = testWorkflowSource.match(
-      /\n {2}variant-smoke-pro-webmcp:\n[\s\S]*?(?=\n {2}[a-z][a-z0-9-]+:\n|$)/,
-    )?.[0] ?? '';
-    assert.match(script, /WM_REQUIRE_WEBMCP=1/);
-    assert.match(script, /e2e\/webmcp\.spec\.ts/);
-    assert.match(script, /e2e\/embed\.spec\.ts/);
-    assert.match(script, /--project=chromium/);
-    assert.match(productionScript, /WM_REQUIRE_WEBMCP=1/);
-    assert.match(productionScript, /WM_WEBMCP_PRODUCTION=1/);
-    assert.match(productionScript, /e2e\/webmcp\.spec\.ts/);
-    assert.match(productionScript, /--headed/);
-    assert.ok(variantSmokeJob, 'Test workflow must define the full-variant smoke job');
-    assert.match(
-      variantSmokeJob,
-      /run: npm run test:e2e:webmcp/,
-      'PR CI must fail when the strict WebMCP iframe probe fails or is unavailable',
-    );
-    assert.match(playwrightConfigSource, /process\.env\.WM_REQUIRE_WEBMCP === '1'/);
-    assert.match(playwrightConfigSource, /process\.env\.WM_WEBMCP_CHROME_EXECUTABLE_PATH/);
-    assert.match(playwrightConfigSource, /channel: webMcpChromeChannel/);
-    assert.match(playwrightConfigSource, /executablePath: webMcpChromeExecutablePath/);
-    assert.match(playwrightConfigSource, /--enable-features=WebMCPTesting/);
-    assert.match(playwrightConfigSource, /requireWebMcp && !webMcpProduction/);
-    assert.match(playwrightConfigSource, /https:\/\/www\.worldmonitor\.app/);
-    assert.match(playwrightConfigSource, /WM_WEBMCP_DEPLOYED_SHA/);
-    assert.match(webMcpE2eSource, /document\.modelContext/);
-    assert.match(webMcpE2eSource, /\.getTools\(\)/);
-    assert.match(webMcpE2eSource, /provider\.executeTool/);
-    assert.match(webMcpCancellationE2eSource, /new AbortController\(\)/);
-    assert.match(webMcpCancellationE2eSource, /page\.on\('pageerror'/);
-    assert.match(webMcpCancellationE2eSource, /window\.addEventListener\('unhandledrejection'/);
-    assert.match(webMcpCancellationE2eSource, /lateLeakWindowMs/);
-    assert.match(webMcpE2eSource, /headers\['origin-trial'\]/);
-    assert.match(
-      webMcpE2eSource,
-      /const unconfiguredLocalFixture =\s*!productionSmoke && accessSnapshot\.clerk === 'unavailable'/,
-      'clerk_unavailable is only valid on the local unconfigured Clerk fixture',
-    );
-    assert.match(
-      webMcpE2eSource,
-      /production smoke must open the real Clerk sign-in modal/,
-      'production WebMCP smoke must require the real Clerk modal',
-    );
-    assert.match(
-      webMcpE2eSource,
-      /signIn: \{ tool: 'open_sign_in'/,
-      'production smoke must attach open_sign_in modal evidence',
-    );
-    assert.match(webMcpE2eSource, /testInfo\.outputPath\(name\)/);
-    assert.match(webMcpE2eSource, /writeFile\(path/);
-    assert.match(webMcpE2eSource, /testInfo\.attach\(name, \{ path/);
-    assert.match(webMcpE2eSource, /webmcp-production-matrix\.json/);
-    assert.match(webMcpE2eSource, /build-hash\.txt/);
-    assert.match(webMcpE2eSource, /expect\(servedSha,[\s\S]*?\.toBe\(expectedDeployedSha\)/);
-    assert.match(webMcpE2eSource, /https:\/\/tech\.worldmonitor\.app\/embed/);
-    assert.match(webMcpE2eSource, /redirectHeaders\['origin-trial'\]/);
-    assert.match(playwrightConfigSource, /preserveOutput:\s*'always'/);
-    assert.match(embedE2eSource, /WEBMCP_MIN_CHROME_MAJOR = 149/);
-    assert.match(embedE2eSource, /WM_REQUIRE_WEBMCP requires Chrome/);
   });
 
   it('origin-keys only the intended production web origins', () => {
@@ -2999,9 +2504,9 @@ describe('security header guardrails', () => {
   });
 
   it('dashboard CSP is header-only and keeps https: for runtime fetch/media', () => {
-    const indexHtml = readFileSync(resolve(__dirname, '../index.html'), 'utf-8');
+    const liteHtml = readFileSync(resolve(__dirname, '../lite.html'), 'utf-8');
     const headerCsp = getHeaderValue('Content-Security-Policy');
-    assert.equal(hasCspMeta(indexHtml), false, 'index.html must not ship a CSP meta tag');
+    assert.equal(hasCspMeta(liteHtml), false, 'lite.html must not ship a CSP meta tag');
 
     const headerConnectSrc = headerCsp.match(/connect-src\s+([^;]+)/)?.[1] ?? '';
     const headerMediaSrc = headerCsp.match(/media-src\s+([^;]+)/)?.[1] ?? '';
@@ -3083,9 +2588,9 @@ describe('security header guardrails', () => {
   });
 
   it('dashboard CSP font and style sources are first-party across deploy surfaces', () => {
-    const indexHtml = readFileSync(resolve(__dirname, '../index.html'), 'utf-8');
+    const liteHtml = readFileSync(resolve(__dirname, '../lite.html'), 'utf-8');
     const headerCsp = getHeaderValue('Content-Security-Policy');
-    assert.equal(hasCspMeta(indexHtml), false, 'index.html must not ship a CSP meta tag');
+    assert.equal(hasCspMeta(liteHtml), false, 'lite.html must not ship a CSP meta tag');
     const nginxCsp = getNginxHeaderValue('Content-Security-Policy');
     assert.ok(nginxCsp, 'nginx-security-headers.conf must have a Content-Security-Policy header');
 
@@ -3227,20 +2732,10 @@ describe('security header guardrails', () => {
     );
   });
 
-  it('disables Zod parser JIT because production script-src forbids unsafe-eval', () => {
+  it('production script-src forbids unsafe-eval', () => {
     const csp = getHeaderValue('Content-Security-Policy');
     const tokens = getCspDirectiveTokens(csp, 'script-src');
     assert.ok(!tokens.includes("'unsafe-eval'"), 'production script-src must not allow unsafe-eval');
-    assert.match(
-      mainSource,
-      /import '\.\/bootstrap\/zod-csp';/,
-      'main.ts must apply the Zod CSP bootstrap before the app graph'
-    );
-    assert.match(
-      zodCspSource,
-      /configureZod\(\{\s*jitless:\s*true\s*\}\)/,
-      'Zod must stay on the non-JIT parser path under the hardened CSP'
-    );
   });
 
   it('CSP frame-src includes Clerk origin for auth modals', () => {
@@ -3267,10 +2762,10 @@ describe('security header guardrails', () => {
   });
 
   it('CSP frame directives include every variant hostname', () => {
-    const variantHosts = getVariantHosts();
+    const variantHosts = VARIANT_HOSTS;
     const headerCsp = getHeaderValue('Content-Security-Policy');
-    const indexHtml = readFileSync(resolve(__dirname, '../index.html'), 'utf-8');
-    assert.equal(hasCspMeta(indexHtml), false, 'index.html must not ship a CSP meta tag');
+    const liteHtml = readFileSync(resolve(__dirname, '../lite.html'), 'utf-8');
+    assert.equal(hasCspMeta(liteHtml), false, 'lite.html must not ship a CSP meta tag');
     const nginxCsp = getNginxHeaderValue('Content-Security-Policy');
     assert.ok(nginxCsp, 'nginx-security-headers.conf must have a Content-Security-Policy header');
 
@@ -3305,9 +2800,9 @@ describe('security header guardrails', () => {
   // Per-file assertions, so the built /pro pages drop out of the population
   // rather than taking the five committed files down with them (#6898).
   it('HTML entry script tags carry the nonce trusted by the header CSP', () => {
-    const indexHtml = readFileSync(resolve(__dirname, '../index.html'), 'utf-8');
+    const liteHtml = readFileSync(resolve(__dirname, '../lite.html'), 'utf-8');
     const headerCsp = getHeaderValue('Content-Security-Policy');
-    assert.equal(hasCspMeta(indexHtml), false, 'index.html must not ship a CSP meta tag');
+    assert.equal(hasCspMeta(liteHtml), false, 'lite.html must not ship a CSP meta tag');
     assert.ok(
       getCspDirectiveTokens(headerCsp, 'script-src').includes(`'nonce-${STATIC_SCRIPT_NONCE}'`),
       'header script-src must trust the static entry-script nonce'
@@ -3455,23 +2950,11 @@ describe('security header guardrails', () => {
 });
 
 describe('embeddable map route guardrails', () => {
-  it('registers embed.html as a Vite HTML entry', () => {
-    assert.match(viteConfigSource, /embed:\s*resolve\(__dirname,\s*'embed\.html'\)/);
-  });
-
-  it('rewrites /embed to the dedicated embed.html entry', () => {
-    // #6575: the SPA catch-all this rule used to precede is gone; the explicit
-    // /embed rewrite only needs to beat filesystem resolution, which it does.
-    const rewrite = vercelConfig.rewrites.find((r) => r.source === '/embed');
-    assert.ok(rewrite, 'expected /embed rewrite');
-    assert.equal(rewrite.destination, '/embed.html');
-  });
-
   it('keeps /embed and /embed.html off the dashboard document and the SPA cache header', () => {
     // #6575: no dashboard-serving rewrite may match the public embed entry.
     for (const path of ['/embed', '/embed.html']) {
       const shadow = vercelConfig.rewrites.find((r) =>
-        r.destination === DASHBOARD_HTML_DESTINATION && sourceToRegExp(r.source).test(path)
+        r.destination === APP_SHELL_HTML_DESTINATION && sourceToRegExp(r.source).test(path)
       );
       assert.equal(shadow, undefined, path + ' must serve the public embed entry, not the app shell');
     }
@@ -3648,17 +3131,28 @@ describe('embeddable map route guardrails', () => {
 });
 
 describe('self-hosted docker nginx SPA entry', () => {
-  it('both nginx confs serve dashboard.html as the SPA entry', () => {
-    // dashboardHtmlOutputPlugin (vite.config.ts, !isDesktopBuild) renames the
-    // built SPA entry index.html -> dashboard.html for every web build, so dist/
-    // ships no index.html. BOTH self-hosted images must point the `index`
-    // directive and the SPA fallback at dashboard.html, or `/` 403s:
+  it('both nginx confs redirect / and the old dashboard routes to /lite and 404 unknown paths', () => {
+    // dist/ ships lite.html as the only app shell and no root index.html, so
+    // BOTH self-hosted images must send / to /lite and serve lite.html for the
+    // Lite routes:
     //   root Dockerfile   -> docker/nginx.conf          (docker-compose stack)
     //   docker/Dockerfile -> docker/nginx.conf.template (published ghcr image)
     for (const conf of ['docker/nginx.conf', 'docker/nginx.conf.template']) {
       const src = readFileSync(resolve(__dirname, `../${conf}`), 'utf-8');
-      assert.match(src, /^\s*index dashboard\.html index\.html;/m, `${conf}: index directive must prefer dashboard.html then serve corpus index.html`);
-      assert.match(src, /try_files \$uri \$uri\/ \$uri\/index\.html \/dashboard\.html;/, `${conf}: SPA fallback must serve corpus index.html before /dashboard.html`);
+      assert.match(src, /^ {4}index index\.html;$/m, `${conf}: index directive must serve corpus index.html only`);
+      assert.match(src, /^ {4}location = \/ \{ return 302 \/lite; \}$/m, `${conf}: / must redirect to /lite`);
+      assert.match(
+        src,
+        /^ {4}location ~ \^\/\(\?:dashboard\|story\|stocks\(\?:\/\[\^\/\]\+\)\?\)\/\?\$ \{ return 302 \/lite; \}$/m,
+        `${conf}: the old dashboard routes must redirect to /lite`,
+      );
+      assert.match(
+        src,
+        /^ {4}rewrite \^\/lite\(\?:\/\(\?:geopolitics\|finance\|tech\|sources\)\)\?\/\?\$ \/lite\.html last;$/m,
+        `${conf}: /lite and its screens must serve lite.html`,
+      );
+      assert.match(src, /try_files \$uri \$uri\/ \$uri\/index\.html =404;/, `${conf}: unknown paths must 404 after corpus index.html`);
+      assert.doesNotMatch(src, /dashboard\.html/, `${conf}: must not reference the deleted dashboard.html`);
       assert.doesNotMatch(src, /try_files \$uri \$uri\/ \/index\.html;/, `${conf}: must not keep the broken /index.html SPA fallback`);
     }
   });
@@ -3972,7 +3466,7 @@ describe('agent readiness: api-catalog + openapi build', () => {
     // file by default. Guard that no dashboard rewrite ever matches it again
     // and that the pinned HTML-cache exclusion stays in place.
     const shadow = vercelConfig.rewrites.find((r) =>
-      r.destination === DASHBOARD_HTML_DESTINATION && sourceToRegExp(r.source).test('/openapi.json')
+      r.destination === APP_SHELL_HTML_DESTINATION && sourceToRegExp(r.source).test('/openapi.json')
     );
     assert.equal(shadow, undefined, '/openapi.json must serve the static spec, not the app shell');
     assert.ok(
@@ -3983,7 +3477,7 @@ describe('agent readiness: api-catalog + openapi build', () => {
 
   it('no dashboard-serving rewrite can shadow the static /plugin.json Agent Plugin manifest', () => {
     const shadow = vercelConfig.rewrites.find((r) =>
-      r.destination === DASHBOARD_HTML_DESTINATION && sourceToRegExp(r.source).test('/plugin.json')
+      r.destination === APP_SHELL_HTML_DESTINATION && sourceToRegExp(r.source).test('/plugin.json')
     );
     assert.equal(shadow, undefined, '/plugin.json must serve the static manifest, not the app shell');
     assert.ok(
@@ -3995,41 +3489,16 @@ describe('agent readiness: api-catalog + openapi build', () => {
     assert.equal(effectiveCacheControl('/plugin.json'), 'public, max-age=3600');
   });
 
-  it('every web-variant build regenerates inventory facts and OpenAPI', () => {
-    // build:desktop and build:pro are intentionally excluded — Tauri
-    // sidecar builds and the standalone pro-test workspace don't ship
-    // the OpenAPI spec.
-    const declaredVariants = variantDashboardSource
-      .match(/WEB_DASHBOARD_VARIANTS\s*=\s*\[([^\]]+)\]/)?.[1]
-      .match(/'[^']+'/g)
-      ?.map((value) => value.slice(1, -1));
-    assert.ok(declaredVariants?.length, 'WEB_DASHBOARD_VARIANTS extraction must not be empty');
-
-    for (const variant of ['full', ...declaredVariants]) {
-      const buildName = `build:${variant}`;
-      const prebuildName = `prebuild:${variant}`;
-      const script = pkg.scripts[buildName];
-      assert.ok(script, `package.json must define scripts["${buildName}"]`);
-      assert.ok(
-        script.includes('npm run build:openapi'),
-        `scripts["${buildName}"] must chain "npm run build:openapi" so the web bundle ships the spec; got: ${script}`
-      );
-      assert.ok(
-        pkg.scripts[prebuildName]?.split(' && ').includes('npm run product:facts'),
-        `scripts["${prebuildName}"] must regenerate ignored inventory facts before ${buildName}`,
-      );
+  it('runs no npm prebuild hooks: the build scripts are the whole build', () => {
+    // The Lite build dropped the variant builds and their prebuild hooks
+    // (product facts, agent-skills index). The build chains build:openapi
+    // explicitly (a copy of the committed spec into public/), never the frozen
+    // product-facts generator, and nothing fires as a hidden hook.
+    assert.deepEqual(Object.keys(pkg.scripts).filter((name) => name.startsWith('prebuild')), []);
+    for (const name of ['build', 'build:full', 'build:desktop']) {
+      assert.doesNotMatch(pkg.scripts[name], /npm run product:facts\b/, `${name} must not chain the frozen product-facts generator`);
     }
-  });
-
-  it('keeps a prebuild hook so the default `npm run build` path also copies the spec', () => {
-    assert.ok(
-      pkg.scripts.prebuild?.includes('npm run product:facts'),
-      'package.json scripts["prebuild"] must regenerate ignored product and inventory facts',
-    );
-    assert.ok(
-      pkg.scripts.prebuild?.includes('npm run build:openapi'),
-      'package.json scripts["prebuild"] must copy the generated OpenAPI spec',
-    );
+    assert.match(pkg.scripts.build, /npm run build:openapi && npm run build:pro && /);
   });
 
   it('does not regenerate committed product config before build:pro', () => {
@@ -4051,14 +3520,6 @@ describe('agent readiness: api-catalog + openapi build', () => {
       pkg.scripts['prebuild:pro'],
       undefined,
       'package.json must NOT define scripts["prebuild:pro"] — it disarms the freshness guard in the CI unit job',
-    );
-  });
-
-  it('regenerates ignored inventory facts before the Tauri desktop build', () => {
-    assert.equal(
-      pkg.scripts['prebuild:desktop'],
-      'npm run product:facts',
-      'Tauri packages api/ and public/ resources, so build:desktop must regenerate ignored facts',
     );
   });
 
@@ -4354,7 +3815,7 @@ describe('agent readiness: auth.md walkthrough', () => {
     // #6575: the SPA catch-all rewrite is gone, so the real file is served (or
     // a deletion 404s) by default. Guard both directions.
     const dashboardShadow = (path) => vercelConfig.rewrites.find((r) =>
-      r.destination === DASHBOARD_HTML_DESTINATION && sourceToRegExp(r.source).test(path)
+      r.destination === APP_SHELL_HTML_DESTINATION && sourceToRegExp(r.source).test(path)
     );
     assert.equal(dashboardShadow('/auth.md'), undefined, '/auth.md must serve the real file, not the dashboard');
     assert.ok(SPA_HTML_CACHE_SOURCE.includes('|auth\\.md|'), 'HTML cache catch-all must keep excluding /auth.md');
@@ -4389,7 +3850,7 @@ describe('agent readiness: /api/download.md URL twin', () => {
 
   it('is not rewritten to the dashboard shell', () => {
     const dashboardShadow = (path) => vercelConfig.rewrites.find((r) =>
-      r.destination === DASHBOARD_HTML_DESTINATION && sourceToRegExp(r.source).test(path)
+      r.destination === APP_SHELL_HTML_DESTINATION && sourceToRegExp(r.source).test(path)
     );
     assert.equal(dashboardShadow('/api/download.md'), undefined, '/api/download.md must serve the static twin, not the dashboard');
     assert.ok(
@@ -4487,7 +3948,7 @@ describe('agent readiness: remaining markdown twins', () => {
       assert.equal(getHeaderValueForSource(mdPath, 'Access-Control-Allow-Origin'), '*');
       // #6575: no dashboard-serving rewrite may match the static markdown page.
       const shadow = vercelConfig.rewrites.find((r) =>
-        r.destination === DASHBOARD_HTML_DESTINATION && sourceToRegExp(r.source).test(mdPath)
+        r.destination === APP_SHELL_HTML_DESTINATION && sourceToRegExp(r.source).test(mdPath)
       );
       assert.equal(shadow, undefined, `${mdPath} must serve the real file, not the dashboard`);
       const token = mdPath.slice(1).replaceAll('.', '\\.');
@@ -4506,7 +3967,7 @@ describe('agent readiness: remaining markdown twins', () => {
     assert.equal(getHeaderValueForSource('/agent.txt', 'Content-Type'), 'text/plain; charset=utf-8');
     assert.equal(getHeaderValueForSource('/agent.txt', 'Access-Control-Allow-Origin'), '*');
     const dashboardShadow = (path) => vercelConfig.rewrites.find((r) =>
-      r.destination === DASHBOARD_HTML_DESTINATION && sourceToRegExp(r.source).test(path)
+      r.destination === APP_SHELL_HTML_DESTINATION && sourceToRegExp(r.source).test(path)
     );
     assert.equal(dashboardShadow('/agent.txt'), undefined, '/agent.txt must serve the real file, not the dashboard');
     assert.ok(SPA_HTML_CACHE_SOURCE.includes('|agent\\.txt|'), 'HTML cache catch-all must keep excluding /agent.txt');
@@ -5401,80 +4862,16 @@ describe('agent readiness: registry branding + ARD catalog', () => {
   });
 });
 
-describe('variant subdomain dashboard SEO (#4996)', () => {
-  const dashboardRewrites = vercelConfig.rewrites.filter((r) => r.source === '/dashboard');
-
-  const rewriteVariants = dashboardRewrites
-    .filter((r) => r.has)
-    .map((r) => {
-      const host = (r.has ?? []).find((h) => h.type === 'host')?.value ?? '';
-      return host.replace('.worldmonitor.app', '');
-    })
-    .sort();
-
-  const variantHtmlSource = readFileSync(resolve(__dirname, '../src/config/variant-dashboard-html.ts'), 'utf-8');
-  const generatorArrayMatch = variantHtmlSource.match(/WEB_DASHBOARD_VARIANTS = \[([^\]]+)\]/);
-  const generatorVariants = (generatorArrayMatch?.[1] ?? '')
-    .split(',')
-    .map((s) => s.trim().replace(/['"]/g, ''))
-    .filter(Boolean)
-    .sort();
-
-  it('extracts both the rewrite and generator variant sets', () => {
-    assert.ok(rewriteVariants.length > 0, 'no host-conditioned /dashboard rewrites found in vercel.json');
-    assert.ok(generatorVariants.length > 0, 'WEB_DASHBOARD_VARIANTS extraction from variant-dashboard-html.ts found nothing');
-  });
-
-  it('vercel.json rewrites and the generator cover the same variant set', () => {
-    assert.deepEqual(rewriteVariants, generatorVariants, 'vercel.json /dashboard host rewrites vs WEB_DASHBOARD_VARIANTS diverged');
-  });
-
-  it('each variant host rewrite targets its generated variant file', () => {
-    for (const rule of dashboardRewrites.filter((r) => r.has)) {
-      const host = (rule.has ?? []).find((h) => h.type === 'host')?.value ?? '';
-      const variant = host.replace('.worldmonitor.app', '');
-      assert.match(host, /^[a-z]+\.worldmonitor\.app$/, `unexpected host condition shape: ${host}`);
-      assert.strictEqual(
-        rule.destination,
-        `/dashboard-${variant}.html`,
-        `${host} rewrite must target the build-generated variant file`
-      );
-    }
-  });
-
-  it('keeps the host-specific rules BEFORE the generic /dashboard rewrite (order is match priority)', () => {
-    const genericIndex = dashboardRewrites.findIndex((r) => !r.has);
-    assert.ok(genericIndex >= 0, 'generic /dashboard -> /dashboard.html rewrite must exist');
-    assert.strictEqual(
-      genericIndex,
-      dashboardRewrites.length - 1,
-      'the un-conditioned /dashboard rewrite must come last so host rules win'
-    );
-    assert.strictEqual(dashboardRewrites.length, rewriteVariants.length + 1, 'exactly one un-conditioned /dashboard rewrite expected');
-  });
-
-  it('vite build emits the variant dashboard files the rewrites point at (web full build only)', () => {
-    assert.match(
-      viteConfigSource,
-      /!isDesktopBuild && activeVariant === 'full' && variantDashboardHtmlPlugin\(\)/,
-      'variantDashboardHtmlPlugin must be registered for web full builds'
-    );
-  });
-});
-
 describe('docs host scoping — Mintlify proxy is www-only (#5345)', () => {
   // The /docs rewrite proxies worldmonitor.mintlify.dev with no host condition,
   // so every variant subdomain served the full docs site and Googlebot crawled
   // the duplicates. Redirects run before rewrites on Vercel, so a host-scoped
   // redirect entry is what keeps subdomain /docs requests from reaching the
-  // proxy. The host list is derived from the /dashboard variant rewrites so a
-  // new variant subdomain cannot ship outside the docs redirect.
+  // proxy. The host list is VARIANT_HOSTS without www.
   const docsHostRedirect = vercelConfig.redirects.find(
     (r) => r.source === '/docs/:match(.*)' && r.has
   );
-  const variantHosts = vercelConfig.rewrites
-    .filter((r) => r.source === '/dashboard' && r.has)
-    .map((r) => (r.has ?? []).find((h) => h.type === 'host')?.value ?? '');
+  const variantHosts = VARIANT_HOSTS.filter((host) => host !== 'www.worldmonitor.app');
 
   it('redirects subdomain /docs/* to www permanently', () => {
     assert.ok(docsHostRedirect, 'expected a host-conditioned redirect for /docs/:match(.*)');
@@ -5485,7 +4882,7 @@ describe('docs host scoping — Mintlify proxy is www-only (#5345)', () => {
   it('the host condition covers every variant subdomain plus api., and never www.', () => {
     const hostValue = (docsHostRedirect?.has ?? []).find((h) => h.type === 'host')?.value ?? '';
     const hostRe = new RegExp(hostValue);
-    assert.ok(variantHosts.length > 0, 'variant host extraction from /dashboard rewrites found nothing');
+    assert.equal(variantHosts.length, 5, 'expected the five variant subdomains');
     for (const host of [...variantHosts, 'api.worldmonitor.app']) {
       assert.match(host, hostRe, `${host} must be caught by the docs host redirect`);
     }
@@ -5583,7 +4980,7 @@ describe('agent readiness: named developer-resource pages (#4953)', () => {
     it(`${page.path} serves the static page, never the app shell`, () => {
       // #6575: the SPA catch-all is gone; guard that it stays that way per page.
       const shadow = vercelConfig.rewrites.find((r) =>
-        r.destination === DASHBOARD_HTML_DESTINATION && sourceToRegExp(r.source).test(page.path)
+        r.destination === APP_SHELL_HTML_DESTINATION && sourceToRegExp(r.source).test(page.path)
       );
       assert.equal(shadow, undefined, `${page.path} must not be rewritten to the app shell`);
       assert.ok(
@@ -5741,31 +5138,6 @@ describe('section-scoped llms.txt files', () => {
   });
 });
 
-describe('skeleton brand text extraction (#5541)', () => {
-  const indexHtml = readFileSync(resolve(__dirname, '../index.html'), 'utf-8');
-
-  it('.skeleton-brand raw textContent does not contain "WWorld"', () => {
-    const match = indexHtml.match(/<div class="skeleton-brand">([\s\S]*?)<\/div>/);
-    assert.ok(match, 'index.html must contain .skeleton-brand element');
-    // Simulate raw textContent: strip all HTML tags
-    const rawText = match[1].replace(/<[^>]+>/g, '');
-    assert.doesNotMatch(rawText, /WWorld/, 'skeleton-brand raw text must not concatenate as "WWorld Monitor"');
-    assert.match(rawText, /World Monitor/, 'skeleton-brand raw text must contain "World Monitor"');
-  });
-
-  it('.skeleton-brand-mark is aria-hidden and has no text content', () => {
-    const markMatch = indexHtml.match(/<span class="skeleton-brand-mark"[^>]*>([\s\S]*?)<\/span>/);
-    assert.ok(markMatch, 'index.html must contain .skeleton-brand-mark element');
-    assert.match(markMatch[0], /aria-hidden="true"/, 'skeleton-brand-mark must be aria-hidden');
-    const markText = markMatch[1].replace(/<[^>]+>/g, '').trim();
-    assert.equal(markText, '', 'skeleton-brand-mark must have no text content (use CSS ::after instead)');
-  });
-
-  it('.skeleton-brand-mark renders "W" via CSS content pseudo-element', () => {
-    assert.match(indexHtml, /\.skeleton-brand-mark::after\s*\{\s*content:\s*"W"\s*\}/, 'skeleton-brand-mark must render W via CSS ::after content');
-  });
-});
-
 // #6832/#6833/#6834/#6835/#6836 — one Vercel project serves every host, so
 // shared HTML/XML on tech/finance/commodity/happy/energy/api is crawled as
 // alternates (or, for RSS, duplicates with no user-selected canonical).
@@ -5775,10 +5147,7 @@ describe('variant-host canonicalization (#6833–#6836)', () => {
   );
   const sharedHostValue = (docsHostRedirect?.has ?? []).find((h) => h.type === 'host')?.value ?? '';
   const sharedHostRe = new RegExp(sharedHostValue);
-  const dashboardVariantHosts = vercelConfig.rewrites
-    .filter((r) => r.source === '/dashboard' && r.has)
-    .map((r) => (r.has ?? []).find((h) => h.type === 'host')?.value ?? '')
-    .filter(Boolean);
+  const dashboardVariantHosts = VARIANT_HOSTS.filter((host) => host !== 'www.worldmonitor.app');
 
   const hostRedirect = (source, hostNeedle) =>
     vercelConfig.redirects.find((r) => {
@@ -5932,8 +5301,8 @@ describe('variant-host canonicalization (#6833–#6836)', () => {
     const tech = 'tech.worldmonitor.app';
     assert.equal(firstRedirectFor({ host: tech, path: '/' })?.destination, '/dashboard');
     assert.equal(firstRedirectFor({ host: tech, path: '/', query: { mode: 'agent' } }), null);
-    assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path: '/' }), null);
-    assert.equal(firstRedirectFor({ host: 'worldmonitor.app', path: '/' }), null);
+    assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path: '/' })?.destination, '/lite');
+    assert.equal(firstRedirectFor({ host: 'worldmonitor.app', path: '/' })?.destination, '/lite');
     assert.equal(firstRedirectFor({ host: 'api.worldmonitor.app', path: '/' })?.destination, 'https://www.worldmonitor.app/');
     assert.equal(
       firstRedirectFor({ host: tech, path: '/blog/rss.xml' })?.destination,
@@ -5942,7 +5311,7 @@ describe('variant-host canonicalization (#6833–#6836)', () => {
     assert.equal(firstRedirectFor({ host: tech, path: '/pro' })?.destination, 'https://www.worldmonitor.app/pro');
     assert.equal(firstRedirectFor({ host: tech, path: '/pro/' })?.destination, 'https://www.worldmonitor.app/pro');
     assert.equal(firstRedirectFor({ host: tech, path: '/pro/assets/index-abc.js' }), null);
-    assert.equal(firstRedirectFor({ host: tech, path: '/dashboard' }), null);
+    assert.equal(firstRedirectFor({ host: tech, path: '/dashboard' })?.destination, '/lite');
     assert.equal(
       firstRedirectFor({ host: tech, path: '/zh/mcp-error-catalog' })?.destination,
       'https://www.worldmonitor.app/docs/zh/:match*'
@@ -6094,7 +5463,7 @@ describe('variant-host canonicalization (#6833–#6836)', () => {
     }
   });
 
-  it('keeps leaked source/tmp/server paths off the dashboard document (#6836, #6575)', () => {
+  it('keeps leaked source/tmp/server paths off every app shell (#6836, #6575)', () => {
     for (const path of [
       '/src/generated/server/worldmonitor/seismology/v1/service_server',
       '/tmp/gem-drops.log',
@@ -6102,65 +5471,17 @@ describe('variant-host canonicalization (#6833–#6836)', () => {
       '/llms*.txt',
       '/country-intel',
     ]) {
-      const shadow = vercelConfig.rewrites.find((r) =>
-        r.destination === DASHBOARD_HTML_DESTINATION && sourceToRegExp(r.source).test(path)
-      );
-      assert.equal(shadow, undefined, `${path} must 404 instead of serving dashboard.html`);
+      assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path }), null, `${path} must 404 instead of serving an app shell`);
     }
-    // The real client-side History routes keep reaching the SPA document.
-    assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path: '/stocks' })?.destination, DASHBOARD_HTML_DESTINATION);
-    assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path: '/stocks/AAPL' })?.destination, DASHBOARD_HTML_DESTINATION);
-    assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path: '/story' })?.destination, DASHBOARD_HTML_DESTINATION);
+    // The old client-side History routes now redirect to the Lite UI.
+    for (const path of ['/stocks', '/stocks/AAPL', '/story']) {
+      assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path })?.destination, '/lite', path);
+      assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path }), null, path);
+    }
     assert.equal(firstRewriteFor({ host: 'www.worldmonitor.app', path: '/stocks/foo/bar' }), null);
     assert.ok(SPA_HTML_CACHE_SOURCE.includes('|src|'), 'HTML cache catch-all must exclude /src');
     assert.ok(SPA_HTML_CACHE_SOURCE.includes('|tmp|'), 'HTML cache catch-all must exclude /tmp');
     assert.ok(SPA_HTML_CACHE_SOURCE.includes('|server|'), 'HTML cache catch-all must exclude /server');
-  });
-});
-
-describe('cold-load metric evidence reaches the CI artifact (#7837)', () => {
-  const mapBudgetE2eSource = readFileSync(
-    resolve(__dirname, '../e2e/map-overlay-marker-budget.spec.ts'),
-    'utf-8',
-  );
-
-  // The failure this pins is SILENT. `testInfo.attach({ body })` keeps the
-  // bytes in memory for a reporter to persist, and the `list` reporter this
-  // project runs persists nothing — so the spec passed while its cold-load
-  // metrics never reached the uploaded artifact (shard-1 of run 34144452921
-  // contained zero files for this spec). Nothing goes red when that regresses;
-  // the evidence simply stops existing, which is how #7837's own acceptance
-  // criteria became unanswerable.
-  it('attaches the cold-load metrics by path, never by body', () => {
-    assert.match(mapBudgetE2eSource, /testInfo\.outputPath\('cold-dashboard-metrics\.json'\)/);
-    assert.match(mapBudgetE2eSource, /await writeFile\(path, payload, 'utf8'\)/);
-    assert.match(
-      mapBudgetE2eSource,
-      /testInfo\.attach\('cold-dashboard-metrics\.json', \{ path, contentType: 'application\/json' \}\)/,
-    );
-    assert.doesNotMatch(
-      mapBudgetE2eSource,
-      /attach\('cold-dashboard-metrics\.json', \{[\s\S]{0,80}?body:/,
-      'a body attachment is dropped by the list reporter and never reaches test-results/',
-    );
-    // A path attachment only survives a PASSING test because output is kept.
-    assert.match(playwrightConfigSource, /preserveOutput:\s*'always'/);
-    // ...and test-results/ is what the smoke job uploads.
-    assert.match(testWorkflowSource, /path: test-results\//);
-  });
-
-  // #7867 gives the first-paint sample its own CI-derived budget. The settled
-  // diagnostic remains optional because hydration readiness is incomplete on CI.
-  it('asserts the first-paint budgets against the first-paint sample only', () => {
-    assert.match(
-      mapBudgetE2eSource,
-      /assertDashboardMetricBudgets\(samples\.map\(\(sample\) => sample\.firstPaint\.postGc\), FIRST_PAINT_METRIC_BUDGETS\)/,
-    );
-    assert.doesNotMatch(
-      mapBudgetE2eSource,
-      /assertDashboardMetricBudgets\(samples\.map\(\(sample\) => sample\.quiescence/,
-      'the settled sample is recorded, never asserted (#7837)',
-    );
   });
 });
 

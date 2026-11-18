@@ -404,23 +404,3 @@ for (const status of [408, 429, 503]) test(`Wingbits ${status} outage retains di
   assert.equal((await read({ swLat: 24, swLon: 54, neLat: 26, neLon: 56 })).source, 'opensky');
   assert.deepEqual(providers().map(url => url.pathname), ['/wingbits/track', '/opensky/states/all']);
 });
-
-test('client track breaker stays closed across repeated zoom-outs past the relay area limit', async () => {
-  const harnessFetch = globalThis.fetch;
-  let gatewayCalls = 0;
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url, 'https://www.worldmonitor.app');
-    if (url.pathname !== PATH) return harnessFetch(input, init);
-    gatewayCalls++;
-    return gateway(new Request(`https://api.worldmonitor.app${PATH}${url.search}`, { headers: { 'X-WorldMonitor-Key': session, 'x-real-ip': '192.0.2.10' } }));
-  }) as typeof fetch;
-  const { fetchAircraftPositions } = await import('../src/services/aviation/index.ts');
-  // Distinct viewports so the client's 15s result cache never answers. The
-  // breaker opens after two failures, so a third request that still reaches
-  // the gateway proves none of them counted as a failure.
-  for (const neLat of [60, 70, 80]) {
-    assert.deepEqual(await fetchAircraftPositions({ swLat: -60, swLon: -180, neLat, neLon: 180 }), []);
-  }
-  assert.equal(gatewayCalls, 3);
-  assert.equal(providers().length, 0);
-});

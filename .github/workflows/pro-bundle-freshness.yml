@@ -46,8 +46,11 @@ jobs:
       - name: Install root deps
         run: npm ci --ignore-scripts
 
-      - name: Regenerate product facts
-        run: npm run product:facts
+      - name: Regenerate product config
+        # Product config only: the public product facts are frozen since
+        # refactor Phase 1a (their generator reads removed dashboard config),
+        # so `npm run product:facts` cannot run until Phase 1b removes /pro.
+        run: node --import tsx scripts/generate-product-config.mjs
 
       - name: Install pro-test deps
         run: cd pro-test && npm ci

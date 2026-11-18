@@ -27,11 +27,14 @@ The legacy catalog is [legacy-features.md](../product/legacy-features.md). Produ
 
 ## Phase 1 — Delete what the product no longer uses
 
-- Old dashboard: `src/components`, `src/app`, `src/App.ts`, `src/main.ts`, its `vite.config.ts` build, unused `src/services`, `src/locales`, `src/styles`, `src/workers`, map engines, variant configs.
-- Other surfaces: `src-tauri/` (**first move `src-tauri/sidecar/local-api-server.mjs` and `docker/build-handlers.mjs` aside**; the deployment phase may use the Docker Node API), `convex/`, `blog-site/`, `pro-test/`, plugin build, crawlable corpus/sitemap/product-facts steps, `docs:dates` (non-deterministic; blocks caching).
-- Their tests, CI jobs, scripts in `package.json`, and Dockerfiles for dropped services.
-- Lite becomes the only page: `lite.html` → `index.html`. **Keep the `/lite/*` URLs** for now so `middleware.ts`, `vercel.json` and `src/config/lite-route.ts` change only in the deployment phase.
-- Remove the profile flag's flag-off branches (`VITE_LITE_PROFILE`), since there is no upstream mode to preserve.
+Too large for one PR, so it lands as four PRs into `refactor/lite-monorepo`, each leaving a working build:
+
+- **1a. The dashboard.** `src/components`, `src/app`, `src/App.ts`, `src/main.ts`, and every `src/` module the Lite app, `api/`, `server/` and `scripts/` no longer import (found by esbuild and `tsc --listFilesOnly` reachability, not by hand); every HTML page except `lite.html`; `e2e/` and `playwright.config.ts`; `vite.lite.config.ts` and `vite.plugin.config.ts`. `vite.config.ts` becomes the Lite build, with the dev API plugins in `vite.dev-api.ts`. `npm run build` (Vercel's build command) keeps the OpenAPI copy and the `/pro` build until 1b removes those routes, and drops the blog, crawlable-corpus and sitemap steps; the web `vite build` drops from about 16.7 s (2026-11-07 baseline) to about 3 s. `/`, `/dashboard`, `/stocks` and `/story` redirect to `/lite`; the Lite UI loses its "Full dashboard" link and profile-off notice. Tests, CI steps, workflows, lint allowlists and the verify skill that only covered the dashboard go with it. Generators that fed the dashboard's marketing copy are frozen at their committed output: product facts (`generate-public-product-facts.mjs`, left out of `npm run generate`) and the CLI's TUI catalog (`cli/src/tui/data/catalog.generated.json`). Kept on purpose until 1b: `src/locales/en.json` (the verification-desk demo copies it) and the 35 `src/` config and service modules that the product-facts, crawlable-corpus, WebMCP and live-video scripts still import.
+- **1b. Other surfaces.** `src-tauri/` (**first move `src-tauri/sidecar/local-api-server.mjs` and `docker/build-handlers.mjs` aside**; the deployment phase may use the Docker Node API), `blog-site/`, `pro-test/`, `demos/`, the plugin build, the crawlable corpus, sitemap, product-facts, AI-search and llms generators and the `src/` modules only they import, the public Mintlify docs that describe the dashboard, `docs:dates` (non-deterministic; blocks caching), and the Railway fleet registry. Their tests, CI jobs, scripts in `package.json`, and Dockerfiles.
+- **1c. Convex, Clerk and the API the Lite UI does not call.** `convex/` and the `api/` endpoints and `server/` gates that need it (billing, OAuth, MCP grants, user preferences, notification channels). Run the `edge-contract-reviewer` subagent on the diff.
+- **1d. Variants, the flag and CI.** Remove the remaining `VITE_VARIANT`/`SITE_VARIANT` branches and `VITE_LITE_PROFILE` flag-off paths, and replace the upstream CI (deploy gate, sharded unit jobs, the 1,000-line pre-push hook) with a lean pipeline sized for this repository.
+
+Keep the `/lite/*` URLs until the deployment phase. `lite.html` becomes `apps/web/index.html` in Phase 2.
 
 ## Phase 2 — npm workspaces + Turborepo
 

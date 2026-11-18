@@ -439,18 +439,6 @@ describe('#7081 consumers — FADING stays wire-compatible', () => {
     }
   });
 
-  it('the client still maps the value rather than falling through', () => {
-    const converter = read('src', 'services', 'news-digest-items.ts');
-    assert.match(converter, /STORY_PHASE_FADING:\s*'fading'/,
-      'an unmapped FADING would silently render as breaking');
-  });
-
-  it('the alert gate still suppresses a fading story', () => {
-    const alerts = read('src', 'services', 'breaking-news-alerts.ts');
-    assert.match(alerts, /phase === 'sustained' \|\| phase === 'fading'/,
-      'the banner gate must keep handling fading defensively');
-  });
-
   it('MCP passes the phase through untouched', () => {
     const rpc = read('api', 'mcp', 'registry', 'rpc-tools.ts');
     assert.match(rpc, /storyPhase = item\.storyMeta\.phase/);
@@ -461,17 +449,5 @@ describe('#7081 consumers — FADING stays wire-compatible', () => {
     const rpc = read('api', 'mcp', 'registry', 'rpc-tools.ts');
     assert.match(rpc, /STORY_PHASE_FADING is reserved and is not currently emitted/,
       'agents must be told the value never arrives from this surface');
-  });
-
-  it('the news panel renders no fading badge, and the stylesheet agrees', () => {
-    // Documented gap rather than a silent one: FADING is unemitted here, so no
-    // badge is correct. This assertion fails loudly if a badge is added without
-    // the phase being reactivated, or vice versa.
-    const panel = read('src', 'components', 'NewsPanel.ts');
-    assert.ok(!panel.includes("phase === 'fading'"),
-      'a fading badge implies an emitted phase — reactivate the phase first');
-    const css = read('src', 'styles', 'main.css');
-    assert.ok(!css.includes('.phase-badge.fading'),
-      'no fading badge style while the phase is unemitted');
   });
 });

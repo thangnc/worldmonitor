@@ -1,5 +1,4 @@
 import { useEffect } from 'preact/hooks';
-import { LITE_PROFILE_ENABLED } from '@/config/lite-profile';
 import { useRoute } from './router';
 import { Sidebar } from './components/Sidebar';
 import { Briefing } from './screens/Briefing';
@@ -42,20 +41,3 @@ export function App() {
     </div>
   );
 }
-
-/** What `/lite` renders when the deployment profile is off (upstream builds). */
-export function ProfileOff() {
-  return (
-    <main class="flex min-h-screen items-center justify-center bg-bg p-6 font-sans text-ink" data-lite-off="true">
-      <p class="text-[14px] text-muted">
-        The World Monitor Lite profile is off for this deployment.{' '}
-        <a class="text-ink underline" href="/dashboard">
-          Open the dashboard
-        </a>
-        .
-      </p>
-    </main>
-  );
-}
-
-export const LITE_ENABLED = LITE_PROFILE_ENABLED;

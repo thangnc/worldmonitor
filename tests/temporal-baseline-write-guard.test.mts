@@ -2,7 +2,6 @@
 // for shared temporal baselines. Server-owned v2 producers remain active.
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { afterEach, describe, it } from 'node:test';
 
 import { validateGeneratedRequest } from '../server/request-validator.ts';
@@ -58,19 +57,5 @@ describe('recordBaselineSnapshot complete trust boundary', () => {
         description: 'string must equal global',
       }],
     );
-  });
-
-  it('does not send browser observations to the shared baseline API', () => {
-    const serviceSource = readFileSync(
-      new URL('../src/services/temporal-baseline.ts', import.meta.url),
-      'utf8',
-    );
-    const loaderSource = readFileSync(
-      new URL('../src/app/data-loader.ts', import.meta.url),
-      'utf8',
-    );
-
-    assert.doesNotMatch(serviceSource, /\.recordBaselineSnapshot\s*\(/);
-    assert.doesNotMatch(loaderSource, /\bupdateAndCheck\s*\(/);
   });
 });

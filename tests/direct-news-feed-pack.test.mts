@@ -4,22 +4,15 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
-import { bundleFeedsModule } from './_lib/bundle-feeds-module.mts';
 import { isAllowedDomain } from '../api/_rss-allowed-domain-match.js';
 import { publisherFamilyFor } from '../shared/publisher-families.js';
+import { SOURCE_PROPAGANDA_RISK, SOURCE_TYPES } from '../shared/source-provenance.ts';
+import { SOURCE_TIERS } from '../server/_shared/source-tiers.ts';
 
 interface FeedEntry {
   name: string;
   url: string | Record<string, string>;
   lang?: string;
-}
-
-interface ClientFeedsModule {
-  FULL_FEEDS: Record<string, FeedEntry[]>;
-  CANONICAL_FEEDS: Record<string, FeedEntry[]>;
-  SOURCE_TIERS: Record<string, number>;
-  SOURCE_TYPES: Record<string, string>;
-  SOURCE_PROPAGANDA_RISK: Record<string, { risk: string }>;
 }
 
 interface ServerFeedsModule {
@@ -70,7 +63,6 @@ const LICENSED_DIRECT_HOSTS = DIRECT_FETCH_HOSTS.filter(
 
 const SITE_SCOPED_PUBLISHER_HOSTS = ['interfax.com', 'prnewswire.com', 'coinbase.com', 'binance.com', 'jin10.com'] as const;
 
-let client: ClientFeedsModule;
 let server: ServerFeedsModule;
 
 function findFeed(feeds: Record<string, FeedEntry[]>, category: string, name: string): FeedEntry | undefined {
@@ -78,12 +70,6 @@ function findFeed(feeds: Record<string, FeedEntry[]>, category: string, name: st
 }
 
 before(async () => {
-  client = await bundleFeedsModule<ClientFeedsModule>({
-    repoRoot,
-    tempDir,
-    outfileName: 'client-feeds.mjs',
-  });
-
   mkdirSync(tempDir, { recursive: true });
   const result = await build({
     entryPoints: [join(repoRoot, 'server/worldmonitor/news/v1/_feeds.ts')],
@@ -102,15 +88,11 @@ before(async () => {
 after(() => rmSync(tempDir, { recursive: true, force: true }));
 
 describe('direct licensed news feed pack', () => {
-  it('adds every row to the full client and server catalogs with exact routing', () => {
+  it('adds every row to the full server catalog with exact routing', () => {
     for (const [name, expected] of Object.entries(DIRECT_PACK)) {
-      const clientFeed = findFeed(client.FULL_FEEDS, expected.category, name);
       const serverFeed = findFeed(server.VARIANT_FEEDS.full, expected.category, name);
-      assert.ok(clientFeed, `client full/${expected.category} missing ${name}`);
       assert.ok(serverFeed, `server full/${expected.category} missing ${name}`);
-      assert.equal(clientFeed.url, expected.url, `client URL drifted for ${name}`);
       assert.equal(serverFeed.url, expected.url, `server URL drifted for ${name}`);
-      assert.equal(clientFeed.lang, 'lang' in expected ? expected.lang : undefined, `client lang drifted for ${name}`);
       assert.equal(serverFeed.lang, 'lang' in expected ? expected.lang : undefined, `server lang drifted for ${name}`);
     }
   });
@@ -118,22 +100,15 @@ describe('direct licensed news feed pack', () => {
   it('also exposes finance-specific rows in their finance variant categories', () => {
     for (const [name, expected] of Object.entries(DIRECT_PACK)) {
       if (!('financeCategory' in expected)) continue;
-      const clientFeed = findFeed(client.CANONICAL_FEEDS, expected.financeCategory, name);
       const serverFeed = findFeed(server.VARIANT_FEEDS.finance, expected.financeCategory, name);
-      assert.ok(clientFeed, `client finance/${expected.financeCategory} missing ${name}`);
       assert.ok(serverFeed, `server finance/${expected.financeCategory} missing ${name}`);
-      assert.equal(clientFeed.url, expected.url, `client finance URL drifted for ${name}`);
       assert.equal(serverFeed.url, expected.url, `server finance URL drifted for ${name}`);
-      assert.equal(clientFeed.lang, 'lang' in expected ? expected.lang : undefined, `client finance lang drifted for ${name}`);
       assert.equal(serverFeed.lang, 'lang' in expected ? expected.lang : undefined, `server finance lang drifted for ${name}`);
     }
   });
 
   it('contains no OpenNews transport, host, or route', () => {
-    const catalogText = [
-      readFileSync(join(repoRoot, 'src/config/feeds.ts'), 'utf8'),
-      readFileSync(join(repoRoot, 'server/worldmonitor/news/v1/_feeds.ts'), 'utf8'),
-    ].join('\n').toLowerCase();
+    const catalogText = readFileSync(join(repoRoot, 'server/worldmonitor/news/v1/_feeds.ts'), 'utf8').toLowerCase();
     assert.doesNotMatch(catalogText, /opennews|ai\.6551\.io|\/open\/news/);
   });
 
@@ -145,12 +120,12 @@ describe('direct licensed news feed pack', () => {
 
   it('reviews tier and provenance without treating press releases as independent wires', () => {
     for (const name of Object.keys(DIRECT_PACK)) {
-      assert.ok(client.SOURCE_TIERS[name] >= 1, `${name} missing source tier`);
-      assert.ok(client.SOURCE_TYPES[name], `${name} missing reviewed source type`);
-      assert.ok(client.SOURCE_PROPAGANDA_RISK[name], `${name} missing reviewed risk`);
+      assert.ok(SOURCE_TIERS[name] >= 1, `${name} missing source tier`);
+      assert.ok(SOURCE_TYPES[name], `${name} missing reviewed source type`);
+      assert.ok(SOURCE_PROPAGANDA_RISK[name], `${name} missing reviewed risk`);
     }
     for (const name of ['GlobeNewswire', 'Business Wire', 'PR Newswire', 'Chainwire']) {
-      assert.equal(client.SOURCE_TYPES[name], 'other', `${name} must not claim independent wire status`);
+      assert.equal(SOURCE_TYPES[name], 'other', `${name} must not claim independent wire status`);
     }
     assert.equal(publisherFamilyFor('Interfax EN'), publisherFamilyFor('Interfax RU'));
   });

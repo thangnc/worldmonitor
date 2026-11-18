@@ -242,21 +242,7 @@ describe('link-suppression-check.js matcher (#8401)', () => {
 });
 
 describe('push-handler.js notificationclick suppression (#8401)', () => {
-  it('loads link-suppression-check.js before push-handler.js (order is load-bearing)', async () => {
-    const { readFileSync: read } = await import('node:fs');
-    const { fileURLToPath: toPath } = await import('node:url');
-    const { dirname: dir, resolve: join } = await import('node:path');
-    const root = join(dir(toPath(import.meta.url)), '..');
-    const vite = read(join(root, 'vite.config.ts'), 'utf-8');
-    const match = vite.match(/importScripts:\s*\[([^\]]*)\]/);
-    assert.ok(match, 'vite.config.ts must declare workbox importScripts');
-    const list = match[1] ?? '';
-    const suppIdx = list.indexOf('/link-suppression-check.js');
-    const pushIdx = list.indexOf('/push-handler.js');
-    assert.ok(suppIdx !== -1, 'importScripts must include /link-suppression-check.js');
-    assert.ok(pushIdx !== -1, 'importScripts must include /push-handler.js');
-    assert.ok(suppIdx < pushIdx, 'link-suppression-check.js must load BEFORE push-handler.js so notificationclick can consult it');
-  });
+
   it('blocked click shows the blocked notice and never touches clients', async () => {
     const box = makeSwSandbox({ snapshot: { suppressed: [EVIL_DIGEST], hosts: [] } });
     const ev = notifClickEvent({ url: EVIL });

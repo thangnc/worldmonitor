@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { defaultOnLayerKeys, defaultOnLayerStats } from '../scripts/lib/default-map-layer-count.mjs';
-import { getCompleteLayerCatalogKeys } from '../src/config/map-layer-definitions.ts';
 
 const wrap = (body: string) => `export const DEFAULT_MAP_LAYERS: MapLayers = {\n${body}\n};\n\nexport const MOBILE_DEFAULT_MAP_LAYERS: MapLayers = {\n  conflicts: true,\n};\n`;
 
@@ -33,11 +31,4 @@ test('counts only catalog layers and rounds the share', () => {
 test('rejects a count of zero or the whole catalog', () => {
   assert.throws(() => defaultOnLayerStats(wrap('  fires: false,'), ['fires', 'bases']), /between 1 and 1, got 0/);
   assert.throws(() => defaultOnLayerStats(wrap('  fires: true,\n  bases: true,'), ['fires', 'bases']), /between 1 and 1, got 2/);
-});
-
-test('the real full-variant defaults match the published copy stats', () => {
-  const source = readFileSync(new URL('../src/config/variants/full.ts', import.meta.url), 'utf8');
-  const published = JSON.parse(readFileSync(new URL('../pro-test/src/generated/copy-stats.json', import.meta.url), 'utf8'));
-  const { defaultOnLayers, defaultOnLayerPct } = published;
-  assert.deepEqual(defaultOnLayerStats(source, getCompleteLayerCatalogKeys('full')), { defaultOnLayers, defaultOnLayerPct });
 });

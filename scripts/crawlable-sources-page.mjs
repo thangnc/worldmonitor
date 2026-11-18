@@ -110,6 +110,8 @@ const SOURCE_DOMAIN_MATCHERS = [
 // Keep ambiguous structured providers explicit so a new unmatched provider
 // fails the build instead of silently becoming "geopolitics".
 const SOURCE_DOMAIN_OVERRIDES = new Map([
+  // Google Flights search pages (scripts/ais-relay.cjs GF_PAGE_URL).
+  ['www.google.com', 'aviation'],
   ['ammancity.gov.jo', 'finance'],
   ['data.1212.mn', 'finance'],
   ['madr.gov.dz', 'finance'],

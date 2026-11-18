@@ -32,12 +32,6 @@ function countMatches(source, pattern) {
 }
 
 describe('forecast integrity and provenance surfaces', () => {
-  it('labels simulation path confidence separately from event probability', () => {
-    const src = read('src/components/ForecastPanel.ts');
-    assert.match(src, /% confidence` : '—'/);
-    assert.doesNotMatch(src, /p\.confidence \* 100\)}% probability/);
-  });
-
   it('exposes degraded forecast backend state instead of empty success only', () => {
     const handler = read('server/worldmonitor/forecast/v1/get-forecasts.ts');
     const proto = read('proto/worldmonitor/forecast/v1/get_forecasts.proto');
@@ -48,22 +42,6 @@ describe('forecast integrity and provenance surfaces', () => {
     assert.match(handler, /getRawJson\(REDIS_KEY\)/);
     assert.match(handler, /degraded:\s*true/);
     assert.match(handler, /error:\s*'forecast_backend_unavailable'/);
-  });
-
-  it('does not repeat backend-unavailable detail in degraded forecast notices', () => {
-    const src = read('src/components/ForecastPanel.ts');
-
-    assert.match(src, /const errorDetail = this\.sourceState\.degraded \? '' : this\.sourceState\.error\.replace/);
-    assert.doesNotMatch(src, /this\.sourceState\.error \? this\.sourceState\.error\.replace/);
-  });
-
-  it('keeps client request failures distinct from backend degradation', () => {
-    const dataLoader = read('src/app/data-loader.ts');
-    const forecastService = read('src/services/forecast.ts');
-
-    assert.match(dataLoader, /degraded:\s*false,\n\s*stale:\s*false,\n\s*error:\s*'forecast_request_failed'/);
-    assert.match(forecastService, /export async function fetchForecastFeed/);
-    assert.doesNotMatch(forecastService, /export async function fetchForecasts/);
   });
 
   it('documents market calibration limits and projection clamp heuristics', () => {

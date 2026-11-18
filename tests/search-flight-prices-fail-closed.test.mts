@@ -21,8 +21,7 @@
  * null through unchanged and surfaces `upstreamFailed: boolean` on its
  * result so the handler can distinguish the two states.
  *
- * Covers all reachable handler paths under default-off and demo-on,
- * plus a source-grep regression on the service-layer breaker fallback.
+ * Covers all reachable handler paths under default-off and demo-on.
  */
 
 import { describe, it, beforeEach, after } from 'node:test';
@@ -215,66 +214,5 @@ describe('searchFlightPrices — demo opt-in (#3756)', () => {
     assert.equal(result.degraded, true);
     assert.equal(result.error, 'upstream_error');
     assert.equal(result.provider, 'demo');
-  });
-});
-
-// Service-layer circuit-breaker fallback regression (#3795 review).
-// The handler is reached via fetch(/api/aviation/v1/search-flight-prices)
-// inside src/services/aviation/index.ts. If THAT call throws (network
-// down, gateway 5xx, JSON parse error), the breaker returns a static
-// fallback object — the ONLY path through which the UI ever sees the
-// breaker-side error:'upstream_error'.
-//
-// We can't import the service module from node:test because it pulls in
-// a Vite-runtime chain that uses `import.meta.env.DEV` at module load
-// (the `test-import-vite-env-dev-transitive` trap documented in
-// ~/.claude/skills/test-ci-gotchas/). Use the source-grep regression
-// pattern instead (also from test-ci-gotchas as
-// `source-grep-regression-test-for-unexercisable-defensive-branch`):
-// assert that the fallback object in the service has the safety-critical
-// shape — never demo, always degraded, surfaces upstream_error.
-describe('fetchFlightPrices — service-layer circuit-breaker fallback (#3795)', () => {
-  it('breaker fallback shape is safety-critical: never demo, always degraded, error:upstream_error', async () => {
-    const { readFile } = await import('node:fs/promises');
-    const source = await readFile(
-      new URL('../src/services/aviation/index.ts', import.meta.url),
-      'utf8',
-    );
-    const fallbackMatch = source.match(/const fallback = (\{[^}]+\});/);
-    assert.ok(fallbackMatch, 'expected to find `const fallback = { ... }` in fetchFlightPrices');
-    const lit = fallbackMatch[1];
-    assert.match(lit, /isDemoMode:\s*false/, 'fallback MUST set isDemoMode:false — never inject synthetic data on breaker trip');
-    assert.match(lit, /degraded:\s*true/, 'fallback MUST set degraded:true so UI shows a message');
-    assert.match(lit, /error:\s*['"]upstream_error['"]/, 'fallback MUST surface error:upstream_error so UI renders the "provider unavailable" branch');
-    assert.match(lit, /quotes:\s*\[\s*\]/, 'fallback MUST be empty');
-  });
-
-  it('breakerPrices.execute call includes shouldCache predicate that rejects degraded/empty (#3795 P1)', async () => {
-    const { readFile } = await import('node:fs/promises');
-    const source = await readFile(
-      new URL('../src/services/aviation/index.ts', import.meta.url),
-      'utf8',
-    );
-    assert.match(
-      source,
-      /breakerPrices\.execute\([\s\S]{0,2000}?shouldCache:\s*\(r\)\s*=>\s*r\.quotes\.length\s*>\s*0\s*&&\s*!r\.degraded/,
-      'fetchFlightPrices must pass shouldCache:(r)=>r.quotes.length>0 && !r.degraded to avoid pinning degraded responses in the persistent cache (#3795 P1)',
-    );
-  });
-
-  it('breakerPrices.execute opts into evictOnRefreshFailure so degraded states surface (#3795 review-2)', async () => {
-    const { readFile } = await import('node:fs/promises');
-    const source = await readFile(
-      new URL('../src/services/aviation/index.ts', import.meta.url),
-      'utf8',
-    );
-    // Without this option, SWR would preserve previously-good quotes
-    // forever even after the server starts returning degraded — the
-    // exact stale-display bug the reviewer caught on the first review pass.
-    assert.match(
-      source,
-      /breakerPrices\.execute\([\s\S]{0,2000}?evictOnRefreshFailure:\s*true/,
-      'fetchFlightPrices must opt into evictOnRefreshFailure:true so SWR refresh that fails shouldCache evicts the stale entry instead of pinning it (#3795 review-2 P1)',
-    );
   });
 });

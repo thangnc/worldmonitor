@@ -21,7 +21,6 @@ const defaultCapability = readFileSync(new URL("./capabilities/default.json", im
 const rendererSources = [
   new URL("../src/services/runtime.ts", import.meta.url),
   new URL("../src/services/runtime-config.ts", import.meta.url),
-  new URL("../src/settings-main.ts", import.meta.url),
   // #5911 moved the desktop detector into its own leaf and made
   // external-navigation.ts the renderer-side owner of open_url for every
   // billing/checkout/upgrade surface. This list is the GHSA-2x6r sweep's

@@ -13,8 +13,6 @@
  */
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 
 import {
   catalogExposesProBusiness,
@@ -272,56 +270,6 @@ describe('catalogExposesProBusiness — served-catalog detection', () => {
     assert.equal(catalogExposesProBusiness({}), false);
     assert.equal(catalogExposesProBusiness({ tiers: 'pro_business' }), false);
     assert.equal(catalogExposesProBusiness({ tiers: [null, 42, 'pro_business'] }), false);
-  });
-});
-
-/**
- * Source-grep wiring guards (the project's regression pattern): the resolver is
- * only effective if the panel wiring actually consults it, subscribes to both
- * reactive sources, and keeps the heavy exporter off the locked path.
- */
-describe('setupExportPanel wiring', () => {
-  const source = readFileSync(resolve(process.cwd(), 'src/app/event-handlers.ts'), 'utf8');
-  const exportPanelBody = source.slice(
-    source.indexOf('setupExportPanel(): void {'),
-    source.indexOf('setupUnifiedSettings(): void {'),
-  );
-
-  it('extracts a non-empty setupExportPanel body', () => {
-    assert.ok(exportPanelBody.length > 500, 'guard needs the real function body');
-  });
-
-  it('no longer gates on the never-written Clerk role', () => {
-    assert.ok(
-      !exportPanelBody.includes(`role === 'pro'`),
-      'the role check hid the export button from every paying subscriber',
-    );
-  });
-
-  it('routes the verdict through the shared resolver and gate action', () => {
-    assert.match(exportPanelBody, /evaluateExportGate\(authState\)/);
-    assert.match(exportPanelBody, /evaluateAvailableExportFormats\(authState\)/);
-    assert.match(exportPanelBody, /currentExportFormats = formats/);
-    assert.match(exportPanelBody, /setAvailableFormats\(currentExportFormats\)/);
-    assert.match(exportPanelBody, /exportLockToGateReason\(verdict\.reason\)/);
-    assert.match(exportPanelBody, /resolveGateAction\(/);
-  });
-
-  it('subscribes to BOTH auth state and entitlement changes', () => {
-    assert.match(exportPanelBody, /subscribeAuthState\(\(\) => applyGate\(\)\)/);
-    assert.match(exportPanelBody, /onEntitlementChange\(\(\) => applyGate\(\)\)/);
-  });
-
-  it('fires the gate metric on a locked click, not on render', () => {
-    assert.match(exportPanelBody, /onOpen: \(\) => trackGateHit\('export'\)/);
-  });
-
-  it('keeps the exporter chunk lazy — locked users never fetch it', () => {
-    assert.match(exportPanelBody, /import\('@\/utils\/export'\)/);
-    assert.ok(
-      !/^import .*from '@\/utils\/export'/m.test(source),
-      'a static import would pull the exporter into the eager dashboard chunk',
-    );
   });
 });
 

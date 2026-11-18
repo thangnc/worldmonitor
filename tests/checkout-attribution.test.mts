@@ -271,31 +271,4 @@ describe('return-leg attribution (review P1: durable carrier + hardened peek)', 
     assert.equal(peeked?.surface, 'mission-preview');
   });
 
-  it('the checkout-attempt record carries the durable attribution copy', async () => {
-    const { readFileSync } = await import('node:fs');
-    const attempt = readFileSync(new URL('../src/services/checkout-attempt.ts', import.meta.url), 'utf8');
-    assert.ok(attempt.includes('CheckoutAttemptRecord'), 'CheckoutAttempt must use the shared typed record');
-    const checkout = readFileSync(new URL('../src/services/checkout.ts', import.meta.url), 'utf8');
-    assert.ok(checkout.includes('context: checkoutContext'),
-      'saveCheckoutAttempt must persist the resolved checkout context');
-  });
-});
-
-describe('checkout service threading', () => {
-  it('startCheckout passes the attribution through to trackCheckoutStart', async () => {
-    const { readFileSync } = await import('node:fs');
-    const src = readFileSync(new URL('../src/services/checkout.ts', import.meta.url), 'utf8');
-    assert.ok(src.includes('analyticsAttribution?: CheckoutAttribution'),
-      'checkout behavior must accept analyticsAttribution');
-    assert.ok(src.includes('behavior?.analyticsAttribution'),
-      'startCheckout must thread analyticsAttribution into trackCheckoutStart');
-    assert.ok(src.includes('checkoutContext?: CheckoutContext'),
-      'PendingCheckoutIntent must keep context for the post-sign-in resume');
-    assert.ok(src.includes('checkoutContext: intent.checkoutContext'),
-      'resumePendingCheckout must re-thread the stored context');
-    assert.ok(
-      (src.match(/checkoutContext/g) ?? []).length >= 8,
-      'checkout context must cover tracking, intent, attempt, retry, and recovery',
-    );
-  });
 });

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build:full",
+  "buildCommand": "npm run build",
   "ignoreCommand": "bash scripts/vercel-ignore.sh",
   "crons": [],
   "redirects": [
@@ -133,6 +133,11 @@
     { "source": "/mcp-grant/", "destination": "/mcp-grant", "permanent": true },
     { "source": "/desktop-sign-in/", "destination": "/desktop-sign-in", "permanent": true },
     { "source": "/embed/", "destination": "/embed", "permanent": true },
+    { "source": "/", "missing": [{ "type": "query", "key": "mode", "value": "agent" }], "destination": "/lite", "permanent": false },
+    { "source": "/dashboard", "destination": "/lite", "permanent": false },
+    { "source": "/stocks", "destination": "/lite", "permanent": false },
+    { "source": "/stocks/:symbol", "destination": "/lite", "permanent": false },
+    { "source": "/story", "destination": "/lite", "permanent": false },
     { "source": "/lite/", "destination": "/lite", "permanent": true },
     { "source": "/lite/geopolitics/", "destination": "/lite/geopolitics", "permanent": true },
     { "source": "/lite/finance/", "destination": "/lite/finance", "permanent": true },
@@ -156,9 +161,6 @@
     { "source": "/a2a", "destination": "/api/a2a" },
     { "source": "/ask", "destination": "/api/ask" },
     { "source": "/agent/auth", "destination": "/api/agent-auth" },
-    { "source": "/mcp-grant", "destination": "/mcp-grant.html" },
-    { "source": "/desktop-sign-in", "destination": "/desktop-sign-in.html" },
-    { "source": "/verify", "destination": "/verify.html" },
     { "source": "/oauth/token", "destination": "/api/oauth/token" },
     { "source": "/oauth/register", "destination": "/api/oauth/register" },
     { "source": "/oauth/authorize", "destination": "/api/oauth/authorize" },
@@ -172,21 +174,11 @@
     { "source": "/.well-known/mcp.json", "destination": "/api/mcp" },
     { "source": "/.well-known/mcp/server.json", "destination": "/.well-known/mcp/server-card.json" },
     { "source": "/.well-known/http-message-signatures-directory", "destination": "/api/http-message-signatures-directory" },
-    { "source": "/embed", "destination": "/embed.html" },
     { "source": "/lite", "destination": "/lite.html" },
     { "source": "/lite/geopolitics", "destination": "/lite.html" },
     { "source": "/lite/finance", "destination": "/lite.html" },
     { "source": "/lite/tech", "destination": "/lite.html" },
-    { "source": "/lite/sources", "destination": "/lite.html" },
-    { "source": "/dashboard", "has": [{ "type": "host", "value": "tech.worldmonitor.app" }], "destination": "/dashboard-tech.html" },
-    { "source": "/dashboard", "has": [{ "type": "host", "value": "finance.worldmonitor.app" }], "destination": "/dashboard-finance.html" },
-    { "source": "/dashboard", "has": [{ "type": "host", "value": "commodity.worldmonitor.app" }], "destination": "/dashboard-commodity.html" },
-    { "source": "/dashboard", "has": [{ "type": "host", "value": "happy.worldmonitor.app" }], "destination": "/dashboard-happy.html" },
-    { "source": "/dashboard", "has": [{ "type": "host", "value": "energy.worldmonitor.app" }], "destination": "/dashboard-energy.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" },
-    { "source": "/stocks", "destination": "/dashboard.html" },
-    { "source": "/stocks/:symbol", "destination": "/dashboard.html" },
-    { "source": "/story", "destination": "/dashboard.html" }
+    { "source": "/lite/sources", "destination": "/lite.html" }
   ],
   "headers": [
     {
@@ -606,7 +598,7 @@
         { "key": "Cross-Origin-Opener-Policy-Report-Only", "value": "same-origin; report-to=\"wm-coop-coep\"" },
         { "key": "Cross-Origin-Embedder-Policy-Report-Only", "value": "require-corp; report-to=\"wm-coop-coep\"" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(self), accelerometer=(), autoplay=(self \"https://www.youtube.com\" \"https://www.youtube-nocookie.com\"), bluetooth=(), display-capture=(), encrypted-media=(self \"https://www.youtube.com\" \"https://www.youtube-nocookie.com\"), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), midi=(), payment=(self \"https://checkout.dodopayments.com\" \"https://test.checkout.dodopayments.com\" \"https://pay.google.com\" \"https://hooks.stripe.com\" \"https://js.stripe.com\"), picture-in-picture=(self \"https://www.youtube.com\" \"https://www.youtube-nocookie.com\" \"https://challenges.cloudflare.com\"), unload=(*), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=(\"https://challenges.cloudflare.com\"), tools=(self)" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; connect-src 'self' https: wss: blob: data: https://*.ingest.sentry.io https://*.ingest.us.sentry.io; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'strict-dynamic' 'nonce-wm-static-bootstrap' 'sha256-5Z9IhMFGUf29PVDaWoiTpwEg7J7Q4r4F49rLS77PJm0=' 'sha256-Z5TaQuwFMHlxoFSQYuTWfxuPE5RUOpVsZOttUGCcRNE=' 'sha256-Jgh3W4Qj3HWZPVSti0C073yuiaz611LO8OZRUCsN0x8=' 'sha256-llBxZlyh3eu6gbNvZXaeD9oZE2jgTvnh72FEO/GDErQ=' 'sha256-roOemWhEmW8UlmpgHCUfsnJ1s6HiVAPc70DMJuIPtDk=' 'sha256-sMkhxXs3qUW2IR01a4d3tL1e2XQV0XUwxXAeL31nDjM=' 'wasm-unsafe-eval'; worker-src 'self' blob:; font-src 'self' data:; media-src 'self' data: blob: https:; frame-src 'self' https://www.worldmonitor.app https://worldmonitor.app https://tech.worldmonitor.app https://finance.worldmonitor.app https://commodity.worldmonitor.app https://happy.worldmonitor.app https://energy.worldmonitor.app https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com https://webcams.windy.com https://challenges.cloudflare.com https://*.clerk.accounts.dev https://clerk.worldmonitor.app https://vercel.live https://*.dodopayments.com https://checkout.dodopayments.com https://test.checkout.dodopayments.com https://*.hs.dodopayments.com https://*.custom.hs.dodopayments.com https://pay.google.com https://hooks.stripe.com https://js.stripe.com; frame-ancestors 'self' https://www.worldmonitor.app https://tech.worldmonitor.app https://finance.worldmonitor.app https://commodity.worldmonitor.app https://happy.worldmonitor.app https://energy.worldmonitor.app https://worldmonitor.app https://vercel.live; base-uri 'self'; object-src 'none'; form-action 'self' https://api.worldmonitor.app" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; connect-src 'self' https: wss: blob: data: https://*.ingest.sentry.io https://*.ingest.us.sentry.io; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'strict-dynamic' 'nonce-wm-static-bootstrap' 'sha256-roOemWhEmW8UlmpgHCUfsnJ1s6HiVAPc70DMJuIPtDk=' 'wasm-unsafe-eval'; worker-src 'self' blob:; font-src 'self' data:; media-src 'self' data: blob: https:; frame-src 'self' https://www.worldmonitor.app https://worldmonitor.app https://tech.worldmonitor.app https://finance.worldmonitor.app https://commodity.worldmonitor.app https://happy.worldmonitor.app https://energy.worldmonitor.app https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com https://webcams.windy.com https://challenges.cloudflare.com https://*.clerk.accounts.dev https://clerk.worldmonitor.app https://vercel.live https://*.dodopayments.com https://checkout.dodopayments.com https://test.checkout.dodopayments.com https://*.hs.dodopayments.com https://*.custom.hs.dodopayments.com https://pay.google.com https://hooks.stripe.com https://js.stripe.com; frame-ancestors 'self' https://www.worldmonitor.app https://tech.worldmonitor.app https://finance.worldmonitor.app https://commodity.worldmonitor.app https://happy.worldmonitor.app https://energy.worldmonitor.app https://worldmonitor.app https://vercel.live; base-uri 'self'; object-src 'none'; form-action 'self' https://api.worldmonitor.app" }
       ]
     },
     {

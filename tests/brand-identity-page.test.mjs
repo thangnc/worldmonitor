@@ -92,13 +92,6 @@ describe('World Monitor brand-identity page', () => {
 });
 
 describe('Organization JSON-LD NAP alignment', () => {
-  it('keeps index.html linked to the canonical Organization without redeclaring it', () => {
-    const orgs = organizationBlocks(read('index.html'));
-    assert.equal(orgs.length, 0, 'the dashboard must not redeclare Organization');
-    const html = read('index.html');
-    assert.match(html, /"publisher": \{\s*"@id": "https:\/\/www\.worldmonitor\.app\/#organization"\s*\}/);
-  });
-
   it('keeps the canonical welcome Organization NAP aligned', () => {
     const welcome = organizationBlocks(read('pro-test/welcome.html'));
     assert.equal(welcome.length, 1, 'welcome.html must declare one Organization');

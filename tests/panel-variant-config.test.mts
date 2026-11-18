@@ -255,41 +255,4 @@ describe('variant panel config resolution', () => {
     // otherwise a snapshot that never arrives suspends the caps forever.
     assert.equal(shouldDeferFreeTierEnforcement(true, true, false, true), false);
   });
-
-  it('does not use the canonical registry directly for entitlement or pro badge metadata', () => {
-    const files = [
-      'src/components/UnifiedSettings.ts',
-      'src/app/search-manager.ts',
-      'src/settings-window.ts',
-    ];
-
-    for (const file of files) {
-      const text = src(file);
-      assert.doesNotMatch(
-        text,
-        /isPanelEntitled\([^\n]*ALL_PANELS\[/,
-        `${file} must resolve variant-specific panel config before entitlement checks`,
-      );
-      assert.doesNotMatch(
-        text,
-        /\(ALL_PANELS\[[^\]]+\]\s*\?\?[^)]*\)\.premium/,
-        `${file} must resolve variant-specific panel config before PRO badge checks`,
-      );
-    }
-  });
-
-  it('standalone settings render uses resolved variant names instead of saved panel names', () => {
-    const text = src('src/settings-window.ts');
-
-    assert.match(
-      text,
-      /const resolvedPanel = ALL_PANELS\[key\] \? getEffectivePanelConfig\(key, SITE_VARIANT\) : panel;/,
-      'settings-window render must resolve variant-specific panel config per entry',
-    );
-    assert.match(
-      text,
-      /getPanelDisplayName\(key, resolvedPanel\.name \?\? panel\.name\)/,
-      'settings-window render must prefer the resolved variant name before saved panel.name',
-    );
-  });
 });

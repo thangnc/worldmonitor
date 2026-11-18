@@ -231,14 +231,10 @@ describe('coverage-ledger and provenance wiring (source-textual)', () => {
     assert.match(src, /news:coverage-ledger:v1/);
   });
 
-  it('insights payload carries provenance and the panel renders it', () => {
+  it('insights payload carries provenance', () => {
     const seedSrc = readSrc('scripts/seed-insights.mjs');
     assert.match(seedSrc, /storiesConsidered: normalizedItems\.length/);
     assert.match(seedSrc, /selectTopStories\(clusters, 8, selectionStats\)/);
-    const panelSrc = readSrc('src/components/InsightsPanel.ts');
-    assert.match(panelSrc, /components\.insights\.compiledFrom/);
-    const en = JSON.parse(readSrc('src/locales/en.json'));
-    assert.match(en.components.insights.compiledFrom, /\{\{stories\}\}.*\{\{sources\}\}/);
   });
 
   it('both completeness keys are registered in health surfaces', () => {

@@ -1,7 +1,5 @@
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { transformSync } from 'esbuild';
 import { Window } from 'happy-dom';
 import { COUNTRY_RISK_APP_HTML } from '../api/mcp/ui/country-risk-app.ts';
 import { buildStructuredContent } from '../api/mcp/structured-content.ts';
@@ -76,13 +74,7 @@ describe('Country Risk exported HTML projections', () => {
     }
   });
   it('uses canonical CII headline levels at every boundary and for the captured Ukraine score', async () => {
-    const source = readFileSync(new URL('../src/services/cached-risk-scores.ts', import.meta.url), 'utf8');
-    const mapper = source.match(/function getScoreLevel\(score: number\):[^{]+\{[\s\S]*?\n\}/);
-    assert.ok(mapper);
-    const compiled = transformSync(`${mapper[0]}\nexport { getScoreLevel };`, { loader: 'ts', format: 'esm', target: 'es2022' });
-    const { getScoreLevel } = await import(`data:text/javascript;base64,${Buffer.from(compiled.code).toString('base64')}`);
     for (const [score, label] of [[0, 'Low'], [30, 'Low'], [31, 'Normal'], [50, 'Normal'], [51, 'Elevated'], [65, 'Elevated'], [66, 'High'], [80, 'High'], [81, 'Critical'], [93, 'Critical'], [100, 'Critical'], ['93', 'Critical']]) {
-      assert.equal(getScoreLevel(Number(score)), label.toLowerCase(), `canonical mapper for ${score}`);
       const view = await mount(wire({ ...risk, countryCode: 'UA', countryName: 'Ukraine', cii: { ...risk.cii, combinedScore: score } }));
       assert.equal(text(view.doc, 'level'), label, `headline for ${score}`);
       assert.equal(text(view.doc, 'cii'), String(score));

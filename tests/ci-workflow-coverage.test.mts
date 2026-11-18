@@ -25,7 +25,6 @@ const desktopBuildWorkflow = read(resolve(workflowsDir, 'build-desktop.yml'));
 const desktopCanaryWorkflow = read(resolve(workflowsDir, 'test-linux-app.yml'));
 const lintCodeWorkflow = read(resolve(workflowsDir, 'lint-code.yml'));
 const protoCheckWorkflow = read(resolve(workflowsDir, 'proto-check.yml'));
-const playwrightConfig = read(resolve(root, 'playwright.config.ts'));
 
 describe('root dependency cache (#8710)', () => {
   const actionPath = resolve(root, '.github/actions/install-root-deps/action.yml');
@@ -171,9 +170,7 @@ describe('root dependency cache (#8710)', () => {
   // 'unit-built-output nested dependency cache' blocks), so they are in the
   // first group.
   for (const [workflowText, jobIds, setupCache] of [
-    [testWorkflow, ['docs-stats', 'sidecar', 'convex-tests', 'dom-tests', 'variant-smoke-shards', 'resilience-validation-smoke', 'unit-shards', 'unit-built-output'], undefined],
-    [testWorkflow, ['variant-smoke-pro-webmcp'], 'npm'],
-    [read(resolve(workflowsDir, 'perf-style-layout-budget.yml')), ['measure'], undefined],
+    [testWorkflow, ['docs-stats', 'sidecar', 'convex-tests', 'dom-tests', 'resilience-validation-smoke', 'unit-shards', 'unit-built-output'], undefined],
     [lintCodeWorkflow, ['biome'], undefined],
     [read(resolve(workflowsDir, 'typecheck.yml')), ['typecheck'], 'npm'],
   ] as const) {
@@ -409,51 +406,6 @@ describe('shipped desktop Node coverage (#5909, #9906)', () => {
   }
 });
 
-describe('browser-loss artifact capture (#6501, #7880)', () => {
-  for (const exitCode of [0, 17]) {
-    it(`retains logs after output cleanup and preserves smoke exit ${exitCode}`, () => {
-      const workflow = YAML.parse(testWorkflow);
-      const step = workflow.jobs['variant-smoke-shards'].steps.find(
-        (candidate: { name?: string }) => candidate.name === 'Run ci-smoke with browser-loss diagnostics',
-      );
-      assert.ok(step, 'both current smoke shards must run the diagnostic capture');
-      const dir = mkdtempSync(resolve(tmpdir(), 'wm-browser-loss-capture-'));
-      try {
-        mkdirSync(resolve(dir, 'bin'));
-        // Model Playwright opening its debug file before clearing outputDir.
-        // Two workers then emit evidence that must survive the same invocation.
-        writeFileSync(resolve(dir, 'bin/npm'), `#!${process.execPath}
-const fs = require('node:fs');
-if (process.env.DEBUG !== 'pw:browser') process.exit(98);
-const fd = process.env.DEBUG_FILE ? fs.openSync(process.env.DEBUG_FILE, 'w') : 2;
-fs.rmSync('test-results', { recursive: true, force: true });
-fs.mkdirSync('test-results');
-fs.writeFileSync('test-results/trace.zip', 'retained trace');
-fs.writeSync(fd, 'pw:browser [pid=101] <process did exit: exitCode=null, signal=SIGKILL>\\n');
-fs.writeSync(fd, 'pw:browser [pid=102] <process did exit: exitCode=0, signal=null>\\n');
-console.log('smoke completed');
-process.exit(${exitCode});
-`, { mode: 0o755 });
-        writeFileSync(resolve(dir, 'bin/free'), '#!/bin/sh\nprintf "Mem: 16384 2048 14336\\n"\n', { mode: 0o755 });
-        const result = spawnSync('bash', ['-c', step.run.replaceAll('${{ matrix.shard }}', '1')], {
-          cwd: dir,
-          env: { ...process.env, ...step.env, PATH: `${dir}/bin:${process.env.PATH}` },
-          encoding: 'utf8',
-          timeout: 15_000,
-        });
-        assert.equal(result.status, exitCode, result.stderr);
-        const log = read(resolve(dir, 'test-results/browser-loss/playwright.log'));
-        assert.match(log, /pid=101.*signal=SIGKILL/);
-        assert.match(log, /pid=102.*exitCode=0/);
-        assert.match(log, /smoke completed/);
-        assert.match(read(resolve(dir, 'test-results/browser-loss/memory-samples.log')), /Mem: 16384 2048 14336/);
-        assert.equal(read(resolve(dir, 'test-results/trace.zip')), 'retained trace');
-      } finally {
-        rmSync(dir, { recursive: true, force: true });
-      }
-    });
-  }
-});
 const workflowText = readdirSync(workflowsDir)
   .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
   .map((name) => read(resolve(workflowsDir, name)))
@@ -466,48 +418,10 @@ const REQUIRED_PR_SCRIPTS = [
   'test:resilience-validation-smoke',
 ] as const;
 
-// Every regression guard the combined ci-smoke invocation must keep exercising.
-// Dropping a spec from its command line is how a guard can stop being invoked
-// while CI stays green, so the required spec list is pinned here.
-const REQUIRED_CI_SMOKE_SPECS = [
-  'e2e/variant-live-smoke.spec.ts',
-  'e2e/country-brief.spec.ts',
-  'e2e/country-brief-reports.spec.ts',
-  'e2e/mcp-grant-consent.spec.ts',
-  'e2e/dashboard-news-request-budget.spec.ts',
-  'e2e/bootstrap-request-budget.spec.ts',
-  'e2e/bootstrap-hydration-request-budget.spec.ts',
-  'e2e/settings-panel-live-apply.spec.ts',
-  'e2e/settings-source-live-apply.spec.ts',
-  'e2e/dashboard-lcp-attribution.spec.ts',
-  'e2e/keyword-spike-flow.spec.ts',
-  'e2e/breaking-news-banner-provenance.spec.ts',
-  'e2e/dompurify-regression.spec.ts',
-  'e2e/a11y-axe-scan.spec.ts',
-  'e2e/map-overlay-marker-budget.spec.ts',
-  'e2e/mcp-market-built.spec.ts',
-  'e2e/live-panel-layout-8276.spec.ts',
-  'e2e/panel-grid-no-overlap.spec.ts',
-  'e2e/panel-table-overflow.spec.ts',
-  'e2e/etf-panel-overflow.spec.ts',
-  'e2e/panel-header-fits.spec.ts',
-  'e2e/procurement-filters-fit.spec.ts',
-  'e2e/news-source-row-fits.spec.ts',
-  'e2e/progress-chart-fits.spec.ts',
-  'e2e/energy-table-values-whole.spec.ts',
-  'e2e/panel-text-unclipped.spec.ts',
-  'e2e/regional-intelligence-region-select.spec.ts',
-  'e2e/settings-tabs-all-visible.spec.ts',
-  'e2e/panel-grid-column-clamp.spec.ts',
-  'e2e/narrow-panel-overflow.spec.ts',
-  'e2e/hormuz-chart-width.spec.ts',
-] as const;
-
 const REQUIRED_TEST_JOBS = [
   'unit',
   'sidecar',
   'convex-tests',
-  'variant-smoke-full',
   'resilience-validation-smoke',
   'desktop-config',
   'desktop-node-windows',
@@ -518,9 +432,6 @@ const TIMEOUT_CAPPED_TEST_JOBS = [
   'consumer-prices',
   'sidecar',
   'convex-tests',
-  'variant-smoke-shards',
-  'variant-smoke-pro-webmcp',
-  'variant-smoke-full',
   'resilience-validation-smoke',
   'desktop-config',
   'desktop-node-windows',
@@ -555,8 +466,6 @@ const GATE_CHECK_EXEMPTIONS: Record<string, { workflow: string; coveredBy: strin
   'audit-rust': { workflow: 'Security Audit', coveredBy: 'security-audit' },
   'unit-shards': { workflow: 'Test', coveredBy: 'unit' },
   'unit-built-output': { workflow: 'Test', coveredBy: 'unit' },
-  'variant-smoke-shards': { workflow: 'Test', coveredBy: 'variant-smoke-full' },
-  'variant-smoke-pro-webmcp': { workflow: 'Test', coveredBy: 'variant-smoke-full' },
 };
 
 const REQUIRED_RESILIENCE_VALIDATION_INPUTS = [
@@ -677,43 +586,6 @@ function workflowStepBlocksByUses(workflow: string, action: string): string[] {
   }
   assert.ok(blocks.length > 0, `workflow must define ${action}`);
   return blocks;
-}
-
-// Every step of a job block, with the offset it starts at so a caller can ask
-// where a step sits relative to another (step ORDER decides whether an
-// `if: failure()` step can see what an earlier step produced).
-function jobSteps(jobBlock: string): { block: string; offset: number }[] {
-  // Anchored with `m` rather than a leading `\n`: consuming the newline that
-  // separates two steps would leave the next step with no `\n` to match on,
-  // and matchAll would silently return every OTHER step.
-  const steps: { block: string; offset: number }[] = [];
-  for (const match of jobBlock.matchAll(/^ {6}- [^\n]*\n(?:(?! {6}- )[^\n]*\n)*/gm)) {
-    steps.push({ block: `\n${match[0]}`, offset: match.index ?? 0 });
-  }
-  return steps;
-}
-
-// The `path:` of an upload step, normalized, as a list — the input accepts a
-// single path or a block scalar of several, and a guard that only understood
-// the single-path form would redden the day someone adds a second path.
-function stepPaths(stepBlock: string): string[] {
-  const inline = stepBlock.match(/\n {10}path: (?!\|)([^\n]+)/);
-  if (inline) return [inline[1].trim().replace(/\/$/, '')];
-  const block = stepBlock.match(/\n {10}path: \|[-+]?\n((?: {12}[^\n]*\n)+)/);
-  if (!block) return [];
-  return block[1]
-    .split('\n')
-    .map((line) => line.trim().replace(/\/$/, ''))
-    .filter((line) => line.length > 0);
-}
-
-function shellArgvTokens(command: string): string[] {
-  const tokens: string[] = [];
-  for (const token of command.trim().split(/\s+/)) {
-    if (token.startsWith('#')) break;
-    tokens.push(token);
-  }
-  return tokens;
 }
 
 function workflowRunScript(stepBlock: string): string {
@@ -1189,63 +1061,6 @@ describe('deployment_status triggers — npm cache scope hygiene (#7593)', () =>
 });
 
 describe('CI workflow coverage', () => {
-  it('stages the regenerated sitemap and software dates in the weekly pulse PR', () => {
-    const pulseWorkflow = read(resolve(workflowsDir, 'crawlable-pulse-refresh.yml'));
-    const openPrStep = workflowStepBlock(pulseWorkflow, 'Open the weekly pulse PR');
-    assert.match(
-      openPrStep,
-      /git\s+add\s+"\$snapshot_path"\s+public\/sitemap\.xml\s+public\/sitemap-main\.xml\s+public\/llms-full\.txt\s+pro-test\/src\/generated\/teasers\.json\s+pro-test\/welcome\.html\s+pro-test\/index\.html/,
-      'weekly pulse PRs must include the sitemap, llms-full corpus, and both shared software dates',
-    );
-    assert.match(
-      openPrStep,
-      /git commit -m "chore\(corpus\): refresh[^\n]+\n[\s\S]*npm run build:sitemap\n\s+git add public\/sitemap\.xml public\/sitemap-main\.xml\n[\s\S]*git commit -m "chore\(corpus\): align[^\n]+\n[\s\S]*node --import tsx scripts\/build-sitemap\.mjs --check\n\s+git push/,
-      'publish the sitemap only after regenerating its dates from committed material sources',
-    );
-  });
-
-  it('keeps a capture whose verification failed as a draft PR instead of a lost run (#8417)', () => {
-    const pulseWorkflow = read(resolve(workflowsDir, 'crawlable-pulse-refresh.yml'));
-    const buildStep = workflowStepBlock(pulseWorkflow, 'Rebuild published artifacts');
-    assert.match(buildStep, /^\s+id: build$/m);
-    assert.match(buildStep, /npm run build:crawlable-corpus/, 'the coverage floor that rejects a capture lives in the build step');
-    const verifyStep = workflowStepBlock(pulseWorkflow, 'Verify published artifacts');
-    assert.match(verifyStep, /^\s+id: verify$/m);
-    assert.match(verifyStep, /node --import tsx --test/);
-    assert.doesNotMatch(
-      verifyStep,
-      /continue-on-error/,
-      'a failed verification must still fail the job so the freshness monitor reports it',
-    );
-    for (const stepName of ['Prune superseded pulse snapshots', 'Open the weekly pulse PR']) {
-      assert.match(
-        workflowStepBlock(pulseWorkflow, stepName),
-        /^\s+if: \$\{\{ !cancelled\(\) && steps\.build\.outcome == 'success' \}\}$/m,
-        `${stepName} requires a successful build and must not run after cancellation`,
-      );
-    }
-    const openPrStep = workflowStepBlock(pulseWorkflow, 'Open the weekly pulse PR');
-    const pruneStep = workflowStepBlock(pulseWorkflow, 'Prune superseded pulse snapshots');
-    assert.ok(pulseWorkflow.indexOf(pruneStep) > pulseWorkflow.indexOf(buildStep));
-    assert.ok(
-      pulseWorkflow.indexOf(verifyStep) > pulseWorkflow.indexOf(pruneStep),
-      'verify the pruned snapshot set that the PR will publish',
-    );
-    assert.ok(pulseWorkflow.indexOf(openPrStep) > pulseWorkflow.indexOf(verifyStep));
-    assert.match(verifyStep, /tests\/brief-relevance\.test\.mjs/);
-    assert.match(verifyStep, /tests\/ci-workflow-coverage\.test\.mts/);
-    assert.match(openPrStep, /VERIFY_OUTCOME: \$\{\{ steps\.verify\.outcome \}\}/);
-    assert.match(openPrStep, /if \[ "\$VERIFY_OUTCOME" != "success" \]; then\n\s+draft=\(--draft\)/);
-    assert.match(openPrStep, /gh pr create[\s\S]*"\$\{draft\[@\]\}"/);
-    for (const stepName of ['Reconcile the weekly review branch', 'Open the weekly pulse PR']) {
-      assert.match(
-        workflowStepBlock(pulseWorkflow, stepName),
-        /GH_TOKEN: \$\{\{ secrets\.REVIEW_PR_TOKEN \|\| github\.token \}\}/,
-        `${stepName} must open the PR with a user or app token when one is configured, so the PR gets CI`,
-      );
-    }
-  });
-
   it('runs the proto breaking check against the full main history (#6114)', () => {
     const breakingJob = workflowJobBlock(protoCheckWorkflow, 'proto-breaking');
     assert.match(breakingJob, /^\s+needs: changes\s*$/m);
@@ -1316,70 +1131,6 @@ describe('CI workflow coverage', () => {
     }
   });
 
-  it('keeps every smoke spec on the combined command and exactly one shard', () => {
-    const ciSmoke = packageScripts['test:e2e:ci-smoke'] ?? '';
-    // Tokenize as the shell would, and stop at the first comment token: npm
-    // scripts run under `sh -c`, where a word-initial `#` comments out the
-    // rest of the line. A substring check would stay green with the spec
-    // paths sitting in the commented-out tail while playwright never runs
-    // them — the argv-token check is what gives this guard teeth.
-    const argvTokens = shellArgvTokens(ciSmoke);
-    for (const spec of REQUIRED_CI_SMOKE_SPECS) {
-      assert.ok(
-        argvTokens.includes(spec),
-        `test:e2e:ci-smoke must pass ${spec} as a live argv token — a spec dropped ` +
-          '(or commented out) from this command has no other CI invocation',
-      );
-      assert.ok(
-        existsSync(resolve(root, spec)),
-        `${spec} must exist on disk — a missing file would only fail once Playwright starts`,
-      );
-    }
-    assert.ok(
-      argvTokens.includes('VITE_VARIANT=full'),
-      'test:e2e:ci-smoke must pin VITE_VARIANT=full — variant-live-smoke asserts the full-variant panel set',
-    );
-
-    const smokeSpecs = argvTokens.filter((token) => token.startsWith('e2e/') && token.endsWith('.spec.ts'));
-    assert.equal(new Set(smokeSpecs).size, smokeSpecs.length, 'test:e2e:ci-smoke must not repeat a spec');
-    assert.deepEqual(
-      [...smokeSpecs].sort(),
-      [...REQUIRED_CI_SMOKE_SPECS].sort(),
-      'test:e2e:ci-smoke must contain exactly the pinned smoke-spec inventory',
-    );
-    // One script per CI shard, read from the matrix so adding a shard without
-    // its spec list (or the reverse) fails here.
-    const smokeShards: number[] = YAML.parse(testWorkflow).jobs['variant-smoke-shards'].strategy.matrix.shard;
-    assert.deepEqual(smokeShards, smokeShards.map((_, i) => i + 1), 'smoke shard indices must be 1..N');
-    const shardScripts = Object.keys(packageScripts).filter((name) => /^test:e2e:ci-smoke:\d+$/.test(name));
-    assert.deepEqual(
-      shardScripts.sort(),
-      smokeShards.map((n) => `test:e2e:ci-smoke:${n}`).sort(),
-      'package.json must define exactly one test:e2e:ci-smoke:<n> script per CI smoke shard',
-    );
-    const shardSpecs = smokeShards.map((n) => `test:e2e:ci-smoke:${n}`).map((script) => {
-      const command = packageScripts[script] ?? '';
-      const tokens = shellArgvTokens(command);
-      assert.deepEqual(
-        tokens.slice(0, 4),
-        ['cross-env', 'VITE_VARIANT=full', 'playwright', 'test'],
-        `${script} must invoke the full-variant Playwright command before its smoke specs`,
-      );
-      const specs = tokens.filter((token) => token.startsWith('e2e/') && token.endsWith('.spec.ts'));
-      assert.ok(specs.length > 0, `${script} must pass smoke specs as live argv tokens`);
-      assert.equal(new Set(specs).size, specs.length, `${script} must not repeat a spec`);
-      return specs;
-    });
-    const allShardSpecs = shardSpecs.flat();
-    assert.equal(new Set(allShardSpecs).size, allShardSpecs.length, 'ci-smoke shards must be disjoint');
-    assert.ok(shardSpecs.every((specs) => specs.length > 0), 'no ci-smoke shard may be empty');
-    assert.deepEqual(
-      [...allShardSpecs].sort(),
-      [...REQUIRED_CI_SMOKE_SPECS].sort(),
-      'the ci-smoke shard union must equal the pinned smoke-spec inventory',
-    );
-  });
-
   it('keeps the main Test workflow jobs for defensibility smoke gates', () => {
     for (const job of REQUIRED_TEST_JOBS) {
       assert.match(testWorkflow, new RegExp(`\\n  ${escapeRegExp(job)}:\\n`), `test.yml must define ${job}`);
@@ -1389,32 +1140,6 @@ describe('CI workflow coverage', () => {
   it('keeps required smoke jobs capped with explicit timeouts', () => {
     for (const job of TIMEOUT_CAPPED_TEST_JOBS) {
       assert.match(testJobBlock(job), /\n {4}timeout-minutes: \d+\n/, `${job} must set timeout-minutes`);
-    }
-  });
-
-  it('does not let a hung playwright install-deps eat a browser job budget', () => {
-    const browserJobs = workflowJobNames(testWorkflow, 'test.yml')
-      .filter((jobName) => /npm run test:e2e:/.test(testJobBlock(jobName)));
-    assert.deepEqual(browserJobs, ['variant-smoke-shards', 'variant-smoke-pro-webmcp']);
-    for (const jobName of browserJobs) {
-      const job = testJobBlock(jobName);
-      assert.match(job, /\n {4}timeout-minutes: 20\n/);
-      assert.match(
-        job,
-        /id: playwright-install-deps[\s\S]*timeout-minutes: 8[\s\S]*continue-on-error: true[\s\S]*npx playwright install-deps chromium/,
-      );
-      // install-deps runs only when ldd finds a library a Playwright browser
-      // cannot resolve. An unconditional install would download ~32 MB of
-      // fonts and Mesa upgrades on every run.
-      const installDeps = YAML.parse(testWorkflow).jobs[jobName].steps
-        .flatMap((step: { parallel?: unknown[] }) => step.parallel ?? [step])
-        .find((step: { id?: string }) => step.id === 'playwright-install-deps');
-      assert.match(installDeps.run, /ldd "\$browser" \| grep 'not found'[\s\S]*exit 0[\s\S]*npx playwright install-deps chromium/);
-      assert.match(installDeps.run, /missing="no Playwright browser binary found"/, 'a missing browser binary must fall through to install-deps');
-      assert.match(
-        job,
-        /steps\.playwright-install-deps\.outcome == 'failure'[\s\S]*pkill -9 apt-get[\s\S]*npx playwright install --with-deps chromium/,
-      );
     }
   });
 
@@ -1462,7 +1187,7 @@ describe('CI workflow coverage', () => {
     assert.equal(steps[testIndex]['continue-on-error'], undefined, 'publisher regression failure must fail CI');
   });
 
-  it('installs the locale font subset from a package cache in every browser job', () => {
+  it('installs the locale font subset from a package cache', () => {
     const action = YAML.parse(read(resolve(root, '.github/actions/install-browser-fonts/action.yml')));
     const steps = action.runs.steps;
     const download = steps.find((step: { name?: string }) => step.name === 'Download browser font packages on cache miss');
@@ -1484,105 +1209,6 @@ describe('CI workflow coverage', () => {
     // apt-get -f can repair a missing dependency by removing the font packages
     // and still exit 0, so the fallback must prove they are installed.
     assert.match(install.run, /dpkg-query -W[^\n]*\$\{Status\}/, 'the fallback must check every font package is installed');
-    for (const jobName of ['variant-smoke-shards', 'variant-smoke-pro-webmcp']) {
-      const fonts = YAML.parse(testWorkflow).jobs[jobName].steps
-        .flatMap((step: { parallel?: unknown[] }) => step.parallel ?? [step])
-        .find((step: { uses?: string }) => step.uses === './.github/actions/install-browser-fonts');
-      assert.ok(fonts, `${jobName} must install the browser fonts`);
-      assert.equal(fonts['continue-on-error'], true, `${jobName}: a font install failure must not fail the job`);
-    }
-  });
-
-  // #6496: playwright.config.ts retained a trace, a video and a screenshot for
-  // every failed test and CI collected none of them, so run 31584738075 died
-  // with the only evidence that could have named its browser close. The job is
-  // required, so it reddens on flakes nobody can then diagnose.
-  it('collects what every playwright run in each browser job leaves behind (#6496)', () => {
-    const browserJobs = workflowJobNames(testWorkflow, 'test.yml')
-      .filter((jobName) => /npm run test:e2e:/.test(testJobBlock(jobName)));
-    assert.deepEqual(browserJobs, ['variant-smoke-shards', 'variant-smoke-pro-webmcp']);
-    for (const jobName of browserJobs) {
-      const job = testJobBlock(jobName);
-
-    // The uploaded path has to be the directory Playwright actually writes.
-    // The config leaves outputDir at its default, so that is `test-results`;
-    // pinning one later without repointing the uploads would strand them on an
-    // empty folder while every run still reported green.
-    const configuredOutputDir = playwrightConfig.match(/^\s*outputDir:\s*['"]([^'"]+)['"]/m);
-    const outputDir = (configuredOutputDir?.[1] ?? 'test-results').replace(/^\.\//, '').replace(/\/$/, '');
-
-    const steps = jobSteps(job);
-    // Include direct run values and commands inside a multiline shell step.
-    const smokeCommand = /\n\s*(?:(?:- )?run: )?npm run test:e2e:/g;
-    const runs = steps
-      .map((step, index) => ({ ...step, index }))
-      .filter((step) => [...step.block.matchAll(smokeCommand)].length > 0);
-    assert.ok(runs.length > 0, `${jobName} must invoke playwright`);
-    assert.equal(
-      runs.length,
-      [...job.matchAll(smokeCommand)].length,
-      'every `npm run test:e2e:*` line in the job must be attributed to exactly one step — if this ' +
-        'fails the step splitter has drifted and the per-run checks below cover less than they claim',
-    );
-
-    const rejected: string[] = [];
-    const qualifies = (block: string): boolean => {
-      if (!/\n\s*uses: actions\/upload-artifact@/.test(block)) return false;
-      const why: string[] = [];
-      // The condition has to survive a failed step AND a green run. With no
-      // `if:` the step is skipped the moment a run above it fails — the only
-      // time it matters. With `failure()` it skips the green-but-flaky run,
-      // which retries make the COMMON shape here: the failed attempt's trace
-      // is retained, the job is green, and the evidence would be dropped.
-      if (!/\n {8}if: [^\n]*(?:!\s*cancelled\(\)|always\(\))/.test(block)) {
-        why.push('is not guarded by an `if:` that runs on both failure and success (`!cancelled()`)');
-      }
-      if (!stepPaths(block).includes(outputDir)) why.push(`does not upload ${outputDir}/`);
-      // A re-run keeps the same run_id and upload-artifact rejects a duplicate
-      // name within one run, so a name without run_attempt fails to upload
-      // exactly when someone re-runs the job to reproduce the flake.
-      if (!/\n {10}name: [^\n]*github\.run_attempt/.test(block)) why.push('has no github.run_attempt in its name');
-      if (why.length > 0) {
-        rejected.push(`  - "${block.trim().split('\n')[0].replace(/^-\s*/, '')}" ${why.join('; ')}`);
-        return false;
-      }
-      return true;
-    };
-
-    // Each playwright run needs its OWN collector, before the next one starts:
-    // `playwright test` clears the output dir on startup, so a single upload at
-    // the end of the job carries only the last run's leftovers and silently
-    // drops the earlier run's traces (observed in run 31587725167).
-    const artifactNames: string[] = [];
-    for (const [position, run] of runs.entries()) {
-      const script = run.block.match(/npm run (test:e2e:[\w:-]+)/)?.[1] ?? 'playwright';
-      const nextRun = runs[position + 1]?.index ?? steps.length;
-      const collector = steps.slice(run.index + 1, nextRun).find((step) => qualifies(step.block));
-      assert.ok(
-        collector,
-        `${script} has no artifact upload between it and the next playwright run — the next run wipes ` +
-          `${outputDir}/ on startup, so its traces would be gone before anything collected them (#6496).` +
-          (rejected.length > 0 ? `\nUpload steps that do not qualify:\n${rejected.join('\n')}` : ''),
-      );
-      artifactNames.push(collector.block.match(/\n {10}name: ([^\n]+)/)?.[1]?.trim() ?? '');
-    }
-
-    // Distinct names, or the second upload 409s against the first and the run
-    // ends up with one of the two sets of traces.
-    assert.equal(
-      new Set(artifactNames).size,
-      artifactNames.length,
-      `each playwright run's artifact needs its own name — upload-artifact rejects a duplicate name ` +
-        `within one run, so a collision drops one run's traces entirely. Got: ${artifactNames.join(', ')}`,
-    );
-    }
-
-    const shardJob = testJobBlock('variant-smoke-shards');
-    assert.match(
-      shardJob,
-      /name: playwright-ci-smoke-\$\{\{ matrix\.shard \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/,
-      'matrix shards must publish distinct ci-smoke artifact names',
-    );
   });
 
   it('keeps the deploy gate wired to every Test workflow check job', () => {
@@ -2986,10 +2612,11 @@ describe('docker-publish conditions', () => {
     // being checked while the step still looks like it verifies the image.
     const pathLoop = smoke.match(/for path in ([^;]+); do/);
     assert.ok(pathLoop, 'the smoke step must enumerate the paths it requests');
-    // `/` proves nginx resolved its index (dashboard.html) rather than that a
-    // file is non-empty -- the assertion docker/Dockerfile cannot make. `/pro`
-    // is a live route that 404s if the pro build did not survive the copy.
-    assert.deepEqual(pathLoop[1].trim().split(/\s+/), ['/', '/pro/']);
+    // `/lite` proves nginx rewrote to the SPA entry (lite.html) rather than that a
+    // file is non-empty -- the assertion docker/Dockerfile cannot make (`/` only
+    // redirects to it). `/pro` is a live route that 404s if the pro build did
+    // not survive the copy.
+    assert.deepEqual(pathLoop[1].trim().split(/\s+/), ['/lite', '/pro/']);
     assert.match(smoke, /expected 200/, 'a non-200 must fail the job, not just print');
     // The empty-body guard must be scoped to the loop's `$path`, not hardcoded
     // to `/` alone (#8503 review, CodeRabbit) -- otherwise a 200-with-empty
@@ -3051,7 +2678,7 @@ done
 code=200; body="<html>ok</html>"
 [ "$SCENARIO" = "pro-404" ] && [ "$path" = "/pro/" ] && { code=404; body="not found"; }
 [ "$SCENARIO" = "pro-empty" ] && [ "$path" = "/pro/" ] && body=""
-[ "$SCENARIO" = "root-empty" ] && [ "$path" = "/" ] && body=""
+[ "$SCENARIO" = "lite-empty" ] && [ "$path" = "/lite" ] && body=""
 if [ "$mode" = code ]; then printf '%s' "$code"; exit 0; fi
 if [ "$code" -ge 400 ]; then exit 22; fi
 [ "$out" = stdout ] && printf '%s' "$body"
@@ -3068,7 +2695,7 @@ exit 0`);
       for (const [scenario, why] of [
         ['pro-404', '/pro/ answering 404 is the regression docker/Dockerfile cannot see'],
         ['pro-empty', '/pro/ answering 200 with no body is not a working page'],
-        ['root-empty', '/ answering 200 with no body is not a working page'],
+        ['lite-empty', '/lite answering 200 with no body is not a working page'],
         ['down', 'a server that never comes up must not pass'],
       ]) {
         assert.notEqual(run(scenario).status, 0, `${scenario}: ${why}`);
@@ -3223,68 +2850,6 @@ describe('scheduled workflows run only in the upstream repository', () => {
     ];
     for (const [event_name, repository, expected] of cases) {
       assert.equal(runInNewContext(FORK_GUARD, { github: { event_name, repository } }), expected, `${event_name} in ${repository}`);
-    }
-  });
-});
-
-// The strict WebMCP smoke (61-81s) ran after the /pro gates in one job, so the
-// job took ~200s, as long as the slowest unit shard. More workers did not help:
-// the smoke is CPU-bound on the Vite dev server and Chrome, and 4 workers
-// failed a test (bench run 40097331565). Running the two halves on separate
-// runners removes the gates from the WebMCP path. Both halves build /pro: the
-// legacy-API WebMCP tests load /pro/welcome.html.
-describe('variant-smoke-pro-webmcp runs the /pro gates and the WebMCP smoke on separate runners', () => {
-  const job = YAML.parse(testWorkflow).jobs['variant-smoke-pro-webmcp'];
-  const steps: Array<{ name?: string; id?: string; run?: string; if?: string; parallel?: unknown[] }> = job.steps;
-  const flat = steps.flatMap((step) => (step.parallel as typeof steps | undefined) ?? [step]);
-
-  it('splits the job into a webmcp part and a pro-gates part', () => {
-    // webmcp first: it is the longer part, so it should take a runner first.
-    assert.deepEqual(job.strategy.matrix.part, ['webmcp', 'pro-gates']);
-    assert.equal(job.strategy['fail-fast'], false, 'a red half must not cancel the other half\'s evidence');
-  });
-
-  it('builds /pro in both parts and runs each suite in exactly one', () => {
-    const build = flat.find((step) => step.run === 'npm run build:pro');
-    assert.ok(build, 'the job must build /pro');
-    assert.equal(build.if, undefined, 'both parts need /pro: the legacy WebMCP tests load /pro/welcome.html');
-    const partOf = (script: string) => {
-      const step = flat.find((s) => s.run === `npm run ${script}`);
-      assert.ok(step, `the job must run npm run ${script}`);
-      return step.if;
-    };
-    assert.equal(partOf('test:e2e:webmcp'), "matrix.part == 'webmcp'");
-    assert.equal(partOf('test:e2e:prehydration'), "matrix.part == 'pro-gates'");
-    assert.equal(partOf('test:e2e:pro-gates'), "matrix.part == 'pro-gates'");
-  });
-
-  it('keys setup-node\'s npm cache to the only install that reads it', () => {
-    // node_modules comes from install-root-deps, so ~/.npm serves only
-    // `npm --prefix pro-test ci` inside build:pro. Keyed on the root lockfile
-    // it restored the 583 MB root download cache, and the two parts pulling
-    // that blob at the same moment took 12-62s instead of ~6s (PR #9626).
-    const setup = flat.find((step) => (step as { uses?: string }).uses?.startsWith('actions/setup-node@')) as
-      { with: Record<string, string> } | undefined;
-    assert.equal(setup?.with.cache, 'npm');
-    assert.equal(setup?.with['cache-dependency-path'], 'pro-test/package-lock.json');
-  });
-
-  it('runs the four /pro browser gates in one Playwright run', () => {
-    // Each Playwright run starts the Vite dev server and Chrome (~3.5s), and
-    // the four gates ran one after another.
-    const specs = [
-      'e2e/pro-critical-css-cls.spec.ts',
-      'e2e/pro-mobile-overflow.spec.ts',
-      'e2e/pro-hero-animation.spec.ts',
-      'e2e/pro-hero-lcp.spec.ts',
-    ];
-    const script = packageScripts['test:e2e:pro-gates'] ?? '';
-    assert.match(script, /^cross-env VITE_VARIANT=full playwright test /);
-    assert.match(script, / --project=chromium$/);
-    assert.deepEqual(script.match(/e2e\/[\w-]+\.spec\.ts/g), specs);
-    for (const spec of specs) assert.ok(existsSync(resolve(root, spec)), `${spec} must exist`);
-    for (const single of ['pro-cls', 'pro-overflow', 'pro-hero', 'pro-lcp']) {
-      assert.ok(!flat.some((step) => step.run?.includes(`test:e2e:${single}`)), `test:e2e:${single} must run via test:e2e:pro-gates`);
     }
   });
 });

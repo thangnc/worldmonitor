@@ -9,9 +9,7 @@
  *
  * This suite reads the PRERENDERED pages, not the JSX: `public/pro/*.html` is
  * what a buyer and a crawler actually receive, so a link that a refactor drops
- * from the render fails here even if the constant survives in source. The
- * dashboard's own legal row is built at runtime by `legalLinksHtml()`, which is
- * asserted directly.
+ * from the render fails here even if the constant survives in source.
  *
  * Built pages follow the repo convention (#6898): skip when the checkout has
  * not run `npm run build:pro`, FAIL when WM_EXPECT_BUILT_OUTPUT=1 says CI did.
@@ -28,7 +26,6 @@ import {
   LICENSE_PATH,
   TRADEMARK_PATH,
 } from '../shared/legal.ts';
-import { legalLinksHtml } from '../src/utils/legal-links.ts';
 // @ts-expect-error — JS helper, no declaration file
 import { guardProBuiltOutput, shouldSkipProBuiltOutput } from './_lib/pro-built-output.mjs';
 
@@ -93,32 +90,5 @@ describe('legal links are reachable in one click', () => {
   it('the shared footer (welcome + /pro) mounts the same legal nav', () => {
     const footer = footerOf(read('pro-test/src/components/Footer.tsx'), 'Footer.tsx');
     assert.match(footer, /<LegalFooterNav\s*\/>/);
-  });
-
-  it('the dashboard legal row carries the same four documents', () => {
-    const html = legalLinksHtml('https://worldmonitor.app');
-    for (const path of REQUIRED) {
-      assert.ok(
-        html.includes(`href="https://worldmonitor.app${path}"`),
-        `dashboard legal row is missing ${path}`,
-      );
-    }
-  });
-
-  it('the dashboard legal row is absolute, so the desktop WebView resolves it', () => {
-    // A root-relative /docs/terms inside Tauri resolves against the bundled
-    // app origin and 404s — the one runtime where the link silently dies.
-    const html = legalLinksHtml('https://worldmonitor.app');
-    assert.ok(!/href="\/docs\//.test(html), 'legal row must not emit root-relative doc links');
-  });
-
-  it('the dashboard legal row opens externally without leaking the opener', () => {
-    const html = legalLinksHtml('https://worldmonitor.app');
-    const anchors = html.match(/<a\b[^>]*>/g) ?? [];
-    assert.equal(anchors.length, REQUIRED.length);
-    for (const anchor of anchors) {
-      assert.match(anchor, /rel="noopener noreferrer"/, `missing rel on ${anchor}`);
-      assert.match(anchor, /target="_blank"/, `missing target on ${anchor}`);
-    }
   });
 });

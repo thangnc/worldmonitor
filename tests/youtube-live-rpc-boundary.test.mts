@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import { getYoutubeLiveStreamInfo } from '../server/worldmonitor/aviation/v1/get-youtube-live-stream-info.ts';
 import { createAviationServiceRoutes } from '../src/generated/server/worldmonitor/aviation/v1/service_server.ts';
@@ -72,12 +71,9 @@ describe('YouTube public RPC input boundary and retired channel detection', () =
     });
   }
 
-  it('answers every shipped handle, international handle and channel ID with the retired error and no I/O at all', async () => {
+  it('answers a handle, international handles and a channel ID with the retired error and no I/O at all', async () => {
     // Callers built before the retirement still send these handles; they get a stable error, not a 400.
-    const source = readFileSync(new URL('../src/services/live-channels.ts', import.meta.url), 'utf8');
-    const handles = new Set([...source.matchAll(/handle:\s*'([^']+)'/g)].map(match => match[1]!));
-    assert.ok(handles.size > 50);
-    for (const channel of [...handles, '@中', '@あい', '@cafe\u0301', '@a·b', CHANNEL_ID]) {
+    for (const channel of ['@SkyNews', '@中', '@あい', '@cafe\u0301', '@a·b', CHANNEL_ID]) {
       assert.deepEqual(await getYoutubeLiveStreamInfo(ctx(), { channel, videoId: '' }), RETIRED, channel);
     }
     assert.equal(calls.length, 0);

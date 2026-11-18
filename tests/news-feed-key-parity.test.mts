@@ -19,13 +19,8 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { NEWS_CATALOG } from '../shared/news-catalog.ts';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 
 // Map client const names to the variant string used by the server.
@@ -99,60 +94,4 @@ describe('news feed key parity (client FEEDS ⇔ server VARIANT_FEEDS)', () => {
       );
     });
   }
-});
-
-// Static guard: every news panel the UI can create MUST have a feed
-// definition somewhere in feeds.ts — otherwise enabling it (in its own
-// variant OR customized into another variant) leaves it stuck on
-// "Loading..." forever, because loadNews()/panel-layout resolve feeds from
-// CANONICAL_FEEDS (the union of every variant's *_FEEDS map).
-//
-// Regression motivated this: 14 Tech news panels (startups, github, …) were
-// reachable via the settings picker in the `full` variant but had no
-// FULL_FEEDS category, so they never loaded. The fix made the data layer
-// panel-driven; this guard locks the invariant.
-describe('news panel ↔ feed coverage (panel-layout createNewsPanel ⇔ feeds.ts)', () => {
-  const PANEL_LAYOUT_PATH = resolve(__dirname, '../src/app/panel-layout.ts');
-
-  // News panels intentionally NOT backed by a *_FEEDS category — they have a
-  // dedicated loader path in data-loader.ts instead. Keep this list tight.
-  const SPECIAL_CASED = new Set<string>([
-    'intel', // INTEL_SOURCES + bespoke branch in DataLoader.loadNews()
-  ]);
-
-  // CANONICAL_FEEDS is the union of every edition's browser categories,
-  // including the on-demand edition (nq-news).
-  test('every createNewsPanel(...) key resolves to feeds in CANONICAL_FEEDS', () => {
-    // NB: do NOT run stripComments() on panel-layout.ts — unlike the pure-data
-    // feed maps, it contains regex literals (e.g. /-([a-z])/g) that the naive
-    // block-comment regex would mangle. The createNewsPanel('X') call shape is
-    // distinctive enough to match safely on raw source.
-    const panelLayoutSrc = readFileSync(PANEL_LAYOUT_PATH, 'utf-8');
-
-    const canonicalKeys = new Set<string>(Object.values(LAYOUT.browser).flat());
-    assert.ok(canonicalKeys.size > 0, 'parsed 0 canonical feed keys');
-
-    const createNewsPanelKeys = new Set<string>();
-    const re = /createNewsPanel\(\s*'([^']+)'/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(panelLayoutSrc)) !== null) {
-      if (m[1]) createNewsPanelKeys.add(m[1]);
-    }
-    assert.ok(createNewsPanelKeys.size > 0, 'parsed 0 createNewsPanel keys from panel-layout.ts');
-
-    const orphans = [...createNewsPanelKeys]
-      .filter(k => !canonicalKeys.has(k) && !SPECIAL_CASED.has(k))
-      .sort();
-    assert.deepStrictEqual(
-      orphans,
-      [],
-      `News panels created by panel-layout.ts with NO feed definition in any ` +
-      `*_FEEDS map:\n\n  ${orphans.join(', ')}\n\n` +
-      `These panels can be enabled via the settings picker but will sit on ` +
-      `"Loading..." forever — loadNews() resolves feeds from CANONICAL_FEEDS ` +
-      `(the union of all *_FEEDS maps) and finds nothing.\n\n` +
-      `Fix: add the category to the relevant *_FEEDS map in src/config/feeds.ts, ` +
-      `or add it to SPECIAL_CASED in this test if it has a dedicated loader.`,
-    );
-  });
 });

@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
 import {
   PANEL_LAYOUT_PERSIST_FAILED_MESSAGE,
   applyExclusiveFullscreenEnter,
@@ -231,17 +228,6 @@ describe('exclusive panel fullscreen', () => {
     assert.equal(body.classActive, false);
   });
 
-  it('wires exclusive enter through PanelLayoutManager.set_fullscreen', () => {
-    const managerSrc = readFileSync(resolve(process.cwd(), 'src/app/panel-layout.ts'), 'utf8');
-    const applyStart = managerSrc.indexOf('public applyWebMcpSetPanelFullscreen(');
-    const applyEnd = managerSrc.indexOf('public applyWebMcpMovePanel(', applyStart);
-    const applyBody = managerSrc.slice(applyStart, applyEnd);
-    assert.ok(applyBody.includes('applyExclusiveFullscreenEnter('));
-    assert.match(
-      applyBody,
-      /if \(resolved\.requestedFullscreen\) \{[\s\S]*applyExclusiveFullscreenEnter\(/,
-    );
-  });
 });
 
 describe('resolveMovePanel', () => {

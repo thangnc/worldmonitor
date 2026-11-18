@@ -23,8 +23,7 @@ import {
   slotStatus,
 } from '../scripts/check-live-video-sources.mjs';
 import { resolveChannelsLive } from '../scripts/lib/live-video-channel-live.mjs';
-import { extractLiveVideoSurfaces, readLiveVideoSurfaces } from '../scripts/lib/live-video-surfaces.mjs';
-import { LIVE_NEWS_SOURCES, WEBCAM_SOURCES } from '../src/config/live-video-sources.ts';
+import { extractLiveVideoSurfaces } from '../scripts/lib/live-video-surfaces.mjs';
 import { LIVE_VIDEO_TIMING, parseSourceEntry } from '../src/services/live-video/model.ts';
 
 const parsed = (entry) => parseSourceEntry(entry);
@@ -1439,17 +1438,6 @@ describe('audit report (--all --report)', () => {
 });
 
 describe('live video surfaces', () => {
-  it('reads the webcam wall, regions and Live News defaults from the panels', () => {
-    const surfaces = readLiveVideoSurfaces();
-    assert.deepEqual(surfaces.webcamFeeds.map((feed) => feed.id).sort(), Object.keys(WEBCAM_SOURCES).sort());
-    assert.ok(surfaces.webcamFeeds.every((feed) => /^[a-z-]+$/.test(feed.region)));
-    assert.equal(surfaces.gridCells, 4);
-    assert.deepEqual(Object.keys(surfaces.newsDefaults).sort(), ['full', 'tech']);
-    assert.ok(surfaces.newsDefaults.full.includes('bloomberg'));
-    const newsIds = new Set([...Object.values(surfaces.newsDefaults).flat(), ...surfaces.newsOptional]);
-    assert.deepEqual([...newsIds].sort(), Object.keys(LIVE_NEWS_SOURCES).sort());
-  });
-
   it('reads only arrays that open on their declaration line, never a ternary that mentions []', () => {
     const webcamsPanel = "const WEBCAM_FEEDS: WebcamFeed[] = [\n  { id: 'kyiv', city: 'Ukraine', country: 'Ukraine', region: 'europe' },\n];\nconst MAX_GRID_CELLS = 4;\n";
     const newsPanel = [
@@ -1486,9 +1474,6 @@ describe('live video surfaces', () => {
       () => extractLiveVideoSurfaces({ webcamsPanel, newsPanel: newsPanel.replace("['NO']", 'NORDIC') }),
       /cannot read the geoAvailability of nrk1/,
     );
-    const real = readLiveVideoSurfaces().newsGeoAvailability;
-    for (const id of ['bbc-news', 'phoenix', 'nrk1']) assert.ok(real[id]?.length > 0, `${id} is region-locked in live-channels.ts`);
-    assert.equal(real.bloomberg, undefined);
   });
 
   it('fails loudly when a panel list can no longer be read', () => {

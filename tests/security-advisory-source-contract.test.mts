@@ -133,23 +133,6 @@ describe('security advisory source contract', () => {
     }
   });
 
-  it('panel country filters are derived from active travel-advisory feed countries', () => {
-    const expectedCountries = travelAdvisorySourceCountries(extractAdvisoryFeeds());
-    const panel = readRepoFile('src/components/SecurityAdvisoriesPanel.ts');
-
-    const typeMatch = panel.match(/type AdvisoryFilter = ([^;]+);/);
-    assert.ok(typeMatch, 'SecurityAdvisoriesPanel must keep AdvisoryFilter inspectable.');
-    const typedFilters = [...typeMatch[1]!.matchAll(/'([^']+)'/g)].map((match) => match[1]);
-    const typedCountryFilters = typedFilters.filter((filter) => /^[A-Z]{2}$/.test(filter!)).sort();
-
-    const renderedCountryFilters = [...panel.matchAll(/data-filter="([A-Z]{2})"/g)]
-      .map((match) => match[1]!)
-      .sort();
-
-    assert.deepEqual(typedCountryFilters, expectedCountries);
-    assert.deepEqual(renderedCountryFilters, expectedCountries);
-  });
-
   it('public advisory docs disclose only active travel-advisory feed countries', () => {
     const feeds = extractAdvisoryFeeds();
     const sourceCountries = travelAdvisorySourceCountries(feeds);

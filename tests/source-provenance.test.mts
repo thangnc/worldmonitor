@@ -12,79 +12,13 @@
  * - Explicit low only when reviewed in SOURCE_PROPAGANDA_RISK
  * - All six China policy agencies are government sources with high state-affiliated risk
  * - Badge helpers never claim "Verified News Outlet" for unreviewed types
- * - Every configured feed has a definite provenance state via the public API
- *
- * Loading note: `src/config/feeds.ts` pulls `rssProxyUrl` → `import.meta.env.DEV`.
- * Node/tsx has no Vite env object, so we esbuild-bundle with defines — the
- * shared harness lives in tests/_lib/bundle-feeds-module.mts.
+ * - Every declared feed has a definite provenance state via the public API
  */
-import { describe, it, before } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { rmSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { bundleFeedsModule } from './_lib/bundle-feeds-module.mts';
+import * as feeds from '../shared/source-provenance.ts';
+import { getSourceTier } from '../server/_shared/source-tiers.ts';
 import { CONFIGURED_SOURCE_PROVENANCE_DECLARATIONS } from '../shared/source-provenance-declarations';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const repoRoot = join(__dirname, '..');
-const tempDir = join(repoRoot, 'tmp-source-provenance-test');
-
-interface FeedsModule {
-  SOURCE_PROPAGANDA_RISK: Record<string, { risk: string; stateAffiliated?: string; note?: string }>;
-  SOURCE_TYPES: Record<string, string>;
-  UNREVIEWED_SOURCE_RISK: { risk: string; note?: string };
-  describePropagandaBadge: (
-    profile: { risk: string; note?: string; stateAffiliated?: string },
-    sourceType?: string,
-  ) => {
-    risk: string;
-    label: string;
-    shortLabel: string;
-    title: string;
-  } | null;
-  getFeedProvenanceState: (name: string) => {
-    risk: string;
-    type: string;
-    riskDeclared: boolean;
-    typeDeclared: boolean;
-    riskReviewed: boolean;
-    typeReviewed: boolean;
-  };
-  getSourcePropagandaRisk: (name: string) => { risk: string; stateAffiliated?: string; note?: string };
-  getSourceTier: (name: string) => number;
-  getSourceTierBadgeTitle: (type: string) => string;
-  getSourceType: (name: string) => string;
-  hasDeclaredPropagandaRisk: (name: string) => boolean;
-  hasDeclaredSourceType: (name: string) => boolean;
-  hasReviewedPropagandaRisk: (name: string) => boolean;
-  hasReviewedSourceType: (name: string) => boolean;
-  listConfiguredFeedNames: () => string[];
-}
-
-let feeds: FeedsModule;
-let renderer: {
-  renderPrimarySourceProvenance: (sourceName: string) => {
-    riskBadge: string;
-    tierBadge: string;
-    facts: string;
-  };
-  getCorroboratingSourceRiskBadge: (sourceName: string) => { className: string; title: string; label: string } | null;
-  renderCredibilityBadge: (
-    sourceName: string,
-    item?: { credibilityScore?: number; corroborationCount?: number },
-  ) => string;
-};
-
-before(async () => {
-  feeds = await bundleFeedsModule<FeedsModule>({ repoRoot, tempDir });
-  renderer = await bundleFeedsModule<typeof renderer>({
-    repoRoot,
-    tempDir,
-    outfileName: 'renderer-bundle.mjs',
-    entryPoint: join(repoRoot, 'src/components/news/source-provenance.ts'),
-  });
-});
 
 describe('source provenance defaults (#5390)', () => {
   it('does not map missing risk profiles to independent (low)', () => {
@@ -125,7 +59,7 @@ describe('source provenance defaults (#5390)', () => {
       assert.equal(risk.risk, 'high', `${name} risk`);
       assert.equal(risk.stateAffiliated, 'China');
       if (name === 'MIIT (China)' || name === 'MOFCOM (China)') {
-        assert.equal(feeds.getSourceTier(name), 1, `${name} configured feed tier`);
+        assert.equal(getSourceTier(name), 1, `${name} configured feed tier`);
       }
       const badge = feeds.describePropagandaBadge(risk, feeds.getSourceType(name));
       assert.ok(badge);
@@ -154,23 +88,17 @@ describe('source provenance defaults (#5390)', () => {
     assert.match(badge!.title, /not yet reviewed/i);
   });
 
-  it('requires an explicit reviewed-or-unknown declaration for every configured feed', () => {
-    const names = feeds.listConfiguredFeedNames();
-    assert.ok(names.length > 0, 'configured feed extraction must not be empty');
+  it('every provenance declaration matches the reviewed registries', () => {
+    const names = Object.keys(CONFIGURED_SOURCE_PROVENANCE_DECLARATIONS);
+    assert.ok(names.length > 0, 'provenance declarations must not be empty');
     assert.ok(names.includes('MIIT (China)'));
     assert.ok(names.includes('MOFCOM (China)'));
-    const declaredNames = Object.keys(CONFIGURED_SOURCE_PROVENANCE_DECLARATIONS);
-    assert.deepEqual(
-      [...declaredNames].sort((a, b) => a.localeCompare(b)),
-      [...names].sort((a, b) => a.localeCompare(b)),
-      'configured feed names and provenance declarations must match exactly; regenerate after additions or aliases change',
-    );
 
     const falselyIndependent: string[] = [];
     let explicitUnknownDimensions = 0;
 
     for (const name of names) {
-      const state = feeds.getFeedProvenanceState(name);
+      const state = feeds.getSourceProvenanceState(name);
       const declaration = CONFIGURED_SOURCE_PROVENANCE_DECLARATIONS[name];
       assert.ok(declaration, `${name} missing explicit provenance declaration`);
       assert.ok(state.risk, `${name} missing risk`);
@@ -213,104 +141,4 @@ describe('source provenance defaults (#5390)', () => {
       );
     }
   });
-
-  it('renders NewsPanel provenance output for unreviewed, government, and reviewed wire sources', () => {
-    const unreviewed = renderer.renderPrimarySourceProvenance('Reuters US');
-    assert.match(unreviewed.riskBadge, /\? Unreviewed/);
-    assert.match(unreviewed.riskBadge, /not yet reviewed/i);
-    assert.match(unreviewed.tierBadge, /Source type not yet reviewed/);
-    assert.doesNotMatch(unreviewed.tierBadge, />[^<]*Wire/);
-
-    const government = renderer.renderPrimarySourceProvenance('MIIT (China)');
-    assert.match(government.riskBadge, /Official Government Source/);
-    assert.doesNotMatch(government.riskBadge, /State Media/);
-    assert.match(government.tierBadge, /Official Government Source/);
-    assert.doesNotMatch(government.tierBadge, />[^<]*Wire/);
-
-    const reviewedWire = renderer.renderPrimarySourceProvenance('Reuters');
-    assert.equal(reviewedWire.riskBadge, '');
-    assert.match(reviewedWire.tierBadge, /Wire Service - Highest reliability/);
-    assert.match(reviewedWire.tierBadge, />★ Wire</);
-
-    assert.equal(renderer.getCorroboratingSourceRiskBadge('Fars News')?.label, '?');
-  });
-
-  it('renders existing badge CSS on Telegram channel labels (#6600)', () => {
-    const idf = renderer.renderPrimarySourceProvenance('IDF Official');
-    assert.match(idf.riskBadge, /propaganda-badge high/);
-    assert.match(idf.riskBadge, /Official Government Source/);
-    assert.match(idf.tierBadge, /tier-badge tier-1/);
-    assert.doesNotMatch(idf.tierBadge, /Wire/);
-
-    const clash = renderer.renderPrimarySourceProvenance('Clash Report');
-    assert.match(clash.riskBadge, /propaganda-badge medium/);
-    assert.equal(clash.tierBadge, '', 'tier-3 OSINT aggregators do not get the T1/T2 star');
-
-    const dd = renderer.renderPrimarySourceProvenance('DD Geopolitics');
-    assert.match(dd.riskBadge, /propaganda-badge medium/);
-    assert.match(dd.riskBadge, />! Caution</);
-    assert.doesNotMatch(dd.riskBadge, /State Media/);
-    assert.equal(dd.tierBadge, '');
-  });
-});
-
-describe('provenance facts beside the risk badge (#6419)', () => {
-  it('renders perspective labels on reviewed-low sources that carry no risk badge', () => {
-    const meduza = renderer.renderPrimarySourceProvenance('Meduza');
-    assert.equal(meduza.riskBadge, '');
-    assert.match(meduza.facts, /<span class="provenance-fact perspective" title="[^"]*not judged neutral[^"]*">Anti-Kremlin<\/span>/);
-    assert.deepEqual(
-      [renderer.getCorroboratingSourceRiskBadge('Meduza')?.className, renderer.getCorroboratingSourceRiskBadge('Meduza')?.label],
-      ['provenance-fact-marker', '◐'],
-    );
-  });
-
-  it('names the state on the risk badge even when a note fills the badge title', () => {
-    const voa = renderer.renderPrimarySourceProvenance('Voice of America');
-    assert.match(voa.riskBadge, />! Caution: USA</);
-    assert.match(voa.riskBadge, /title="Caution\. State-affiliated: USA\. Perspective: none recorded\. US government-funded\."/);
-    assert.equal(voa.facts, '', 'the badge carries the state, so no duplicate chip');
-    assert.equal(
-      renderer.getCorroboratingSourceRiskBadge('Voice of America')?.title,
-      'Caution. State-affiliated: USA. Perspective: none recorded. US government-funded.',
-    );
-  });
-
-  it('renders a state chip for an affiliated source rated low, which has no risk badge', () => {
-    const cna = renderer.renderPrimarySourceProvenance('CNA');
-    assert.equal(cna.riskBadge, '');
-    assert.match(cna.facts, /class="provenance-fact state"[^>]*>State-affiliated: Singapore</);
-  });
-
-  it('renders no facts for a reviewed source with none recorded', () => {
-    assert.equal(renderer.renderPrimarySourceProvenance('Reuters').facts, '');
-    assert.equal(renderer.getCorroboratingSourceRiskBadge('Reuters'), null);
-  });
-});
-
-describe('renderCredibilityBadge (#6597)', () => {
-  it('renders a distinct CRED badge with a low band for high-propaganda sources', () => {
-    const html = renderer.renderCredibilityBadge('RT', { credibilityScore: 21 });
-    assert.ok(html.includes('CRED 21'));
-    assert.ok(html.includes('credibility-score-badge'));
-    assert.ok(html.includes('band-low'));
-    assert.ok(!html.includes('importance'));
-  });
-
-  it('renders a high band for wire-service scores', () => {
-    const html = renderer.renderCredibilityBadge('Reuters', { credibilityScore: 80 });
-    assert.ok(html.includes('CRED 80'));
-    assert.ok(html.includes('band-high'));
-  });
-
-  it('computes a low score for RT when the digest field is absent', () => {
-    const html = renderer.renderCredibilityBadge('RT');
-    assert.match(html, /CRED \d+/);
-    assert.ok(html.includes('band-low'));
-  });
-});
-
-// Best-effort cleanup; ignore errors if concurrent tests hold the dir
-process.on('exit', () => {
-  try { rmSync(tempDir, { recursive: true, force: true }); } catch { /* ignore */ }
 });

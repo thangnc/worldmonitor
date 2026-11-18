@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import {
@@ -147,11 +146,5 @@ describe('selectStockAnalysisTargets', () => {
     const free = selectStockAnalysisTargets(userPicks, resolved.symbols, { isPro: false });
     assert.deepEqual(symbolsOf(pro), ['PLTR', 'SAP', 'NVDA', 'MSFT', 'AAPL', 'GOOGL']);
     assert.deepEqual(symbolsOf(free), ['PLTR', 'SAP', 'NVDA', 'MSFT']);
-  });
-
-  it('uses the shared effective-watchlist resolver in the runtime target loader', () => {
-    const source = readFileSync(new URL('../src/services/stock-analysis.ts', import.meta.url), 'utf8');
-    assert.match(source, /resolveEffectiveMarketWatchlist\(\s*STOCK_CATALOG,\s*MARKET_SYMBOLS,\s*getCatalogSelection\(\),\s*getMarketWatchlistEntries\(\),/);
-    assert.match(source, /return selectStockAnalysisTargets\(userPicks, resolved\.symbols,/);
   });
 });

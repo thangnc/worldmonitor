@@ -302,22 +302,4 @@ describe('runtime fetch-patch wiring', () => {
     assert.match(desktopBody, /withBillingVerificationRetry\(/, 'desktop patch unwrapped');
     assert.match(webBody, /withBillingVerificationRetry\(/, 'web patch unwrapped');
   });
-
-  it('premiumFetch no longer retries — exactly one layer may own the bound', () => {
-    // Two layers would double the bound to two attempts and ~10s of inline
-    // waiting, because premiumFetch dispatches through globalThis.fetch, which
-    // IS the wrapped patch in a browser.
-    //
-    // Assert on the IMPORT, not on a mention: premium-fetch.ts documents in
-    // prose where the retry went, and a naive text match flags that comment.
-    // The import is the real coupling — retrying there requires one.
-    const premiumSrc = readFileSync(join(REPO_ROOT, 'src/services/premium-fetch.ts'), 'utf8');
-    const imports = premiumSrc.match(/^\s*import\s[\s\S]*?from\s+'[^']+';/gm) ?? [];
-    const billingImport = imports.find((i) => i.includes('billing-retry'));
-    assert.equal(
-      billingImport,
-      undefined,
-      'premiumFetch must not re-introduce a second retry layer',
-    );
-  });
 });

@@ -4,7 +4,6 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { guardProBuiltOutput, shouldSkipProBuiltOutput } from './_lib/pro-built-output.mjs';
 import { describe, it } from 'node:test';
-import { VARIANT_META } from '../src/config/variant-meta.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -138,17 +137,5 @@ describe('reported landing-page SEO metadata', () => {
         assert.doesNotMatch(value, /[，。、：；！？]\s/, `${file} has a space after full-width punctuation: ${value}`);
       }
     }
-  });
-
-  it('keeps full and variant dashboard descriptions bounded and synchronized', () => {
-    const indexHtml = source('index.html');
-    const variants = ['full', 'tech', 'finance', 'commodity', 'happy', 'energy'];
-
-    for (const variant of variants) {
-      assertDescription(`${variant} variant`, VARIANT_META[variant].description);
-    }
-
-    const fullDescription = indexHtml.match(/<meta name="description" content="([^"]+)"/)?.[1];
-    assert.equal(fullDescription, VARIANT_META.full.description, 'index.html must use the full variant description');
   });
 });

@@ -10,7 +10,6 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { candidatePeriods } from '../scripts/seed-comtrade-bilateral-hs4.mjs';
-import { createCountryDeepDivePanelHarness } from './helpers/country-deep-dive-panel-harness.mjs';
 
 const root = join(import.meta.dirname, '..');
 
@@ -412,70 +411,9 @@ describe('Comtrade reporter-code source-of-truth guard', () => {
   });
 });
 
-// ─── Service function ────────────────────────────────────────────────────────
+// ─── Generated client contract ───────────────────────────────────────────────
 
-describe('fetchCountryProducts service (src/services/supply-chain/index.ts)', () => {
-  const filePath = join(root, 'src', 'services', 'supply-chain', 'index.ts');
-  const src = readFileSync(filePath, 'utf-8');
-
-  it('fetchCountryProducts function exists', () => {
-    assert.ok(
-      /export\s+async\s+function\s+fetchCountryProducts/.test(src),
-      'supply-chain/index.ts: must export fetchCountryProducts function',
-    );
-  });
-
-  it('CountryProductsResponse alias is exported for legacy callsites', () => {
-    assert.ok(
-      src.includes('export type CountryProductsResponse = GetCountryProductsResponse'),
-      'supply-chain/index.ts: must export CountryProductsResponse as alias of GetCountryProductsResponse',
-    );
-  });
-
-  it('CountryProduct type is re-exported from the generated client', () => {
-    assert.ok(
-      /export type \{[\s\S]*?\bCountryProduct\b/.test(src),
-      'supply-chain/index.ts: must re-export CountryProduct from the generated sebuf client',
-    );
-  });
-
-  it('ProductExporter type is re-exported from the generated client', () => {
-    assert.ok(
-      /export type \{[\s\S]*?\bProductExporter\b/.test(src),
-      'supply-chain/index.ts: must re-export ProductExporter from the generated sebuf client',
-    );
-  });
-
-  it('calls the generated sebuf client.getCountryProducts (not premiumFetch)', () => {
-    const fnStart = src.indexOf('async function fetchCountryProducts');
-    const fnBody = src.slice(fnStart, src.indexOf('\n}\n', fnStart) + 3);
-    assert.ok(
-      fnBody.includes('client.getCountryProducts('),
-      'fetchCountryProducts: must call the generated client.getCountryProducts',
-    );
-    assert.ok(
-      !fnBody.includes('premiumFetch'),
-      'fetchCountryProducts: must not bypass the typed client with premiumFetch',
-    );
-  });
-
-  it('returns empty products array on error (graceful fallback)', () => {
-    assert.ok(
-      src.includes("products: [], fetchedAt: ''"),
-      'fetchCountryProducts: emptyProducts fallback must have empty products array and empty fetchedAt',
-    );
-    const fnStart = src.indexOf('async function fetchCountryProducts');
-    const fnBody = src.slice(fnStart, src.indexOf('\n}\n', fnStart) + 3);
-    assert.ok(
-      fnBody.includes('catch'),
-      'fetchCountryProducts: must have catch block for graceful fallback',
-    );
-    assert.ok(
-      fnBody.includes('emptyProducts'),
-      'fetchCountryProducts: catch block must return emptyProducts',
-    );
-  });
-
+describe('CountryProduct generated client interface', () => {
   it('CountryProduct generated interface has expected fields', () => {
     const generated = readFileSync(
       join(root, 'src', 'generated', 'client', 'worldmonitor', 'supply_chain', 'v1', 'service_client.ts'),
@@ -490,115 +428,5 @@ describe('fetchCountryProducts service (src/services/supply-chain/index.ts)', ()
     assert.ok(iface.includes('totalValue: number'), 'CountryProduct must have totalValue: number');
     assert.ok(iface.includes('topExporters: ProductExporter[]'), 'CountryProduct must have topExporters: ProductExporter[]');
     assert.ok(iface.includes('year: number'), 'CountryProduct must have year: number');
-  });
-});
-
-// ─── CountryDeepDivePanel product imports ────────────────────────────────────
-
-describe('CountryDeepDivePanel product imports section', () => {
-  const filePath = join(root, 'src', 'components', 'CountryDeepDivePanel.ts');
-  const src = readFileSync(filePath, 'utf-8');
-
-  it('updateProductImports method exists as public', () => {
-    assert.ok(
-      src.includes('public updateProductImports'),
-      'CountryDeepDivePanel: must have a public updateProductImports method',
-    );
-  });
-
-  it('has product search/filter input', () => {
-    assert.ok(
-      src.includes("'cdp-product-search'") || src.includes('"cdp-product-search"'),
-      'CountryDeepDivePanel: must create a search input element for product filtering',
-    );
-    assert.ok(
-      src.includes("placeholder = 'Search products") || src.includes('placeholder = "Search products'),
-      'CountryDeepDivePanel: product search input must have a search placeholder',
-    );
-  });
-
-  it('implements filter logic on product list', () => {
-    assert.ok(
-      src.includes('.filter(p =>') || src.includes('.filter((p)'),
-      'CountryDeepDivePanel: must filter products by search term',
-    );
-    assert.ok(
-      src.includes('toLowerCase'),
-      'CountryDeepDivePanel: filter must be case-insensitive via toLowerCase',
-    );
-  });
-
-  it('PRO gate check (hasPremiumAccess) guards product imports card', () => {
-    // Match the binding inside the import list, not the list's exact spelling:
-    // the panel legitimately imports siblings from panel-gating (the
-    // WORLDMONITOR-147 denial diagnostic added two), and pinning the literal
-    // `import { hasPremiumAccess }` made an unrelated import widening fail a
-    // test whose invariant — this panel gates on hasPremiumAccess — still held.
-    assert.match(
-      src,
-      /import \{[^}]*\bhasPremiumAccess\b[^}]*\} from '@\/services\/panel-gating'/,
-      'CountryDeepDivePanel: must import hasPremiumAccess for PRO gating',
-    );
-    const productImportsIdx = src.indexOf('productImportsCardBody');
-    assert.ok(
-      productImportsIdx !== -1,
-      'CountryDeepDivePanel: must have productImportsCardBody',
-    );
-    const nearbyIsPro = src.slice(Math.max(0, productImportsIdx - 200), productImportsIdx + 300);
-    assert.ok(
-      nearbyIsPro.includes('isPro'),
-      'CountryDeepDivePanel: productImportsCardBody must be gated by isPro check',
-    );
-  });
-
-  it('uses textContent for product rendering (XSS-safe, no innerHTML)', () => {
-    const renderStart = src.indexOf('private renderProductDetail');
-    assert.ok(renderStart !== -1, 'CountryDeepDivePanel: must have private renderProductDetail method');
-    const renderBody = src.slice(renderStart, src.indexOf('\n  }\n', renderStart + 100) + 5);
-    assert.ok(
-      renderBody.includes('.textContent'),
-      'renderProductDetail: must use textContent for safe text rendering',
-    );
-    assert.ok(
-      !renderBody.includes('.innerHTML'),
-      'renderProductDetail: must not use innerHTML (XSS risk with user-influenced product data)',
-    );
-  });
-
-  it('resetPanelContent clears productImportsBody', () => {
-    const resetIdx = src.indexOf('private resetPanelContent');
-    assert.ok(resetIdx !== -1, 'CountryDeepDivePanel: must have private resetPanelContent method');
-    const resetBody = src.slice(resetIdx, src.indexOf('\n  }\n', resetIdx + 50) + 5);
-    assert.ok(
-      resetBody.includes('this.productImportsBody = null'),
-      'resetPanelContent: must set productImportsBody to null',
-    );
-  });
-
-  it('renders product imports in the brief grid with a heading and card body', async () => {
-    const harness = await createCountryDeepDivePanelHarness();
-    const panel = harness.createPanel();
-    try {
-      panel.show('United States', 'US', null, {});
-      for (let attempt = 0; attempt < 25 && harness.getWidgets().length === 0; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-      assert.equal(harness.getWidgets().length, 1, 'lazy widgets must settle before cleanup');
-      const card = harness.getPanelRoot().querySelector('.cdp-grid').querySelector('#cdp-section-products');
-      assert.ok(card, 'Product Imports must be mounted in the brief grid');
-      assert.ok(card.classList.contains('cdp-card'));
-      assert.match(card.querySelector('.cdp-card-title').textContent, /Product Imports/);
-      assert.ok(card.querySelector('.cdp-card-body').querySelector('.cdp-pro-locked'));
-    } finally {
-      panel.hide();
-      harness.cleanup();
-    }
-  });
-
-  it('product imports card is appended to the body grid', () => {
-    assert.ok(
-      src.includes('productImportsCard'),
-      'CountryDeepDivePanel: productImportsCard must be appended to bodyGrid',
-    );
   });
 });

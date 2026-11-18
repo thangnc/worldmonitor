@@ -3,7 +3,7 @@
 // mirrored ONCE for TypeScript code in src/shared/ciss-staleness.ts. The
 // seeder is plain .mjs and cannot be imported by TS app/server code, so one
 // mirror is unavoidable — this test fails if the two drift, or if the server
-// RPC / panel reintroduce a local copy instead of importing the shared one.
+// RPC reintroduces a local copy instead of importing the shared one.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -41,10 +41,9 @@ test('CISS stale threshold: canonical seeder value and shared TS mirror agree', 
   );
 });
 
-test('server RPC and panel import the shared CISS threshold — no local copy', () => {
+test('server RPC imports the shared CISS threshold — no local copy', () => {
   for (const path of [
     'server/worldmonitor/economic/v1/get-eu-fsi.ts',
-    'src/components/FSIPanel.ts',
   ]) {
     const src = read(path);
     assert.match(

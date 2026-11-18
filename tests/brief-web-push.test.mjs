@@ -1,12 +1,9 @@
 // Phase 6 — Web Push unit tests.
 //
-// Two targets:
-//   1. Pure helpers in src/config/push.ts — base64 ↔ Uint8Array round-trip
-//      and shape guards.
-//   2. The SW push handler at public/push-handler.js. We load the file
-//      into a minimal service-worker sandbox (fake `self` + `clients`)
-//      and fire synthetic push + notificationclick events to verify
-//      the handler's behaviour without a real browser.
+// Target: the SW push handler at public/push-handler.js. We load the file
+// into a minimal service-worker sandbox (fake `self` + `clients`) and fire
+// synthetic push + notificationclick events to verify the handler's
+// behaviour without a real browser.
 //
 // Intentionally NOT here: the client subscribe/unsubscribe flow. Those
 // require navigator.serviceWorker / Notification.permission / the
@@ -39,46 +36,6 @@ import {
 } from './fixtures/hostile-push-urls.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// ── Pure helpers ──────────────────────────────────────────────────────────
-
-describe('push config helpers', () => {
-  // Dynamic import so the module's top-level `import.meta.env` reference
-  // resolves in this Node test context.
-  it('urlBase64ToUint8Array round-trips via arrayBufferToBase64', async () => {
-    const { urlBase64ToUint8Array, arrayBufferToBase64 } = await import('../src/config/push.ts');
-    const original = 'BNIrVn4fQrNVN82cADphw320VdnaaAGwjnJNHZJAMyUepPJywn8LSJZTeNpWgqYOOstaJQUZ1WugocN-RKlPAQM';
-    const bytes = urlBase64ToUint8Array(original);
-    // VAPID public keys decode to 65 bytes (uncompressed P-256 point).
-    assert.equal(bytes.length, 65);
-    const roundtrip = arrayBufferToBase64(bytes.buffer);
-    assert.equal(roundtrip, original);
-  });
-
-  it('arrayBufferToBase64 handles null safely', async () => {
-    const { arrayBufferToBase64 } = await import('../src/config/push.ts');
-    assert.equal(arrayBufferToBase64(null), '');
-  });
-
-  it('VAPID_PUBLIC_KEY reads from VITE_VAPID_PUBLIC_KEY env, empty when unset', async () => {
-    // REGRESSION guard: previously the module shipped a committed
-    // DEFAULT_VAPID_PUBLIC_KEY fallback. That gave rotations two
-    // sources of truth (code + env) and let stale committed keys
-    // ship alongside fresh env vars. The fallback was removed —
-    // push is intentionally disabled on builds that lack the env.
-    const { VAPID_PUBLIC_KEY, isWebPushConfigured } = await import('../src/config/push.ts');
-    assert.equal(typeof VAPID_PUBLIC_KEY, 'string');
-    // In Node tests VITE_VAPID_PUBLIC_KEY is unset, so the module
-    // MUST return empty. If this assertion flips we know a
-    // committed default was reintroduced.
-    assert.equal(
-      VAPID_PUBLIC_KEY,
-      '',
-      'VAPID_PUBLIC_KEY must be empty when VITE env var is unset (no committed fallback)',
-    );
-    assert.equal(isWebPushConfigured(), false);
-  });
-});
 
 // ── Service worker handler ────────────────────────────────────────────────
 

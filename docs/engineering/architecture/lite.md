@@ -41,7 +41,7 @@ The owner's priority (2026-11-08) is **early indicators**: see army activity, co
 | Watchlist stand-in | Until the watchlist exists (open decision 1), the indicators that fire "for a watchlist country" read the curated hotspots' countries (`shared/hotspot-country-map.ts`) instead, and say so (owner's decision, 2026-11-08). Embassy security alerts are the first. |
 | Taiwan Strait trigger | PLA aircraft sorties or PLAN ships at 1.5 times their 30-day median or more, with at least 10 aircraft or 5 ships (owner's choice, 2026-11-09). The seeder keeps the median of prior reporting days, not an average, and above the median alone would fire about every other day. |
 | Sources screen | The owner's design (2026-11-08) for "Sources & ingestion", trimmed by the owner: the KPI strip (reports, duplicates merged, ingest-to-display latency, stale feeds, archive size), the 24-hour volume bars, rate limits and quotas, retries, request logs and runbooks, and every action (retry, pause, add source, edit policy) are left out. The screen is read-only, and its status comes from data the Lite UI already reads, with no new endpoint. Details in [Screen design](#screen-design). |
-| Front page | A dedicated Lite UI at `/lite`, built from the owner's designs with Preact and Tailwind CSS. With the flag on it is the default page; the full dashboard stays reachable at `/dashboard?full=1`. See [Lite UI](#lite-ui-lite). |
+| Front page | A dedicated Lite UI at `/lite`, built from the owner's designs with Preact and Tailwind CSS. It is the only web app since refactor Phase 1 removed the dashboard (2026-11-18). See [Lite UI](#lite-ui-lite). |
 
 ### Open decisions
 
@@ -380,19 +380,17 @@ This section describes the code until refactor Phase 1, which deletes the dashbo
 
 The owner's front page: a sidebar, the cross-domain Briefing at `/lite` (home), and its three child screens, Geopolitics & Conflicts (`/lite/geopolitics`), Finance & Crypto (`/lite/finance`) and Technology & AI (`/lite/tech`), plus the read-only Sources screen (`/lite/sources`). The Briefing links to each child through the sidebar, its events' domain tags and its panel headers. The design exports are kept out of the repository; their sample rows live in `src/lite/data/fixtures.ts`.
 
-**Stack exception.** The dashboard has no framework. `src/lite/` alone uses Preact (JSX through `tsconfig.json`'s `jsxImportSource`) and Tailwind CSS 4 (`@tailwindcss/vite`, scoped to `src/lite/lite.css`), with Lucide icons, self-hosted IBM Plex fonts (the CSP allows no font host), and OverlayScrollbars (`overlayscrollbars`) for overlay scrollbars that take no width and show only while the pointer is over the scroll area (owner's decision, 2026-11-08). `scripts/lint-boundaries.mjs` keeps it separate: `src/lite/` may import `config`, `services`, `utils`, `shared/` and generated clients, never `src/components/`, `src/app/` or `App.ts`, and nothing outside it may import `src/lite/`.
+**Stack.** The Lite UI is the only web app. It uses Preact (JSX through `tsconfig.json`'s `jsxImportSource`) and Tailwind CSS 4 (`@tailwindcss/vite`, scoped to `src/lite/lite.css`), with Lucide icons, self-hosted IBM Plex fonts (the CSP allows no font host), and OverlayScrollbars (`overlayscrollbars`) for overlay scrollbars that take no width and show only while the pointer is over the scroll area (owner's decision, 2026-11-08). `scripts/lint-boundaries.mjs` keeps it separate: `src/lite/` may import `config`, `services`, `utils`, `shared/` and generated clients, and nothing outside it may import `src/lite/`.
 
-**Routing.**
+**Routing.** Refactor Phase 1a (2026-11-18) removed the dashboard, its `?full=1` escape and the profile-off notice, so routing no longer depends on the flag:
 
-| Request | Flag on | Flag off |
-|---|---|---|
-| `/` on the owner's host | `middleware.ts` 307s to `/lite` (legacy `/?lat=` map links still go to `/dashboard`) | Unchanged (404 on a custom host) |
-| `/` in dev or Docker, `/dashboard` | The guard at the top of `src/main.ts` replaces the page with `/lite` unless the URL carries dashboard state | Unchanged |
-| `/dashboard?full=1` | The dashboard; remembered for the tab (`sessionStorage` `wm-lite-full`) | The dashboard |
-| `/lite`, `/lite/geopolitics`, `/lite/finance`, `/lite/tech`, `/lite/sources` | The Lite UI | A notice that the profile is off, with a link to `/dashboard` |
-| Installed PWA | Starts on `/lite` | Starts on `/dashboard` |
+| Request | Result |
+|---|---|
+| `/` (except `?mode=agent`), `/dashboard`, `/stocks`, `/stocks/:symbol`, `/story` | A temporary redirect to `/lite`: `vercel.json` on Vercel (`middleware.ts` still 307s `/` first while the flag is on), `docker/nginx.conf*` in Docker, `liteDevRoutePlugin` (`vite.dev-api.ts`) in dev |
+| `/lite`, `/lite/geopolitics`, `/lite/finance`, `/lite/tech`, `/lite/sources` | The Lite UI (`lite.html`) |
+| Installed PWA | Starts on `/lite` (static `public/manifest.webmanifest`) |
 
-The rules are in `src/config/lite-route.ts`. `vercel.json`, `docker/nginx.conf*` and a Vite dev middleware serve `lite.html` for the five paths only, and `isKnownPublicPagePath` (`src/config/agent-not-found.ts`) lets exactly those five past the 404 gate. `npm run build:lite` (`vite.lite.config.ts`) builds the page on its own after the main build, so it shares no chunks with the dashboard.
+`vercel.json`, `docker/nginx.conf*` and the dev middleware serve `lite.html` for the five paths only, and `isKnownPublicPagePath` (`src/config/agent-not-found.ts`) lets exactly those five past the 404 gate. `npm run build` builds `lite.html` into `dist/` (`vite.config.ts`). `public/sw.js` replaces the old dashboard's service worker with one that clears its caches and unregisters itself.
 
 **Data.** `src/lite/data/sources.ts` reads the same sources as the dashboard, without `App`: the bootstrap tiers once, then the generated RPC clients, and the news digest through its public CDN shape. It uses no premium path. Each widget is one of:
 

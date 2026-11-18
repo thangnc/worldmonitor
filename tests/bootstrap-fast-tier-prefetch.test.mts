@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { afterEach, before, describe, it } from 'node:test';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readFileSync } from 'node:fs';
 import { build } from 'esbuild';
 
 // The entry script starts the fast bootstrap tier before the App chunk loads,
@@ -205,16 +204,5 @@ describe('fast bootstrap tier prefetch', () => {
     await harness.fetchBootstrapData();
     assert.equal(calls, 2, 'a network failure before App loaded gets one direct retry');
     assert.equal(harness.getBootstrapHydrationState().tiers.fast.source, 'live');
-  });
-
-  it('is started by the dashboard entry before the App chunk import', () => {
-    const main = readFileSync(resolve(root, 'src/main.ts'), 'utf8');
-    const prime = main.indexOf('primeBootstrapFastTier();');
-    const appImport = main.indexOf("void import('./App')");
-    const redirect = main.indexOf('installWebApiRedirect();');
-    assert.ok(prime > redirect, 'the primed request must go through the installed web API fetch wrappers');
-    assert.ok(prime >= 0 && prime < appImport, 'the fast tier must start before the App chunk is requested');
-    const settingsBranch = main.indexOf("urlParams.get('settings') === '1'");
-    assert.ok(prime > settingsBranch, 'standalone settings windows never boot the dashboard and must not prime it');
   });
 });

@@ -185,17 +185,6 @@ describe('funnel context fields', () => {
   });
 });
 
-describe('follow-cap funnel wiring (U6)', () => {
-  it('the FREE_CAP branch emits the followed-countries gate-hit before the upgrade trigger', () => {
-    const src = read('src/utils/follow-button.ts');
-    const capIdx = src.indexOf("case 'FREE_CAP':");
-    const gateIdx = src.indexOf("trackGateHit('limits.followed_countries')");
-    const triggerIdx = src.indexOf("_upgradeTrigger('follow-cap')");
-    assert.ok(capIdx >= 0 && gateIdx > capIdx && triggerIdx > gateIdx,
-      'gate-hit emission lost from the follow-cap upgrade moment');
-  });
-});
-
 describe('pro-preview-viewed integrity (review: denominator must not inflate)', () => {
   afterEach(cleanupWindow);
 

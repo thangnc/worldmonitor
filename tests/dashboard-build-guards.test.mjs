@@ -8,7 +8,6 @@ import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import YAML from 'yaml';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
@@ -72,78 +71,22 @@ function runGuardProbe(expectBuiltOutput) {
 }
 
 describe('built-output guard contract', () => {
-  it('builds /pro before full and focused prehydration browser checks', () => {
-    const packageJson = JSON.parse(readFileSync(resolve(repoRoot, 'package.json'), 'utf8'));
-    const fullE2eScript = packageJson.scripts?.['test:e2e:full'] ?? '';
-    const prehydrationScript = packageJson.scripts?.['test:e2e:prehydration'] ?? '';
-    const prehydrationSource = readFileSync(
-      resolve(repoRoot, 'e2e/prehydration-shell.spec.ts'),
-      'utf8',
-    );
-    const proJobSteps = YAML.parse(readFileSync(workflowPath, 'utf8')).jobs['variant-smoke-pro-webmcp'].steps;
-    assert.match(
-      fullE2eScript,
-      /^npm run build:pro && /,
-      'test:e2e:full must build ignored /pro output before Playwright starts',
-    );
-    assert.match(
-      prehydrationScript,
-      /playwright test e2e\/prehydration-shell\.spec\.ts --project=chromium --grep [^&]*server-rendered welcome page\|dashboard shell without JavaScript/,
-      'the focused CI script must execute all formerly guarded prehydration checks in Chromium',
-    );
-    assert.doesNotMatch(
-      prehydrationSource,
-      /test\.skip\(!proWelcomeBuilt/,
-      'the prehydration spec must fail when /pro output is absent, not silently skip',
-    );
-    // public/pro/ is built output since #6898. The build may share a parallel
-    // group with the font install, but no step may sit between that group and
-    // the focused spec. Anything there could leave the browser checks reading
-    // missing or stale bytes from another build.
-    const buildIndex = proJobSteps.findIndex((step) => (step.parallel ?? [step])
-      .some((inner) => inner.name === 'Build /pro artifacts for prehydration browser checks' && inner.run === 'npm run build:pro'));
-    const prehydrationIndex = proJobSteps.findIndex((step) => step.id === 'prehydration');
-    assert.ok(buildIndex >= 0, 'PR CI must build /pro for the prehydration browser checks');
-    assert.equal(proJobSteps[prehydrationIndex]?.run, 'npm run test:e2e:prehydration');
-    assert.ok(buildIndex < prehydrationIndex, 'the /pro build must run before the prehydration browser checks');
-    assert.deepEqual(
-      proJobSteps.slice(buildIndex + 1, prehydrationIndex).map((step) => step.name),
-      [],
-      'no step may sit between the /pro build and the prehydration browser checks',
-    );
-  });
-
-  it('keeps the dashboard build immediately before the marker-enabled data test in CI', () => {
+  it('keeps the Lite build immediately before the marker-enabled data test in CI', () => {
     const workflow = readFileSync(workflowPath, 'utf8').replaceAll('\r\n', '\n');
-    // The bundle-size gate (#7111) sits between the build and test:data on
-    // purpose: it reads the freshly built dist/ without mutating it, and a
-    // budget breach should cost seconds, not the full test:data run. Pinning
-    // it in this sequence keeps both contracts — the data test still runs
-    // against the dist the step above just built, and the gate cannot drift
-    // to a position where dist/ might be stale or absent.
+    // The data test must run against the dist the step above just built, with
+    // nothing between them that could leave dist/ stale or absent.
     // The /pro build is build:pro's build half; its install half runs on a
     // dependency-cache miss earlier in the job.
     const expectedSequence = [
       '        run: npm --prefix pro-test run build',
-      '      - name: Build dashboard artifacts for built-output tests',
-      '        run: VITE_VARIANT=full ./node_modules/.bin/vite build',
-      '      - name: Client bundle size budget (#7111, #7119)',
-    ].join('\n');
-    const expectedTailSequence = [
-      '        run: |',
-      '          npm run bundle:check',
-      '          npm run bundle:check:pro',
-      '          npm run bundle:check:embed',
+      '      - name: Build Lite artifacts for built-output tests',
+      '        run: ./node_modules/.bin/vite build',
       '      - run: WM_EXPECT_BUILT_OUTPUT=1 npm run test:data',
     ].join('\n');
 
     assert.ok(
       workflow.includes(expectedSequence),
-      'the unit job must build /pro then dashboard artifacts, then run the bundle-size gate against that fresh dist',
-    );
-    assert.ok(
-      workflow.includes(expectedTailSequence),
-      'the bundle-size gate must run immediately before test:data with WM_EXPECT_BUILT_OUTPUT=1, with nothing between it and the build except the gate itself',
+      'the unit job must build /pro then Lite artifacts, then run test:data with WM_EXPECT_BUILT_OUTPUT=1 immediately after',
     );
     assert.equal(
       workflow.match(/WM_EXPECT_BUILT_OUTPUT=1 npm run test:data/g)?.length ?? 0,

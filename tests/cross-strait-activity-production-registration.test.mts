@@ -87,16 +87,8 @@ describe('cross-Strait activity production registration (#5575)', () => {
     );
   });
 
-  it('hydrates the existing Force Posture panel without touching flight identity rules', () => {
-    const panel = read('src/components/MilitaryCorrelationPanel.ts');
-    const renderer = read('src/components/cross-strait-activity-summary.ts');
+  it('does not touch flight identity rules', () => {
     const flightSeeder = read('scripts/seed-military-flights.mjs');
-    assert.match(panel, /getHydratedData\('crossStraitActivity'\)/);
-    assert.match(panel, /tryBuildCrossStraitActivityPanelModel/);
-    assert.match(panel, /if \(this\.officialActivity\) this\.requestRender\(\)/);
-    assert.match(panel, /View Taiwan Strait/);
-    assert.match(renderer, /Publisher claim/);
-    assert.match(renderer, /not aircraft or ship transponder tracks/);
     assert.doesNotMatch(flightSeeder, /cross-strait-activity|Taiwan Ministry of National Defense|Japan Joint Staff/);
   });
 });

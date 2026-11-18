@@ -161,14 +161,6 @@ function functionContaining(source: string, marker: string): string {
   return source.slice(at, next ? next.index : source.length);
 }
 
-function assertStartsBefore(body: string, started: string, awaited: string, message: string) {
-  const startAt = body.indexOf(started);
-  const awaitAt = body.indexOf(awaited);
-  assert.ok(startAt >= 0, `missing: ${started}`);
-  assert.ok(awaitAt >= 0, `missing: ${awaited}`);
-  assert.ok(startAt < awaitAt, message);
-}
-
 /**
  * In the function that logs `marker`, the Convex API load must start before the
  * client is awaited, so the two chunk fetches overlap.
@@ -193,41 +185,14 @@ describe('signed-in boot: the Convex API chunk loads alongside the client', () =
     assertApiLoadStartsBeforeClientAwait('src/services/billing.ts', 'No VITE_CONVEX_URL -- skipping subscription watch');
   });
 
-  it('no billing or followed-countries call awaits the client and then the API', () => {
-    for (const rel of ['src/services/billing.ts', 'src/services/followed-countries.ts', 'src/services/entitlements.ts']) {
+  it('no billing or entitlements call awaits the client and then the API', () => {
+    for (const rel of ['src/services/billing.ts', 'src/services/entitlements.ts']) {
       assert.doesNotMatch(
         read(rel),
         /await (?:getConvexClient|_convexClientGetter)\(\);\s*\n\s*const api = await (?:getConvexApi|_convexApiGetter)\(\)/,
         `${rel}: load the Convex client and API together`,
       );
     }
-  });
-});
-
-describe('country brief open', () => {
-  it('getCountrySignals starts the aviation read before awaiting the aggregator chunk', () => {
-    const body = functionContaining(read('src/app/country-intel.ts'), 'async getCountrySignals(');
-    assertStartsBefore(
-      body,
-      'this.countryAviationDisruptions(code, country)',
-      'await getSignalAggregator()',
-      'the aviation fetch must not wait for the signal-aggregator chunk',
-    );
-  });
-
-  it('country-brief-source loads its schemas alongside the network read', () => {
-    const source = read('src/services/country-brief-source.ts');
-    assert.doesNotMatch(source, /await import\('\.\.\/\.\.\/shared\/country-signal-observations'\)/);
-    assert.doesNotMatch(source, /await import\('\.\.\/\.\.\/shared\/country-raw-signals'\)/);
-  });
-});
-
-describe('app boot', () => {
-  it('starts loading i18n before it waits for IndexedDB', () => {
-    const body = functionContaining(read('src/App.ts'), "markLcpDebug('wm:boot:app-init-start');");
-    assertStartsBefore(body, 'const i18nReady = initI18n();', 'await initDB();', 'the locale load must not wait for IndexedDB');
-    assertStartsBefore(body, 'await initDB();', 'await i18nReady;', 'boot still waits for i18n after the database opens');
-    assert.doesNotMatch(body, /await initI18n\(\)/);
   });
 });
 

@@ -202,11 +202,8 @@ describe('every surface that counts publishers applies it', () => {
     assert.equal(cluster!.uniquePublisherCount, 1);
   });
 
-  it('the dashboard\'s semantic merge rebuilds the count with the same detector', () => {
+  it('clusterPublisherCount rebuilds the count with the same detector', () => {
     assert.equal(clusterPublisherCount(asNewsItems([euronews, africanews, cbcPanama])), 2);
-    const source = readFileSync(new URL('../src/services/clustering.ts', import.meta.url), 'utf8');
-    assert.match(source, /uniquePublisherCount: clusterPublisherCount\(allItems\)/);
-    assert.doesNotMatch(source, /countPublisherFamilies/);
   });
 
   it('evidenceFromCluster, verdict and roster: one publisher, shown as the same copy', () => {

@@ -36,7 +36,6 @@ interface StaticResponse {
 }
 
 const APPLICATION_ROUTES = new Map<string, string>([
-  ['/dashboard', 'index.html'],
   ['/pro', 'public/pro/index.html'],
 ]);
 
@@ -46,7 +45,6 @@ const DEPLOYED_ROUTES = new Map<string, string>([
 ]);
 
 const ENGLISH_ONLY_DOCUMENTS = [
-  { path: 'index.html', canonical: 'https://www.worldmonitor.app/dashboard' },
   { path: 'pro-test/index.html', canonical: 'https://www.worldmonitor.app/pro' },
   { path: 'public/pro/index.html', canonical: 'https://www.worldmonitor.app/pro' },
 ];
@@ -285,7 +283,7 @@ describe('international SEO application-locale mode (#5666)', { skip: shouldSkip
         locale.canonicalUrl,
       );
     }
-    for (const route of ['/dashboard', '/pro']) {
+    for (const route of ['/pro']) {
       const url = new URL(route, 'https://www.worldmonitor.app').href;
       assert.deepEqual(await validateHreflangCluster(url, fetchStaticRoute), [], url);
     }

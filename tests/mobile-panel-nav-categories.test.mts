@@ -1,13 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { PANEL_CATEGORY_MAP, VARIANT_DEFAULTS, getVariantPanelCategories, getProPanelKeys } from '../src/config/panels';
 import type { PanelConfig } from '../src/types';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // getVariantPanelCategories feeds both the UnifiedSettings panel-tab filter
 // and the mobile category nav (MobilePanelNav). Regression target: the
@@ -124,22 +119,5 @@ describe('getProPanelKeys (mobile nav PRO chip)', () => {
     assert.ok(result.includes('stock-analysis'));
     assert.ok(result.includes('chat-analyst'));
     assert.ok(result.length >= 5, `expected a meaningful premium suite, got ${result.join(', ')}`);
-  });
-});
-
-describe('mobile nav i18n contract', () => {
-  it('every category labelKey resolves in en.json', () => {
-    const en = JSON.parse(readFileSync(resolve(__dirname, '../src/locales/en.json'), 'utf-8'));
-    const lookup = (path: string): unknown =>
-      path.split('.').reduce<unknown>((node, part) =>
-        node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined, en);
-
-    for (const [key, def] of Object.entries(PANEL_CATEGORY_MAP)) {
-      assert.equal(typeof lookup(def.labelKey), 'string', `missing en.json key ${def.labelKey} (category ${key})`);
-    }
-    // The "all" chip both consumers prepend:
-    assert.equal(typeof lookup('header.sourceRegionAll'), 'string');
-    // The nav's accessible name:
-    assert.equal(typeof lookup('components.mobileNav.panelCategories'), 'string');
   });
 });

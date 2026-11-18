@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { Bell, Database, ExternalLink, Globe, LayoutDashboard, Settings, SlidersHorizontal, Star } from 'lucide-preact';
+import { Bell, Database, Globe, LayoutDashboard, Settings, SlidersHorizontal, Star } from 'lucide-preact';
 import type { LiteScreen } from '@/config/lite-route';
 import { LITE_SCREEN_PATHS } from '@/config/lite-route';
 import { navigate } from '../router';
@@ -146,16 +146,6 @@ export function Sidebar({ screen }: { screen: LiteScreen }) {
               <SoonItem icon={<SlidersHorizontal {...ICON} />} label="Scoring rules" />
               <SoonItem icon={<Settings {...ICON} />} label="Settings" />
             </div>
-          </div>
-          <div class="flex flex-col gap-[2px]">
-            <a
-              href="/dashboard?full=1"
-              class="mt-1 flex w-full items-center gap-[10px] rounded-[6px] px-[10px] py-2 text-[13px] text-muted hover:bg-surface-2/60 hover:text-ink"
-              data-testid="open-full-dashboard"
-            >
-              <ExternalLink {...ICON} />
-              <span>Full dashboard</span>
-            </a>
           </div>
         </div>
         <HealthCard />

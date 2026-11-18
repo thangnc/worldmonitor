@@ -194,7 +194,7 @@ test('suites that read built output run in the job that builds it', () => {
     const source = readFileSync(join(root, file), 'utf8');
     if (/built-output-guard|pro-built-output/.test(source)) assert.ok(built.has(file), `${file} imports a built-output guard`);
   }
-  for (const file of ['tests/dashboard-eager-chunks.test.mjs', 'tests/pro-welcome-prerender.test.mjs', 'tests/deploy-config.test.mjs']) {
+  for (const file of ['tests/pro-welcome-prerender.test.mjs', 'tests/deploy-config.test.mjs']) {
     assert.ok(built.has(file), `${file} reads dist/ or public/pro/`);
   }
   // Loads pro-test/vite.config.ts, whose plugins resolve from pro-test/node_modules;

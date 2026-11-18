@@ -403,19 +403,6 @@ describe('mcp-quota handler — plan-resolved limit (U3b)', () => {
     assert.equal(lookups, 0, '401 short-circuits before any backend read');
   });
 
-  it('client normaliser keeps the wire meaning of null/0 (settings widget end)', async () => {
-    // The endpoint can now answer `limit: null`. The consumer used to coerce
-    // any non-positive limit to 50, which would have put "50 / 50" back in
-    // front of the exact users this unit exists to fix.
-    const { normalizeQuotaLimit } = await import('../src/services/mcp-clients.ts');
-    assert.equal(normalizeQuotaLimit(null), null, 'null = unlimited must survive');
-    assert.equal(normalizeQuotaLimit(250), 250);
-    assert.equal(normalizeQuotaLimit(0), 0, '0 is a real allowance, not a missing one');
-    assert.equal(normalizeQuotaLimit(undefined), 50, 'absent field → plan default');
-    assert.equal(normalizeQuotaLimit(-1), 50);
-    assert.equal(normalizeQuotaLimit(Number.NaN), 50);
-  });
-
   it('reuses api/mcp/quota.ts resolveDailyLimit — no second copy of the normalisation', async () => {
     // Drift guard: if the reader ever grows its own copy of the three-way
     // contract, this import breaks or the pairing below diverges.

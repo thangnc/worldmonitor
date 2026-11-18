@@ -254,15 +254,6 @@ describe('brief-contract wiring (source-textual)', () => {
     assert.match(src, /TIER1_COUNTRIES\[countryCode\]\s*\|\|\s*displayNameForIso2\(countryCode\)/);
   });
 
-  it('panel keeps cited story lines behind a disclosure and renders the freshness footer', () => {
-    const src = readSrc('src/components/InsightsPanel.ts');
-    assert.match(src, /renderBriefExtras/);
-    assert.match(src, /insights-brief-details/);
-    assert.match(src, /insights-brief-lines/);
-    assert.match(src, /formatIntelBrief\(brief, \{ sources \}\)/);
-    assert.match(src, /components\.insights\.briefFreshness/);
-  });
-
   it('core and mirrors are byte-identical (grounding spine included)', () => {
     assert.equal(readSrc('shared/brief-llm-core.js'), readSrc('scripts/shared/brief-llm-core.js'));
     assert.equal(readSrc('shared/brief-llm-core.d.ts'), readSrc('scripts/shared/brief-llm-core.d.ts'));

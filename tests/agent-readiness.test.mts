@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import { load } from 'js-yaml';
 import middleware from '../middleware';
 import agentRequestPolicy from '../shared/agent-request-policy.json';
-import { decodeHtmlEntities } from '../src/utils/html-entities';
+import { decodeHtmlEntities } from '../scripts/_html-entities.mjs';
 import { guardProBuiltOutput, shouldSkipProBuiltOutput } from './_lib/pro-built-output.mjs';
 
 describe('public agent documents', () => {

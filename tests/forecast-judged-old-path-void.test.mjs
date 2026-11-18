@@ -1,5 +1,4 @@
 import { strict as assert } from 'node:assert';
-import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import {
@@ -217,12 +216,6 @@ describe('judged verdicts sealed on the stock-word selection (#8990)', () => {
     assert.equal(RECEIPT_VOID_REASON_LABELS[receipt.voidReason], 'Judged with an evidence method later found unreliable');
   });
 
-  it('labels the reason on the card chips in every locale', () => {
-    const source = readFileSync(new URL('../src/components/forecast-record.ts', import.meta.url), 'utf8');
-    assert.match(source, new RegExp(`'${JUDGED_OLD_SELECTION_VOID_REASON}'`));
-    const en = JSON.parse(readFileSync(new URL('../src/locales/en.json', import.meta.url), 'utf8'));
-    assert.equal(en.components.forecast.resolution.void[JUDGED_OLD_SELECTION_VOID_REASON], 'Judged with an evidence method later found unreliable');
-  });
 });
 
 describe('judged verdicts carry the evidence-selection version they were sealed under (#9011)', () => {

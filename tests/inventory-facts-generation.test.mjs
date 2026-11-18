@@ -60,11 +60,11 @@ describe('inventory facts generation contract', () => {
       'locales',
       'variantCount',
       'layerDefinitions',
-      'panelClasses',
       'feedDefinitions',
-      'freshnessSources',
       'sourceAttributionHosts',
     ];
+    // panelClasses and freshnessSources described the old dashboard, which
+    // refactor Phase 1 removed; zero is their true value now.
     for (const key of capabilityStatKeys) {
       assert.throws(
         () => buildInventoryFacts({ ...stats, [key]: 0 }),

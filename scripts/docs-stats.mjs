@@ -14,7 +14,7 @@
  * import graph, or requiring installed packages. This keeps the generator
  * usable in dependency-free CI and container build stages.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { basename, dirname, join } from 'node:path';
 import { buildSourceAttributionStats } from './source-attribution.mjs';
@@ -827,76 +827,6 @@ function parseJsonLdBlocks(html) {
     .map((m) => JSON.parse(m[1]));
 }
 
-function validateIndexLanguageMetadata(_stats, html = read('index.html')) {
-  const failures = [];
-
-  const alternateLinks = [...html.matchAll(/<link\s+rel="alternate"\s+hreflang="([^"]+)"\s+href="([^"]+)"\s*\/>/g)]
-    .map((m) => ({ code: m[1], href: m[2] }));
-  const canonicalHref = html.match(/<link\s+rel="canonical"\s+href="([^"]+)"\s*\/>/)?.[1] ?? null;
-  if (!canonicalHref) {
-    failures.push('index.html: canonical link not found');
-  }
-
-  const defaultLink = alternateLinks.find((l) => l.code === 'x-default');
-  if (!defaultLink) {
-    failures.push('index.html: x-default hreflang link not found');
-  } else {
-    let parsed;
-    try {
-      parsed = new URL(defaultLink.href);
-    } catch {
-      failures.push('index.html: x-default hreflang href is not a valid URL');
-    }
-    if (parsed?.searchParams.has('lang')) {
-      failures.push('index.html: x-default hreflang href must not set ?lang');
-    }
-  }
-
-  const hreflangCodes = alternateLinks.map((link) => link.code);
-  const expectedDiscoveryCodes = ['x-default', 'en'];
-  if (!sameStringSet(hreflangCodes, expectedDiscoveryCodes)) {
-    failures.push(`index.html: hreflang set must contain only x-default and en (${describeSetDelta(hreflangCodes, expectedDiscoveryCodes)})`);
-  }
-
-  for (const link of alternateLinks) {
-    let parsed;
-    try {
-      parsed = new URL(link.href);
-    } catch {
-      failures.push(`index.html: ${link.code} hreflang href must be an absolute URL`);
-    }
-    if (parsed?.searchParams.has('lang')) {
-      failures.push(`index.html: query-string locale URLs must not be advertised (${link.code})`);
-    }
-    if (canonicalHref && link.href !== canonicalHref) {
-      failures.push(`index.html: ${link.code} hreflang href must equal the canonical URL`);
-    }
-  }
-
-  let jsonLd;
-  try {
-    jsonLd = parseJsonLdBlocks(html);
-  } catch (error) {
-    failures.push(`index.html: JSON-LD could not be parsed (${error.message})`);
-    return failures;
-  }
-
-  const webSite = jsonLd.find((o) => o?.['@type'] === 'WebSite');
-  if (!webSite) {
-    failures.push('index.html: WebSite JSON-LD block not found');
-  } else {
-    const inLanguage = Array.isArray(webSite.inLanguage) ? webSite.inLanguage : [webSite.inLanguage].filter(Boolean);
-    if (!sameStringSet(inLanguage, ['en'])) {
-      failures.push(`index.html: WebSite inLanguage must describe the raw English document (${describeSetDelta(inLanguage, ['en'])})`);
-    }
-  }
-
-  // The "<N> language support with RTL" featureList count is validated by the
-  // index.html claims() entry (single source of truth), so it is not re-checked
-  // here to avoid a duplicate assertion of the same string against the same value.
-
-  return failures;
-}
 
 // Cross-check the runtime i18next allow-list (SUPPORTED_LANGUAGES in
 // src/services/i18n.ts) against the filesystem locale set. index.html now
@@ -909,16 +839,6 @@ function parseSupportedLanguages(i18nSource) {
   return (block[1].match(/'([^']+)'/g) || []).map((s) => s.slice(1, -1));
 }
 
-function validateSupportedLanguagesRegistry(stats, i18nSource = read('src/services/i18n.ts')) {
-  const supported = parseSupportedLanguages(i18nSource);
-  if (!supported) {
-    return ['src/services/i18n.ts: could not parse SUPPORTED_LANGUAGES array'];
-  }
-  if (!sameStringSet(supported, stats.localeCodes)) {
-    return [`src/services/i18n.ts: SUPPORTED_LANGUAGES does not match src/locales (${describeSetDelta(supported, stats.localeCodes)})`];
-  }
-  return [];
-}
 
 function makefileVar(text, name) {
   const match = text.match(new RegExp(`^${name}\\s*:=\\s*(\\S+)`, 'm'));
@@ -1024,7 +944,10 @@ function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
   const variantCount = Object.keys(variantLayers).length;
 
   // ---- Root app directories used by CLAUDE.md and CONTRIBUTING.md ----
-  const componentTopLevelTsFiles = filesIn('src/components').filter((f) => f.endsWith('.ts')).length;
+  // The old dashboard's src/components/ is gone (refactor Phase 1), so these
+  // counts are 0 unless the directory comes back.
+  const componentTopLevelTsFiles = readdirPresentSync(join(rootOf(), 'src/components'))
+    .filter((e) => e.isFile() && e.name.endsWith('.ts')).length;
   const serviceTopLevelEntries = entriesIn('src/services').length;
   const apiEndpointEntries = readdirSync(join(rootOf(), 'api'), { withFileTypes: true }).filter((e) => {
     const f = e.name;
@@ -1053,9 +976,11 @@ function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
   const serverDomains = dirsIn('server/worldmonitor').length;
 
   // ---- User-facing locales (src/locales/*.json, excluding shell fragments) ----
-  const localeCodes = filesIn('src/locales')
-    .filter((f) => f.endsWith('.json') && !f.endsWith('.shell.json'))
-    .map((f) => f.replace(/\.json$/, ''))
+  // The Lite UI ships English only, as the en.shell.json fragment; a locale
+  // with only a shell fragment still counts as a supported interface language.
+  const localeCodes = [...new Set(filesIn('src/locales')
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => f.replace(/(?:\.shell)?\.json$/, '')))]
     .sort();
   const locales = localeCodes.length;
 
@@ -1063,7 +988,8 @@ function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
   const workflows = filesIn('.github/workflows').filter((f) => f.endsWith('.yml') || f.endsWith('.yaml')).sort();
 
   // ---- Freshness-tracked sources (src/services/data-freshness.ts) ----
-  const dfs = read('src/services/data-freshness.ts');
+  // The dashboard's freshness tracker left with the dashboard (refactor Phase 1).
+  const dfs = existsSync(join(rootOf(), 'src/services/data-freshness.ts')) ? read('src/services/data-freshness.ts') : '';
   const dfsStart = dfs.indexOf('const SOURCE_METADATA');
   const dfsClass = dfs.indexOf('class ', dfsStart);
   const metaBlock = dfs.slice(dfsStart, dfsClass >= 0 ? dfsClass : dfs.length);
@@ -1232,7 +1158,7 @@ export const VOLATILE_INVENTORY_CLAIM_RE = new RegExp(
 );
 
 export const ACQUISITION_CLAIM_ROOTS = [
-  'index.html',
+  'lite.html',
   'README.md',
   'README.zh-CN.md',
   'README.ja-JP.md',
@@ -1374,7 +1300,6 @@ export function validateVolatileInventoryClaims() {
     { path: 'public/llms-full.txt', text: /72 indicators across 21 active dimensions, 6 domains/ },
     { path: 'public/llms.txt', text: /live in 190\+ countries/ },
     { path: 'public/llms.txt', text: /structural resilience ranked for/ },
-    { path: 'index.html', text: /live in 190\+ countries/ },
     { path: 'docs/about.mdx', text: /live in 190\+ countries/ },
     { path: 'blog-site/src/content/blog/country-instability-index-methodology-explained.md', text: /72 indicators, 21 active dimensions, and 6 domains/ },
     { path: 'blog-site/src/content/blog/country-resilience-index-methodology-explained.md', text: /72 indicators across 21 active dimensions and 6 domains/ },
@@ -2010,8 +1935,6 @@ export function validateCategoryExplainerCopy(stats, readFile = read) {
 // validator being dropped from the CLI — the whole suite stayed green while
 // `--check` silently stopped running that gate.
 const DOC_VALIDATORS = [
-  validateIndexLanguageMetadata,
-  validateSupportedLanguagesRegistry,
   validateMcpAppsDocs,
   validateBootstrapCacheDocs,
   validateHealthSummaryDocs,
@@ -2079,8 +2002,6 @@ function main() {
 
 export {
   computeStats,
-  validateIndexLanguageMetadata,
-  validateSupportedLanguagesRegistry,
   parseSupportedLanguages,
   parseJsonLdBlocks,
   sameStringSet,

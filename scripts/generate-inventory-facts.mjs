@@ -55,9 +55,12 @@ export function buildInventoryFacts(stats = loadStatsForInventoryFacts()) {
     localeCodes: stats.localeCodes,
   };
 
+  // The old dashboard's panels and freshness tracker were removed in refactor
+  // Phase 1; the Lite UI has neither, so those two counts may be zero.
+  const MAY_BE_ZERO = new Set(['panelImplementations', 'freshnessTrackedSourceGroups']);
   for (const [name, value] of Object.entries(capabilities)) {
     if (name === 'localeCodes') continue;
-    if (!Number.isInteger(value) || value <= 0) {
+    if (!Number.isInteger(value) || value < 0 || (value === 0 && !MAY_BE_ZERO.has(name))) {
       throw new Error(`inventory capability ${name} must be a positive integer`);
     }
   }

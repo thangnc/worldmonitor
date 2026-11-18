@@ -31,12 +31,6 @@ ENV VITE_VARIANT=${VITE_VARIANT}
 ENV VITE_WS_API_URL=${VITE_WS_API_URL}
 ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}
 
-# The crawlable-corpus step runs the source-attribution drift gate. Inventory
-# facts write untracked .js into api/, so the gate must see the pristine
-# checkout first (#7435). tsc + vite stay later so they copy the generated
-# assets into dist/.
-RUN npm run build:crawlable-corpus && npm run build:sitemap
-
 # Generated inventory assets are intentionally untracked. Recreate them in the
 # clean release image before Vite copies public/ into dist/.
 RUN node scripts/generate-inventory-facts.mjs
@@ -50,13 +44,11 @@ RUN npm run build:pro
 # tsc + vite build directly like the sidecar image's builder. `npm run build`
 # would chain build:blog (blog-site has its own lockfile, not installed here)
 # and the prebuild openapi/agent-skills generators.
-RUN npx tsc && npx vite build && npx vite build --config vite.lite.config.ts
+RUN npx tsc && npx vite build
 RUN test -s dist/product-facts.json
-# The SPA entry point. vite.config.ts's dashboardHtmlOutputPlugin renames
-# index.html -> dashboard.html, and docker/nginx.conf.template both indexes it
-# and falls back to it from `location /` — so if the rename ever changes, every
-# route in the image serves a 404 while every other assertion here still passes.
-RUN test -s dist/dashboard.html
+# The SPA entry point: docker/nginx.conf.template rewrites /lite and its screens
+# to it, so without it every app route in the image serves a 404.
+RUN test -s dist/lite.html
 # Assert the /pro pages survived the public/ -> dist/ copy. build:pro succeeding
 # proves public/pro/ exists; it does NOT prove Vite copied it, and nginx routes
 # `location ^~ /pro` regardless (#6898). Without this an outDir/publicDir change

@@ -1,0 +1,16 @@
+{
+  "name": "World Monitor Lite",
+  "short_name": "World Monitor",
+  "description": "Geopolitics, finance and technology early indicators.",
+  "start_url": "/lite",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0a0c0f",
+  "background_color": "#0a0c0f",
+  "icons": [
+    { "src": "/favico/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/favico/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/favico/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

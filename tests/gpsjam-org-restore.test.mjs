@@ -64,10 +64,9 @@ describe('gpsjam.org restore — source wiring guards', () => {
     assert.match(src, /process\.exit\(0\)/);
   });
 
-  test('web UI reads the gpsjam.org metric (pct), not npAvg', () => {
+  test('client service reads the gpsjam.org metric (pct), not npAvg', () => {
     assert.match(read('src/services/gps-interference.ts'), /pct: number;[\s\S]*affectedAircraft: number;[\s\S]*totalAircraft: number;/);
     assert.doesNotMatch(read('src/services/gps-interference.ts'), /npAvg/);
-    assert.match(read('src/components/MapPopup.ts'), /Number\(data\.pct\)\.toFixed\(1\)/);
   });
 
   test('public proto API contract is unchanged (still reads npAvg / np_avg)', () => {

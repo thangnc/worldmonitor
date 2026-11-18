@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import {
-  GEO_CONVERGENCE_THRESHOLD,
   GEO_CONVERGENCE_WINDOW_MS,
   GEO_EVENT_TYPE_LABELS,
   GEO_NEARBY_MIN_TYPES,
@@ -399,22 +398,7 @@ describe('geo convergence signal projection', () => {
   });
 });
 
-describe('client shim stays pinned to the shared core', () => {
-  it('publishes the same convergence threshold the docs guard reads', () => {
-    // tests/docs-signal-alignment.test.mts asserts this literal in the client shim
-    // and cross-checks it against docs/geographic-convergence.mdx; the shared core
-    // owns the default, so the two must not drift.
-    const shim = readFileSync(new URL('../src/services/geo-convergence.ts', import.meta.url), 'utf8');
-    const literal = shim.match(/const CONVERGENCE_THRESHOLD = (\d+);/);
-    assert.ok(literal, 'src/services/geo-convergence.ts must declare CONVERGENCE_THRESHOLD');
-    assert.equal(Number(literal[1]), GEO_CONVERGENCE_THRESHOLD);
-  });
-
-  it('imports the core instead of re-implementing it', () => {
-    const shim = readFileSync(new URL('../src/services/geo-convergence.ts', import.meta.url), 'utf8');
-    assert.match(shim, /from '\.\.\/\.\.\/shared\/analysis-geo-convergence'/);
-  });
-
+describe('shared core stays bundler-agnostic', () => {
   it('keeps the shared core free of client-only imports', () => {
     const core = readFileSync(new URL('../shared/analysis-geo-convergence.ts', import.meta.url), 'utf8');
     assert.doesNotMatch(core, /from '@\//, 'core must not use the src/ path alias');

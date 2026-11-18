@@ -129,49 +129,4 @@ describe('published resilience snapshot freshness', () => {
     }
   });
 
-  it('runs a credentialed monthly capture and opens an idempotent review PR', () => {
-    const workflow = readFileSync(
-      join(repoRoot, '.github', 'workflows', 'resilience-snapshot-refresh.yml'),
-      'utf8',
-    );
-
-    assert.match(workflow, /cron: '17 5 1 \* \*'/);
-    assert.match(workflow, /secrets\.WORLDMONITOR_API_KEY/);
-    assert.match(workflow, /node scripts\/freeze-resilience-ranking\.mjs/);
-    assert.match(workflow, /npm run build:crawlable-corpus/);
-    assert.match(workflow, /npm run build:sitemap/);
-    assert.match(workflow, /npm run build:llms-full/);
-    assert.match(workflow, /git add "\$snapshot_path" public\/sitemap\.xml public\/sitemap-main\.xml public\/llms-full\.txt/);
-    assert.match(workflow, /gh pr list --state all/);
-    assert.match(workflow, /gh pr create/);
-    assert.doesNotMatch(workflow, /push --force/);
-    const parsed = YAML.parse(workflow);
-    const verify = parsed.jobs.refresh.steps.find((step) => step.name === 'Rebuild and verify published artifacts');
-    const consumers = new RegExp(verify.env.SNAPSHOT_CONSUMERS);
-    for (const suite of [
-      'crawlable-corpus.test.mjs',
-      'seo-geo-residue.test.mjs',
-      'sitemap-generation.test.mjs',
-      'resilience-ranking-snapshot.test.mts',
-      'ai-search-product-facts.test.mjs',
-      'country-corpus-slugs-freshness.test.mjs',
-      'public-product-facts.test.mjs',
-      'seo-landing-metadata.test.mjs',
-    ]) {
-      assert.match(readFileSync(join(repoRoot, 'tests', suite), 'utf8'), consumers, `the refresh must verify ${suite}`);
-    }
-    assert.match(verify.run, /grep -lE "\$SNAPSHOT_CONSUMERS" tests\/\*\.test\.mjs tests\/\*\.test\.mts/);
-    // The job never builds, so a built-output filter would drop whole suites
-    // whose committed-source checks still apply.
-    assert.match(verify.run, /^node scripts\/run-data-tests\.mjs "\$\{suites\[@\]\}"$/m);
-    assert.doesNotMatch(verify.run, /--built-output/);
-    assert.doesNotMatch(JSON.stringify(verify.env), /WM_EXPECT_BUILT_OUTPUT/);
-
-    const checkout = parsed.jobs.refresh.steps.find((step) => step.uses?.startsWith('actions/checkout@'));
-    assert.equal(
-      checkout?.with?.ref,
-      'refs/heads/main',
-      'publication checkout must pin main so workflow_dispatch cannot snapshot a feature branch',
-    );
-  });
 });
