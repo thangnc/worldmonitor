@@ -137,7 +137,7 @@ describe('check-no-public-source-maps deploy gate', () => {
 describe('bundler configs that ship to production', () => {
   // Every config here was reviewed for source-map output. A new bundler
   // config must follow shared/source-map-policy.ts before it joins this list.
-  const REVIEWED = ['blog-site/astro.config.mjs', 'pro-test/vite.config.ts', 'vite.config.ts'];
+  const REVIEWED = ['vite.config.ts'];
 
   it('has no unreviewed bundler config', () => {
     const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n');
@@ -147,13 +147,11 @@ describe('bundler configs that ship to production', () => {
     assert.deepEqual(configs, REVIEWED);
   });
 
-  it('builds production maps only as hidden upload input', async () => {
+  it('builds no production source maps', async () => {
     const read = (p: string) => readFile(join(root, p), 'utf8');
     // The Lite UI has no Sentry upload, so it builds no maps at all.
     const main = await read('vite.config.ts');
     assert.equal(main.match(/sourcemap/gi)?.length, 1, 'vite.config.ts sets sourcemap exactly once');
     assert.match(main, /\n\s*sourcemap:\s*false,\n/);
-    assert.match(await read('pro-test/vite.config.ts'), /sourcemap:\s*uploadSourceMapsToSentry \? 'hidden' : false/);
-    assert.doesNotMatch(await read('blog-site/astro.config.mjs'), /sourcemap/i);
   });
 });

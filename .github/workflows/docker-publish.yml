@@ -51,9 +51,8 @@ on:
     #
     # Application changes do not trigger it. The builder stage runs `COPY . .`
     # and nearly every path reaches the image, so a wide filter rebuilt the
-    # multi-arch image on almost every merge (#7808 chose that). Test's
-    # unit-built-output job already builds /pro and runs the vite build before
-    # merge, so what an application merge can still break here is the
+    # multi-arch image on almost every merge (#7808 chose that). CI's build
+    # job already runs the vite build before merge, so what an application merge can still break here is the
     # image-only part (the handler build and the smoke test),
     # and the next daily run finds that. No consumer needs a
     # `sha-*` tag per merge; `latest` moves only with a release.
@@ -206,23 +205,18 @@ jobs:
           done
 
           failed=""
-          # Exactly the two routes docker/Dockerfile asserts the inputs for, so
-          # this gate can only go red on a genuinely broken image: `/lite` must
+          # Exactly the route docker/Dockerfile asserts the input for, so this
+          # gate can only go red on a genuinely broken image: `/lite` must
           # serve the SPA entry (nginx rewrites it to lite.html, so a missing
           # entry 404s here rather than in the registry; `/` only redirects to
-          # it), and `/pro` is a live nginx route
-          # that 404s whenever the pro build did not survive the copy (#6898).
-          # Adding a path whose file nothing asserts would turn a green build
-          # red for the wrong reason.
-          for path in /lite /pro/; do
+          # it). Adding a path whose file nothing asserts would turn a green
+          # build red for the wrong reason.
+          for path in /lite; do
             code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8080${path}")"
             if [ "$code" != "200" ]; then
               echo "::error::GET ${path} returned ${code}, expected 200"
               failed="yes"
-            # A 200 that served an empty body is not a working page either --
-            # checked per path, not just for `/`: `/pro/` 404ing was already
-            # a real regression here (#6898), and a 200-with-empty-body on it
-            # would be the same failure mode with a passing status code.
+            # A 200 that served an empty body is not a working page either.
             elif [ -z "$(curl -fsS "http://127.0.0.1:8080${path}")" ]; then
               echo "::error::GET ${path} returned 200 with an empty body"
               failed="yes"

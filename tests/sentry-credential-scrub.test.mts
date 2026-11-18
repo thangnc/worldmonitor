@@ -78,7 +78,7 @@ describe('scrubSentryCredentials', () => {
 });
 
 describe('Sentry init wiring', () => {
-  for (const file of ['src/bootstrap/sentry-init.ts', 'pro-test/src/sentry.ts']) {
+  for (const file of ['src/bootstrap/sentry-init.ts']) {
     it(`${file} scrubs events, breadcrumbs, transactions and spans`, () => {
       const src = read(file);
       for (const hook of ['beforeBreadcrumb', 'beforeSendTransaction', 'beforeSendSpan']) {

@@ -265,7 +265,7 @@ test('actual native sidecar requires its token before the news gateway', async (
   const { mkdtemp, mkdir, writeFile } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
-  const { createLocalApiServer } = await import('../src-tauri/sidecar/local-api-server.mjs');
+  const { createLocalApiServer } = await import('../docker/local-api/local-api-server.mjs');
   const root = await mkdtemp(join(tmpdir(), 'aviation-news-sidecar-'));
   await mkdir(join(root, 'aviation/v1'), { recursive: true });
   const serviceUrl = new URL('../src/generated/server/worldmonitor/aviation/v1/service_server.ts', import.meta.url).href;

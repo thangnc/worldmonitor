@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { parseCountryBriefSources, renderEvidenceGroundedCountryBrief } from '../server/worldmonitor/intelligence/v1/get-country-intel-brief.ts';
-import { briefCitationGroundingGap, parseBriefSections } from '../scripts/crawlable-developments.mjs';
 
 describe('country assessment energy grounding', () => {
   const sources = [
@@ -392,13 +391,13 @@ describe('sanctions aggregate claim publication', () => {
     assert.equal(render({ situation: [], risks: [claim(atom, [], ['E3'])] }), null);
   });
 
-  it('publishes independent facts accepted by the corpus after withholding the mixed claim', () => {
+  it('publishes independent facts after withholding the mixed claim', () => {
     const result = render({
       implications: [claim('China sanctions Belize.', [1], ['E3'])],
       risks: [claim(atom, [], ['E3'])],
     });
     assert.equal(result.withheld, 1);
-    assert.equal(briefCitationGroundingGap({ ...result, sources }, { countryCode: 'CN', countryName: 'China' }), null);
+    assert.deepEqual(result.sections.map(section => section.key), ['situation', 'risks']);
   });
 });
 
@@ -433,18 +432,6 @@ describe('evidence-grounded country brief rendering', () => {
     assert.deepEqual(result.sections.map((section) => section.key), ['situation', 'risks']);
     assert.deepEqual(result.sections[1].claims[0], { text: "Finland's fiscal space scores 28 of 100 in the Country Resilience Index.", sourceIndexes: [], evidenceIds: ['E2'] });
     assert.deepEqual(result.evidence.map((item) => item.id), ['E2']);
-  });
-
-  it('renders text the corpus parses back into the same sections and claims', () => {
-    const result = render(payload({
-      implications: [claim('Finland completes a border fence while its fiscal space scores 28 of 100 in the Country Resilience Index.', [1], ['E2'])],
-      risks: [claim("Finland's Country Instability Index is 31 of 100 (Low) as of Sep 21, 2026.", [], ['E1'])],
-      outlook: [claim("Polymarket prices 'Will Finland close its eastern border by December 31?' at 62% (closes Dec 31, 2026).", [], ['E3'])],
-      watch: [claim('Fitburg defendants deny sabotage', [2])],
-    }));
-    const parsed = parseBriefSections(result.text, { countryCode: 'FI', countryName: 'Finland' });
-    assert.deepEqual(parsed.map((section) => section.key), ['situation', 'implications', 'risks', 'outlook', 'watch']);
-    assert.deepEqual(parsed.map(({ key, claims }) => ({ key, claims })), result.sections.map(({ key, claims }) => ({ key, claims })));
   });
 
   it('never emits evidence-limit or withheld notices', () => {

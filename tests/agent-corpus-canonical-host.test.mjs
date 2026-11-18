@@ -44,15 +44,9 @@ const APEX_SERVED = [
 const APEX_IDENTIFIERS = [/"(?:issuer|resource)":/, /^\| Apex domain \|/];
 const APEX_IDENTIFIER_ARRAY = /"authorization_servers":\s*\[$/;
 
-// public/blog and public/pro are BUILD OUTPUT — scanning them would report the
-// same defect twice and cannot be fixed there. Their sources are scanned
-// instead: BLOG_SOURCE_DIR below is the Astro content the blog is built from,
-// and it is crawlable HTML at www.worldmonitor.app/blog/* with its own sitemap
-// in robots.www.txt, so its host hygiene is this guard's job too. (An earlier
-// version of this comment claimed the blog was covered by its own suite; it is
-// not — blog-conversion-links only pins two product-URL constants.)
+// public/blog and public/pro were build output of the removed blog and /pro
+// sites; skip them if a stale local build left them behind.
 const SKIP_DIRS = new Set(['blog', 'pro', 'node_modules']);
-const BLOG_SOURCE_DIR = join(ROOT, 'blog-site/src/content/blog');
 const SCANNED_EXTENSIONS = /\.(?:txt|md|json|yaml|yml|xml)$/;
 // `.well-known` documents are served extensionless by RFC 8615 convention
 // (`/.well-known/api-catalog` is a linkset of 12 published URLs), so the
@@ -82,7 +76,7 @@ function scanFiles(dir, acc = []) {
 
 function apexOffenders() {
   const offenders = [];
-  for (const file of [...scanFiles(PUBLIC_DIR), ...scanFiles(BLOG_SOURCE_DIR)]) {
+  for (const file of scanFiles(PUBLIC_DIR)) {
     const rel = relative(ROOT, file);
     const lines = readFileSync(file, 'utf-8').split('\n');
     lines.forEach((line, index) => {
@@ -127,7 +121,7 @@ describe('published agent corpus names the serving host (#7660)', () => {
       { label: 'an OAuth endpoint', re: /https:\/\/www\.worldmonitor\.app\/oauth\// },
     ];
     const offenders = [];
-    for (const file of [...scanFiles(PUBLIC_DIR), ...scanFiles(BLOG_SOURCE_DIR)]) {
+    for (const file of scanFiles(PUBLIC_DIR)) {
       const body = readFileSync(file, 'utf-8');
       for (const { label, re } of APEX_IDENTITY_PATHS) {
         body.split('\n').forEach((line, index) => {
@@ -243,7 +237,7 @@ describe('published agent corpus names the serving host (#7660)', () => {
     // Guards the scanner itself: a glob or extension change that silently
     // stopped covering the corpus would make this suite pass vacuously.
     const scanned = new Set(
-      [...scanFiles(PUBLIC_DIR), ...scanFiles(BLOG_SOURCE_DIR)].map((f) => relative(ROOT, f))
+      scanFiles(PUBLIC_DIR).map((f) => relative(ROOT, f))
     );
     for (const required of [
       'public/llms.txt',
@@ -260,11 +254,6 @@ describe('published agent corpus names the serving host (#7660)', () => {
       'public/.well-known/agent-skills/index.json',
       'public/.well-known/api-catalog',
       'public/.well-known/agent-card.json',
-      // The blog is crawlable HTML on www with its own sitemap — and it had
-      // been repeating the same broken apex-root discovery instruction this
-      // suite forbids in docs/agent-discovery.mdx.
-      'blog-site/src/content/blog/build-on-worldmonitor-developer-api-open-source.md',
-      'blog-site/src/content/blog/worldmonitor-mcp-server-ai-agents-real-time-intelligence.md',
     ]) {
       assert.ok(scanned.has(required), `${required} must be covered by the apex scan`);
     }
@@ -276,14 +265,13 @@ describe('published agent corpus names the serving host (#7660)', () => {
 // `canonical_endpoint_required`, `/api/mcp` on the apex 301s onto www and
 // lands on the same 410, and `/mcp/` is a 404. A connector configured from any
 // of those never connects. The scans above only see apex URLs and www `/mcp`
-// inside public/ and the blog; the onboarding surfaces people actually copy
+// inside public/; the onboarding surfaces people actually copy
 // from (docs code fences, README, skills, the CLI and SDK defaults, the
-// in-app settings modal, the welcome page, the registry manifests, the
+// in-app settings modal, the registry manifests, the
 // homepage Link header) were unguarded.
 describe('every published MCP endpoint is the canonical one (#9722)', () => {
   const PUBLISHED_ROOTS = [
     'public',
-    'blog-site/src/content/blog',
     'skills',
     'cli/README.md',
     'cli/src',
@@ -295,7 +283,6 @@ describe('every published MCP endpoint is the canonical one (#9722)', () => {
     'sdk/rust/README.md',
     'sdk/rust/src',
     'src',
-    'pro-test/src',
     'README.md',
     'server.json',
     'mcp.json',
@@ -417,7 +404,6 @@ describe('every published MCP endpoint is the canonical one (#9722)', () => {
       'sdk/ruby/lib/worldmonitor.rb',
       'sdk/rust/src/lib.rs',
       'skills/check-country-risk/SKILL.md',
-      'pro-test/src/welcome/Agents.tsx',
       'public/agent/index.html',
       'public/.well-known/mcp/server-card.json',
       'docs/mcp-quickstart.mdx',

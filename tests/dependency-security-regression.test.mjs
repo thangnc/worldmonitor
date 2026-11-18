@@ -85,10 +85,8 @@ function pnpmLockVersions(path, name) {
 
 const patchedLocks = [
   ['sharp', '0.35.5', npmLockVersions, '../package-lock.json'],
-  ['sharp', '0.35.5', npmLockVersions, '../blog-site/package-lock.json'],
   ['sharp', '0.35.5', npmLockVersions, '../workers/railway-reconcile-control/package-lock.json'],
   ['shell-quote', '1.11.0', npmLockVersions, '../package-lock.json'],
-  ['shell-quote', '1.11.0', npmLockVersions, '../pro-test/package-lock.json'],
   ['shell-quote', '1.11.0', pnpmLockVersions, '../docker/umami/runtime/pnpm-lock.yaml'],
   ['markdown-it', '14.3.3', npmLockVersions, '../package-lock.json'],
   ['@vitest/mocker', '4.1.12', npmLockVersions, '../package-lock.json'],
@@ -122,9 +120,9 @@ for (const [name, patched, versionsOf, path] of patchedLocks) {
 // (glob 7, minimatch 3 and 5), so the check is "no version inside the
 // vulnerable range" rather than "every version >= patched".
 const vulnerableRanges = [
-  ['glob', '>=9.0.0 <=14.0.1', 'GHSA-3g3m-2fjr-6pw4', ['../package-lock.json', '../pro-test/package-lock.json', '../integrations/zapier/package-lock.json']],
-  ['minimatch', '>=7.0.0 <11.0.1', 'GHSA-g3hv-75wg-m249', ['../package-lock.json', '../pro-test/package-lock.json', '../integrations/zapier/package-lock.json']],
-  ['uuid', '<11.1.1 || >=12.0.0 <12.0.1 || >=13.0.0 <13.0.1', 'GHSA-w5hq-g745-h8pq', ['../package-lock.json', '../scripts/package-lock.json', '../pro-test/package-lock.json']],
+  ['glob', '>=9.0.0 <=14.0.1', 'GHSA-3g3m-2fjr-6pw4', ['../package-lock.json', '../integrations/zapier/package-lock.json']],
+  ['minimatch', '>=7.0.0 <11.0.1', 'GHSA-g3hv-75wg-m249', ['../package-lock.json', '../integrations/zapier/package-lock.json']],
+  ['uuid', '<11.1.1 || >=12.0.0 <12.0.1 || >=13.0.0 <13.0.1', 'GHSA-w5hq-g745-h8pq', ['../package-lock.json', '../scripts/package-lock.json']],
 ];
 
 for (const [name, range, advisory, paths] of vulnerableRanges) {

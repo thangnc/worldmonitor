@@ -35,25 +35,14 @@ ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}
 # clean release image before Vite copies public/ into dist/.
 RUN node scripts/generate-inventory-facts.mjs
 
-# public/pro/ is a build product, not committed bytes (#6898), and
-# docker/nginx.conf.template routes `location ^~ /pro` + `/pro/assets/` — so
-# unlike /blog (deliberately skipped here) the image must build pro-test or it
-# serves a 404 behind a live route. build:pro installs pro-test's own lockfile.
-RUN npm run build:pro
-
 # tsc + vite build directly like the sidecar image's builder. `npm run build`
-# would chain build:blog (blog-site has its own lockfile, not installed here)
-# and the prebuild openapi/agent-skills generators.
+# would also run the Vite env secrets check and the OpenAPI copy, which the
+# image does not need.
 RUN npx tsc && npx vite build
 RUN test -s dist/product-facts.json
 # The SPA entry point: docker/nginx.conf.template rewrites /lite and its screens
 # to it, so without it every app route in the image serves a 404.
 RUN test -s dist/lite.html
-# Assert the /pro pages survived the public/ -> dist/ copy. build:pro succeeding
-# proves public/pro/ exists; it does NOT prove Vite copied it, and nginx routes
-# `location ^~ /pro` regardless (#6898). Without this an outDir/publicDir change
-# ships a green image that 404s behind a live route.
-RUN test -s dist/pro/index.html && test -s dist/pro/welcome.html
 
 
 # Stage 2: Serve the built assets from nginx.

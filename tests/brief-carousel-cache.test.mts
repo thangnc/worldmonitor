@@ -64,7 +64,7 @@ describe('api/brief/carousel cache policy', () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://fake-upstash.invalid';
     process.env.UPSTASH_REDIS_REST_TOKEN = 'tok';
     const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-serif/files/noto-serif-latin-400-normal.woff';
-    const font = await readFile(resolve(dirname(fileURLToPath(import.meta.url)), '../blog-site/scripts/fonts/inter-regular.ttf'));
+    const font = await readFile(resolve(dirname(fileURLToPath(import.meta.url)), '../vendor/vercel-og/dist/Geist-Regular.ttf'));
     const envelope = {
       version: 1,
       issuedAt: 1_700_000_000_000,

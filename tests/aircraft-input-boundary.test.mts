@@ -269,7 +269,7 @@ test('native HTTP identifier admission preserves real auth, data, cache and wind
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
   const providerFetch = globalThis.fetch;
-  const { createLocalApiServer } = await import('../src-tauri/sidecar/local-api-server.mjs');
+  const { createLocalApiServer } = await import('../docker/local-api/local-api-server.mjs');
   globalThis.fetch = providerFetch;
   const root = await mkdtemp(join(tmpdir(), 'aircraft-native-'));
   await mkdir(join(root, 'aviation/v1'), { recursive: true });

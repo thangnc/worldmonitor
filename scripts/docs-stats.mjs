@@ -1169,10 +1169,6 @@ export const ACQUISITION_CLAIM_ROOTS = [
   'public/.well-known/ai-catalog.json',
   'public/.well-known/agent-skills',
   'public/api/llms.txt',
-  'pro-test/src/locales',
-  'pro-test/index.html',
-  'pro-test/welcome.html',
-  'blog-site/src/content/blog',
   'scripts/build-agent-skills-index.mjs',
 ];
 const ACQUISITION_CLAIM_EXCLUDES = [
@@ -1301,10 +1297,6 @@ export function validateVolatileInventoryClaims() {
     { path: 'public/llms.txt', text: /live in 190\+ countries/ },
     { path: 'public/llms.txt', text: /structural resilience ranked for/ },
     { path: 'docs/about.mdx', text: /live in 190\+ countries/ },
-    { path: 'blog-site/src/content/blog/country-instability-index-methodology-explained.md', text: /72 indicators, 21 active dimensions, and 6 domains/ },
-    { path: 'blog-site/src/content/blog/country-resilience-index-methodology-explained.md', text: /72 indicators across 21 active dimensions and 6 domains/ },
-    { path: 'blog-site/src/content/blog/country-resilience-index-methodology-explained.md', text: /six domains/i },
-    { path: 'blog-site/src/content/blog/country-risk-monitoring-workflow-for-analysts.md', text: /72 indicators, 21 active dimensions, and 6 domains/ },
     // Fixed resilience schema. tests/resilience-doc-parity.test.mts derives
     // these values from the scorer registry and validates this exact page.
     { path: 'docs/methodology/country-resilience-index.mdx', text: /\d+ of 196 countries ranked, using 72 indicators across 21 dimensions and 6 domains/ },
@@ -1339,13 +1331,6 @@ export function validateVolatileInventoryClaims() {
     // Fixed scoring universe: tests/chokepoint-scenario-doc-parity.test.mjs
     // derives the exact registry membership and validates this methodology.
     { path: 'docs/methodology/chokepoints.mdx', text: /13 monitored waterways/ },
-    { path: 'blog-site/src/content/blog/alerts-notification-channels-worldmonitor.md', text: /seven channels/i },
-    { path: 'blog-site/src/content/blog/aviation-intelligence-airports-airspace-flight-prices.md', text: /between any two airports/ },
-    { path: 'blog-site/src/content/blog/build-supply-chain-early-warning-system-api.md', text: /Three signals, three endpoints/ },
-    { path: 'blog-site/src/content/blog/free-geopolitical-data-apis-2026.md', text: /ingest ten feeds/ },
-    { path: 'blog-site/src/content/blog/supply-chain-early-warning-dashboard-worldmonitor-api.md', text: /five panels/ },
-    { path: 'pro-test/src/locales/ja.json', text: /25ダッシュボード/ },
-    { path: 'pro-test/src/locales/ja.json', text: /紛争は1つのマップレイヤー/ },
   ];
   const failures = [];
   const observedRetainedContracts = new Set();
@@ -1789,12 +1774,6 @@ export const PLAN_LAYER_COPY_SURFACES = [
   'docs/accounts.mdx',
   'docs/zh/pricing.mdx',
   'docs/zh/accounts.mdx',
-  'pro-test/src/locales/en.json',
-  'pro-test/welcome.html',
-  // The category explainer names the free-tier layer boundary too ("Every
-  // layer except the Resilience layer is available on the free plan"), so it
-  // has to be re-pointed alongside the pricing surfaces when the lock set moves.
-  'blog-site/src/content/blog/what-is-worldmonitor-real-time-global-intelligence.md',
 ];
 
 /** The single web-locked layer the copy above is written around. */
@@ -1939,7 +1918,6 @@ const DOC_VALIDATORS = [
   validateBootstrapCacheDocs,
   validateHealthSummaryDocs,
   validatePlanLayerEntitlementCopy,
-  validateCategoryExplainerCopy,
   validateVolatileInventoryClaims,
 ];
 

@@ -3,44 +3,16 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { guardProBuiltOutput, shouldSkipProBuiltOutput } from './_lib/pro-built-output.mjs';
 
 import { TRUSTED_RETURN_URL_ORIGINS } from '../convex/payments/returnUrlOrigin.ts';
 import { DEBUGBEAR_RUM_HOSTS } from '../src/bootstrap/debugbear-rum.ts';
 import { SENTRY_ALLOW_URLS } from '../src/bootstrap/sentry-allow-urls.ts';
-import { DEBUGBEAR_RUM_HOSTS as MARKETING_DEBUGBEAR_RUM_HOSTS } from '../pro-test/src/debugbear-rum.ts';
-import { SENTRY_ALLOW_URLS as MARKETING_SENTRY_ALLOW_URLS } from '../pro-test/src/sentry-allow-urls.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 
 function read(relPath: string): string {
   return readFileSync(resolve(root, relPath), 'utf8');
-}
-
-/**
- * Every built `public/pro` chunk reachable from a marketing HTML entry, following
- * module imports transitively. Same walk tests/debugbear-rum.test.mts uses to prove a
- * script reaches the shipped bundle rather than only the source.
- */
-function collectReachableProAssets(htmlRelPath: string): Set<string> {
-  const entries = [...read(htmlRelPath).matchAll(/<script\b[^>]*\btype=["']module["'][^>]*\bsrc=["']\/pro\/([^"']+\.js)["']/g)]
-    .map((match) => match[1]!);
-  const reachable = new Set<string>();
-  const queue = [...entries];
-
-  while (queue.length > 0) {
-    const asset = queue.shift()!;
-    if (reachable.has(asset)) continue;
-    reachable.add(asset);
-    const source = read(`public/pro/${asset}`);
-    for (const match of source.matchAll(/(?:from|import)\(\s*["']\.\/([^"']+\.js)["']\s*\)|from\s*["']\.\/([^"']+\.js)["']/g)) {
-      const specifier = match[1] ?? match[2];
-      if (specifier) queue.push(`assets/${specifier}`);
-    }
-  }
-
-  return reachable;
 }
 
 /**
@@ -59,10 +31,8 @@ function admits(allowUrls: RegExp[], host: string): boolean {
   return admitsUrl(allowUrls, scriptUrl(host));
 }
 
-/** Both copies must satisfy every behavioural assertion, not just the dashboard one. */
 const ALLOWLISTS: ReadonlyArray<readonly [string, RegExp[]]> = [
   ['src/bootstrap/sentry-allow-urls.ts', SENTRY_ALLOW_URLS],
-  ['pro-test/src/sentry-allow-urls.ts', MARKETING_SENTRY_ALLOW_URLS],
 ];
 
 /**
@@ -78,7 +48,6 @@ const ALLOWLISTS: ReadonlyArray<readonly [string, RegExp[]]> = [
 const SERVED_HOSTS = TRUSTED_RETURN_URL_ORIGINS.map((origin) => new URL(origin).host);
 
 describe('Sentry allowUrls ingest allowlist (#6545)', () => {
-  guardProBuiltOutput();
   it('derives a non-empty served-host population', () => {
     // Guards the enumerators themselves: an import that silently resolved to an
     // empty list would make every loop below iterate zero times and pass. Only
@@ -160,49 +129,13 @@ describe('Sentry allowUrls ingest allowlist (#6545)', () => {
     }
   });
 
-  it('keeps the marketing allowlist identical to the dashboard allowlist', () => {
-    // vercel.json rewrites `/` on every app host to the marketing
-    // /pro/welcome.html, so both bundles run on these hosts and fixing one copy
-    // alone just moves the blind spot.
-    assert.deepEqual(
-      MARKETING_SENTRY_ALLOW_URLS.map(String),
-      SENTRY_ALLOW_URLS.map(String),
-      'pro-test/src/sentry-allow-urls.ts drifted from src/bootstrap/sentry-allow-urls.ts',
-    );
-    assert.deepEqual(
-      [...MARKETING_DEBUGBEAR_RUM_HOSTS].sort(),
-      [...DEBUGBEAR_RUM_HOSTS].sort(),
-      'pro-test/src/debugbear-rum.ts host set drifted from its dashboard sibling',
-    );
-  });
-
-  it('ships the current allowlist in the built marketing bundle', { skip: shouldSkipProBuiltOutput() }, () => {
-    // public/pro/ is built during the deploy since #6898, so this no longer
-    // guards the stale-committed-bytes class it was written for. It still earns
-    // its place as a build-integrity check: source parity above proves the
-    // patterns are WRITTEN, this proves they SURVIVE bundling into the chunks
-    // the entry graph actually reaches (minification, tree-shaking, chunk
-    // splitting all sit between the two).
-    for (const htmlPath of ['public/pro/index.html', 'public/pro/welcome.html']) {
-      const reachable = collectReachableProAssets(htmlPath);
-      assert.ok(reachable.size > 0, `${htmlPath} referenced no module chunks`);
-      const bundled = [...reachable].map((asset) => read(`public/pro/${asset}`)).join('\n');
-      for (const pattern of MARKETING_SENTRY_ALLOW_URLS) {
-        assert.ok(
-          bundled.includes(pattern.source),
-          `${htmlPath} lost ${pattern.source} during bundling — re-run \`npm run build:pro\` and check the Sentry init survives tree-shaking`,
-        );
-      }
-    }
-  });
-
-  it('wires the shared allowlist into both Sentry init sites', () => {
+  it('wires the shared allowlist into the Sentry init site', () => {
     // The behavioural assertions above prove the exported value. These prove the
     // SDK is handed THAT value: the assignment must be the whole property (so a
     // chained `.filter(...)` or a spread cannot narrow it), the identifier must be
     // the shared-module import (so a local shadow cannot satisfy it), and
     // `allowUrls` must appear exactly once (so a later key cannot override it).
-    for (const relPath of ['src/bootstrap/sentry-init.ts', 'pro-test/src/sentry.ts']) {
+    for (const relPath of ['src/bootstrap/sentry-init.ts']) {
       const src = read(relPath);
       assert.match(
         src,

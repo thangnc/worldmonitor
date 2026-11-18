@@ -126,6 +126,6 @@ describe('agent readiness: llms.txt MCP tool citations', () => {
 
   it('preserves committed publication facts for the unit freshness checks', () => {
     const scripts = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).scripts;
-    assert.doesNotMatch(scripts['pretest:data'], /build:openapi|build:ai-search|product:facts/);
+    assert.doesNotMatch(scripts['pretest:data'] ?? '', /build:openapi|build:ai-search|product:facts/);
   });
 });

@@ -1718,8 +1718,8 @@ describe('spec-origin follow-through slice (#7067)', () => {
   });
 
   it('stays off the public scorecard contract', async () => {
-    const { SCORECARD_DECLARED_FIELDS } = await import('../scripts/build-accuracy-page.mjs');
-    for (const field of ['specOrigins', 'withheldAtEmission']) assert.ok(!SCORECARD_DECLARED_FIELDS.includes(field), field);
+    const { SCORECARD_DATA_FIELDS } = await import('../server/worldmonitor/forecast/v1/scorecard-fields.ts');
+    for (const field of ['specOrigins', 'withheldAtEmission']) assert.ok(!SCORECARD_DATA_FIELDS.includes(field), field);
   });
 });
 

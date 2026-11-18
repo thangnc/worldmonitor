@@ -16,7 +16,7 @@ component:
 | Accounts, API keys, billing, entitlements, notifications | `convex/` | Convex Cloud |
 | Relay (RSS proxy, AIS WebSocket, Telegram, notification delivery) and seeders | `scripts/` (`ais-relay.cjs`, `notification-relay.cjs`, `seed-*.mjs`) | Railway |
 | Consumer-prices scraper/API | `consumer-prices-core/` | Railway |
-| Desktop shell and local API sidecar | `src-tauri/` (Rust), `src-tauri/sidecar/local-api-server.mjs` | user's machine |
+| Desktop shell and local API sidecar | `src-tauri/` (Rust), `docker/local-api/local-api-server.mjs` | user's machine |
 | Self-hosted image | `Dockerfile`, `docker/` | anyone's server |
 | CORS preflight worker | `workers/api-cors-preflight/` | Cloudflare |
 
@@ -79,7 +79,7 @@ Highest value, in order:
    (`scripts/notification-relay.cjs`, `api/notification-channels.ts`).
 4. XSS in the SPA from feed/news/LLM content (`src/components/`, `src/services/`).
 5. Desktop trust boundary: `src-tauri/src/main.rs`, `src-tauri/capabilities/`,
-   `src-tauri/sidecar/local-api-server.mjs`.
+   `docker/local-api/local-api-server.mjs`.
 6. Cache and rate-limit integrity: a per-user or Pro response served to
    another caller via Redis or CDN keys; rate-limit bypass via spoofed client IP
    (`api/_client-ip.js`, `api/_rate-limit.js`).
@@ -118,7 +118,7 @@ Redis, Convex and upstream fetches.
   export LOCAL_API_TOKEN=scan-local-token
   cd /opt/worldmonitor-runtime && LOCAL_API_MODE=docker LOCAL_API_PORT=46123 \
     LOCAL_API_RESOURCE_DIR=/opt/worldmonitor-runtime \
-    node src-tauri/sidecar/local-api-server.mjs &
+    node docker/local-api/local-api-server.mjs &
   curl -H "x-worldmonitor-local-token: $LOCAL_API_TOKEN" \
     http://127.0.0.1:46123/api/product-catalog
   ```

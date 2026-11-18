@@ -76,7 +76,7 @@ export const DESKTOP_KEY_CLIENT_ERROR =
  * User-Agent prefixes of the clients a desktop key is issued for: the desktop
  * sidecar (`cloudUserAgent()`), the desktop auth bridge in `src-tauri`, and the
  * self-hosted relay (`selfHostRelayUserAgent()`), all in
- * `src-tauri/sidecar/local-api-server.mjs`.
+ * `docker/local-api/local-api-server.mjs`.
  */
 const DESKTOP_KEY_CLIENT_PREFIXES = ['WorldMonitor-Desktop/', 'WorldMonitor-SelfHost/'];
 

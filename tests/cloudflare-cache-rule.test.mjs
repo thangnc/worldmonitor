@@ -21,8 +21,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { CONTENT_CORPUS_PREFIXES } from '../scripts/discover-content-corpus-pages.mjs';
 import {
+  CONTENT_CORPUS_PREFIXES,
   AGENT_TEXT_FILES,
   AGENT_USER_AGENTS,
   CORPUS_HOST,
@@ -70,8 +70,8 @@ const UNCLAIMED_ENTRY_SOURCES = new Set(['/dashboard.html']);
  *   /(es|pt|ru|fr|de|ar)/          trailing-slash locale landings, exact documents
  *   /(a|b|c)                       bare corpus families (308s, mirrored anyway)
  *   /(a|b|c)/(.*)                  nested corpus families
- *   /blog                          a bare family that is itself a document
- *   /blog/((?!_astro/|og/).*)      a nested family with carve-outs; `x$` marks an exact path
+ *   /family                        a bare family that is itself a document
+ *   /docs/((?!_|mcp$|mcp/).*)      a nested family with carve-outs; `x$` marks an exact path
  *   /(llms\.txt|home\.md)          root-level files, dots escaped
  *
  * Returns null for anything else so the caller can fail loudly: a shape this
@@ -229,7 +229,8 @@ describe('cloudflare corpus cache rule', () => {
     const claimed = ruleClaims(rule.expression);
 
     // Positive controls: the parsers must actually be seeing the new shapes.
-    assert.ok(advertised.nested.has('blog') && advertised.nested.has('docs'), 'vercel.json must advertise /blog and /docs');
+    assert.ok(advertised.nested.has('docs'), 'vercel.json must advertise /docs');
+    assert.ok(!advertised.nested.has('blog') && !claimed.nested.has('blog'), 'the blog left with blog-site/; neither half may claim /blog');
     assert.ok(
       advertised.nested.has('accuracy') && claimed.nested.has('accuracy'),
       '/accuracy/ shipped with the origin CDN header; the Cloudflare rule must claim it too (#8070)',
@@ -344,18 +345,6 @@ describe('cloudflare corpus cache rule', () => {
         `vercel.json must advertise /${file} with the shared CDN-Cache-Control, or the claim caches at Vercel's static default`,
       );
     }
-  });
-
-  it('leaves the blog asset prefixes to the zone\'s older "Blog" rule', () => {
-    // That rule gives /blog/_astro/, /blog/og/ and /blog/images/ a month-long
-    // override TTL. Cloudflare lets the last matching rule write edge_ttl, so
-    // claiming them here would replace the month with "respect origin" — for
-    // Vercel's static default, an origin round-trip per request.
-    assert.deepEqual([...FAMILY_EXCLUSIONS.blog.prefixes], ['_astro/', 'og/', 'images/']);
-    for (const prefix of FAMILY_EXCLUSIONS.blog.prefixes) {
-      assert.ok(rule.expression.includes(`and not starts_with(http.request.uri.path, "/blog/${prefix}")`));
-    }
-    assert.ok(rule.expression.includes('"/blog"'), '/blog is the blog index, a document in its own right');
   });
 
   it('deliberately claims the agent-facing markdown twins alongside the HTML', () => {

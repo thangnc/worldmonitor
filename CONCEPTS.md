@@ -642,6 +642,8 @@ A run with no timestamp is never superseded, so the alarm fails closed. The alar
 
 ### Tiered Gate
 
+Retired in refactor Phase 1b, when `.husky/pre-push` became a short gate that runs only the checks the branch's changes touch. The entry records how the upstream hook worked.
+
 The pre-push check suite split into two tiers: a state-dependent tier (secret guards, PR-state and branch-contamination checks, lockfile sync) that runs on every push, and a tree-dependent tier (typechecks, invariant lints, bundle checks, scoped tests) that runs only for the paths the branch diff actually touches. Configuration-file changes, or an unresolvable branch diff, escalate the tree-dependent tier to run everything. The gate is a fast local pre-flight, not the merge gate — CI remains the full-suite authority.
 
 ### Green-Tree Cache
@@ -667,6 +669,8 @@ A dependency advisory the security gate knowingly tolerates, recorded per-lockfi
 The baseline is an exemption list, not a suppression: an advisory outside it fails the gate for every branch at once, which is why a newly published advisory blocks the whole repository until someone either patches or baselines it. Each entry carries its justification inline so a later reader can re-evaluate rather than inherit a bare allowlist, and an entry that no longer matches any live advisory is surfaced as stale so the list does not accrete dead exemptions. See also: Third-Party Rot, Acceptance Baseline.
 
 ### Deploy Gate
+
+Retired in refactor Phase 1b: `ci.yml` runs every job on every pull request, so its own check results are the gate. The entry records how the upstream gate worked.
 
 The single merge-blocking status that CI computes for a commit once the gated workflows finish, from a fixed list of check-run names. Each listed name resolves to the conclusion of its latest check run: a name no run has published holds the gate pending, a skipped conclusion counts as passing, and any other non-success fails it. A periodic sweep re-evaluates pending or stale statuses, so a status that arrived before its checks heals on its own. It is the CI counterpart of the Tiered Gate, which is a local pre-flight rather than the merge authority.
 

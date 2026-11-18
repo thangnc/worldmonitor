@@ -72,11 +72,9 @@ updates:
   - package-ecosystem: "npm"
     directories:
       - "/"
-      - "/blog-site"
       - "/consumer-prices-core"
       - "/docker/umami/runtime"
       - "/integrations/zapier"
-      - "/pro-test"
       - "/scripts"
       - "/workers/api-cors-preflight"
       - "/workers/railway-reconcile-control"
@@ -85,7 +83,7 @@ updates:
     # Security updates only, on purpose. open-pull-requests-limit caps VERSION
     # updates exclusively — security-update PRs are drawn from a separate
     # internal budget and never consume this one — so 0 switches off routine
-    # weekly bumps across nine directories while leaving advisory fixes, and
+    # weekly bumps across seven directories while leaving advisory fixes, and
     # the grouping below (which does apply to them), fully intact. Raising this
     # above 0 is how you would later opt into routine version bumps; do that
     # deliberately, with an `ignore` rule for semver-major, rather than by
@@ -94,25 +92,6 @@ updates:
     groups:
       # One PR per directory per advisory batch instead of one per package.
       npm-security:
-        applies-to: security-updates
-        patterns: ["*"]
-
-  # The desktop app. src-tauri/Cargo.lock has no general advisory scan — there
-  # is no `cargo audit` or `cargo-deny` step anywhere under .github/. The one
-  # Rust gate, scripts/check-rust-security-floors.mjs, is a hand-maintained
-  # allow-list of recorded floors and currently covers exactly one crate
-  # (tauri >= 2.11.1), so an advisory against any other crate passes unnoticed.
-  # That matters because build-desktop.yml ships signed binaries for five
-  # platforms, two of them Linux, where reqwest -> native-tls -> openssl is the
-  # live TLS implementation.
-  - package-ecosystem: "cargo"
-    directory: "/src-tauri"
-    schedule:
-      interval: "weekly"
-    # Same reasoning as the npm entry above: security updates only.
-    open-pull-requests-limit: 0
-    groups:
-      cargo-security:
         applies-to: security-updates
         patterns: ["*"]
 

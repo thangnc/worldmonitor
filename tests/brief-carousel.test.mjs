@@ -19,7 +19,7 @@ import { carouselUrlsFrom } from '../scripts/lib/digest-orchestration-helpers.mj
 
 const TEST_DIR = dirname(fileURLToPath(import.meta.url));
 const RENDERER_SOURCE_PATH = resolve(TEST_DIR, '../server/_shared/brief-carousel-render.ts');
-const LOCAL_RENDER_FONT_PATH = resolve(TEST_DIR, '../blog-site/scripts/fonts/inter-regular.ttf');
+const LOCAL_RENDER_FONT_PATH = resolve(TEST_DIR, '../vendor/vercel-og/dist/Geist-Regular.ttf');
 const originalFetch = globalThis.fetch;
 
 let rendererSourcePromise;

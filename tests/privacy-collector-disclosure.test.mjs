@@ -31,8 +31,6 @@ const read = (relativePath) => readFileSync(join(root, relativePath), 'utf8');
 const COLLECTOR_CALL_SITES = [
   'src/bootstrap/debugbear-rum.ts',
   'src/services/analytics.ts',
-  'pro-test/src/debugbear-rum.ts',
-  'pro-test/welcome.html',
 ];
 
 // host -> how the privacy policy must account for it.

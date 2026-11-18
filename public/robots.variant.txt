@@ -86,5 +86,4 @@ User-agent: Bytespider
 Disallow: /
 
 Sitemap: https://www.worldmonitor.app/sitemap.xml
-Sitemap: https://www.worldmonitor.app/blog/sitemap-index.xml
 Sitemap: https://www.worldmonitor.app/docs/sitemap.xml

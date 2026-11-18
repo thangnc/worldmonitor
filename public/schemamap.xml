@@ -12,16 +12,4 @@
     <loc>https://www.worldmonitor.app/</loc>
     <schema>https://schema.org/SoftwareApplication</schema>
   </url>
-  <url>
-    <loc>https://www.worldmonitor.app/blog/</loc>
-    <schema>https://schema.org/Blog</schema>
-  </url>
-  <url>
-    <loc>https://www.worldmonitor.app/blog/rss.xml</loc>
-    <schema>https://schema.org/DataFeed</schema>
-  </url>
-  <url>
-    <loc>https://www.worldmonitor.app/blog/glossary/</loc>
-    <schema>https://schema.org/DefinedTermSet</schema>
-  </url>
 </schemamap>

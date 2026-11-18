@@ -106,7 +106,7 @@ test('actual native sidecar requires its token before the flight-search gateway'
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
   const providerFetch = globalThis.fetch;
-  const { createLocalApiServer } = await import('../src-tauri/sidecar/local-api-server.mjs');
+  const { createLocalApiServer } = await import('../docker/local-api/local-api-server.mjs');
   // Sidecar import installs its network transport; keep upstream I/O synthetic.
   globalThis.fetch = providerFetch;
   const root = await mkdtemp(join(tmpdir(), 'google-flights-sidecar-'));

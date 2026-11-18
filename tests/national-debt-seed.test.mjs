@@ -5,8 +5,18 @@ import { imfSdmxFetchIndicator } from '../scripts/_seed-utils.mjs';
 
 // Import only the pure compute function (no Redis, no fetch side-effects)
 import { computeEntries, fetchTreasury, weoYearWindow } from '../scripts/seed-national-debt.mjs';
-import { debtAt } from '../scripts/live-pages/national-debt.mjs';
 import weoFiscalPeriods from '../scripts/shared/weo-fiscal-periods.mjs';
+
+// The accrual the seeded fields define: debt at `now` is the stock plus the
+// per-second rate times the time since baselineTs. These tests use it to check
+// that the seeder anchors baselineTs and perSecondRate consistently.
+function debtAt(entry, now) {
+  const base = Number.isFinite(entry.debtUsd) ? entry.debtUsd : 0;
+  const rate = entry.perSecondRate;
+  const baselineTs = entry.baselineTs;
+  if (!Number.isFinite(rate) || !rate || !Number.isFinite(baselineTs) || !baselineTs) return base;
+  return base + rate * ((now - baselineTs) / 1000);
+}
 
 // WEO gross debt is an end-of-year stock, so 2024 data is anchored at the end of 2024.
 const BASELINE_TS = Date.UTC(2025, 0, 1);

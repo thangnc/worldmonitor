@@ -67,7 +67,7 @@ Run these checks:
 
 ```bash
 node_modules/.bin/tsx --test tests/llm-health.test.mts
-node --test src-tauri/sidecar/local-api-server.test.mjs
+node --test docker/local-api/local-api-server.test.mjs
 npm run typecheck:api
 npm run test:sidecar
 ```

@@ -106,7 +106,7 @@ describe('rootless Mintlify route canonicalization', () => {
   });
 
   it('does not intercept product routes or non-read methods', () => {
-    for (const path of ['/pricing', '/changelog', '/sandbox', '/sandbox/', '/sandbox/index.json']) {
+    for (const path of ['/changelog', '/sandbox', '/sandbox/', '/sandbox/index.json']) {
       assert.equal(
         middleware(new Request(`https://www.worldmonitor.app${path}`, {
           headers: { host: 'www.worldmonitor.app', 'user-agent': 'Googlebot' },

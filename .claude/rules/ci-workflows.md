@@ -12,7 +12,7 @@ Source of truth: [ARCHITECTURE.md "CI/CD"](../../ARCHITECTURE.md#11-cicd), `docs
 ## Rules
 
 - Add or update the workflow's row in the ARCHITECTURE.md CI/CD table in the same change.
-- A check required by the Deploy Gate must be an `if:`-gated job, not a path-filtered workflow. A workflow skipped by a path filter never reports, so the required check stays pending.
+- `ci.yml` is the pull-request gate. Keep it free of path filters: every job runs on every PR, so a required check never stays pending.
 - PR workflows never run repository-controlled code with a write token. Generated-artifact writes follow the read-only-then-writer split in [CONTRIBUTING.md "Generated Artifacts in Pull Requests"](../../CONTRIBUTING.md#generated-artifacts-in-pull-requests).
 - Pin each third-party action to a full commit SHA, as every existing workflow does. Grant the minimum `permissions:` per job.
 - A check must fail closed when it loses its target (no files matched, an empty artifact, a missing input).

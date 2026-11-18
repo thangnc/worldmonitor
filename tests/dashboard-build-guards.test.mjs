@@ -11,7 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
-const workflowPath = resolve(repoRoot, '.github/workflows/test.yml');
+const workflowPath = resolve(repoRoot, '.github/workflows/ci.yml');
 const guardModuleUrl = pathToFileURL(resolve(repoRoot, 'tests/_lib/built-output-guard.mjs')).href;
 
 const guardProbeSource = [
@@ -71,109 +71,23 @@ function runGuardProbe(expectBuiltOutput) {
 }
 
 describe('built-output guard contract', () => {
-  it('keeps the Lite build immediately before the marker-enabled data test in CI', () => {
+  it('keeps the Lite build immediately before the marker-enabled built-output test in CI', () => {
     const workflow = readFileSync(workflowPath, 'utf8').replaceAll('\r\n', '\n');
-    // The data test must run against the dist the step above just built, with
-    // nothing between them that could leave dist/ stale or absent.
-    // The /pro build is build:pro's build half; its install half runs on a
-    // dependency-cache miss earlier in the job.
+    // The built-output suites must run against the dist the step above just
+    // built, with nothing between them that could leave dist/ stale or absent.
     const expectedSequence = [
-      '        run: npm --prefix pro-test run build',
-      '      - name: Build Lite artifacts for built-output tests',
-      '        run: ./node_modules/.bin/vite build',
-      '      - run: WM_EXPECT_BUILT_OUTPUT=1 npm run test:data',
+      '      - run: npm run build',
+      '      - run: WM_EXPECT_BUILT_OUTPUT=1 npm run test:data -- --built-output=only --concurrency=4',
     ].join('\n');
 
     assert.ok(
       workflow.includes(expectedSequence),
-      'the unit job must build /pro then Lite artifacts, then run test:data with WM_EXPECT_BUILT_OUTPUT=1 immediately after',
+      'the build job must run npm run build, then the built-output test:data run with WM_EXPECT_BUILT_OUTPUT=1 immediately after',
     );
     assert.equal(
       workflow.match(/WM_EXPECT_BUILT_OUTPUT=1 npm run test:data/g)?.length ?? 0,
       1,
-      'the CI marker command should remain a single, explicit unit-job contract',
-    );
-  });
-
-  it('wires the /pro guard to the shared primitive and the prerendered page', async () => {
-    // The skip/fail behaviour itself is proven with teeth by the probe cases
-    // below, which exercise the shared primitive. What that probe cannot reach
-    // is the /pro wrapper, because it resolves its own path -- so pin the two
-    // things the wrapper contributes: which file it watches, and that it
-    // delegates rather than reimplementing the skip/fail decision.
-    const proGuard = await import('./_lib/pro-built-output.mjs');
-    assert.match(
-      proGuard.PRO_BUILT_MARKER,
-      /public\/pro\/welcome\.html$/,
-      'the /pro marker must be the prerendered welcome page',
-    );
-
-    const source = readFileSync(resolve(repoRoot, 'tests/_lib/pro-built-output.mjs'), 'utf8');
-    assert.match(
-      source,
-      /from '\.\/built-output-guard\.mjs'/,
-      'the /pro helper must delegate to the shared built-output primitive, not fork it',
-    );
-    assert.match(
-      source,
-      /shouldSkipBuiltOutput\(PRO_BUILT_MARKER\)/,
-      'shouldSkipProBuiltOutput must ask the shared primitive about the /pro marker',
-    );
-    assert.match(
-      source,
-      /guardBuiltOutput\(PRO_BUILT_MARKER/,
-      'guardProBuiltOutput must ask the shared primitive about the /pro marker',
-    );
-
-    const sentrySource = readFileSync(resolve(repoRoot, 'tests/pro-sentry-chunk.test.mjs'), 'utf8');
-    assert.match(
-      sentrySource,
-      /from '\.\/_lib\/built-output-guard\.mjs'/,
-      'the pro Sentry chunk suite must use the shared built-output primitive',
-    );
-    assert.match(
-      sentrySource,
-      /skip: shouldSkipBuiltOutput\(ASSETS_DIR\)/,
-      'the pro Sentry chunk suite must skip specifically when public/pro/assets is absent',
-    );
-    assert.match(
-      sentrySource,
-      /guardBuiltOutput\(ASSETS_DIR, undefined, REBUILD_HINT\)/,
-      'the pro Sentry chunk suite must fail closed on the same assets path when CI expects built output',
-    );
-    assert.match(
-      sentrySource,
-      /Run `npm run build:pro` first/,
-      'the pro Sentry chunk failure must name the /pro build command',
-    );
-  });
-
-  it('keeps the /pro build-output existence check in the freshness workflow', () => {
-    // The only thing standing between a broken pro build and a 404 at /pro is
-    // this check: #6898 stopped committing public/pro/, so no byte in git covers
-    // for a build that emitted nothing. `vite build` succeeding is not the same
-    // as the two entry pages existing -- a rollupOptions.input rename would ship
-    // a green build and an empty route.
-    const freshness = readFileSync(
-      resolve(repoRoot, '.github/workflows/pro-bundle-freshness.yml'),
-      'utf8',
-    ).replaceAll('\r\n', '\n');
-
-    for (const page of ['public/pro/index.html', 'public/pro/welcome.html']) {
-      assert.ok(
-        freshness.includes(page),
-        `pro-bundle-freshness.yml must assert ${page} exists after the build`,
-      );
-    }
-    assert.match(
-      freshness,
-      /if \[ ! -s "\$page" \]; then/,
-      'the existence check must test for a NON-EMPTY file (-s), not merely a present one',
-    );
-    assert.match(
-      freshness,
-      /run: cd pro-test && npm run build/,
-      'the existence check is only meaningful if the workflow actually builds pro-test',
+      'the CI built-output command should remain a single, explicit build-job contract',
     );
   });
 

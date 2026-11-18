@@ -17,7 +17,6 @@ import {
   prefersAgentNotFound,
   suggestNotFoundSection,
 } from '../src/config/agent-not-found.ts';
-import { CONTENT_CORPUS_PREFIXES } from '../scripts/discover-content-corpus-pages.mjs';
 import { indexableLandingPassthroughPrefixes } from '../shared/indexable-landing-locales.ts';
 
 const vercelConfig = JSON.parse(
@@ -143,8 +142,13 @@ describe('agent-friendly 404s (orank agent-friendly-404)', () => {
   });
 
   it('does not intercept known product routes or mutating methods', () => {
-    for (const path of ['/', '/dashboard', '/stocks/AAPL', '/story', '/pro', '/docs/mcp', '/countries/united-states', ...indexableLandingPassthroughPrefixes()]) {
+    for (const path of ['/', '/dashboard', '/stocks/AAPL', '/story', '/docs/mcp', '/countries/united-states', ...indexableLandingPassthroughPrefixes()]) {
       assert.equal(call(path, { accept: '*/*' }), undefined, `${path} must keep its vercel.json route`);
+    }
+    // The /pro and /blog builds are gone (refactor Phase 1b), so their paths
+    // get the agent-friendly 404 rather than Vercel's static HTML one.
+    for (const path of ['/pro', '/pro/welcome.html', '/blog/some-post', '/pricing']) {
+      assert.ok(call(path, { accept: 'text/markdown' }), `${path} has no route and must not pass through`);
     }
     assert.equal(call('/some-path-that-does-not-exist', { method: 'POST', accept: '*/*' }), undefined);
   });
@@ -160,15 +164,6 @@ describe('agent-friendly 404s (orank agent-friendly-404)', () => {
   it('serves the /trust page (#9093), which used to be a leaked SPA guess', async () => {
     for (const path of ['/trust', '/trust/', '/trust/review/']) {
       assert.equal(call(path, { accept: '*/*' }), undefined, `${path} must reach its static page`);
-    }
-  });
-
-  it('passthrough prefixes cover every crawlable corpus section', () => {
-    for (const prefix of CONTENT_CORPUS_PREFIXES) {
-      assert.ok(
-        (AGENT_NOT_FOUND_PASSTHROUGH_PREFIXES as readonly string[]).includes(`/${prefix}`),
-        `corpus prefix /${prefix} must not 404 real static pages`,
-      );
     }
   });
 
@@ -228,7 +223,7 @@ describe('human 404 guides a lost reader to a real page', () => {
       ['/chokepoint/suez-canal', '/chokepoints/'],
       ['/comparison/liveuamap', '/compare/'],
       ['/documentation', '/docs/documentation'],
-      ['/blogs/some-post', '/blog/'],
+      ['/blogs/some-post', null],
       ["/'to", null],
       ['/zzzzzz', null],
       [`/${'countries'.repeat(900)}`, null],

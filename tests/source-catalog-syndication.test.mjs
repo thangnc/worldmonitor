@@ -23,7 +23,6 @@ import {
   scanUpstreamHosts,
   sourceAttributionLedgerStats,
 } from '../scripts/source-attribution.mjs';
-import { buildSourceCatalog } from '../scripts/crawlable-sources-page.mjs';
 import { rawCatalogProviderNames } from './helpers/raw-catalog-providers.mjs';
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -192,49 +191,6 @@ test('the committed inventory keeps transport hosts in the ledger but not the pr
   assert.ok(!identities.has('news.google.com'));
   assert.ok(identities.has('NDTV'));
   assert.ok(identities.has('reuters.com') || identities.has('Reuters'));
-});
-
-test('catalog cards distinguish origin from coverage for BBC, NDTV, and Reuters', () => {
-  const manifest = loadManifest(rootDir);
-  const declarations = scanNamedFeedDeclarations(rootDir);
-  const geography = loadSourceGeography(rootDir);
-  const catalog = attachCoverageToCatalog(
-    buildSourceCatalog(
-      manifest.entries.filter(isCatalogProviderEntry),
-      { logicalProviders: manifest.logicalProviders || [] },
-    ),
-    declarations,
-    geography,
-  );
-  const byName = new Map(catalog.map((row) => [row.displayName, row]));
-
-  assert.ok(!catalog.some((row) => row.displayName === 'Google News'));
-  assert.ok(!catalog.some((row) => /FeedBurner/i.test(row.displayName)));
-
-  const ndtv = byName.get('NDTV');
-  assert.ok(ndtv, 'NDTV must appear as its own catalog provider');
-  assert.equal(ndtv.originCountry, 'IN');
-  assert.ok(ndtv.coveredCountries.includes('IN'));
-  assert.ok(ndtv.hosts.includes('feeds.feedburner.com'));
-  assert.deepEqual(ndtv.transportHosts, ['feeds.feedburner.com']);
-
-  const bbcRows = catalog.filter((row) => row.provider === 'BBC');
-  assert.equal(bbcRows.length, 1, 'BBC must render exactly one logical publisher card');
-  const [bbc] = bbcRows;
-  assert.ok(bbc, 'BBC Hindi must remain under BBC');
-  assert.equal(bbc.originCountry, 'GB');
-  assert.ok(bbc.coveredCountries.includes('IN'), 'BBC Hindi must declare India coverage');
-  assert.deepEqual(
-    bbc.hosts,
-    ['feeds.bbci.co.uk', 'www.bbc.com'],
-    'BBC feed and language-edition hosts must collapse into one publisher card',
-  );
-
-  const reuters = byName.get('Reuters');
-  assert.ok(reuters, 'site-scoped Reuters queries must keep the Reuters identity');
-  assert.equal(reuters.originCountry, 'GB');
-  assert.ok(reuters.coveredCountries.includes('IN'), 'India-focused Reuters routes must declare India coverage');
-  assert.ok(reuters.hosts.includes('reuters.com'));
 });
 
 test('www catalog hosts inherit geography from stripped editorial hosts', () => {

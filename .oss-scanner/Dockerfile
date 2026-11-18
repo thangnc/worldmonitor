@@ -57,7 +57,7 @@ RUN npm ci --prefix scripts \
 # Typecheck and build the frontend into dist/, as the root Dockerfile does.
 RUN npm run build:pro && npx tsc && npx vite build
 
-# The local API server (src-tauri/sidecar/local-api-server.mjs) loads esbuild
+# The local API server (docker/local-api/local-api-server.mjs) loads esbuild
 # bundles of the handlers. The script bundles them in a copy at
 # /opt/worldmonitor-runtime so /src keeps the real source.
 RUN sh .oss-scanner/build-runtime.sh

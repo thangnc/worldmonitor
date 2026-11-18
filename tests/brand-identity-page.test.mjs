@@ -1,5 +1,5 @@
 // Published-document check by design (#8690, section 2): this suite pins
-// the brand page, its discovery links, and Organization JSON-LD identity data.
+// the brand page and its discovery links.
 // Runtime application tests do not check the document bytes crawlers read.
 //
 import assert from 'node:assert/strict';
@@ -13,12 +13,6 @@ const BRAND_PAGE = 'public/world-monitor.md';
 // list, so the api-catalog and the sitemap must both name www or a crawler
 // following the catalog pays for a 301 the sitemap does not (#7660).
 const BRAND_URL = 'https://www.worldmonitor.app/world-monitor.md';
-
-function organizationBlocks(html) {
-  return [...html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)]
-    .map((match) => JSON.parse(match[1]))
-    .filter((block) => block['@type'] === 'Organization');
-}
 
 describe('World Monitor brand-identity page', () => {
   it('opens with the brand-named H1 and a NAP table crawlers can quote', () => {
@@ -72,7 +66,7 @@ describe('World Monitor brand-identity page', () => {
     assert.match(body, /https:\/\/www\.wikidata\.org\/wiki\/Q141237754/, 'brand page must cite the World Monitor Wikidata item');
   });
 
-  it('is advertised on catalog, llms, agents, and IndexNow discovery surfaces', () => {
+  it('is advertised on catalog, llms, and agents discovery surfaces', () => {
     const catalog = JSON.parse(read('public/.well-known/api-catalog'));
     const hrefs = catalog.linkset.flatMap((ctx) =>
       Object.values(ctx).flatMap((value) => (Array.isArray(value) ? value.map((entry) => entry.href) : [])),
@@ -84,87 +78,8 @@ describe('World Monitor brand-identity page', () => {
     }
 
     // A file, not a page: it left the sitemap (#8608) and is announced through
-    // IndexNow and llms.txt instead, still on the www host.
+    // llms.txt instead, still on the www host.
     const sitemap = read('public/sitemap-main.xml');
     assert.ok(!sitemap.includes(`<loc>${BRAND_URL}</loc>`), 'sitemap-main.xml must not declare the brand markdown');
-    assert.match(read('scripts/build-sitemap.mjs'), /`\$\{SITE_ORIGIN\}\/world-monitor\.md`/);
-  });
-});
-
-describe('Organization JSON-LD NAP alignment', () => {
-  it('keeps the canonical welcome Organization NAP aligned', () => {
-    const welcome = organizationBlocks(read('pro-test/welcome.html'));
-    assert.equal(welcome.length, 1, 'welcome.html must declare one Organization');
-    for (const org of welcome) {
-      assert.equal(org.address?.addressLocality, 'Dubai');
-      assert.equal(org.address?.addressCountry, 'AE');
-      assert.equal(org.address?.streetAddress, undefined);
-      assert.equal(org.telephone, undefined);
-      assert.ok(org.sameAs.includes('https://x.com/eliehabib'));
-    }
-    assert.match(
-      read('pro-test/welcome.html'),
-      /rel="alternate" type="text\/markdown" href="\/world-monitor\.md"/,
-    );
-    assert.doesNotMatch(read('pro-test/prerender.mjs'), /Organization JSON-LD|ORGANIZATION_JSONLD/);
-  });
-
-  it('links the organization profile and owned packages, never foreign identities', () => {
-    const [org] = organizationBlocks(read('pro-test/welcome.html'));
-    for (const edge of [
-      'https://www.crunchbase.com/organization/world-monitor',
-      'https://www.wikidata.org/wiki/Q141437464',
-      'https://rubygems.org/gems/worldmonitor',
-      'https://pypi.org/project/worldmonitor-sdk/',
-      'https://pkg.go.dev/github.com/koala73/worldmonitor/sdk/go',
-    ]) {
-      assert.ok(org.sameAs.includes(edge), `Organization sameAs must include ${edge}`);
-    }
-    assert.doesNotMatch(
-      read('pro-test/welcome.html'),
-      /pypi\.org\/project\/worldmonitor\//,
-      'the foreign same-name PyPI project is not ours and must not appear',
-    );
-    // Q141237754 is instance-of web application, not an organization: it belongs
-    // on the SoftwareApplication node (pinned by schema-graph-contract), and
-    // attaching it here would assert a false identity.
-    assert.equal(
-      org.sameAs.includes('https://www.wikidata.org/wiki/Q141237754'),
-      false,
-      'the web-application item must not be attached to the Organization node',
-    );
-  });
-
-  it('names each Wikidata item only on the node it identifies (#8699)', () => {
-    // Two items, two entities: Q141437464 is the company, Q141237754 the web
-    // application. A single page carries both, so the check is per node, not
-    // "every ID on the page is the same".
-    const COMPANY = 'Q141437464';
-    const APPLICATION = 'Q141237754';
-    const blocks = [...read('pro-test/welcome.html').matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)]
-      .map((match) => JSON.parse(match[1]));
-    const [org] = blocks.filter((block) => block['@type'] === 'Organization');
-    const [app] = blocks.filter((block) => block['@type'] === 'SoftwareApplication');
-    const itemsIn = (value) => new Set(JSON.stringify(value ?? null).match(/Q\d+/g) ?? []);
-    const wikidataSameAs = (node) => node.sameAs.filter((url) => url.startsWith('https://www.wikidata.org/'));
-
-    assert.deepEqual(wikidataSameAs(org), [`https://www.wikidata.org/wiki/${COMPANY}`]);
-    assert.deepEqual(wikidataSameAs(app), [`https://www.wikidata.org/wiki/${APPLICATION}`]);
-    assert.ok(
-      itemsIn(org.disambiguatingDescription).has(COMPANY),
-      'the Organization description must name the company item it is the sameAs of',
-    );
-    assert.match(
-      org.disambiguatingDescription,
-      new RegExp(`the company ${COMPANY} and the web application ${APPLICATION}`),
-      'a second item in the Organization text must say which entity it is',
-    );
-    assert.ok(!itemsIn(app).has(COMPANY), 'the application node must not carry the company item');
-  });
-
-  it('keeps star counts out of the source template for build-time injection', () => {
-    const source = read('pro-test/welcome.html');
-    assert.doesNotMatch(source, /"userInteractionCount":\s*\d+/, 'star counts must not be hardcoded in the source template');
-    assert.doesNotMatch(source, /GITHUB_STARS/, 'the source template must not carry injection tokens');
   });
 });

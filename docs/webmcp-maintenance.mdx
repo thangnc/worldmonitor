@@ -32,8 +32,7 @@ Treat each WebMCP change as a public UI contract change. Tool names, description
 | `src/config/panel-enablement.ts` | Panel enablement policy and the settings persist and apply path used by `set_panel_enabled`. |
 | `src/services/clerk.ts` | Live access context, the PII-free snapshot, and the existing Clerk sign-in dialog. |
 | `src/services/panel-layout-actions.ts`, `src/services/tab-store.ts`, and `src/services/dashboard-tab-actions.ts` | Panel layout snapshot/collapse/move/fullscreen policy, dashboard-tab UI, persistence, name and ID limits, and list, select, create, rename, and delete actions. |
-| `pro-test/welcome.html` | Zero-import homepage registration for `launchWorldMonitor` and `getWorldMonitorMcpEndpoint`. |
-| `vercel.json`, `docker/nginx-security-headers.conf`, `docker/nginx-embed-security-headers.conf`, `vite.config.ts`, and `pro-test/vite.config.ts` | Trial enrollment, origin isolation, same-origin permission, local testing parity, and explicit embed denial. |
+| `vercel.json`, `docker/nginx-security-headers.conf`, `docker/nginx-embed-security-headers.conf`, and `vite.config.ts` | Trial enrollment, origin isolation, same-origin permission, local testing parity, and explicit embed denial. |
 | `tests/webmcp*.test.*` and `tests/deploy-config.test.mjs` | Deterministic inventory, schema, lifecycle, UI, telemetry, documentation, and deployment-boundary contracts. |
 | `tests/fixtures/webmcp/evals.v1.json` and `scripts/evaluate-webmcp-evals.mjs` | Offline tool-selection and multi-step journey evaluation contract. |
 

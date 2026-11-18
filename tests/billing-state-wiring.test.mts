@@ -124,11 +124,3 @@ describe('Pro-gated endpoint policy and billing denial ordering (#5600, #5646)',
     });
   }
 });
-
-describe('returning-subscriber surfaces (#4799)', () => {
-  it('lets the pricing page honor a returning subscriber plan preference', async () => {
-    const src = await read('pro-test/src/components/PricingSection.tsx');
-    assert.match(src, /wm_reactivate_plan/);
-    assert.match(src, /endsWith\('_annual'\)/);
-  });
-});
