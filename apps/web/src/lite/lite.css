@@ -6,11 +6,10 @@
 @import "@fontsource/ibm-plex-mono/500.css";
 @import "@fontsource/ibm-plex-mono/600.css";
 @import "overlayscrollbars/overlayscrollbars.css";
-/* Tailwind detects classes from the repository root, as it did when the Vite
-   root was the repository (before refactor PR 2.5 moved the app to apps/web),
-   so the built CSS stays byte-identical. Scanning apps/web alone drops about
-   130 stray utilities that only prose and code outside the UI spell. */
-@import "tailwindcss" source("../../../..");
+/* Tailwind detects classes in apps/web only (source is relative to this
+   file). Prose and code elsewhere in the repository no longer add stray
+   utilities, and turbo hashes only the files that can change the CSS. */
+@import "tailwindcss" source("../..");
 
 @theme {
 	--color-bg: #0a0c0f;

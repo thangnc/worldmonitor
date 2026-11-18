@@ -23,17 +23,20 @@
     "@wm/web#build": {
       "inputs": [
         "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/**",
         "$TURBO_ROOT$/.env*",
-        "!$TURBO_ROOT$/dist/**",
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/package-lock.json",
+        "$TURBO_ROOT$/tsconfig.json",
+        "$TURBO_ROOT$/public/**",
+        "$TURBO_ROOT$/packages/**",
+        "!$TURBO_ROOT$/packages/**/node_modules/**",
         "!$TURBO_ROOT$/**/.turbo/**",
-        "!$TURBO_ROOT$/.claude/worktrees/**",
-        "!$TURBO_ROOT$/.claude/verify-evidence/**",
-        "!$TURBO_ROOT$/**/target/**",
-        "!$TURBO_ROOT$/blog-site/**",
-        "!$TURBO_ROOT$/**/node_modules/**",
-        "!$TURBO_ROOT$/docs/engineering/**",
-        "!$TURBO_ROOT$/tests/**"
+        "$TURBO_ROOT$/api/_*.js",
+        "$TURBO_ROOT$/scripts/_*.mjs",
+        "$TURBO_ROOT$/scripts/shared/**",
+        "$TURBO_ROOT$/scripts/lib/**",
+        "$TURBO_ROOT$/scripts/check-vite-env-secrets.mjs",
+        "$TURBO_ROOT$/scripts/check-no-public-source-maps.mjs"
       ],
       "env": ["VITE_*", "VERCEL_GIT_COMMIT_SHA"],
       "outputs": ["$TURBO_ROOT$/dist/**"]
