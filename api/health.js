@@ -701,7 +701,6 @@ const STANDALONE_KEYS = {
   // API and MCP service read this key only; no request-time source fan-out.
   scorecardFiveFactor:       'scorecard:five-factor:v1',
   resilienceRanking:        'resilience:ranking:v29',
-  productCatalog:           'product-catalog:v3',
   energySpineCountries:     'energy:spine:v1:_countries',
   energyExposure:           'energy:exposure:v1:index',
   energyMixAll:             'energy:mix:v1:_all',
@@ -798,7 +797,6 @@ const STANDALONE_KEYS = {
   staticRefHeavyBundleTick:      'bundle:heartbeat:static-ref-heavy',
   telegramFeed:                  'intelligence:telegram-feed:v1',
   xFeed:                         'intelligence:x-feed:v1',
-  digestNotifications:           'digest:last-run',
   webcams:                       'webcam:cameras:active',
   forecastResolutions:           'forecast:resolutions:v1',
   forecastProbabilityTrail:      'forecast:probability-trail:v1',
@@ -1572,7 +1570,6 @@ const SEED_META = {
   },
   telegramFeed:     { key: 'seed-meta:intelligence:telegram-feed:v1', maxStaleMin: 10 }, // 60s poll interval; 10min grace catches poll failures before they go stale in the panel
   xFeed:            { key: 'seed-meta:intelligence:x-feed:v1', maxStaleMin: 45 }, // Fixed 15min List slots; 45min = 3 missed slots. Freshness advances only after an accepted page is published.
-  digestNotifications: { key: 'seed-meta:digest:last-run',          maxStaleMin: 90 }, // Railway digest-notifications cron runs every 30min; 90 = 3x cadence and detects a dead cron before daily digests are missed.
   forecasts:        { key: 'seed-meta:forecast:predictions',       maxStaleMin: 90 },
   forecastProbabilityTrail: {
     key: 'seed-meta:forecast:probability-trail', maxStaleMin: 90,
@@ -2272,7 +2269,6 @@ const SEED_META = {
       activationKey: 'seed-activated:intelligence:pizzint-history',
     },
   },
-  productCatalog:    { key: 'seed-meta:product-catalog',               maxStaleMin: 1080 }, // relay loop every 6h; 1080 = 18h = 3x interval
   vpdTrackerRealtime:   { key: 'seed-meta:health:vpd-tracker',         maxStaleMin: 2880 }, // daily seed (0 2 * * *); 2880min = 48h = 2x interval
   vpdTrackerHistorical: { key: 'seed-meta:health:vpd-tracker',         maxStaleMin: 2880 }, // shares seed-meta key with vpdTrackerRealtime (same run)
   resilienceStaticIndex: { key: 'seed-meta:resilience:static',         maxStaleMin: 576000, projectFailedDatasets: true }, // annual October snapshot; 400d threshold matches TTL and preserves prior-year data on source outages

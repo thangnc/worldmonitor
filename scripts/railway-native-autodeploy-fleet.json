@@ -13,14 +13,6 @@
       "name": "deep-forecast-worker"
     },
     {
-      "id": "01d644b8-057f-4040-a50e-500bd684daa8",
-      "name": "digest-notifications"
-    },
-    {
-      "id": "aa37bd8e-c28d-4e9b-9d1e-0961f1b63d97",
-      "name": "notification-relay"
-    },
-    {
       "id": "0afd5faf-1f52-4688-9183-f106d46eaeb6",
       "name": "publish-bootstrap-tiers"
     },
@@ -355,18 +347,6 @@
     {
       "id": "67264e35-0b51-457b-984f-4ef20e36a117",
       "name": "simulation-worker"
-    },
-    {
-      "id": "d7620480-e05a-4c09-b210-05166c3c0e59",
-      "name": "umami"
-    },
-    {
-      "id": "ad4184fa-51d1-487f-8b2b-61ebbdd9ab4d",
-      "name": "umami-retention"
-    },
-    {
-      "id": "1f732679-760d-467b-bc36-4be3f45bc586",
-      "name": "verification-desk"
     }
   ]
 }

@@ -112,15 +112,10 @@
       "host": "abacus.worldmonitor.app",
       "provider": "abacus.worldmonitor.app",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/check-analytics-collector.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "abc-iview-mediapackagestreams-2.akamaized.net",
@@ -1229,18 +1224,10 @@
       "host": "api.telegram.org",
       "provider": "api.telegram.org",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Provider terms for this upstream API/dataset; verify before redistribution",
       "attribution": "Credit api.telegram.org and link to the original upstream API/dataset.",
-      "status": "terms-review",
-      "references": [
-        {
-          "path": "scripts/notification-relay.cjs"
-        },
-        {
-          "path": "scripts/seed-digest-notifications.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "api.travelpayouts.com",
@@ -5941,15 +5928,10 @@
       "host": "live.dodopayments.com",
       "provider": "live.dodopayments.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/ais-relay.cjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "live.livetvstream.co.uk",
@@ -9413,15 +9395,10 @@
       "host": "test.dodopayments.com",
       "provider": "test.dodopayments.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/ais-relay.cjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "th.usembassy.gov",
@@ -10467,13 +10444,7 @@
           "path": "scripts/lib/company-monitoring-classifier-client.mjs"
         },
         {
-          "path": "scripts/lib/digest-email-html.mjs"
-        },
-        {
           "path": "scripts/lib/x-news-accounts.cjs"
-        },
-        {
-          "path": "scripts/seed-digest-notifications.mjs"
         },
         {
           "path": "scripts/seed-five-factor-scorecard.mjs"
@@ -10495,9 +10466,6 @@
         },
         {
           "path": "scripts/seed-wb-indicators.mjs"
-        },
-        {
-          "path": "scripts/shared/notify-fields.cjs"
         },
         {
           "path": "scripts/shipping-webhook-worker.mjs"
@@ -14479,9 +14447,6 @@
           "path": "scripts/freeze-resilience-ranking.mjs"
         },
         {
-          "path": "scripts/lib/email-unsubscribe.cjs"
-        },
-        {
           "path": "scripts/lib/internal-links.mjs"
         },
         {
@@ -14489,9 +14454,6 @@
         },
         {
           "path": "scripts/measure-dashboard-render-axis.mjs"
-        },
-        {
-          "path": "scripts/notification-relay.cjs"
         },
         {
           "path": "scripts/seed-no2-activity.mjs"

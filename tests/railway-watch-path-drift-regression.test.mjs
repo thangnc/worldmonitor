@@ -36,9 +36,9 @@ describe('critical ingestion Railway registry drift regressions', () => {
     const derivedSignals = registry.find(
       (entry) => entry.service === 'seed-bundle-derived-signals',
     );
-    const umami = registry.find((entry) => entry.service === 'umami');
+    const relay = registry.find((entry) => entry.service === 'ais-relay');
     assert.ok(derivedSignals, 'derived-signals bundle must be registered');
-    assert.ok(umami, 'umami must be registered');
+    assert.ok(relay, 'ais-relay must be registered');
 
     const correlationRuntimeModePath = 'scripts/shared/correlation-runtime-mode.js';
     const expectedDerivedWatchPatterns = [...derivedSignals.watchPatterns];
@@ -46,53 +46,50 @@ describe('critical ingestion Railway registry drift regressions', () => {
       expectedDerivedWatchPatterns.includes(correlationRuntimeModePath),
       'derived-signals registry must pin the correlation runtime-mode helper',
     );
-    assert.equal(umami.dockerfile, 'Dockerfile.umami');
+    assert.equal(relay.dockerfile, 'Dockerfile.relay');
 
     const derivedServiceId = 'svc-derived-signals';
-    const umamiServiceId = 'svc-umami';
+    const relayServiceId = 'svc-relay';
     const serviceIds = new Map([
       [derivedSignals.service, derivedServiceId],
-      [umami.service, umamiServiceId],
+      [relay.service, relayServiceId],
     ]);
     const liveDerivedSignals = service({
       cronSchedule: derivedSignals.cronSchedule,
       watchPatterns: [...expectedDerivedWatchPatterns],
       variables: { JAPAN_MOD_PROXY_URL: 'https://proxy.example' },
     });
-    const liveUmami = service({
+    const liveRelay = service({
       cronSchedule: null,
-      dockerfilePath: umami.dockerfile,
-      watchPatterns: [...umami.watchPatterns],
-      variables: {
-        APP_SECRET: 'configured',
-        DATABASE_URL: 'postgres://configured',
-      },
+      dockerfilePath: relay.dockerfile,
+      watchPatterns: [...relay.watchPatterns],
+      variables: Object.fromEntries(relay.requiredEnv.map((name) => [name, 'configured'])),
     });
-    liveUmami.source.rootDirectory = '';
+    liveRelay.source.rootDirectory = '';
 
     const canonicalConfig = {
       services: {
         [derivedServiceId]: liveDerivedSignals,
-        [umamiServiceId]: liveUmami,
+        [relayServiceId]: liveRelay,
       },
     };
-    const managedRegistry = [derivedSignals, umami];
+    const managedRegistry = [derivedSignals, relay];
     assert.deepEqual(
       auditRailwayServiceConfig(canonicalConfig, serviceIds, managedRegistry),
       [],
       'the paired production contract should audit clean before either setting drifts',
     );
 
-    const umamiExpectedDrift = {
-      service: umami.service,
-      serviceId: umamiServiceId,
+    const relayExpectedDrift = {
+      service: relay.service,
+      serviceId: relayServiceId,
       missingService: false,
       watchPatterns: null,
       cronSchedule: null,
-      dockerfilePath: { actual: '', expected: umami.dockerfile },
+      dockerfilePath: { actual: '', expected: relay.dockerfile },
     };
-    const umamiExpectedPatch = {
-      build: { dockerfilePath: umami.dockerfile },
+    const relayExpectedPatch = {
+      build: { dockerfilePath: relay.dockerfile },
     };
     const cases = [
       {
@@ -117,22 +114,22 @@ describe('critical ingestion Railway registry drift regressions', () => {
         },
       },
       {
-        name: 'Umami Dockerfile path omitted',
-        serviceId: umamiServiceId,
+        name: 'relay Dockerfile path omitted',
+        serviceId: relayServiceId,
         mutate(config) {
-          delete config.services[umamiServiceId].build.dockerfilePath;
+          delete config.services[relayServiceId].build.dockerfilePath;
         },
-        expectedDrift: umamiExpectedDrift,
-        expectedPatch: umamiExpectedPatch,
+        expectedDrift: relayExpectedDrift,
+        expectedPatch: relayExpectedPatch,
       },
       {
-        name: 'Umami Dockerfile path empty',
-        serviceId: umamiServiceId,
+        name: 'relay Dockerfile path empty',
+        serviceId: relayServiceId,
         mutate(config) {
-          config.services[umamiServiceId].build.dockerfilePath = '';
+          config.services[relayServiceId].build.dockerfilePath = '';
         },
-        expectedDrift: umamiExpectedDrift,
-        expectedPatch: umamiExpectedPatch,
+        expectedDrift: relayExpectedDrift,
+        expectedPatch: relayExpectedPatch,
       },
     ];
 

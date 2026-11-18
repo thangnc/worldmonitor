@@ -52,25 +52,6 @@ test('canonical JSON has the expected shape', () => {
   }
 });
 
-test('packages/shared/brief-filter.js sources keywords from canonical JSON', async () => {
-  const src = await readFromRoot('packages/shared/brief-filter.js');
-  assert.match(
-    src,
-    /import\s+diplomacyKeywordsData\s+from\s+['"]\.\/diplomacy-keywords\.json['"]/,
-    'brief-filter.js must import the canonical JSON',
-  );
-  assert.doesNotMatch(
-    src,
-    /const\s+DIPLOMACY_KEYWORDS\s*=\s*\[\s*'ceasefire'/,
-    'brief-filter.js must not redefine DIPLOMACY_KEYWORDS inline',
-  );
-  assert.doesNotMatch(
-    src,
-    /const\s+FLASHPOINT_KEYWORDS\s*=\s*\[\s*'iran'/,
-    'brief-filter.js must not redefine FLASHPOINT_KEYWORDS inline',
-  );
-});
-
 test('scripts/_clustering.mjs sources keywords from canonical JSON', async () => {
   const src = await readFromRoot('scripts/_clustering.mjs');
   // Either `./shared/diplomacy-keywords.json` (scripts/shared mirror)
@@ -92,25 +73,6 @@ test('scripts/_clustering.mjs sources keywords from canonical JSON', async () =>
     src,
     /export\s+const\s+ENTITY_BIGRAMS\s*=\s*\[\s*\[\s*'iran'/,
     '_clustering.mjs must not redefine ENTITY_BIGRAMS inline',
-  );
-});
-
-test('scripts/seed-digest-notifications.mjs sources keywords from canonical JSON', async () => {
-  const src = await readFromRoot('scripts/seed-digest-notifications.mjs');
-  // Either `./shared/...` (scripts/shared mirror) or `../packages/shared/...`
-  // (root). seed-digest-notifications runs under Dockerfile.digest-
-  // notifications which COPYs packages/shared/ files explicitly, so `../packages/shared/`
-  // is fine. Accepting both forms keeps the test robust to a future
-  // Docker-vs-nixpacks repackaging.
-  assert.match(
-    src,
-    /require\(\s*['"](?:\.\/|\.\.\/packages\/)shared\/diplomacy-keywords\.json['"]\s*\)/,
-    'seed-digest-notifications.mjs must require the canonical JSON',
-  );
-  assert.doesNotMatch(
-    src,
-    /const\s+DIGEST_DIPLOMACY_KEYWORDS\s*=\s*\[\s*'ceasefire'/,
-    'seed-digest-notifications.mjs must not redefine DIGEST_DIPLOMACY_KEYWORDS inline',
   );
 });
 

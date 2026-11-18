@@ -22,8 +22,6 @@ jobs that put that user's data into a prompt.
 | Dashboard chat analyst | `api/chat-analyst.ts` | Anthropic (streamed) |
 | Widget builder | `scripts/ais-relay.cjs` widget agent | Already Anthropic for every account |
 | `search_intel_history`, `get_similar_events` | query embeddings (OpenRouter only) | Refused with 403; no keyword index exists to fall back to |
-| AI alert impact (user's alert profile) | `scripts/notification-relay.cjs` `generateEventImpact` | Anthropic |
-| Personalised digest prose (profile, greeting) | `scripts/seed-digest-notifications.mjs` → `brief-llm.mjs` `generateDigestProse` | Anthropic, both synthesis levels |
 | Company Monitoring admission classifier | `convex/companyMonitoring/admission.ts` claim | Candidate rejected (`ai_routing_policy_excludes_classifier`) before evidence is sent |
 
 The Railway jobs read the policy through `/relay/ai-routing-policy` with the
@@ -108,7 +106,8 @@ Anthropic model.
 ## Configuration
 
 - `ANTHROPIC_API_KEY` must be set on Vercel and on the Railway
-  `notification-relay` and digest services. Without it the `anthropic`
+  jobs that call `scripts/lib/llm-chain.cjs` (the notification relay and
+  digest services that used it left in the 2026-11 Lite-only cleanup). Without it the `anthropic`
   provider is unavailable and restricted accounts get no AI answers there.
   The Railway jobs also need `CONVEX_NOTIFICATION_RELAY_SECRET` and
   `CONVEX_SITE_URL` (or `CONVEX_URL`), which they already use.

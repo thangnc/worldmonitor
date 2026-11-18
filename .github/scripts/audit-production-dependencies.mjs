@@ -37,7 +37,6 @@ const DAY_MS = 86_400_000;
  */
 export const BASELINE_ADVISORIES_BY_LOCKFILE = {
   'package-lock.json': [],
-  'consumer-prices-core/package-lock.json': [],
   'scripts/package-lock.json': [],
   'docker/runtime-package-lock.json': [],
 };

@@ -203,11 +203,10 @@ const PR_GATE_WORKFLOWS = [
   'Proto Generation Check',
 ] as const;
 
-// The Lite gate's own jobs, then the gates of services outside the web app
-// (consumer-prices-core, Umami, digest image) that Phase 2 decides.
+// The Lite gate's own jobs. The upstream-only service gates (consumer-prices,
+// umami-postgres, digest-image) left with those services (2026-11).
 const CI_JOBS = [
   'checks', 'unit', 'build', 'dom', 'server', 'health-probe-cutovers',
-  'consumer-prices', 'umami-postgres', 'digest-image',
 ] as const;
 
 

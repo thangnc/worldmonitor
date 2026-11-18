@@ -1,7 +1,8 @@
-// The Railway jobs that put one user's data into an LLM prompt (AI alert
-// impact, personalised digest prose) must honour that user's AI routing
-// policy. These tests drive the real llm-chain, the real relay impact path and
-// the real digest synthesis with fetch stubbed, and read every outgoing host.
+// Railway jobs that put one user's data into an LLM prompt must honour that
+// user's AI routing policy. These tests drive the real llm-chain and policy
+// resolver with fetch stubbed, and read every outgoing host. (The relay impact
+// path and digest synthesis that used them left in the 2026-11 Lite-only
+// cleanup.)
 import assert from 'node:assert/strict';
 import Module, { createRequire } from 'node:module';
 import { afterEach, beforeEach, describe, it } from 'node:test';
@@ -40,8 +41,6 @@ const {
   withAiRoutingPolicy,
   aiRoutingCacheSuffix,
 } = require('../scripts/lib/ai-routing-policy.cjs');
-const { generateEventImpact } = require('../scripts/notification-relay.cjs');
-const { runSynthesisWithFallback } = await import('../scripts/lib/digest-orchestration-helpers.mjs');
 
 const originalFetch = globalThis.fetch;
 const RESTRICTED = { kind: 'restricted', allowedProviders: ['anthropic'] };
@@ -95,8 +94,6 @@ function stubFetch({ policies = {}, anthropicStatus = 200, text = 'Direct impact
   };
   return { llmHosts, llmBodies, redisPaths, convexCalls };
 }
-
-const EVENT = { eventType: 'rss_alert', severity: 'high', payload: { title: 'Chip export controls widened', source: 'Reuters' } };
 
 describe('AI routing policy on Railway jobs', () => {
   beforeEach(() => {
@@ -202,63 +199,5 @@ describe('AI routing policy on Railway jobs', () => {
       assert.deepEqual(calls.at(-1), []);
       assert.equal(aiRoutingCacheSuffix({ kind: 'unavailable' }), ':ai=none');
     });
-  });
-
-  describe('notification relay AI impact', () => {
-    it('sends a restricted user\'s profile only to Anthropic and caches it apart', async () => {
-      const { llmHosts, redisPaths } = stubFetch({
-        policies: { 'user-restricted': { status: 200, policy: { allowedProviders: ['anthropic'] } } },
-      });
-      const impact = await generateEventImpact(EVENT, { userId: 'user-restricted', variant: 'full' });
-      assert.equal(impact, 'Direct impact on your NVDA position.');
-      assert.deepEqual(llmHosts, ['api.anthropic.com']);
-      const impactKeys = redisPaths.filter((p) => p.includes('impact:ai:'));
-      assert.ok(impactKeys.length >= 2, impactKeys.join(','));
-      assert.ok(impactKeys.every((p) => p.includes(':ai=anthropic')), impactKeys.join(','));
-    });
-
-    it('keeps an unrestricted user on the default chain and shared key', async () => {
-      const { llmHosts, redisPaths } = stubFetch();
-      await generateEventImpact(EVENT, { userId: 'user-open', variant: 'full' });
-      assert.deepEqual(llmHosts, ['openrouter.ai']);
-      assert.ok(redisPaths.filter((p) => p.includes('impact:ai:')).every((p) => !p.includes(':ai=')));
-    });
-
-    it('sends nothing when the policy cannot be verified', async () => {
-      const { llmHosts } = stubFetch({ policies: { 'user-unknown': { status: 500 } } });
-      assert.equal(await generateEventImpact(EVENT, { userId: 'user-unknown', variant: 'full' }), null);
-      assert.deepEqual(llmHosts, []);
-    });
-  });
-
-  describe('digest prose', () => {
-    it('routes both personalised synthesis levels through the policy', async () => {
-      const calls = [];
-      const keys = [];
-      const deps = {
-        callLLM: async (_s, _u, opts) => { calls.push(opts.allowedProviders); return null; },
-        cacheGet: async (k) => { keys.push(k); return null; },
-        cacheSet: async (k) => { keys.push(k); },
-      };
-      const stories = [{ headline: 'Chip export controls widened', threatLevel: 'high', category: 'Economic', country: 'US', source: 'Reuters' }];
-      const result = await runSynthesisWithFallback(
-        'user-restricted', stories, 'all', { profile: 'Watchlist: NVDA', greeting: 'Good morning' },
-        withAiRoutingPolicy(deps, RESTRICTED),
-      );
-      assert.equal(result.level, 3);
-      assert.deepEqual(calls, [['anthropic'], ['anthropic']]);
-      assert.ok(keys.length >= 2);
-      assert.ok(keys.every((k) => k.startsWith('brief:llm:digest:') && k.endsWith(':ai=anthropic')), keys.join(','));
-    });
-  });
-});
-
-describe('digest seeder wiring', () => {
-  it('hands personalised synthesis the user-scoped, policy-wrapped deps', async () => {
-    const { readFileSync } = await import('node:fs');
-    const src = readFileSync(new URL('../scripts/seed-digest-notifications.mjs', import.meta.url), 'utf8');
-    const call = src.match(/runSynthesisWithFallback\(\s*userId,[\s\S]*?\n\s*\(level, kind, err\)/);
-    assert.ok(call, 'expected the runSynthesisWithFallback call in seed-digest-notifications.mjs');
-    assert.match(call[0], /withAiRoutingPolicy\(briefLlmDeps, await resolveAiRoutingPolicy\(userId\)\)/);
   });
 });

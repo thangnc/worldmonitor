@@ -2132,24 +2132,6 @@ test('the three bundle tick heartbeats stay registered together (#6691 / #6806)'
   }
 });
 
-test('classifyKey: digestNotifications heartbeat goes stale when the cron stops', () => {
-  const entry = classifyKey('digestNotifications', STANDALONE_KEYS.digestNotifications, { allowOnDemand: true },
-    makeCtx({
-      strens: { [STANDALONE_KEYS.digestNotifications]: 256 },
-      metaValues: {
-        'seed-meta:digest:last-run': seedMeta({
-          fetchedAt: NOW - 120 * ONE_MIN_MS,
-          sentCount: 0,
-        }),
-      },
-    }));
-
-  assert.equal(STANDALONE_KEYS.digestNotifications, 'digest:last-run');
-  assert.equal(entry.status, 'STALE_SEED');
-  assert.equal(entry.maxStaleMin, 90);
-  assert.equal(STATUS_COUNTS[entry.status], 'warn');
-});
-
 test('classifyKey: expired transitional producers fail closed when missing or empty', () => {
   const graduatedNames = [
     'fxYoy',
@@ -2157,7 +2139,6 @@ test('classifyKey: expired transitional producers fail closed when missing or em
     'chokepointFlowsRelayHeartbeat',
     'climateNewsRelayHeartbeat',
     'eiaPetroleum',
-    'digestNotifications',
   ];
 
   for (const name of graduatedNames) {

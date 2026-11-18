@@ -47,7 +47,6 @@
     "sync:bootstrap-tier-keys:check": "node scripts/sync-bootstrap-tier-keys.mjs --check",
     "sync:live-video-channels": "node --import tsx scripts/sync-live-video-refresh-channels.mjs",
     "sync:live-video-channels:check": "node --import tsx scripts/sync-live-video-refresh-channels.mjs --check",
-    "brief-fonts:subset": "node scripts/brief-fonts/run.mjs",
     "generate": "node scripts/generate-derived.mjs",
     "generate:check": "node scripts/generate-derived.mjs --check",
     "inventory:facts": "node scripts/generate-inventory-facts.mjs",
