@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -654,23 +653,3 @@ describe('Dependabot image-size and fast-uri remediation', () => {
   });
 });
 
-
-it('Metro reads ordinary and zip-mounted image asset files', async (t) => {
-  const require = createRequire(new URL('../package.json', import.meta.url));
-  const { getAssetData, getAssetSize } = require('metro/private/Assets');
-  const directory = mkdtempSync(join(tmpdir(), 'metro-assets-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
-  const png = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489', 'hex');
-  assert.deepEqual(getAssetSize('png', png, 'pixel.png'), { width: 1, height: 1 });
-
-  for (const folder of ['ordinary', 'assets.zip']) {
-    const assetDirectory = join(directory, folder);
-    mkdirSync(assetDirectory);
-    const file = join(assetDirectory, 'pixel.png');
-    writeFileSync(file, png);
-    const asset = await getAssetData(file, 'pixel.png', [], null, '/assets');
-    assert.equal(asset.width, 1);
-    assert.equal(asset.height, 1);
-    assert.deepEqual(asset.files, [file]);
-  }
-});

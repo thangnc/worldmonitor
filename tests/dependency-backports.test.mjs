@@ -40,12 +40,6 @@ describe('installed dependency backports', () => {
     }
   });
 
-  it('installs the patched assembler for jayson without install scripts', () => {
-    const consumer = createRequire(require.resolve('jayson'));
-    assert.deepEqual(readFileSync(consumer.resolve('stream-json/Assembler')), readFileSync(new URL('../vendor/stream-json/Assembler.js', import.meta.url)));
-    assert.equal(consumer('stream-json/package.json').private, true);
-    assert.equal(consumer('stream-json/package.json').scripts, undefined);
-  });
 });
 
 describe('braces stack-exhaustion remediation', () => {

@@ -83,7 +83,6 @@
     "typecheck": "tsc --noEmit",
     "typecheck:api": "tsc --noEmit -p tsconfig.api.json",
     "typecheck:all": "tsc --noEmit && tsc --noEmit -p tsconfig.api.json",
-    "audit:dodo-catalog": "node scripts/audit-dodo-catalog.cjs",
     "audit:inventory-counts": "node scripts/check-inventory-count-contracts.mjs",
     "audit:sentry-resolve-pins": "node scripts/audit-sentry-resolve-pins.mjs",
     "preview": "vite preview",
@@ -240,7 +239,6 @@
       "@loaders.gl/gltf": "4.5.2",
       "@loaders.gl/textures": "4.5.2"
     },
-    "metro": "0.83.8",
     "stream-json": "$stream-json",
     "katex": "0.18.2",
     "glob@11": "14.0.2",
