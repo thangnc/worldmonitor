@@ -523,15 +523,6 @@ describe('revocation', () => {
     assert.equal(await validateUserApiKeyPrincipal(key), null);
     assert.equal(harness.validateCalls, 2);
   });
-
-  it('Convex-side revocation and account deletion still delete the literal key name', () => {
-    for (const file of ['convex/payments/cacheActions.ts', 'convex/accountDeletion/sideEffects.ts']) {
-      const src = readFileSync(resolve(ROOT, file), 'utf8');
-      assert.match(src, /`user-api-key:\$\{/, `${file} must delete user-api-key:<hash>`);
-    }
-    const revoke = readFileSync(resolve(ROOT, 'api/invalidate-user-api-key-cache.ts'), 'utf8');
-    assert.match(revoke, /invalidateApiKeyCache\(keyHash\)/);
-  });
 });
 
 describe('Convex outage keeps the retryable 503', () => {

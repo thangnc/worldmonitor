@@ -36,20 +36,6 @@ export const INVENTORY_CONTRACTS = Object.freeze([
   contract('source-attribution-totals', 'source-attribution manifest entries and explicit retirement records', ['retirement', 'parity'], 'replace', 'Aggregate source totals are derived; explicit retirement and exact identity parity protect deletion.', [
     surface('tests/source-attribution.test.mjs', ['stats.activeHosts', 'stats.providerCount', 'stats.observedHosts']),
   ]),
-  contract('mcp-output-schema-tools', 'TOOL_REGISTRY and the tools/list response', ['parity'], 'replace', 'Exact tool/schema set parity makes arbitrary tool floors redundant.', [
-    surface('tests/mcp-output-schema-coverage.test.mjs', ['registry', 'tools']),
-  ]),
-  contract('mcp-tool-annotations', 'TOOL_REGISTRY and the tools/list response', ['parity'], 'replace', 'Every discovered tool must have matching protocol annotations.', [
-    surface('tests/mcp-tool-annotations.test.mjs', ['registry', 'tools']),
-  ]),
-  contract('mcp-protocol-tools', 'the MCP tools/list response', ['parity'], 'replace', 'Protocol assertions cover the complete returned tool set.', [
-    surface('tests/mcp-protocol-conformance.test.mjs', ['step1bListBody.result.tools', 'step3Body.result.tools']),
-    surface('tests/mcp.test.mjs', ['body.result.tools', 'TOOL_REGISTRY']),
-    surface('tests/mcp-resources.test.mjs', ['uiUris', 'listedUiUris']),
-  ]),
-  contract('llms-mcp-tools', 'api/mcp/registry tool names and public discovery citations', ['named-member', 'parity'], 'replace', 'Registry-to-citation parity plus named critical tools replaces an arbitrary floor.', [
-    surface('tests/llms-txt-mcp-tools.test.mjs', ['registry']),
-  ]),
   contract('openapi-server-specs', 'generated per-service OpenAPI JSON/YAML files', ['parity'], 'replace', 'Exact JSON/YAML sibling and per-spec server coverage protects the full discovered universe.', [
     surface('tests/openapi-servers-contract.test.mjs', ['serviceJsonSpecs', 'serviceYamlSpecs']),
   ]),
@@ -81,9 +67,6 @@ export const INVENTORY_CONTRACTS = Object.freeze([
   ]),
   contract('notification-country-registry', 'the shared country-name to ISO-2 registry', ['parity'], 'replace', 'Exact authoritative country coverage replaces the parser floor.', [
     surface('tests/notification-relay-country-scope-5359.test.mjs', ['names']),
-  ]),
-  contract('iso2-country-registry', 'the closed ISO alpha-2 registry and its client mirror', ['exact', 'parity'], 'keep', 'ISO alpha-2 is a closed external standard and the client/server sets must remain identical.', [
-    surface('convex/__tests__/followed-countries-mutations.test.ts', ['_ISO2_REGISTRY_FOR_TESTS']),
   ]),
   contract('public-fixed-algorithm-claims', 'versioned CII country membership and the closed CRI public rankable universe', ['exact', 'named-member'], 'keep', 'Fixed algorithm universes remain exact while platform inventories on the same surfaces use semantic or named-set wording.', [
     surface('tests/cii-docs-drift.test.mts', ['llmsBrief', 'llmsFull', 'pressKit', 'communityGuide', 'publicHome', 'agentView.capabilities']),

@@ -17,7 +17,7 @@ Source of truth: CLAUDE.md test-suite table, [CONTRIBUTING.md "Verify the change
 |---|---|---|
 | Data, contract, script | `tests/*.test.{mjs,mts}` | node:test (`npm run test:data`) |
 | DOM (happy-dom) | `tests/dom/` | vitest (`npm run test:dom`) |
-| Convex, server, correlation engine | `convex/__tests__/`, `server/__tests__/` | vitest (`npm run test:convex`) |
+| Server, correlation engine | `server/__tests__/`, `src/services/correlation-engine/` | vitest (`npm run test:server`) |
 | `api/` node suites, sidecar | next to the code | `npm run test:sidecar` |
 | Browser | `e2e/*.spec.ts` | Playwright, one `VITE_VARIANT` per run |
 

@@ -1,9 +1,8 @@
 // Follow-ups to the hot-path await sweep (#10075): independent awaits the
 // first pass left serialized. The crypto and Redis paths are driven for real
 // with a deferred spy, so the tests fail if the work goes back to running one
-// await at a time. The client sites have no injectable seam, so their tests pin
-// the order in the source instead: the second operation must start before the
-// first is awaited.
+// await at a time. Handler sites with no injectable seam pin the order in the
+// source instead: the second operation must start before the first is awaited.
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -161,52 +160,7 @@ function functionContaining(source: string, marker: string): string {
   return source.slice(at, next ? next.index : source.length);
 }
 
-/**
- * In the function that logs `marker`, the Convex API load must start before the
- * client is awaited, so the two chunk fetches overlap.
- */
-function assertApiLoadStartsBeforeClientAwait(rel: string, marker: string) {
-  const source = read(rel);
-  const markerAt = source.indexOf(marker);
-  assert.ok(markerAt >= 0, `${rel}: marker not found: ${marker}`);
-  const clientAwait = source.lastIndexOf('await getConvexClient()', markerAt);
-  const fnStart = source.lastIndexOf('function ', clientAwait);
-  const apiStart = source.lastIndexOf('getConvexApi()', clientAwait);
-  assert.ok(clientAwait > fnStart && fnStart >= 0, `${rel}: could not locate the client await`);
-  assert.ok(apiStart > fnStart, `${rel}: start getConvexApi() before awaiting getConvexClient()`);
-}
-
-describe('signed-in boot: the Convex API chunk loads alongside the client', () => {
-  it('entitlements subscription starts the API load before awaiting the client', () => {
-    assertApiLoadStartsBeforeClientAwait('src/services/entitlements.ts', 'No VITE_CONVEX_URL — skipping Convex subscription');
-  });
-
-  it('billing subscription watch starts the API load before awaiting the client', () => {
-    assertApiLoadStartsBeforeClientAwait('src/services/billing.ts', 'No VITE_CONVEX_URL -- skipping subscription watch');
-  });
-
-  it('no billing or entitlements call awaits the client and then the API', () => {
-    for (const rel of ['src/services/billing.ts', 'src/services/entitlements.ts']) {
-      assert.doesNotMatch(
-        read(rel),
-        /await (?:getConvexClient|_convexClientGetter)\(\);\s*\n\s*const api = await (?:getConvexApi|_convexApiGetter)\(\)/,
-        `${rel}: load the Convex client and API together`,
-      );
-    }
-  });
-});
-
 describe('request handlers', () => {
-  it('chat-analyst resolves the routing policy alongside the context assembly', () => {
-    const source = read('api/chat-analyst.ts');
-    assert.doesNotMatch(source, /await assembleAnalystContext\(/, 'context assembly must not be awaited alone');
-    assert.doesNotMatch(source, /await getAiRoutingDecisionForUser\(/, 'the routing lookup must not be awaited alone');
-    assert.match(
-      source,
-      /Promise\.all\(\[\s*assembleAnalystContext\([^)]*\),\s*getAiRoutingDecisionForUser\(premiumIdentity\.userId\),?\s*\]\)/,
-    );
-  });
-
   it('classify-event hashes the title alongside the routing lookup', () => {
     const source = read('server/worldmonitor/intelligence/v1/classify-event.ts');
     assert.doesNotMatch(source, /const aiRouting = await resolveAiRouting\(ctx\.request\);\s*\n\s*const cacheKey = `\$\{await buildClassifyCacheKey/);

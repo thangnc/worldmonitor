@@ -24,14 +24,14 @@ const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 
 const ROUTE_EXPECTATIONS = [
   {
-    path: 'api/miit-news.js',
-    reasonTerms: ['miit', 'rss/xml', 'application/rss+xml'],
-    sourceTerms: ['miit.gov.cn', 'rss', 'application/rss+xml'],
+    path: 'api/story.js',
+    reasonTerms: ['story', 'html', 'text/html'],
+    sourceTerms: ['story', 'text/html'],
   },
   {
-    path: 'api/youtube/embed.js',
-    reasonTerms: ['youtube', 'iframe', 'html', 'text/html'],
-    sourceTerms: ['youtube.com', 'iframe', 'text/html'],
+    path: 'api/md-twin.ts',
+    reasonTerms: ['markdown', 'text/markdown'],
+    sourceTerms: ['markdown', 'text/markdown'],
   },
 ];
 
@@ -65,22 +65,22 @@ describe('api-route-exceptions manifest', () => {
   }
 
   it('rejects category and rationale regressions for route-specific exceptions', () => {
-    const miitNews = manifest.exceptions.find(({ path }) => path === 'api/miit-news.js');
-    const youtubeEmbed = manifest.exceptions.find(({ path }) => path === 'api/youtube/embed.js');
+    const story = manifest.exceptions.find(({ path }) => path === 'api/story.js');
+    const mdTwin = manifest.exceptions.find(({ path }) => path === 'api/md-twin.ts');
 
-    assert.ok(miitNews);
-    assert.ok(youtubeEmbed);
+    assert.ok(story);
+    assert.ok(mdTwin);
     assert.throws(() => {
       assertRouteSpecificException(
-        { ...miitNews, category: 'upstream-proxy' },
+        { ...story, category: 'upstream-proxy' },
         ROUTE_EXPECTATIONS[0],
       );
     });
     assert.throws(() => {
       assertRouteSpecificException(
         {
-          ...youtubeEmbed,
-          reason: 'YouTube oEmbed proxy returns metadata as application/json.',
+          ...mdTwin,
+          reason: 'Agent page proxy returns the sibling page as application/json.',
         },
         ROUTE_EXPECTATIONS[1],
       );

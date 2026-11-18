@@ -77,12 +77,9 @@ describe('OpenAPI async-job pattern contract (RunScenario 202)', () => {
     assert.ok(bundle.paths?.[POLL_PATH]?.get, 'bundle must keep the poll endpoint published');
   });
 
-  it('runtime honors the documented 202 (fail-closed source assertions)', () => {
-    // The handler marks the request for the 202 upgrade + Location header…
-    const handler = readFileSync(resolve(root, 'server/worldmonitor/scenario/v1/run-scenario.ts'), 'utf8');
-    assert.match(handler, /setSuccessStatusOverride\(ctx\.request,\s*202\)/, 'run-scenario.ts must set the 202 override');
-    assert.match(handler, /setResponseHeader\(ctx\.request,\s*'Location'/, 'run-scenario.ts must set the Location header');
-    // …and the gateway drains + applies it (POST-200 only).
+  it('gateway runtime can honor a documented 202 (fail-closed source assertions)', () => {
+    // The RunScenario handler is deferred (scripts/lib/sebuf-deferred-services.mjs);
+    // the gateway keeps draining + applying a handler's 202 override (POST-200 only).
     const gateway = readFileSync(resolve(root, 'server/gateway.ts'), 'utf8');
     // The handler writes on the principal-stamped clone it was given, so the
     // drain must read that same object (gateway-side-channel-principal.test.ts

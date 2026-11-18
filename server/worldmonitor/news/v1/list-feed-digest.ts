@@ -22,7 +22,7 @@ import {
 } from '../../../_shared/redis';
 // @ts-expect-error — JS module, no declaration file
 import { captureSilentError } from '../../../../api/_sentry-edge.js';
-import { readBoundedResponseBody } from '../../../../api/mcp/bounded-body';
+import { readBoundedResponseBody } from '../../../_shared/bounded-body';
 import {
   classifyStaleSnapshot,
   filterRevokedUrls,

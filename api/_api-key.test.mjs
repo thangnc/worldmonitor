@@ -394,7 +394,7 @@ test('WORLDMONITOR_VALID_KEYS entries are trimmed like server/_shared/premium-ch
 });
 
 test('every api/ operator-key reader uses the shared trimming parser', async () => {
-  for (const rel of ['./_api-key.js', './_oauth-token.js', './mcp/auth.ts', './oauth/authorize.js', './oauth/token.ts']) {
+  for (const rel of ['./_api-key.js']) {
     const source = await readFile(new URL(rel, import.meta.url), 'utf8');
     assert.doesNotMatch(source, /WORLDMONITOR_VALID_KEYS\s*\|\|/, `${rel} must call getOperatorKeys()`);
   }

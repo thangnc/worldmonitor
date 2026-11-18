@@ -13,7 +13,7 @@
 // tests/agent-corpus-canonical-host.test.mjs guards apex-vs-www hygiene for the
 // crawlable corpus (public/, blog source, Mintlify pages). This file covers the
 // rest of what users and agents read: in-app connector setup, the welcome and
-// pricing pages, plugin and registry manifests, READMEs, the CLI, and docs. It
+// pricing pages, plugin manifests, READMEs, and docs. It
 // scans every tracked text file instead of a list, so a new surface is covered
 // the day it is added. Only tests and internal notes may quote a wrong URL.
 
@@ -180,18 +180,7 @@ describe('published MCP URLs are the canonical endpoint (#9722)', () => {
   // The places a user copies the URL from when setting up a connector. Each
   // must carry the canonical endpoint itself, not merely avoid a wrong one.
   it('connector setup surfaces carry the canonical endpoint', () => {
-    const plugin = JSON.parse(readFileSync(join(ROOT, 'claude-plugin/.mcp.json'), 'utf8'));
-    assert.equal(plugin.mcpServers.worldmonitor.url, MCP_CANONICAL_ENDPOINT);
-
-    const registry = JSON.parse(readFileSync(join(ROOT, 'server.json'), 'utf8'));
-    assert.ok(registry.remotes?.length, 'server.json lists its remotes');
-    for (const remote of registry.remotes) assert.equal(remote.url, MCP_CANONICAL_ENDPOINT);
-
-    for (const file of [
-      'claude-plugin/README.md',
-      '.antigravity-plugin/README.md',
-      'README.md',
-    ]) {
+    for (const file of ['.antigravity-plugin/README.md', 'README.md']) {
       assert.ok(
         readFileSync(join(ROOT, file), 'utf8').includes(MCP_CANONICAL_ENDPOINT),
         `${file} should show ${MCP_CANONICAL_ENDPOINT}`,

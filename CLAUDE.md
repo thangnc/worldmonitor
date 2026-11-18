@@ -6,7 +6,7 @@ Claude Code is the only supported coding agent for this repository. This file is
 
 | Path | What it does |
 |---|---|
-| `.claude/rules/` | Path-scoped rules. Each loads only when Claude works on matching files: edge API, seeders, proto, browser, tests, CI, Convex, docs. Keep them short and link to the canonical docs. |
+| `.claude/rules/` | Path-scoped rules. Each loads only when Claude works on matching files: edge API, seeders, proto, browser, tests, CI, docs. Keep them short and link to the canonical docs. |
 | `.claude/skills/` | Engineering skills: `verify-worldmonitor` (browser proof), `sentry-triage`, `learn` (`/learn`: record a lesson in the engineering knowledge base), and `ship` (user-invoked `/ship`: deliver a worktree's change as a PR on this fork). |
 | `.claude/agents/` | Subagents: `edge-contract-reviewer` (repo contract review of a diff). |
 | `.claude/hooks/` + `.claude/settings.json` | Block hand edits to `src/generated/`, `docs/api/`, the generated `docs/engineering/*/INDEX.md` files, and `package-lock.json`; Biome-lint each edited JS/TS file. |
@@ -62,14 +62,14 @@ Node 24 (`.nvmrc`).
 npm run dev                      # Vite dev server for the Lite UI at /lite; also serves the API routes it calls (vite.dev-api.ts)
 
 npm run typecheck                # browser code (tsc --noEmit)
-npm run typecheck:api            # api/ + server/ (tsconfig.api.json) plus Convex audits
+npm run typecheck:api            # api/ + server/ (tsconfig.api.json)
 npm run lint                     # biome + safe-html guard
 npm run lint:boundaries          # browser import-direction enforcement
 npm run lint:api-contract        # hand-written api/ routes must be listed in api/api-route-exceptions.json
 
-npm run test:data                # tests/*.test.{mjs,mts}, cli/test (node:test, sharded runner)
+npm run test:data                # tests/*.test.{mjs,mts} (node:test, sharded runner)
 npm run test:dom                 # tests/dom (vitest, vitest.dom.config.mts)
-npm run test:convex              # convex/, server/__tests__, correlation engine (vitest)
+npm run test:server              # server/__tests__, correlation engine (vitest)
 npm run test:sidecar             # api/ node suites + the Docker Node API server (docker/local-api/)
 
 make generate                    # regenerate src/generated/ + docs/api/ from proto/
@@ -126,16 +126,16 @@ Test path, command, and owning CI job (`.github/workflows/ci.yml`).
 
 | Test path | Command | CI job |
 |---|---|---|
-| `tests/*.test.mjs`, `tests/*.test.mts`, `cli/test/`, `api/security/report.test.mjs` | `npm run test:data` | `unit` (3 shards); suites that read built output run in `build` |
+| `tests/*.test.mjs`, `tests/*.test.mts`, `api/security/report.test.mjs` | `npm run test:data` | `unit` (3 shards); suites that read built output run in `build` |
 | `tests/dom/` | `npm run test:dom` | `dom` |
-| `convex/__tests__/`, `server/__tests__/`, `src/services/correlation-engine/` | `npm run test:convex` | `server` |
+| `server/__tests__/`, `src/services/correlation-engine/` | `npm run test:server` | `server` |
 | `api/` node suites except `api/security/report.test.mjs`, and `docker/local-api/` | `npm run test:sidecar` | `server` |
 
 Find a suite by subject with `ls tests/ | grep <subject>` before searching the tree.
 
 ## Architecture at a glance
 
-**Runtime topology.** Lite SPA (`src/lite/`) → Vercel Edge Functions (`api/`, `middleware.ts`) → Upstash Redis, which Railway workers (`scripts/seed-*.mjs`, the long-running relay `scripts/ais-relay.cjs`) fill from roughly 850 upstream hosts. Convex (`convex/`) holds user-scoped state: auth, entitlements, API keys, alert rules, notification channels, preferences.
+**Runtime topology.** Lite SPA (`src/lite/`) → Vercel Edge Functions (`api/`, `middleware.ts`) → Upstash Redis, which Railway workers (`scripts/seed-*.mjs`, the long-running relay `scripts/ais-relay.cjs`) fill from roughly 850 upstream hosts. There is no user-scoped backend: Convex, Clerk, billing, MCP and OAuth were removed in refactor Phase 1c.
 
 **Request path is cache-first.** Most domain RPCs do not hit upstreams per request. Seeders write Redis keys through `atomicPublish()` / `writeSeedMeta` in `scripts/_seed-utils.mjs`, always alongside `seed-meta:<key>` (`fetchedAt`, `recordCount`). Edge handlers read via `cachedFetchJson()` (`server/_shared/redis.ts`), which coalesces concurrent misses. `api/health.js` grades staleness per key from that seed-meta. Some domains (scorecard, supply-chain vulnerability, physical divergence) are pure read models of a Railway-published cohort. A data change usually spans producer script → Redis key → handler → bootstrap/health registration → panel.
 
@@ -147,9 +147,9 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 **Variants.** `VITE_VARIANT` and the variant configs in `src/config/` still exist for the server and seeders; the web build is the Lite UI only. Refactor Phase 1 removes the remaining variant and flag-off paths.
 
-**`shared/` vs `src/shared/`.** The top-level `shared/` holds logic that both the browser and server/MCP must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side.
+**`shared/` vs `src/shared/`.** The top-level `shared/` holds logic that both the browser and the server must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side.
 
-**Other surfaces.** `api/mcp.ts` (MCP server), `sdk/`, `cli/`, `docs/` (Mintlify public site; engineering records live in `docs/engineering/`, mapped by [its README](docs/engineering/README.md)), `skills/` (published product recipes, distinct from the `.claude/skills/` engineering skills). `claude-plugin/`, `gemini-extension.json`, and `public/agents.md` distribute the product to agent clients. They are not development tooling.
+**Other surfaces.** `docs/` (Mintlify public site, removed with the public outputs in refactor 1c; engineering records live in `docs/engineering/`, mapped by [its README](docs/engineering/README.md)) and `skills/` (published product recipes, distinct from the `.claude/skills/` engineering skills; also removed in 1c). The SDKs, CLI, MCP server and agent-client plugins were removed in refactor Phase 1c.
 
 ## Critical boundaries
 

@@ -1458,15 +1458,14 @@ const cloudPreferredServerStateRoutes = new Set([
   '/api/wm-session',
 ]);
 
-// Versioned route families (api/v{N}/{domain}) the desktop deliberately never
-// bundles — scripts/build-sidecar-handlers.mjs refuses to build an undeclared
-// one, and its CLOUD_ONLY_ROUTE_FAMILIES must list exactly these (#5907).
-// Routed to the cloud on purpose, WS_RELAY_URL or not: route-intelligence reads
-// seed-owned Redis (empty 200 locally, so `!ok` fallback never fires) and the
-// webhook family is Pro-gated + server-persisted, so the gate lives upstream.
-// Before this list the family reached the cloud only via the 404 "handler
-// missing" fallback — undeclared, and invisible when cloudFallback is off.
-const cloudOnlyRouteFamilyPrefixes = ['/api/v2/shipping/'];
+// Versioned route families (api/v{N}/{domain}) the local-api server never
+// serves locally and routes to the cloud on purpose (#5907). Without an entry
+// a family reaches the cloud only via the 404 "handler missing" fallback,
+// undeclared and invisible when cloudFallback is off. Empty since the Lite
+// refactor (Phase 1c) deleted the only one, api/v2/shipping/[rpc].ts;
+// tests/sidecar-desktop-path-decisions.test.mjs requires an entry for any
+// versioned family added back.
+const cloudOnlyRouteFamilyPrefixes = [];
 
 function isCloudPreferred(pathname) {
   if (cloudPreferred.has(pathname)) return true;

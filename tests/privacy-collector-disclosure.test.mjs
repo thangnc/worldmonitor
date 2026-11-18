@@ -28,9 +28,11 @@ const read = (relativePath) => readFileSync(join(root, relativePath), 'utf8');
 
 // Every file that can inject a third-party or self-hosted telemetry script into
 // a production page. Adding a collector anywhere else means adding it here too.
+// The dashboard's Umami loader (src/services/analytics.ts) went with the old
+// UI; the agent page still loads the self-hosted Umami tracker.
 const COLLECTOR_CALL_SITES = [
   'src/bootstrap/debugbear-rum.ts',
-  'src/services/analytics.ts',
+  'public/agent/index.html',
 ];
 
 // host -> how the privacy policy must account for it.
@@ -168,14 +170,6 @@ describe('privacy policy discloses the subprocessors behind the page', () => {
       assert.match(text, /Telegram/, `${label} policy must account for the Telegram channel`);
       assert.match(text, /Slack/, `${label} policy must account for the Slack channel`);
       assert.match(text, /Discord/, `${label} policy must account for the Discord channel`);
-    }
-    const channelTypes = read('convex/schema.ts');
-    for (const channel of ['telegram', 'slack', 'discord', 'webhook', 'web_push', 'email']) {
-      assert.match(
-        channelTypes,
-        new RegExp(`v\\.literal\\("${channel}"\\)`),
-        `notificationChannels no longer ships ${channel} — the policy section describing it is stale`,
-      );
     }
   });
 });

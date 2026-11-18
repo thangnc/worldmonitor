@@ -100,10 +100,9 @@ export const DIRECT_LLM_GATEWAY_QUOTA_PATHS = new Set<string>([
   '/api/news/v1/summarize-article',
 ]);
 
-export const DIRECT_LLM_SELF_METERED_QUOTA_PATHS = new Set<string>([
-  '/api/chat-analyst',
-  '/api/widget-agent',
-]);
+// The self-metered handlers (chat-analyst, widget-agent) were removed in
+// refactor Phase 1c; the set stays so a future self-metered route has a home.
+export const DIRECT_LLM_SELF_METERED_QUOTA_PATHS = new Set<string>([]);
 
 export const DIRECT_LLM_QUOTA_PATHS = new Set<string>([
   ...DIRECT_LLM_GATEWAY_QUOTA_PATHS,

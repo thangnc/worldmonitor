@@ -55,21 +55,6 @@ function describeSetDelta(found, expected) {
   ].filter(Boolean).join('; ');
 }
 
-function extractSingleQuotedValue(text, name) {
-  const match = text.match(new RegExp(`export\\s+const\\s+${name}\\s*=\\s*'([^']+)'`));
-  if (!match) throw new Error(`docs-stats: could not find ${name}`);
-  return match[1];
-}
-
-function findTopLevelObjectBlocks(source) {
-  const starts = [...source.matchAll(/^ {2}\{$/gm)].map((m) => m.index);
-  return starts.map((start) => {
-    const close = source.slice(start).search(/^ {2}\},?$/m);
-    if (close === -1) return source.slice(start);
-    return source.slice(start, start + close);
-  });
-}
-
 function stripCommentsAndTemplates(source) {
   let output = '';
   let state = 'code';
@@ -261,90 +246,6 @@ function parseLayerRegistry(source) {
   return {
     keys: sorted(declaredKeys),
     lockedKeys: sorted(lockedKeys),
-  };
-}
-
-function parseMcpAppsInventory({
-  uiRegistrySource = read('api/mcp/ui/registry.ts'),
-  shellSource = read('api/mcp/ui/shell.ts'),
-  rpcToolsSource = read('api/mcp/registry/rpc-tools.ts'),
-  cacheToolsSource = read('api/mcp/registry/cache-tools.ts'),
-} = {}) {
-  const uiConstToUri = new Map(
-    [...uiRegistrySource.matchAll(/^export\s+const\s+(\w+_UI_URI)\s*=\s*'([^']+)';/gm)]
-      .map((m) => [m[1], m[2]]),
-  );
-  if (uiConstToUri.size === 0) {
-    throw new Error('docs-stats: could not parse MCP Apps ui:// URI constants');
-  }
-
-  const registryBlockMatch = uiRegistrySource.match(/export const UI_RESOURCE_REGISTRY:[\s\S]*?=\s*\[([\s\S]*?)\n\];/);
-  if (!registryBlockMatch) {
-    throw new Error('docs-stats: could not parse UI_RESOURCE_REGISTRY');
-  }
-  const registryBody = [registryBlockMatch[1], ...[...uiRegistrySource.matchAll(/UI_RESOURCE_LIST_RESPONSE\.push\(\{([\s\S]*?)\}\);/g)].map(match => match[1])].join('\n');
-  const loaderSource = read('api/mcp/ui/news-dashboard-app.ts');
-  for (const [, name, uri] of loaderSource.matchAll(/^export\s+const\s+(\w+_UI_URI)\s*=\s*'([^']+)';/gm)) {
-    if (new RegExp(`\\b${name}\\b`).test(registryBody)) uiConstToUri.set(name, uri);
-  }
-  const registryEntries = [...registryBody.matchAll(
-    /uri:\s*(\w+_UI_URI),\s*\n\s*name:\s*'((?:\\'|[^'])*)',\s*\n\s*description:\s*\n\s*'((?:\\'|[^'])*)',/g,
-  )].map((m) => ({
-    uriConst: m[1],
-    uri: uiConstToUri.get(m[1]) ?? m[1],
-    name: m[2].replace(/\\'/g, "'"),
-    description: m[3].replace(/\\'/g, "'"),
-  }));
-  const registryConsts = registryEntries.map((entry) => entry.uriConst);
-  const uiConsts = [...uiConstToUri.keys()];
-  if (!sameStringSet(registryConsts, uiConsts)) {
-    throw new Error(
-      `docs-stats: UI_RESOURCE_REGISTRY entries do not match ui:// constants (${describeSetDelta(registryConsts, uiConsts)})`,
-    );
-  }
-
-  const toolLinks = [];
-  const compiledToolSources = [];
-  if (uiConstToUri.has('NEWS_DASHBOARD_UI_URI')) compiledToolSources.push(read('api/mcp/registry/news-dashboard.ts'));
-  if (uiConstToUri.has('COUNTRY_VIEW_UI_URI')) compiledToolSources.push(read('api/mcp/registry/country-view.ts'));
-  for (const source of [rpcToolsSource, cacheToolsSource, ...compiledToolSources]) {
-    for (const block of (compiledToolSources.includes(source) ? source.split(/(?=^ {2}name:)/m) : findTopLevelObjectBlocks(source))) {
-      const name = block.match(/^\s+name:\s*'([^']+)'/m)?.[1];
-      const uriConst = block.match(/^\s+_uiResourceUri:\s*(\w+_UI_URI),/m)?.[1];
-      if (name && uriConst) {
-        const uri = uiConstToUri.get(uriConst);
-        if (!uri) throw new Error(`docs-stats: tool ${name} links unknown MCP App URI constant ${uriConst}`);
-        toolLinks.push({ tool: name, uriConst, uri });
-      }
-    }
-  }
-  for (const [label, values] of [
-    ['tool', toolLinks.map((entry) => entry.tool)],
-    ['ui resource', toolLinks.map((entry) => entry.uri)],
-  ]) {
-    const duplicates = values.filter((value, index) => values.indexOf(value) !== index);
-    if (duplicates.length) {
-      throw new Error(`docs-stats: duplicate MCP Apps ${label} links: ${sorted([...new Set(duplicates)]).join(', ')}`);
-    }
-  }
-
-  const toolByUri = new Map(toolLinks.map((entry) => [entry.uri, entry.tool]));
-  const apps = registryEntries.map((entry) => ({
-    ...entry,
-    tool: toolByUri.get(entry.uri) ?? null,
-  }));
-  const unlinked = apps.filter((entry) => !entry.tool).map((entry) => entry.uri);
-  if (unlinked.length) {
-    throw new Error(`docs-stats: MCP Apps resources missing linked tools: ${unlinked.join(', ')}`);
-  }
-
-  return {
-    specVersion: extractSingleQuotedValue(shellSource, 'UI_PROTOCOL_VERSION'),
-    mimeType: extractSingleQuotedValue(shellSource, 'UI_RESOURCE_MIME_TYPE'),
-    apps,
-    uiResources: apps.map((entry) => entry.uri),
-    linkedTools: apps.map((entry) => entry.tool),
-    toolLinks: apps.map((entry) => ({ tool: entry.tool, uri: entry.uri })),
   };
 }
 
@@ -916,7 +817,6 @@ function dirHasFiles(rel) {
 function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
   const makefile = read('Makefile');
   const serverCard = parseJson('public/.well-known/mcp/server-card.json');
-  const mcpApps = parseMcpAppsInventory();
 
   // ---- Map layers (src/config/map-layer-definitions.ts) ----
   const mld = read('src/config/map-layer-definitions.ts');
@@ -1109,10 +1009,6 @@ function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
     populationPriorityCountries,
     sebufVersion: makefileVar(makefile, 'SEBUF_VERSION'),
     mcpToolCount: Array.isArray(serverCard.tools) ? serverCard.tools.length : 0,
-    mcpApps,
-    mcpAppCount: mcpApps.apps.length,
-    mcpAppUiResources: mcpApps.uiResources,
-    mcpAppLinkedTools: mcpApps.linkedTools,
     bootstrapCache: parseBootstrapCacheContract(),
     // Counts only — see parseHealthProbedKeys on why the key names stay out.
     healthProbedKeys: (({ bootstrap, standalone, total }) => ({ bootstrap, standalone, total }))(
@@ -1162,8 +1058,6 @@ export const ACQUISITION_CLAIM_ROOTS = [
   'README.md',
   'README.zh-CN.md',
   'README.ja-JP.md',
-  'server.json',
-  'cli',
   'docs',
   'public',
   'public/.well-known/ai-catalog.json',
@@ -1201,7 +1095,7 @@ const ACQUISITION_CLAIM_EXTENSIONS = /\.(?:astro|html|json|md|mdx|mjs|txt)$/;
 
 function isCurrentAcquisitionClaimSurface(path) {
   return (
-    ['index.html', 'README.md', 'README.zh-CN.md', 'README.ja-JP.md', 'server.json', 'cli/README.md',
+    ['index.html', 'README.md', 'README.zh-CN.md', 'README.ja-JP.md',
       'pro-test/index.html', 'pro-test/welcome.html', 'scripts/build-agent-skills-index.mjs'].includes(path)
     || /^docs\/.+\.(?:md|mdx)$/.test(path)
     || /^public\/[^/]+\.(?:md|txt|json)$/.test(path)
@@ -1358,81 +1252,6 @@ export function validateVolatileInventoryClaims() {
   };
   for (const path of collectCurrentAcquisitionClaimFiles()) visit(path);
   failures.push(...retainedExactContractCoverageFailures(retainedExactContracts, observedRetainedContracts));
-  return failures;
-}
-
-function findDocsJsonPages(node, out = []) {
-  if (typeof node === 'string') {
-    out.push(node);
-    return out;
-  }
-  if (Array.isArray(node)) {
-    for (const item of node) findDocsJsonPages(item, out);
-    return out;
-  }
-  if (!node || typeof node !== 'object') return out;
-  for (const value of Object.values(node)) findDocsJsonPages(value, out);
-  return out;
-}
-
-function validateMcpAppsDocs(stats) {
-  const failures = [];
-  const docsPage = read('docs/mcp-apps.mdx');
-  const overview = read('docs/mcp-overview.mdx');
-  const publicMcp = read('public/mcp-server.md');
-  const docsJson = parseJson('docs/docs.json');
-  const serverCard = parseJson('public/.well-known/mcp/server-card.json');
-
-  if (!findDocsJsonPages(docsJson).includes('mcp-apps')) {
-    failures.push('docs/docs.json: MCP Apps page `mcp-apps` is not in navigation');
-  }
-
-  const cardApps = serverCard.metadata?.mcpApps;
-  if (!cardApps || cardApps.supported !== true) {
-    failures.push('public/.well-known/mcp/server-card.json: metadata.mcpApps.supported must be true');
-  } else {
-    if (cardApps.extension !== 'io.modelcontextprotocol/ui') {
-      failures.push(`public/.well-known/mcp/server-card.json: metadata.mcpApps.extension is ${cardApps.extension}`);
-    }
-    if (cardApps.specVersion !== stats.mcpApps.specVersion) {
-      failures.push(
-        `public/.well-known/mcp/server-card.json: metadata.mcpApps.specVersion is ${cardApps.specVersion}, code says ${stats.mcpApps.specVersion}`,
-      );
-    }
-    if (cardApps.uiResourceMimeType !== stats.mcpApps.mimeType) {
-      failures.push(
-        `public/.well-known/mcp/server-card.json: metadata.mcpApps.uiResourceMimeType is ${cardApps.uiResourceMimeType}, code says ${stats.mcpApps.mimeType}`,
-      );
-    }
-    if (!sameStringSet(cardApps.uiResources ?? [], stats.mcpAppUiResources)) {
-      failures.push(
-        `public/.well-known/mcp/server-card.json: metadata.mcpApps.uiResources drift (${describeSetDelta(cardApps.uiResources ?? [], stats.mcpAppUiResources)})`,
-      );
-    }
-  }
-
-  for (const { tool, uri } of stats.mcpApps.toolLinks) {
-    for (const [file, text] of [
-      ['docs/mcp-apps.mdx', docsPage],
-      ['docs/mcp-overview.mdx', overview],
-      ['public/mcp-server.md', publicMcp],
-    ]) {
-      if (!text.includes(uri)) failures.push(`${file}: missing MCP Apps ui resource ${uri}`);
-      if (!text.includes(tool)) failures.push(`${file}: missing MCP Apps linked tool ${tool}`);
-    }
-  }
-
-  for (const app of stats.mcpApps.apps) {
-    if (!docsPage.includes(app.name)) failures.push(`docs/mcp-apps.mdx: missing MCP Apps display name ${app.name}`);
-  }
-
-  if (!docsPage.includes(stats.mcpApps.specVersion)) {
-    failures.push(`docs/mcp-apps.mdx: missing MCP Apps spec version ${stats.mcpApps.specVersion}`);
-  }
-  if (!docsPage.includes(stats.mcpApps.mimeType)) {
-    failures.push(`docs/mcp-apps.mdx: missing MCP Apps mime type ${stats.mcpApps.mimeType}`);
-  }
-
   return failures;
 }
 
@@ -1914,7 +1733,6 @@ export function validateCategoryExplainerCopy(stats, readFile = read) {
 // validator being dropped from the CLI — the whole suite stayed green while
 // `--check` silently stopped running that gate.
 const DOC_VALIDATORS = [
-  validateMcpAppsDocs,
   validateBootstrapCacheDocs,
   validateHealthSummaryDocs,
   validatePlanLayerEntitlementCopy,
@@ -1984,9 +1802,7 @@ export {
   parseJsonLdBlocks,
   sameStringSet,
   describeSetDelta,
-  parseMcpAppsInventory,
   parseLayerRegistry,
-  validateMcpAppsDocs,
   parseBootstrapCacheContract,
   parseBootstrapKeyTiers,
   parseHealthProbedKeys,

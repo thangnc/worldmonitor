@@ -246,14 +246,6 @@ describe('chokepoint disruption alerts', () => {
   });
 });
 
-describe('alert-rule chokepoint ids', () => {
-  it('match the chokepoint registry ids and order', async () => {
-    const { CHOKEPOINT_ALERT_IDS } = await import('../shared/chokepoint-alert-ids.ts');
-    const { CHOKEPOINT_REGISTRY } = await import('../server/_shared/chokepoint-registry.ts');
-    assert.deepEqual([...CHOKEPOINT_ALERT_IDS], CHOKEPOINT_REGISTRY.map((entry) => entry.id));
-  });
-});
-
 describe('relay wiring', () => {
   const relay = readFileSync(new URL('../scripts/ais-relay.cjs', import.meta.url), 'utf8');
   const warmPing = relay.slice(relay.indexOf('async function seedChokepointWarmPing()'), relay.indexOf('function startChokepointWarmPingLoop()'));

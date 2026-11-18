@@ -351,8 +351,6 @@ describe('VOIDs from a feed the resolver could not read are labelled so (#9013)'
   it('registers the reason in every VOID-reason surface', () => {
     const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
     const label = RECEIPT_VOID_REASON_LABELS[REASON];
-    assert.ok(read('../api/mcp/registry/cache-tools.ts').includes(`'${REASON}'`), 'MCP reason set');
-    assert.ok(read('../api/mcp/ui/forecasts-app.ts').includes(`${REASON}: "${label}"`), 'MCP forecasts app label');
     assert.equal(JSON.parse(read('../scripts/locale-baselines/app.json'))[`components.forecast.resolution.void.${REASON}`], label);
   });
 });

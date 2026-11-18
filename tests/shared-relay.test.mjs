@@ -203,7 +203,6 @@ describe('getRelayHeaders — with auth', () => {
 
 describe('relay.ts — consumer import verification', () => {
   const consumers = [
-    { file: 'server/worldmonitor/aviation/v1/_shared.ts', importPath: '../../../_shared/relay' },
     { file: 'server/worldmonitor/intelligence/v1/_relay.ts', importPath: '../../../_shared/relay' },
     { file: 'server/worldmonitor/research/v1/list-tech-events.ts', importPath: '../../../_shared/relay' },
     { file: 'server/worldmonitor/maritime/v1/get-vessel-snapshot.ts', importPath: '../../../_shared/relay' },
@@ -224,7 +223,6 @@ describe('relay.ts — consumer import verification', () => {
 
   it('no local getRelayBaseUrl/getRelayHeaders/getRelayRequestHeaders definitions in server/ (except _shared/relay.ts)', () => {
     const dupeFiles = [
-      'server/worldmonitor/aviation/v1/_shared.ts',
       'server/worldmonitor/intelligence/v1/_relay.ts',
       'server/worldmonitor/research/v1/list-tech-events.ts',
       'server/worldmonitor/maritime/v1/get-vessel-snapshot.ts',
@@ -258,14 +256,6 @@ describe('relay.ts — consumer import verification', () => {
     assert.ok(
       src.includes('getRelayBaseUrl()') && src.includes("'/opensky'"),
       'military: must use getRelayBaseUrl() for relay URL construction',
-    );
-  });
-
-  it('api/_relay.js has canonical version comment', () => {
-    const src = readFileSync(resolve('api/_relay.js'), 'utf-8');
-    assert.ok(
-      src.includes('canonical version at server/_shared/relay.ts'),
-      'api/_relay.js must have comment pointing to canonical server-side implementation',
     );
   });
 });

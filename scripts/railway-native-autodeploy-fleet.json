@@ -9,10 +9,6 @@
       "name": "ais-relay"
     },
     {
-      "id": "cc708db0-0bbc-4151-a199-4c03c1f15217",
-      "name": "company-monitoring-worker"
-    },
-    {
       "id": "750bc68f-9840-49a3-95eb-7c8bcc060485",
       "name": "deep-forecast-worker"
     },

@@ -22,7 +22,6 @@ env:
     scripts/apply-openapi-filter-param-schemas.mjs
     scripts/generate-request-validation.mjs
     scripts/harden-generated-server-errors.mjs
-    scripts/generate-scorecard-edge-mirrors.mjs
     scripts/lib/main-module.mjs
     scripts/lib/openapi-codegen.mjs
     scripts/openapi-inject-async-jobs.mjs
@@ -116,13 +115,6 @@ env:
   GENERATED_PATHS: >-
     src/generated/
     docs/api/
-    server/worldmonitor/scorecard/v1/_input-registry.ts
-    server/worldmonitor/scorecard/v1/_methodology.ts
-    server/worldmonitor/scorecard/v1/_score-country.ts
-    server/worldmonitor/scorecard/v1/_snapshot.ts
-    server/worldmonitor/scorecard/v1/_source-adapters.ts
-    server/worldmonitor/scorecard/v1/_source-registry.ts
-    server/worldmonitor/scorecard/v1/_types.ts
 
 permissions: {}
 

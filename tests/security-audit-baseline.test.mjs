@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -470,11 +469,13 @@ describe('security audit baseline', () => {
     const rootLock = readRepoJson('package-lock.json');
     const cpcLock = readRepoJson('consumer-prices-core/package-lock.json');
 
-    for (const [label, entry] of [
-      ['root @istanbuljs', rootLock.packages['node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml']],
-    ]) {
-      assert.ok(entry, `${label} js-yaml must be present`);
-      assert.ok(atLeast(entry.version, '3.15.1'), `${label} js-yaml ${entry.version} is below the patched 3.15.1`);
+    // Every js-yaml copy in the root tree, whichever major it resolves to.
+    const rootEntries = Object.entries(rootLock.packages)
+      .filter(([path]) => /(^|\/)node_modules\/js-yaml$/.test(path));
+    assert.ok(rootEntries.length > 0, 'root js-yaml must be present');
+    for (const [path, entry] of rootEntries) {
+      const patched = entry.version.startsWith('3.') ? '3.15.1' : '4.3.1';
+      assert.ok(atLeast(entry.version, patched), `root ${path} ${entry.version} is below the patched ${patched}`);
     }
 
     for (const [label, entry] of [
@@ -510,7 +511,7 @@ describe('security audit baseline', () => {
     const viteEsbuild = lockfile.packages['node_modules/vite/node_modules/esbuild'];
 
     assert.equal(packageJson.overrides?.esbuild, undefined);
-    assert.equal(packageJson.overrides?.convex?.esbuild, '0.28.1');
+    assert.equal(packageJson.devDependencies?.esbuild, '0.28.1');
     assert.equal(rootEsbuild?.version, '0.28.1');
     assert.equal(vite?.dependencies?.esbuild, '^0.25.0');
     assert.ok(viteEsbuild, 'Vite must keep its own esbuild when root uses the audit-patched version');
@@ -652,23 +653,3 @@ describe('Dependabot image-size and fast-uri remediation', () => {
   });
 });
 
-
-it('Metro reads ordinary and zip-mounted image asset files', async (t) => {
-  const require = createRequire(new URL('../package.json', import.meta.url));
-  const { getAssetData, getAssetSize } = require('metro/private/Assets');
-  const directory = mkdtempSync(join(tmpdir(), 'metro-assets-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
-  const png = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489', 'hex');
-  assert.deepEqual(getAssetSize('png', png, 'pixel.png'), { width: 1, height: 1 });
-
-  for (const folder of ['ordinary', 'assets.zip']) {
-    const assetDirectory = join(directory, folder);
-    mkdirSync(assetDirectory);
-    const file = join(assetDirectory, 'pixel.png');
-    writeFileSync(file, png);
-    const asset = await getAssetData(file, 'pixel.png', [], null, '/assets');
-    assert.equal(asset.width, 1);
-    assert.equal(asset.height, 1);
-    assert.deepEqual(asset.files, [file]);
-  }
-});

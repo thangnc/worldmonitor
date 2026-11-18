@@ -5,7 +5,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync as originalReadFileSync, existsSync, readdirSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { nonDefaultLandingLocales } from '../shared/indexable-landing-locales.ts';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 function readFileSync(path, options) {
   const content = originalReadFileSync(path, options);
   if (typeof content === 'string') {
@@ -2382,69 +2382,6 @@ describe('self-hosted docker nginx SPA entry', () => {
   });
 });
 
-// Per-route CSP override for the hosted brief magazine. The renderer
-// emits an inline <script> (swipe/arrow/wheel/touch nav IIFE) whose
-// hash is NOT on the global script-src allowlist, so the catch-all
-// CSP silently blocks it. This rule relaxes script-src to
-// 'unsafe-inline' for /api/brief/* only. All Redis-sourced content
-// flows through escapeHtml() in brief-render.js before interpolation,
-// so unsafe-inline doesn't open an XSS surface.
-const getBriefSecurityHeaders = () => {
-  const rule = vercelConfig.headers.find((entry) => entry.source === '/api/brief/(.*)');
-  return rule?.headers ?? [];
-};
-
-const getBriefCspValue = () => {
-  const headers = getBriefSecurityHeaders();
-  const header = headers.find((h) => h.key.toLowerCase() === 'content-security-policy');
-  return header?.value ?? null;
-};
-
-describe('brief magazine CSP override', () => {
-  it('rule exists for /api/brief/(.*) with a Content-Security-Policy header', () => {
-    const csp = getBriefCspValue();
-    assert.ok(csp, 'Missing per-route CSP override for /api/brief/(.*) — the magazine nav IIFE will be blocked');
-  });
-
-  it('script-src includes unsafe-inline so the nav IIFE can execute', () => {
-    const csp = getBriefCspValue();
-    const scriptSrc = csp.match(/script-src\s+([^;]+)/)?.[1] ?? '';
-    assert.ok(
-      scriptSrc.includes("'unsafe-inline'"),
-      "brief CSP script-src must include 'unsafe-inline' — without it swipe/arrow nav is silently blocked",
-    );
-  });
-
-  it('connect-src allows Cloudflare Insights analytics beacon to POST', () => {
-    const csp = getBriefCspValue();
-    const connectSrc = csp.match(/connect-src\s+([^;]+)/)?.[1] ?? '';
-    assert.ok(
-      connectSrc.includes('https://cloudflareinsights.com'),
-      'brief CSP connect-src must allow cloudflareinsights.com so the CF beacon can POST to /cdn-cgi/rum',
-    );
-  });
-
-  it('loads fonts only from the site itself (self-hosted brief fonts, no Google Fonts)', () => {
-    const csp = getBriefCspValue();
-    const styleSrc = csp.match(/style-src\s+([^;]+)/)?.[1] ?? '';
-    const fontSrc = csp.match(/font-src\s+([^;]+)/)?.[1] ?? '';
-    assert.equal(fontSrc.trim(), "'self' data:");
-    assert.doesNotMatch(styleSrc, /googleapis|gstatic/);
-  });
-
-  it('keeps tight defaults for non-script directives', () => {
-    const csp = getBriefCspValue();
-    for (const directive of [
-      "default-src 'self'",
-      "object-src 'none'",
-      "form-action 'none'",
-      "base-uri 'self'",
-    ]) {
-      assert.ok(csp.includes(directive), `brief CSP missing tight directive: ${directive}`);
-    }
-  });
-});
-
 // Agent readiness: RFC 9727 API catalog at /.well-known/api-catalog and
 // the build-time copy of the OpenAPI spec from docs/api/ into public/.
 // These guardrails protect against:
@@ -2737,42 +2674,9 @@ describe('agent readiness: api-catalog + openapi build', () => {
   });
 });
 
-// The MCP endpoint and OAuth protected-resource metadata must be
-// self-consistent per host. The static file that used to live at
-// public/.well-known/oauth-protected-resource was replaced with a
-// dynamic edge function at api/oauth-protected-resource.ts that
-// derives `resource` and `authorization_servers` from the request
-// Host header, so every origin (apex / www / api) sees same-origin
-// metadata regardless of which host the scanner entered from.
-// Scanners like isitagentready.com (and Cloudflare's reference at
-// mcp.cloudflare.com) enforce that `authorization_servers[*]` share
-// origin with `resource` — this construction guarantees that.
-describe('agent readiness: MCP/OAuth origin alignment', () => {
-  it('oauth-protected-resource handler returns origin-matching metadata per host', async () => {
-    // Runtime test (not source-regex): dynamically import the edge handler
-    // and invoke it against synthetic Host headers to prove the response
-    // is actually same-origin per host, with correct Vary + Content-Type.
-    const mod = await import('../api/oauth-protected-resource.ts');
-    const handler = mod.default;
-    assert.equal(typeof handler, 'function', 'handler must be the default export');
-
-    const hosts = ['worldmonitor.app', 'www.worldmonitor.app', 'api.worldmonitor.app'];
-    for (const host of hosts) {
-      const req = new Request(`https://${host}/.well-known/oauth-protected-resource`, {
-        headers: { host },
-      });
-      const res = await handler(req);
-      assert.equal(res.status, 200, `status 200 for ${host}`);
-      assert.equal(res.headers.get('content-type'), 'application/json', `JSON for ${host}`);
-      assert.equal(res.headers.get('vary'), 'Host', `Vary: Host for ${host}`);
-      const json = await res.json();
-      assert.equal(json.resource, `https://${host}`, `resource matches ${host}`);
-      assert.deepEqual(json.authorization_servers, [`https://${host}`], `auth_servers match ${host}`);
-      assert.deepEqual(json.bearer_methods_supported, ['header']);
-      assert.deepEqual(json.scopes_supported, ['mcp']);
-    }
-  });
-
+// The MCP server card still ships under public/.well-known/ until the public
+// docs leave in a later PR, so its advertised resource must stay on a known host.
+describe('agent readiness: MCP server card', () => {
   it('MCP server card authentication.resource is a valid https URL on a known host', () => {
     const mcpCard = JSON.parse(
       readFileSync(resolve(__dirname, '../public/.well-known/mcp/server-card.json'), 'utf-8')
@@ -2782,173 +2686,6 @@ describe('agent readiness: MCP/OAuth origin alignment', () => {
     assert.ok(
       ['worldmonitor.app', 'www.worldmonitor.app', 'api.worldmonitor.app'].includes(u.host),
       `unexpected host: ${u.host}`
-    );
-  });
-
-  it('api/mcp.ts resource_metadata is host-derived, not hardcoded', () => {
-    // After the structural split (refactor PR), the host-derivation
-    // (`requestHost = req.headers.get('host') ?? ...`) lives in
-    // api/mcp/handler.ts and the template-literal that emits
-    // `resource_metadata="${url}"` lives in api/mcp/auth.ts (the
-    // `wwwAuthHeader` helper). Concatenate both so the three sub-greps
-    // below still see the same byte surface they did pre-split.
-    const source = readFileSync(resolve(__dirname, '../api/mcp/handler.ts'), 'utf-8')
-      + '\n'
-      + readFileSync(resolve(__dirname, '../api/mcp/auth.ts'), 'utf-8');
-    // Must NOT contain a hardcoded apex or api URL for resource_metadata —
-    // that regressed once (PR #3351 review: apex pointer emitted from
-    // api.worldmonitor.app/mcp 401s) and the grep-only test didn't catch it.
-    assert.ok(
-      !/resource_metadata="https:\/\/(?:api\.)?worldmonitor\.app\/\.well-known\//.test(source),
-      'api/mcp.ts must not hardcode resource_metadata URL — derive from request host'
-    );
-    // Must contain a template-literal construction that uses a host variable.
-    assert.match(
-      source,
-      /resource_metadata="\$\{[A-Za-z_][A-Za-z0-9_]*\}"|`[^`]*resource_metadata="\$\{[^}]+\}"/,
-      'api/mcp.ts must construct resource_metadata from a host-derived variable'
-    );
-    // Must derive the origin from the request, through the shared resolver that
-    // validates Host against the allowlist (api/_agent-metadata.ts). Reading the
-    // raw header directly would reflect a spoofed Host into the discovery
-    // pointer, and could name a host whose metadata document we never serve.
-    assert.match(
-      source,
-      /resolveMetadataOrigin\(req(?:uest)?\)/,
-      'api/mcp.ts must derive the resource_metadata origin via resolveMetadataOrigin'
-    );
-  });
-
-  it('vercel.json rewrites /.well-known/oauth-protected-resource to the edge fn', () => {
-    const rewrite = vercelConfig.rewrites.find(
-      (r) => r.source === '/.well-known/oauth-protected-resource'
-    );
-    assert.ok(rewrite, 'expected a rewrite for /.well-known/oauth-protected-resource');
-    assert.equal(rewrite.destination, '/api/oauth-protected-resource');
-  });
-
-  // RFC 8414 authorization-server metadata is ALSO a dynamic edge fn (was a
-  // static file at public/.well-known/oauth-authorization-server). Host
-  // derivation keeps `issuer` == the origin the PRM advertises, so ora.ai/orank
-  // can cross-check that PRM `authorization_servers` resolves to an AS document
-  // whose `issuer` matches — while same-origin also satisfies isitagentready.
-  it('oauth-authorization-server handler returns host-derived RFC 8414 metadata + WorkOS agent_auth block', async () => {
-    const mod = await import('../api/oauth-authorization-server.ts');
-    const handler = mod.default;
-    assert.equal(typeof handler, 'function', 'handler must be the default export');
-
-    const hosts = ['worldmonitor.app', 'www.worldmonitor.app', 'api.worldmonitor.app'];
-    for (const host of hosts) {
-      const req = new Request(`https://${host}/.well-known/oauth-authorization-server`, {
-        headers: { host },
-      });
-      const res = await handler(req);
-      assert.equal(res.status, 200, `status 200 for ${host}`);
-      assert.equal(res.headers.get('content-type'), 'application/json', `JSON for ${host}`);
-      assert.equal(res.headers.get('vary'), 'Host', `Vary: Host for ${host}`);
-      assert.equal(res.headers.get('cache-control'), 'public, max-age=3600', `cacheable for ${host}`);
-      const json = await res.json();
-
-      // RFC 8414 issuer + endpoints are all self-origin.
-      assert.equal(json.issuer, `https://${host}`, `issuer matches ${host}`);
-      assert.equal(json.authorization_endpoint, `https://${host}/oauth/authorize`);
-      assert.equal(json.token_endpoint, `https://${host}/oauth/token`);
-      assert.equal(json.registration_endpoint, `https://${host}/oauth/register`);
-      assert.deepEqual(json.code_challenge_methods_supported, ['S256']);
-      assert.deepEqual(json.token_endpoint_auth_methods_supported, ['none']);
-      assert.deepEqual(json.scopes_supported, ['mcp']);
-
-      // WorkOS auth.md agent_auth discovery block (only `anonymous` is honest —
-      // WM has no ID-JAG identity endpoint, so identity_assertion is not advertised).
-      assert.ok(json.agent_auth, `agent_auth block present for ${host}`);
-      // Scanners require skill == <issuer>/auth.md. The apex serves it because
-      // /auth.md is exempt from the Cloudflare apex→www 301 (ARCHITECTURE.md §2).
-      assert.equal(json.agent_auth.skill, `https://${host}/auth.md`, `skill is the issuer's /auth.md for ${host}`);
-      assert.equal(json.agent_auth.register_uri, `https://${host}/oauth/register`);
-      // auth.md v0.2's identity_endpoint takes {"type":"anonymous"} and returns
-      // an identity_assertion; /oauth/register is RFC 7591 DCR, so it must not
-      // be advertised under that key.
-      assert.equal(json.agent_auth.identity_endpoint, undefined);
-      assert.deepEqual(json.agent_auth.identity_types_supported, ['anonymous']);
-      // Only `access_token` — an api_key is user-minted (carries a user
-      // identity), so it is not an anonymous-registration credential.
-      assert.deepEqual(
-        json.agent_auth.anonymous.credential_types_supported,
-        ['access_token'],
-        `anonymous sibling block enumerates credential types for ${host}`
-      );
-      // The anonymous registration method requires a claim URI (readiness
-      // scanners reject the method without it). Anonymous credentials are
-      // claimed at authorization time, so claim_uri == the authorization
-      // endpoint. Advertised both at the agent_auth top level (parallel to
-      // register_uri) and inside the anonymous method object.
-      assert.equal(
-        json.agent_auth.claim_uri,
-        `https://${host}/oauth/authorize`,
-        `agent_auth.claim_uri = authorization endpoint for ${host}`
-      );
-      assert.equal(
-        json.agent_auth.anonymous.claim_uri,
-        `https://${host}/oauth/authorize`,
-        `anonymous method advertises claim_uri for ${host}`
-      );
-    }
-  });
-
-  // The Host header is client-controlled; both discovery handlers derive their
-  // origin through the shared allowlist (api/_agent-metadata.ts) so a spoofed
-  // Host cannot be reflected into issuer/resource/endpoints. They also guard the
-  // HTTP method (read-only docs).
-  it('discovery handlers reject spoofed Host (apex fallback) and non-GET methods', async () => {
-    const prm = (await import('../api/oauth-protected-resource.ts')).default;
-    const as = (await import('../api/oauth-authorization-server.ts')).default;
-
-    // Spoofed / unrecognized Host → apex fallback, never reflected.
-    for (const host of ['evil.com', 'worldmonitor.app.evil.com', 'evilworldmonitor.app', 'x.y.worldmonitor.app']) {
-      const prmRes = await prm(new Request('https://worldmonitor.app/.well-known/oauth-protected-resource', { headers: { host } }));
-      const prmJson = await prmRes.json();
-      assert.equal(prmJson.resource, 'https://worldmonitor.app', `PRM must not reflect spoofed host ${host}`);
-      assert.deepEqual(prmJson.authorization_servers, ['https://worldmonitor.app']);
-
-      const asRes = await as(new Request('https://worldmonitor.app/.well-known/oauth-authorization-server', { headers: { host } }));
-      const asJson = await asRes.json();
-      assert.equal(asJson.issuer, 'https://worldmonitor.app', `AS must not reflect spoofed host ${host}`);
-      assert.equal(asJson.token_endpoint, 'https://worldmonitor.app/oauth/token', `AS token_endpoint must not carry spoofed host ${host}`);
-      assert.equal(asJson.agent_auth.register_uri, 'https://worldmonitor.app/oauth/register');
-      assert.equal(asJson.agent_auth.claim_uri, 'https://worldmonitor.app/oauth/authorize', `AS claim_uri must not carry spoofed host ${host}`);
-      assert.equal(asJson.agent_auth.anonymous.claim_uri, 'https://worldmonitor.app/oauth/authorize');
-    }
-
-    // Legit subdomain still self-describes.
-    const variant = await as(new Request('https://tech.worldmonitor.app/.well-known/oauth-authorization-server', { headers: { host: 'tech.worldmonitor.app' } }));
-    assert.equal((await variant.json()).issuer, 'https://tech.worldmonitor.app');
-
-    // Method guard: OPTIONS → 204 preflight, other verbs → 405 + Allow, GET → 200.
-    for (const handler of [prm, as]) {
-      const opt = await handler(new Request('https://worldmonitor.app/x', { method: 'OPTIONS', headers: { host: 'worldmonitor.app' } }));
-      assert.equal(opt.status, 204, 'OPTIONS is a CORS preflight');
-      assert.equal(opt.headers.get('access-control-allow-methods'), 'GET, HEAD, OPTIONS');
-
-      const post = await handler(new Request('https://worldmonitor.app/x', { method: 'POST', headers: { host: 'worldmonitor.app' } }));
-      assert.equal(post.status, 405, 'non-GET/HEAD is rejected');
-      assert.equal(post.headers.get('allow'), 'GET, HEAD, OPTIONS');
-
-      const get = await handler(new Request('https://worldmonitor.app/x', { headers: { host: 'worldmonitor.app' } }));
-      assert.equal(get.status, 200, 'GET is served');
-    }
-  });
-
-  it('vercel.json rewrites /.well-known/oauth-authorization-server to the edge fn and the static file is gone', () => {
-    const rewrite = vercelConfig.rewrites.find(
-      (r) => r.source === '/.well-known/oauth-authorization-server'
-    );
-    assert.ok(rewrite, 'expected a rewrite for /.well-known/oauth-authorization-server');
-    assert.equal(rewrite.destination, '/api/oauth-authorization-server');
-    // The static file MUST be deleted — Vercel serves real files before
-    // rewrites, so a leftover static doc would shadow the dynamic handler.
-    assert.ok(
-      !existsSync(resolve(__dirname, '../public/.well-known/oauth-authorization-server')),
-      'static public/.well-known/oauth-authorization-server must be removed so the edge fn is not shadowed'
     );
   });
 });
@@ -3806,7 +3543,9 @@ describe('agent readiness: crawl-budget disallows (#7660)', () => {
       const params = new Set();
       for (const dir of SOURCE_DIRS) collectParams(resolve(__dirname, '..', dir), params);
       assert.ok(params.size > 50, `expected to find the app's query params, got ${params.size}`);
-      for (const token of BLOCKED_TOKENS) assert.ok(params.has(token), `${token} must be a real param`);
+      // `layers` is still blocked, but no kept route reads it since the map
+      // embed left; the coordinate tokens prove the scan sees real params.
+      for (const token of ['lat', 'lon', 'zoom']) assert.ok(params.has(token), `${token} must be a real param`);
 
       // The bounding-box params collide on the token but never on a crawlable
       // URL: they exist only on `/api/*` RPC routes, which `Disallow: /api/`
@@ -3841,9 +3580,7 @@ describe('agent readiness: crawl-budget disallows (#7660)', () => {
           // bare prose mention (`// [sw_lat, sw_lon, …]` documenting an array
           // order) is not a parameter and must not trip this.
           const asQueryKey = new RegExp(`['"\`]${needle}['"\`]|[?&]${needle}=`);
-          // MCP tool arguments travel in JSON-RPC POST bodies, never in a URL.
-          const mcpArgument = relative(resolve(__dirname, '..'), full).startsWith(join('api', 'mcp') + sep);
-          if (asQueryKey.test(body)) acc.push({ path: full, apiScoped: body.includes('/api/') || mcpArgument });
+          if (asQueryKey.test(body)) acc.push({ path: full, apiScoped: body.includes('/api/') });
         }
         return acc;
       };
@@ -4196,26 +3933,17 @@ describe('NLWeb schemamap (/schemamap.xml)', () => {
   });
 });
 
-// Docs MCP facade: /docs/mcp must hit api/docs-mcp.ts (which lifts the
-// upstream's protocol-level tool-call failures into real JSON-RPC errors)
-// BEFORE the catch-all /docs/:match* Mintlify rewrite — rewrites are
-// first-match-wins, so ordering is load-bearing.
-describe('docs MCP facade (/docs/mcp)', () => {
-  it('rewrites /docs/mcp to /api/docs-mcp ahead of the Mintlify catch-all', () => {
-    const rewrites = vercelConfig.rewrites;
-    const facadeIdx = rewrites.findIndex(
-      (r) => r.source === '/docs/mcp' && r.destination === '/api/docs-mcp'
-    );
-    const mintlifyIdx = rewrites.findIndex(
-      (r) => r.source === '/docs/:match*' && String(r.destination).includes('mintlify.dev')
-    );
-    assert.ok(facadeIdx >= 0, 'missing /docs/mcp → /api/docs-mcp rewrite');
-    assert.ok(mintlifyIdx >= 0, 'Mintlify /docs rewrite missing');
-    assert.ok(facadeIdx < mintlifyIdx, '/docs/mcp rewrite must precede the /docs/:match* Mintlify rewrite');
-    assert.ok(existsSync(resolve(__dirname, '../api/docs-mcp.ts')), 'api/docs-mcp.ts must exist');
+// Docs MCP: the api/docs-mcp.ts facade is gone, so /docs/mcp must reach the
+// Mintlify docs rewrite (which serves the docs MCP server) and nothing else.
+describe('docs MCP (/docs/mcp)', () => {
+  it('routes /docs/mcp to the Mintlify docs rewrite, with no leftover facade', () => {
+    const rule = firstRewriteFor({ host: 'www.worldmonitor.app', path: '/docs/mcp' });
+    assert.ok(rule, '/docs/mcp must match a rewrite');
+    assert.match(String(rule.destination), /mintlify\.dev/, '/docs/mcp must reach the Mintlify docs rewrite');
+    assert.equal(vercelConfig.rewrites.some((r) => r.destination === '/api/docs-mcp'), false);
   });
 
-  it('the first-party docs server card still points at the facade URL', () => {
+  it('the first-party docs server card still points at the /docs/mcp URL', () => {
     const card = JSON.parse(
       readFileSync(resolve(__dirname, '../public/.well-known/mcp/docs-server-card.json'), 'utf-8')
     );

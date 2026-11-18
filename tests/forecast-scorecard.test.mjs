@@ -1716,11 +1716,6 @@ describe('spec-origin follow-through slice (#7067)', () => {
     assert.equal(specOrigins.byOrigin.hard.market.entries, 1);
     assert.equal(specOrigins.excludedBetEngine, 1);
   });
-
-  it('stays off the public scorecard contract', async () => {
-    const { SCORECARD_DATA_FIELDS } = await import('../server/worldmonitor/forecast/v1/scorecard-fields.ts');
-    for (const field of ['specOrigins', 'withheldAtEmission']) assert.ok(!SCORECARD_DATA_FIELDS.includes(field), field);
-  });
 });
 
 describe('ledger totals and funnel count published forecasts only (#8990)', () => {

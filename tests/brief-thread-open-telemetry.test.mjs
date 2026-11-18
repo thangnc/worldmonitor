@@ -1,27 +1,19 @@
 /**
  * Tests for the U11 brief_thread_open telemetry plumbing.
  *
- * Two surfaces emit `brief-thread-open`:
- *
- *   1. Magazine — `server/_shared/brief-render.js` stamps every story
- *      source-link with `data-thread-open / data-country / data-severity
- *      / data-followed`, and an inline script invokes
- *      `window.umami?.track('brief-thread-open', { … })` on click.
- *
- *   2. Dashboard — `src/components/LatestBriefPanel.ts` fires the same
- *      event from the cover-card click via `trackBriefThreadOpen` in
- *      `src/services/analytics.ts`.
+ * The magazine emits `brief-thread-open`: `server/_shared/brief-render.js`
+ * stamps every story source-link with `data-thread-open / data-country /
+ * data-severity / data-followed`, and an inline script invokes
+ * `window.umami?.track('brief-thread-open', { … })` on click. (The
+ * dashboard emitter and src/services/analytics.ts were removed in Lite
+ * Phase 1c.)
  *
  * The magazine surface is fully testable from Node without jsdom (the
  * renderer is a pure HTML producer; the inline script is a string we
- * eval against a hand-rolled DOM stub). The dashboard surface is
- * exercised through `trackBriefThreadOpen` directly: it short-circuits
- * on missing `window.umami` and forwards the props otherwise. The
- * panel's click-handler-doesn't-throw contract is asserted by the
- * fact that `trackBriefThreadOpen` itself is the only side-effect.
+ * eval against a hand-rolled DOM stub).
  */
 
-import { describe, it, before, beforeEach, after } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderBriefMagazine } from '../server/_shared/brief-render.js';
 import { BRIEF_ENVELOPE_VERSION } from '../shared/brief-envelope.js';
@@ -393,105 +385,6 @@ describe('brief-render — U11 inline tracker', () => {
     const link = makeElement({ threadOpen: '1', country: 'IR', severity: 'high', followed: '0' });
     stub.fireClick(link);
     stub.fireClick(link);
-    assert.equal(calls.length, 2);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Dashboard: trackBriefThreadOpen analytics helper
-// ---------------------------------------------------------------------------
-
-/**
- * The dashboard fires `trackBriefThreadOpen({ country: null, followed:
- * false, severity: null, source: 'dashboard' })` from the cover-card
- * click handler. We exercise the helper directly under a mocked
- * `window.umami.track`. The panel's click handler just calls this
- * inside try/catch — its contract is "fire-and-forget; never throw"
- * which is fully captured by `track` itself short-circuiting on a
- * missing `window.umami`.
- */
-describe('analytics — trackBriefThreadOpen (dashboard)', () => {
-  let _window;
-  let svc;
-
-  before(async () => {
-    _window = {};
-    Object.defineProperty(globalThis, 'window', {
-      configurable: true,
-      value: _window,
-    });
-    // Stub other globals analytics.ts touches at module top level.
-    Object.defineProperty(globalThis, 'localStorage', {
-      configurable: true,
-      value: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
-    });
-    svc = await import('../src/services/analytics.ts');
-  });
-
-  beforeEach(() => {
-    _window.umami = undefined;
-  });
-
-  after(() => {
-    delete globalThis.window;
-    delete globalThis.localStorage;
-  });
-
-  it('forwards { country, followed, severity, source } to umami.track', () => {
-    const calls = [];
-    _window.umami = { track: (name, data) => calls.push({ name, data }) };
-    svc.trackBriefThreadOpen({
-      country: null,
-      followed: false,
-      severity: null,
-      source: 'dashboard',
-    });
-    assert.equal(calls.length, 1);
-    assert.equal(calls[0].name, 'brief-thread-open');
-    assert.deepEqual(calls[0].data, {
-      country: null,
-      followed: false,
-      severity: null,
-      source: 'dashboard',
-    });
-  });
-
-  it('passes through magazine-source events with full per-thread props', () => {
-    const calls = [];
-    _window.umami = { track: (name, data) => calls.push({ name, data }) };
-    svc.trackBriefThreadOpen({
-      country: 'US',
-      followed: true,
-      severity: 'critical',
-      source: 'magazine',
-    });
-    assert.equal(calls.length, 1);
-    assert.deepEqual(calls[0].data, {
-      country: 'US',
-      followed: true,
-      severity: 'critical',
-      source: 'magazine',
-    });
-  });
-
-  it('umami absent → silent no-op (no throw)', () => {
-    _window.umami = undefined;
-    assert.doesNotThrow(() =>
-      svc.trackBriefThreadOpen({
-        country: null,
-        followed: false,
-        severity: null,
-        source: 'dashboard',
-      }),
-    );
-  });
-
-  it('same event fired twice → both reach umami (no analytics-layer dedup)', () => {
-    const calls = [];
-    _window.umami = { track: (name, data) => calls.push({ name, data }) };
-    const props = { country: 'US', followed: true, severity: 'high', source: 'dashboard' };
-    svc.trackBriefThreadOpen(props);
-    svc.trackBriefThreadOpen(props);
     assert.equal(calls.length, 2);
   });
 });

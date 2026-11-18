@@ -9,8 +9,7 @@ let server: ViteDevServer;
 let base: string;
 const policyUsers: string[] = [];
 const cacheReads: string[] = [];
-const feedRequests: string[] = [];
-let redirectTarget = '';
+const outboundRequests: string[] = [];
 
 before(async () => {
   process.env.UPSTASH_REDIS_REST_URL = 'https://redis.vite.test';
@@ -21,14 +20,8 @@ before(async () => {
   globalThis.fetch = (async (input, init) => {
     const url = String(input instanceof Request ? input.url : input);
     const target = new URL(url);
-    if (target.hostname === 'feeds.bbci.co.uk') {
-      feedRequests.push(url);
-      assert.equal(init?.redirect, 'manual');
-      return url.endsWith('/next') ? new Response('<rss/>')
-        : new Response(null, { status: 302, headers: { location: redirectTarget } });
-    }
     if (target.hostname !== '127.0.0.1' && !['redis.vite.test', 'convex.vite.test'].includes(target.hostname)) {
-      feedRequests.push(url);
+      outboundRequests.push(url);
       throw new Error('Unexpected outbound request');
     }
     if (target.hostname === 'redis.vite.test') {
@@ -72,26 +65,5 @@ it('Vite does not trust inbound gateway-only identity stamps', async () => {
   assert.equal(response.status, 200, await response.clone().text());
   assert.ok(cacheReads.includes(key), cacheReads.join('\n'));
   assert.deepEqual(policyUsers, []);
-});
-
-it('Vite validates RSS redirect destinations before sending requests', async () => {
-  for (const target of ['http://127.0.0.1/private', 'https://attacker.example/story', 'http://feeds.bbci.co.uk/next']) {
-    redirectTarget = target;
-    feedRequests.length = 0;
-    const response = await originalFetch(`${base}/api/rss-proxy?url=${encodeURIComponent('https://feeds.bbci.co.uk/start')}`);
-    assert.equal(response.status, 403);
-    assert.deepEqual(feedRequests, ['https://feeds.bbci.co.uk/start']);
-  }
-  redirectTarget = '/next';
-  const response = await originalFetch(`${base}/api/rss-proxy?url=${encodeURIComponent('https://feeds.bbci.co.uk/start')}`);
-  assert.equal(response.status, 200);
-  // Match api/rss-proxy.js: feed bytes are data, never a same-origin document.
-  assert.equal(response.headers.get('content-type'), 'text/plain; charset=utf-8');
-  assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
-  assert.equal(response.headers.get('content-security-policy'), "sandbox; default-src 'none'");
-  assert.equal(await response.text(), '<rss/>');
-  feedRequests.length = 0;
-  const plaintext = await originalFetch(`${base}/api/rss-proxy?url=${encodeURIComponent('http://feeds.bbci.co.uk/start')}`);
-  assert.equal(plaintext.status, 403);
-  assert.deepEqual(feedRequests, []);
+  assert.deepEqual(outboundRequests, []);
 });

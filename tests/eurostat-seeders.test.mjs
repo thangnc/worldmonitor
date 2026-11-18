@@ -192,16 +192,6 @@ describe('Registry wiring (issue #3028)', () => {
     assert.match(src, /eurostatIndProd:\s*\{[^}]*seed-meta:economic:eurostat-industrial-production/);
   });
 
-  it('MCP tool registry exposes the three new EU overlay tools', async () => {
-    const src = await readFile(resolve(ROOT, 'api/mcp/registry/cache-tools.ts'), 'utf8');
-    assert.match(src, /name: 'get_eu_housing_cycle'/);
-    assert.match(src, /name: 'get_eu_quarterly_gov_debt'/);
-    assert.match(src, /name: 'get_eu_industrial_production'/);
-    assert.match(src, /'economic:eurostat:house-prices:v1'/);
-    assert.match(src, /'economic:eurostat:gov-debt-q:v1'/);
-    assert.match(src, /'economic:eurostat:industrial-production:v1'/);
-  });
-
   it('macro bundle runner includes the three new scripts with distinct seed-meta keys', async () => {
     const src = await readFile(resolve(ROOT, 'scripts/seed-bundle-macro.mjs'), 'utf8');
     assert.match(src, /seed-eurostat-house-prices\.mjs/);

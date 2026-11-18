@@ -36,7 +36,6 @@ export default defineConfig(({ mode }) => {
       __APP_VERSION__: JSON.stringify(pkg.version),
       // Vercel sets VERCEL_GIT_COMMIT_SHA on production and preview builds.
       __BUILD_HASH__: JSON.stringify(process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev'),
-      __CLERK_JS_VERSION__: JSON.stringify(pkg.dependencies['@clerk/clerk-js'].replace(/^[\^~>=<\s]*/, '')),
     },
     // The shared CSP is strict-dynamic plus this nonce (vercel.json, nginx).
     html: { cspNonce: STATIC_SCRIPT_NONCE },

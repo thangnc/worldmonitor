@@ -43,7 +43,7 @@ describe('China decision-signal static and staging audit (#5580)', () => {
     );
   });
 
-  it('pins all six domains across API, MCP, bootstrap, health, alerts, Railway, and docs', () => {
+  it('pins all six domains across API, bootstrap, health, alerts, Railway, and docs', () => {
     const result = auditChinaDecisionStaticRegistrations(REPO_ROOT);
     assert.deepEqual(result.groupIds, [
       'macro',

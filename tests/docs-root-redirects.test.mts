@@ -148,10 +148,13 @@ describe('rootless Mintlify route canonicalization', () => {
     ]) {
       assert.match(path, routeRegex, `middleware must inspect extensionless route ${path}`);
     }
-    for (const path of ['/api/health', '/mcp', '/assets/app.js', '/docs/chunk.css']) {
+    for (const path of ['/api/health', '/assets/app.js', '/docs/chunk.css']) {
       assert.doesNotMatch(path, routeRegex, `general matcher must leave ${path} to its dedicated route`);
     }
     assert.ok(middlewareConfig.matcher.includes('/api/:path*'));
-    assert.ok(middlewareConfig.matcher.includes('/mcp'));
+    // The MCP endpoint is gone, so /mcp has no dedicated matcher and falls to
+    // the general one (and its agent-friendly 404).
+    assert.ok(!middlewareConfig.matcher.includes('/mcp'));
+    assert.match('/mcp', routeRegex);
   });
 });

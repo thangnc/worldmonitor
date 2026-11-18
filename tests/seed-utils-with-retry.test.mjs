@@ -485,9 +485,8 @@ describe('httpRetryError', () => {
 // so the error is nonRetryable and the provider loop falls through immediately
 // with the budget intact. Equality is included: sleeping the full remainder
 // would leave usableBudget at 0 and abort the whole waterfall. Deliberately a NEW option rather than a redefinition of
-// `capMs`: scripts/_seed-history.mjs passes `capMs: RELAY_RETRY_AFTER_CAP_MS`
-// (a fixed 10s ceiling, not a budget), so changing `capMs` semantics would
-// silently make that relay give up where it used to retry.
+// `capMs`: callers pass a fixed ceiling (not a budget), so changing `capMs`
+// semantics would silently make them give up where they used to retry.
 describe('httpRetryError — remainingBudgetMs (#6110)', () => {
   const resp429 = (retryAfterSeconds) => ({
     status: 429,
@@ -547,7 +546,7 @@ describe('httpRetryError — remainingBudgetMs (#6110)', () => {
   });
 
   it('leaves capMs semantics untouched — a long hint still clamps and retries', () => {
-    // scripts/_seed-history.mjs depends on exactly this: capMs is a ceiling.
+    // Fixed-ceiling callers depend on exactly this: capMs is a ceiling.
     const err = httpRetryError(resp429(30), { capMs: 10_000 });
     assert.equal(err.nonRetryable, false, 'capMs must NOT gain the futility verdict');
     assert.equal(err.retryAfterMs, 10_000);

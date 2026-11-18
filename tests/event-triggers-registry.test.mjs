@@ -7,8 +7,7 @@ import { describe, it } from 'node:test';
 
 // shared/event-triggers.json is the one definition of every push event: the
 // registration handler validates against it, the delivery worker reads the
-// scripts/shared mirror, the Zapier app reads its own mirror and the OpenAPI
-// webhooks block names its events. This suite pins the shape every consumer
+// scripts/shared mirror and the OpenAPI webhooks block names its events. This suite pins the shape every consumer
 // relies on, so a new event cannot land half-described.
 
 const require = createRequire(import.meta.url);
@@ -27,8 +26,8 @@ function propertyNames(schema) {
 }
 
 describe('event registry shape', () => {
-  it('mirrors byte-for-byte where the worker and the Zapier app read it', () => {
-    for (const mirror of ['scripts/shared/event-triggers.json', 'integrations/zapier/event-triggers.json']) {
+  it('mirrors byte-for-byte where the worker reads it', () => {
+    for (const mirror of ['scripts/shared/event-triggers.json']) {
       assert.equal(readFileSync(resolve(root, mirror), 'utf8'), canonicalRaw, `run: cp shared/event-triggers.json ${mirror}`);
     }
   });

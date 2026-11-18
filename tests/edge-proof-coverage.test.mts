@@ -105,9 +105,6 @@ describe('IP-scoped endpoint rate limits reject unproven CF client IP (#8402)', 
 
   for (const [path, module] of [
     ['/api/skills/fetch-agentskills', '../api/skills/fetch-agentskills.ts'],
-    ['/ask', '../api/ask.ts'],
-    ['/a2a', '../api/a2a.ts'],
-    ['/docs/mcp', '../api/docs-mcp.ts'],
   ]) {
     it(`rejects unproven CF headers through the real ${path} handler`, async () => {
       process.env.CF_EDGE_PROOF_SECRET = 'edge-secret-xyz';
@@ -125,13 +122,6 @@ describe('IP-scoped endpoint rate limits reject unproven CF client IP (#8402)', 
       assert.equal(response.status, 403);
       assert.equal(fetches, 0);
       assert.equal(response.headers.get('X-RateLimit-Mode'), 'edge-proof');
-      const body = await response.json();
-      if (path === '/a2a' || path === '/docs/mcp') {
-        assert.equal(body.jsonrpc, '2.0');
-        assert.equal(body.id, 7);
-        assert.equal(body.error.code, -32003);
-      }
-      if (path === '/ask') assert.equal(body._meta.response_type, 'error');
     });
   }
 

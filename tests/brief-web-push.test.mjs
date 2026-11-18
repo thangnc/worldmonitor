@@ -309,27 +309,6 @@ describe('push-handler.js — off-origin click targets', () => {
   });
 });
 
-// REGRESSION: PR #3173 P1 (cross-account subscription leak).
-// setWebPushChannelForUser must dedupe by endpoint across all users,
-// not just by (userId, channelType). Otherwise a shared device
-// delivers user A's alerts to user B after an account switch.
-describe('setWebPushChannelForUser endpoint dedupe', () => {
-  it('source deletes any existing rows with the same endpoint before insert', async () => {
-    const { readFileSync } = await import('node:fs');
-    const { fileURLToPath } = await import('node:url');
-    const { dirname, resolve } = await import('node:path');
-    const __d = dirname(fileURLToPath(import.meta.url));
-    const src = readFileSync(
-      resolve(__d, '../convex/notificationChannels.ts'),
-      'utf-8',
-    );
-    // Lock both the scan-by-endpoint AND the delete-before-insert
-    // pattern. If either drifts, the review finding reappears.
-    assert.match(src, /row\.endpoint === args\.endpoint/, 'setWebPushChannelForUser must compare rows by endpoint');
-    assert.match(src, /await ctx\.db\.delete\(row\._id\)/, 'matching rows must be deleted before upsert');
-  });
-});
-
 // REGRESSION: the service worker must be origin-agnostic.
 //
 // The worker is served from www.worldmonitor.app and from five vertical
