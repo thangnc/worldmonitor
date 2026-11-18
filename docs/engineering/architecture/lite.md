@@ -39,6 +39,9 @@ The owner's priority (2026-11-08) is **early indicators**: see army activity, co
 | Indicator sources | The owner holds free keys for Cloudflare Radar, NVD, abuse.ch, AbuseIPDB and AlienVault OTX (2026-11-08), so the Technology and AI indicators can be built. FAA NOTAM access is not self-service and has been requested; airspace closures wait for it. Keys live in the deployment's env and, for local seeder runs, in `.env.local`; they are never committed or printed. |
 | Indicator screens | The owner's designs (2026-11-08) for the Briefing, Geopolitics, Finance & Crypto, Technology & AI and the layers popover. Every domain screen has a map with a layers popover, an indicator panel beside it and its domain panels below; the Briefing has a fired-indicators block with a feed-health strip. Owner answers: VERIFIED is kept for independently verified datasets (UCDP), and prices are labelled MARKET DATA; a stablecoin fires at 0.5% from $1; Finance shows the 1D range only; the Geopolitics range is 6h, 24h and 7d (12 months dropped; 30d dropped 2026-11-10 because its shading repeated 7d), and UCDP shows as the verified background whatever the range; "Primary-source regulation" stays a labelled sample until a regulation feed exists. Details in [Screen design](#screen-design). |
 | Watchlist stand-in | Until the watchlist exists (open decision 1), the indicators that fire "for a watchlist country" read the curated hotspots' countries (`packages/shared/hotspot-country-map.ts`) instead, and say so (owner's decision, 2026-11-08). Embassy security alerts are the first. |
+| Decision tiers | The owner reads Lite as an investor and board member (2026-11-19): every indicator states the decision it informs and is tagged **check daily** or **check weekly**. Analyst-level inputs (military aircraft, GPS interference, attack infrastructure) feed the region and infrastructure views instead of standing as decisions of their own. The work runs in two milestones: Phase 1 improves the indicators from data the repository already fetches (issues #113–#121), then Phase 2 adds new sources (#122–#142). See [Decision tiers](#decision-tiers). |
+| Indicator sources and priority | New indicator sources are free (2026-11-19). An issue is high priority when its decision value is high and it needs no key, or a key the owner already holds, because it builds fast; a new free key, a weekly or monthly signal or a fragile source makes it medium; scraping, an unclear licence or low value makes it low. Sources free only for non-commercial use (OpenSanctions, ransomware.live, ACLED) are left out, because board use may count as commercial. See [Sources left out](#sources-left-out). |
+| Geopolitics indicator panel | Grouped by the region strip's regions (`ESCALATION_REGIONS`), not one flat list (2026-11-19): every Geopolitics indicator is tied to a country, a hotspot or a sea area, so several cards often describe one situation, and a decision-maker reads it as one. Planned in #116; see [Screen design](#screen-design). |
 | Taiwan Strait trigger | PLA aircraft sorties or PLAN ships at 1.5 times their 30-day median or more, with at least 10 aircraft or 5 ships (owner's choice, 2026-11-09). The seeder keeps the median of prior reporting days, not an average, and above the median alone would fire about every other day. |
 | Sources screen | The owner's design (2026-11-08) for "Sources & ingestion", trimmed by the owner: the KPI strip (reports, duplicates merged, ingest-to-display latency, stale feeds, archive size), the 24-hour volume bars, rate limits and quotas, retries, request logs and runbooks, and every action (retry, pause, add source, edit policy) are left out. The screen is read-only, and its status comes from data the Lite UI already reads, with no new endpoint. Details in [Screen design](#screen-design). |
 | Front page | A dedicated Lite UI at `/lite`, built from the owner's designs with Preact and Tailwind CSS. It is the only web app since refactor Phase 1 removed the dashboard (2026-11-18). See [Lite UI](#lite-ui-lite). |
@@ -121,9 +124,56 @@ Every indicator links to the news, in both directions:
 - **No link.** An indicator with no matching story says "No linked news found". An unexplained move is a signal in itself, so it is not hidden.
 - **AI summaries.** A one-line "why" may be generated only from the linked stories, with citations, through the grounded brief code (`packages/shared/brief-llm-core.js`, `packages/shared/brief-claim-rules.js`), and labelled as model inference.
 
+### Decision tiers
+
+The owner's view (2026-11-19): an indicator earns its place by the decision it informs. **Check daily** indicators can need action the same day; **check weekly** indicators shape plans. Some feeds are inputs, not decisions: military aircraft, GPS interference and reported violence feed the region level, and attack infrastructure stays for the security view. "Built" means the indicator renders today; an issue number means it is planned, with its rule in the [Catalogue](#catalogue).
+
+**Geopolitics and conflicts.**
+
+| Indicator | Tier | Decision it informs | Status |
+|---|---|---|---|
+| Chokepoint transits | Daily | Reroute freight, build inventory, hedge oil | Built |
+| Region escalation level | Daily | Hold back exposure to a region, or keep watching | Region strip built; indicator #117; panel grouped by region #116 |
+| New sanctions | Daily | Review customers, suppliers and partners in the country | OFAC data built (Finance map); indicator #118; EU #129; UK #140 |
+| Export controls and tariffs | Daily | Change sourcing and pricing; check a product can still be sold | #122; restricted parties #123 |
+| Taiwan Strait activity | Daily | Semiconductor supply and Asia exposure | Built |
+| Travel advisories and embassy alerts | Daily | Staff safety and travel freezes | Embassy alerts built (four countries); advisories #124 |
+| Elections and changes of government | Weekly | Political risk where the owner has exposure | #141 |
+
+**Finance and crypto.**
+
+| Indicator | Tier | Decision it informs | Status |
+|---|---|---|---|
+| Treasury yields and the 2s10s spread | Daily | Cost of capital, valuations, when to refinance | Built |
+| Credit spreads | Daily | The earliest sign of credit stress: hold more cash, delay raising money | #114 |
+| VIX and dollar index | Daily | Risk appetite; a strong dollar squeezes foreign revenue | #115 |
+| Macro release surprise | Daily | The expected rate path | Built against the prior print; forecast stand-in #128 |
+| Rate decisions and expectations | Daily | Hedging and debt timing | Odds #125; decision calendar #130 |
+| Price moves (Brent, gold, S&P 500, BTC) | Daily | Input costs, safe-haven demand, risk appetite | Built |
+| Crypto health (ETF flows, depegs, perp positioning) | Weekly | Crypto exposure | Built; stablecoin supply #137 |
+| Freight (SCFI, Baltic Dry) | Weekly | Goods inflation ahead | Built |
+| Company material events and earnings dates | Weekly | Peer and supplier risk | 8-K filings built; earnings dates #138 |
+| Fed liquidity | Weekly | The liquidity behind risk assets | #136 |
+| US oil inventories | Weekly | Energy cost | #139 |
+
+**Technology and AI.**
+
+| Indicator | Tier | Decision it informs | Status |
+|---|---|---|---|
+| Cloud and AI service outages | Daily | Continuity, dependence on one vendor, service credits | Built |
+| Exploited vulnerabilities in the owner's vendors | Daily | Patch now, accept the risk, or ask the vendor | KEV built; vendor watchlist #119 |
+| Breaches at peers and suppliers | Daily | Third-party risk, insurance, questions to suppliers | 8-K item 1.05 on Tech #120; breach list #131 |
+| Internet outages and cable cuts | Daily | Regional continuity | Built |
+| AI model releases and prices | Weekly | Build or buy, vendor choice, cost assumptions | #126; open-weight releases #132; lab announcements #133 |
+| AI and data regulation | Weekly | Compliance timeline | #127, replacing the SAMPLE list |
+| Chip supply and export controls | Weekly | Semiconductor supply | TSMC revenue #134; controls through #122 |
+| Hyperscaler capex and AI funding | Weekly | Where AI money is going | #135; Form D filings #142 |
+
+The Briefing gets a "Daily check" filter (#121). Phase 1 (#113–#121) uses data the repository already fetches, or keys the owner holds; Phase 2 (#122–#142) adds the free sources, high priority first (see [Owner decisions](#owner-decisions)). Each Phase 2 host still passes the source-policy filter (`packages/shared/source-attribution-manifest.json`) in its build PR.
+
 ### Catalogue
 
-Defaults are a starting point (open decision 2). Each build PR runs its seeders locally first and reports how often the trigger would have fired. "Key" names the credential the seeder needs; none is printed or committed.
+Defaults are a starting point (open decision 2). Each build PR runs its seeders locally first and reports how often the trigger would have fired. "Key" names the credential the seeder needs; none is printed or committed. A row whose feed starts "Planned" is not built yet: it names its issue, and its trigger is a default for the owner to confirm. The free sources were checked with a live request on 2026-11-19 unless the row says otherwise.
 
 Finance fire rates over the year to 8 Nov 2026 (step 3): US 2-year or 10-year ±10 bp on 17 of 249 trading days, no 2s10s sign flip; 10-year ±10 bp on 7 of 252 days for DE, 13 of 251 for GB and 2 of 240 for JP. The prior-print stand-in fires on about half the releases (FRED, last 24: CPI 10, PCE 12, payrolls 13), which is why the forecast source stays the target. ETF flows, perp positioning, freight and 8-K filings keep no history to replay.
 
@@ -150,12 +200,18 @@ A slow feed shows the date its data covers ("data to 3 Nov", "week to 7 Nov"), n
 | Taiwan Strait activity | `seed-cross-strait-activity` (Taiwan MND daily report) | PLA aircraft sorties or PLAN ships at 1.5 times their median over the prior 30 reporting days, with at least 10 aircraft or 5 ships (see Owner decisions). Fewer than 30 reporting days reads "Building history" | Official report |
 | Embassy security alerts | `seed-security-advisories` (US embassies) | An alert in the last 24 h for a watchlist country (until the watchlist exists, a curated hotspot's country; see Owner decisions). The seeder reads 13 embassy feeds, which cover four hotspot countries (Ukraine, Mexico, Pakistan, the UAE); the quiet line names the covered ones | Official notice |
 | Verified violence | `seed-ucdp-events` | None: background, released monthly up to a month behind (GED Candidate) | Verified (UCDP) |
+| Region escalation | Planned (#117): the region strip's level, from the live hotspot score (`apps/web/src/lite/data/escalation.ts`) | A region's level rises one step or more and reaches Elevated or higher | Estimated (derived score) |
+| New sanctions | Planned: OFAC from `seed-sanctions-pressure` (bootstrap key `sanctionsPressure`; #118); the EU consolidated financial sanctions list (XML behind a public token; #129); the UK OFSI list (its old public link refused access, so the current one is found first; #140) | OFAC: new designations for a country in the last 24 h. EU and UK, compared day by day: a new listing for a watchlist country, or 5 or more in a day | Official |
+| Export controls and tariffs | Planned (#122): Federal Register API, documents of the Bureau of Industry and Security and the US Trade Representative (no key) | A new rule or proposed rule in the last 24 h; routine information-collection notices are dropped | Official notice |
+| Restricted parties | Planned (#123): trade.gov Consolidated Screening List (BIS Entity List, OFAC, State Department lists; no key; about 30 MB, so only the day's additions and a compact id set are stored) | Any addition to the BIS Entity List, or 5 or more additions for one country, since the day before | Official |
+| Travel advisories | Planned (#124): US State Department advisories API and UK FCDO advice through the GOV.UK Content API (no key). The State Department endpoint answered with an empty list on one of two calls, so the seeder retries and keeps the last good snapshot | A US level rises, or reaches 3 or 4, for a watchlist country; UK advice changes to against all or all but essential travel | Official notice |
+| Elections | Planned (#141): IFES ElectionGuide (HTML only, no feed) or a curated list | An election within 30 days in a watchlist country | Reported (IFES) or curated |
 
 **Finance and crypto.** Link window: 6 h before.
 
 | Indicator | Feed | Default trigger | Label |
 |---|---|---|---|
-| Macro release surprise | `seed-economic-calendar`, actuals from FRED (`scripts/_econ-actuals.mjs`: CPI, PCE (`PCEPI`) and others); `seed-us-cpi` (key `FRED_API_KEY`) | Target: actual minus forecast of 0.1 pt or more for CPI or PCE month on month, 50k or more for payrolls. No source gives a forecast (the calendar's `estimate` is empty), so until one exists the prior print stands in (owner's choice, 2026-11-08): the print 0.2 pt or more from the prior print for CPI or PCE, 100k or more for payrolls, released in the last 3 days, labelled "no forecast source" | Official data |
+| Macro release surprise | `seed-economic-calendar`, actuals from FRED (`scripts/_econ-actuals.mjs`: CPI, PCE (`PCEPI`) and others); `seed-us-cpi` (key `FRED_API_KEY`) | Target: actual minus forecast of 0.1 pt or more for CPI or PCE month on month, 50k or more for payrolls. No source gives a forecast (the calendar's `estimate` is empty), so until one exists the prior print stands in (owner's choice, 2026-11-08): the print 0.2 pt or more from the prior print for CPI or PCE, 100k or more for payrolls, released in the last 3 days, labelled "no forecast source". Planned stand-in (#128): the median the Kalshi CPI and jobs markets imply, when those markets are liquid enough | Official data |
 | Treasury yields | `seed-us-treasury-par-yield` (daily; no key); the intraday 10-year from the `^TNX` quote | The 2-year or 10-year moves 10 bp or more in a day, or the 2s10s spread changes sign | Official data |
 | Other government bonds | `seed-yield-curve-*` (DE, GB, JP and others) | A 10-year moves 10 bp or more in a day | Official data |
 | Price moves | Seeded quotes (the existing risk alerts) | The existing fixed thresholds and BTC 2 h move over 4σ | Market data |
@@ -164,6 +220,14 @@ A slow feed shows the date its data covers ("data to 3 Nov", "week to 7 Nov"), n
 | Stablecoin depeg | `seed-stablecoin-markets` (USDT, USDC, DAI, FDUSD, USDe; CoinGecko, CoinPaprika fallback; no key) | A tracked stablecoin more than 0.5% from $1 (owner's choice): the classifier's `SLIGHT DEPEG` or `DEPEGGED` (`scripts/shared/stablecoins.json`) | Market data |
 | Perp positioning | `seed-hyperliquid-flow` (one venue, every 5 min: BTC, ETH, SOL, PAXG, oil, metals, natural gas, EUR, JPY; stress score from funding 30%, volume 25%, open interest 25%, basis 20%) | Stress score 60 or more (the seeder's `ALERT_THRESHOLD`) | Market data (Hyperliquid, one venue). No liquidation figures: no source has them |
 | Container and bulk freight | `seed-supply-chain-trade` (`supply_chain:shipping:v2`: SCFI weekly on Fridays, Baltic Dry daily) | SCFI 5% or more week on week, or the Baltic Dry 5% or more in a day | Official (Shanghai Shipping Exchange) for SCFI; Market data for the Baltic Dry |
+| Credit spreads | Planned (#114): FRED `BAMLH0A0HYM2` (high yield) and `BAMLC0A0CM` (investment grade), already read by `seed-fear-greed` (key `FRED_API_KEY`). Since April 2026 FRED keeps a rolling 3 years of these series, enough for daily moves | High yield widens 20 bp or more in a day, or 50 bp or more in 5 trading days; investment grade widens 5 bp or more in a day | Market data (ICE BofA via FRED) |
+| VIX and dollar index | Planned (#115): Yahoo `^VIX` and `DX-Y.NYB`, already seeded by `seed-commodity-quotes` and `seed-fear-greed`; FRED `VIXCLS` as the daily fallback | VIX at 25 or above, or up 20% or more in a day; the dollar index moves 1% or more in a day | Market data |
+| Rate expectations | Planned (#125): Kalshi Fed decision markets (series `KXFED`; no key for market data) | The probability of a move at the next meeting changes 15 points or more in a day, or the most likely outcome changes | Market data (Kalshi, one venue) |
+| Central bank decisions | Planned (#130): the FOMC calendar page and the ECB press RSS, unless `seed-economic-calendar` already carries the meeting dates | A Fed or ECB decision published in the last 24 h | Official |
+| Fed liquidity | Planned (#136): NY Fed Markets API (reverse repo; no key) and FRED `WALCL` (balance sheet, already read by `seed-fear-greed`) | The balance sheet moves 50 bn USD or more in a week, or the reverse repo 100 bn USD or more in a day | Official data |
+| Stablecoin supply | Planned (#137): DefiLlama stablecoins API (no key) | Total supply moves 2% or more in 7 days, or a top-5 coin 5% or more | Market data (DefiLlama) |
+| Earnings dates | Planned (#138): `seed-earnings-calendar` (Finnhub; key `FINNHUB_API_KEY`, new) joins the Lite seeders | None: the next two weeks for the default stock list (the watchlist stand-in) | Reported (Finnhub) |
+| US oil inventories | Planned (#139): EIA API, weekly petroleum status (key `EIA_API_KEY`, new; not tested without a key) | Crude stocks change 5 million barrels or more in a week | Official data (EIA) |
 
 **Technology and AI.** Link window: 12 h before. The linked news is the tech digest, which includes Hacker News: an outage, a hack or an exploited vulnerability links to the stories there that name its vendor, network or country.
 
@@ -171,11 +235,26 @@ A slow feed shows the date its data covers ("data to 3 Nov", "week to 7 Nov"), n
 |---|---|---|---|
 | Internet and power outages | `seed-internet-outages` (Cloudflare Radar; key `CLOUDFLARE_API_TOKEN`) | A new country or network outage. The card shows its type, scope and stated cause (power cut, cable cut, government shutdown), not a percentage drop: Cloudflare's outage notices and traffic anomalies carry none | Reported (Cloudflare) |
 | Cloud and AI service outages | `infra:service-statuses:v1` from `packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts` (public status pages of AWS, Azure, Google Cloud, Cloudflare, GitHub, OpenAI, Anthropic and others; no key). `seed-service-statuses` warms the upstream production URL, so the owner's deployment warms its own endpoint | A watched provider reports a partial or major outage | Official (provider status page) |
-| Exploited vulnerabilities | `seed-cve-reference` (CISA KEV subset of NVD; key `NVD_API_KEY` optional) | A new known-exploited CVE, or one naming a watchlist vendor | Official (CISA) |
+| Exploited vulnerabilities | `seed-cve-reference` (CISA KEV subset of NVD; key `NVD_API_KEY` optional) | A new known-exploited CVE, or one naming a watchlist vendor. Planned (#119): match KEV's own `vendorProject` field (NVD's vendor stays empty until NVD analyses the CVE) against a starter vendor list, the watchlist stand-in, with the GitHub copy of KEV (`cisagov/kev-data`) as fallback | Official (CISA) |
+| Peer and supplier cyber incidents | `seed-sec-8k-stream`, item 1.05. It fires on Finance today; planned on Tech (#120) | Any 8-K reporting item 1.05 in the last 24 h | Official filing |
+| Data breaches | Planned (#131): Have I Been Pwned breach list (no key; CC BY 4.0, attribution required). Breaches are often listed days or weeks late, so the card shows both dates | A breach added in the last 3 days with 1 million or more accounts, or naming a watchlist vendor's domain | Reported (HIBP) |
+| Chip demand | Planned (#134): TSMC monthly revenue from the Taiwan Stock Exchange open data (no key) | Year-on-year growth changes 10 points or more from the previous month, or revenue falls year on year | Official (company filing via TWSE) |
+| Hyperscaler capex | Planned (#135): SEC EDGAR company facts for Microsoft, Alphabet, Amazon and Meta (no key; a descriptive User-Agent is required) | A new quarter whose capex growth year on year changes 15 points or more from the previous quarter | Official filing |
+| AI funding rounds | Planned (#142): SEC EDGAR full-text search for Form D filings that mention AI (no key; US only, noisy) | A Form D offering of 100 million USD or more in the last 7 days | Official filing |
 | Attack infrastructure | `seed-cyber-threats` (abuse.ch Feodo Tracker and URLhaus, AlienVault OTX, AbuseIPDB, C2IntelFeeds; keys `URLHAUS_AUTH_KEY`, `OTX_API_KEY`, `ABUSEIPDB_API_KEY`) | A spike against its 7-day average. Needs the count history in [Baselines](#baselines) | Reported (threat feeds) |
-| Model and product releases | None yet ([gap 5](#gaps-to-build)) | — | — |
+| Model and product releases | Planned (#126; [gap 5](#gaps-to-build)): the OpenRouter models API (no key; release date and price per token), with LiteLLM's price list as the cross-check; open-weight releases from the Hugging Face Hub (#132); the labs' own news feeds (#133) | A new model from a watched lab, or a price change of 20% or more on a watched model | Reported (OpenRouter listing) |
 | Live power-grid outages | None yet; `seed-power-reliability` is per-country background, not live | — | — |
-| Primary-source regulation | None yet; the policy list is hand-maintained (`packages/client/config/ai-regulations.ts`) | — | Shown as SAMPLE (owner's choice) until a regulation feed exists |
+| Primary-source regulation | Planned (#127): the European Commission digital-strategy RSS and EUR-Lex RSS, and the Federal Register searched for "artificial intelligence" (shared with #122). Today the policy list is hand-maintained (`packages/client/config/ai-regulations.ts`) | A new EU act, implementing act or guideline on AI or data, or a US final or proposed AI rule, in the last 7 days | Official. Shown as SAMPLE (owner's choice) until the feed is built |
+
+### Sources left out
+
+Checked on 2026-11-19 against the owner's free-sources rule (see [Owner decisions](#owner-decisions)):
+
+- **Free for non-commercial use only.** OpenSanctions (compliance screening counts as commercial), ransomware.live (the free tier excludes corporate use) and ACLED (registration, limited tiers; see Owner decisions). The OFAC, trade.gov, EU and UK lists, 8-K item 1.05, and GDELT with UCDP cover the same ground.
+- **Blocked or fragile.** OPEC (403 to scripted clients) and China's MOFCOM lists (Chinese HTML only). The news digest covers both.
+- **Low decision value.** Congress.gov (free key; bills move slowly), the Epoch AI models dataset (background only) and regulator enforcement actions (`seed-regulatory-actions`, not a board-level decision).
+- **No free source.** Consensus forecasts for macro releases: the prior print and the Kalshi stand-in (#128) remain.
+- **Not reachable from the test machine.** Polymarket and CBOE timed out; Kalshi covers rate expectations, and Yahoo with FRED covers the VIX.
 
 ### Baselines
 
@@ -208,7 +287,7 @@ Built in step 1:
 - **AI line:** shown only when the card has linked stories and a grounded "why", which no feed produces yet.
 - **Detail line** (step 4a): an optional line of facts from the feed, such as scope, stated cause or counts per feed. It never states a guessed cause.
 
-**Briefing.** A "Fired indicators" block at the top, newest first, with filters All, Watchlist and No linked news, and a feed-health strip (one dot per feed: fired, quiet, stale, unavailable). The watchlist parts are samples until the watchlist exists (open decision 1). The hourly brief, priority events, market pulse, escalation tracker and catalysts stay.
+**Briefing.** A "Fired indicators" block at the top, newest first, with filters All, Watchlist and No linked news, and a feed-health strip (one dot per feed: fired, quiet, stale, unavailable). The watchlist parts are samples until the watchlist exists (open decision 1). The hourly brief, priority events, market pulse, escalation tracker and catalysts stay. Planned (#121): a "Daily check" filter that shows only the check-daily indicators ([Decision tiers](#decision-tiers)).
 
 **Geopolitics.**
 
@@ -218,7 +297,7 @@ Built in step 1:
   - **Context, optional**: shipping lanes; social OSINT (discovery only, never alerts; no source chosen yet).
 - Range 6h, 24h and 7d, with a GDELT events-per-hour histogram. Each range button says what it is for: 6h, is something spiking now; 24h, what happened today; 7d, a sudden spike or a week-long build-up.
 - A region strip under the map (derived): one tile per named region in `ESCALATION_REGIONS` (`apps/web/src/lite/data/regions.ts`): Red Sea / Aden, Eastern Europe, Levant, Gulf / Iran, Sahel and Taiwan Strait (owner's decision, 2026-11-10; it replaced the five highest-scoring curated hotspots, which split one war across two tiles and listed cities outside any conflict). Each region sits inside one area of the region selector (Middle East, Europe, Africa, Asia-Pacific); the selector has no Americas area. Each tile shows its level word (Critical, High, Elevated, Watch, Stable, Easing) from the highest live score among the curated hotspots in its countries, the change in GDELT reports over its countries in the last 24 complete hours against the 7-day daily average ("—" while any of those hours is incomplete), and daily bars for 14 days. A selected area dims the tiles outside it. A click zooms the map to the region and a second click zooms back out; a dimmed tile also switches the selector to its area. The Briefing's escalation tracker reads the same list.
-- The indicator panel beside the map; priority incidents, regional timeline and evidence mix below.
+- The indicator panel beside the map; priority incidents, regional timeline and evidence mix below. Planned (#116, owner's decision 2026-11-19): the panel groups fired indicators by region (`ESCALATION_REGIONS`), the highest-level region first and newest first inside a region; an indicator outside every region goes under "Other", and the quiet, stale and unavailable rows stay one compact block.
 
 Built in step 2a: the range (then 6h, 24h, 7d and 30d), the GDELT shading and histogram, UCDP as the background, the strip (then of hotspots) and the indicator panel's violence feed (`apps/web/src/lite/data/conflict.ts`, `LiteMap`'s `countries` prop).
 
@@ -335,6 +414,8 @@ Each step is its own PR with screenshots, and starts by running its seeders loca
 3. Finance: macro release surprises, yield moves, bitcoin ETF flows, stablecoin depegs, perp positioning and freight, each with linked news; the "Where markets are moving" map. Done in code: step 3a (the indicators, 8-K filings and the Treasury curve) and step 3b (the map, the chart widgets removed, 1D tickers).
 4. Technology and AI: the attack-infrastructure history; internet, cloud and AI service outages, exploited vulnerabilities and attack infrastructure (all keys in hand); the infrastructure and cyber map; then the model-release tracker.
 5. The Briefing's fired-indicators block and feed-health strip, across Geopolitics, Finance and Technology.
+6. Decision tiers, Phase 1 (milestone "Lite indicators · Phase 1: improve existing indicators", #113–#121): the [Decision tiers](#decision-tiers) from data the repository already fetches.
+7. Decision tiers, Phase 2 (milestone "Lite indicators · Phase 2: new data ingestion", #122–#142): the free sources, high priority first. Starts after step 6.
 
 ## Removed or optional by default
 
@@ -472,7 +553,7 @@ The three similarity definitions are separate on purpose (`packages/shared/news-
 2. A **novelty** score. Only a console prototype exists in `src/services/parallel-analysis.ts`.
 3. A per-source **track record**.
 4. **Crypto risk alerts**: depeg notifications, volatility, funding and open-interest stress. Liquidation data has no source yet.
-5. An **AI/tech event detector** and model-release tracker.
+5. An **AI/tech event detector** and model-release tracker. The model-release source is planned (#126; see the [Catalogue](#catalogue)).
 6. **Numeric alert thresholds** and an alert delivery path that does not need Convex. [Early indicators](#early-indicators) gives the default thresholds.
 7. A **move-to-news linker**: from an indicator to the stories around it (see [News link rule](#news-link-rule)). Built for the Lite UI in `apps/web/src/lite/data/news-link.ts` (step 1); the story-to-indicator direction exists for prices only.
 
