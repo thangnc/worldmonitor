@@ -113,6 +113,8 @@ Options to evaluate with measurements once Phases 0–3 land:
 
 Measurements for that decision: Upstash commands/day vs free tier, memory of api + relay + seeders, arm64 Docker build (verify the pinned `node:24-alpine` digest is multi-arch), `/api/bootstrap` latency per option.
 
+The measurements that need no deployment are in the [Lite hosting brief](2026-11-18-002-ops-lite-hosting-brief-plan.md) (2026-11-18): the arm64 images, container memory, and an estimate of Upstash commands per day from the code, which is well above the free tier. It also lists the owner's decisions and the items carried into this phase.
+
 ## Verification (per phase)
 
 - Every PR: `npm run typecheck`, `npm run lint:boundaries`, the Lite tests (`tests/lite-ui.test.mts`, `tests/dom/lite-ui.test.mts`), the API and seeder suites that remain, `git diff --check`.
