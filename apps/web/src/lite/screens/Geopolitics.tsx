@@ -364,18 +364,17 @@ function ConflictMap({
           pins += 1;
           const name = f.callsign || f.hexCode || 'Unidentified';
           out.push({
-            // A transponder position is reported, not verified: a translucent grey event.
+            // A transponder position is reported, not verified; the card says so.
             kind: 'event',
             glyph: 'plane',
             state: 'normal',
-            fill: 'reported',
             stale: stale.aircraft,
             id: `aircraft:${f.id}`,
             lat: f.location!.latitude,
             lon: f.location!.longitude,
             title: `${name}: military aircraft near ${c.hotspot.name}`,
             popup: {
-              kind: 'Military aircraft · transponder',
+              kind: 'Military aircraft · reported by transponder',
               name,
               value: aircraftKind(f.aircraftType),
               lines: [
@@ -392,13 +391,11 @@ function ConflictMap({
       const from = Date.now() - TIME_RANGE_HOURS[range] * HOUR_MS;
       for (const i of sea.data.incidents) {
         if (i.occurredAt < from || !inView(i.location!.latitude, i.location!.longitude)) continue;
-        const recent = Date.now() - (i.reportedAt || i.occurredAt) <= SEA_WINDOW_HOURS * HOUR_MS;
         out.push({
-          // An official notice: solid in its state colour; older than the fire window, the faint background.
+          // An official notice in its state colour; the card dates it.
           kind: 'event',
           glyph: 'ship',
           state: seaIncidentState(i.incidentType),
-          fill: recent ? 'solid' : 'background',
           stale: stale.sea,
           id: `sea:${i.id}`,
           lat: i.location!.latitude,
@@ -571,7 +568,7 @@ function layerGroups(layers: LayerState, ucdpNewestAt: number, range: TimeRange)
       note: `at ${range}`,
       rows: [
         { id: 'violence', mark: <RampSwatch steps={[2, 3, 4]} />, name: 'Reported violence · GDELT', sub: "country shading · against each country's normal", range: layerRangeNote('violence', range), on: layers.violence },
-        { id: 'aircraft', mark: <EventMark glyph="plane" state="normal" fill="reported" />, name: 'Military aircraft', sub: `transponder · grouped at ${AIRCRAFT_MIN}+ near a hotspot`, range: layerRangeNote('aircraft', range), on: layers.aircraft },
+        { id: 'aircraft', mark: <EventMark glyph="plane" state="normal" />, name: 'Military aircraft', sub: `transponder · grouped at ${AIRCRAFT_MIN}+ near a hotspot`, range: layerRangeNote('aircraft', range), on: layers.aircraft },
         { id: 'sea', mark: <EventMark glyph="ship" state="crit" />, name: 'Incidents at sea · UKMTO', sub: `official notices · fires on one in ${SEA_WINDOW_HOURS} h`, range: layerRangeNote('sea', range), on: layers.sea },
         { id: 'gps', mark: <StatusAreaSwatch state="crit" shape="hex" />, name: 'GPS interference · gpsjam.org', sub: 'hexagons · amber 2–10%, red above 10%', range: layerRangeNote('gps', range), on: layers.gps },
         { id: 'airspace', mark: <HatchSwatch />, name: 'Airspace closures · NOTAM', sub: 'awaiting FAA access', on: null },
@@ -601,7 +598,7 @@ function GeoLegend({ layers }: { layers: LayerState }) {
       {layers.violence ? <LegendRow mark={<RampSwatch />} name="Reported violence" note="GDELT" /> : null}
       {layers.conflicts ? <LegendRow mark={<UcdpMark />} name="Verified background" note="UCDP" /> : null}
       {layers.hotspots ? <LegendRow mark={<SwatchRun><JudgementMark state="normal" /><JudgementMark state="elev" /><JudgementMark state="crit" /></SwatchRun>} name="Curated hotspot" note="1–5" /> : null}
-      {layers.aircraft ? <LegendRow mark={<SwatchRun><EventMark glyph="plane" state="normal" fill="reported" /><AggregateMark count={AIRCRAFT_MIN} fullAt={AIRCRAFT_FULL_AT} state="normal" size={16} /></SwatchRun>} name="Military aircraft" note={`ADS-B · ${AIRCRAFT_MIN}+ grouped`} /> : null}
+      {layers.aircraft ? <LegendRow mark={<SwatchRun><EventMark glyph="plane" state="normal" /><AggregateMark count={AIRCRAFT_MIN} fullAt={AIRCRAFT_FULL_AT} state="normal" size={16} /></SwatchRun>} name="Military aircraft" note={`ADS-B · ${AIRCRAFT_MIN}+ grouped`} /> : null}
       {layers.sea ? <LegendRow mark={<SwatchRun><EventMark glyph="ship" state="normal" /><EventMark glyph="ship" state="elev" /><EventMark glyph="ship" state="crit" /></SwatchRun>} name="Sea incident" note="UKMTO" /> : null}
       {layers.gps ? <LegendRow mark={<GpsMark />} name="GPS interference" note="gpsjam" /> : null}
       <LegendRow mark={<HatchSwatch />} name="Airspace closure" note="N/A" />

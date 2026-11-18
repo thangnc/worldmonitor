@@ -234,7 +234,7 @@ function MarketsMap({ feeds, focus, onFocus }: { feeds: readonly FeedState[]; fo
         // New York sits on Washington at world zoom: lift the NYSE mark clear of the Fed's.
         const at = { id: p.id, lat: p.issuer.lat, lon: p.issuer.lon, stale: p.stale, nudge: p.issuer.id === 'nyse' ? ([6, -14] as [number, number]) : undefined };
         out.push({
-          ...(mark.kind === 'event' ? { kind: 'event' as const, glyph: mark.glyph, state: mark.state, fill: 'solid' as const, ...at } : { kind: 'asset' as const, glyph: mark.glyph, state: mark.state, ...at }),
+          ...(mark.kind === 'event' ? { kind: 'event' as const, glyph: mark.glyph, state: mark.state, ...at } : { kind: 'asset' as const, glyph: mark.glyph, state: mark.state, ...at }),
           title: `${p.issuer.short} · ${p.signals.map((s) => s.text).join(' · ')}`,
           popup: signalCard(p),
         });

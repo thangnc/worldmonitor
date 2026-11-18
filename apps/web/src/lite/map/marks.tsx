@@ -33,7 +33,9 @@ import { AGGREGATE_LABEL_MIN, aggregateDiameter, compactCount } from './view';
  * - Shape is what kind of thing it is: an event (rounded square), an asset
  *   (outlined square), an aggregate (circle with a count) or a judgement
  *   (diamond).
- * - Fill is how sure we are: solid (official or verified), reported
+ * - Fill: an event is always solid in its state colour with a dark glyph, so
+ *   it reads on the dark map (owner's decision, 2026-11-19); how sure we are
+ *   (reported, verified, weeks old) is in its card. An aggregate is reported
  *   (translucent with an outline) or background (faint: verified, weeks old).
  * - Colour is state, never domain: grey normal, amber elevated, red critical.
  *   Selected adds a 2 px white ring; a late feed draws at 45% opacity.
@@ -42,7 +44,8 @@ import { AGGREGATE_LABEL_MIN, aggregateDiameter, compactCount } from './view';
  */
 
 export type MarkState = 'normal' | 'elev' | 'crit';
-export type MarkFill = 'solid' | 'reported' | 'background';
+/** An aggregate's fill; events are always solid. */
+export type MarkFill = 'reported' | 'background';
 
 /** The glyph catalogue: Lucide only, one glyph per marker. */
 export const MARK_GLYPHS = {
@@ -84,23 +87,15 @@ export const STATE_BG: Readonly<Record<MarkState, string>> = {
   normal: 'bg-mark-normal', elev: 'bg-mark-elev', crit: 'bg-mark-crit',
 };
 
-/** Event: solid fill; reported 35% fill with the outline; background 10% fill, 30% outline. The glyph is always dark ink. */
-export const EVENT_CLASS: Readonly<Record<MarkFill, Readonly<Record<MarkState, string>>>> = {
-  solid: {
-    normal: 'border-mark-normal bg-mark-normal',
-    elev: 'border-mark-elev bg-mark-elev',
-    crit: 'border-mark-crit bg-mark-crit',
-  },
-  reported: {
-    normal: 'border-mark-normal bg-mark-normal/35',
-    elev: 'border-mark-elev bg-mark-elev/35',
-    crit: 'border-mark-crit bg-mark-crit/35',
-  },
-  background: {
-    normal: 'border-mark-normal/30 bg-mark-normal/10',
-    elev: 'border-mark-elev/30 bg-mark-elev/10',
-    crit: 'border-mark-crit/30 bg-mark-crit/10',
-  },
+/**
+ * Event: always the solid state fill under a dark glyph. A translucent fill
+ * under the dark glyph disappeared on the dark map, so certainty lives in the
+ * card instead (2026-11-19).
+ */
+export const EVENT_CLASS: Readonly<Record<MarkState, string>> = {
+  normal: 'border-mark-normal bg-mark-normal',
+  elev: 'border-mark-elev bg-mark-elev',
+  crit: 'border-mark-crit bg-mark-crit',
 };
 
 /** Asset: dark square, outline in the state colour; a normal asset keeps a light glyph. */
@@ -111,7 +106,7 @@ export const ASSET_CLASS: Readonly<Record<MarkState, string>> = {
 };
 
 /** Aggregate: a circle whose area grows with the count; reported 20% fill, or background. */
-export const AGGREGATE_CLASS: Readonly<Record<Exclude<MarkFill, 'solid'>, Readonly<Record<MarkState, string>>>> = {
+export const AGGREGATE_CLASS: Readonly<Record<MarkFill, Readonly<Record<MarkState, string>>>> = {
   reported: {
     normal: 'border-mark-normal bg-mark-normal/20',
     elev: 'border-mark-elev bg-mark-elev/20',
@@ -138,14 +133,13 @@ interface MarkProps {
 }
 
 /** 16 px rounded square with a 10 px glyph: one thing happened here. */
-export function EventMark({ glyph, state, fill = 'solid', selected, stale }: MarkProps & { glyph: MarkGlyph; state: MarkState; fill?: MarkFill }) {
+export function EventMark({ glyph, state, selected, stale }: MarkProps & { glyph: MarkGlyph; state: MarkState }) {
   const Icon = MARK_GLYPHS[glyph];
   return (
     <span
-      class={cx('flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border text-mark-ink', EVENT_CLASS[fill][state], selected && SELECTED_RING, stale && STALE)}
+      class={cx('flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border text-mark-ink', EVENT_CLASS[state], selected && SELECTED_RING, stale && STALE)}
       data-mark-kind="event"
       data-mark-state={state}
-      data-mark-fill={fill}
       data-mark-glyph={glyph}
       aria-hidden="true"
     >
@@ -179,7 +173,7 @@ export function AggregateMark({
   size,
   selected,
   stale,
-}: MarkProps & { count: number; fullAt: number; state: MarkState; fill?: Exclude<MarkFill, 'solid'>; size?: number }) {
+}: MarkProps & { count: number; fullAt: number; state: MarkState; fill?: MarkFill; size?: number }) {
   const d = size ?? aggregateDiameter(count, fullAt);
   return (
     <span

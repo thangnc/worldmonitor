@@ -257,12 +257,11 @@ export function outageMarkers(outages: readonly InternetOutage[], now: number, r
   return outages
     .filter((o) => o.location && (!o.endedAt || o.endedAt >= from))
     .map((o): EventMarker => {
-      const live = isOutageLive(o, now);
       const ongoing = !o.endedAt;
       const cause = o.cause ? o.cause.replace(/_/g, ' ').toLowerCase() : 'no stated cause';
       return {
-        // Verified by Cloudflare: solid while live, background once it ended over 24 h ago.
-        kind: 'event', glyph: outageGlyph(o.cause ?? ''), state: SEVERITY_STATE[o.severity] ?? 'elev', fill: live ? 'solid' : 'background',
+        // Verified by Cloudflare; the card says whether it is ongoing or when it ended.
+        kind: 'event', glyph: outageGlyph(o.cause ?? ''), state: SEVERITY_STATE[o.severity] ?? 'elev',
         id: `outage:${o.id}`, lat: o.location!.latitude, lon: o.location!.longitude,
         title: `${SEVERITY_WORD[o.severity] ?? 'Internet'} outage in ${o.country}, ${ongoing ? 'ongoing' : 'ended'} (Cloudflare Radar)`,
         popup: {
@@ -415,7 +414,7 @@ export function cableLayer(cables: readonly UnderseaCable[], health: GetCableHea
       const [lon, lat] = c.points[Math.floor(c.points.length / 2)]!;
       const word = rec.status === 'CABLE_HEALTH_STATUS_FAULT' ? 'Fault' : 'Degraded';
       markers.push({
-        kind: 'event', glyph: 'cable', state: tone === 'crit' ? 'crit' : 'elev', fill: 'solid', id: `cable:${c.id}`, lat, lon,
+        kind: 'event', glyph: 'cable', state: tone === 'crit' ? 'crit' : 'elev', id: `cable:${c.id}`, lat, lon,
         title: `${c.name}: ${word.toLowerCase()} (NGA navigational warnings)`,
         popup: {
           kind: 'Undersea cable · NGA warnings', name: c.name, value: word,
