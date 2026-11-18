@@ -141,12 +141,7 @@ The relay keeps an AIS stream open (`AISSTREAM_API_KEY`) and publishes what no s
 
 Never expose it on a network. To run it with auth, set `RELAY_SHARED_SECRET` in `.env.local`; the dev server's handlers send the same value.
 
-The Redis REST proxy (`docker/redis-rest-proxy.mjs`) runs only the `EVAL` scripts on its pinned allowlist. Two writes that Lite uses are not on it yet, so against the proxy they fail while plain commands work:
-
-- the relay's chokepoint transit summaries (`Durable transit gate update failed`);
-- the health verdict snapshot (`[health] verdict snapshot write failed`).
-
-Upstash runs any script, so both work there.
+The Redis REST proxy (`docker/redis-rest-proxy.mjs`) runs only the `EVAL` scripts on its pinned allowlist, so a write whose script is not pinned fails while plain commands work. The relay's chokepoint transit summaries are not pinned yet (`Durable transit gate update failed`); Upstash runs any script, so they work there. The proxy bakes its code into its image, so after a change to the allowlist rebuild it with `docker compose up -d --build redis-rest`.
 
 ### Build Prerequisites
 
