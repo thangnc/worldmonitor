@@ -67,6 +67,7 @@ Two effects pull the other way. On Vercel, the `public=1` bootstrap and digest r
    - The handler reads the relay's transit summaries (`supply_chain:transit-summaries:v1`, built from the PortWatch key) and its AIS snapshot.
    - In production the relay runs `seed-chokepoint-flows` every 6 h. Without the relay, a plain seeder schedule has to run that seeder, as the local runner does (`scripts/run-lite-seeders.mjs`).
    - Without the relay the chokepoint status still renders, from tanker flows and NGA warnings, but reports partial coverage.
+   - Four warm-ping loops in the relay POST to the upstream project's production API (`https://api.worldmonitor.app`) with an `Origin: https://worldmonitor.app` header: cable health (every 30 min), service statuses (15 min), risk scores (8 min) and chokepoint status (6 min). They write nothing to this deployment's Redis, so they warm upstream's caches, not ours, and without `WORLDMONITOR_RELAY_KEY` they get 401s. The relay's widget agent also fetches its session from `https://api.worldmonitor.app/api/wm-session`. Gating the relay for Lite should turn these off or point them at this deployment's API.
 4. **The command reductions above:** each is a behaviour change, so each needs approval before it is built.
 
 Before choosing, one day of `seed:lite:watch` and one open tab against a scratch Upstash database would replace the estimate with a meter reading. That needs the owner to create the database and put its credentials in `.env.local`.
