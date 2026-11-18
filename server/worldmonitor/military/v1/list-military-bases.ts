@@ -6,7 +6,7 @@ import type {
   MilitaryBaseCluster,
 } from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 
-import filterParamContracts from '../../../../shared/openapi-filter-param-contracts.json';
+import filterParamContracts from '../../../../packages/shared/openapi-filter-param-contracts.json';
 import { cachedFetchJson, getCachedJson, geoSearchByBox, getHashFieldsBatch } from '../../../_shared/redis';
 import { markNoCacheResponse, setResponseHeader } from '../../../_shared/response-headers';
 

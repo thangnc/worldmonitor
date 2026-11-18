@@ -6,7 +6,7 @@ import { createRedisFetch } from './helpers/fake-upstash-redis.mts';
 import rpc from '../api/infrastructure/v1/[rpc].ts';
 import bootstrap from '../api/bootstrap.js';
 import { issueSessionToken } from '../api/_session.js';
-import { BOOTSTRAP_CACHE_KEYS } from '../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS } from '../packages/shared/bootstrap-tier-keys.js';
 import { assembleBootstrapTierPayload } from '../scripts/publish-bootstrap-tiers.mjs';
 import { sanitizeBootstrapValue as edgeSanitize } from '../api/_bootstrap-public-payload.js';
 import { sanitizeBootstrapValue as workerSanitize } from '../scripts/_bootstrap-public-payload.mjs';

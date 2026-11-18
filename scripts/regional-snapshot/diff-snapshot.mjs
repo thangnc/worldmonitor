@@ -7,9 +7,9 @@ const LEVERAGE_SHIFT_THRESHOLD = 0.15;
 const BUFFER_FAILURE_THRESHOLD = 0.20;
 
 /**
- * @param {import('../../shared/regions.types.js').RegionalSnapshot | null} prev
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} curr
- * @returns {import('../../shared/regions.types.js').SnapshotDiff}
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot | null} prev
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} curr
+ * @returns {import('../../packages/shared/regions.types.js').SnapshotDiff}
  */
 export function diffRegionalSnapshot(prev, curr) {
   const diff = {
@@ -114,8 +114,8 @@ export function diffRegionalSnapshot(prev, curr) {
 /**
  * Pick a trigger_reason from a SnapshotDiff in priority order.
  *
- * @param {import('../../shared/regions.types.js').SnapshotDiff} diff
- * @returns {import('../../shared/regions.types.js').TriggerReason}
+ * @param {import('../../packages/shared/regions.types.js').SnapshotDiff} diff
+ * @returns {import('../../packages/shared/regions.types.js').TriggerReason}
  */
 export function inferTriggerReason(diff) {
   if (diff.regime_changed) return 'regime_shift';

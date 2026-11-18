@@ -7,8 +7,8 @@ import {
   militaryFlightsToGeoEvents,
   unrestEventsToGeoEvents,
   usniVesselsToGeoEvents,
-} from '../shared/analysis-mcp-adapters.ts';
-import { GeoConvergenceEngine } from '../shared/analysis-geo-convergence.ts';
+} from '../packages/shared/analysis-mcp-adapters.ts';
+import { GeoConvergenceEngine } from '../packages/shared/analysis-geo-convergence.ts';
 
 const NOW = Date.UTC(2026, 6, 28, 12, 0, 0);
 const MIN = 60_000;

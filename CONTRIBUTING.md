@@ -452,7 +452,7 @@ Sebuf is the project's custom Proto-first HTTP RPC framework — a lightweight a
 2. **Code generation** (`make generate`) produces:
    - TypeScript clients in `packages/contracts/generated/client/` (e.g., `MarketServiceClient`)
    - Server route factories in `packages/contracts/generated/server/` (e.g., `createMarketServiceRoutes`)
-   - Browser code imports them as `@wm/contracts/generated/...`; `api/`, `server/` and `shared/` use relative paths into `packages/contracts/generated/`
+   - Browser code imports them as `@wm/contracts/generated/...`; `api/`, `server/` and `packages/shared/` use relative paths into `packages/contracts/generated/`
 3. **Handlers** in `server/worldmonitor/{domain}/v1/handler.ts` implement the service interface
 4. **Gateway** in `api/[domain]/v1/[rpc].ts` registers all handlers and routes requests
 5. **Clients** in `src/services/{domain}/index.ts` wrap the generated client for app use
@@ -543,7 +543,7 @@ For endpoints that deal with non-JSON payloads (XML feeds, binary data, HTML emb
 
 ### Source attribution ledger
 
-Any new outbound host that appears in a URL literal under `scripts/`, `server/`, `api/`, or `src/` is discovered by `scripts/source-attribution.mjs` and needs a curated row in `shared/source-attribution-manifest.json`. This catches contributions that only add data — a feed URL, an MCP preset in `src/services/mcp-store.ts` — with no obvious link to the ledger:
+Any new outbound host that appears in a URL literal under `scripts/`, `server/`, `api/`, or `src/` is discovered by `scripts/source-attribution.mjs` and needs a curated row in `packages/shared/source-attribution-manifest.json`. This catches contributions that only add data — a feed URL, an MCP preset in `src/services/mcp-store.ts` — with no obvious link to the ledger:
 
 ```bash
 npm run sources:check     # fails with "missing manifest entry for <host>"

@@ -8,11 +8,11 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server';
 
 import { cachedFetchJson, getCachedJson, runRedisPipeline, setCachedJson, setCachedJsonIfAbsent } from '../../../_shared/redis';
-import { CABLE_HEALTH_REPAIR_SCRIPT } from '../../../../shared/cable-health-repair-script.mjs';
+import { CABLE_HEALTH_REPAIR_SCRIPT } from '../../../../packages/shared/cable-health-repair-script.mjs';
 import { parseNgaBroadcastWarnings, type NgaBroadcastWarning } from '../../../_shared/nga-broadcast-warnings';
 import { UPSTREAM_TIMEOUT_MS } from './_shared';
 import { CHROME_UA } from '../../../_shared/constants';
-import { extractCableShipName, isCableRelatedNotice, isFreshNotice } from '../../../../shared/nga-cable-notices';
+import { extractCableShipName, isCableRelatedNotice, isFreshNotice } from '../../../../packages/shared/nga-cable-notices';
 
 // ========================================================================
 // Constants
@@ -39,7 +39,7 @@ type NgaWarning = Partial<Pick<NgaBroadcastWarning, 'text' | 'issueDate'>>;
 // Cable keywords and patterns
 // ========================================================================
 
-// Cable keyword / ship-name / staleness rules live in shared/nga-cable-notices.ts.
+// Cable keyword / ship-name / staleness rules live in packages/shared/nga-cable-notices.ts.
 const FAULT_KEYWORDS = /FAULT|BREAK|CUT|DAMAGE|SEVERED|RUPTURE|OUTAGE|FAILURE/i;
 const ON_STATION_RE = /ON STATION|OPERATIONS IN PROGRESS|LAYING|REPAIRING|WORKING|COMMENCED/i;
 

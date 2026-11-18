@@ -1,11 +1,11 @@
 import type {
   ChinaCorridorControlTowerResponse,
   CorridorSourceSignal,
-} from '../../../../shared/china-corridor-control-towers';
+} from '../../../../packages/shared/china-corridor-control-towers';
 import {
   CHINA_CORRIDOR_SIGNAL_FAMILIES,
   type ChinaCorridorSignalFamily,
-} from '../../../../shared/china-logistics-corridors';
+} from '../../../../packages/shared/china-logistics-corridors';
 import {
   CHINA_CORRIDOR_DIRECTIONAL_HISTORY_KEY as SHARED_HISTORY_KEY,
 } from '../../../_shared/cache-keys';

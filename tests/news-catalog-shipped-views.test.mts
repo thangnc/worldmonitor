@@ -1,10 +1,10 @@
-// The server catalog that ships is a thin view over shared/news-catalog.json.
+// The server catalog that ships is a thin view over packages/shared/news-catalog.json.
 // These checks read the shipped exports themselves (not the builders) and
 // compare them in order, so an edit to the wrapper fails here.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { buildServerIntelSources, buildServerVariantFeeds } from '../shared/news-catalog.ts';
+import { buildServerIntelSources, buildServerVariantFeeds } from '../packages/shared/news-catalog.ts';
 import { INTEL_SOURCES as SERVER_INTEL, VARIANT_FEEDS } from '../server/worldmonitor/news/v1/_feeds.ts';
 
 // JSON round-trip drops undefined-valued keys so optional fields compare by presence.

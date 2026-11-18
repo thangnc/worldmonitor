@@ -10,7 +10,7 @@
  *   description: string;
  *   regionId: string;
  *   scenario_lane: 'base' | 'escalation' | 'containment' | 'fragmentation';
- *   threshold: import('../../shared/regions.types.js').TriggerThreshold;
+ *   threshold: import('../../packages/shared/regions.types.js').TriggerThreshold;
  * }>}
  */
 export const TRIGGER_DEFS = [

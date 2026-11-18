@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import { lua, lauxlib, lualib, to_luastring, to_jsstring } from 'fengari';
 
-import { STORY_ALIAS_PUBLISH_SCRIPT } from '../shared/story-alias-publish-script.mjs';
+import { STORY_ALIAS_PUBLISH_SCRIPT } from '../packages/shared/story-alias-publish-script.mjs';
 
 const LOCK_KEY = 'story:alias:publish-lock:v1';
 const ALIAS_A = 'story:alias:v1:a';

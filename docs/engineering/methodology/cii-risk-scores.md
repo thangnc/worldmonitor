@@ -347,13 +347,13 @@ Both are hand-set values, published here so you can argue with them.
 
 These are the editorial values applied by server-side API scoring. The source
 of truth is
-[`shared/cii-weights.ts`](https://github.com/koala73/worldmonitor/blob/main/shared/cii-weights.ts); the scorer derives its coefficients from that module so
+[`packages/shared/cii-weights.ts`](https://github.com/koala73/worldmonitor/blob/main/shared/cii-weights.ts); the scorer derives its coefficients from that module so
 coefficient drift fails in tests instead of shipping silently. The browser
 consumes cached server-produced CII scores rather than calculating a local
 fallback.
 
 Climate anomaly attribution uses the canonical
-[`shared/cii-climate-zones.ts`](https://github.com/koala73/worldmonitor/blob/main/shared/cii-climate-zones.ts)
+[`packages/shared/cii-climate-zones.ts`](https://github.com/koala73/worldmonitor/blob/main/shared/cii-climate-zones.ts)
 map. Changes to that map can shift server/API scores and follow the score
 contract-change protocol above.
 

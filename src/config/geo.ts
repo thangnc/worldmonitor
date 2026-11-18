@@ -3,9 +3,9 @@ import {
   CONFLICT_ZONES as SHARED_CONFLICT_ZONES,
   INTEL_HOTSPOTS as SHARED_INTEL_HOTSPOTS,
   STRATEGIC_WATERWAYS as SHARED_STRATEGIC_WATERWAYS,
-} from '../../shared/geo-data';
+} from '../../packages/shared/geo-data';
 
-// The curated data lives in shared/geo-data.ts so server-side (Edge/MCP) code can
+// The curated data lives in packages/shared/geo-data.ts so server-side (Edge/MCP) code can
 // read it too. Re-exported here under the client `@/types` interfaces — the
 // annotations below are the structural-compatibility check between the two.
 

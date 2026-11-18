@@ -120,7 +120,7 @@ function normalizedMatchText(text) {
 }
 
 // Word-start containment in normalizedMatchText output. Mirrors
-// shared/brief-filter.js:containsKeywordToken — prevents 'pact' inside
+// packages/shared/brief-filter.js:containsKeywordToken — prevents 'pact' inside
 // 'impact' (false positive) while still matching 'iran' inside
 // 'iranian' (demonym preserved). PR #3909 review (P2).
 function containsKeywordToken(text, kw) {

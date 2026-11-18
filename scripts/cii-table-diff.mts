@@ -33,7 +33,7 @@ import { CII_FORMULA_VERSION } from '../server/worldmonitor/intelligence/v1/_ris
 const REPO_ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
 const SCORER_PATH = 'server/worldmonitor/intelligence/v1/get-risk-scores.ts';
 // Everything the scorer imports, transitively.
-const ARCHIVE_PATHS = ['server', 'shared', 'scripts/shared', 'packages/contracts/generated', 'src/config', 'src/shared', 'src/types', 'package.json', 'tsconfig.json'];
+const ARCHIVE_PATHS = ['server', 'packages/shared', 'scripts/shared', 'packages/contracts/generated', 'src/config', 'src/shared', 'src/types', 'package.json', 'tsconfig.json'];
 
 const { values } = parseArgs({
   options: {

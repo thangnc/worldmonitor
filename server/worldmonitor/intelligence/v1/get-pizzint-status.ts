@@ -7,7 +7,7 @@ import type {
 
 import { readCachedJson, logCacheReadError } from '../../../_shared/redis';
 import { markNoCacheResponse, markNoStoreFallbackResponse } from '../../../_shared/response-headers';
-import pairs from '../../../../shared/gdelt-tension-pairs.json';
+import pairs from '../../../../packages/shared/gdelt-tension-pairs.json';
 
 const SEED_KEY = 'intelligence:pizzint:seed:v1';
 const TENSION_KEY = 'gdelt:bulk:dyad-tension:v1';

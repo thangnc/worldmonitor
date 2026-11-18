@@ -7,7 +7,7 @@ import {
   insightsSnapshotRejection,
   isAcceptedInsightsSnapshot,
   normalizeInsightSource,
-} from '../shared/insights-snapshot.js';
+} from '../packages/shared/insights-snapshot.js';
 
 const NOW_MS = Date.parse('2026-08-04T00:00:00.000Z');
 

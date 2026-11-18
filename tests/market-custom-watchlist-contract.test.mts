@@ -3,7 +3,7 @@
  * returned together with the defaults.
  *
  * This walks the real chain end to end — the shipped default universe from
- * `shared/stocks.json`, the watchlist merge the dashboard performs, and the
+ * `packages/shared/stocks.json`, the watchlist merge the dashboard performs, and the
  * handler that answers the resulting request — because the bug needed BOTH
  * halves to be wrong at once and either fix alone still loses the symbol:
  *
@@ -38,7 +38,7 @@ import {
 } from '../src/services/market-watchlist.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const STOCK_CONFIG = JSON.parse(readFileSync(resolve(root, 'shared/stocks.json'), 'utf8')) as {
+const STOCK_CONFIG = JSON.parse(readFileSync(resolve(root, 'packages/shared/stocks.json'), 'utf8')) as {
   symbols: MarketSymbolMeta[];
   defaultSymbols: string[];
 };

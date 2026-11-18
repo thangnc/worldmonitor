@@ -1,4 +1,4 @@
-// shared/story-identity.js — the single "same news story?" definition
+// packages/shared/story-identity.js — the single "same news story?" definition
 // (#4919). The labeled pair set below is the tuning ground truth for
 // STORY_SIMILARITY_THRESHOLD: if you change the vectorizer, weights, or
 // threshold, this suite tells you whether separation still holds.
@@ -20,7 +20,7 @@ import {
   activeFeatureHashSalt,
   deriveFeatureHashSalt,
   CANDIDATE_STOPWORDS,
-} from '../shared/story-identity.js';
+} from '../packages/shared/story-identity.js';
 
 afterEach(() => {
   setStoryVectorProvider(null);
@@ -881,7 +881,7 @@ it('loads the environment salt after import and freezes it on first use', async 
   const previous = process.env.STORY_FEATURE_HASH_SALT;
   delete process.env.STORY_FEATURE_HASH_SALT;
   try {
-    const fresh = await import(`../shared/story-identity.js?lazy-env=${Date.now()}`);
+    const fresh = await import(`../packages/shared/story-identity.js?lazy-env=${Date.now()}`);
     process.env.STORY_FEATURE_HASH_SALT = 'loaded-by-loadEnvFile';
     fresh.storyVector('A headline after environment loading');
     assert.equal(fresh.activeFeatureHashSalt(), fresh.deriveFeatureHashSalt('loaded-by-loadEnvFile'));

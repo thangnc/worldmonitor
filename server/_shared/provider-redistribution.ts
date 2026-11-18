@@ -3,7 +3,7 @@ import { getHeaderApiKey } from '../../api/_api-key.js';
 export {
   hasRedistributableProviderAttribution,
   isOpenSkyProvider,
-} from '../../shared/provider-redistribution';
+} from '../../packages/shared/provider-redistribution';
 
 /**
  * True for API-key calls. Anonymous

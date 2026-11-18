@@ -1,5 +1,5 @@
-import countryNames from '../../shared/country-names.json';
-import iso2ToIso3 from '../../shared/iso2-to-iso3.json';
+import countryNames from '../../packages/shared/country-names.json';
+import iso2ToIso3 from '../../packages/shared/iso2-to-iso3.json';
 import sovereignStatus from '../../scripts/shared/sovereign-status.json';
 
 export const G20_COUNTRIES = [

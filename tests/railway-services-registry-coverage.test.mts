@@ -87,7 +87,7 @@ describe('Railway service registry coverage', () => {
       'utf8',
     );
     assert.match(publisherDockerfile, /^COPY scripts\/ \.\/scripts\/$/m);
-    assert.match(publisherDockerfile, /^COPY shared\/ \.\/shared\/$/m);
+    assert.match(publisherDockerfile, /^COPY packages\/shared\/ \.\/packages\/shared\/$/m);
     assert.match(
       publisherDockerfile,
       /^CMD \["node", "scripts\/publish-bootstrap-tiers\.mjs", "--loop"\]$/m,
@@ -374,7 +374,7 @@ describe('Railway service registry coverage', () => {
 
 // The live audit gives an unregistered service a watch-path contract only when
 // its start command is a seeder (`node seed-*`): it must watch scripts/** and
-// shared/**. Any other live service outside the registry keeps whatever
+// packages/shared/**. Any other live service outside the registry keeps whatever
 // patterns were set by hand, and nothing checks them against its imports.
 // notification-relay (`npm run notification-relay`) watched six paths while
 // seventeen files it requires went unwatched, so fixes to those never deployed (#9265).

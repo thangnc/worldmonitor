@@ -168,7 +168,7 @@ describe('durable last-good policy (#7084)', () => {
   });
 
   it('the Redis script and the sidecar gate share one threshold', async () => {
-    const { DIGEST_LASTGOOD_PUBLISH_SCRIPT } = await import('../shared/digest-lastgood-publish-script.mjs');
+    const { DIGEST_LASTGOOD_PUBLISH_SCRIPT } = await import('../packages/shared/digest-lastgood-publish-script.mjs');
     assert.match(
       DIGEST_LASTGOOD_PUBLISH_SCRIPT,
       new RegExp(`nextData\\.items \\* 100 < currentData\\.items \\* ${LASTGOOD_MIN_ITEM_PCT}\\b`),
@@ -1138,7 +1138,7 @@ describe('durable last-good wiring (#7084)', () => {
     // its own file, so it holds a copy; this parity check is what keeps the
     // copy honest. (Text comparison is the point here: the pinned TEXT is
     // the contract the proxy enforces.)
-    const { DIGEST_LASTGOOD_PUBLISH_SCRIPT } = await import('../shared/digest-lastgood-publish-script.mjs');
+    const { DIGEST_LASTGOOD_PUBLISH_SCRIPT } = await import('../packages/shared/digest-lastgood-publish-script.mjs');
     reset();
     await mod.__testing__.publishAcceptedSnapshot('full', 'en', body(['https://a/1'], COVERAGE));
     const cmd = evalCalls()[0] as string[];

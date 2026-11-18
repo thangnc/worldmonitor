@@ -175,7 +175,7 @@ The `scorecard/v1` domain is an exception to request-time upstream fetching. Its
 
 The `supply-chain/v1` country-vulnerability, ranking, and chokepoint-dependency RPCs also read a Railway-published cohort instead of fetching upstream data at request time. `seed-supply-vulnerability.mjs` scores each country and builds the chokepoint inverse index in one pass, writes country and chokepoint shards into the inactive Redis slot, and switches the shared cohort pointer only after every shard is valid. The manifest and every shard carry an explicit redistribution-policy version; readers reject an older unmarked cohort until the matching publisher activates a current one. Every direct RPC or MCP response fails closed on provider inputs whose programmatic redistribution is restricted, including requests with freely mintable browser-session tokens. The canonical cohort retains the full attribution-bound evidence for internal audit, but the restricted values do not leave through these routes. The three routes are also `no-store`.
 
-`IntelligenceService.GetCountryCoverage` is the inverse case: it serves an agent surface that must agree, event for event, with what the browser country panel renders. Rather than reimplement the panel's rules server-side, the rules were moved to `shared/` and both sides import them — `country-headline-match.ts` (which country a headline is primarily about), `threat-keyword-classifier.ts` (lane and severity), and `country-timeline-events.ts` (36-hour incident clustering and structured-record precedence). A second copy of any of these is the defect this arrangement exists to prevent, and the ordering between them is load-bearing: cluster first, then filter by country, because a cluster is represented by its earliest member.
+`IntelligenceService.GetCountryCoverage` is the inverse case: it serves an agent surface that must agree, event for event, with what the browser country panel renders. Rather than reimplement the panel's rules server-side, the rules were moved to `packages/shared/` and both sides import them — `country-headline-match.ts` (which country a headline is primarily about), `threat-keyword-classifier.ts` (lane and severity), and `country-timeline-events.ts` (36-hour incident clustering and structured-record precedence). A second copy of any of these is the defect this arrangement exists to prevent, and the ordering between them is load-bearing: cluster first, then filter by country, because a cluster is represented by its earliest member.
 
 Its coverage half fetches Google News at request time through `news/v1`'s shared fetcher rather than standing up a second RSS transport; its structured half composes five existing first-party RPCs. Because several of those upstream handlers catch their own failures and return an empty array, this route cannot learn about an outage from a thrown error — it reads the backing seed key's own hit/miss/error status instead, and reports `failed` rather than `empty` when the cache is unreadable. Producers that genuinely cannot prove they were reached report `unknown`. `degraded` covers only `stale` and `failed`, the states that mean something changed; the per-producer `sources` block, always populated, is where the guarantee lives that an empty event list is never silently healthy.
 
@@ -421,7 +421,8 @@ gates.
 ├── docker/                 Dockerfile + nginx config for Railway
 ├── docs/                   Engineering records (docs/engineering/)
 ├── packages/
-│   └── contracts/          @wm/contracts: proto/ (sebuf service definitions), generated/ (client/server stubs, DO NOT EDIT), openapi/ (generated specs)
+│   ├── contracts/          @wm/contracts: proto/ (sebuf service definitions), generated/ (client/server stubs, DO NOT EDIT), openapi/ (generated specs)
+│   └── shared/             @wm/shared: logic and data the browser, server and seeders apply the same way (scripts/shared/ mirrors part of it)
 ├── public/                 Static assets served as-is (favicons, textures, map styles, data, robots.txt, 404.html)
 ├── scripts/                Seed scripts, build helpers, relay service
 ├── server/                 Server-side code (bundled into Edge Functions)
@@ -429,7 +430,6 @@ gates.
 │   ├── gateway.ts          Domain gateway factory
 │   ├── router.ts           Route matching
 │   └── worldmonitor/       Domain handlers (mirrors proto structure)
-├── shared/                 Cross-platform JSON configs (markets, RSS domains)
 ├── src/                    Browser SPA (TypeScript)
 │   ├── app/                App orchestration managers
 │   ├── bootstrap/          Startup/recovery (chunk reload, deferred Sentry, SW update)

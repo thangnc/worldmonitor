@@ -3,7 +3,7 @@ import type {
   ProductExporter, ExporterScale,
 } from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
-import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
+import { isAssignedCountryCode } from '../../../../packages/shared/country-code-resolve';
 import { normalizeComtradeProducts, HS4_CODES, HS4_LABELS } from '../../../../scripts/shared/comtrade';
 import { isCallerPremium } from '../../../_shared/premium-check';
 import { getCachedJson, getLargeRawJson, logCacheReadError, readCachedJson } from '../../../_shared/redis';

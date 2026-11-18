@@ -12,7 +12,7 @@ import {
   emptyNarrative,
   selectPromptEvidence,
 } from '../scripts/regional-snapshot/narrative.mjs';
-import { REGIONS } from '../shared/geography.js';
+import { REGIONS } from '../packages/shared/geography.js';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Fixtures

@@ -122,11 +122,11 @@ function deriveValidUntil(freshKeys, sources, metaSources, now) {
  * @param {ReturnType<typeof buildPreMeta>['pre']} preMeta
  * @param {{
  *   snapshot_id: string;
- *   trigger_reason: import('../../shared/regions.types.js').TriggerReason;
+ *   trigger_reason: import('../../packages/shared/regions.types.js').TriggerReason;
  *   narrative_provider?: string;
  *   narrative_model?: string;
  * }} finalFields
- * @returns {import('../../shared/regions.types.js').SnapshotMeta}
+ * @returns {import('../../packages/shared/regions.types.js').SnapshotMeta}
  */
 export function buildFinalMeta(preMeta, finalFields) {
   return {

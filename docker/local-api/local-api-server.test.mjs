@@ -21,7 +21,7 @@ test('ships the shared LLM health provider registry in the Docker image (#7126)'
   const dockerfile = readFileSync(new URL('../../Dockerfile', import.meta.url), 'utf8');
   assert.match(
     dockerfile,
-    /COPY --from=builder \/app\/shared\/llm-health-providers\.js \.\/shared\/llm-health-providers\.js/,
+    /COPY --from=builder \/app\/packages\/shared\/llm-health-providers\.js \.\/packages\/shared\/llm-health-providers\.js/,
   );
   assert.match(dockerfile, /^ENV LOCAL_API_RESOURCE_DIR=\/app$/m);
 });
@@ -4474,7 +4474,7 @@ test('ships the self-host relay path mirror in the Docker image', () => {
   const dockerfile = readFileSync(new URL('../../Dockerfile', import.meta.url), 'utf8');
   assert.match(
     dockerfile,
-    /COPY --from=builder \/app\/shared\/selfhost-relay-paths\.js \.\/shared\/selfhost-relay-paths\.js/,
+    /COPY --from=builder \/app\/packages\/shared\/selfhost-relay-paths\.js \.\/packages\/shared\/selfhost-relay-paths\.js/,
   );
 });
 

@@ -672,7 +672,7 @@ describe('clear-delivered-entry — argument parsing', () => {
 
   // Codex PR #3617 P2 — exact-DEL mode must accept glob chars.
   // Legitimate clusterIds can be the level-3 fallback `url:${sourceUrl}`
-  // (shared/brief-filter.js:300) and real URLs commonly contain `?` for
+  // (packages/shared/brief-filter.js:300) and real URLs commonly contain `?` for
   // query strings. Rejecting these in exact-DEL mode would make those
   // delivered-log rows unrecoverable via this primitive. The guard is
   // sweep-mode-only (no --channel + no --rule).

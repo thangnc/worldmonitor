@@ -424,7 +424,7 @@ function titleNamesCountry(title, names) {
 // The primary country is the one with the most location mentions (ties go to
 // the first named); a record is indexed under a non-primary country only when
 // it names few countries in total. The read side still requires the title to
-// mention the country (shared/country-mention.js) before publishing a row —
+// mention the country (packages/shared/country-mention.js) before publishing a row —
 // this pass only decides which rows are worth a slot in the index, and
 // which of them rank first.
 export function recordCountryMentions(record) {

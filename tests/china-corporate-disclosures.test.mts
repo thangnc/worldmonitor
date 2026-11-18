@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { validateDecisionSignalProvenance } from '../shared/decision-signal-provenance';
-import { composeChinaDecisionSignals } from '../shared/china-decision-signals';
+import { validateDecisionSignalProvenance } from '../packages/shared/decision-signal-provenance';
+import { composeChinaDecisionSignals } from '../packages/shared/china-decision-signals';
 import { summarizeChinaDecisionGroups } from '../scripts/seed-china-decision-signals.mjs';
 import {
   CHINA_CORPORATE_DISCLOSURE_MAX_NETWORK_MS,

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import wgiIndicatorKeys from '../shared/wgi-indicator-keys.json' with { type: 'json' };
+import wgiIndicatorKeys from '../packages/shared/wgi-indicator-keys.json' with { type: 'json' };
 
 import {
   IMPUTATION,

@@ -24,7 +24,7 @@ import {
   sanitizeLayersForVariant,
 } from '../src/config/map-layer-definitions';
 import { buildForecastInputFetchKeys } from '../scripts/seed-forecasts.mjs';
-import { resolveBootstrapRegistry } from '../shared/bootstrap-tier-keys.js';
+import { resolveBootstrapRegistry } from '../packages/shared/bootstrap-tier-keys.js';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p: string) => readFileSync(resolve(repoRoot, p), 'utf8');

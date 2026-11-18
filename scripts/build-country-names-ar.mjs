@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Builds shared/country-names-ar.json (and its scripts/shared/ mirror): Arabic names for every country code the
- * MCP country resolver accepts (shared/country-code-resolve.ts).
+ * Builds packages/shared/country-names-ar.json (and its scripts/shared/ mirror): Arabic names for every country code the
+ * MCP country resolver accepts (packages/shared/country-code-resolve.ts).
  *
  *   node scripts/build-country-names-ar.mjs           write the file
  *   node scripts/build-country-names-ar.mjs --check   exit 1 when it is stale
@@ -9,22 +9,22 @@
  * Source: CLDR via Intl.DisplayNames('ar'), long and short styles, plus the
  * common short and official forms below that CLDR does not carry ("السعودية"
  * for "المملكة العربية السعودية"). Names are stored as written; the resolver
- * normalizes them (shared/country-code-resolve-arabic.ts). The CLDR release
+ * normalizes them (packages/shared/country-code-resolve-arabic.ts). The CLDR release
  * that produced the file is recorded so the sync test only compares against
  * the same release (tests/mcp-country-args-arabic.test.mts).
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-// scripts/shared/ mirrors every shared/*.json byte for byte
+// scripts/shared/ mirrors every packages/shared/*.json byte for byte
 // (tests/edge-functions.test.mjs), so both copies are written.
 const OUTPUTS = [
-  new URL('../shared/country-names-ar.json', import.meta.url),
+  new URL('../packages/shared/country-names-ar.json', import.meta.url),
   new URL('./shared/country-names-ar.json', import.meta.url),
 ];
-const ISO3_TO_ISO2 = JSON.parse(readFileSync(new URL('../shared/iso3-to-iso2.json', import.meta.url), 'utf8'));
+const ISO3_TO_ISO2 = JSON.parse(readFileSync(new URL('../packages/shared/iso3-to-iso2.json', import.meta.url), 'utf8'));
 
-// Mirrors ASSIGNED_ISO2_OUTSIDE_GEOJSON in shared/country-code-resolve.ts. The
+// Mirrors ASSIGNED_ISO2_OUTSIDE_GEOJSON in packages/shared/country-code-resolve.ts. The
 // test asserts this file covers exactly the codes isAssignedCountryCode accepts.
 const ASSIGNED_OUTSIDE_GEOJSON = ['BQ', 'BV', 'CC', 'CX', 'GF', 'GP', 'MQ', 'RE', 'SJ', 'TK', 'YT'];
 
@@ -113,6 +113,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.log('country-names-ar.json is current.');
   } else {
     for (const output of OUTPUTS) writeFileSync(output, next);
-    console.log('Wrote shared/country-names-ar.json and scripts/shared/country-names-ar.json');
+    console.log('Wrote packages/shared/country-names-ar.json and scripts/shared/country-names-ar.json');
   }
 }

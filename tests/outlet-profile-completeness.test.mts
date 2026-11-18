@@ -1,5 +1,5 @@
 /**
- * Checks for shared/outlet-profile.json: the validator rules that keep each
+ * Checks for packages/shared/outlet-profile.json: the validator rules that keep each
  * outlet's home country, audience, language and ownership class reviewed, the
  * server loader, and the browser/shared import boundary. The closed-world
  * comparison against the live outlet catalog was removed with the legacy
@@ -15,8 +15,8 @@ import { validateOutletProfiles } from '../scripts/lib/outlet-catalog.mjs';
 import { getOutletProfile } from '../server/_shared/outlet-profile.ts';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-const profiles = JSON.parse(readFileSync(join(repoRoot, 'shared/outlet-profile.json'), 'utf8'));
-const iso2 = Object.keys(JSON.parse(readFileSync(join(repoRoot, 'shared/iso2-to-region.json'), 'utf8')));
+const profiles = JSON.parse(readFileSync(join(repoRoot, 'packages/shared/outlet-profile.json'), 'utf8'));
+const iso2 = Object.keys(JSON.parse(readFileSync(join(repoRoot, 'packages/shared/iso2-to-region.json'), 'utf8')));
 const validCountries = new Set([...iso2, 'INTL', 'EU']);
 
 const fixtureCatalog = (entries: Record<string, string[]>) =>
@@ -45,7 +45,7 @@ describe('outlet profile registry', () => {
       }
     };
     walk('src');
-    walk('shared');
+    walk('packages/shared');
     assert.deepEqual(importers, []);
   });
 

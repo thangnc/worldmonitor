@@ -5,7 +5,7 @@
  */
 
 import type { MarketWatchlistEntry } from '@/services/market-watchlist';
-import { normalizeStockSymbol } from '../../shared/stock-symbol';
+import { normalizeStockSymbol } from '../../packages/shared/stock-symbol';
 
 export interface StockAnalysisTarget {
   symbol: string;

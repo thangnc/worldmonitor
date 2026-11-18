@@ -7,7 +7,7 @@ import {
   buildDefenseIndustrialResponse,
   type StoredIndustrialSnapshot,
   type StoredSupplierSnapshot,
-} from '../../../../shared/defense-industrial-response';
+} from '../../../../packages/shared/defense-industrial-response';
 import { readCachedJson } from '../../../_shared/redis';
 import type { CacheReadResult } from '../../../_shared/redis';
 import { markNoStoreFallbackResponse } from '../../../_shared/response-headers';

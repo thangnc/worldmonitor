@@ -18,7 +18,7 @@ import { hasPremiumIntent } from './premium-intent';
 import type { WmSessionDeadReason } from './wm-session-copy';
 import { isPublicSharedRpcRequest } from '@/shared/public-rpc-cache';
 import { enqueueSentryCall } from '@/bootstrap/sentry-defer';
-import { PUBLIC_WEATHER_BOOTSTRAP_KEY, bootstrapTierKeyNames } from '../../shared/bootstrap-tier-keys.js';
+import { PUBLIC_WEATHER_BOOTSTRAP_KEY, bootstrapTierKeyNames } from '@wm/shared/bootstrap-tier-keys.js';
 
 const STORAGE_KEY = 'wm-session-exp';
 // Refresh well before expiry so a half-loaded page doesn't fail mid-flight.

@@ -4078,7 +4078,7 @@ paths:
                 - name: region_id
                   in: query
                   description: |-
-                    Display region id (e.g. "mena", "east-asia", "europe"). See shared/geography.js.
+                    Display region id (e.g. "mena", "east-asia", "europe"). See packages/shared/geography.js.
                      Kebab-case: lowercase alphanumeric groups separated by single hyphens, no
                      trailing or consecutive hyphens.
                   required: true
@@ -4238,7 +4238,7 @@ paths:
                 - name: region_id
                   in: query
                   description: |-
-                    Display region id (e.g. "mena", "east-asia", "europe"). See shared/geography.js.
+                    Display region id (e.g. "mena", "east-asia", "europe"). See packages/shared/geography.js.
                      Kebab-case: lowercase alphanumeric groups separated by single hyphens, no
                      trailing or consecutive hyphens.
                   required: true
@@ -10203,7 +10203,7 @@ components:
                     minLength: 1
                     pattern: ^[a-z][a-z0-9]*(-[a-z0-9]+)*$
                     description: |-
-                        Display region id (e.g. "mena", "east-asia", "europe"). See shared/geography.js.
+                        Display region id (e.g. "mena", "east-asia", "europe"). See packages/shared/geography.js.
                          Kebab-case: lowercase alphanumeric groups separated by single hyphens, no
                          trailing or consecutive hyphens.
             required:
@@ -10264,7 +10264,7 @@ components:
             description: |-
                 RegionalSnapshot is the canonical intelligence object for one region.
                  See docs/internal/pro-regional-intelligence-upgrade.md for the full spec
-                 and shared/regions.types.d.ts for the authoritative TypeScript contract.
+                 and packages/shared/regions.types.d.ts for the authoritative TypeScript contract.
         SnapshotMeta:
             type: object
             properties:
@@ -10690,7 +10690,7 @@ components:
                     minLength: 1
                     pattern: ^[a-z][a-z0-9]*(-[a-z0-9]+)*$
                     description: |-
-                        Display region id (e.g. "mena", "east-asia", "europe"). See shared/geography.js.
+                        Display region id (e.g. "mena", "east-asia", "europe"). See packages/shared/geography.js.
                          Kebab-case: lowercase alphanumeric groups separated by single hyphens, no
                          trailing or consecutive hyphens.
                 limit:

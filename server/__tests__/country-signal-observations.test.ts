@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COUNTRY_SIGNAL_FAMILIES, projectCountrySignalFamily, projectQualifiedCountrySignals, projectQualifiedCountrySignalContext, unavailableCountrySignal, boundCountrySignalFamily, sourceClock, type CountrySignalOutcome } from '../../shared/country-signal-observations';
+import { COUNTRY_SIGNAL_FAMILIES, projectCountrySignalFamily, projectQualifiedCountrySignals, projectQualifiedCountrySignalContext, unavailableCountrySignal, boundCountrySignalFamily, sourceClock, type CountrySignalOutcome } from '../../packages/shared/country-signal-observations';
 
 describe('qualified country Signals', () => {
   it.each([['elevated', 1, 'medium'], ['elevated', 5, 'high'], ['critical', 1, 'medium'], ['critical', 5, 'high']] as const)('keeps vessel count thresholds for %s posture with %i vessels', (postureLevel, trackedVessels, severity) => {

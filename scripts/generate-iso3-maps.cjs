@@ -53,11 +53,11 @@ const sorted2to3 = Object.fromEntries(
 );
 
 // Write files
-const out3to2 = path.join(root, 'shared', 'iso3-to-iso2.json');
+const out3to2 = path.join(root, 'packages', 'shared', 'iso3-to-iso2.json');
 fs.writeFileSync(out3to2, JSON.stringify(sorted3to2, null, 2) + '\n');
 console.log(`Wrote ${Object.keys(sorted3to2).length} entries to ${out3to2}`);
 
-const out2to3 = path.join(root, 'shared', 'iso2-to-iso3.json');
+const out2to3 = path.join(root, 'packages', 'shared', 'iso2-to-iso3.json');
 fs.writeFileSync(out2to3, JSON.stringify(sorted2to3, null, 2) + '\n');
 console.log(`Wrote ${Object.keys(sorted2to3).length} entries to ${out2to3}`);
 
@@ -75,7 +75,7 @@ const js2to3 = [
   'export default ISO2_TO_ISO3;',
   '',
 ];
-const jsOut2to3 = path.join(root, 'shared', 'iso2-to-iso3.js');
+const jsOut2to3 = path.join(root, 'packages', 'shared', 'iso2-to-iso3.js');
 fs.writeFileSync(jsOut2to3, js2to3.join('\n'));
 console.log(`Wrote JS module to ${jsOut2to3}`);
 
@@ -86,7 +86,7 @@ const dts2to3 = [
   'export default ISO2_TO_ISO3;',
   '',
 ];
-const dtsOut2to3 = path.join(root, 'shared', 'iso2-to-iso3.d.ts');
+const dtsOut2to3 = path.join(root, 'packages', 'shared', 'iso2-to-iso3.d.ts');
 fs.writeFileSync(dtsOut2to3, dts2to3.join('\n'));
 console.log(`Wrote .d.ts declaration to ${dtsOut2to3}`);
 

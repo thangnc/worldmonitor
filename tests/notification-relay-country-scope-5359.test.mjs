@@ -245,7 +245,7 @@ describe('#5359 — duplicate shared copies must stay byte-identical', () => {
   for (const file of ['country-name-to-iso2.cjs', 'country-names.json']) {
     it(`scripts/shared/${file} === shared/${file}`, () => {
       const a = readFileSync(resolve(__dirname, '..', 'scripts', 'shared', file), 'utf-8');
-      const b = readFileSync(resolve(__dirname, '..', 'shared', file), 'utf-8');
+      const b = readFileSync(resolve(__dirname, '..', 'packages', 'shared', file), 'utf-8');
       assert.equal(a, b, `scripts/shared/${file} and shared/${file} have diverged — sync them (they are duplicate copies, not independent files)`);
     });
   }
@@ -264,13 +264,13 @@ describe('#5359 — aviation registry country names all normalize', () => {
       assert.ok(names.includes(critical), `aviation country extraction must retain ${critical}`);
     }
     const misses = names.filter((n) => countryNameToIso2(n) === null);
-    assert.deepEqual(misses, [], `aviation registry country names that fail to normalize: ${misses.join(', ')} — add them to shared/country-names.json`);
+    assert.deepEqual(misses, [], `aviation registry country names that fail to normalize: ${misses.join(', ')} — add them to packages/shared/country-names.json`);
   });
 });
 
 describe('#5359 — region taxonomy parity between emitter and scope matcher', () => {
   it('iso2-to-region.json values ⊆ REGION_IDS; every region except global has members', async () => {
-    const { REGION_IDS } = await import('../shared/geography.js');
+    const { REGION_IDS } = await import('../packages/shared/geography.js');
     const regionMap = JSON.parse(
       readFileSync(resolve(__dirname, '..', 'scripts', 'shared', 'iso2-to-region.json'), 'utf-8'),
     );

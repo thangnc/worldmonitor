@@ -6,9 +6,9 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 import { getLargeRawJson, logCacheReadError, readCachedJson } from '../../../_shared/redis';
-import { normalizeGdeltTopicSnapshot } from '../../../../shared/intelligence-snapshots.js';
+import { normalizeGdeltTopicSnapshot } from '../../../../packages/shared/intelligence-snapshots.js';
 import { readRevokedUrlSet } from '../../../_shared/digest-revocations';
-import { countryMentionTerms, mentionsCountry } from '../../../../shared/country-mention.js';
+import { countryMentionTerms, mentionsCountry } from '../../../../packages/shared/country-mention.js';
 
 const SEEDED_KEY = 'intelligence:gdelt-intel:v1';
 // Mirrors GDELT_BULK_COUNTRY_ARTICLES_KEY in scripts/_gdelt-bulk-contract.mjs;

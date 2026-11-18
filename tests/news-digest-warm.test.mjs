@@ -22,7 +22,7 @@ const {
 } = require('../scripts/lib/news-digest-warm.cjs');
 
 const cells = JSON.parse(readFileSync(join(root, 'scripts/shared/news-digest-warm-cells.json'), 'utf8'));
-const catalog = JSON.parse(readFileSync(join(root, 'shared/news-catalog.json'), 'utf8'));
+const catalog = JSON.parse(readFileSync(join(root, 'packages/shared/news-catalog.json'), 'utf8'));
 const editions = JSON.parse(readFileSync(join(root, 'scripts/shared/news-digest-editions.json'), 'utf8'));
 
 const coverage = (overrides = {}) => ({

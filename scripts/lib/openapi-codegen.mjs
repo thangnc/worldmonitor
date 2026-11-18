@@ -842,9 +842,9 @@ export function parseChinaDecisionSignalManifest(source) {
 }
 
 export function readDecisionSignalProvenanceContract() {
-  const src = readFileSync(resolve(root, 'shared/decision-signal-provenance-contract.ts'), 'utf8');
+  const src = readFileSync(resolve(root, 'packages/shared/decision-signal-provenance-contract.ts'), 'utf8');
   const familySrc = readFileSync(
-    resolve(root, 'shared/decision-signal-provenance-families.ts'),
+    resolve(root, 'packages/shared/decision-signal-provenance-families.ts'),
     'utf8',
   );
   const version = src.match(
@@ -921,15 +921,15 @@ export function readDecisionSignalProvenanceContract() {
 
 export function readChinaCorridorWireContract() {
   const corridor = readFileSync(
-    resolve(root, 'shared/china-corridor-control-towers.ts'),
+    resolve(root, 'packages/shared/china-corridor-control-towers.ts'),
     'utf8',
   );
   const logistics = readFileSync(
-    resolve(root, 'shared/china-logistics-corridors.ts'),
+    resolve(root, 'packages/shared/china-logistics-corridors.ts'),
     'utf8',
   );
   const provenance = readFileSync(
-    resolve(root, 'shared/decision-signal-provenance-contract.ts'),
+    resolve(root, 'packages/shared/decision-signal-provenance-contract.ts'),
     'utf8',
   );
   const contract = {
@@ -962,11 +962,11 @@ export function readChinaCorridorWireContract() {
 
 export function readChinaDecisionSignalWireContract() {
   const src = readFileSync(
-    resolve(root, 'shared/china-decision-signals.ts'),
+    resolve(root, 'packages/shared/china-decision-signals.ts'),
     'utf8',
   );
   const manifestSrc = readFileSync(
-    resolve(root, 'shared/china-decision-signal-manifest.ts'),
+    resolve(root, 'packages/shared/china-decision-signal-manifest.ts'),
     'utf8',
   );
   const {

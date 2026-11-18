@@ -2,7 +2,7 @@ import {
   isPhysicalDivergenceDate,
   isPhysicalDivergenceInstant,
   physicalDivergenceStaleReason,
-} from '../../shared/physical-divergence-staleness.js';
+} from '../../packages/shared/physical-divergence-staleness.js';
 import {
   PHYSICAL_DIVERGENCE_CONTRACT,
   buildPhysicalStressComposite,
@@ -13,7 +13,7 @@ import {
   type PhysicalDivergenceRegime,
   type PhysicalDivergenceState,
   type PhysicalDivergenceTrend,
-} from '../../shared/physical-divergence-contract.js';
+} from '../../packages/shared/physical-divergence-contract.js';
 
 export const PHYSICAL_DIVERGENCE_METHODOLOGY_VERSION = PHYSICAL_DIVERGENCE_CONTRACT.methodologyVersion;
 export const PHYSICAL_DIVERGENCE_METALS = PHYSICAL_DIVERGENCE_CONTRACT.metalOrder;

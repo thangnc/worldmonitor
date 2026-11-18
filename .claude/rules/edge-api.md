@@ -23,7 +23,7 @@ Source of truth: CLAUDE.md "Critical boundaries", [docs/engineering/architecture
 - Pick the cache tier from how often the data changes. Health responses are never cached.
 - Outbound server fetches set a `User-Agent`. Stagger Yahoo Finance requests by at least 150 ms.
 - A new RPC path is classified once in each of `PREMIUM_RPC_PATHS`, `PUBLIC_NO_AUTH_RPC_PATHS`, and the rate-limit policy (`ENDPOINT_RATE_POLICIES`) when it needs one.
-- A new outbound host in a URL literal needs a row in `shared/source-attribution-manifest.json` (`npm run sources:generate`).
+- A new outbound host in a URL literal needs a row in `packages/shared/source-attribution-manifest.json` (`npm run sources:generate`).
 - Never let a reader turn a failed read into an empty success. See `docs/engineering/solutions/conventions/a-degrading-accessor-turns-a-failed-read-into-a-confident-absence.md`.
 
 ## Verify

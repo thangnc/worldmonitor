@@ -16,10 +16,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const sharedResourceRoot = process.env.LOCAL_API_RESOURCE_DIR
   || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const { getConfiguredLlmHealthProviders } = await import(
-  pathToFileURL(path.join(sharedResourceRoot, 'shared/llm-health-providers.js')).href
+  pathToFileURL(path.join(sharedResourceRoot, 'packages/shared/llm-health-providers.js')).href
 );
 const { isSelfHostRelayPath } = await import(
-  pathToFileURL(path.join(sharedResourceRoot, 'shared/selfhost-relay-paths.js')).href
+  pathToFileURL(path.join(sharedResourceRoot, 'packages/shared/selfhost-relay-paths.js')).href
 );
 
 const brotliCompressAsync = promisify(brotliCompress);

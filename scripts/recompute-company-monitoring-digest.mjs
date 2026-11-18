@@ -15,7 +15,7 @@
 // would turn a product-owner decision into a keystroke.
 import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { thresholdDigest } from '../shared/company-monitoring-evaluation.ts';
+import { thresholdDigest } from '../packages/shared/company-monitoring-evaluation.ts';
 
 const FIXTURE = new URL(
   '../tests/fixtures/company-monitoring-evaluation/protocol.json',

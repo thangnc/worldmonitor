@@ -455,7 +455,7 @@ describe('daily recorder', () => {
 });
 
 describe('pair registry', () => {
-  const pairs = JSON.parse(readFileSync(new URL('../shared/gdelt-tension-pairs.json', import.meta.url), 'utf8'));
+  const pairs = JSON.parse(readFileSync(new URL('../packages/shared/gdelt-tension-pairs.json', import.meta.url), 'utf8'));
   const flights = readFileSync(new URL('../scripts/seed-military-flights.mjs', import.meta.url), 'utf8');
   const theaterBlock = flights.slice(flights.indexOf('const POSTURE_THEATERS = ['));
   const theaterIds = new Set([...theaterBlock.slice(0, theaterBlock.indexOf('];')).matchAll(/id: '([^']+)'/g)].map(m => m[1]));

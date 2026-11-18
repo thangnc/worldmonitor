@@ -69,7 +69,7 @@
  *
  * The homepage has one more representation that no Accept value selects:
  * middleware.ts rewrites `GET /` to /home.md for the User-Agents listed in
- * shared/agent-request-policy.json (`Vary: User-Agent`, `no-store`). The
+ * packages/shared/agent-request-policy.json (`Vary: User-Agent`, `no-store`). The
  * no-store keeps that markdown out of the edge; the problem is the other
  * direction. Cloudflare answers from the stored browser HTML before the
  * middleware runs and ignores Vary: User-Agent, so on a warm edge server a
@@ -227,7 +227,7 @@ export const SINGLE_REPRESENTATION_EXTENSIONS = Object.freeze(['md', 'txt', 'xml
 /**
  * Slashless and trailing-slash URLs for the prerendered locale homepages.
  * Keep in lockstep with `nonDefaultLandingLocales()` in
- * shared/indexable-landing-locales.ts — the cache-rule test compares both.
+ * packages/shared/indexable-landing-locales.ts — the cache-rule test compares both.
  */
 export const INDEXABLE_LANDING_ENTRY_PATHS = Object.freeze([
   '/es', '/es/',

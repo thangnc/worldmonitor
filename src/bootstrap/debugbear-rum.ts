@@ -18,7 +18,7 @@ export const DEBUGBEAR_RUM_HOSTS = new Set([
 ]);
 
 import type { BootstrapTransferRumSample } from './bootstrap-transfer-rum';
-import { whenUrlFreeOfSensitiveParams } from '../../shared/sensitive-url-params';
+import { whenUrlFreeOfSensitiveParams } from '@wm/shared/sensitive-url-params';
 import { getDeviceTier } from '../utils/device-tier';
 
 type DebugBearRumEvent =

@@ -21,7 +21,7 @@
  * headers, the payload schema, and — crucially — the verification recipe, so a
  * consuming agent can confirm a delivery genuinely came from WorldMonitor.
  *
- * The event registry (shared/event-triggers.json) also defines
+ * The event registry (packages/shared/event-triggers.json) also defines
  * `country.risk_surge`. It shares every header and the signature with the
  * block below, and the `X-WM-Event` parameter names it; its payload schema is
  * published in the registry and at docs/api-shipping-v2#delivery-format, not
@@ -55,14 +55,14 @@ const bundlePath = resolve(root, 'packages/contracts/openapi/worldmonitor.openap
 const CHECK = process.argv.includes('--check');
 
 // The webhook event names — `X-WM-Event` header values, the keys of
-// shared/event-triggers.json (read here so a registry event cannot land
+// packages/shared/event-triggers.json (read here so a registry event cannot land
 // without the header naming it; the contract test pins the two together).
 // WEBHOOK_EVENT is the default `options.event` in deliver-webhook.ts and the
 // one `webhooks` entry; the others are named in the event header's description.
 export const WEBHOOK_EVENT = 'chokepoint.disruption';
 export const RISK_SURGE_WEBHOOK_EVENT = 'country.risk_surge';
 const registryEvents = Object.keys(
-  JSON.parse(readFileSync(resolve(root, 'shared/event-triggers.json'), 'utf8')).events,
+  JSON.parse(readFileSync(resolve(root, 'packages/shared/event-triggers.json'), 'utf8')).events,
 );
 export const WEBHOOK_EVENTS = Object.freeze([WEBHOOK_EVENT, ...registryEvents.filter((event) => event !== WEBHOOK_EVENT)]);
 const OTHER_EVENTS = WEBHOOK_EVENTS.filter((event) => event !== WEBHOOK_EVENT);

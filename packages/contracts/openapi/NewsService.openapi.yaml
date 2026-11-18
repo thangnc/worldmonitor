@@ -2055,7 +2055,7 @@ components:
                          cycle. "Same story" is determined by edit-tolerant story-identity
                          clustering (headlines describing one event with different wording,
                          ordering, source suffixes, truncation, or morphology corroborate each
-                         other) — not exact-title matching. See shared/story-identity.js.
+                         other) — not exact-title matching. See packages/shared/story-identity.js.
                 storyMeta:
                     $ref: '#/components/schemas/StoryMeta'
                 snippet:
@@ -2074,8 +2074,8 @@ components:
                         description: |-
                             Equity ticker symbols mentioned by the story, extracted at ingest from
                              cashtags ($AAPL) and the curated company dictionary
-                             (shared/stocks.json). Uppercase symbols, deduplicated, capped at 8.
-                             Empty when no tracked ticker is mentioned. See shared/ticker-extract.js.
+                             (packages/shared/stocks.json). Uppercase symbols, deduplicated, capped at 8.
+                             Empty when no tracked ticker is mentioned. See packages/shared/ticker-extract.js.
                     maxItems: 8
                 credibilityScore:
                     type: integer

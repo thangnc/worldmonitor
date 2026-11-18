@@ -7,7 +7,7 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 
-import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
+import { isAssignedCountryCode } from '../../../../packages/shared/country-code-resolve';
 import { isCallerPremium } from '../../../_shared/premium-check';
 import { cachedFetchJson, getCachedJson } from '../../../_shared/redis';
 import { CHOKEPOINT_REGISTRY } from '../../../../src/config/chokepoint-registry';

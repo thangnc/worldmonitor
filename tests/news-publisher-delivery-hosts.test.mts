@@ -11,8 +11,8 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest';
 import { VARIANT_FEEDS } from '../server/worldmonitor/news/v1/_feeds';
-import catalog from '../shared/news-catalog.json' with { type: 'json' };
-import { publisherFamilyFor, PUBLISHER_FAMILY_DOMAIN_TABLE } from '../shared/publisher-families.js';
+import catalog from '../packages/shared/news-catalog.json' with { type: 'json' };
+import { publisherFamilyFor, PUBLISHER_FAMILY_DOMAIN_TABLE } from '../packages/shared/publisher-families.js';
 
 const require = createRequire(import.meta.url);
 const { gateRelayStoryLink } = require('../scripts/lib/publisher-link-relay-gate.cjs');
@@ -80,7 +80,7 @@ describe('every server feed on a delivery host names its publisher domains', () 
       const domains = (PUBLISHER_FAMILY_DOMAIN_TABLE as Record<string, string[]>)[publisherFamilyFor(feed.name)];
       if (!domains?.length) missing.push(`${feed.name} (${host})`);
     }
-    assert.deepEqual(missing, [], 'add a family with the domains these publishers link to in shared/publisher-families.js and the relay gate');
+    assert.deepEqual(missing, [], 'add a family with the domains these publishers link to in packages/shared/publisher-families.js and the relay gate');
   });
 });
 

@@ -15,7 +15,7 @@
  */
 
 import { LITE_SCREEN_PATHS } from './lite-route';
-import { stripTrailingSlashes } from '../../shared/strip-trailing-slashes.js';
+import { stripTrailingSlashes } from '../../packages/shared/strip-trailing-slashes.js';
 
 export const AGENT_NOT_FOUND_STATUS = 404 as const;
 export const AGENT_NOT_FOUND_CONTENT_TYPE = 'text/markdown; charset=utf-8';

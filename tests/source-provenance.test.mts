@@ -16,9 +16,9 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import * as feeds from '../shared/source-provenance.ts';
+import * as feeds from '../packages/shared/source-provenance.ts';
 import { getSourceTier } from '../server/_shared/source-tiers.ts';
-import { CONFIGURED_SOURCE_PROVENANCE_DECLARATIONS } from '../shared/source-provenance-declarations';
+import { CONFIGURED_SOURCE_PROVENANCE_DECLARATIONS } from '../packages/shared/source-provenance-declarations';
 
 describe('source provenance defaults (#5390)', () => {
   it('does not map missing risk profiles to independent (low)', () => {

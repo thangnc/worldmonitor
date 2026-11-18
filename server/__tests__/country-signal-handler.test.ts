@@ -11,7 +11,7 @@ import { getCountrySignalObservations } from '../worldmonitor/intelligence/v1/ge
 import { readMilitaryFlights } from '../worldmonitor/military/v1/list-military-flights';
 import { getTheaterPosture } from '../worldmonitor/military/v1/get-theater-posture';
 import { drainResponseHeaders } from '../_shared/response-headers';
-import { countrySignalOutcomeSchema } from '../../shared/country-signal-observations';
+import { countrySignalOutcomeSchema } from '../../packages/shared/country-signal-observations';
 import type { GetCountrySignalObservationsRequest } from '../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { createIntelligenceServiceRoutes, ValidationError, type IntelligenceServiceHandler } from '../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 

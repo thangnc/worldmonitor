@@ -67,7 +67,7 @@ on:
       # workflow's assertions, which is exactly the class of unwatched drift
       # #5643 exists to close.
       - 'scripts/lib/openapi-codegen.mjs'
-      - 'shared/china-decision-signal-manifest.ts'
+      - 'packages/shared/china-decision-signal-manifest.ts'
       - '.github/workflows/china-decision-parity-live.yml'
   schedule:
     - cron: '11 */6 * * *'

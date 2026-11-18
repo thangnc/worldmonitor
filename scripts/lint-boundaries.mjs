@@ -11,7 +11,8 @@
  * Also checks:
  *   - api/ legacy .js: must not import from src/ or server/ (self-contained)
  *   - api/ RPC .ts: may import server/ and packages/contracts/generated/, but not src/ app code
- *   - api/, server/, shared/, middleware.ts reach @wm/contracts by relative path, not by package name
+ *   - api/, server/, packages/shared/, middleware.ts, vite.dev-api.ts and the src/ files
+ *     they import reach @wm/contracts and @wm/shared by relative path, not by package name
  *   - server/ must not import the Lite UI (src/lite/)
  *   - nothing outside src/lite/ imports the Lite UI
  *
@@ -116,7 +117,7 @@ for (const file of serverFiles) {
         from: 'server',
         to: 'src/lite',
         text: line.trim(),
-        remedy: 'Server code must not import browser UI code. Extract shared logic into shared/, server/_shared/ or src/types/.',
+        remedy: 'Server code must not import browser UI code. Extract shared logic into packages/shared/, server/_shared/ or src/types/.',
       });
     }
   }
@@ -194,28 +195,62 @@ for (const file of srcFiles) {
   }
 }
 
-// --- Check 5: Edge-reachable code imports the contracts by relative path ---
+// --- Check 5: Edge-reachable code imports the workspace packages by relative path ---
 // Vercel's Edge bundler has not been proven to resolve npm workspace packages,
-// so api/, server/, shared/ and middleware.ts import packages/contracts/
-// relatively. Only browser code (src/) uses the @wm/contracts package name.
-const edgeFiles = [
-  ...walkDir(join(ROOT, 'api'), ['.js', '.mjs', '.ts']),
-  ...walkDir(join(ROOT, 'server'), ['.js', '.mjs', '.ts']),
-  ...walkDir(join(ROOT, 'shared'), ['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts']),
-  // server/ and api/ import these browser-side modules directly.
-  ...walkDir(join(ROOT, 'src', 'shared'), ['.js', '.mjs', '.ts']),
+// so api/, server/, packages/shared/, middleware.ts and vite.dev-api.ts import
+// packages/contracts/ and packages/shared/ relatively, and so does every src/
+// file they reach (src/shared/ and the src/config, src/services and src/utils
+// modules the handlers import). Other browser code (src/) may use the
+// @wm/contracts and @wm/shared package names.
+const EDGE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts'];
+const edgeRoots = [
+  ...walkDir(join(ROOT, 'api'), EDGE_EXTS),
+  ...walkDir(join(ROOT, 'server'), EDGE_EXTS),
+  ...walkDir(join(ROOT, 'packages', 'shared'), EDGE_EXTS),
+  ...walkDir(join(ROOT, 'src', 'shared'), EDGE_EXTS),
   join(ROOT, 'middleware.ts'),
+  join(ROOT, 'vite.dev-api.ts'),
 ];
+const RELATIVE_SPEC_RE = /(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\(\s*|^\s*import\s+)['"](\.{1,2}\/[^'"]+|@\/[^'"]+)['"]/gm;
+function resolveRelative(fromFile, spec) {
+  // `@/` is the browser alias for src/ (tsconfig paths); Edge code reaches
+  // src/ through it too.
+  const path = spec.split('?')[0];
+  const base = path.startsWith('@/') ? join(ROOT, SRC, path.slice(2)) : resolve(dirname(fromFile), path);
+  const candidates = [base, ...['.ts', '.tsx', '.js', '.mjs'].map((e) => base + e),
+    base.replace(/\.js$/, '.ts'), join(base, 'index.ts'), join(base, 'index.js')];
+  for (const c of candidates) {
+    try { if (statSync(c).isFile()) return c; } catch { /* probe next */ }
+  }
+  return null;
+}
+const edgeFiles = new Set(edgeRoots);
+const srcRoot = join(ROOT, SRC) + '/';
+const queue = [...edgeRoots];
+while (queue.length > 0) {
+  const file = queue.pop();
+  const text = readFileSync(file, 'utf8');
+  for (const match of text.matchAll(RELATIVE_SPEC_RE)) {
+    // A type-only alias import is erased before bundling, so it reaches nothing.
+    const lineStart = text.lastIndexOf('\n', match.index) + 1;
+    if (match[1].startsWith('@/') && /^\s*(?:import|export)\s+type\b/.test(text.slice(lineStart, match.index))) continue;
+    const target = resolveRelative(file, match[1]);
+    if (!target || !target.startsWith(srcRoot) || edgeFiles.has(target)) continue;
+    edgeFiles.add(target);
+    queue.push(target);
+  }
+}
 for (const file of edgeFiles) {
   const lines = readFileSync(file, 'utf8').split('\n');
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.includes('boundary-ignore')) continue;
     if (i > 0 && lines[i - 1].includes('boundary-ignore')) continue;
-    if (/(?:from\s+|import\(\s*|require\(\s*|^\s*import\s+)['"]@wm\/contracts(?:\/|['"])/.test(line)) {
+    const pkg = line.match(/(?:from\s+|import\(\s*|require\(\s*|^\s*import\s+)['"](@wm\/(?:contracts|shared))(?:\/|['"])/)?.[1];
+    if (pkg) {
       violations.push({
-        file: relative(ROOT, file), line: i + 1, from: 'edge-reachable', to: '@wm/contracts', text: line.trim(),
-        remedy: 'Import packages/contracts/ by relative path from api/, server/, shared/ and middleware.ts.',
+        file: relative(ROOT, file), line: i + 1, from: 'edge-reachable', to: pkg, text: line.trim(),
+        remedy: `Import ${pkg.replace('@wm/', 'packages/')}/ by relative path from api/, server/, packages/shared/, middleware.ts, vite.dev-api.ts and the src/ files they import.`,
       });
     }
   }

@@ -1,5 +1,5 @@
-import filterParamContracts from '../../../../shared/openapi-filter-param-contracts.json';
-import { CURRENT_FLOWS_WINDOW, PRE_CRISIS_WINDOW } from '../../../../shared/hormuz-crisis.js';
+import filterParamContracts from '../../../../packages/shared/openapi-filter-param-contracts.json';
+import { CURRENT_FLOWS_WINDOW, PRE_CRISIS_WINDOW } from '../../../../packages/shared/hormuz-crisis.js';
 import { BYPASS_RAMP_DAYS, HORMUZ_BYPASS_BY_EXPORTER } from './_hormuz-bypass';
 
 const BYPASS_EXPORTERS = Object.keys(HORMUZ_BYPASS_BY_EXPORTER);
@@ -390,7 +390,7 @@ export const MIN_PRE_CRISIS_MONTHS = 9;
 
 /**
  * Gulf share of one importer's crude imports by value, from its own monthly
- * Comtrade filings, over two windows (shared/hormuz-crisis.js):
+ * Comtrade filings, over two windows (packages/shared/hormuz-crisis.js):
  * - preCrisis: the filed months of the 12 full months before the crisis,
  *   at least MIN_PRE_CRISIS_MONTHS of them; reported against the window bounds.
  * - current: the latest CURRENT_FLOWS_WINDOW.months filed months no earlier

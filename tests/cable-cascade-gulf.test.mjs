@@ -8,8 +8,8 @@ import {
   calculateMultiCascade,
   CABLE_ESTIMATE_NOTE,
   getCablesThroughChokepoint,
-} from '../shared/analysis-infrastructure-cascade.ts';
-import { MCP_CASCADE_WATERWAYS } from '../shared/analysis-mcp-adapters.ts';
+} from '../packages/shared/analysis-infrastructure-cascade.ts';
+import { MCP_CASCADE_WATERWAYS } from '../packages/shared/analysis-mcp-adapters.ts';
 import { UNDERSEA_CABLES } from '../src/config/geo-map.ts';
 
 const graph = buildDependencyGraph({ cables: UNDERSEA_CABLES, waterways: MCP_CASCADE_WATERWAYS });

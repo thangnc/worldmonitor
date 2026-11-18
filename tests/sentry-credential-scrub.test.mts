@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { scrubSentryCredentials } from '../shared/sensitive-url-params.ts';
+import { scrubSentryCredentials } from '../packages/shared/sensitive-url-params.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel: string) => readFileSync(resolve(root, rel), 'utf8');

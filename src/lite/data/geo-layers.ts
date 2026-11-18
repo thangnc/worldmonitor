@@ -4,8 +4,8 @@
  * hotspots, incidents at sea (UKMTO) and GPS interference (gpsjam.org).
  * Pure rules: the screen passes the loaded data and the curated hotspots.
  */
-import { HOTSPOT_COUNTRY_MAP } from '../../../shared/hotspot-country-map';
-import { haversineKm } from '../../../shared/geo-distance';
+import { HOTSPOT_COUNTRY_MAP } from '@wm/shared/hotspot-country-map';
+import { haversineKm } from '@wm/shared/geo-distance';
 import type { Hotspot } from '@/types';
 import type { MilitaryAircraftType, MilitaryFlight } from '@wm/contracts/generated/client/worldmonitor/military/v1/service_client';
 import type { ListUkmtoIncidentsResponse, UkmtoIncident } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';

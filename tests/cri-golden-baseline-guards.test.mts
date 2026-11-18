@@ -182,7 +182,7 @@ describe('CRI golden baseline generator guards', () => {
       const dependencies = [
         'server/_shared/resilience-stats.ts',
         'server/_shared/resilience-freshness.ts',
-        'shared/iso2-to-iso3.json',
+        'packages/shared/iso2-to-iso3.json',
         'tsconfig.json',
       ];
       const output = 'tests/fixtures/resilience-cri-golden-baseline-2026-08-13.json';
@@ -209,9 +209,9 @@ describe('CRI golden baseline generator guards', () => {
           write(file, '{}\n');
           git('add', file);
         }
-        write('shared/new-scoring-input.json', '{}\n');
+        write('packages/shared/new-scoring-input.json', '{}\n');
         const dirtyStatusLines = readGenerationDirtyStatus(dir);
-        assert.ok(dirtyStatusLines?.some((line) => line === '?? shared/new-scoring-input.json'));
+        assert.ok(dirtyStatusLines?.some((line) => line === '?? packages/shared/new-scoring-input.json'));
         assert.throws(() => assertGenerationGuards(guardsFixture({ dirtyStatusLines })), /--allow-dirty-fixture/);
       } finally {
         rmSync(dir, { recursive: true, force: true });

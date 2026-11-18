@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { BOOTSTRAP_CACHE_KEYS } from '../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS } from '../packages/shared/bootstrap-tier-keys.js';
 import { MINERAL_PRODUCTION_2024 } from '../server/worldmonitor/supply-chain/v1/_minerals-data.ts';
 
 // The v2 rollout assertions that used to open this file pinned proto field

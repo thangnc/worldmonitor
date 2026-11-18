@@ -73,14 +73,14 @@ import {
   normalizeCountryName,
   selectCiiTrendPriorSnapshot,
 } from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
-import { CII_CLIMATE_ZONE_COUNTRIES } from '../shared/cii-climate-zones.ts';
+import { CII_CLIMATE_ZONE_COUNTRIES } from '../packages/shared/cii-climate-zones.ts';
 import {
   CII_BASELINE_RISK as SHARED_BASELINE_RISK,
   CII_COUNTRY_WEIGHTS,
   CII_EVENT_MULTIPLIER as SHARED_EVENT_MULTIPLIER,
   DEFAULT_CII_BASELINE_RISK,
   DEFAULT_CII_EVENT_MULTIPLIER,
-} from '../shared/cii-weights.ts';
+} from '../packages/shared/cii-weights.ts';
 import { CLIMATE_ZONES } from '../scripts/_climate-zones.mjs';
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
@@ -1686,7 +1686,7 @@ describe('CII scoring', () => {
       assert.ok(Number.isFinite(mult), `${s.region} eventMultiplier should be finite, got ${mult}`);
       assert.ok(mult > 0, `${s.region} eventMultiplier should be > 0, got ${mult}`);
       assert.ok(mult <= 5, `${s.region} eventMultiplier should be <= 5 (sanity), got ${mult}`);
-      assert.equal(mult, expected, `${s.region} eventMultiplier should match shared/cii-weights.ts`);
+      assert.equal(mult, expected, `${s.region} eventMultiplier should match packages/shared/cii-weights.ts`);
     }
   });
 
@@ -1745,23 +1745,23 @@ describe('CII scoring', () => {
   it('server and frontend baseline/multiplier values match shared CII weights for every country', () => {
     const sharedCodes = Object.keys(CII_COUNTRY_WEIGHTS).sort();
     assert.deepEqual(Object.keys(CURATED_COUNTRIES).sort(), sharedCodes,
-      'CURATED_COUNTRIES keys must match shared/cii-weights.ts keys');
+      'CURATED_COUNTRIES keys must match packages/shared/cii-weights.ts keys');
     assert.deepEqual(Object.keys(TIER1_COUNTRIES).sort(), sharedCodes,
-      'frontend TIER1_COUNTRIES keys must match shared/cii-weights.ts keys');
+      'frontend TIER1_COUNTRIES keys must match packages/shared/cii-weights.ts keys');
     assert.deepEqual(Object.keys(SERVER_TIER1_COUNTRIES).sort(), sharedCodes,
-      'server _shared.ts TIER1_COUNTRIES keys must match shared/cii-weights.ts keys (computeCIIScores iterates this map)');
+      'server _shared.ts TIER1_COUNTRIES keys must match packages/shared/cii-weights.ts keys (computeCIIScores iterates this map)');
 
     const scores = computeCIIScores([], emptyAux());
     for (const code of sharedCodes) {
       const expected = CII_COUNTRY_WEIGHTS[code as keyof typeof CII_COUNTRY_WEIGHTS];
       assert.equal(CURATED_COUNTRIES[code]?.baselineRisk, expected.baselineRisk,
-        `${code} frontend baselineRisk should come from shared/cii-weights.ts`);
+        `${code} frontend baselineRisk should come from packages/shared/cii-weights.ts`);
       assert.equal(CURATED_COUNTRIES[code]?.eventMultiplier, expected.eventMultiplier,
-        `${code} frontend eventMultiplier should come from shared/cii-weights.ts`);
+        `${code} frontend eventMultiplier should come from packages/shared/cii-weights.ts`);
       assert.equal(BASELINE_RISK[code], expected.baselineRisk,
-        `${code} server BASELINE_RISK should come from shared/cii-weights.ts`);
+        `${code} server BASELINE_RISK should come from packages/shared/cii-weights.ts`);
       assert.equal(EVENT_MULTIPLIER[code], expected.eventMultiplier,
-        `${code} server EVENT_MULTIPLIER should come from shared/cii-weights.ts`);
+        `${code} server EVENT_MULTIPLIER should come from packages/shared/cii-weights.ts`);
       assert.equal(SHARED_BASELINE_RISK[code as keyof typeof SHARED_BASELINE_RISK], expected.baselineRisk,
         `${code} shared baseline map should be derived from CII_COUNTRY_WEIGHTS`);
       assert.equal(SHARED_EVENT_MULTIPLIER[code as keyof typeof SHARED_EVENT_MULTIPLIER], expected.eventMultiplier,
@@ -1785,7 +1785,7 @@ describe('CII scoring', () => {
     );
 
     const getRiskScoresSource = readRepoFile('server/worldmonitor/intelligence/v1/get-risk-scores.ts');
-    const climateZoneSource = readRepoFile('shared/cii-climate-zones.ts');
+    const climateZoneSource = readRepoFile('packages/shared/cii-climate-zones.ts');
     const scoreFormulaLiterals = extractScoreFormulaLiterals(getRiskScoresSource);
     const scoreHelperInputs = extractScoreHelperInputSnapshot(getRiskScoresSource, climateZoneSource);
     assertFormulaLiteralCovered(scoreFormulaLiterals, 'climateSeverityScore', 5, 'return 5');
@@ -2627,7 +2627,7 @@ describe('CII scoring', () => {
         relPath: 'server/_shared/cache-keys.ts',
         expectedKeys: [expectedLiveKey, expectedStaleKey, expectedTrendPrefix],
       },
-      { relPath: 'shared/bootstrap-tier-keys.js', expectedKeys: [expectedStaleKey] },
+      { relPath: 'packages/shared/bootstrap-tier-keys.js', expectedKeys: [expectedStaleKey] },
       { relPath: 'api/bootstrap.js', expectedRefs: ['BOOTSTRAP_CACHE_KEYS'] },
       { relPath: 'api/health.js', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale', 'CII_RISK_SCORE_CACHE_KEYS.live'] },
       { relPath: 'server/worldmonitor/intelligence/v1/chat-analyst-context.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
@@ -2640,7 +2640,7 @@ describe('CII scoring', () => {
       { relPath: 'scripts/regional-snapshot/trigger-evaluator.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'tests/regional-snapshot.test.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'scripts/shipping-webhook-worker.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.live', 'CII_RISK_SCORE_CACHE_KEYS.stale'] },
-      { relPath: 'shared/event-triggers.json', expectedKeys: [expectedLiveKey, expectedStaleKey] },
+      { relPath: 'packages/shared/event-triggers.json', expectedKeys: [expectedLiveKey, expectedStaleKey] },
     ];
 
     const violations: string[] = [];

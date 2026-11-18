@@ -22,7 +22,7 @@ import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sortRec, serialize, eq, normalizeKey } from './lib/openapi-codegen.mjs';
-import { EMERGENCY_CODES } from '../shared/aircraft-emergencies.ts';
+import { EMERGENCY_CODES } from '../packages/shared/aircraft-emergencies.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const apiDir = resolve(root, 'packages/contracts/openapi');
@@ -76,7 +76,7 @@ const GIVING_PUBLISHED_ESTIMATE_CLAIMS = JSON.parse(
 // carries the canonical 'suez' id — use it as the drift-anchored source.
 const CHOKEPOINT_EXAMPLE_ID = (() => {
   try {
-    const contract = JSON.parse(readRepoText('shared/openapi-filter-param-contracts.json'));
+    const contract = JSON.parse(readRepoText('packages/shared/openapi-filter-param-contracts.json'));
     const ids = Array.isArray(contract.intelligenceChokepointIds) ? contract.intelligenceChokepointIds : [];
     return ids.includes('suez') ? 'suez' : (ids[0] ?? 'suez');
   } catch {
@@ -129,7 +129,7 @@ const ICAO24_EXAMPLE = 'a835af';
 // GetTemporalBaseline enum example.
 const BASELINE_TYPE_EXAMPLE_ID = (() => {
   try {
-    const contract = JSON.parse(readRepoText('shared/openapi-filter-param-contracts.json'));
+    const contract = JSON.parse(readRepoText('packages/shared/openapi-filter-param-contracts.json'));
     const ids = Array.isArray(contract.infrastructureTemporalBaselineTypes) ? contract.infrastructureTemporalBaselineTypes : [];
     return ids.includes('military_flights') ? 'military_flights' : (ids[0] ?? 'military_flights');
   } catch {
@@ -223,7 +223,7 @@ function isCuratedOmission(key, context = {}) {
 function overrideStringExample(key, context = {}) {
   const where = `${context.operationId ?? ''} ${context.path ?? ''}`.toLowerCase();
   if (key === 'jmespath') return 'keys(@)';
-  // Shipping v2 webhooks: eventType is a registry key (shared/event-triggers.json)
+  // Shipping v2 webhooks: eventType is a registry key (packages/shared/event-triggers.json)
   // and countries holds monitored ISO2 codes; the heuristic's "all" / "example"
   // are rejected by registerWebhook.
   if (where.includes('registerwebhook') || where.includes('listwebhooks') || where.includes('/api/v2/shipping/webhooks')) {

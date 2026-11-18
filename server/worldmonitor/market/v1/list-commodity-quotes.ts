@@ -4,7 +4,7 @@
  *
  * Contract (narrowed, see #6307):
  *   - Empty `symbols` returns the full configured default commodity set.
- *   - Only symbols in the configured commodity set (shared/commodities.json)
+ *   - Only symbols in the configured commodity set (packages/shared/commodities.json)
  *     are supported. Requesting an unsupported symbol returns HTTP 400.
  *   - Symbols are normalized (trim, de-whitespace, upper), deduplicated, and
  *     capped before the seed read. Results preserve seed/bootstrap order.
@@ -20,7 +20,7 @@ import { ValidationError } from '../../../../packages/contracts/generated/server
 import { parseStringArray } from './_shared';
 import { getCachedJson } from '../../../_shared/redis';
 import { markNoStoreFallbackResponse } from '../../../_shared/response-headers';
-import commodityConfig from '../../../../shared/commodities.json';
+import commodityConfig from '../../../../packages/shared/commodities.json';
 
 const BOOTSTRAP_KEY = 'market:commodities-bootstrap:v1';
 const MAX_SYMBOLS = 64;

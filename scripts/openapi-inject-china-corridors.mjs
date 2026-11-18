@@ -561,7 +561,7 @@ function responseExample() {
       },
     },
   ];
-  // The production parser (shared/china-corridor-control-towers.ts) accepts a
+  // The production parser (packages/shared/china-corridor-control-towers.ts) accepts a
   // payload only with every reviewed corridor and every signal family on each,
   // so the example keeps all four. Two corridors carry the full observed port
   // condition (signal plus provenance); the other two take the all-unavailable

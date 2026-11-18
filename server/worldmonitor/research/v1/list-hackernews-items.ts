@@ -9,7 +9,7 @@ import type {
   ListHackernewsItemsResponse,
 } from '../../../../packages/contracts/generated/server/worldmonitor/research/v1/service_server';
 
-import filterParamContracts from '../../../../shared/openapi-filter-param-contracts.json';
+import filterParamContracts from '../../../../packages/shared/openapi-filter-param-contracts.json';
 import { resolvePageSize } from '../../../_shared/constants';
 import { getCachedJson } from '../../../_shared/redis';
 import { markNoStoreFallbackResponse } from '../../../_shared/response-headers';

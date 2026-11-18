@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { __testing__ as healthTesting } from '../api/health.js';
 import { readChinaDecisionSignalWireContract } from '../scripts/lib/openapi-codegen.mjs';
 import { validateChinaDecisionSignalSnapshot } from '../scripts/seed-china-decision-signals.mjs';
-import { CHINA_DECISION_SIGNAL_GROUP_MANIFEST } from '../shared/china-decision-signal-manifest.ts';
+import { CHINA_DECISION_SIGNAL_GROUP_MANIFEST } from '../packages/shared/china-decision-signal-manifest.ts';
 import {
   CHINA_DECISION_PARITY_MANIFEST,
   CHINA_DECISION_PARITY_USER_AGENT,

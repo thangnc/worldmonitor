@@ -9,9 +9,9 @@
  * from the UI. This serves the same result from the same rules.
  *
  * Rule ownership, none of it re-implemented here:
- *   country matching   shared/country-headline-match.ts
- *   threat labelling   shared/threat-keyword-classifier.ts
- *   clustering/expiry  shared/country-timeline-events.ts
+ *   country matching   packages/shared/country-headline-match.ts
+ *   threat labelling   packages/shared/threat-keyword-classifier.ts
+ *   clustering/expiry  packages/shared/country-timeline-events.ts
  *   coverage fetch     ./_country-coverage-feeds.ts (mirrors src/services/country-coverage.ts)
  *   structured records ./_country-coverage-structured.ts
  *
@@ -29,16 +29,16 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import type { ThreatLevel as ProtoThreatLevel } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
-import type { ThreatLevel as SharedThreatLevel } from '../../../../shared/threat-keyword-classifier';
+import type { ThreatLevel as SharedThreatLevel } from '../../../../packages/shared/threat-keyword-classifier';
 
 import { TIER1_COUNTRIES } from '../../../../src/config/countries';
-import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
-import { countryDisplayName } from '../../../../shared/country-mention.js';
-import { getCountrySearchTerms } from '../../../../shared/country-headline-match';
+import { isAssignedCountryCode } from '../../../../packages/shared/country-code-resolve';
+import { countryDisplayName } from '../../../../packages/shared/country-mention.js';
+import { getCountrySearchTerms } from '../../../../packages/shared/country-headline-match';
 import {
   reconcileCountryTimelineIncidents,
   type CountryTimelineIncident,
-} from '../../../../shared/country-timeline-events';
+} from '../../../../packages/shared/country-timeline-events';
 import { fetchCountryCoverageFeeds } from './_country-coverage-feeds';
 import {
   collectStructuredIncidents,

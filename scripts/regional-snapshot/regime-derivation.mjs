@@ -4,8 +4,8 @@
 // Pure function: takes a balance vector, returns a regime label.
 
 /**
- * @param {import('../../shared/regions.types.js').BalanceVector} balance
- * @returns {import('../../shared/regions.types.js').RegimeLabel}
+ * @param {import('../../packages/shared/regions.types.js').BalanceVector} balance
+ * @returns {import('../../packages/shared/regions.types.js').RegimeLabel}
  */
 export function deriveRegime(balance) {
   const coercive = balance.coercive_pressure;
@@ -23,10 +23,10 @@ export function deriveRegime(balance) {
 /**
  * Build a RegimeState by comparing the new balance to a previous regime label.
  *
- * @param {import('../../shared/regions.types.js').BalanceVector} balance
- * @param {import('../../shared/regions.types.js').RegimeLabel | ''} previousLabel
+ * @param {import('../../packages/shared/regions.types.js').BalanceVector} balance
+ * @param {import('../../packages/shared/regions.types.js').RegimeLabel | ''} previousLabel
  * @param {string} transitionDriver
- * @returns {import('../../shared/regions.types.js').RegimeState}
+ * @returns {import('../../packages/shared/regions.types.js').RegimeState}
  */
 export function buildRegimeState(balance, previousLabel, transitionDriver = '') {
   const label = deriveRegime(balance);

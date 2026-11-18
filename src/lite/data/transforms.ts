@@ -6,11 +6,11 @@
  * presented as a confirmed fact (docs/engineering/architecture/lite.md, "Lite UI").
  */
 import type { ListFeedDigestResponse, NewsItem } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
-import { getSourceType } from '../../../shared/source-provenance';
-import { MIN_CORROBORATING_PUBLISHERS } from '../../../shared/publisher-families.js';
+import { getSourceType } from '@wm/shared/source-provenance';
+import { MIN_CORROBORATING_PUBLISHERS } from '@wm/shared/publisher-families.js';
 import { getSourceTier } from '../../../server/_shared/source-tiers';
 import { assessCorroboration, evidenceFromItem, type Corroboration } from '../../../server/_shared/corroboration';
-import { SIMILARITY_THRESHOLD, jaccardSimilarity, tokenize } from '../../../shared/text-analysis-core.js';
+import { SIMILARITY_THRESHOLD, jaccardSimilarity, tokenize } from '@wm/shared/text-analysis-core.js';
 
 export type Tone = 'crit' | 'high' | 'elev' | 'ok' | 'muted' | 'dim';
 
@@ -38,7 +38,7 @@ export function digestItems(digest: ListFeedDigestResponse | null | undefined, c
 /**
  * Drops near-duplicate headlines: one story filed under several buckets, or
  * rewritten by several outlets. Uses the dashboard's own title similarity
- * (Jaccard over tokens, shared/text-analysis-core.js). Input order decides
+ * (Jaccard over tokens, packages/shared/text-analysis-core.js). Input order decides
  * which copy survives, so sort first.
  */
 export function dropNearDuplicates<T extends { title: string }>(items: readonly T[]): T[] {
@@ -63,7 +63,7 @@ export function sourceCount(item: NewsItem): number {
   return Math.max(1, item.storyMeta?.sourceCount ?? 0, item.corroborationCount ?? 0);
 }
 
-/** Tier 1 in shared/source-tiers.json: wires, official bodies, and some major outlets and public broadcasters. */
+/** Tier 1 in packages/shared/source-tiers.json: wires, official bodies, and some major outlets and public broadcasters. */
 export function isPrimarySource(sourceName: string): boolean {
   return getSourceTier(sourceName) === 1;
 }
@@ -179,7 +179,7 @@ export function evidenceClassOf(sourceName: string): (typeof EVIDENCE_CLASSES)[n
   return 'other';
 }
 
-/** Share of reports per source class, from shared/source-provenance.ts types and source tiers. */
+/** Share of reports per source class, from packages/shared/source-provenance.ts types and source tiers. */
 export function evidenceMix(items: readonly NewsItem[]): EvidenceClass[] {
   const counts = new Map<string, number>();
   for (const item of items) {

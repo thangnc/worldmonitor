@@ -4,7 +4,7 @@
  * src/utils/analysis-constants.ts, which re-exports from here — that file
  * cannot be imported server-side because it also pulls in @/services/i18n.
  *
- * Dependency-free ESM (shared/story-identity.js pattern). Types in
+ * Dependency-free ESM (packages/shared/story-identity.js pattern). Types in
  * text-analysis-core.d.ts.
  */
 

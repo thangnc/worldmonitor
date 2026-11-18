@@ -7,7 +7,7 @@ import type {
 import { ApiError } from '../../../../packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server';
 import { getCachedJson, setCachedJson } from '../../../_shared/redis';
 import { checkScopedRateLimit } from '../../../_shared/rate-limit';
-import { geocodeCacheKey } from '../../../../shared/geocode-cache-key.js';
+import { geocodeCacheKey } from '../../../../packages/shared/geocode-cache-key.js';
 
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org/reverse';
 const CHROME_UA = 'WorldMonitor/2.0 (https://worldmonitor.app)';

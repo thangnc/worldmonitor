@@ -142,19 +142,19 @@ function commitSha() {
 }
 
 async function loadCountryNameMap() {
-  const filePath = path.join(REPO_ROOT, 'shared', 'country-names.json');
+  const filePath = path.join(REPO_ROOT, 'packages', 'shared', 'country-names.json');
   let raw;
   try {
     raw = await fs.readFile(filePath, 'utf8');
   } catch (err) {
-    console.error(`[audit] shared/country-names.json read failed (${err.code || err.name}): ${err.message}. Falling back to ISO-2 codes in the report (country names will appear as CC).`);
+    console.error(`[audit] packages/shared/country-names.json read failed (${err.code || err.name}): ${err.message}. Falling back to ISO-2 codes in the report (country names will appear as CC).`);
     return {};
   }
   let forward;
   try {
     forward = JSON.parse(raw);
   } catch (err) {
-    console.error(`[audit] shared/country-names.json parse failed: ${err.message}. Falling back to ISO-2 codes.`);
+    console.error(`[audit] packages/shared/country-names.json parse failed: ${err.message}. Falling back to ISO-2 codes.`);
     return {};
   }
   const reverse = {};

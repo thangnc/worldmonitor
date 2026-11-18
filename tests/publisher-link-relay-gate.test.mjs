@@ -1,6 +1,6 @@
 // #8398: the relay-side publisher-link gate duplicates the curated family
 // domain table (CJS, dependency-free — the relay boots on require) and the
-// shared link predicate (shared/publisher-link-gate.js). This pins both the
+// shared link predicate (packages/shared/publisher-link-gate.js). This pins both the
 // behavioral contract and the table sync.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -47,10 +47,10 @@ describe('publisher-link relay gate (#8398)', () => {
     assert.equal(gateRelayStoryLink('javascript:alert(1)', 'reuters'), '');
   });
 
-  it('stays in sync with PUBLISHER_FAMILY_DOMAINS in shared/publisher-families.js', () => {
-    const src = readFileSync(new URL('../shared/publisher-families.js', import.meta.url), 'utf8');
+  it('stays in sync with PUBLISHER_FAMILY_DOMAINS in packages/shared/publisher-families.js', () => {
+    const src = readFileSync(new URL('../packages/shared/publisher-families.js', import.meta.url), 'utf8');
     const tableMatch = src.match(/const PUBLISHER_FAMILY_DOMAINS = Object\.freeze\(\{([\s\S]*?)\n\}\);/);
-    assert.ok(tableMatch, 'curated domain table found in shared/publisher-families.js');
+    assert.ok(tableMatch, 'curated domain table found in packages/shared/publisher-families.js');
     const sharedTable = {};
     for (const [, family, domains] of tableMatch[1].matchAll(/'([^']+)': \[([^\]]*)\]/g)) {
       sharedTable[family] = domains.split(',').map(s => s.trim().replace(/^'|'$/g, '')).filter(Boolean);
@@ -79,9 +79,9 @@ describe('publisher-link relay gate (#8398)', () => {
     // ingest allows it — a silent divergence. Parse both tables from the
     // shared source and require full label coverage.
     const relay = require('../scripts/lib/publisher-link-relay-gate.cjs');
-    const src = readFileSync(new URL('../shared/publisher-families.js', import.meta.url), 'utf8');
+    const src = readFileSync(new URL('../packages/shared/publisher-families.js', import.meta.url), 'utf8');
     const dataMatch = src.match(/const PUBLISHER_FAMILY_DATA = \{([\s\S]*?)\n\};/);
-    assert.ok(dataMatch, 'curated family data found in shared/publisher-families.js');
+    assert.ok(dataMatch, 'curated family data found in packages/shared/publisher-families.js');
     // Simpler: extract family ids that have a domain-table entry.
     const tableMatch = src.match(/const PUBLISHER_FAMILY_DOMAINS = Object\.freeze\(\{([\s\S]*?)\n\}\);/);
     const familiesWithDomains = new Set(
@@ -114,7 +114,7 @@ describe('publisher-link relay gate (#8398)', () => {
   });
 
   it('matches the shared predicate on sampled cases', async () => {
-    const shared = await import('../shared/publisher-link-gate.js');
+    const shared = await import('../packages/shared/publisher-link-gate.js');
     const cases = [
       ['https://www.bbc.co.uk/news/x', ['bbc.co.uk'], true],
       ['https://evilbbc.co.uk/x', ['bbc.co.uk'], false],

@@ -8,12 +8,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
 
 // The Railway "derived-signals" seed bundle deploys with rootDirectory=scripts,
-// which means the repo-root `shared/` folder is NOT present in the container.
-// Scripts that need shared/* assets at runtime must import them from
+// which means the repo-root `packages/shared/` folder is NOT present in the container.
+// Scripts that need packages/shared/* assets at runtime must import them from
 // `scripts/shared/*` instead. `scripts/shared/*` is a byte-for-byte mirror
-// of the subset of `shared/*` used by the Railway seeders.
+// of the subset of `packages/shared/*` used by the Railway seeders.
 //
-// This test locks the mirror so a drift between `shared/X` and
+// This test locks the mirror so a drift between `packages/shared/X` and
 // `scripts/shared/X` cannot slip through code review. When adding new
 // mirrored files, append them to MIRRORED_FILES.
 
@@ -51,16 +51,16 @@ const MIRRORED_FILES = [
   'event-triggers.json',
 ];
 
-describe('scripts/shared/ mirrors shared/', () => {
+describe('scripts/shared/ mirrors packages/shared/', () => {
   for (const relPath of MIRRORED_FILES) {
-    it(`${relPath} is identical between shared/ and scripts/shared/`, () => {
-      const canonical = readFileSync(join(repoRoot, 'shared', relPath), 'utf-8');
+    it(`${relPath} is identical between packages/shared/ and scripts/shared/`, () => {
+      const canonical = readFileSync(join(repoRoot, 'packages', 'shared', relPath), 'utf-8');
       const mirror = readFileSync(join(repoRoot, 'scripts', 'shared', relPath), 'utf-8');
       assert.equal(
         mirror,
         canonical,
-        `scripts/shared/${relPath} drifted from shared/${relPath}. ` +
-          `Run: cp shared/${relPath} scripts/shared/${relPath}`,
+        `scripts/shared/${relPath} drifted from packages/shared/${relPath}. ` +
+          `Run: cp packages/shared/${relPath} scripts/shared/${relPath}`,
       );
     });
   }

@@ -4,8 +4,8 @@
  * fired (and up to an hour after), matched on its subject. The match is a
  * reason to read the story together with the move, never a cause.
  */
-import { ENTITY_REGISTRY } from '../../../shared/entity-registry.js';
-import { escapeRegExp, isCountryHeadline } from '../../../shared/country-headline-match';
+import { ENTITY_REGISTRY } from '@wm/shared/entity-registry.js';
+import { escapeRegExp, isCountryHeadline } from '@wm/shared/country-headline-match';
 import type { Domain } from './briefing';
 import { namedInstruments } from './prices';
 import { corroborationOf, dropNearDuplicates, publisherCount, type LiteItem } from './transforms';
@@ -24,7 +24,7 @@ export interface LinkSubject {
   /** Words that commonly drive the subject: 'Fed', 'CPI', 'depeg'. */
   drivers?: readonly string[];
   countries?: ReadonlyArray<{ name: string; code: string }>;
-  /** `shared/entity-registry.js` ids. */
+  /** `packages/shared/entity-registry.js` ids. */
   entities?: readonly string[];
 }
 

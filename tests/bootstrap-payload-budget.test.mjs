@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { bootstrapTierKeyNames } from '../shared/bootstrap-tier-keys.js';
+import { bootstrapTierKeyNames } from '../packages/shared/bootstrap-tier-keys.js';
 import { buildBootstrapPayloadByteLedger } from '../scripts/publish-bootstrap-tiers.mjs';
 import {
   BOOTSTRAP_PAYLOAD_BUDGET_MANIFEST,

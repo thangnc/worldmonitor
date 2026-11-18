@@ -20,7 +20,7 @@
  * handler caches only definitive not-found and never caches provider errors.
  */
 import { CHROME_UA, finnhubGate } from '../../../_shared/constants';
-import stocksConfig from '../../../../shared/stocks.json';
+import stocksConfig from '../../../../packages/shared/stocks.json';
 
 /** A quote as returned by a provider. Sparklines are seed-only; see `sparkline`. */
 export interface ProviderQuote {

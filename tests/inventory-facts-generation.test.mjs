@@ -34,12 +34,12 @@ function makeInventoryFixture({ malformed = false } = {}) {
     mkdirSync(dirname(join(fixtureRoot, path)), { recursive: true });
     cpSync(join(ROOT, path), join(fixtureRoot, path), { recursive: true, verbatimSymlinks: true });
   }
-  const manifest = readJson('shared/source-attribution-manifest.json');
+  const manifest = readJson('packages/shared/source-attribution-manifest.json');
   const entry = manifest.entries.find((row) => row.observed && row.kind === 'structured');
   assert.ok(entry, 'fixture needs an observed structured source');
   entry.references = [{ path: 'scripts/stale-source.mjs' }];
   if (malformed) entry.kind = 'not-a-source-kind';
-  writeFileSync(join(fixtureRoot, 'shared/source-attribution-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  writeFileSync(join(fixtureRoot, 'packages/shared/source-attribution-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   return fixtureRoot;
 }
 

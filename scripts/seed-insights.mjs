@@ -61,7 +61,7 @@ import {
 } from './_llm-model-timeouts.mjs';
 // Import from the scripts mirror (`scripts/shared/`) — NOT the repo-root
 // `shared/`. Railway services with nixpacks `rootDirectory=scripts` only
-// package files under scripts/; a `../shared/` import resolves to
+// package files under scripts/; a `../packages/shared/` import resolves to
 // `/shared/...` at runtime which is absent in the container and crashes
 // the seeder on startup. The local pattern is the `./shared/geo-extract.mjs`
 // line above. PR #3836 review caught this. See skill

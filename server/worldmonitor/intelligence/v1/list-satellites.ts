@@ -6,7 +6,7 @@ import type {
   Satellite,
 } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { readRequiredSeed } from '../../../_shared/required-seed';
-import { normalizeSatelliteSnapshot } from '../../../../shared/intelligence-snapshots.js';
+import { normalizeSatelliteSnapshot } from '../../../../packages/shared/intelligence-snapshots.js';
 
 const REDIS_KEY = 'intelligence:satellites:tle:v1';
 

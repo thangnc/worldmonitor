@@ -21,7 +21,7 @@ import {
   extractCollectorFailureMetadata,
   isBotFilteredBody,
   WRITE_RECEIPT_FIELDS,
-} from '../shared/collector-failure-metadata.js';
+} from '../packages/shared/collector-failure-metadata.js';
 
 export { extractCollectorFailureMetadata, isBotFilteredBody };
 

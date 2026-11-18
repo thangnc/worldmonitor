@@ -163,7 +163,7 @@ describe('a war-zone chokepoint is not YES by construction (#9033)', () => {
 
   it('still emits every other route at the red boundary of 50', async () => {
     const { CANONICAL_CHOKEPOINTS } = await import('../server/worldmonitor/supply-chain/v1/_chokepoint-ids.ts');
-    const { CHOKEPOINT_THREAT_LEVELS } = await import('../shared/chokepoint-threat-levels.js');
+    const { CHOKEPOINT_THREAT_LEVELS } = await import('../packages/shared/chokepoint-threat-levels.js');
     const { THREAT_LEVEL } = await import('../server/worldmonitor/supply-chain/v1/_scoring.mjs');
     const mismatches = [];
     for (const cp of CANONICAL_CHOKEPOINTS) {

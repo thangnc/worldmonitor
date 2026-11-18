@@ -18,12 +18,12 @@ import {
   type OfflineProviderObservationManifest,
   type OfflinePredictionCheckpoint,
   type OfflineContinuationAuthorization,
-} from '../shared/company-monitoring-offline-predictions.ts';
+} from '../packages/shared/company-monitoring-offline-predictions.ts';
 import {
   compileCompanyMonitoringBlindCorpus,
   computeCompanyMonitoringCurationManifestDigest,
   type CompanyMonitoringCurationManifest,
-} from '../shared/company-monitoring-curation.ts';
+} from '../packages/shared/company-monitoring-curation.ts';
 import {
   asNumber,
   asObject,
@@ -32,7 +32,7 @@ import {
   exactPoissonRateLowerBound,
   syntheticDigest,
   type JsonObject,
-} from '../shared/company-monitoring-evaluation.ts';
+} from '../packages/shared/company-monitoring-evaluation.ts';
 import {
   computeBlindCorpusDigest,
   computeExpansionManifestDigest,
@@ -40,7 +40,7 @@ import {
   computeScoreReportDigest,
   type BlindCorpus,
   type ScoreReport,
-} from '../shared/company-monitoring-blind-evaluation.ts';
+} from '../packages/shared/company-monitoring-blind-evaluation.ts';
 
 const approvedThresholdDigest = '29ce1d431086f3b7a9a955776f0c2c009d87c809f810f32f8b10aef53f8ecfc2';
 const checkpointAuthenticationKey = Buffer.alloc(32, 7).toString('base64');

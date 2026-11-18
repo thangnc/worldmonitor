@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 
 import { __testing__ as healthTesting } from '../api/health.js';
 import { extractBundleSections } from './helpers/bundle-section-parser.mjs';
-import { bootstrapTierKeyNames } from '../shared/bootstrap-tier-keys.js';
+import { bootstrapTierKeyNames } from '../packages/shared/bootstrap-tier-keys.js';
 import { GTA_FIRE_KEY, GTA_POLICE_KEY, GTA_UPDATE_WRITER_ENABLED } from '../scripts/lib/gta-update.mjs';
 import {
   TPS_CALLS_KEY,
@@ -18,7 +18,7 @@ import {
   TPS_MCI_SEMANTIC,
   TPS_MCI_SOURCE,
 } from '../scripts/lib/tps-open-data.mjs';
-import { TORONTO_SAFETY_SOURCES } from '../shared/toronto-safety.js';
+import { TORONTO_SAFETY_SOURCES } from '../packages/shared/toronto-safety.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(join(root, rel), 'utf8');
@@ -63,7 +63,7 @@ describe('Toronto safety qualification wiring (#7012)', () => {
       true,
     );
 
-    const coreSrc = read('shared/toronto-safety.js');
+    const coreSrc = read('packages/shared/toronto-safety.js');
     assert.match(coreSrc, /live_dispatch/);
     assert.match(coreSrc, /reported_occurrence/);
     assert.match(coreSrc, /annual_aggregate/);
@@ -144,7 +144,7 @@ describe('Toronto safety qualification wiring (#7012)', () => {
       assert.equal(onDemand.includes(name), false);
       assert.equal(Object.hasOwn(BOOTSTRAP_KEYS, name), false);
     }
-    const bootstrapSrc = read('shared/bootstrap-tier-keys.js');
+    const bootstrapSrc = read('packages/shared/bootstrap-tier-keys.js');
     assert.equal(SAFETY_HINT.test(bootstrapSrc), false);
   });
 

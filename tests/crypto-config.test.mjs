@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const crypto = require('../shared/crypto.json');
+const crypto = require('../packages/shared/crypto.json');
 
-describe('shared/crypto.json integrity', () => {
+describe('packages/shared/crypto.json integrity', () => {
   it('every id in ids has a meta entry', () => {
     for (const id of crypto.ids) {
       assert.ok(crypto.meta[id], `missing meta for "${id}"`);

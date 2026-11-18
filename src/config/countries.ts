@@ -2,8 +2,8 @@ import {
   DEFAULT_CII_BASELINE_RISK,
   DEFAULT_CII_EVENT_MULTIPLIER,
   getCiiCountryWeight,
-} from '../../shared/cii-weights';
-import type { CiiCountryCode } from '../../shared/cii-weights';
+} from '../../packages/shared/cii-weights';
+import type { CiiCountryCode } from '../../packages/shared/cii-weights';
 
 export interface CuratedCountryConfig {
   name: string;

@@ -41,7 +41,7 @@ function apiClaim(text: string, reviews: ReturnType<typeof review>[]): FactCheck
 
 describe('IFCN allowlist', () => {
   it('is the IFCN verified-signatories list, normalized, with its source recorded', () => {
-    const file = JSON.parse(readFileSync(new URL('../shared/fact-checkers.json', import.meta.url), 'utf8'));
+    const file = JSON.parse(readFileSync(new URL('../packages/shared/fact-checkers.json', import.meta.url), 'utf8'));
     assert.match(file.source, /github\.com\/IFCN\/verified-signatories/);
     assert.match(file.sourceCommit, /^[0-9a-f]{40}$/);
     assert.ok(file.domains.length >= 100, 'the full signatory list, not a hand-picked subset');

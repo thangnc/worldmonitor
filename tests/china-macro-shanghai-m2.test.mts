@@ -8,9 +8,9 @@ import {
   normalizeChinaMacroObservations,
   normalizeChinaMacroPreflight,
   validateChinaMacroAvailabilityBindings,
-} from '../shared/china-macro-normalization';
+} from '../packages/shared/china-macro-normalization';
 import { buildOfficialChinaMacroFixture } from './helpers/china-macro-fixture.mjs';
-import * as shared from '../shared/china-macro-contract.js';
+import * as shared from '../packages/shared/china-macro-contract.js';
 import * as railway from '../scripts/_china-macro-contract.mjs';
 
 const fixture = (name: string) => readFileSync(new URL(`fixtures/china-macro/${name}`, import.meta.url), 'utf8');

@@ -1,8 +1,8 @@
 import type { IntelligenceServiceHandler } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
-import { COUNTRY_SIGNAL_BYTES, COUNTRY_SIGNAL_FAMILIES, projectCountrySignalFamily, unavailableCountrySignal } from '../../../../shared/country-signal-observations';
-import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
-import { countryActivityQueries } from '../../../../shared/country-activity-query';
+import { COUNTRY_SIGNAL_BYTES, COUNTRY_SIGNAL_FAMILIES, projectCountrySignalFamily, unavailableCountrySignal } from '../../../../packages/shared/country-signal-observations';
+import { isAssignedCountryCode } from '../../../../packages/shared/country-code-resolve';
+import { countryActivityQueries } from '../../../../packages/shared/country-activity-query';
 import { listInternetOutages } from '../../infrastructure/v1/list-internet-outages';
 import { listUnrestEvents } from '../../unrest/v1/list-unrest-events';
 import { listFireDetections } from '../../wildfire/v1/list-fire-detections';

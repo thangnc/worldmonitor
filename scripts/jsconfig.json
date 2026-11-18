@@ -15,8 +15,8 @@
     "seed-forecasts.types.d.ts",
     "seed-regional-snapshots.mjs",
     "regional-snapshot/**/*.mjs",
-    "../shared/regions.types.d.ts",
-    "../shared/geography.d.ts"
+    "../packages/shared/regions.types.d.ts",
+    "../packages/shared/geography.d.ts"
   ],
   "exclude": []
 }

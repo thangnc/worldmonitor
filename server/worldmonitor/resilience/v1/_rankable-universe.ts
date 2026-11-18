@@ -29,7 +29,7 @@
 // the rest of the codebase. Vercel's esbuild bundler does NOT
 // support the import-attribute syntax. Sibling modules use the
 // same plain-import shape from scripts/shared/:
-//   `import iso2ToIso3Json from '../../../../shared/iso2-to-iso3.json';`
+//   `import iso2ToIso3Json from '../../../../packages/shared/iso2-to-iso3.json';`
 // (see _dimension-scorers.ts:1-2).
 import sovereignStatus from '../../../../scripts/shared/sovereign-status.json';
 

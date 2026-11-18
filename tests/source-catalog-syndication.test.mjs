@@ -61,8 +61,8 @@ test('FeedBurner declarations require an explicit publisher identity', () => {
 test('catalog feed declarations retain their publisher identity', () => {
   const fixtureRoot = mkdtempSync(join(tmpdir(), 'source-catalog-identity-'));
   try {
-    mkdirSync(join(fixtureRoot, 'shared'), { recursive: true });
-    writeFileSync(join(fixtureRoot, 'shared/news-catalog.json'), JSON.stringify({
+    mkdirSync(join(fixtureRoot, 'packages/shared'), { recursive: true });
+    writeFileSync(join(fixtureRoot, 'packages/shared/news-catalog.json'), JSON.stringify({
       feeds: [{
         name: 'Fast Company',
         url: 'https://feeds.feedburner.com/fastcompany/headlines',
@@ -86,15 +86,15 @@ test('feed declaration parsing works in the dependency-free docs-stats checkout'
     for (const relativePath of [
       'scripts/source-catalog-identity.mjs',
       'scripts/source-origin.mjs',
-      'shared/publisher-families.js',
+      'packages/shared/publisher-families.js',
     ]) {
       const destination = join(fixtureRoot, relativePath);
       mkdirSync(dirname(destination), { recursive: true });
       copyFileSync(join(rootDir, relativePath), destination);
     }
-    mkdirSync(join(fixtureRoot, 'shared'), { recursive: true });
+    mkdirSync(join(fixtureRoot, 'packages/shared'), { recursive: true });
     writeFileSync(join(fixtureRoot, 'package.json'), '{"type":"module"}\n');
-    writeFileSync(join(fixtureRoot, 'shared/news-catalog.json'), JSON.stringify({
+    writeFileSync(join(fixtureRoot, 'packages/shared/news-catalog.json'), JSON.stringify({
       feeds: [{
         name: 'Fast Company',
         url: 'https://feeds.feedburner.com/fastcompany/headlines',

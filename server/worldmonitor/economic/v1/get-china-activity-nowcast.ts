@@ -12,13 +12,13 @@ import {
   type ChinaActivityNowcastResponse,
   type ChinaActivityOfficialObservation,
   type ChinaActivityProxyObservation,
-} from '../../../../shared/china-activity-nowcast';
+} from '../../../../packages/shared/china-activity-nowcast';
 import {
   CHINA_ENERGY_DEMAND_METRIC_KEYS,
   type ChinaCorridorControlTowerResponse,
   type CorridorSourceSignal,
-} from '../../../../shared/china-corridor-control-towers';
-import { chinaMacroObservationDateMs } from '../../../../shared/china-macro-contract.js';
+} from '../../../../packages/shared/china-corridor-control-towers';
+import { chinaMacroObservationDateMs } from '../../../../packages/shared/china-macro-contract.js';
 import {
   CHINA_NO2_COMPOSITE,
   NO2_ACTIVITY_KEY,

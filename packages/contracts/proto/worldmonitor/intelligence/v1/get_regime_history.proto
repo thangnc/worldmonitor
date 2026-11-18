@@ -10,7 +10,7 @@ import "sebuf/http/annotations.proto";
 // scripts/regional-snapshot/regime-history.mjs for the writer that
 // populates the underlying Redis list on every regime change.
 message GetRegimeHistoryRequest {
-  // Display region id (e.g. "mena", "east-asia", "europe"). See shared/geography.js.
+  // Display region id (e.g. "mena", "east-asia", "europe"). See packages/shared/geography.js.
   // Kebab-case: lowercase alphanumeric groups separated by single hyphens, no
   // trailing or consecutive hyphens.
   string region_id = 1 [

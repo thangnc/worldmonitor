@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { lua, lauxlib, lualib, to_luastring, to_jsstring } from 'fengari';
 
-import { DIGEST_LASTGOOD_PUBLISH_SCRIPT } from '../shared/digest-lastgood-publish-script.mjs';
+import { DIGEST_LASTGOOD_PUBLISH_SCRIPT } from '../packages/shared/digest-lastgood-publish-script.mjs';
 import { ATTEMPT_META_TTL_S, LASTGOOD_MAX_AGE_MS, LASTGOOD_TTL_S } from '../server/worldmonitor/news/v1/_lastgood.ts';
 
 const NOW = Date.UTC(2026, 7, 22, 12, 0, 0);

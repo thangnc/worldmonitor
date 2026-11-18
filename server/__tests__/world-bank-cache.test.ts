@@ -10,7 +10,7 @@ import type { ListWorldBankIndicatorsRequest, ServerContext } from '../../packag
 import {
   WORLD_BANK_RPC_USER_AGENT,
   worldBankRpcCacheKey,
-} from '../../shared/world-bank-rpc-cache.js';
+} from '../../packages/shared/world-bank-rpc-cache.js';
 
 const ctx = {} as ServerContext;
 const indicator = 'NY.GDP.MKTP.CD';

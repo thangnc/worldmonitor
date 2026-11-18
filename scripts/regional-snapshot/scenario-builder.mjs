@@ -8,16 +8,16 @@ import { num } from './_helpers.mjs';
 // rootDirectory=scripts so ../../shared/ escapes the deploy root.
 import { REGIONS } from '../shared/geography.js';
 
-/** @type {import('../../shared/regions.types.js').ScenarioHorizon[]} */
+/** @type {import('../../packages/shared/regions.types.js').ScenarioHorizon[]} */
 const HORIZONS = ['24h', '7d', '30d'];
-/** @type {import('../../shared/regions.types.js').ScenarioName[]} */
+/** @type {import('../../packages/shared/regions.types.js').ScenarioName[]} */
 const LANE_NAMES = ['base', 'escalation', 'containment', 'fragmentation'];
 
 /**
  * @param {string} regionId
  * @param {Record<string, any>} sources
- * @param {import('../../shared/regions.types.js').TriggerLadder} triggers
- * @returns {import('../../shared/regions.types.js').ScenarioSet[]}
+ * @param {import('../../packages/shared/regions.types.js').TriggerLadder} triggers
+ * @returns {import('../../packages/shared/regions.types.js').ScenarioSet[]}
  */
 export function buildScenarioSets(regionId, sources, triggers) {
   const region = REGIONS.find((r) => r.id === regionId);

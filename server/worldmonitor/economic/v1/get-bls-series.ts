@@ -14,7 +14,7 @@ import type {
   GetBlsSeriesResponse,
   BlsSeries,
 } from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
-import filterParamContracts from '../../../../shared/openapi-filter-param-contracts.json';
+import filterParamContracts from '../../../../packages/shared/openapi-filter-param-contracts.json';
 import { SeedUnavailableError, readRequiredSeed } from '../../../_shared/required-seed';
 
 const BLS_CANONICAL_KEY = 'bls:series:v1';

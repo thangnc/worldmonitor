@@ -99,7 +99,7 @@ function assessResilienceCacheState(meta) {
 }
 
 // Kept literal, mirroring api/seed-health.js: this Edge function imports only
-// from api/_*.js, so it cannot reach shared/china-decision-signal-manifest.ts.
+// from api/_*.js, so it cannot reach packages/shared/china-decision-signal-manifest.ts.
 // Registry parity across the three literal copies is enforced by
 // scripts/audit-china-decision-parity.mjs.
 const CHINA_DECISION_SIGNAL_GROUP_IDS = Object.freeze([
@@ -1041,7 +1041,7 @@ const SEED_META = {
   // seed-meta:market:stocks fresh and health green while the country caches
   // expired and the RPC silently reverted to per-request Yahoo fetches.
   // #6240: countries whose Yahoo symbol is dead carry `unavailable` in
-  // shared/openapi-filter-param-contracts.json and are not seeded (38 of 45 as
+  // packages/shared/openapi-filter-param-contracts.json and are not seeded (38 of 45 as
   // of 2026-09-13). 30 leaves headroom for 8 transient failures;
   // tests/country-stock-index-health.test.mjs keeps it below the seedable count.
   countryStockIndexes: { key: 'seed-meta:market:country-indexes', maxStaleMin: 30, minRecordCount: 30 },

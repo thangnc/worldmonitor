@@ -14,7 +14,7 @@
  * The label describes coverage, not accuracy: a change to "corroborated" means
  * more publishers carry the story, not that it was confirmed.
  */
-import { publisherFamilyFor } from '../../shared/publisher-families.js';
+import { publisherFamilyFor } from '../../packages/shared/publisher-families.js';
 import {
   assessCorroboration,
   evidenceFromCluster,

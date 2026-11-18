@@ -4,7 +4,7 @@ import type {
   SummarizeArticleResponse,
 } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 
-import filterParamContracts from '../../../../shared/openapi-filter-param-contracts.json';
+import filterParamContracts from '../../../../packages/shared/openapi-filter-param-contracts.json';
 import { CACHE_VERSION } from '../../../../src/utils/summary-cache-key';
 import { getCachedJson } from '../../../_shared/redis';
 import { markNoCacheResponse } from '../../../_shared/response-headers';

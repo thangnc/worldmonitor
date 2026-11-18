@@ -9,7 +9,7 @@
 // The origin probe cannot answer (2): it GETs the bare origin, so a provider
 // that is up but does not serve the configured model ID still looks healthy.
 
-import { getConfiguredLlmHealthProviders } from '../../shared/llm-health-providers.js';
+import { getConfiguredLlmHealthProviders } from '../../packages/shared/llm-health-providers.js';
 
 const PROBE_TIMEOUT_MS = 2_000;
 const CACHE_TTL_MS = 60_000; // re-probe every 60s

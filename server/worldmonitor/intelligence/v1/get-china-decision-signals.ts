@@ -6,7 +6,7 @@ import type {
 import {
   composeChinaDecisionSignals,
   type ChinaDecisionSignalSnapshot,
-} from '../../../../shared/china-decision-signals';
+} from '../../../../packages/shared/china-decision-signals';
 import { getCachedJsonBatch } from '../../../_shared/redis';
 import { getChinaMacroSnapshot } from '../../economic/v1/get-china-macro-snapshot';
 import { getChinaActivityNowcast } from '../../economic/v1/get-china-activity-nowcast';

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { appChunkRuntimeCache, createDashboardPrecache } from '../shared/pwa-precache.ts';
+import { appChunkRuntimeCache, createDashboardPrecache } from '../packages/shared/pwa-precache.ts';
 
 function chunk(fileName, { name = fileName, imports = [], dynamicImports = [], css = [], isEntry = false } = {}) {
   return { type: 'chunk', fileName, name, isEntry, imports, dynamicImports, viteMetadata: { importedCss: new Set(css) } };

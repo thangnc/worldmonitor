@@ -17,7 +17,7 @@ import {
   hasTerminalPunctuation,
   hashBriefStory,
   parseWhyMatters,
-} from '../shared/brief-llm-core.js';
+} from '../packages/shared/brief-llm-core.js';
 
 function nodeHashBriefStory(story) {
   const material = JSON.stringify([
@@ -71,7 +71,7 @@ describe('whyMatters character bounds — shared parser contracts', () => {
   });
 
   it('wires the exported v2 bounds into parseWhyMattersV2', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     assert.equal(WHY_MATTERS_V2_MIN_CHARS, 100);
     assert.equal(WHY_MATTERS_V2_MAX_CHARS, 500);
     assert.equal(parseWhyMattersV2(`${'x'.repeat(WHY_MATTERS_V2_MIN_CHARS - 1)}.`)?.length, WHY_MATTERS_V2_MIN_CHARS);
@@ -251,12 +251,12 @@ describe('parseWhyMatters — pure sentence validator', () => {
 
 describe('parseWhyMattersV2 — multi-sentence, analyst-path only', () => {
   it('lazy-loads', async () => {
-    const mod = await import('../shared/brief-llm-core.js');
+    const mod = await import('../packages/shared/brief-llm-core.js');
     assert.equal(typeof mod.parseWhyMattersV2, 'function');
   });
 
   it('accepts 2–3 sentences totalling 100–500 chars', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     const good =
       "Iran's closure of the Strait of Hormuz on April 21 halts roughly 20% of global seaborne oil. " +
       'The disruption forces an immediate repricing of sovereign risk across Gulf energy exporters. ' +
@@ -266,7 +266,7 @@ describe('parseWhyMattersV2 — multi-sentence, analyst-path only', () => {
   });
 
   it('rejects private forecast percentages regardless of wording, distance, or newlines', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     const privateForecasts = 'WorldMonitor disruption model: Strait closure remains 84% likely.';
     const evasive =
       'WorldMonitor sees shipping pressure rising through the Gulf as insurers reassess the route. ' +
@@ -282,7 +282,7 @@ describe('parseWhyMattersV2 — multi-sentence, analyst-path only', () => {
   });
 
   it('accepts sourced public forecast percentages even when private context has the same value', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     const sourced =
       'NOAA forecasts an 80% chance of above-normal Atlantic hurricane activity this season, according to its public outlook. ' +
       'Ports and carriers are bringing contingency planning forward before peak storm months.';
@@ -297,7 +297,7 @@ describe('parseWhyMattersV2 — multi-sentence, analyst-path only', () => {
   });
 
   it('accepts output percentages that do not match private forecast context', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     const sourced =
       'Reuters reports that the central bank forecasts inflation at 4% next year after the latest policy review. ' +
       'The revised path gives officials more room to hold rates steady while monitoring wage growth.';
@@ -312,7 +312,7 @@ describe('parseWhyMattersV2 — multi-sentence, analyst-path only', () => {
   });
 
   it('rejects a clipped final sentence even when an earlier sentence is complete', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     const clipped =
       'Marine Le Pen\u2019s conviction on appeal leaves her legally eligible for the 2027 presidential election. ' +
       'The ruling reshapes the campaign while leaving debate over democratic norms and';
@@ -320,18 +320,18 @@ describe('parseWhyMattersV2 — multi-sentence, analyst-path only', () => {
   });
 
   it('rejects <100 chars (too terse for the analyst contract)', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     assert.equal(parseWhyMattersV2('Short.'), null);
     assert.equal(parseWhyMattersV2('x'.repeat(99)), null);
   });
 
   it('rejects >500 chars (runaway generation)', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     assert.equal(parseWhyMattersV2('a'.repeat(501)), null);
   });
 
   it('rejects preamble the system prompt banned', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     const cases = [
       'This matters because global energy markets depend on the Strait of Hormuz remaining open for transit and this is therefore a critical development.',
       'The importance of this development cannot be overstated given the potential for cascading economic impacts across multiple regions and industries.',
@@ -347,7 +347,7 @@ describe('parseWhyMattersV2 — multi-sentence, analyst-path only', () => {
   });
 
   it('rejects markdown / leaked section labels the prompt told it to omit', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     const cases = [
       '# Situation\nIran closed the strait on April 21, halting 20% of seaborne oil. Analysis: sovereign risk repricing follows immediately for Gulf exporters.',
       '- Bullet one that should not open the response at all given the plain-prose rule in the system message.\n- Bullet two of the banned response.',
@@ -362,14 +362,14 @@ describe('parseWhyMattersV2 — multi-sentence, analyst-path only', () => {
   });
 
   it('still rejects the stub echo', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     const stub =
       'Story flagged by your sensitivity settings. Open for context. This stub is long enough to clear the 100-char floor but must still be rejected as non-enrichment output.';
     assert.equal(parseWhyMattersV2(stub), null);
   });
 
   it('strips surrounding smart-quotes before validation', async () => {
-    const { parseWhyMattersV2 } = await import('../shared/brief-llm-core.js');
+    const { parseWhyMattersV2 } = await import('../packages/shared/brief-llm-core.js');
     const raw =
       '\u201CIran closed the Strait on April 21, halting 20% of seaborne oil. The disruption forces an immediate repricing of sovereign risk across Gulf exporters.\u201D';
     const out = parseWhyMattersV2(raw);
@@ -380,7 +380,7 @@ describe('parseWhyMattersV2 — multi-sentence, analyst-path only', () => {
 
 describe('validateNoHallucinatedProperNouns — May 19 regression + class', () => {
   it('does not treat sentence-opening connective adverbs as invented names', async () => {
-    const { validateNoHallucinatedProperNouns: validate } = await import('../shared/brief-llm-core.js');
+    const { validateNoHallucinatedProperNouns: validate } = await import('../packages/shared/brief-llm-core.js');
     for (const adverb of ['Simultaneously', 'Concurrently', 'Domestically']) {
       assert.equal(validate(`${adverb}, Finland faces disruption.`, 'Finland faces disruption.', { failClosed: true }).ok, true);
       assert.equal(validate(`${adverb}, Tamar faces disruption.`, 'Finland faces disruption.', { failClosed: true }).ok, false);
@@ -388,7 +388,7 @@ describe('validateNoHallucinatedProperNouns — May 19 regression + class', () =
     }
   });
   it('treats typographic hyphens in the same source name as equivalent', async () => {
-    const { validateNoHallucinatedProperNouns: validate } = await import('../shared/brief-llm-core.js');
+    const { validateNoHallucinatedProperNouns: validate } = await import('../packages/shared/brief-llm-core.js');
     for (const hyphen of ['\u2010', '\u2011']) {
       assert.equal(validate(`The El Niño${hyphen}related flooding continues.`, 'El Niño-related flooding', { failClosed: true }).ok, true);
       assert.equal(validate(`The El Niño${hyphen}related flooding continues.`, 'Tamar operations resume', { failClosed: true }).ok, false);
@@ -397,7 +397,7 @@ describe('validateNoHallucinatedProperNouns — May 19 regression + class', () =
   let validateNoHallucinatedProperNouns;
   let extractProperNounSequences;
   before(async () => {
-    ({ validateNoHallucinatedProperNouns, extractProperNounSequences } = await import('../shared/brief-llm-core.js'));
+    ({ validateNoHallucinatedProperNouns, extractProperNounSequences } = await import('../packages/shared/brief-llm-core.js'));
   });
 
   // Captured fixture: the actual 2026-05-19 LLM hallucination.
@@ -777,7 +777,7 @@ describe('coordinating and is grammar, not a name joiner', () => {
   let validateNoHallucinatedProperNouns;
   let extractProperNounSequences;
   before(async () => {
-    ({ validateNoHallucinatedProperNouns, extractProperNounSequences } = await import('../shared/brief-llm-core.js'));
+    ({ validateNoHallucinatedProperNouns, extractProperNounSequences } = await import('../packages/shared/brief-llm-core.js'));
   });
 
   it('AE1: Ukraine and Russia against separately named headline accepts', () => {
@@ -894,7 +894,7 @@ describe('captured country headline spelling', () => {
 describe('validateNoHallucinatedStatusQualifiers — Sep 20 "former President Trump" regression + class', () => {
   let validate;
   before(async () => {
-    ({ validateNoHallucinatedStatusQualifiers: validate } = await import('../shared/brief-llm-core.js'));
+    ({ validateNoHallucinatedStatusQualifiers: validate } = await import('../packages/shared/brief-llm-core.js'));
   });
 
   const SEP_20_HEADLINE = 'Trump Returns to UN as Iran War Spreads Across Shipping Chokepoints';

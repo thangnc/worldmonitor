@@ -10,9 +10,9 @@ import type {
   GetPriceHistoryResponse,
   PriceSeries,
 } from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
-import commodityConfig from '../../../../shared/commodities.json';
-import stockConfig from '../../../../shared/stocks.json';
-import gulfConfig from '../../../../shared/gulf.json';
+import commodityConfig from '../../../../packages/shared/commodities.json';
+import stockConfig from '../../../../packages/shared/stocks.json';
+import gulfConfig from '../../../../packages/shared/gulf.json';
 import { UPSTREAM_TIMEOUT_MS, type YahooChartResponse } from './_shared';
 import { CHROME_UA, yahooGate } from '../../../_shared/constants';
 import { cachedFetchJson } from '../../../_shared/redis';

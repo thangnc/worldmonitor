@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Offline helper for shared/outlet-profile.json. Collects the evidence the
+ * Offline helper for packages/shared/outlet-profile.json. Collects the evidence the
  * repo already holds about every catalog outlet (hosts, host-derived origin,
  * source-geography locality, declared feed language, state affiliation,
  * publisher family, Telegram region) so a reviewer can tag outlets that have
@@ -16,9 +16,9 @@ import { fileURLToPath } from 'node:url';
 import { loadOutletCatalog } from './lib/outlet-catalog.mjs';
 import { resolveHostOrigin } from './source-origin.mjs';
 import { loadSourceGeography } from './source-catalog-identity.mjs';
-import { publisherFamilyFor } from '../shared/publisher-families.js';
-import { SOURCE_PROPAGANDA_RISK, getSourceType } from '../shared/source-provenance.ts';
-import { TELEGRAM_CHANNEL_TRUST } from '../shared/telegram-channel-trust.ts';
+import { publisherFamilyFor } from '../packages/shared/publisher-families.js';
+import { SOURCE_PROPAGANDA_RISK, getSourceType } from '../packages/shared/source-provenance.ts';
+import { TELEGRAM_CHANNEL_TRUST } from '../packages/shared/telegram-channel-trust.ts';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const includeProfiled = process.argv.includes('--all');
@@ -44,7 +44,7 @@ const telegramRegions = new Map(
     .map((channel) => [channel.handle, channel.region]),
 );
 const telegramByName = new Map(TELEGRAM_CHANNEL_TRUST.map((entry) => [entry.name, entry]));
-const profiles = JSON.parse(readFileSync(join(repoRoot, 'shared/outlet-profile.json'), 'utf8'));
+const profiles = JSON.parse(readFileSync(join(repoRoot, 'packages/shared/outlet-profile.json'), 'utf8'));
 const geography = loadSourceGeography(repoRoot);
 const catalog = await loadOutletCatalog(repoRoot);
 

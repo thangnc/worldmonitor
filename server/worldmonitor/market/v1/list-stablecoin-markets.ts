@@ -26,9 +26,9 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 // The same row shaping the two Railway seeders apply when writing the seed
 // snapshot — a gap coin and a seeded coin sitting in one response must not be
-// labelled on different rules. Thresholds default to shared/stablecoins.json
+// labelled on different rules. Thresholds default to packages/shared/stablecoins.json
 // inside the module. (#6308, #6319)
-import { classifyStablecoin } from '../../../../shared/stablecoin-classifier.cjs';
+import { classifyStablecoin } from '../../../../packages/shared/stablecoin-classifier.cjs';
 import { cachedFetchJson, readCachedJson, setCachedJson } from '../../../_shared/redis';
 import { sha256Hex } from '../../../_shared/hash';
 import {

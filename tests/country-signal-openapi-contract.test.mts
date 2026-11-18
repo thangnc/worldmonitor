@@ -2,7 +2,7 @@ import { it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
-import { countrySignalOutcomeSchema } from '../shared/country-signal-observations';
+import { countrySignalOutcomeSchema } from '../packages/shared/country-signal-observations';
 
 const spec = JSON.parse(readFileSync(new URL('../packages/contracts/openapi/IntelligenceService.openapi.json', import.meta.url), 'utf8'));
 const operation = spec.paths['/api/intelligence/v1/get-country-signal-observations'].get;

@@ -241,7 +241,7 @@ export function buildSnapshotMethodology(methodologyConfig, methodologyMetadata)
 }
 
 async function loadCountryNameMap() {
-  const raw = await fs.readFile(path.join(REPO_ROOT, 'shared', 'country-names.json'), 'utf8');
+  const raw = await fs.readFile(path.join(REPO_ROOT, 'packages', 'shared', 'country-names.json'), 'utf8');
   const forward = JSON.parse(raw);
   // forward: { "albania": "AL", ... }. Build reverse: { "AL": "Albania" }.
   // When multiple names map to the same ISO-2 (e.g. "bahamas" + "bahamas the"),

@@ -7,7 +7,7 @@ import { countryStockIndexKey } from './_country-stock-index.mjs';
  *
  * `scripts/ais-relay.cjs` imports that module for the CN key and the snapshot
  * builder, and it never needs this list. Putting the `readFileSync` there would
- * add `shared/openapi-filter-param-contracts.json` to the relay's Railway
+ * add `packages/shared/openapi-filter-param-contracts.json` to the relay's Railway
  * runtime-dependency closure (tests/railway-watch-path-audit.test.mjs), forcing
  * the always-on relay to redeploy every time an unrelated country entry
  * changes. Seeder-only concerns belong in a seeder-only module.
@@ -50,7 +50,7 @@ export function loadUnavailableCountryStockIndexes() {
 /** Every declared country, serviceable or not, in enum order. */
 export function loadDeclaredCountryStockIndexes() {
   const raw = JSON.parse(
-    readFileSync(new URL('../shared/openapi-filter-param-contracts.json', import.meta.url), 'utf8'),
+    readFileSync(new URL('../packages/shared/openapi-filter-param-contracts.json', import.meta.url), 'utf8'),
   );
   const contracts = raw?.marketCountryStockIndexes;
   if (!contracts || typeof contracts !== 'object') {

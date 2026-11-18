@@ -32,7 +32,7 @@ import { getCachedJsonBatch, readCachedJson } from '../../../_shared/redis';
 import { getOutletProfile } from '../../../_shared/outlet-profile';
 import { filterRevokedUrls } from '../../../_shared/digest-revocations';
 import { markNoCacheResponse } from '../../../_shared/response-headers';
-import { NEWS_POOL_LAYOUT } from '../../../../shared/news-pool-layout.generated';
+import { NEWS_POOL_LAYOUT } from '../../../../packages/shared/news-pool-layout.generated';
 import { classifyStaleSnapshot, isAcceptableDigest } from './_lastgood';
 import { readAcceptedSnapshot, readRevokedUrlSet } from './_lastgood-store';
 import { INTEL_SOURCES, VARIANT_FEEDS } from './_feeds';

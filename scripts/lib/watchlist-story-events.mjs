@@ -3,8 +3,8 @@
 // The digest cron (scripts/seed-digest-notifications.mjs) scans the story
 // accumulator every 30 minutes; this module turns that scan into
 // `watchlist_story_alert` queue events: a story whose title/description
-// mentions a stock ticker (shared/ticker-extract.js — cashtags + company
-// names from shared/stocks.json) AND whose importance score clears the
+// mentions a stock ticker (packages/shared/ticker-extract.js — cashtags + company
+// names from packages/shared/stocks.json) AND whose importance score clears the
 // threshold produces ONE event carrying the extracted tickers. The
 // notification relay fans it out to PRO users whose alert rule opted in
 // AND whose `rule.tickers` intersects `payload.tickers`.
@@ -14,11 +14,11 @@
 // process.exit guards on missing env — so a pure function defined there
 // can't be imported by tests. Same extraction pattern as
 // scripts/lib/brief-compose.mjs et al. Docker: scripts/lib/ is COPY'd
-// recursively by Dockerfile.digest-notifications; shared/ticker-extract.js
+// recursively by Dockerfile.digest-notifications; packages/shared/ticker-extract.js
 // needs its own COPY line (guarded by
 // tests/dockerfile-digest-notifications-imports.test.mjs).
 
-import { extractTickers } from '../../shared/ticker-extract.js';
+import { extractTickers } from '../../packages/shared/ticker-extract.js';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);

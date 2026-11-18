@@ -6,9 +6,9 @@ import { resolve } from 'node:path';
 import { normalizeCountryToken, createCountryResolvers, resolveIso2, isIso2, isIso3 } from '../scripts/_country-resolver.mjs';
 
 const root = resolve(import.meta.dirname, '..');
-const countryNames = JSON.parse(readFileSync(resolve(root, 'shared/country-names.json'), 'utf8'));
-const iso3ToIso2 = JSON.parse(readFileSync(resolve(root, 'shared/iso3-to-iso2.json'), 'utf8'));
-const iso2ToIso3 = JSON.parse(readFileSync(resolve(root, 'shared/iso2-to-iso3.json'), 'utf8'));
+const countryNames = JSON.parse(readFileSync(resolve(root, 'packages/shared/country-names.json'), 'utf8'));
+const iso3ToIso2 = JSON.parse(readFileSync(resolve(root, 'packages/shared/iso3-to-iso2.json'), 'utf8'));
+const iso2ToIso3 = JSON.parse(readFileSync(resolve(root, 'packages/shared/iso2-to-iso3.json'), 'utf8'));
 
 describe('country-names.json structural validation', () => {
   it('every key equals normalizeCountryToken(key)', () => {

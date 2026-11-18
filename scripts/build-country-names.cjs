@@ -4,7 +4,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const geojsonPath = path.join(root, 'public', 'data', 'countries.geojson');
-const existingPath = path.join(root, 'shared', 'country-names.json');
+const existingPath = path.join(root, 'packages', 'shared', 'country-names.json');
 
 const existing = JSON.parse(fs.readFileSync(existingPath, 'utf8'));
 const result = Object.assign({}, existing);

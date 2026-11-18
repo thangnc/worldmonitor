@@ -4,7 +4,7 @@
  * so the server-side get_news_clusters MCP tool produces the same clusters
  * agents see in the dashboard (issue #5697).
  *
- * NOTE: shared/story-identity.js hosts the OTHER shared similarity
+ * NOTE: packages/shared/story-identity.js hosts the OTHER shared similarity
  * implementation (cosine over token vectors, used by the server digest dedup
  * and seeders). This module deliberately mirrors the CLIENT's clustering so
  * MCP output matches the UI; do not merge the two without deciding which

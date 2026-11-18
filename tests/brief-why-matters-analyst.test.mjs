@@ -16,14 +16,14 @@ import { generateWhyMatters } from '../scripts/lib/brief-llm.mjs';
 import {
   hashBriefStory,
   parseWhyMattersV2,
-} from '../shared/brief-llm-core.js';
+} from '../packages/shared/brief-llm-core.js';
 
 const ANALYST_MAX_TOKEN_CLIP =
   'Marine Le Pen\u2019s conviction on appeal leaves her legally eligible for the 2027 presidential election. ' +
   'The ruling reshapes the campaign while leaving debate over democratic norms and';
 
 // ── Story fixture matching the cron's actual payload shape
-// (shared/brief-filter.js:134-135). ────────────────────────────────────
+// (packages/shared/brief-filter.js:134-135). ────────────────────────────────────
 
 function story(overrides = {}) {
   return {
@@ -49,7 +49,7 @@ describe('normalizeCountryToIso2', () => {
       const mod = await import('../server/_shared/country-normalize.ts');
       normalize = mod.normalizeCountryToIso2;
     } catch {
-      const { default: COUNTRY_NAMES } = await import('../shared/country-names.json', {
+      const { default: COUNTRY_NAMES } = await import('../packages/shared/country-names.json', {
         with: { type: 'json' },
       });
       const ISO2_SET = new Set(Object.values(COUNTRY_NAMES));

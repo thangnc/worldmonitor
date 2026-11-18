@@ -9,8 +9,8 @@
 import { isDesktopRuntime } from '@/services/desktop-runtime';
 import { isIosLikeUserAgent } from './platform-ua';
 import { SENTRY_ALLOW_URLS } from './sentry-allow-urls';
-import { getSentryBuildMetadata, isolateNonProductionSentryEvent } from '../../shared/sentry-build-metadata';
-import { scrubSentryCredentials } from '../../shared/sensitive-url-params';
+import { getSentryBuildMetadata, isolateNonProductionSentryEvent } from '@wm/shared/sentry-build-metadata';
+import { scrubSentryCredentials } from '@wm/shared/sensitive-url-params';
 
 declare global {
   /**
@@ -19,7 +19,7 @@ declare global {
    * 0 (entirely node_modules). Absent in dev/serve and for any chunk that has
    * not evaluated yet, which is why `firstPartyFile` treats a miss as "unknown"
    * and falls back to the legacy name regex. Name pinned to
-   * `CHUNK_OWNERSHIP_GLOBAL` in shared/chunk-ownership.ts by a source test.
+   * `CHUNK_OWNERSHIP_GLOBAL` in packages/shared/chunk-ownership.ts by a source test.
    */
   // eslint-disable-next-line no-var
   var __WM_CHUNK_OWNERSHIP__: Record<string, number> | undefined;
@@ -519,7 +519,7 @@ function buildSentryInitOptions(): Parameters<SentryNs['init']>[0] {
       // Keep this lookup INLINE. `tests/sentry-beforesend.test.mjs` evaluates
       // this function body with a fixed `new Function` parameter list, so an
       // imported helper would be an unbound free identifier there. The global's
-      // name is pinned against shared/chunk-ownership.ts by a source test.
+      // name is pinned against packages/shared/chunk-ownership.ts by a source test.
       const chunkOwnership = globalThis.__WM_CHUNK_OWNERSHIP__;
       const firstPartyFile = (filename: string) => {
         if (/\.(ts|tsx)$/.test(filename) || /^src\//.test(filename)) return true;

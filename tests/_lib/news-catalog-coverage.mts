@@ -1,4 +1,4 @@
-// Coverage rules for shared/news-catalog.json: every source the browser can
+// Coverage rules for packages/shared/news-catalog.json: every source the browser can
 // show must be fetched by a digest the server builds, and every language the
 // catalog uses must be a digest language. Pure functions so tests can feed
 // fixtures as well as the real catalog.

@@ -2,10 +2,10 @@
 /**
  * Geographic coverage health audit (#5957, epic #5948).
  *
- * Compares the strategic keyCountries declared in shared/geography.js against
+ * Compares the strategic keyCountries declared in packages/shared/geography.js against
  * the feed catalog (src/config/feeds.ts FULL_FEEDS + INTEL_SOURCES) using the
- * curated source→country map in shared/source-geography.json, and enforces
- * the policy in shared/geo-coverage-policy.json:
+ * curated source→country map in packages/shared/source-geography.json, and enforces
+ * the policy in packages/shared/geo-coverage-policy.json:
  *
  *   - strategic floors: minimum globally default-on local sources per keyCountry
  *   - zeroDefaultOnAllowlist: exact set of keyCountries allowed to have zero
@@ -130,16 +130,16 @@ export function getGloballyDefaultEnabledSources(feeds) {
 export async function loadGeoCoverageInputs(repoRoot = DEFAULT_REPO_ROOT, paths = {}) {
   const sourceGeographyPath = paths.sourceGeographyPath
     ?? process.env.GEO_COVERAGE_SOURCE_GEOGRAPHY_PATH
-    ?? join(repoRoot, 'shared/source-geography.json');
+    ?? join(repoRoot, 'packages/shared/source-geography.json');
   const policyPath = paths.policyPath
     ?? process.env.GEO_COVERAGE_POLICY_PATH
-    ?? join(repoRoot, 'shared/geo-coverage-policy.json');
+    ?? join(repoRoot, 'packages/shared/geo-coverage-policy.json');
 
   const [{ REGIONS }, sourceGeographyDoc, policy, iso2ToRegion] = await Promise.all([
-    import(pathToFileURL(join(repoRoot, 'shared/geography.js')).href),
+    import(pathToFileURL(join(repoRoot, 'packages/shared/geography.js')).href),
     readJson(sourceGeographyPath),
     readJson(policyPath),
-    readJson(join(repoRoot, 'shared/iso2-to-region.json')),
+    readJson(join(repoRoot, 'packages/shared/iso2-to-region.json')),
   ]);
   const { feeds, cleanup } = await bundleFeedsModule(repoRoot);
 
@@ -254,7 +254,7 @@ export function validateGeoCoveragePolicy({ policy, keyCountries }) {
     for (const iso2 of Object.keys(values)) {
       if (!known.has(iso2)) {
         problems.push(
-          `geo-coverage-policy.json: ${section} key "${iso2}" is not a keyCountry in shared/geography.js`,
+          `geo-coverage-policy.json: ${section} key "${iso2}" is not a keyCountry in packages/shared/geography.js`,
         );
       }
     }
@@ -306,19 +306,19 @@ export function evaluateGeoCoverage(rows) {
       row.status = 'FLOOR-BREACH';
       violations.push(
         `${row.iso2}: ${onCount} default-on local source(s), below floor ${row.floor} — ` +
-        'restore coverage or lower the floor in shared/geo-coverage-policy.json with a documented reason',
+        'restore coverage or lower the floor in packages/shared/geo-coverage-policy.json with a documented reason',
       );
     } else if (onCount === 0 && !row.allowlistReason) {
       row.status = 'GAP-UNDOCUMENTED';
       violations.push(
         `${row.iso2}: zero default-on local sources and no allowlist entry — ` +
-        'add local coverage or document the exception in shared/geo-coverage-policy.json',
+        'add local coverage or document the exception in packages/shared/geo-coverage-policy.json',
       );
     } else if (onCount > 0 && row.allowlistReason) {
       row.status = 'ALLOWLIST-STALE';
       violations.push(
         `${row.iso2}: now has ${onCount} default-on local source(s) — ` +
-        'remove the stale entry from zeroDefaultOnAllowlist in shared/geo-coverage-policy.json',
+        'remove the stale entry from zeroDefaultOnAllowlist in packages/shared/geo-coverage-policy.json',
       );
     } else {
       row.status = onCount === 0 ? 'ALLOWLISTED' : 'OK';
@@ -357,7 +357,7 @@ export function formatGeoCoverageHuman({ rows, regions, violations, catalogSize,
     }
     lines.push('');
   }
-  lines.push('* = globally default-on. Floors and the zero-default-on allowlist live in shared/geo-coverage-policy.json.');
+  lines.push('* = globally default-on. Floors and the zero-default-on allowlist live in packages/shared/geo-coverage-policy.json.');
   lines.push('');
   if (violations.length > 0) {
     lines.push(`VIOLATIONS (${violations.length}):`);

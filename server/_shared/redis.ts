@@ -1,4 +1,4 @@
-import { COMPARE_AND_DELETE_SCRIPT } from '../../shared/compare-and-delete-script.cjs';
+import { COMPARE_AND_DELETE_SCRIPT } from '../../packages/shared/compare-and-delete-script.cjs';
 import { unwrapEnvelope } from './seed-envelope.js';
 import { getRpcNoStoreReasonFromPayload } from './cache-contract.js';
 import { buildUpstreamEvent, getUsageScope, sendToAxiom } from './usage.js';

@@ -8,7 +8,7 @@
 import type { ListFeedDigestResponse } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 // @ts-expect-error — JS module, no declaration file
 import { captureSilentError } from '../../../../api/_sentry-edge.js';
-import { DIGEST_LASTGOOD_PUBLISH_SCRIPT } from '../../../../shared/digest-lastgood-publish-script.mjs';
+import { DIGEST_LASTGOOD_PUBLISH_SCRIPT } from '../../../../packages/shared/digest-lastgood-publish-script.mjs';
 import {
   readCachedJson,
   runRedisPipeline,

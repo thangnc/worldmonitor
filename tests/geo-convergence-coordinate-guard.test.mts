@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { usableCoord } from '../shared/analysis-adapter-guards.ts';
+import { usableCoord } from '../packages/shared/analysis-adapter-guards.ts';
 
 test('coordinate guard rejects missing, invalid, and Null Island positions', () => {
   assert.equal(usableCoord(null, null), false);

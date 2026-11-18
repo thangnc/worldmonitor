@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { planAgentReadiness, runAgentReadiness } from '../scripts/cloudflare-agent-readiness.mjs';
 import { AGENT_USER_AGENTS, RETIRED_CACHE_RULES, buildCorpusCacheRule } from '../scripts/cloudflare-cache-rule.mjs';
-import policy from '../shared/agent-request-policy.json' with { type: 'json' };
+import policy from '../packages/shared/agent-request-policy.json' with { type: 'json' };
 
 function fixture() {
   return {

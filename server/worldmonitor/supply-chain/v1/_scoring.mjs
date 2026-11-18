@@ -74,7 +74,7 @@ export function riskRating(hhi) {
 
 // Re-exported from shared/ so the AIS relay can load the same implementation:
 // the relay image copies shared/ but not server/ (Dockerfile.relay).
-export { detectTrafficAnomaly } from '../../../../shared/chokepoint-traffic-anomaly.js';
+export { detectTrafficAnomaly } from '../../../../packages/shared/chokepoint-traffic-anomaly.js';
 
 export function detectSpike(history) {
   if (!history || history.length < 3) return false;

@@ -9,7 +9,7 @@ import {
   removeSourceMaps,
   shouldEmitPublicSourceMaps,
   viteSourcemapSetting,
-} from '../shared/source-map-policy.ts';
+} from '../packages/shared/source-map-policy.ts';
 import { findPublicSourceMapLeaks } from '../scripts/check-no-public-source-maps.mjs';
 
 const root = join(import.meta.dirname, '..');
@@ -136,7 +136,7 @@ describe('check-no-public-source-maps deploy gate', () => {
 
 describe('bundler configs that ship to production', () => {
   // Every config here was reviewed for source-map output. A new bundler
-  // config must follow shared/source-map-policy.ts before it joins this list.
+  // config must follow packages/shared/source-map-policy.ts before it joins this list.
   const REVIEWED = ['vite.config.ts'];
 
   it('has no unreviewed bundler config', () => {

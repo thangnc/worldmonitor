@@ -11,8 +11,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { INTEL_EDITION, digestCarriesFeed } from '../shared/news-catalog-browser';
-import { projectBrowserCatalog } from '../shared/news-catalog';
+import { INTEL_EDITION, digestCarriesFeed } from '../packages/shared/news-catalog-browser';
+import { projectBrowserCatalog } from '../packages/shared/news-catalog';
 import { VALID_VARIANTS, __testing__ as digestTesting } from '../server/worldmonitor/news/v1/list-feed-digest';
 import { NEWS_LANGUAGES } from '../src/shared/public-rpc-cache';
 import {
@@ -28,7 +28,7 @@ import {
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (path: string) => JSON.parse(readFileSync(join(root, path), 'utf8'));
 
-const catalog = readJson('shared/news-catalog.json') as {
+const catalog = readJson('packages/shared/news-catalog.json') as {
   feeds: CoverageFeed[];
   layout: { server: Record<string, string[]> };
 };

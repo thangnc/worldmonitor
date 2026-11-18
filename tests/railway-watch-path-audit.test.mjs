@@ -159,8 +159,8 @@ const RELAY_INVENTORY_BUILD_INPUTS = Object.freeze([
   'scripts/docs-stats.mjs',
   'scripts/generate-inventory-facts.mjs',
   'scripts/source-attribution.mjs',
-  'shared/source-attribution-manifest.json',
-  'shared/news-catalog.json',
+  'packages/shared/source-attribution-manifest.json',
+  'packages/shared/news-catalog.json',
   'src/config/map-layer-definitions.ts',
   'src/locales/*.json',
 ]);
@@ -330,7 +330,7 @@ function literalBasesFor(file) {
     dir,
     resolve(dir, 'data'),
     resolve(dir, 'shared'),
-    resolve(dir, '..', 'shared'),
+    resolve(dir, '..', 'packages', 'shared'),
     resolve(dir, '..', 'data'),
   ];
 }
@@ -345,7 +345,7 @@ function literalBasesFor(file) {
  *   scripts/_energy-disruption-registry.mjs:37  readFileSync(resolve(__dirname, 'data', 'x.json'))
  *   scripts/shared/rankable-universe.mjs:47     const P = resolve(here, 'x.json'); readFileSync(P)
  *   scripts/shared/swf-manifest-loader.mjs:27   the same, for a .yaml manifest
- *   scripts/ais-relay.cjs:56                    require(path.join(__dirname, '..', 'shared', name))
+ *   scripts/ais-relay.cjs:56                    require(path.join(__dirname, '..', 'packages', 'shared', name))
  *
  * Matching the LITERAL rather than the call is what makes this robust: a new
  * seeder inventing a fourth way to build a path is still covered, because the
@@ -359,7 +359,7 @@ function extractLiteralPathDependencies(files, repoRootDir) {
     for (const match of source.matchAll(LITERAL_PATH_RE)) {
       // EVERY base that resolves, never the first one. shared/ is mirrored at
       // the repository root AND under scripts/ — `stocks.json` exists in both —
-      // and scripts/ais-relay.cjs:56 resolves `../shared` FIRST while this list
+      // and scripts/ais-relay.cjs:56 resolves `../packages/shared` FIRST while this list
       // reaches scripts/shared first. Stopping at one match picked the copy the
       // service does not load, which watches a file that never changes while the
       // one it reads goes unwatched. Claiming both costs a build; guessing
@@ -509,7 +509,7 @@ function resolveRuntimeSurface(entry, repoRootDir) {
 function extractSharedConfigDependencies(files, deployMode) {
   const prefix = deployMode === 'nixpacks-root-scripts'
     ? 'scripts/shared'
-    : 'shared';
+    : 'packages/shared';
   const dependencies = new Set();
   for (const file of files) {
     if (!/\.[cm]?[jt]s$/u.test(file)) continue;
@@ -575,7 +575,7 @@ describe('Railway operational-config audit', () => {
     const config = {
       services: {
         'svc-example': service({
-          watchPatterns: ['scripts/**', 'shared/**'],
+          watchPatterns: ['scripts/**', 'packages/shared/**'],
           cronSchedule: '0 * * * *',
         }),
       },
@@ -587,7 +587,7 @@ describe('Railway operational-config audit', () => {
         serviceId: 'svc-example',
         missingService: false,
         watchPatterns: {
-          actual: ['scripts/**', 'shared/**'],
+          actual: ['scripts/**', 'packages/shared/**'],
           expected: managedRegistry[0].watchPatterns,
         },
         cronSchedule: {
@@ -722,7 +722,7 @@ describe('Railway operational-config audit', () => {
     const broad = {
       services: {
         'svc-example': service({
-          watchPatterns: ['scripts/**', 'shared/**'],
+          watchPatterns: ['scripts/**', 'packages/shared/**'],
           cronSchedule: '0 * * * *',
         }),
       },
@@ -1285,12 +1285,12 @@ describe('unmanaged live seeders', () => {
       unmanagedSeeder: true,
       watchPatterns: {
         actual: ['scripts/seed-forecasts.mjs'],
-        expected: ['scripts/**', 'shared/**'],
+        expected: ['scripts/**', 'packages/shared/**'],
       },
       cronSchedule: null,
     }]);
     assert.deepEqual(buildRailwayServiceConfigPatch(drift), {
-      services: { 'svc-forecasts': { build: { watchPatterns: ['scripts/**', 'shared/**'] } } },
+      services: { 'svc-forecasts': { build: { watchPatterns: ['scripts/**', 'packages/shared/**'] } } },
     });
   });
 
@@ -1310,7 +1310,7 @@ describe('unmanaged live seeders', () => {
     const broad = {
       services: {
         'svc-example': managedService(),
-        'svc-forecasts': unmanagedSeeder({ watchPatterns: ['scripts/**', 'shared/**'] }),
+        'svc-forecasts': unmanagedSeeder({ watchPatterns: ['scripts/**', 'packages/shared/**'] }),
       },
     };
     assert.deepEqual(auditRailwayServiceConfig(broad, ids, registry), []);
@@ -1330,7 +1330,7 @@ describe('unmanaged live seeders', () => {
     assert.deepEqual(drift[0].watchPatterns.expected, [
       'Dockerfile.seed-forecasts',
       'scripts/**',
-      'shared/**',
+      'packages/shared/**',
     ]);
   });
 
@@ -1537,11 +1537,11 @@ describe('closure detection layers', () => {
 
     it('claims both copies of a file that shared/ mirrors', () => {
       // shared/ exists at the repository root and under scripts/. ais-relay.cjs
-      // resolves `../shared` FIRST, so stopping at the first resolving base
+      // resolves `../packages/shared` FIRST, so stopping at the first resolving base
       // watched the copy the service does not load.
       const entry = registry.find((e) => e.service === 'ais-relay');
       const watched = new Set(entry.watchPatterns);
-      assert.ok(watched.has('shared/stocks.json'), 'the copy requireShared actually loads');
+      assert.ok(watched.has('packages/shared/stocks.json'), 'the copy requireShared actually loads');
       assert.ok(watched.has('scripts/shared/stocks.json'), 'and the mirrored sibling');
     });
 
@@ -1593,7 +1593,7 @@ describe('critical ingestion Railway registry contract', () => {
     const entry = registry.find((candidate) => candidate.service === 'seed-trade-flows');
     assert.ok(entry, 'daily Comtrade flows must be registry-managed');
     const serviceId = 'svc-comtrade-flows';
-    const live = service({ watchPatterns: ['scripts/**', 'shared/**'], cronSchedule: '0 5 * * *' });
+    const live = service({ watchPatterns: ['scripts/**', 'packages/shared/**'], cronSchedule: '0 5 * * *' });
     live.deploy.startCommand = 'node seed-trade-flows.mjs';
     live.variables = {
       UPSTASH_REDIS_REST_URL: 'https://redis.example',
@@ -1618,7 +1618,7 @@ describe('critical ingestion Railway registry contract', () => {
     assert.ok(entry, 'radiation cron must be registry-managed');
     assert.equal(entry.cronSchedule, '*/15 * * * *');
     const serviceId = 'svc-radiation';
-    const live = service({ watchPatterns: ['scripts/**', 'shared/**'], cronSchedule: '*/15 * * * *' });
+    const live = service({ watchPatterns: ['scripts/**', 'packages/shared/**'], cronSchedule: '*/15 * * * *' });
     live.deploy.startCommand = 'node seed-radiation-watch.mjs';
     live.variables = {
       UPSTASH_REDIS_REST_URL: 'https://redis.example',
@@ -1747,7 +1747,7 @@ describe('critical ingestion Railway registry contract', () => {
         `${serviceName} watchPatterns must not contain duplicates`,
       );
       assert.ok(!entry.watchPatterns.includes('scripts/**'), `${serviceName} must not watch every seeder`);
-      assert.ok(!entry.watchPatterns.includes('shared/**'), `${serviceName} must not watch all shared data`);
+      assert.ok(!entry.watchPatterns.includes('packages/shared/**'), `${serviceName} must not watch all shared data`);
       const buildInputs = buildInputsFor(entry, repoRoot);
       for (const watchedPath of entry.watchPatterns) {
         if (watchedPath.includes('*')) {

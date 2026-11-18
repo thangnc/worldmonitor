@@ -5,8 +5,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import { isAllowedDomain } from '../api/_rss-allowed-domain-match.js';
-import { publisherFamilyFor } from '../shared/publisher-families.js';
-import { SOURCE_PROPAGANDA_RISK, SOURCE_TYPES } from '../shared/source-provenance.ts';
+import { publisherFamilyFor } from '../packages/shared/publisher-families.js';
+import { SOURCE_PROPAGANDA_RISK, SOURCE_TYPES } from '../packages/shared/source-provenance.ts';
 import { SOURCE_TIERS } from '../server/_shared/source-tiers.ts';
 
 interface FeedEntry {
@@ -132,7 +132,7 @@ describe('direct licensed news feed pack', () => {
 
   it('records acquired publisher rights for direct and site-scoped publisher hosts', () => {
     const manifest = JSON.parse(
-      readFileSync(join(repoRoot, 'shared/source-attribution-manifest.json'), 'utf8'),
+      readFileSync(join(repoRoot, 'packages/shared/source-attribution-manifest.json'), 'utf8'),
     ) as {
       entries: Array<{ host: string; status: string; observed: boolean }>;
     };

@@ -2,7 +2,7 @@
 // flags any app_identifier whose `application` field CONTAINS the substring
 // "worldmonitor" (confirmed live -- see the HAPI_APP_IDENTIFIER comment in
 // scripts/seed-conflict-intel.mjs). Without this test, a future well-intentioned
-// "brand consistency" rename of shared/hapi-app-identifier.json's `application`
+// "brand consistency" rename of packages/shared/hapi-app-identifier.json's `application`
 // field back toward "worldmonitor..." would silently reintroduce the exact
 // outage this PR fixes, with no signal until HAPI starts 429ing in production.
 //
@@ -23,7 +23,7 @@ function loadConfig(relPath) {
   return JSON.parse(readFileSync(resolve(root, relPath), 'utf-8'));
 }
 
-for (const relPath of ['shared/hapi-app-identifier.json', 'scripts/shared/hapi-app-identifier.json']) {
+for (const relPath of ['packages/shared/hapi-app-identifier.json', 'scripts/shared/hapi-app-identifier.json']) {
   test(`${relPath}: application field does not contain "worldmonitor"`, () => {
     const cfg = loadConfig(relPath);
     assert.equal(typeof cfg.application, 'string');

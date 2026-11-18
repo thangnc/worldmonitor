@@ -4,7 +4,7 @@
 // which is the contamination class that landed three Pentagon static pages in
 // user_3BovQ1tYlaz2YIGYAdDPXGFBgKy's brief 2026-04-25-2001.
 //
-// Feeds are declared once in shared/news-catalog.json with expanded URLs, so
+// Feeds are declared once in packages/shared/news-catalog.json with expanded URLs, so
 // the check reads the server view the digest fetches.
 //
 // See: docs/plans/2026-04-26-001-fix-brief-static-page-contamination-plan.md
@@ -13,7 +13,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildServerIntelSources, buildServerVariantFeeds } from '../shared/news-catalog.ts';
+import { buildServerIntelSources, buildServerVariantFeeds } from '../packages/shared/news-catalog.ts';
 
 const GOOGLE_NEWS_SEARCH = 'https://news.google.com/rss/search';
 

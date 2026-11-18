@@ -6,7 +6,7 @@
  * Background: PR #2604 introduced importanceScore in the digest. The relay
  * republishes classified headlines as rss_alert events and must carry a score
  * recomputed from the post-LLM threat level (see docs/internal/scoringDiagnostic.md).
- * Both sides load SOURCE_TIERS from shared/source-tiers.json (same bytes), so
+ * Both sides load SOURCE_TIERS from packages/shared/source-tiers.json (same bytes), so
  * tier-map parity is structural. This test covers SEVERITY_SCORES, SCORE_WEIGHTS,
  * and computeImportanceScore() itself — the pieces still duplicated until a
  * follow-up moves them into shared/ too (todo #195, part 2).
@@ -37,14 +37,14 @@ const clusteringSrc = readFileSync(
   'utf-8',
 );
 const briefFilterSrc = readFileSync(
-  resolve(repoRoot, 'shared/brief-filter.js'),
+  resolve(repoRoot, 'packages/shared/brief-filter.js'),
   'utf-8',
 );
 
 // Shared source of truth: both sides load this JSON at runtime.
 // The test uses it as the oracle for tier lookups.
 const sharedSourceTiers = JSON.parse(
-  readFileSync(resolve(repoRoot, 'shared/source-tiers.json'), 'utf-8'),
+  readFileSync(resolve(repoRoot, 'packages/shared/source-tiers.json'), 'utf-8'),
 );
 
 // Canonical diplomacy/flashpoint keyword set. As of the centralization
@@ -54,7 +54,7 @@ const sharedSourceTiers = JSON.parse(
 // its own copy — drift between the canonical JSON and the relay literal
 // is asserted further below.
 const sharedDiplomacyKeywords = JSON.parse(
-  readFileSync(resolve(repoRoot, 'shared/diplomacy-keywords.json'), 'utf-8'),
+  readFileSync(resolve(repoRoot, 'packages/shared/diplomacy-keywords.json'), 'utf-8'),
 );
 
 // ── Extract constants from source files ──────────────────────────────────────
@@ -269,22 +269,22 @@ function relayScore(level, source, corroboration, publishedAt, context = {}) {
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('SOURCE_TIERS structural parity', () => {
-  it('shared/source-tiers.json has the expected shape', () => {
+  it('packages/shared/source-tiers.json has the expected shape', () => {
     assert.ok(Object.keys(sharedSourceTiers).length > 100, 'tier map unexpectedly small');
     for (const [name, tier] of Object.entries(sharedSourceTiers)) {
       assert.ok([1, 2, 3, 4].includes(tier), `${name} has invalid tier ${tier}`);
     }
   });
 
-  it('scripts/shared/source-tiers.json matches shared/source-tiers.json byte-for-byte', () => {
+  it('scripts/shared/source-tiers.json matches packages/shared/source-tiers.json byte-for-byte', () => {
     // Also guarded by tests/edge-functions.test.mjs (scripts-shared-mirror).
     // Duplicated here as an explicit parity cross-check so drift can't sneak
     // through if the edge-functions test is ever narrowed.
-    const canonical = readFileSync(resolve(repoRoot, 'shared/source-tiers.json'), 'utf-8');
+    const canonical = readFileSync(resolve(repoRoot, 'packages/shared/source-tiers.json'), 'utf-8');
     const mirror = readFileSync(resolve(repoRoot, 'scripts/shared/source-tiers.json'), 'utf-8');
     assert.equal(
       mirror, canonical,
-      'scripts/shared/source-tiers.json drifted from shared/source-tiers.json — run: cp shared/source-tiers.json scripts/shared/',
+      'scripts/shared/source-tiers.json drifted from packages/shared/source-tiers.json — run: cp packages/shared/source-tiers.json scripts/shared/',
     );
   });
 });

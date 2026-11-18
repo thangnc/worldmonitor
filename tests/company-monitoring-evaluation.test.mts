@@ -32,7 +32,7 @@ import {
   withoutKey,
   type CalibrationExample,
   type JsonObject,
-} from '../shared/company-monitoring-evaluation.ts';
+} from '../packages/shared/company-monitoring-evaluation.ts';
 
 const fixtureDirectory = new URL('./fixtures/company-monitoring-evaluation/', import.meta.url);
 const protocolPath = new URL('protocol.json', fixtureDirectory);

@@ -19370,7 +19370,7 @@ paths:
                 - name: region_id
                   in: query
                   description: |-
-                    Display region id (e.g. "mena", "east-asia", "europe"). See shared/geography.js.
+                    Display region id (e.g. "mena", "east-asia", "europe"). See packages/shared/geography.js.
                      Kebab-case: lowercase alphanumeric groups separated by single hyphens, no
                      trailing or consecutive hyphens.
                   required: true
@@ -19530,7 +19530,7 @@ paths:
                 - name: region_id
                   in: query
                   description: |-
-                    Display region id (e.g. "mena", "east-asia", "europe"). See shared/geography.js.
+                    Display region id (e.g. "mena", "east-asia", "europe"). See packages/shared/geography.js.
                      Kebab-case: lowercase alphanumeric groups separated by single hyphens, no
                      trailing or consecutive hyphens.
                   required: true
@@ -21385,7 +21385,7 @@ paths:
             description: |-
                 ListCommodityQuotes retrieves commodity price quotes. Reads the seeded
                  commodity snapshot; only symbols in the configured commodity set
-                 (shared/commodities.json) are supported.
+                 (packages/shared/commodities.json) are supported.
             operationId: ListCommodityQuotes
             parameters:
                 - name: symbols
@@ -21393,7 +21393,7 @@ paths:
                   description: |-
                     Commodity symbols to retrieve (Yahoo symbols). Empty returns the seed
                      defaults. Only symbols in the configured commodity set
-                     (shared/commodities.json) are supported; requesting an unsupported
+                     (packages/shared/commodities.json) are supported; requesting an unsupported
                      symbol returns HTTP 400.
                   required: false
                   style: form
@@ -52125,7 +52125,7 @@ components:
                     minLength: 1
                     pattern: ^[a-z][a-z0-9]*(-[a-z0-9]+)*$
                     description: |-
-                        Display region id (e.g. "mena", "east-asia", "europe"). See shared/geography.js.
+                        Display region id (e.g. "mena", "east-asia", "europe"). See packages/shared/geography.js.
                          Kebab-case: lowercase alphanumeric groups separated by single hyphens, no
                          trailing or consecutive hyphens.
             required:
@@ -52186,7 +52186,7 @@ components:
             description: |-
                 RegionalSnapshot is the canonical intelligence object for one region.
                  See docs/internal/pro-regional-intelligence-upgrade.md for the full spec
-                 and shared/regions.types.d.ts for the authoritative TypeScript contract.
+                 and packages/shared/regions.types.d.ts for the authoritative TypeScript contract.
         worldmonitor_intelligence_v1_SnapshotMeta:
             type: object
             properties:
@@ -52612,7 +52612,7 @@ components:
                     minLength: 1
                     pattern: ^[a-z][a-z0-9]*(-[a-z0-9]+)*$
                     description: |-
-                        Display region id (e.g. "mena", "east-asia", "europe"). See shared/geography.js.
+                        Display region id (e.g. "mena", "east-asia", "europe"). See packages/shared/geography.js.
                          Kebab-case: lowercase alphanumeric groups separated by single hyphens, no
                          trailing or consecutive hyphens.
                 limit:
@@ -53582,7 +53582,7 @@ components:
                         description: |-
                             Commodity symbols to retrieve (Yahoo symbols). Empty returns the seed
                              defaults. Only symbols in the configured commodity set
-                             (shared/commodities.json) are supported; requesting an unsupported
+                             (packages/shared/commodities.json) are supported; requesting an unsupported
                              symbol returns HTTP 400.
             description: ListCommodityQuotesRequest specifies which commodities to retrieve.
         worldmonitor_market_v1_ListCommodityQuotesResponse:
@@ -56751,7 +56751,7 @@ components:
                          cycle. "Same story" is determined by edit-tolerant story-identity
                          clustering (headlines describing one event with different wording,
                          ordering, source suffixes, truncation, or morphology corroborate each
-                         other) — not exact-title matching. See shared/story-identity.js.
+                         other) — not exact-title matching. See packages/shared/story-identity.js.
                 storyMeta:
                     $ref: '#/components/schemas/worldmonitor_news_v1_StoryMeta'
                 snippet:
@@ -56770,8 +56770,8 @@ components:
                         description: |-
                             Equity ticker symbols mentioned by the story, extracted at ingest from
                              cashtags ($AAPL) and the curated company dictionary
-                             (shared/stocks.json). Uppercase symbols, deduplicated, capped at 8.
-                             Empty when no tracked ticker is mentioned. See shared/ticker-extract.js.
+                             (packages/shared/stocks.json). Uppercase symbols, deduplicated, capped at 8.
+                             Empty when no tracked ticker is mentioned. See packages/shared/ticker-extract.js.
                     maxItems: 8
                 credibilityScore:
                     type: integer
@@ -60190,7 +60190,7 @@ components:
                 eventType:
                     type: string
                     maxLength: 64
-                    description: A shared/event-triggers.json key; `chokepoint.disruption` when omitted.
+                    description: A packages/shared/event-triggers.json key; `chokepoint.disruption` when omitted.
                 countries:
                     type: array
                     items:
@@ -60264,7 +60264,7 @@ components:
                 direction:
                     type: string
                     description: 'market.move: `up`, `down` or `any` (default any).'
-            description: Per-event filters for occurrence events. Each key applies to the events named in its comment; the handler validates against shared/event-triggers.json and stores the defaults.
+            description: Per-event filters for occurrence events. Each key applies to the events named in its comment; the handler validates against packages/shared/event-triggers.json and stores the defaults.
         worldmonitor_shipping_v2_RegisterWebhookResponse:
             type: object
             properties:

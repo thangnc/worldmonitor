@@ -4,7 +4,7 @@ import type {
   SearchClaimHeadlinesResponse,
   ServerContext,
 } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
-import type { NewsItemCore } from '../../../../shared/news-clustering-core.js';
+import type { NewsItemCore } from '../../../../packages/shared/news-clustering-core.js';
 import { getCachedJsonBatch } from '../../../_shared/redis';
 import { readRevokedUrlSet } from '../../../_shared/digest-revocations';
 import { markNoCacheResponse } from '../../../_shared/response-headers';

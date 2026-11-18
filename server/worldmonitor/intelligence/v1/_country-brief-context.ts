@@ -16,8 +16,8 @@
 import { getCachedJson } from '../../../_shared/redis';
 import { filterRevokedUrls, readRevokedUrlSet } from '../../../_shared/digest-revocations';
 import { sanitizeForPromptLine } from '../../../_shared/llm-sanitize.js';
-import { countryMentionTerms, mentionsCountry } from '../../../../shared/country-mention.js';
-import { isBriefRelevantTitle } from '../../../../shared/brief-relevance.js';
+import { countryMentionTerms, mentionsCountry } from '../../../../packages/shared/country-mention.js';
+import { isBriefRelevantTitle } from '../../../../packages/shared/brief-relevance.js';
 
 const DIGEST_KEY_EN = 'news:digest:v1:full:en';
 const MAX_GROUNDING_ITEMS = 15;
@@ -166,7 +166,7 @@ export function buildSharedCountryContext(
   );
   if (allItems.length === 0) return EMPTY_CONTEXT;
 
-  // Country matching is the shared matcher (shared/country-mention.js):
+  // Country matching is the shared matcher (packages/shared/country-mention.js):
   // display names, aliases and case-sensitive demonyms, bare ISO codes only
   // for the allowlist. The local copy this replaced matched every uppercase
   // code token, which was safe for "US announces…" and wrong for "African
@@ -174,7 +174,7 @@ export function buildSharedCountryContext(
   // published (#7748). Raw text, NOT lowercased: demonyms are case-sensitive.
   const terms = countryMentionTerms(countryCode);
   // Sports, entertainment and awards items mention a country without saying
-  // anything about its situation (shared/brief-relevance.js).
+  // anything about its situation (packages/shared/brief-relevance.js).
   const countryItems = allItems.filter((item) => {
     const text = `${typeof item.title === 'string' ? item.title : ''} ${typeof item.snippet === 'string' ? item.snippet : ''}`;
     return mentionsCountry(text, terms) && isBriefRelevantTitle(item.title);

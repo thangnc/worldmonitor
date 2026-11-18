@@ -309,7 +309,7 @@ function Licensing() {
         ))}
       </ul>
       <p class="text-[11px] leading-[16px] text-dim">
-        Status per host from shared/source-attribution-manifest.json. The news digests’ publishers are not counted here.
+        Status per host from packages/shared/source-attribution-manifest.json. The news digests’ publishers are not counted here.
       </p>
     </Panel>
   );
@@ -321,7 +321,7 @@ function TierPolicy() {
   const tiers = useMemo(() => tierRows(), []);
   const outlets = tiers.reduce((sum, t) => sum + t.outlets, 0);
   return (
-    <Card title="Source tier policy" sub={`${outlets} news outlets · shared/source-tiers.json`} testId="tier-policy">
+    <Card title="Source tier policy" sub={`${outlets} news outlets · packages/shared/source-tiers.json`} testId="tier-policy">
       <div class="grid grid-cols-1 border-t border-line sm:grid-cols-2 wide:grid-cols-4">
         {tiers.map((t) => (
           <div key={t.tier} class="flex gap-3 border-b border-line px-5 py-4 last:border-b-0 sm:border-r wide:border-b-0" data-tier={t.tier}>

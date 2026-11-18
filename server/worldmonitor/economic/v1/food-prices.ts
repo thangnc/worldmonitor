@@ -1,4 +1,4 @@
-import sourceDefinitions from '../../../../shared/food-price-sources.json';
+import sourceDefinitions from '../../../../packages/shared/food-price-sources.json';
 import type { FoodMarketPrice, FoodPriceSource, FoodSecurityContext } from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
 export const FOOD_PRICE_SOURCES = sourceDefinitions;

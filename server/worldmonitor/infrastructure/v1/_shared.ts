@@ -1,4 +1,4 @@
-import filterParamContracts from '../../../../shared/openapi-filter-param-contracts.json';
+import filterParamContracts from '../../../../packages/shared/openapi-filter-param-contracts.json';
 import {
   parseWildfireFiresSummary,
   WILDFIRE_FIRES_SUMMARY_KEY,
@@ -18,7 +18,7 @@ export {
   Z_THRESHOLD_MEDIUM,
   Z_THRESHOLD_HIGH,
   getBaselineSeverity,
-} from '../../../../shared/analysis-temporal-severity';
+} from '../../../../packages/shared/analysis-temporal-severity';
 
 export const VALID_BASELINE_TYPES = filterParamContracts.infrastructureTemporalBaselineTypes;
 

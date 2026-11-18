@@ -2,7 +2,7 @@
  * Product catalog tests.
  *
  * The canonical Convex catalog, its generator and the Edge product-catalog
- * route are gone (Lite Phase 1c). shared/product-catalog.generated.json stays
+ * route are gone (Lite Phase 1c). packages/shared/product-catalog.generated.json stays
  * as a committed artifact that scripts/ais-relay.cjs still serves, so pin its
  * shape and the relay's wiring, and keep raw Dodo product ids out of source.
  */
@@ -94,7 +94,7 @@ function collectRawProductIds(root, filesystem = {}) {
 }
 
 describe('Generated product catalog', () => {
-  const generatedCatalog = JSON.parse(readFileSync(join(ROOT, 'shared/product-catalog.generated.json'), 'utf8'));
+  const generatedCatalog = JSON.parse(readFileSync(join(ROOT, 'packages/shared/product-catalog.generated.json'), 'utf8'));
 
   it('generated tier config exposes plan limits for public plans', () => {
     const { pro, pro_business: proBusiness, api_starter: api, enterprise: ent } = generatedCatalog.tierConfig;
@@ -140,7 +140,7 @@ describe('Generated product catalog', () => {
     ).find((entry) => entry.entry === 'scripts/ais-relay.cjs');
     for (const requiredWatch of [
       'scripts/generate-inventory-facts.mjs',
-      'shared/source-attribution-manifest.json',
+      'packages/shared/source-attribution-manifest.json',
     ]) {
       assert.ok(relayService.watchPatterns.includes(requiredWatch), `ais-relay must watch ${requiredWatch}`);
     }

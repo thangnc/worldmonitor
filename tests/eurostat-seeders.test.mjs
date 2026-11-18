@@ -15,7 +15,7 @@ import { strict as assert } from 'node:assert';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../packages/shared/bootstrap-tier-keys.js';
 
 import {
   parseEurostatSeries,

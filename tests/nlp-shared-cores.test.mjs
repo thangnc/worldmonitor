@@ -1,6 +1,6 @@
 // Unit coverage for the shared NLP cores extracted in #5697
-// (shared/entity-extraction-core.js, shared/keyword-spike-core.js,
-// shared/news-clustering-core.js, shared/text-analysis-core.js).
+// (packages/shared/entity-extraction-core.js, packages/shared/keyword-spike-core.js,
+// packages/shared/news-clustering-core.js, packages/shared/text-analysis-core.js).
 // These run against the REAL entity registry and real implementations —
 // no replicas — because the same modules feed both the client pipeline
 // and the MCP tools.
@@ -12,8 +12,8 @@ import {
   extractEntitiesFromTitle,
   findEntitiesInText,
   getEntityIndex,
-} from '../shared/entity-extraction-core.js';
-import { ENTITY_REGISTRY, getEntityById } from '../shared/entity-registry.js';
+} from '../packages/shared/entity-extraction-core.js';
+import { ENTITY_REGISTRY, getEntityById } from '../packages/shared/entity-registry.js';
 import {
   DEFAULT_MIN_SPIKE_COUNT,
   DEFAULT_SPIKE_MULTIPLIER,
@@ -22,18 +22,18 @@ import {
   evaluateSpikeDecision,
   extractEntities,
   stripSourceAttribution,
-} from '../shared/keyword-spike-core.js';
+} from '../packages/shared/keyword-spike-core.js';
 import {
   MAX_CLUSTER_NEWS_ITEMS,
   clusterNewsCore,
   effectivePubDateMs,
   topClusterKeywords,
-} from '../shared/news-clustering-core.js';
+} from '../packages/shared/news-clustering-core.js';
 import {
   SUPPRESSED_TRENDING_TERMS,
   jaccardSimilarity,
   tokenize,
-} from '../shared/text-analysis-core.js';
+} from '../packages/shared/text-analysis-core.js';
 
 describe('entity-extraction-core (real registry)', () => {
   it('matches long aliases at 0.95, short aliases at 0.85, keywords at 0.7', () => {

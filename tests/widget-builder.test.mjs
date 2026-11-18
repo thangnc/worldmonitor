@@ -532,7 +532,7 @@ describe('widget data-tool contracts', () => {
   }
 
   it('lists exactly the FRED series the RPC accepts', () => {
-    const allowed = [...JSON.parse(src('shared/openapi-filter-param-contracts.json')).economicFredSeriesIds].sort();
+    const allowed = [...JSON.parse(src('packages/shared/openapi-filter-param-contracts.json')).economicFredSeriesIds].sort();
     assert.ok(allowed.length > 10);
     for (const prompt of prompts) {
       const line = prompt.match(/get-fred-series \(series_id \(required, ONLY one of: ([^;]+);/);

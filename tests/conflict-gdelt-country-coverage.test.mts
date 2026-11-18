@@ -6,7 +6,7 @@
 
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { resolveCountryCode } from '../shared/country-code-resolve.ts';
+import { resolveCountryCode } from '../packages/shared/country-code-resolve.ts';
 import { GDELT_COUNTRY_NAMES } from '../scripts/_conflict-gdelt.mjs';
 import { mapGdeltExportToConflictEvents } from '../scripts/_conflict-gdelt-bulk.mjs';
 import {
@@ -38,7 +38,7 @@ describe('GDELT conflict country coverage', () => {
   it('is exactly the legacy priority set plus every crisis-tracker country', () => {
     // A tracker page whose country the conflict feed never collects shows a
     // crisis with no conflict events. HAPI_CRISIS_COUNTRIES is read from
-    // shared/crawlable-crises.json, so a new tracker fails here until its
+    // packages/shared/crawlable-crises.json, so a new tracker fails here until its
     // countries are added, and nothing outside the two registries can be.
     assert.ok(HAPI_CRISIS_COUNTRIES.length > 0);
     const expectedCodes = [...new Set([...LEGACY_PRIORITY, ...HAPI_CRISIS_COUNTRIES])].sort();

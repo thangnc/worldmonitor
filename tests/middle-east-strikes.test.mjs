@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 import { deflateRawSync } from 'node:zlib';
-import { TELEGRAM_CHANNEL_TRUST } from '../shared/telegram-channel-trust.ts';
+import { TELEGRAM_CHANNEL_TRUST } from '../packages/shared/telegram-channel-trust.ts';
 import { GDELT_FIPS_TO_ISO2 } from '../scripts/_gdelt-country-codes.mjs';
 import { geoToCountry } from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
 
@@ -196,7 +196,7 @@ describe('gazetteer', () => {
 });
 
 describe('source trust', () => {
-  it('mirrors shared/telegram-channel-trust.ts exactly', () => {
+  it('mirrors packages/shared/telegram-channel-trust.ts exactly', () => {
     const expected = Object.fromEntries(TELEGRAM_CHANNEL_TRUST.map((entry) => [
       entry.handle, [entry.tier, entry.risk, entry.stateAffiliated ?? null],
     ]));

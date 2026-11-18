@@ -28,7 +28,7 @@ import { tokenizeForMatch, findMatchingKeywords } from '../../../../src/utils/ke
 // server/worldmonitor/market/v1/list-commodity-quotes.ts; every consumer of
 // this module runs under tsx, vitest or the edge bundler, which all resolve a
 // bare JSON import.
-import commodityConfig from '../../../../shared/commodities.json';
+import commodityConfig from '../../../../packages/shared/commodities.json';
 import {
   GAS_STORAGE_COUNTRIES_KEY,
   GAS_STORAGE_KEY_PREFIX,
@@ -222,12 +222,12 @@ const INSTRUMENT_ALIASES: ReadonlyMap<string, readonly string[]> = new Map([
 
 // ── Quote currency ───────────────────────────────────────────────────────────
 //
-// shared/commodities.json and shared/stocks.json carry no currency, and a "$"
+// packages/shared/commodities.json and packages/shared/stocks.json carry no currency, and a "$"
 // on every quote misled the price check (#9780 review): TTF trades in EUR/MWh,
 // so a correct "€95" answer read as unsupported under market focus while "$95"
 // passed. Index levels (^GSPC, ^VIX) and exchange rates (=X) are not currency
 // amounts. A listing outside the US quotes in its exchange currency, keyed by
-// the Yahoo Finance exchange suffix; every suffix in shared/stocks.json is
+// the Yahoo Finance exchange suffix; every suffix in packages/shared/stocks.json is
 // here. Everything else trades in US dollars
 // (scripts/_bet-templates-commodities.mjs: USD/bbl, USD/MMBtu, USD/oz).
 const COMMODITY_CURRENCY_SIGN: ReadonlyMap<string, string> = new Map([

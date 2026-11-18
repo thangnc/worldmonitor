@@ -9,12 +9,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildTickerDictionary, extractTickers } from '../shared/ticker-extract.js';
+import { buildTickerDictionary, extractTickers } from '../packages/shared/ticker-extract.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const readSrc = (rel) => readFileSync(resolve(root, rel), 'utf-8');
 
-const stocks = JSON.parse(readSrc('shared/stocks.json'));
+const stocks = JSON.parse(readSrc('packages/shared/stocks.json'));
 const DICT = buildTickerDictionary(stocks.symbols);
 
 describe('extractTickers — cashtags', () => {
@@ -139,8 +139,8 @@ describe('ingest wiring (source-textual + parse behavior)', () => {
   const src = readSrc('server/worldmonitor/news/v1/list-feed-digest.ts');
 
   it('list-feed-digest imports the shared extractor and stocks.json dictionary', () => {
-    assert.match(src, /from '\.\.\/\.\.\/\.\.\/\.\.\/shared\/ticker-extract\.js'/);
-    assert.match(src, /import stocksData from '\.\.\/\.\.\/\.\.\/\.\.\/shared\/stocks\.json'/);
+    assert.match(src, /from '\.\.\/\.\.\/\.\.\/\.\.\/packages\/shared\/ticker-extract\.js'/);
+    assert.match(src, /import stocksData from '\.\.\/\.\.\/\.\.\/\.\.\/packages\/shared\/stocks\.json'/);
     assert.match(src, /buildTickerDictionary\(stocksData\.symbols\)/);
   });
 

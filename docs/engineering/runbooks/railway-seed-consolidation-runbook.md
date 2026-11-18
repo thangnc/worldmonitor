@@ -171,7 +171,7 @@ its cron and the exact repository-relative files in its runtime dependency
 closure. `tests/railway-watch-path-audit.test.mjs` walks each entry point's
 imports and fails when that closure grows without a matching registry update.
 This keeps the declared closure complete without making unrelated changes under
-`scripts/**` or `shared/**` rebuild every seeder.
+`scripts/**` or `packages/shared/**` rebuild every seeder.
 
 **The filter matches accurately — read `meta.skippedReason` before concluding
 otherwise.** Railway records a refused push as a `SKIPPED` deployment carrying
@@ -997,7 +997,7 @@ All new services share these settings:
 - **Resources:** 1 vCPU / 1 GB RAM
 - **NODE_OPTIONS:** `--dns-result-order=ipv4first`
 
-**Watch paths:** Use `scripts/**`, `shared/**` for all bundles. `scripts/**` covers all seed scripts and their helpers. `shared/**` is needed because `loadSharedConfig()` in `_seed-utils.mjs` resolves `../shared/` (repo root) before `./shared/` (scripts dir), so config JSON files like `country-names.json`, `iso3-to-iso2.json`, and others live at the repo root `shared/` directory. Without `shared/**`, config-only edits won't trigger redeploys.
+**Watch paths:** Use `scripts/**`, `packages/shared/**` for all bundles. `scripts/**` covers all seed scripts and their helpers. `packages/shared/**` is needed because `loadSharedConfig()` in `_seed-utils.mjs` resolves `../packages/shared/` (repo root) before `./shared/` (scripts dir), so config JSON files like `country-names.json`, `iso3-to-iso2.json`, and others live in `packages/shared/`. Without `packages/shared/**`, config-only edits won't trigger redeploys.
 
 ### Bundle 1: seed-bundle-ecb-eu
 
@@ -1006,7 +1006,7 @@ All new services share these settings:
 | **Service name** | `seed-bundle-ecb-eu` |
 | **Start command** | `node scripts/seed-bundle-ecb-eu.mjs` |
 | **Cron schedule** | `0 13 * * *` (daily 13:00 UTC) |
-| **Watch paths** | `scripts/**`, `shared/**` |
+| **Watch paths** | `scripts/**`, `packages/shared/**` |
 | **Replaces** | 4 services (ecb-fx-rates, ecb-short-rates, yield-curve-eu, fsi-eu) |
 | **Net savings** | 3 slots |
 | **Members** | ECB FX Rates (daily), ECB Short Rates (daily), Yield Curve EU (daily), FSI EU (daily) |
@@ -1038,7 +1038,7 @@ All new services share these settings:
 | **Service name** | `seed-bundle-static-ref` |
 | **Start command** | `node scripts/seed-bundle-static-ref.mjs` |
 | **Cron schedule** | `0 3 * * *` (daily at 03:00 UTC) |
-| **Watch paths** | `scripts/**`, `shared/**` |
+| **Watch paths** | `scripts/**`, `packages/shared/**` |
 | **Replaces** | 4 services (including the retired defense-patents producer) |
 | **Net savings** | 3 slots |
 | **Members** | Defense Industrial Base (10d), Submarine Cables (weekly), Defense Patents (weekly), Chokepoint Baselines (400d, runs rarely), Demographics Capability (20d) |
@@ -1143,7 +1143,7 @@ any red check anywhere strands this service's builds.
 | **Service name** | `seed-bundle-resilience` |
 | **Start command** | `node scripts/seed-bundle-resilience.mjs` |
 | **Cron schedule** | `0 */6 * * *` (every 6h) |
-| **Watch paths** | `scripts/**`, `shared/**` |
+| **Watch paths** | `scripts/**`, `packages/shared/**` |
 | **Replaces** | 2 services |
 | **Net savings** | 1 slot |
 | **Members** | Resilience Scores (2h admission interval), Resilience Static (90d, skips most runs), Food Stocks (monthly USDA PSD + FAOSTAT fill; needs `USDA_FAS_PSD_API_KEY`), Five-Factor Scorecard (daily Redis-only scoring) |
@@ -1281,7 +1281,7 @@ Recovery is accepted only when:
 | **Service name** | `seed-bundle-climate` |
 | **Start command** | `node scripts/seed-bundle-climate.mjs` |
 | **Cron schedule** | `0 */3 * * *` (every 3h) |
-| **Watch paths** | `scripts/**`, `shared/**` |
+| **Watch paths** | `scripts/**`, `packages/shared/**` |
 | **Replaces** | 6 services |
 | **Net savings** | 5 slots |
 | **Members** | Natural Events (3h, EONET/GDACS/NHC/HKO), Zone Normals (monthly, skips ~359/360), Anomalies (3h, depends on zone-normals), Disasters (6h), Ocean Ice (daily), CO2 Monitoring (3 days) |
@@ -1294,7 +1294,7 @@ Recovery is accepted only when:
 | **Service name** | `seed-bundle-energy-sources` |
 | **Start command** | `node scripts/seed-bundle-energy-sources.mjs` |
 | **Cron schedule** | `30 7 * * *` (daily 07:30 UTC) |
-| **Watch paths** | `scripts/**`, `shared/**` |
+| **Watch paths** | `scripts/**`, `packages/shared/**` |
 | **Replaces** | 6 services |
 | **Net savings** | 5 slots |
 | **Members** | GIE Gas Storage (daily), Gas Storage Countries (daily), JODI Gas (monthly), JODI Oil (monthly), Oil-Trade-Series (weekly), OWID Energy Mix (monthly), IEA Oil Stocks (monthly) |
@@ -1360,7 +1360,7 @@ last-good observations with an unavailable source status.
 | **Service name** | `seed-bundle-macro` |
 | **Start command** | `node scripts/seed-bundle-macro.mjs` |
 | **Cron schedule** | `0 8,9 * * *` (daily 08:00 and 09:00 UTC) |
-| **Watch paths** | `scripts/**`, `shared/**` |
+| **Watch paths** | `scripts/**`, `packages/shared/**` |
 | **Replaces** | 6 services |
 | **Net savings** | 5 slots |
 | **Members** | BIS Data (12h), CBR Rates (daily), BoC Valet (daily), StatCan WDS (daily), China Macro (36h), China Release Calendar (36h), China Policy Events (6h), BIS Extended (12h), BLS Series (daily), Eurostat (daily), Eurostat House Prices (7d), Eurostat Government Debt (2d), Eurostat Industrial Production (daily), IMF Macro (30d), National Debt (30d), FAO FFPI (daily), World Bank External Debt (30d), BIS LBS (7d), FATF Listing (30d), Education Attainment (7d), World CPI IMF (daily), World CPI Eurostat (daily), World CPI JP e-Stat (daily), World CPI AU ABS (daily) |
@@ -1373,7 +1373,7 @@ last-good observations with an unavailable source status.
 | **Service name** | `seed-bundle-health` |
 | **Start command** | `node scripts/seed-bundle-health.mjs` |
 | **Cron schedule** | `0 */1 * * *` (hourly) |
-| **Watch paths** | `scripts/**`, `shared/**` |
+| **Watch paths** | `scripts/**`, `packages/shared/**` |
 | **Replaces** | 4 services plus the China control-plane evaluator |
 | **Net savings** | 3 slots |
 | **Members** | China Coverage (hourly), Air Quality (hourly), Disease Outbreaks (daily), VPD Tracker (daily), Displacement (daily) |
@@ -1399,7 +1399,7 @@ last-good observations with an unavailable source status.
 | **Service name** | `seed-bundle-relay-backup` |
 | **Start command** | `node scripts/seed-bundle-relay-backup.mjs` |
 | **Cron schedule** | `*/30 * * * *` (every 30 min) |
-| **Watch paths** | `scripts/**`, `shared/**` |
+| **Watch paths** | `scripts/**`, `packages/shared/**` |
 | **Replaces** | 4 services |
 | **Net savings** | 3 slots |
 | **Members** | Climate News (30min), USA Spending (hourly), Global Tenders (hourly), UCDP Events (6h), WB Indicators (daily) |
@@ -1467,7 +1467,7 @@ entries.
 | **Service name** | `seed-bundle-resilience-recovery` |
 | **Start command** | `node scripts/seed-bundle-resilience-recovery.mjs` |
 | **Cron schedule** | Monthly recovery cadence; use the active Railway schedule for the existing service |
-| **Watch paths** | `scripts/**`, `shared/**` |
+| **Watch paths** | `scripts/**`, `packages/shared/**` |
 | **Purpose** | Dedicated Country Resilience recovery inputs bundle |
 | **Members** | Fiscal Space, Reserve Adequacy, External Debt, Import HHI, Fuel Stocks, Re-export Share, Sovereign Wealth |
 | **Note** | This is the service referenced by the Import-HHI controls below. It is registry-covered so nixpacks packaging and start-command drift are tested. |
@@ -1479,7 +1479,7 @@ entries.
 | **Service name** | `seed-bundle-resilience-energy-v2` |
 | **Start command** | `node scripts/seed-bundle-resilience-energy-v2.mjs` |
 | **Cron schedule** | `0 6 * * *` (daily 06:00 UTC; per-slot interval gates real seeds to 7 days) |
-| **Watch paths** | `scripts/**`, `shared/**` |
+| **Watch paths** | `scripts/**`, `packages/shared/**` |
 | **Purpose** | Dedicated Country Resilience energy-v2 input bundle |
 | **Members** | Low Carbon Generation, Fossil Electricity Share, Power Losses |
 | **Note** | Daily cron avoids the weekly dead window described in `scripts/seed-bundle-resilience-energy-v2.mjs`; the bundle's 7-day section intervals prevent unnecessary World Bank polling. |

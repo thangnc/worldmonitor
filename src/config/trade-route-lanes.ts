@@ -9,7 +9,7 @@
  * uses it to highlight the same lane for visitors without a lane response.
  */
 
-import { resolveCountryCode } from '../../shared/country-code-resolve';
+import { resolveCountryCode } from '../../packages/shared/country-code-resolve';
 import { STRATEGIC_WATERWAYS } from './geo';
 import { PORTS } from './ports';
 import { TRADE_ROUTES } from './trade-routes';

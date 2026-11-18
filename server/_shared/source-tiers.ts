@@ -1,7 +1,7 @@
 /**
  * Source tier system for news feed prioritization.
  *
- * Canonical RSS data: shared/source-tiers.json — loaded here via
+ * Canonical RSS data: packages/shared/source-tiers.json — loaded here via
  * resolveJsonModule (for Vercel edge + the main relay container) and by
  * scripts/ais-relay.cjs via requireShared('source-tiers.json').
  * `requireShared()` resolves from
@@ -14,9 +14,9 @@
  * JSON makes their registries mechanically testable and prevents renamed
  * channels or accounts from leaving stale public tier keys.
  */
-import sourceTiersData from '../../shared/source-tiers.json';
-import { TELEGRAM_SOURCE_TIERS } from '../../shared/telegram-channel-trust';
-import { X_ACCOUNT_SOURCE_TIERS } from '../../shared/x-account-trust';
+import sourceTiersData from '../../packages/shared/source-tiers.json';
+import { TELEGRAM_SOURCE_TIERS } from '../../packages/shared/telegram-channel-trust';
+import { X_ACCOUNT_SOURCE_TIERS } from '../../packages/shared/x-account-trust';
 
 export const SOURCE_TIERS: Record<string, number> = {
   ...(sourceTiersData as Record<string, number>),

@@ -27,7 +27,7 @@
 // @ts-expect-error — JS module, no declaration file
 import { getPublicCorsHeaders } from './_cors.js';
 import { appendDeprecationPolicyLinkToRecord, DEPRECATION_POLICY_LINK } from '../server/_shared/deprecation-policy';
-import { declaredHtmlCanonical, pageCanonicalUrl } from '../shared/page-canonical.js';
+import { declaredHtmlCanonical, pageCanonicalUrl } from '../packages/shared/page-canonical.js';
 
 export const MD_TWIN_LOOP_HEADER = 'x-wm-md-twin';
 const MAX_TWIN_CHARS = 512_000;

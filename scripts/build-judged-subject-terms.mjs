@@ -4,8 +4,8 @@
 // judge only items that match the forecast's subject, so this table decides
 // what evidence exists for a question.
 //
-// Countries come from every ISO code in shared/country-names.json, with names,
-// aliases, demonyms and exclusions from shared/country-mention.js plus the
+// Countries come from every ISO code in packages/shared/country-names.json, with names,
+// aliases, demonyms and exclusions from packages/shared/country-mention.js plus the
 // capitals and keywords in scripts/data/country-codes.json (the CII names the
 // forecast emitter uses). Non-country regions come from REGIONS below. The
 // build fails when any region label the emitter can produce
@@ -14,11 +14,11 @@
 // Usage: node scripts/build-judged-subject-terms.mjs [--check]
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { countryMentionTerms } from '../shared/country-mention.js';
+import { countryMentionTerms } from '../packages/shared/country-mention.js';
 import { normalizeSubjectText as normalize } from './_forecast-subject.mjs';
 
 const OUTPUT = fileURLToPath(new URL('./shared/judged-subject-terms.json', import.meta.url));
-const COUNTRY_NAMES = JSON.parse(readFileSync(new URL('../shared/country-names.json', import.meta.url), 'utf8'));
+const COUNTRY_NAMES = JSON.parse(readFileSync(new URL('../packages/shared/country-names.json', import.meta.url), 'utf8'));
 const COUNTRY_CODES = JSON.parse(readFileSync(new URL('./data/country-codes.json', import.meta.url), 'utf8'));
 
 // Names that are also common words, people, US states or neighbours' names.

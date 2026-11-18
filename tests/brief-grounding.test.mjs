@@ -8,7 +8,7 @@ import {
   hasBriefGrounding,
   MIN_BRIEF_GROUNDING_PUBLISHERS,
   registrableDomain,
-} from '../shared/brief-grounding.js';
+} from '../packages/shared/brief-grounding.js';
 
 // Moved with the functions from tests/crawlable-developments.test.mjs when the
 // corpus generator was deleted (refactor Phase 1b); the verification desk demo

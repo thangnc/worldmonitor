@@ -45,7 +45,7 @@ export const CACHE_VERSION = 'v12';
 
 // 128 bits of SHA-256. Wide enough that a second preimage is infeasible,
 // short enough that the longest key stays inside the 120-character tail the
-// shared contract allows (shared/openapi-filter-param-contracts.json,
+// shared contract allows (packages/shared/openapi-filter-param-contracts.json,
 // newsSummarizeArticleCacheKeyPattern).
 const DIGEST_HEX_CHARS = 32;
 

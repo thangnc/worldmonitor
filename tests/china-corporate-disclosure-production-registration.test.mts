@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../packages/shared/bootstrap-tier-keys.js';
 import {
   DECISION_SIGNAL_PROVENANCE_FAMILY_REGISTRATIONS,
-} from '../shared/decision-signal-provenance';
+} from '../packages/shared/decision-signal-provenance';
 import {
   CHINA_CORPORATE_DISCLOSURE_MAX_STALE_MIN,
 } from '../scripts/seed-china-corporate-disclosures.mjs';
@@ -30,7 +30,7 @@ describe('China corporate disclosure production registration (#5577)', () => {
   });
 
   it('registers SSE and SZSE as reviewed official-exchange publishers', () => {
-    const registry = read('shared/source-provenance.ts');
+    const registry = read('packages/shared/source-provenance.ts');
     assert.match(registry, /'Shanghai Stock Exchange': 'market'/);
     assert.match(registry, /'Shenzhen Stock Exchange': 'market'/);
     assert.match(registry, /'Shanghai Stock Exchange': \{[\s\S]*?risk: 'high'/);
@@ -117,7 +117,7 @@ describe('China corporate disclosure production registration (#5577)', () => {
   });
 
   it('shares the document-host policy with the producer', () => {
-    const policy = read('shared/china-corporate-disclosure-policy.js');
+    const policy = read('packages/shared/china-corporate-disclosure-policy.js');
     const adapters = read('scripts/china-corporate-disclosures/adapters.mjs');
     assert.match(policy, /CHINA_DISCLOSURE_DOCUMENT_HOSTS/);
     assert.match(adapters, /china-corporate-disclosure-policy\.js/);

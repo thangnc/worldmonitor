@@ -6,7 +6,7 @@
  * the external stories our pipeline carries — the first number that can
  * honestly answer "did we miss a story?".
  *
- * Matching delegates to shared/story-identity (#4919): the same
+ * Matching delegates to packages/shared/story-identity (#4919): the same
  * edit-tolerant similarity the pipeline itself uses for corroboration,
  * so "we have this story" means the same thing here as it does there.
  *

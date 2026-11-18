@@ -1,5 +1,5 @@
 import { isKnownPublicPagePath, originNotFoundResponse } from './src/config/agent-not-found';
-import agentRequestPolicy from './shared/agent-request-policy.json';
+import agentRequestPolicy from './packages/shared/agent-request-policy.json';
 
 const BOT_UA =
   /bot|crawl|spider|slurp|archiver|wget|curl\/|python-requests|scrapy|httpclient|go-http|java\/|libwww|perl|ruby|php\/|ahrefsbot|semrushbot|mj12bot|dotbot|baiduspider|yandexbot|sogou|bytespider|petalbot|gptbot|claudebot|ccbot/i;

@@ -17,7 +17,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest';
-import { normalizeFeedDateZone } from '../shared/feed-date-zone.js';
+import { normalizeFeedDateZone } from '../packages/shared/feed-date-zone.js';
 
 const { parseRssXml, extractFirstDateTag, FUTURE_DATE_TOLERANCE_MS } = __testing__;
 

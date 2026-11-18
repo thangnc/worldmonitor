@@ -12,7 +12,7 @@ const PRUNE_AGE_MS = 90 * 24 * 60 * 60 * 1000;
  * Persist a snapshot atomically with idempotency guard and index pruning.
  * Returns whether the persist actually happened (false = dedupe skip).
  *
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} snapshot
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} snapshot
  * @returns {Promise<{ persisted: boolean; reason: string }>}
  */
 export async function persistSnapshot(snapshot) {
@@ -81,7 +81,7 @@ export async function persistSnapshot(snapshot) {
  * (compares prev vs curr) and by tests.
  *
  * @param {string} regionId
- * @returns {Promise<import('../../shared/regions.types.js').RegionalSnapshot | null>}
+ * @returns {Promise<import('../../packages/shared/regions.types.js').RegionalSnapshot | null>}
  */
 export async function readLatestSnapshot(regionId) {
   const { url, token } = getRedisCredentials();

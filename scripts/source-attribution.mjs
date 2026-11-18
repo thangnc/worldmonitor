@@ -30,7 +30,7 @@ import {
 } from './source-catalog-identity.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const MANIFEST_PATH = 'shared/source-attribution-manifest.json';
+const MANIFEST_PATH = 'packages/shared/source-attribution-manifest.json';
 const DOCS_PATH = 'docs/engineering/architecture/source-attribution.md';
 // MDX-style comment markers, kept from when this page was published by
 // Mintlify (MDX v3 rejects `<!--`); they are harmless in plain Markdown. The markers are interpolated into RegExp below, and `{`,
@@ -1131,7 +1131,7 @@ const LOGICAL_ENTRIES = [
 // drop them. The file is pinned but the line deliberately is not: a line pin
 // hard-fails the whole scan the moment an unrelated edit shifts it.
 const DYNAMIC_HOSTS = [
-  { host: 'webcams.windy.com', kind: 'structured', path: 'shared/pinned-webcams.ts' },
+  { host: 'webcams.windy.com', kind: 'structured', path: 'packages/shared/pinned-webcams.ts' },
   { host: 'www.swfinstitute.org', kind: 'structured', path: 'scripts/seed-sovereign-wealth.mjs' },
   { host: 'www.ifswf.org', kind: 'structured', path: 'scripts/seed-sovereign-wealth.mjs' },
   { host: 'www.visionofhumanity.org', kind: 'structured', path: 'scripts/seed-resilience-static.mjs' },
@@ -1324,7 +1324,7 @@ function walkSourceFiles(rootDir) {
     }
   };
   for (const root of SOURCE_ROOTS) visit(root);
-  // The feed catalog is data under shared/, outside the code roots.
+  // The feed catalog is data under packages/shared/, outside the code roots.
   for (const path of FEED_DECLARATION_FILES) {
     if (!files.includes(path) && existsSync(join(rootDir, path))) files.push(path);
   }

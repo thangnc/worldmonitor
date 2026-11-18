@@ -7,7 +7,7 @@ import {
   createUnavailableChinaCorridorControlTowerResponse,
   validateChinaCorridorProvenanceForSurface,
   type ChinaCorridorControlTowerResponse,
-} from '../../../../shared/china-corridor-control-towers';
+} from '../../../../packages/shared/china-corridor-control-towers';
 import { CHINA_CORRIDOR_CONTROL_TOWERS_KEY } from '../../../_shared/cache-keys';
 import { cachedFetchJson, getCachedJsonBatch } from '../../../_shared/redis';
 import { composeChinaCorridorControlTowers } from './china-corridor-control-towers';

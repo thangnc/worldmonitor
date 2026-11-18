@@ -8,7 +8,7 @@ import {
   __resetServerInsightsCacheForTests,
 } from '../src/services/insights-loader';
 import { __testing__ as bootstrapTesting } from '../src/services/bootstrap';
-import { insightsSnapshotRejection } from '../shared/insights-snapshot.js';
+import { insightsSnapshotRejection } from '../packages/shared/insights-snapshot.js';
 
 describe('insights-loader', () => {
   describe('MAX_AGE_MS — server-cadence-aligned freshness window', () => {

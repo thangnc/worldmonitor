@@ -9,7 +9,7 @@ import { CHROME_UA } from './constants';
 import { cachedFetchJson } from './redis';
 import { getAcledAccessToken } from './acled-auth';
 import { normalizeCountryToIso2 } from './country-normalize';
-import UN_TO_ISO2 from '../../shared/un-to-iso2.json';
+import UN_TO_ISO2 from '../../packages/shared/un-to-iso2.json';
 
 const ACLED_API_URL = 'https://acleddata.com/api/acled/read';
 const ACLED_CACHE_TTL = 900; // 15 min — matches ACLED rate-limit window

@@ -1,13 +1,13 @@
 /**
  * Country-name → ISO2 normalizer backed by the repo's shared gazetteer
- * (`shared/country-names.json`, lowercase-name → uppercase-ISO2).
+ * (`packages/shared/country-names.json`, lowercase-name → uppercase-ISO2).
  *
  * The cron payload has `country` as a free-form string that may be:
  *   - already an ISO2 code ("US", "IR")
  *   - a full name ("United States", "Iran")
  *   - a multi-word name with the connector lowercase ("south korea")
  *   - the sentinel "Global" when no country applies
- *     (shared/brief-filter.js:135 fallback)
+ *     (packages/shared/brief-filter.js:135 fallback)
  *   - empty / unknown / garbage
  *
  * A null return tells the caller "no country-specific context applies"
@@ -15,7 +15,7 @@
  * NOT an error condition for sentinel values like "Global".
  */
 
-import COUNTRY_NAMES_RAW from '../../shared/country-names.json';
+import COUNTRY_NAMES_RAW from '../../packages/shared/country-names.json';
 
 const COUNTRY_NAMES = COUNTRY_NAMES_RAW as Record<string, string>;
 
@@ -78,7 +78,7 @@ export function normalizeCountryToIso2(raw: unknown): string | null {
   if (trimmed === '') return null;
 
   // "Global" is the composer's non-country fallback
-  // (shared/brief-filter.js:135). Map to null without treating as error.
+  // (packages/shared/brief-filter.js:135). Map to null without treating as error.
   if (trimmed.toLowerCase() === 'global') return null;
 
   if (/^[A-Za-z]{2}$/.test(trimmed)) {

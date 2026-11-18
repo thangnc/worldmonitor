@@ -20,8 +20,8 @@ import {
   CREDIBILITY_TIER_SCORES,
   CREDIBILITY_WEIGHTS,
   computeCredibilityScore,
-} from '../shared/news-credibility.js';
-import { getSourcePropagandaRisk } from '../shared/source-provenance.ts';
+} from '../packages/shared/news-credibility.js';
+import { getSourcePropagandaRisk } from '../packages/shared/source-provenance.ts';
 import { getSourceTier } from '../server/_shared/source-tiers.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -167,7 +167,7 @@ describe('digest wiring (source-textual)', () => {
   });
 
   it('list-feed-digest imports the shared scorer and writes credibilityScore', () => {
-    assert.match(digestSrc, /from '\.\.\/\.\.\/\.\.\/\.\.\/shared\/news-credibility\.js'/);
+    assert.match(digestSrc, /from '\.\.\/\.\.\/\.\.\/\.\.\/packages\/shared\/news-credibility\.js'/);
     assert.match(digestSrc, /return computeCredibilityScore\(\{/);
     assert.match(
       digestSrc,

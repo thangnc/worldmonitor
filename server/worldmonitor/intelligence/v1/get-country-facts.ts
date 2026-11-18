@@ -5,9 +5,9 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
-import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
+import { isAssignedCountryCode } from '../../../../packages/shared/country-code-resolve';
 import { cachedFetchJson } from '../../../_shared/redis';
-import unToIso2Json from '../../../../shared/un-to-iso2.json';
+import unToIso2Json from '../../../../packages/shared/un-to-iso2.json';
 
 const FACTS_TTL = 86400;
 const NEGATIVE_TTL = 120;

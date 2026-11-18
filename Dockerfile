@@ -15,9 +15,10 @@ ENV npm_config_install_links=true
 
 # Install root dependencies (layer-cached until package.json changes)
 COPY package.json package-lock.json ./
-# Workspace manifests: npm ci links each workspace package (@wm/contracts) into
-# node_modules, so its package.json must exist before the install.
+# Workspace manifests: npm ci links each workspace package (@wm/contracts,
+# @wm/shared) into node_modules, so its package.json must exist before the install.
 COPY packages/contracts/package.json ./packages/contracts/
+COPY packages/shared/package.json ./packages/shared/
 COPY vendor/braces/ ./vendor/braces/
 COPY vendor/stream-json/ ./vendor/stream-json/
 COPY vendor/vercel-og/ ./vendor/vercel-og/
@@ -66,8 +67,9 @@ WORKDIR /app
 # API server
 COPY --from=builder /app/docker/local-api/local-api-server.mjs ./local-api-server.mjs
 COPY --from=builder /app/docker/local-api/package.json ./package.json
-COPY --from=builder /app/shared/llm-health-providers.js ./shared/llm-health-providers.js
-COPY --from=builder /app/shared/selfhost-relay-paths.js ./shared/selfhost-relay-paths.js
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=builder /app/packages/shared/llm-health-providers.js ./packages/shared/llm-health-providers.js
+COPY --from=builder /app/packages/shared/selfhost-relay-paths.js ./packages/shared/selfhost-relay-paths.js
 ENV LOCAL_API_RESOURCE_DIR=/app
 
 # Minimal runtime node_modules — required by raw .js handlers that aren't

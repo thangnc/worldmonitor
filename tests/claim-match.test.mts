@@ -14,7 +14,7 @@ import {
   matchClaimToClusters,
 } from '../server/_shared/claim-match.ts';
 import { assessCorroboration } from '../server/_shared/corroboration.ts';
-import type { ClusteredEventCore, NewsItemCore } from '../shared/news-clustering-core.js';
+import type { ClusteredEventCore, NewsItemCore } from '../packages/shared/news-clustering-core.js';
 
 function item(source: string, title: string, extra: Partial<NewsItemCore> = {}): NewsItemCore {
   return { source, title, link: `https://example.test/${encodeURIComponent(source)}/${encodeURIComponent(title)}`, pubDate: new Date('2026-10-09T12:00:00Z'), isAlert: false, ...extra };

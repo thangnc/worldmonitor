@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { BOOTSTRAP_CACHE_KEYS } from '../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS } from '../packages/shared/bootstrap-tier-keys.js';
 import { __testing__ as healthTesting } from '../api/health.js';
 import { CHINA_COVERAGE_ENTRIES } from '../scripts/china-coverage-manifest.mjs';
 import {

@@ -22,7 +22,7 @@ The owner runs a private, low-noise dashboard, World Monitor Lite, focused on th
 - Early indicators come first: feeds that report army activity, violence, macro releases, bond moves, hacking, releases and outages as soon as they happen. Link each indicator to the news around it, and say "No linked news found" rather than guess a cause (spec: Early indicators).
 - Upstream sync is dropped (2026-11-07): Lite is the product, and only the ingestion architecture is kept. The [refactor plan](docs/engineering/plans/2026-11-18-001-refactor-lite-monorepo-plan.md) removed the old dashboard, the profile flag and the site variants in Phase 1, then moves to npm workspaces + Turborepo and Vite 8, with hosting last. Build Lite work directly: no env flag, no flag-off path, no site variant. [Legacy features](docs/engineering/product/legacy-features.md) lists what leaves and how to bring it back.
 - The owner's front page is the Lite UI at `/lite` (`src/lite/`, Preact and Tailwind): the cross-domain Briefing, with the three domain screens as its children. Its widgets show real data, a labelled derived rule, or labelled samples, never unlabelled samples.
-- Reuse the existing `shared/` intelligence modules (story identity, publisher families, credibility, corroboration, keyword spikes, grounded briefs) before writing new scoring, dedup, or brief code.
+- Reuse the existing `packages/shared/` intelligence modules (story identity, publisher families, credibility, corroboration, keyword spikes, grounded briefs) before writing new scoring, dedup, or brief code.
 - Add no new datastore (Supabase Postgres, R2 raw archive) until its phase gate in the spec is met. Redis stays the store the dashboard reads.
 - Model work at the event level, not the article level. Keep sources, timestamps, confidence, and the distinction between confirmed facts, attributed claims, and model inference visible.
 - The deployment stays private and access-gated under the "World Monitor" name. Opening it to others needs a distinct name first (trademark policy).
@@ -146,9 +146,9 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 **No variants, no profile flag.** Refactor Phase 1d removed `VITE_VARIANT`/`SITE_VARIANT` and `VITE_LITE_PROFILE`. `/` and `/dashboard` always 307 to `/lite` (query kept): `vercel.json` owns that redirect, and `docker/nginx.conf*` and `vite.dev-api.ts` mirror it. A `variant` request parameter on the news RPCs (`full`, `tech`, `finance`) names a feed digest edition on the server, not a site variant.
 
-**`shared/` vs `src/shared/`.** The top-level `shared/` holds logic that both the browser and the server must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side.
+**`packages/shared/` vs `src/shared/`.** The `@wm/shared` workspace package (`packages/shared/`) holds logic that both the browser and the server must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side. `scripts/shared/` is the Railway seeders' byte-identical mirror of parts of it (mirror tests keep them in sync), because scripts-rooted services cannot see the rest of the repository.
 
-**Other surfaces.** `docs/` holds only `docs/engineering/` (engineering records, mapped by [its README](docs/engineering/README.md)). The `@wm/contracts` workspace package (`packages/contracts/`) holds the proto sources, the generated TypeScript (`generated/`) and the generated OpenAPI (`openapi/`). The Mintlify public site, the published `skills/` recipes, the SDKs, CLI, MCP server, agent-client plugins and the public agent and SEO outputs were removed in refactor Phase 1c.
+**Other surfaces.** `docs/` holds only `docs/engineering/` (engineering records, mapped by [its README](docs/engineering/README.md)). The `@wm/contracts` workspace package (`packages/contracts/`) holds the proto sources, the generated TypeScript (`generated/`) and the generated OpenAPI (`openapi/`). The `@wm/shared` workspace package (`packages/shared/`) holds the cross-runtime logic and data. The Mintlify public site, the published `skills/` recipes, the SDKs, CLI, MCP server, agent-client plugins and the public agent and SEO outputs were removed in refactor Phase 1c.
 
 ## Critical boundaries
 
@@ -156,7 +156,7 @@ The browser import direction is `types -> config -> services -> lite`, and `src/
 
 - Legacy `api/*.js` entries are self-contained JavaScript. Import same-directory `_*.js` helpers or packages, never `server/` or `src/`.
 - TypeScript API entries may import `server/` and `packages/contracts/generated/`, but no other browser code. `server/` must not import `src/lite/`.
-- Browser code imports the contracts by package name (`@wm/contracts/generated/...`). `api/`, `server/`, `shared/` and `middleware.ts` import `packages/contracts/` by relative path until a Vercel preview proves workspace packages in Edge bundles (`lint:boundaries` enforces it).
+- Browser code imports the workspace packages by name (`@wm/contracts/generated/...`, `@wm/shared/...`). `api/`, `server/`, `packages/shared/`, `middleware.ts`, `vite.dev-api.ts` and the `src/` modules they import use relative paths into `packages/contracts/` and `packages/shared/` until a Vercel preview proves workspace packages in Edge bundles (`lint:boundaries` enforces it).
 - Edit proto definitions and regenerate. Never hand-edit `packages/contracts/generated/`.
 - Use shared cache and response helpers. Use `cachedFetchJson()` when applicable. Include every request-varying parameter in cache keys.
 - Edge code must not import `node:http`, `node:https`, or `node:zlib`. Use `(...args) => globalThis.fetch(...args)`, never `fetch.bind(globalThis)`.

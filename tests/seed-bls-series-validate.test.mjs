@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 
 import { BLS_SERIES_IDS, validate } from '../scripts/seed-bls-series.mjs';
 
-const contracts = JSON.parse(readFileSync(new URL('../shared/openapi-filter-param-contracts.json', import.meta.url), 'utf8'));
+const contracts = JSON.parse(readFileSync(new URL('../packages/shared/openapi-filter-param-contracts.json', import.meta.url), 'utf8'));
 
 function series(id, observationCount = 3) {
   return {

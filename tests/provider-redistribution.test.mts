@@ -7,7 +7,7 @@ import {
 import {
   hasRedistributableProviderAttribution,
   isOpenSkyProvider,
-} from '../shared/provider-redistribution';
+} from '../packages/shared/provider-redistribution';
 
 // The removed internal-MCP trust marker: a client-sent copy grants nothing.
 const FORGED_MCP_MARKER = 'x-wm-mcp-internal-verified';

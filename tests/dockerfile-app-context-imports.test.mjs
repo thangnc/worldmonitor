@@ -158,9 +158,9 @@ describe('docker/Dockerfile — tsc inputs stay inside the build context', () =>
     const tmp = mkdtempSync(join(tmpdir(), 'docker-ctx-'));
     try {
       const put = (rel, body) => { mkdirSync(dirname(join(tmp, rel)), { recursive: true }); writeFileSync(join(tmp, rel), body); };
-      put('src/app.ts', "import { helper } from '../shared/helper';\nimport View from './view';\n");
+      put('src/app.ts', "import { helper } from '../packages/shared/helper';\nimport View from './view';\n");
       put('src/view.tsx', "import { widget } from '../tests/fixtures/widget';\nexport default widget;\n");
-      put('shared/helper.ts', "export { fixture as helper } from '../tests/fixtures/data';\n");
+      put('packages/shared/helper.ts', "export { fixture as helper } from '../../tests/fixtures/data';\n");
       put('tests/fixtures/data.ts', 'export const fixture = 1;\n');
       put('tests/fixtures/widget.tsx', 'export const widget = 1;\n');
       put('tests/fixtures/unused.ts', "import '../../src/app';\n");
@@ -172,7 +172,7 @@ describe('docker/Dockerfile — tsc inputs stay inside the build context', () =>
       const entries = ['src/app.ts', 'src/types.ts', 'src/pkg.ts'].map((f) => join(tmp, f));
       const offenders = findOffenders(tmp, entries, parseDockerignore('tests'), FIXTURE_TS_OPTIONS);
       assert.deepEqual(offenders.sort(), [
-        'shared/helper.ts → tests/fixtures/data.ts',
+        'packages/shared/helper.ts → tests/fixtures/data.ts',
         'src/pkg.ts → tests/pkg-types/shapes.d.ts',
         'src/types.ts → tests/typings/index.d.ts',
         'src/view.tsx → tests/fixtures/widget.tsx',
@@ -183,6 +183,6 @@ describe('docker/Dockerfile — tsc inputs stay inside the build context', () =>
   });
 
   it('no type-checked file imports a path .dockerignore drops', () => {
-    assert.deepEqual(findOffenders(root, files, rules, repoTsOptions()), [], 'these imports resolve locally but are missing from the Docker build context; move the target under src/ or shared/');
+    assert.deepEqual(findOffenders(root, files, rules, repoTsOptions()), [], 'these imports resolve locally but are missing from the Docker build context; move the target under src/ or packages/shared/');
   });
 });

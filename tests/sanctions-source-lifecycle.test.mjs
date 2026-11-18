@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { mergeSanctionEntries, SEMA_SOURCE, SEMA_TIMEOUT_MS, SANCTIONS_SOURCE_VERSION, sanctionsListContentMeta } from '../scripts/_sema-sanctions.mjs';
 import { CSL_ROW_ID, CSL_SOURCES, CSL_TIMEOUT_MS } from '../scripts/_csl-sanctions.mjs';
-import { projectCountrySanctions } from '../shared/country-sanctions-signals.mjs';
+import { projectCountrySanctions } from '../packages/shared/country-sanctions-signals.mjs';
 import { __testing__ as health } from '../api/health.js';
 import { readSeedSnapshot, verifySeedKey, runSeed, writeExtraKeyWithMeta } from '../scripts/_seed-utils.mjs';
 import { buildEnvelope } from '../scripts/_seed-envelope-source.mjs';
