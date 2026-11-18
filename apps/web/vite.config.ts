@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
+import preact from '@preact/preset-vite';
 import pkg from '../../package.json';
 import { devApiPlugins } from './vite.dev-api';
 
@@ -14,6 +15,15 @@ import { devApiPlugins } from './vite.dev-api';
  * repository root for what the deploy owns there: `.env*` (envDir and
  * loadEnv), `public/` (publicDir), the app version (root package.json) and
  * the build output `dist/` that vercel.json, the Dockerfiles and turbo read.
+ *
+ * Vite 8 bundles this config with the dev API handler graph (vite.dev-api.ts
+ * imports the handlers so they run as in production) and lists every feature
+ * of that graph its planned `configLoader: 'native'` default will not support:
+ * about 960 extensionless imports. Loading the handlers through
+ * `server.ssrLoadModule` instead fails, because some reach a CommonJS file
+ * (scripts/lib/llm-model-policy.cjs) the SSR loader cannot evaluate. The npm
+ * scripts and Dockerfiles set VITE_CONFIG_NATIVE_IGNORE_WARNING to keep that
+ * list out of every build and dev start.
  */
 const REPO_ROOT = resolve(__dirname, '../..');
 const STATIC_SCRIPT_NONCE = 'wm-static-bootstrap';
@@ -47,11 +57,15 @@ export default defineConfig(({ mode }) => {
     },
     // The shared CSP is strict-dynamic plus this nonce (vercel.json, nginx).
     html: { cspNonce: STATIC_SCRIPT_NONCE },
-    plugins: [tailwindcss(), ...devApiPlugins()],
+    // @preact/preset-vite: Prefresh HMR (an edited component re-renders and
+    // keeps its state) and the Preact devtools hook in dev; JSX goes through
+    // Vite's Oxc transform. No React package is in the app, so react imports
+    // stay unaliased and fail loudly instead of resolving to preact/compat.
+    plugins: [preact({ reactAliasesEnabled: false }), tailwindcss(), ...devApiPlugins()],
     // The MapLibre worker (apps/web/src/lite/map/LiteMap.tsx) stays under assets/lite/ with the rest.
     worker: {
       format: 'es',
-      rollupOptions: { output: LITE_OUTPUT },
+      rolldownOptions: { output: LITE_OUTPUT },
     },
     build: {
       outDir: resolve(REPO_ROOT, 'dist'),
@@ -60,7 +74,7 @@ export default defineConfig(({ mode }) => {
       sourcemap: false,
       // maplibre-gl alone is about 1 MB minified.
       chunkSizeWarningLimit: 1100,
-      rollupOptions: {
+      rolldownOptions: {
         input: { lite: resolve(__dirname, 'lite.html') },
         output: LITE_OUTPUT,
       },

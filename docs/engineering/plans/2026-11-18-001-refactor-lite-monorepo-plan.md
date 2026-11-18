@@ -86,6 +86,23 @@ A design pass against the post-Phase-1 tree changed the order and moved three it
 - Add `@preact/preset-vite`: prefresh HMR, devtools, `preact/compat` aliasing if any React-only package appears.
 - Re-measure: `apps/web` build time, dev cold start, HMR latency, bundle size. Baseline from 2026-11-07: `build:full` 48–50 s, main `vite build` ~16.7 s.
 
+### Phase 3 results (2026-11-18)
+
+PR 3.1 (#84) pointed Tailwind's `source()` at `apps/web` (CSS 71.0 → 57.9 KB, same computed styles) and narrowed the turbo build inputs. PR 3.2 moved to Vite 8.3 (Rolldown, Oxc, Lightning CSS) with `@preact/preset-vite`, and removed the dead `vite-plugin-pwa` and its Workbox precache module. Measured on the same machine, Lite only (the dashboard left in Phase 1):
+
+| Measure | Vite 6.4.5 | Vite 8.3.8 + preset |
+|---|---|---|
+| `vite build`, warm (3 runs) | 3.0–3.5 s | 1.26–1.66 s |
+| `npm run build` (env check, tsc, Vite, source-map check) | — | Vite step 0.47 s |
+| Dev server ready, cold dependency cache | 0.5–1.1 s | 1.2 s |
+| First render of `/lite` in dev | 0.8–1.2 s | 0.35 s |
+| Component edit | full reload, ~620 ms, state lost | Prefresh, 60–114 ms, state kept |
+| `assets/lite` | 59 files, 3.30 MB raw, 1.226 MB gzip | 80 files, 3.33 MB raw, 1.224 MB gzip |
+
+Each route requests the same number of JavaScript and CSS files as before. Rolldown splits more small chunks that no route loads together. Rendering is unchanged: across the five routes at 1440 and 390 px, all 6,574 elements have the same computed style and box.
+
+Follow-up: Vite 8 warns that its planned `configLoader: 'native'` default cannot load this config. The dev API handler graph is bundled into it and has about 960 extensionless imports. Loading the handlers with `server.ssrLoadModule` fails, because some reach `scripts/lib/llm-model-policy.cjs`, which the SSR loader cannot evaluate. The npm scripts and Dockerfiles set `VITE_CONFIG_NATIVE_IGNORE_WARNING` until Phase 4 decides where the dev API runs.
+
 ## Phase 4 — Deployment (last; decide then)
 
 Options to evaluate with measurements once Phases 0–3 land:

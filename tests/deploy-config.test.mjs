@@ -1500,7 +1500,7 @@ describe('Lite deploy contracts', () => {
     assert.equal(packageJson.scripts.build, 'npm run build -w @wm/web');
     assert.equal(
       webPackageJson.scripts.build,
-      'npm --prefix ../.. run security:vite-env-secrets -- --strict-local && tsc && vite build && npm --prefix ../.. run check:source-maps',
+      'npm --prefix ../.. run security:vite-env-secrets -- --strict-local && tsc && cross-env VITE_CONFIG_NATIVE_IGNORE_WARNING=true vite build && npm --prefix ../.. run check:source-maps',
     );
     assert.equal(packageJson.scripts['build:full'], 'npm run build');
     assert.equal(packageJson.scripts.prebuild, undefined, 'the deploy build must not run hidden prebuild generators');
@@ -1803,7 +1803,7 @@ describe('Lite deploy contracts', () => {
     }
     assert.deepEqual(Object.keys(webPackageJson.scripts).filter((name) => name.startsWith('prebuild')), []);
     assert.doesNotMatch(webPackageJson.scripts.build, /npm (?:--prefix \S+ )?run (?:product:facts|build:openapi)\b/);
-    assert.match(webPackageJson.scripts.build, /&& tsc && vite build && /);
+    assert.match(webPackageJson.scripts.build, /&& tsc && cross-env VITE_CONFIG_NATIVE_IGNORE_WARNING=true vite build && /);
   });
 
   it('does not reintroduce a shadowing /api/:path* → /api/not-found rewrite', () => {

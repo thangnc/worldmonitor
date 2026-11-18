@@ -503,20 +503,23 @@ describe('security audit baseline', () => {
     assert.deepEqual(baselineEntriesFor('consumer-prices-core/package-lock.json'), []);
   });
 
-  it('keeps the root esbuild audit fix scoped away from Vite build tooling', () => {
+  it('keeps one audit-patched esbuild, which Vite accepts as its optional peer', () => {
     const packageJson = readRepoJson('package.json');
     const lockfile = readRepoJson('package-lock.json');
     const rootEsbuild = lockfile.packages['node_modules/esbuild'];
     const vite = lockfile.packages['node_modules/vite'];
-    const viteEsbuild = lockfile.packages['node_modules/vite/node_modules/esbuild'];
 
     assert.equal(packageJson.overrides?.esbuild, undefined);
     assert.equal(packageJson.devDependencies?.esbuild, '0.28.1');
     assert.equal(rootEsbuild?.version, '0.28.1');
-    assert.equal(vite?.dependencies?.esbuild, '^0.25.0');
-    assert.ok(viteEsbuild, 'Vite must keep its own esbuild when root uses the audit-patched version');
-    assert.match(viteEsbuild.version, /^0\.25\./);
-    assert.notEqual(viteEsbuild.version, rootEsbuild.version);
+    // Vite 8 bundles with Rolldown and minifies with Oxc. esbuild is only its
+    // optional peer, so the root's patched copy is the only one installed
+    // (Vite 6 nested its own esbuild 0.25 here).
+    assert.match(vite?.version, /^8\./);
+    assert.equal(vite?.dependencies?.esbuild, undefined);
+    assert.equal(vite?.peerDependenciesMeta?.esbuild?.optional, true);
+    assert.match(vite?.peerDependencies?.esbuild, /(?:^|\|\|\s*)\^0\.28\.0(?:\s|$)/);
+    assert.equal(lockfile.packages['node_modules/vite/node_modules/esbuild'], undefined);
   });
 
   it('flags a baseline entry that no longer matches any current advisory', (t) => {

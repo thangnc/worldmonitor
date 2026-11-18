@@ -5,8 +5,8 @@
   "description": "World Monitor Lite, the only web app: lite.html, the Preact and Tailwind UI in src/lite/, and the Vite configs (vite.config.ts, and vite.dev-api.ts for the API routes `npm run dev` serves). It imports the workspace packages by name (@wm/client, @wm/contracts, @wm/shared, @wm/server); vite.dev-api.ts reaches packages/server and packages/contracts by relative path (lint:boundaries Check 5). Vite runs with this directory as its root but reads the repository root's .env* files and public/, and writes the repository root's dist/, which vercel.json, the Dockerfiles and turbo read. `npm run build` at the repository root (vercel.json's buildCommand) runs this package's build: the strict Vite env secrets check, the browser typecheck, the Vite build and the source-map gate.",
   "type": "module",
   "scripts": {
-    "build": "npm --prefix ../.. run security:vite-env-secrets -- --strict-local && tsc && vite build && npm --prefix ../.. run check:source-maps",
-    "dev": "vite",
+    "build": "npm --prefix ../.. run security:vite-env-secrets -- --strict-local && tsc && cross-env VITE_CONFIG_NATIVE_IGNORE_WARNING=true vite build && npm --prefix ../.. run check:source-maps",
+    "dev": "cross-env VITE_CONFIG_NATIVE_IGNORE_WARNING=true vite",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },

@@ -53,6 +53,9 @@ RUN npm ci --prefix scripts \
     && npm ci --prefix consumer-prices-core
 
 # Typecheck and build the frontend into dist/, as the root Dockerfile does.
+# Vite 8 lists every config-graph feature its future native config loader
+# lacks; the dev API handlers make that list ~960 lines (apps/web/vite.config.ts).
+ENV VITE_CONFIG_NATIVE_IGNORE_WARNING=true
 RUN npx tsc && npx vite build --config apps/web/vite.config.ts
 
 # The local API server (docker/local-api/local-api-server.mjs) loads esbuild
