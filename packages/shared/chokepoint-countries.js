@@ -1,10 +1,8 @@
 /**
  * Which countries each chokepoint tracker page lists as related.
  *
- * Editorial and already public: `scripts/chokepoint-page-content.mjs` reads it
- * for the /chokepoints/* and /countries/* cross-links. It lives in `shared/`
- * so the edge country intel brief can cite the same relation without bundling
- * the page copy. Keyed by canonical chokepoint id
+ * Editorial. The public /chokepoints/* pages that first used it are gone; the
+ * edge country intel brief still cites the relation. Keyed by canonical chokepoint id
  * (packages/server/_shared/chokepoint-registry.ts).
  */
 export const CHOKEPOINT_COUNTRY_CODES = Object.freeze({

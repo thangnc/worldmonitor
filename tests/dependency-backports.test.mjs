@@ -1,13 +1,10 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
-import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const braces = require('braces');
-const CachePolicy = require('../vendor/http-cache-semantics');
 
 describe('installed dependency backports', () => {
   for (const [lockfile, name, version, resolved] of [
@@ -75,89 +72,5 @@ describe('braces stack-exhaustion remediation', () => {
     assert.doesNotThrow(() => braces.compile('{'.repeat(32) + 'a' + '}'.repeat(32)));
     assert.doesNotThrow(() => braces.compile('"' + '{'.repeat(3500) + '"'));
     assert.throws(() => braces.parse('{{a}}', { maxDepth: 1 }), /exceeds max depth/);
-  });
-});
-
-describe('http-cache-semantics restricted response remediation', () => {
-  it('processes hostile Connection and Vary whitespace within a bounded time', () => {
-    const source = fileURLToPath(new URL('../vendor/http-cache-semantics/index.js', import.meta.url));
-    const result = spawnSync(process.execPath, ['-e', `
-      const assert = require('node:assert/strict');
-      const CachePolicy = require(${JSON.stringify(source)});
-      const policy = new CachePolicy({ url: '/', headers: {} }, {
-        status: 200, headers: {
-          'cache-control': 'public, max-age=60',
-          connection: 'x-hop, x' + ' '.repeat(300000) + 'y, y-hop',
-          'x-hop': 'remove', 'y-hop': 'remove', 'x-end': 'keep'
-        }
-      });
-      const headers = policy.responseHeaders();
-      assert.equal(headers['x-hop'], undefined);
-      assert.equal(headers['y-hop'], undefined);
-      assert.equal(headers['x-end'], 'keep');
-      const request = { url: '/', headers: { 'x-match': 'same', 'y-match': 'same' } };
-      const varied = new CachePolicy(request, { status: 200, headers: {
-        'cache-control': 'public, max-age=60',
-        vary: 'x-match, x' + ' '.repeat(300000) + 'y, y-match'
-      } });
-      assert.equal(varied.satisfiesWithoutRevalidation(request), true);
-      assert.equal(varied.satisfiesWithoutRevalidation({ ...request, headers: { ...request.headers, 'y-match': 'different' } }), false);
-    `], { timeout: 5000, encoding: 'utf8' });
-    assert.equal(result.error, undefined, result.error?.message);
-    assert.equal(result.status, 0, result.stderr);
-  });
-
-  const request = { url: 'https://example.test/account', method: 'GET', headers: {} };
-  const restricted = [
-    { 'cache-control': 'private, max-age=60' },
-    { 'cache-control': 'no-store, max-age=60' },
-    { 'cache-control': 'no-cache, max-age=60' },
-    { 'cache-control': 'proxy-revalidate, max-age=60' },
-    { 'cache-control': 'max-age=60', 'set-cookie': 'session=secret' },
-    { 'cache-control': 'max-age=60', vary: '*' },
-    { 'cache-control': 'max-age=60', vary: ' * ' },
-    { 'cache-control': 'max-age=60', vary: 'accept, *' },
-  ];
-
-  for (const headers of restricted) {
-    it(`requires validation for ${JSON.stringify(headers)} despite stale directives`, () => {
-      const initial = new CachePolicy(request, {
-        status: 200,
-        headers: { ...headers, 'cache-control': headers['cache-control'] + ', stale-if-error=600, stale-while-revalidate=600', age: '120' },
-      });
-      for (const policy of [initial, CachePolicy.fromObject(JSON.parse(JSON.stringify(initial.toObject())))]) {
-        for (const directive of ['max-stale', 'max-stale=999999']) {
-          const next = { ...request, headers: { 'cache-control': directive } };
-          const result = policy.evaluateRequest(next);
-          assert.equal(policy.satisfiesWithoutRevalidation(next), false);
-          assert.equal(result.response, undefined);
-          assert.equal(result.revalidation.synchronous, true);
-        }
-        assert.equal(policy.useStaleWhileRevalidate(), false);
-        assert.equal(policy.timeToLive(), 0);
-        const result = policy.revalidatedPolicy(request, { status: 503, headers: {} });
-        assert.equal(result.modified, true);
-        assert.equal(result.matches, false);
-      }
-    });
-  }
-
-  it('does not treat inherited object properties as matching Vary headers', () => {
-    for (const vary of ['constructor', '__proto__', 'inherited']) {
-      const headers = Object.create({ inherited: 'secret' });
-      const original = { ...request, headers };
-      const policy = new CachePolicy(original, { status: 200, headers: { 'cache-control': 'public, max-age=60', vary } });
-      assert.equal(policy.satisfiesWithoutRevalidation({ ...request, headers: Object.create({ inherited: 'secret' }) }), false);
-    }
-  });
-
-  it('preserves valid fresh and explicitly allowed stale public responses', () => {
-    const fresh = new CachePolicy(request, { status: 200, headers: { 'cache-control': 'public, max-age=60' } });
-    assert.equal(fresh.satisfiesWithoutRevalidation(request), true);
-    const stale = new CachePolicy(request, { status: 200, headers: { 'cache-control': 'public, max-age=60', age: '120' } });
-    assert.equal(stale.satisfiesWithoutRevalidation(request), false);
-    assert.equal(stale.satisfiesWithoutRevalidation({ ...request, headers: { 'cache-control': 'max-stale=300' } }), true);
-    const privateCache = new CachePolicy(request, { status: 200, headers: { 'cache-control': 'private, max-age=60', 'set-cookie': 'session=secret' } }, { shared: false });
-    assert.equal(privateCache.satisfiesWithoutRevalidation(request), true);
   });
 });

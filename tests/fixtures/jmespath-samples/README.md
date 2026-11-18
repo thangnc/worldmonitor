@@ -3,6 +3,7 @@
 These three captured tool responses feed `scripts/measure-jmespath-savings.mjs`
 (the U6 reproducible token-savings A/B). They are real responses from the
 production MCP endpoint, captured ONCE via `scripts/capture-mcp-fixture.mjs`
+(removed with the MCP server in 2026-11; the fixtures stay as recorded)
 and committed verbatim so the script is fully deterministic — re-running on
 the committed fixtures produces byte-identical numbers.
 

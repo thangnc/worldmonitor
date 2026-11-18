@@ -4,7 +4,8 @@ import { test } from 'node:test';
 import YAML from 'yaml';
 
 const workflow = YAML.parse(readFileSync(new URL('../.github/workflows/codeql.yml', import.meta.url), 'utf8'));
-const all = ['actions', 'go', 'javascript-typescript', 'python', 'ruby', 'rust'];
+// The Go, Ruby and Rust SDKs left with refactor Phase 1; only these languages have source.
+const all = ['actions', 'javascript-typescript', 'python'];
 
 test('one daily all-language scan, never on PRs or pushes', () => {
   assert.equal('pull_request' in workflow.on, false);
@@ -23,7 +24,7 @@ test('scan jobs cover every language with least privilege and stable categories'
   assert.equal(analyze.permissions['security-events'], 'write');
   assert.equal(workflow.permissions.contents, 'read');
   const init = analyze.steps.find(step => step.uses?.startsWith('github/codeql-action/init@'));
-  assert.equal(init.with['build-mode'], "${{ matrix.language == 'go' && 'autobuild' || 'none' }}");
+  assert.equal(init.with['build-mode'], 'none');
   assert.equal(init.with.languages, '${{ matrix.language }}');
   const upload = analyze.steps.find(step => step.uses?.startsWith('github/codeql-action/analyze@'));
   assert.equal(upload.with.category, '/language:${{ matrix.language }}');
@@ -33,13 +34,10 @@ test('scan jobs cover every language with least privilege and stable categories'
   }
 });
 
-test('only the generated @vercel/og bundle is excluded from scanning', () => {
+test('scans the whole tree: no paths or paths-ignore narrow it', () => {
   const init = workflow.jobs.analyze.steps.find(step => step.uses?.startsWith('github/codeql-action/init@'));
-  const config = YAML.parse(init.with.config ?? '');
-  // The bundle is upstream satori/opentype.js output from scripts/vendor-vercel-og.mjs; it
-  // re-raised 22 alerts after #9782. Our patched vendor copies and the script stay scanned.
-  assert.deepEqual(config?.['paths-ignore'], ['vendor/vercel-og/dist']);
-  assert.equal(config.paths, undefined, 'a paths list would narrow every other scan');
+  // The only exclusion was the generated @vercel/og bundle, which left with the blog (2026-11).
+  assert.equal(init.with.config, undefined);
 });
 
 test('Dependabot updates all CodeQL actions together', () => {

@@ -610,9 +610,6 @@
           "path": "scripts/_r2-storage.mjs"
         },
         {
-          "path": "scripts/cloudflare-cache-rule.mjs"
-        },
-        {
           "path": "scripts/seed-internet-outages.mjs"
         },
         {
@@ -2646,9 +2643,6 @@
       "references": [
         {
           "path": "packages/server/worldmonitor/displacement/v1/cross-border-data.ts"
-        },
-        {
-          "path": "scripts/build-open-data-chokepoints.mjs"
         }
       ]
     },
@@ -3994,9 +3988,6 @@
       "attribution": "Excluded from the provider count: placeholder URL.",
       "status": "excluded",
       "references": [
-        {
-          "path": "scripts/mcp-live-smoke.mjs"
-        },
         {
           "path": "scripts/openapi-inject-examples.mjs"
         }
@@ -7979,15 +7970,10 @@
       "host": "registry.modelcontextprotocol.io",
       "provider": "registry.modelcontextprotocol.io",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/publish-mcp-registry.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "reliefweb.int",
@@ -10477,9 +10463,6 @@
           "path": "scripts/_upstash-rest.mjs"
         },
         {
-          "path": "scripts/capture-mcp-fixture.mjs"
-        },
-        {
           "path": "scripts/china-coverage-health.mjs"
         },
         {
@@ -10505,15 +10488,6 @@
         },
         {
           "path": "scripts/lib/x-news-accounts.cjs"
-        },
-        {
-          "path": "scripts/mcp-live-smoke.mjs"
-        },
-        {
-          "path": "scripts/mcp-proxy-live-smoke.mjs"
-        },
-        {
-          "path": "scripts/publish-mcp-registry.mjs"
         },
         {
           "path": "scripts/seed-digest-notifications.mjs"
@@ -14507,9 +14481,6 @@
           "path": "packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts"
         },
         {
-          "path": "scripts/build-open-data-chokepoints.mjs"
-        },
-        {
           "path": "scripts/build-un-m49-regions.mjs"
         },
         {
@@ -14529,9 +14500,6 @@
         },
         {
           "path": "scripts/lib/internal-links.mjs"
-        },
-        {
-          "path": "scripts/mcp-proxy-live-smoke.mjs"
         },
         {
           "path": "scripts/measure-composited-layers.mjs"

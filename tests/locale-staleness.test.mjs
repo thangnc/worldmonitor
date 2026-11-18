@@ -161,9 +161,8 @@ describe('locale staleness classification', () => {
     assert.deepEqual(unresolvedAfterRun(classification, new Set()).stale, ['a', 'c']);
   });
 
-  it('keeps a separate baseline per locale root', () => {
-    assert.equal(baselinePathFor(true), 'scripts/locale-baselines/pro-test.json');
-    assert.equal(baselinePathFor(false), 'scripts/locale-baselines/app.json');
+  it('keeps the app baseline outside the locale directory', () => {
+    assert.equal(baselinePathFor(), 'scripts/locale-baselines/app.json');
   });
 });
 

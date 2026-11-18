@@ -60,7 +60,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | api.aviationstack.com (api.aviationstack.com) | structured — scripts/ais-relay.cjs, scripts/seed-aviation.mjs |
 | api.axios.com (api.axios.com) | feed — packages/shared/news-catalog.json |
 | api.cammesa.com (api.cammesa.com) | structured — scripts/_regional-energy-source.mjs, scripts/shared/regional-energy-feeds.json |
-| api.cloudflare.com (api.cloudflare.com) | structured — scripts/_kv-storage.mjs, scripts/_r2-storage.mjs, scripts/cloudflare-cache-rule.mjs, scripts/seed-internet-outages.mjs, +1 more |
+| api.cloudflare.com (api.cloudflare.com) | structured — scripts/_kv-storage.mjs, scripts/_r2-storage.mjs, scripts/seed-internet-outages.mjs, scripts/seed-military-bases.mjs |
 | api.coingecko.com (api.coingecko.com) | structured — scripts/ais-relay.cjs |
 | api.data.gov.my (api.data.gov.my) | structured — scripts/_dosm-product-demand.mjs, scripts/backfill-fuel-prices-prev.mjs, scripts/seed-fuel-prices.mjs |
 | api.datos.gob.mx (api.datos.gob.mx) | structured — scripts/backfill-fuel-prices-prev.mjs |
@@ -192,7 +192,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | corridorrisk.io (corridorrisk.io) | structured — scripts/ais-relay.cjs |
 | corriere.it (corriere.it) | feed — packages/shared/news-catalog.json |
 | cp24.com (cp24.com) | feed — packages/shared/news-catalog.json |
-| creativecommons.org (creativecommons.org) | structured — packages/server/worldmonitor/displacement/v1/cross-border-data.ts, scripts/build-open-data-chokepoints.mjs |
+| creativecommons.org (creativecommons.org) | structured — packages/server/worldmonitor/displacement/v1/cross-border-data.ts |
 | creg.gov.co (creg.gov.co) | structured — scripts/lib/regional-fuel-feeds.mjs, scripts/shared/regional-energy-feeds.json |
 | cryptoslate.com (cryptoslate.com) | feed — packages/shared/news-catalog.json |
 | csis.org (csis.org) | feed — packages/shared/news-catalog.json |
@@ -284,7 +284,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | eurasianet.org (eurasianet.org) | feed — packages/shared/news-catalog.json |
 | euromaidanpress.com (euromaidanpress.com) | feed — packages/shared/news-catalog.json |
 | evn.com.vn (evn.com.vn) | structured — scripts/shared/regional-energy-feeds.json |
-| Example domain placeholder (example.com) | structured — scripts/mcp-live-smoke.mjs, scripts/openapi-inject-examples.mjs |
+| Example domain placeholder (example.com) | structured — scripts/openapi-inject-examples.mjs |
 | export.arxiv.org (export.arxiv.org) | feed+structured — packages/shared/news-catalog.json, scripts/seed-research.mjs |
 | ezamowienia.gov.pl (ezamowienia.gov.pl) | structured — scripts/_global-tender-feeds.mjs |
 | factchecktools.googleapis.com (factchecktools.googleapis.com) | structured — packages/server/_shared/fact-checks.ts |
@@ -578,7 +578,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | raw.githubusercontent.com (raw.githubusercontent.com) | structured — scripts/ais-relay.cjs, scripts/build-plane-alert-watchlist.mjs, scripts/fetch-country-boundary-overrides.mjs, scripts/generate-airline-codes.mjs, +4 more |
 | reasonstobecheerful.world (reasonstobecheerful.world) | feed — packages/shared/news-catalog.json |
 | reddit.com (reddit.com) | structured — scripts/ais-relay.cjs |
-| registry.modelcontextprotocol.io (registry.modelcontextprotocol.io) | structured — scripts/publish-mcp-registry.mjs |
+| registry.modelcontextprotocol.io (registry.modelcontextprotocol.io) | Excluded / candidate — No current fetch observed |
 | ReliefWeb (UN OCHA) (api.reliefweb.int) | structured — scripts/seed-climate-disasters.mjs |
 | reliefweb.int (reliefweb.int) | structured — scripts/seed-climate-news.mjs |
 | renaissancecapital.com (renaissancecapital.com) | feed — packages/shared/news-catalog.json |
@@ -793,8 +793,8 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | World Bank Open Data (api.worldbank.org) | structured — packages/server/worldmonitor/economic/v1/list-world-bank-indicators.ts, packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts, packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts, scripts/_defense-industrial-source.mjs, +13 more |
 | World Monitor hosted API (api.worldmonitor.app) | feed+structured — packages/client/services/runtime.ts, packages/shared/news-catalog.json, scripts/_widget-data-policy.cjs, scripts/ais-relay.cjs, +16 more |
 | World Monitor proxy (proxy.worldmonitor.app) | structured — packages/client/utils/proxy.ts, scripts/seed-security-advisories.mjs |
-| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/client/services/runtime.ts, +29 more |
-| World Monitor web app (www.worldmonitor.app) | structured — api/_cors.js, api/not-found.ts, packages/server/_shared/deprecation-policy.ts, packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts, +14 more |
+| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/client/services/runtime.ts, +25 more |
+| World Monitor web app (www.worldmonitor.app) | structured — api/_cors.js, api/not-found.ts, packages/server/_shared/deprecation-policy.ts, packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts, +12 more |
 | WorldMonitor test origin (worldmonitor.invalid) | structured — api/_md-url-twin.ts, packages/client/shared/public-rpc-cache.ts |
 | worldmonitor.mintlify.dev (worldmonitor.mintlify.dev) | Excluded / candidate — No current fetch observed |
 | wublockchain.com (wublockchain.com) | feed — packages/shared/news-catalog.json |
