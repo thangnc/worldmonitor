@@ -160,3 +160,6 @@ src-tauri/notices/*
 !src-tauri/notices/.gitkeep
 
 !vendor/vercel-og/dist/
+
+# Turborepo local cache (refactor Phase 2)
+.turbo/
