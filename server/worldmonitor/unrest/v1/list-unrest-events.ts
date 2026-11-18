@@ -8,7 +8,7 @@ import type {
   ListUnrestEventsRequest,
   ListUnrestEventsResponse,
   UnrestEvent,
-} from '../../../../src/generated/server/worldmonitor/unrest/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/unrest/v1/service_server';
 
 import { sortBySeverityAndRecency } from './_shared';
 import { readRequiredSeed } from '../../../_shared/required-seed';

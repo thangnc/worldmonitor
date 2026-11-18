@@ -21,7 +21,7 @@ import { injectJson, injectYaml } from '../scripts/openapi-inject-async-jobs.mjs
 // injector.
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 
 const RUN_PATH = '/api/scenario/v1/run-scenario';
 const POLL_PATH = '/api/scenario/v1/get-scenario-status';

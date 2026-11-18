@@ -1,4 +1,4 @@
-import type { AircraftDetails } from '../../../../src/generated/server/worldmonitor/military/v1/service_server';
+import type { AircraftDetails } from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 
 import { CHROME_UA } from '../../../_shared/constants';
 import { mapWingbitsDetails } from './_shared';

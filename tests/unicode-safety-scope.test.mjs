@@ -44,7 +44,7 @@ describe('unicode safety scan scope', () => {
     assert.deepEqual(EXCLUDED_PREFIXES, [
       '.git/',
       'node_modules/',
-      'src/generated/',
+      'packages/contracts/generated/',
       'docs/',
       'blog-site/',
       'public/blog/',

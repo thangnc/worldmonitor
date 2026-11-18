@@ -11,7 +11,7 @@ import { NEWS_POOL_MAX_LANGUAGES, sourceLanguage } from '../server/worldmonitor/
 import { NEWS_POOL_LAYOUT } from '../shared/news-pool-layout.generated';
 import { buildNewsPoolLayout } from '../shared/news-catalog';
 import { getOutletProfile } from '../server/_shared/outlet-profile';
-import { createNewsServiceRoutes, type ListNewsPoolResponse } from '../src/generated/server/worldmonitor/news/v1/service_server';
+import { createNewsServiceRoutes, type ListNewsPoolResponse } from '../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import { validateGeneratedRequest } from '../server/request-validator';
 
 const route = createNewsServiceRoutes(newsHandler, { validateRequest: validateGeneratedRequest })

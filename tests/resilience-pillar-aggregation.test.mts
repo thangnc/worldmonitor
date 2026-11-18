@@ -13,7 +13,7 @@ import {
   buildPillarList,
   type ResiliencePillarId,
 } from '../server/worldmonitor/resilience/v1/_pillar-membership.ts';
-import type { ResilienceDomain } from '../src/generated/server/worldmonitor/resilience/v1/service_server.ts';
+import type { ResilienceDomain } from '../packages/contracts/generated/server/worldmonitor/resilience/v1/service_server.ts';
 
 function makeDomain(id: string, score: number, coverage: number, weight = 0.17): ResilienceDomain {
   return {

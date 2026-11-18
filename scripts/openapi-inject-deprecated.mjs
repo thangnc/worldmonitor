@@ -15,8 +15,8 @@ import { fileURLToPath } from 'node:url';
 import { serialize } from './lib/openapi-codegen.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
-const protoDir = resolve(root, 'proto/worldmonitor');
+const apiDir = resolve(root, 'packages/contracts/openapi');
+const protoDir = resolve(root, 'packages/contracts/proto/worldmonitor');
 const CHECK = process.argv.includes('--check');
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head']);
 
@@ -250,8 +250,8 @@ const yamlFiles = readdirSync(apiDir)
   .filter(file => /Service\.openapi\.yaml$/.test(file) || file === 'worldmonitor.openapi.yaml')
   .sort();
 const tsFiles = [
-  ...walkFiles(resolve(root, 'src/generated/client'), name => name.endsWith('.ts')),
-  ...walkFiles(resolve(root, 'src/generated/server'), name => name.endsWith('.ts')),
+  ...walkFiles(resolve(root, 'packages/contracts/generated/client'), name => name.endsWith('.ts')),
+  ...walkFiles(resolve(root, 'packages/contracts/generated/server'), name => name.endsWith('.ts')),
 ].sort();
 
 let wouldChange = 0;

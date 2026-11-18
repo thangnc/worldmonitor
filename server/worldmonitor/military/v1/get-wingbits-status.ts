@@ -2,7 +2,7 @@ import type {
   ServerContext,
   GetWingbitsStatusRequest,
   GetWingbitsStatusResponse,
-} from '../../../../src/generated/server/worldmonitor/military/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 
 export async function getWingbitsStatus(
   _ctx: ServerContext,

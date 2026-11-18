@@ -8,7 +8,7 @@ import type {
   ResilienceDimension,
   ResilienceDomain,
   ResiliencePillar,
-} from '../src/generated/server/worldmonitor/resilience/v1/service_server.ts';
+} from '../packages/contracts/generated/server/worldmonitor/resilience/v1/service_server.ts';
 import { round } from '../server/_shared/resilience-stats.ts';
 import {
   buildDimensionList,

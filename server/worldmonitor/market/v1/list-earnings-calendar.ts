@@ -3,7 +3,7 @@ import type {
   ListEarningsCalendarRequest,
   ListEarningsCalendarResponse,
   EarningsEntry,
-} from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import { filterCalendarRange, resolveCalendarRange } from '../../../_shared/calendar-range';
 import { getCachedJson } from '../../../_shared/redis';
 

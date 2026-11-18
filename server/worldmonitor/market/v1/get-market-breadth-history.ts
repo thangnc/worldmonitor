@@ -3,7 +3,7 @@ import type {
   GetMarketBreadthHistoryRequest,
   GetMarketBreadthHistoryResponse,
   BreadthSnapshot,
-} from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import { getCachedJson } from '../../../_shared/redis';
 
 const SEED_CACHE_KEY = 'market:breadth-history:v1';

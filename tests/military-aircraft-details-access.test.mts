@@ -10,7 +10,7 @@ import {
   FAIL_CLOSED_ENDPOINT_RATE_POLICY_REQUIRED,
 } from '../server/_shared/rate-limit.ts';
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
-import { GENERATED_MESSAGE_RULES } from '../src/generated/server/request_validation.ts';
+import { GENERATED_MESSAGE_RULES } from '../packages/contracts/generated/server/request_validation.ts';
 import { validationFailure } from './helpers/validation-failure.mts';
 
 const AIRCRAFT_DETAILS_PATH = '/api/military/v1/get-aircraft-details';

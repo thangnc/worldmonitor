@@ -4,7 +4,7 @@ import type {
   ListStorageFacilitiesRequest,
   ListStorageFacilitiesResponse,
   StorageFacilityEntry,
-} from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 import { deriveStorageBadge } from './_storage-evidence';
 
 /**

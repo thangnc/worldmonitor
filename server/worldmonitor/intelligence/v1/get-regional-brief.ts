@@ -4,7 +4,7 @@ import type {
   GetRegionalBriefRequest,
   GetRegionalBriefResponse,
   RegionalBrief,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { getRawJson } from '../../../_shared/redis';
 
 const KEY_PREFIX = 'intelligence:regional-briefs:v1:weekly:';

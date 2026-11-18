@@ -40,14 +40,14 @@ const specs = [
   [
     'IntelligenceService JSON',
     JSON.parse(readFileSync(
-      resolve(root, 'docs/api/IntelligenceService.openapi.json'),
+      resolve(root, 'packages/contracts/openapi/IntelligenceService.openapi.json'),
       'utf8',
     )),
   ],
   [
     'IntelligenceService YAML',
     loadYaml(readFileSync(
-      resolve(root, 'docs/api/IntelligenceService.openapi.yaml'),
+      resolve(root, 'packages/contracts/openapi/IntelligenceService.openapi.yaml'),
       'utf8',
     )),
   ],

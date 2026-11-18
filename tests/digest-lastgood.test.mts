@@ -295,7 +295,7 @@ describe('durable last-good wiring (#7084)', () => {
     ].join('\n');
     const result = await build({
       stdin: {
-        contents: "export * from './server/worldmonitor/news/v1/list-feed-digest.ts'; export { createNewsServiceRoutes } from './src/generated/server/worldmonitor/news/v1/service_server.ts';",
+        contents: "export * from './server/worldmonitor/news/v1/list-feed-digest.ts'; export { createNewsServiceRoutes } from './packages/contracts/generated/server/worldmonitor/news/v1/service_server.ts';",
         loader: 'ts',
         resolveDir: root,
         sourcefile: 'digest-lastgood-test-entry.ts',

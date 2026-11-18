@@ -4,7 +4,7 @@ import type {
   ListMarketImplicationsRequest,
   ListMarketImplicationsResponse,
   MarketImplicationCard,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { getCachedJson } from '../../../_shared/redis';
 
 const BASE_KEY = 'intelligence:market-implications:v1';

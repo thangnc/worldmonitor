@@ -8,7 +8,7 @@ import type {
   ServerContext,
   ListEarthquakesRequest,
   ListEarthquakesResponse,
-} from '../../../../src/generated/server/worldmonitor/seismology/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/seismology/v1/service_server';
 
 import { readRequiredSeed } from '../../../_shared/required-seed';
 

@@ -3,7 +3,7 @@ import type {
   GetCotPositioningRequest,
   GetCotPositioningResponse,
   CotInstrument,
-} from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import { getCachedJson } from '../../../_shared/redis';
 
 const SEED_CACHE_KEY = 'market:cot:v1';

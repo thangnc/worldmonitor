@@ -4,7 +4,7 @@
  * exploited vulnerabilities and attack-infrastructure spikes. Each fired feed
  * links to tech digest stories through the shared news link rule.
  */
-import type { InternetOutage, ListInternetOutagesResponse, ListServiceStatusesResponse, ServiceStatus } from '@/generated/client/worldmonitor/infrastructure/v1/service_client';
+import type { InternetOutage, ListInternetOutagesResponse, ListServiceStatusesResponse, ServiceStatus } from '@wm/contracts/generated/client/worldmonitor/infrastructure/v1/service_client';
 import { resolveCountryCode } from '../../../shared/country-code-resolve';
 import { feedState, sortFeeds, type FeedState, type Indicator } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';

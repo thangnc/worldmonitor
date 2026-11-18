@@ -1,4 +1,4 @@
-import type { CrossBorderMovement, CrossBorderSourceStatus, GetCrossBorderMovementsResponse } from '../../../../src/generated/server/worldmonitor/displacement/v1/service_server';
+import type { CrossBorderMovement, CrossBorderSourceStatus, GetCrossBorderMovementsResponse } from '../../../../packages/contracts/generated/server/worldmonitor/displacement/v1/service_server';
 import { unwrapEnvelope } from '../../../_shared/seed-envelope';
 
 export const CROSS_BORDER_SOURCES = [

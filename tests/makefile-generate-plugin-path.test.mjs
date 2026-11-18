@@ -95,7 +95,7 @@ describe('Makefile generate target — plugin path resolution', () => {
     // `make install-plugins`. Guarding only one plugin would let buf
     // fall through to a stale copy of the OTHERS on the normal PATH
     // and recreate the mixed-version bug this PR is meant to prevent.
-    // The list here must stay in sync with proto/buf.gen.yaml.
+    // The list here must stay in sync with packages/contracts/proto/buf.gen.yaml.
     const required = ['protoc-gen-ts-client', 'protoc-gen-ts-server', 'protoc-gen-openapiv3'];
     for (const bin of required) {
       // The guard iterates a shell `for` loop, so the literal plugin
@@ -121,12 +121,12 @@ describe('Makefile generate target — plugin path resolution', () => {
   });
 
   test('plugin guard list covers every plugin declared in buf.gen.yaml', () => {
-    // Cross-reference proto/buf.gen.yaml plugin entries against the
+    // Cross-reference packages/contracts/proto/buf.gen.yaml plugin entries against the
     // Makefile's guard list. If buf.gen.yaml ever adds a new `local:`
     // plugin (e.g. a future protoc-gen-*), the guard must grow too —
     // otherwise the new binary can silently fall through to a stale
     // PATH copy.
-    const BUF_GEN = readFileSync(resolve(__dirname, '../proto/buf.gen.yaml'), 'utf-8');
+    const BUF_GEN = readFileSync(resolve(__dirname, '../packages/contracts/proto/buf.gen.yaml'), 'utf-8');
     const declared = new Set();
     for (const m of BUF_GEN.matchAll(/^\s*-\s*local:\s*(\S+)\s*$/gm)) {
       declared.add(m[1]);
@@ -195,8 +195,8 @@ describe('Makefile generate target — plugin path resolution', () => {
     // candidate.
     const HOOK = readFileSync(resolve(__dirname, '../.husky/pre-push'), 'utf-8');
     // Locate the proto-freshness block by its changed-path gate.
-    const start = HOOK.search(/changed '\^\(proto\/\|Makefile\$\)'/);
-    assert.ok(start >= 0, 'pre-push hook must contain the proto-freshness block (gated on proto/ or Makefile changes)');
+    const start = HOOK.search(/changed '\^\(packages\/contracts\/proto\/\|Makefile\$\)'/);
+    assert.ok(start >= 0, 'pre-push hook must contain the proto-freshness block (gated on packages/contracts/proto/ or Makefile changes)');
     const block = HOOK.slice(start, start + 2000);
     // The block must use the caller's buf: it checks `command -v buf` and only
     // then runs `make generate`, which itself resolves buf via `command -v buf`.

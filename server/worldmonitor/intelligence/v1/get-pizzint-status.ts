@@ -3,7 +3,7 @@ import type {
   GetPizzintStatusRequest,
   GetPizzintStatusResponse,
   TensionEvidence,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 import { readCachedJson, logCacheReadError } from '../../../_shared/redis';
 import { markNoCacheResponse, markNoStoreFallbackResponse } from '../../../_shared/response-headers';

@@ -23,7 +23,7 @@ import type {
   EvidenceItem,
   RegionalNarrative,
   NarrativeSection,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { getCachedJson, getCachedRawString } from '../../../_shared/redis';
 
 const LATEST_KEY_PREFIX = 'intelligence:snapshot:v1:';

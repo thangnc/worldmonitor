@@ -36,7 +36,7 @@ describe('raw localStorage guard (#7833)', () => {
     // changed extension filter) and every assertion below would pass vacuously.
     assert.ok(
       scan.scannedFiles.length >= MIN_SCANNED_FILES,
-      `expected >= ${MIN_SCANNED_FILES} scanned files under src/ (860 at #7833), found ${scan.scannedFiles.length} — the scan or the source layout has drifted`,
+      `expected >= ${MIN_SCANNED_FILES} scanned files under src/ (93 after refactor PR 2.1), found ${scan.scannedFiles.length} — the scan or the source layout has drifted`,
     );
     assert.ok(
       scan.observed.length > 0,

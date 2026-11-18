@@ -14,7 +14,7 @@
  * `SEED_META` in api/health.js (or its `ON_DEMAND_KEYS` for a presence check), and each host's `licence` equal to its row in
  * shared/source-attribution-manifest.json.
  */
-import type { ListFeedDigestResponse } from '@/generated/client/worldmonitor/news/v1/service_client';
+import type { ListFeedDigestResponse } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
 import { SOURCE_TIERS, TIER_MEANING, type DeclaredTier } from '../../../server/_shared/source-tiers';
 import type { CompactHealth, CompactHealthCheck, DigestEdition } from './sources';
 import type { ResourceState } from './store';

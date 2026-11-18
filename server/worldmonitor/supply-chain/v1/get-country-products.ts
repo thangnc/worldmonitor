@@ -1,8 +1,8 @@
 import type {
   ServerContext, GetCountryProductsRequest, GetCountryProductsResponse, CountryProduct,
   ProductExporter, ExporterScale,
-} from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
 import { normalizeComtradeProducts, HS4_CODES, HS4_LABELS } from '../../../../scripts/shared/comtrade';
 import { isCallerPremium } from '../../../_shared/premium-check';

@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { eq, serialize, readIdempotencyExemptPaths } from './lib/openapi-codegen.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const CHECK = process.argv.includes('--check');
 // Read from the runtime's own Set (server/_shared/idempotency.ts) rather than restating
 // it here: the gateway skips the idempotency machinery for these paths, and the spec must

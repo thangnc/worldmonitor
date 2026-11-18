@@ -824,7 +824,7 @@ test('the handler emits every published value, and nothing outside them', async 
 test('the proto publishes exactly the vocabulary the handler emits', async () => {
   const { readFileSync } = await import('node:fs');
   const proto = readFileSync(
-    new URL('../proto/worldmonitor/market/v1/list_stablecoin_markets.proto', import.meta.url),
+    new URL('../packages/contracts/proto/worldmonitor/market/v1/list_stablecoin_markets.proto', import.meta.url),
     'utf8',
   );
 

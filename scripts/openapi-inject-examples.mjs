@@ -9,12 +9,12 @@
  * workstream #4610.
  *
  * Artifacts:
- *   1. docs/api/<Service>.openapi.json - full examples, reserialized with the
+ *   1. packages/contracts/openapi/<Service>.openapi.json - full examples, reserialized with the
  *      same sorted, Go-escaped JSON strategy used by openapi-inject-security.
- *   2. docs/api/<Service>.openapi.yaml - surgical example insertions so the
+ *   2. packages/contracts/openapi/<Service>.openapi.yaml - surgical example insertions so the
  *      Mintlify per-service docs carry request/response examples without
  *      reformatting the whole generated YAML file.
- *   3. docs/api/worldmonitor.openapi.yaml - same surgical insertion for the
+ *   3. packages/contracts/openapi/worldmonitor.openapi.yaml - same surgical insertion for the
  *      unified bundle copied to /openapi.yaml at build time.
  */
 
@@ -25,7 +25,7 @@ import { sortRec, serialize, eq, normalizeKey } from './lib/openapi-codegen.mjs'
 import { EMERGENCY_CODES } from '../shared/aircraft-emergencies.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const bundlePath = resolve(apiDir, 'worldmonitor.openapi.yaml');
 const CHECK = process.argv.includes('--check');
 

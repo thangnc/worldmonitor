@@ -15,7 +15,7 @@
 // Refactor Phase 1c deleted these services' api/ gateways because the Lite UI
 // does not call them. Their protos stay because Lite and kept scripts still read
 // some of their generated types (bootstrap payload shapes, resilience tooling);
-// Phase 2 moves proto/ into packages/contracts and drops what nothing reads.
+// PR 2.1 moved proto/ into packages/contracts/proto; Phase 2 drops what nothing reads.
 const RETIRED_GATEWAY_REMOVAL = 'refactor Phase 2 (docs/engineering/plans/2026-11-18-001-refactor-lite-monorepo-plan.md)';
 const RETIRED_GATEWAY_REVIEW_BY = '2027-02-18';
 

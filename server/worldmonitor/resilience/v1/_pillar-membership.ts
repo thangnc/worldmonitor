@@ -1,4 +1,4 @@
-import type { ResilienceDomain } from '../../../../src/generated/server/worldmonitor/resilience/v1/service_server';
+import type { ResilienceDomain } from '../../../../packages/contracts/generated/server/worldmonitor/resilience/v1/service_server';
 import { isFlagDarkDimension, type ResilienceDomainId } from './_dimension-scorers';
 
 export type ResiliencePillarId = 'structural-readiness' | 'live-shock-exposure' | 'recovery-capacity';

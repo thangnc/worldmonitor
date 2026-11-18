@@ -15,7 +15,7 @@
  * No error logging on upstream failures (following established 2F-01 pattern).
  */
 
-import type { ConflictServiceHandler } from '../../../../src/generated/server/worldmonitor/conflict/v1/service_server';
+import type { ConflictServiceHandler } from '../../../../packages/contracts/generated/server/worldmonitor/conflict/v1/service_server';
 
 import { listAcledEvents } from './list-acled-events';
 import { listUcdpEvents } from './list-ucdp-events';

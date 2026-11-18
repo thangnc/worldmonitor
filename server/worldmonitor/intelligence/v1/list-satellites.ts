@@ -4,7 +4,7 @@ import type {
   ListSatellitesRequest,
   ListSatellitesResponse,
   Satellite,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { readRequiredSeed } from '../../../_shared/required-seed';
 import { normalizeSatelliteSnapshot } from '../../../../shared/intelligence-snapshots.js';
 

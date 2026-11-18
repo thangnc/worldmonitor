@@ -1,5 +1,5 @@
 // Type definitions for the Regional Intelligence Model.
-// Mirrors the future proto shape (proto/worldmonitor/intelligence/v1/service.proto)
+// Mirrors the future proto shape (packages/contracts/proto/worldmonitor/intelligence/v1/service.proto)
 // so the Phase 1 codegen lands as a drop-in replacement.
 //
 // See docs/internal/pro-regional-intelligence-upgrade.md for the full spec.

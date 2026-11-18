@@ -2,7 +2,7 @@ import type {
   ServerContext,
   GetWorldCpiMonthlyRequest,
   GetWorldCpiMonthlyResponse,
-} from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
 import { getCachedJsonBatch } from '../../../_shared/redis';
 import { macroHistoryWindow } from './macro-history-window';

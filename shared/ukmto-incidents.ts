@@ -1,4 +1,4 @@
-import type { ListUkmtoIncidentsResponse, UkmtoIncident } from '../src/generated/client/worldmonitor/maritime/v1/service_client';
+import type { ListUkmtoIncidentsResponse, UkmtoIncident } from '../packages/contracts/generated/client/worldmonitor/maritime/v1/service_client';
 
 export const UKMTO_SOURCE_URL = 'https://www.ukmto.org/recent-incidents';
 // UKMTO blocks automated clients, so reports are collected from this documented republication.

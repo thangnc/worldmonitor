@@ -1467,6 +1467,7 @@
       "shared/wgi-source-provenance.js",
       "shared/wgi-indicator-keys.json",
       "tsconfig.api.json",
+      "tsconfig.base.json",
       "tsconfig.json"
     ],
     "documentedAt": "Dockerfile.seed-bundle-resilience-validation"

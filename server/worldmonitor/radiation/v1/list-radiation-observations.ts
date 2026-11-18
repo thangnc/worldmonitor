@@ -3,7 +3,7 @@ import type {
   ListRadiationObservationsResponse,
   RadiationServiceHandler,
   ServerContext,
-} from '../../../../src/generated/server/worldmonitor/radiation/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/radiation/v1/service_server';
 
 import { getCachedJson } from '../../../_shared/redis';
 

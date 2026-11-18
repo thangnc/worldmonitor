@@ -4,7 +4,7 @@ import { after, before, describe, it } from 'node:test';
 import type {
   GetCountryPortActivityRequest,
   ServerContext,
-} from '../src/generated/server/worldmonitor/intelligence/v1/service_server.ts';
+} from '../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server.ts';
 import {
   getCountryPortActivity,
   isCurrentPortActivityPayload,

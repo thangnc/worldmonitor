@@ -6,7 +6,7 @@ import type {
   CrossSourceSignal,
   CrossSourceSignalType,
   CrossSourceSignalSeverity,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { readRequiredSeed } from '../../../_shared/required-seed';
 
 const REDIS_KEY = 'intelligence:cross-source-signals:v1';

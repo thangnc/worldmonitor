@@ -5,7 +5,7 @@ import type {
   ListGpsInterferenceResponse,
   GpsJamHex,
   InterferenceLevel,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { getCachedJson } from '../../../_shared/redis';
 
 const REDIS_KEY = 'intelligence:gpsjam:v2';

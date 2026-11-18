@@ -1,4 +1,4 @@
-import type { EconomicServiceHandler } from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+import type { EconomicServiceHandler } from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
 import { getFredSeries } from './get-fred-series';
 import { getFredSeriesBatch } from './get-fred-series-batch';

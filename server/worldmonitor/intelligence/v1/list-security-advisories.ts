@@ -2,7 +2,7 @@ import type {
   ServerContext,
   ListSecurityAdvisoriesRequest,
   ListSecurityAdvisoriesResponse,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 import { readRequiredSeed } from '../../../_shared/required-seed';
 import { normalizeAdvisorySnapshot } from '../../../../shared/intelligence-snapshots.js';

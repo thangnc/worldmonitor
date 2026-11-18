@@ -416,7 +416,7 @@ describe('Comtrade reporter-code source-of-truth guard', () => {
 describe('CountryProduct generated client interface', () => {
   it('CountryProduct generated interface has expected fields', () => {
     const generated = readFileSync(
-      join(root, 'src', 'generated', 'client', 'worldmonitor', 'supply_chain', 'v1', 'service_client.ts'),
+      join(root, 'packages', 'contracts', 'generated', 'client', 'worldmonitor', 'supply_chain', 'v1', 'service_client.ts'),
       'utf-8',
     );
     const ifaceStart = generated.indexOf('export interface CountryProduct');

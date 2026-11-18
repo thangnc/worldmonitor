@@ -273,12 +273,14 @@ export const LEGACY_RAW_LOCAL_STORAGE = [
 ];
 
 /**
- * Floor for the scanned population, derived from the file count at #7833. A
- * moved directory or a changed extension filter would otherwise shrink the
- * scan toward zero and let every assertion pass vacuously — the silent
- * failure mode this guard exists to prevent.
+ * Floor for the scanned population, derived from the file count at #7833 and
+ * lowered when refactor PR 2.1 moved the 79 generated clients out of src/ into
+ * packages/contracts (93 files remain). A moved directory or a changed
+ * extension filter would otherwise shrink the scan toward zero and let every
+ * assertion pass vacuously — the silent failure mode this guard exists to
+ * prevent.
  */
-export const MIN_SCANNED_FILES = 160;
+export const MIN_SCANNED_FILES = 80;
 
 /**
  * `<idiom> xN` for every raw-storage dereference in `source`, with counts.
@@ -351,7 +353,7 @@ function main() {
 
   if (result.scannedFiles.length < MIN_SCANNED_FILES) {
     problems.push(
-      `Expected >= ${MIN_SCANNED_FILES} scanned files under src/ (179 after refactor Phase 1c), found ${result.scannedFiles.length} — the scan or the source layout has drifted.`,
+      `Expected >= ${MIN_SCANNED_FILES} scanned files under src/ (93 after refactor PR 2.1), found ${result.scannedFiles.length} — the scan or the source layout has drifted.`,
     );
   }
 

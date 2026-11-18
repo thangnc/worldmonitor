@@ -20,7 +20,7 @@ import {
 import { assembleBootstrapTierPayload } from '../scripts/publish-bootstrap-tiers.mjs';
 import { MAX_PAYLOAD_BYTES, runSeed } from '../scripts/_seed-utils.mjs';
 import { buildEnvelope, unwrapEnvelope } from '../scripts/_seed-envelope-source.mjs';
-import type { FireDetection } from '../src/generated/server/worldmonitor/wildfire/v1/service_server';
+import type { FireDetection } from '../packages/contracts/generated/server/worldmonitor/wildfire/v1/service_server';
 
 const REGIONS = ['Ukraine', 'Russia', 'Iran', 'Israel/Gaza', 'Syria', 'Taiwan', 'North Korea', 'Saudi Arabia', 'Turkey'];
 const SATELLITES = ['VIIRS_SNPP_NRT', 'VIIRS_NOAA20_NRT', 'VIIRS_NOAA21_NRT'];

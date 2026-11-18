@@ -13,7 +13,7 @@ import type {
   GoldCbReserves,
   GoldCbHolder,
   GoldCbMover,
-} from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import { getCachedJson } from '../../../_shared/redis';
 
 const COMMODITY_KEY = 'market:commodities-bootstrap:v1';

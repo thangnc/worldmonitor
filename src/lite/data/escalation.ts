@@ -1,8 +1,8 @@
 import type { Hotspot } from '@/types';
-import type { CiiScore } from '@/generated/client/worldmonitor/intelligence/v1/service_client';
-import type { Earthquake } from '@/generated/client/worldmonitor/seismology/v1/service_client';
-import type { MilitaryFlight } from '@/generated/client/worldmonitor/military/v1/service_client';
-import type { UnrestEvent } from '@/generated/client/worldmonitor/unrest/v1/service_client';
+import type { CiiScore } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
+import type { Earthquake } from '@wm/contracts/generated/client/worldmonitor/seismology/v1/service_client';
+import type { MilitaryFlight } from '@wm/contracts/generated/client/worldmonitor/military/v1/service_client';
+import type { UnrestEvent } from '@wm/contracts/generated/client/worldmonitor/unrest/v1/service_client';
 import { matchesAnyKeyword, tokenizeForMatch } from '@/utils/keyword-match';
 import {
   computeEscalationScore,

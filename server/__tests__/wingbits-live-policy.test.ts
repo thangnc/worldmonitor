@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { createDomainGateway } from '../gateway';
 import { getWingbitsLiveFlight } from '../worldmonitor/military/v1/get-wingbits-live-flight';
-import { createMilitaryServiceRoutes, type MilitaryServiceHandler } from '../../src/generated/server/worldmonitor/military/v1/service_server';
+import { createMilitaryServiceRoutes, type MilitaryServiceHandler } from '../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 import { ENDPOINT_RATE_POLICIES, FAIL_CLOSED_ENDPOINT_RATE_POLICY_REQUIRED, __resetRateLimitForTest } from '../_shared/rate-limit';
 import { __resetKeyPrefixCacheForTests } from '../_shared/redis';
 import { issueSessionToken } from '../../api/_session.js';

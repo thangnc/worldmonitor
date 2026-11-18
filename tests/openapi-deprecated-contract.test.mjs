@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 //       other - fails here.
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head']);
 const YAML_METHOD_RE = /^ {8}(get|post|put|delete|patch|options|head):\s*$/;
 
@@ -182,7 +182,7 @@ describe('OpenAPI deprecated + operation-description contract', () => {
 
     for (const family of ['client', 'server']) {
       const generated = readFileSync(
-        resolve(root, `src/generated/${family}/worldmonitor/intelligence/v1/service_${family}.ts`),
+        resolve(root, `packages/contracts/generated/${family}/worldmonitor/intelligence/v1/service_${family}.ts`),
         'utf8',
       );
       assert.match(generated, /export interface GetCompanyEnrichmentRequest \{\n {2}\/\*\* @deprecated \*\/\n {2}domain: string;/);
@@ -241,7 +241,7 @@ describe('OpenAPI deprecated + operation-description contract', () => {
 
     for (const family of ['client', 'server']) {
       const generated = readFileSync(
-        resolve(root, `src/generated/${family}/worldmonitor/aviation/v1/service_${family}.ts`),
+        resolve(root, `packages/contracts/generated/${family}/worldmonitor/aviation/v1/service_${family}.ts`),
         'utf8',
       );
       assert.match(generated, /export interface GetYoutubeLiveStreamInfoResponse \{[\s\S]*? {2}\/\*\* @deprecated \*\/\n {2}channelExists: boolean;/);
@@ -262,7 +262,7 @@ describe('OpenAPI deprecated + operation-description contract', () => {
 
     for (const family of ['client', 'server']) {
       const generated = readFileSync(
-        resolve(root, `src/generated/${family}/worldmonitor/forecast/v1/service_${family}.ts`),
+        resolve(root, `packages/contracts/generated/${family}/worldmonitor/forecast/v1/service_${family}.ts`),
         'utf8',
       );
       assert.match(generated, /export interface ScorecardTotals \{[\s\S]*? {2}\/\*\* @deprecated \*\/\n {2}publicationCoverage: number;/);
@@ -280,10 +280,10 @@ describe('openapi-inject-deprecated message-shape guard', () => {
       for (const file of ['scripts/openapi-inject-deprecated.mjs', 'scripts/lib/openapi-codegen.mjs']) {
         copyFileSync(resolve(root, file), join(dir, file));
       }
-      for (const sub of ['docs/api', 'src/generated/client', 'src/generated/server', 'proto/worldmonitor/demo/v1']) {
+      for (const sub of ['packages/contracts/openapi', 'packages/contracts/generated/client', 'packages/contracts/generated/server', 'packages/contracts/proto/worldmonitor/demo/v1']) {
         mkdirSync(join(dir, sub), { recursive: true });
       }
-      writeFileSync(join(dir, 'proto/worldmonitor/demo/v1/demo.proto'), protoText);
+      writeFileSync(join(dir, 'packages/contracts/proto/worldmonitor/demo/v1/demo.proto'), protoText);
       return spawnSync(process.execPath, [join(dir, 'scripts/openapi-inject-deprecated.mjs'), '--check'], { encoding: 'utf8' });
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -331,7 +331,7 @@ function yamlPathBlock(text, path) {
 // deprecated-flag injector read.
 function countDeprecatedRpcDeclarations() {
   let count = 0;
-  for (const file of walkProtoFiles(resolve(root, 'proto/worldmonitor'))) {
+  for (const file of walkProtoFiles(resolve(root, 'packages/contracts/proto/worldmonitor'))) {
     const text = readFileSync(file, 'utf8');
     count += (text.match(/^\s*option\s+deprecated\s*=\s*true\s*;/gm) ?? []).length;
   }

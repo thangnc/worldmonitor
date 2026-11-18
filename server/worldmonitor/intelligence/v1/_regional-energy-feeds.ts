@@ -1,5 +1,5 @@
 import feeds from '../../../../scripts/shared/regional-energy-feeds.json';
-import type { RegionalEnergyFeed, RegionalEnergyObservation } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+import type { RegionalEnergyFeed, RegionalEnergyObservation } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 function observationTime(period: unknown): number {
   if (typeof period !== 'string') return NaN;

@@ -234,9 +234,9 @@ test('RPC still requires a session and does not expose arbitrary Redis keys', as
 
 
 test('published RPC query schema documents the multi-key selector', () => {
-  const spec = JSON.parse(readFileSync(new URL('../docs/api/InfrastructureService.openapi.json', import.meta.url), 'utf8'));
+  const spec = JSON.parse(readFileSync(new URL('../packages/contracts/openapi/InfrastructureService.openapi.json', import.meta.url), 'utf8'));
   const parameters = spec.paths['/api/infrastructure/v1/get-bootstrap-data'].get.parameters;
-  const yaml = loadYaml(readFileSync(new URL('../docs/api/InfrastructureService.openapi.yaml', import.meta.url), 'utf8')) as typeof spec;
+  const yaml = loadYaml(readFileSync(new URL('../packages/contracts/openapi/InfrastructureService.openapi.yaml', import.meta.url), 'utf8')) as typeof spec;
   const yamlKeys = yaml.paths['/api/infrastructure/v1/get-bootstrap-data'].get.parameters.find((parameter: { name: string }) => parameter.name === 'keys');
   assert.deepEqual(yamlKeys.schema, { type: 'array', maxItems: 100, items: { type: 'string', minLength: 1 } });
   const keys = parameters.find((parameter: { name: string }) => parameter.name === 'keys');

@@ -1,4 +1,4 @@
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
 export function macroHistoryWindow(limit: number | undefined): <T>(rows: T[]) => T[] {
   if (limit !== undefined && (!Number.isInteger(limit) || limit < 0 || limit > 366)) {

@@ -18,7 +18,7 @@ const SOURCE_SCAN_IGNORED_DIRS = new Set([
   'coverage',
   'dist',
   'node_modules',
-  'src/generated',
+  'packages/contracts/generated',
 ]);
 
 function shouldScanSourceDir(path) {

@@ -1,4 +1,4 @@
-import type { ScenarioCoverage } from '../../../../src/generated/client/worldmonitor/scenario/v1/service_client';
+import type { ScenarioCoverage } from '../../../../packages/contracts/generated/client/worldmonitor/scenario/v1/service_client';
 
 /**
  * Pre-built scenario templates for the supply chain scenario engine.

@@ -4,8 +4,8 @@ import type {
   ListPipelinesRequest,
   ListPipelinesResponse,
   PipelineEntry,
-} from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 import { derivePublicBadge } from './_pipeline-evidence';
 import { pickNewerClassifierVersion, pickNewerIsoTimestamp } from '../../../../src/shared/pipeline-evidence';
 

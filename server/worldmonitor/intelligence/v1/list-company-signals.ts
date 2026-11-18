@@ -16,8 +16,8 @@ import type {
   ListCompanySignalsRequest,
   ListCompanySignalsResponse,
   SignalSummary,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import {
   MATERIAL_8K_ITEMS,
   describeItemCodes,

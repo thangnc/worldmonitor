@@ -8,7 +8,7 @@ import type {
   AisDisruptionType,
   AisDisruptionSeverity,
   SnapshotCandidateReport,
-} from '../../../../src/generated/server/worldmonitor/maritime/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/maritime/v1/service_server';
 
 import { getRelayBaseUrl, getRelayHeaders } from '../../../_shared/relay';
 

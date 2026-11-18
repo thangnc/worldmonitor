@@ -6,7 +6,7 @@ import type {
   PhysicalPremiumRegime,
   PhysicalPremiumTrend,
   PhysicalStressComposite,
-} from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import {
   PHYSICAL_DIVERGENCE_METALS,
   PHYSICAL_DIVERGENCE_METHODOLOGY_VERSION,

@@ -6,7 +6,7 @@ import {
   attachApiErrorHttpResponseMetadata,
   mapErrorToResponse,
 } from '../error-mapper';
-import { ApiError } from '../../src/generated/server/worldmonitor/market/v1/service_server';
+import { ApiError } from '../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 
 describe('opt-in ApiError HTTP responses', () => {
   afterEach(() => {

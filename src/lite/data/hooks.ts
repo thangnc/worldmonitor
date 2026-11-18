@@ -13,7 +13,7 @@ import {
   threatRank,
   type LiteItem,
 } from './transforms';
-import type { ListFeedDigestResponse } from '@/generated/client/worldmonitor/news/v1/service_client';
+import type { ListFeedDigestResponse } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
 import { buildPriceBoard, isMarketMovingWarStory, type PriceBoard } from './prices';
 import { rankPriorityEvents, type PriorityEvent } from './briefing';
 import { CONNECTORS, digestConnectorStatus, healthConnectorStatus, sortConnectorRows, type ConnectorRow } from './connectors';

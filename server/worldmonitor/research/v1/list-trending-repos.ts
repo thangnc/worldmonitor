@@ -7,7 +7,7 @@ import type {
   ServerContext,
   ListTrendingReposRequest,
   ListTrendingReposResponse,
-} from '../../../../src/generated/server/worldmonitor/research/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/research/v1/service_server';
 
 import { resolvePageSize } from '../../../_shared/constants';
 import { getCachedJson } from '../../../_shared/redis';

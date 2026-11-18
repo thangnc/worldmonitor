@@ -25,9 +25,9 @@ const COUNTRY_HISTORY_PATH = '/api/intelligence/v1/get-country-history';
 
 it('country history publishes anonymous, API-key and bearer alternatives with 401 only for supplied credentials', () => {
   const specs = [
-    JSON.parse(readFileSync(resolve(root, 'docs/api/IntelligenceService.openapi.json'), 'utf8')),
-    loadYaml(readFileSync(resolve(root, 'docs/api/IntelligenceService.openapi.yaml'), 'utf8')),
-    loadYaml(readFileSync(resolve(root, 'docs/api/worldmonitor.openapi.yaml'), 'utf8')),
+    JSON.parse(readFileSync(resolve(root, 'packages/contracts/openapi/IntelligenceService.openapi.json'), 'utf8')),
+    loadYaml(readFileSync(resolve(root, 'packages/contracts/openapi/IntelligenceService.openapi.yaml'), 'utf8')),
+    loadYaml(readFileSync(resolve(root, 'packages/contracts/openapi/worldmonitor.openapi.yaml'), 'utf8')),
   ];
   for (const spec of specs) {
     const op = spec.paths[COUNTRY_HISTORY_PATH].get;
@@ -35,8 +35,8 @@ it('country history publishes anonymous, API-key and bearer alternatives with 40
     assert.match(op.responses['401'].description, /Invalid supplied credentials/);
   }
 });
-const apiDir = resolve(root, 'docs/api');
-const protoWorldmonitorDir = resolve(root, 'proto/worldmonitor');
+const apiDir = resolve(root, 'packages/contracts/openapi');
+const protoWorldmonitorDir = resolve(root, 'packages/contracts/proto/worldmonitor');
 
 // Source-of-truth sets/maps are imported from scripts/lib/openapi-codegen.mjs —
 // the SAME module the injector uses — so the contract test can't drift from the

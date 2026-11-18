@@ -482,7 +482,7 @@ describe("today's label counts (#9093 /trust)", () => {
   });
 
   it('the OpenAPI example shows counts whose parts add up', () => {
-    const spec = JSON.parse(readFileSync(new URL('../docs/api/NewsService.openapi.json', import.meta.url), 'utf8'));
+    const spec = JSON.parse(readFileSync(new URL('../packages/contracts/openapi/NewsService.openapi.json', import.meta.url), 'utf8'));
     const example = spec.paths['/api/news/v1/list-label-changes'].get.responses['200'].content['application/json'].example;
     assert.equal(example.state, 'ok');
     const { at, ...counts } = example.counts;

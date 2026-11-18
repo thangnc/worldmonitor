@@ -26,9 +26,9 @@ import type {
   CountryCoverageEvent,
   CountryCoverageHeadline,
   CountryCoverageSourceStatus,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
-import type { ThreatLevel as ProtoThreatLevel } from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
+import type { ThreatLevel as ProtoThreatLevel } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import type { ThreatLevel as SharedThreatLevel } from '../../../../shared/threat-keyword-classifier';
 
 import { TIER1_COUNTRIES } from '../../../../src/config/countries';

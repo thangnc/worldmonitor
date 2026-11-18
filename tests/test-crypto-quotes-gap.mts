@@ -2,9 +2,9 @@ import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { listCryptoQuotes } from '../server/worldmonitor/market/v1/list-crypto-quotes';
-import { createMarketServiceRoutes, type MarketServiceHandler } from '../src/generated/server/worldmonitor/market/v1/service_server';
+import { createMarketServiceRoutes, type MarketServiceHandler } from '../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import { fetchCoinGeckoMarkets } from '../server/worldmonitor/market/v1/_shared';
-import { GENERATED_MESSAGE_RULES } from '../src/generated/server/request_validation';
+import { GENERATED_MESSAGE_RULES } from '../packages/contracts/generated/server/request_validation';
 
 const SEED = {
   quotes: [

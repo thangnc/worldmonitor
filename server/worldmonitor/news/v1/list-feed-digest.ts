@@ -7,8 +7,8 @@ import type {
   ThreatLevel as ProtoThreatLevel,
   StoryMeta as ProtoStoryMeta,
   StoryPhase as ProtoStoryPhase,
-} from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import {
   cachedFetchJsonWithMeta,
   getCachedJson,

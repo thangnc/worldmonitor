@@ -19,8 +19,8 @@ const staticPolicyUrl = 'https://www.worldmonitor.app/api-versioning.md';
 describe('REST API versioning and deprecation policy', () => {
   it('keeps the policy discoverable from the OpenAPI generator and source bundle', () => {
     for (const path of [
-      'proto/buf.gen.yaml',
-      'docs/api/worldmonitor.openapi.yaml',
+      'packages/contracts/proto/buf.gen.yaml',
+      'packages/contracts/openapi/worldmonitor.openapi.yaml',
     ]) {
       const source = read(path);
       assert.match(source, new RegExp(htmlPolicyUrl.replaceAll('.', '\\.')));

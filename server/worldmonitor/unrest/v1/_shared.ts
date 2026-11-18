@@ -1,4 +1,4 @@
-import type { UnrestEvent } from '../../../../src/generated/server/worldmonitor/unrest/v1/service_server';
+import type { UnrestEvent } from '../../../../packages/contracts/generated/server/worldmonitor/unrest/v1/service_server';
 
 // ========================================================================
 // Deduplication (ported from src/services/protests.ts lines 226-258)

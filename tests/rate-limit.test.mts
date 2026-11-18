@@ -417,7 +417,7 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
     __resetRateLimitForTest();
     const { issueSessionToken } = await import('../api/_session.js');
     const { createDomainGateway } = await import('../server/gateway.ts');
-    const { createMarketServiceRoutes } = await import('../src/generated/server/worldmonitor/market/v1/service_server.ts');
+    const { createMarketServiceRoutes } = await import('../packages/contracts/generated/server/worldmonitor/market/v1/service_server.ts');
     const { marketHandler } = await import('../server/worldmonitor/market/v1/handler.ts');
     const token = (await issueSessionToken()).token;
     const calls: string[] = [];
@@ -442,7 +442,7 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
     __resetRateLimitForTest();
     const { issueSessionToken } = await import('../api/_session.js');
     const { createDomainGateway } = await import('../server/gateway.ts');
-    const { createMarketServiceRoutes } = await import('../src/generated/server/worldmonitor/market/v1/service_server.ts');
+    const { createMarketServiceRoutes } = await import('../packages/contracts/generated/server/worldmonitor/market/v1/service_server.ts');
     const { marketHandler } = await import('../server/worldmonitor/market/v1/handler.ts');
     let providerCalls = 0;
     let admissions = 0;

@@ -18,7 +18,7 @@ import type {
   No2RegionExclusion,
   No2RegionKind,
   ServerContext,
-} from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 import {
   NO2_ACTIVITY_KEY,
   NO2_ACTIVITY_METHOD,

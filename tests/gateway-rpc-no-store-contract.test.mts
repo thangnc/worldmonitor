@@ -290,7 +290,7 @@ describe('high-tier bare-empty source guard', () => {
 });
 
 it('keeps generated RPC availability errors out of HTTP caches', async () => {
-  const { createSeismologyServiceRoutes, ApiError } = await import('../src/generated/server/worldmonitor/seismology/v1/service_server.ts');
+  const { createSeismologyServiceRoutes, ApiError } = await import('../packages/contracts/generated/server/worldmonitor/seismology/v1/service_server.ts');
   const { serverOptions } = await import('../server/gateway.ts');
   const gateway = createDomainGateway(createSeismologyServiceRoutes({
     listEarthquakes: async () => { throw new ApiError(503, 'Seed unavailable', ''); },

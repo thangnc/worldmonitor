@@ -803,7 +803,7 @@ TradingView calls are independent of CoinGecko rate limits. Each call completes 
 - [ ] `npm install tradingview-screener-ts` in Railway relay package
 - [ ] Add `seedTvStockScreener()` to `scripts/ais-relay.cjs`
 - [ ] Add `market:tv-screener:stocks:v1` to `server/_shared/cache-keys.ts`
-- [ ] Create `proto/worldmonitor/market/v1/list_tv_stock_screener.proto`
+- [ ] Create `packages/contracts/proto/worldmonitor/market/v1/list_tv_stock_screener.proto`
 - [ ] Create `server/worldmonitor/market/v1/list-tv-stock-screener.ts`
 - [ ] Register in `handler.ts` and `service.proto`
 - [ ] Run `buf generate`

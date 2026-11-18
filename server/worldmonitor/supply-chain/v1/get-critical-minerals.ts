@@ -4,7 +4,7 @@ import type {
   GetCriticalMineralsResponse,
   CriticalMineral,
   MineralProducer,
-} from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 
 import { cachedFetchJson } from '../../../_shared/redis';
 import { MINERAL_PRODUCTION_2024 } from './_minerals-data';

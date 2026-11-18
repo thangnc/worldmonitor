@@ -4,7 +4,7 @@ import type {
   ResilienceDomain,
   ResilienceRankingItem,
   ScoreInterval,
-} from '../../../../src/generated/server/worldmonitor/resilience/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/resilience/v1/service_server';
 
 
 export type { ScoreInterval };

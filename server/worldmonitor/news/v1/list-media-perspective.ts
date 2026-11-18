@@ -4,8 +4,8 @@ import type {
   MediaPerspectiveGroup,
   MediaPerspectiveHeadline,
   ServerContext,
-} from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import { getCachedJson, getCachedJsonBatch, setCachedJson } from '../../../_shared/redis';
 import { readRevokedUrlSet } from '../../../_shared/digest-revocations';
 import { markNoCacheResponse } from '../../../_shared/response-headers';

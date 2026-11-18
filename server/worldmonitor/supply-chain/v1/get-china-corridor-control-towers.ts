@@ -2,7 +2,7 @@ import type {
   GetChinaCorridorControlTowersRequest,
   GetChinaCorridorControlTowersResponse,
   ServerContext,
-} from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 import {
   createUnavailableChinaCorridorControlTowerResponse,
   validateChinaCorridorProvenanceForSurface,

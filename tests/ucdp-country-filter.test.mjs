@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createConflictServiceRoutes } from '../src/generated/server/worldmonitor/conflict/v1/service_server.ts';
+import { createConflictServiceRoutes } from '../packages/contracts/generated/server/worldmonitor/conflict/v1/service_server.ts';
 import { listUcdpEvents } from '../server/worldmonitor/conflict/v1/list-ucdp-events.ts';
 
 test('UCDP ISO2 filters resolve seeded names and historical aliases', async (t) => {

@@ -1,4 +1,4 @@
-import type { SanctionsServiceHandler } from '../../../../src/generated/server/worldmonitor/sanctions/v1/service_server';
+import type { SanctionsServiceHandler } from '../../../../packages/contracts/generated/server/worldmonitor/sanctions/v1/service_server';
 
 import { listSanctionsPressure } from './list-sanctions-pressure';
 import { lookupSanctionEntity } from './lookup-entity';

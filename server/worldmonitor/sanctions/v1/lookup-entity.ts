@@ -3,7 +3,7 @@ import type {
   LookupSanctionEntityResponse,
   SanctionsServiceHandler,
   ServerContext,
-} from '../../../../src/generated/server/worldmonitor/sanctions/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/sanctions/v1/service_server';
 import { getCachedJson } from '../../../_shared/redis';
 import { sanctionsIndexRecords, screenSanctions } from '../../../_shared/sanctions-screen';
 

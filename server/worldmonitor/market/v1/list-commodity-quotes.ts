@@ -15,8 +15,8 @@ import type {
   ListCommodityQuotesRequest,
   ListCommodityQuotesResponse,
   CommodityQuote,
-} from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import { parseStringArray } from './_shared';
 import { getCachedJson } from '../../../_shared/redis';
 import { markNoStoreFallbackResponse } from '../../../_shared/response-headers';

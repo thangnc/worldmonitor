@@ -3,7 +3,7 @@ import type {
   ServerContext,
   GetSimilarEventsRequest,
   GetSimilarEventsResponse,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { validateHistoryScope, validateHistoryText } from '../../../_shared/intel-history-contract';
 
 /** Hard cap on `limit`, kept from the published contract. */

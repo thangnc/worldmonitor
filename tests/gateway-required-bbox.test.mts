@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { MilitaryServiceClient } from '../src/generated/client/worldmonitor/military/v1/service_client.ts';
+import { MilitaryServiceClient } from '../packages/contracts/generated/client/worldmonitor/military/v1/service_client.ts';
 import {
   createDomainGateway,
   REQUIRED_BBOX_QUERY_PARAMS,

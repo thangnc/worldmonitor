@@ -3,8 +3,8 @@ import type {
   ServerContext,
   ReverseGeocodeRequest,
   ReverseGeocodeResponse,
-} from '../../../../src/generated/server/worldmonitor/infrastructure/v1/service_server';
-import { ApiError } from '../../../../src/generated/server/worldmonitor/infrastructure/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server';
+import { ApiError } from '../../../../packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server';
 import { getCachedJson, setCachedJson } from '../../../_shared/redis';
 import { checkScopedRateLimit } from '../../../_shared/rate-limit';
 import { geocodeCacheKey } from '../../../../shared/geocode-cache-key.js';

@@ -11,7 +11,7 @@ component:
 |---|---|---|
 | SPA (vanilla TS + Vite) | `src/`, `index.html`, `public/` | browser |
 | Edge API handlers | `api/` (Vercel Edge functions), `middleware.ts`, `vercel.json` | Vercel |
-| Proto-first RPC gateway and domain handlers | `server/`, `proto/` | Vercel Edge (via `api/`) |
+| Proto-first RPC gateway and domain handlers | `server/`, `packages/contracts/proto/` | Vercel Edge (via `api/`) |
 | MCP server + OAuth 2.1 authorization server | `api/mcp*`, `api/mcp/`, `api/oauth/`, `api/oauth-*.ts` | Vercel Edge |
 | Accounts, API keys, billing, entitlements, notifications | `convex/` | Convex Cloud |
 | Relay (RSS proxy, AIS WebSocket, Telegram, notification delivery) and seeders | `scripts/` (`ais-relay.cjs`, `notification-relay.cjs`, `seed-*.mjs`) | Railway |
@@ -90,7 +90,7 @@ upstream-controlled redirects), `consumer-prices-core/`, `workers/`.
 
 Out of scope: `blog-site/`, `pro-test/` (static marketing pages), `demos/`,
 `docs/`, `e2e/`, `tests/` (except as harnesses), generated files
-(`*.generated.*`, `convex/_generated/`, `src/generated/`), and anything under
+(`*.generated.*`, `convex/_generated/`, `packages/contracts/generated/`), and anything under
 `node_modules/`.
 
 ## How to exercise it

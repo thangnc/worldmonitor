@@ -21,7 +21,7 @@ import {
   selectEarningsForSymbol,
   type AnalystData,
 } from '../server/worldmonitor/market/v1/analyze-stock.ts';
-import { MarketServiceClient } from '../src/generated/client/worldmonitor/market/v1/service_client.ts';
+import { MarketServiceClient } from '../packages/contracts/generated/client/worldmonitor/market/v1/service_client.ts';
 
 const originalFetch = globalThis.fetch;
 

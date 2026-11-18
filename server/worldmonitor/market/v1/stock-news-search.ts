@@ -1,6 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
 
-import type { StockAnalysisHeadline } from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+import type { StockAnalysisHeadline } from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import { CHROME_UA } from '../../../_shared/constants';
 import { sha256Hex } from '../../../_shared/hash';
 import { cachedFetchJson } from '../../../_shared/redis';

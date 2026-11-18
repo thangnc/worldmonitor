@@ -16,7 +16,7 @@ import type {
   ServerContext,
   GetHumanitarianSummaryRequest,
   GetHumanitarianSummaryResponse,
-} from '../../../../src/generated/server/worldmonitor/conflict/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/conflict/v1/service_server';
 
 import { readRequiredSeed } from '../../../_shared/required-seed';
 

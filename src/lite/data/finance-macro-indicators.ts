@@ -10,10 +10,10 @@ import type {
   GetGovernmentYieldCurveResponse,
   UsTreasuryParYieldCurve,
   EconomicEvent,
-} from '@/generated/client/worldmonitor/economic/v1/service_client';
-import type { GetHyperliquidFlowResponse, ListEtfFlowsResponse } from '@/generated/client/worldmonitor/market/v1/service_client';
-import type { GetShippingRatesResponse, ShippingIndex } from '@/generated/client/worldmonitor/supply_chain/v1/service_client';
-import type { ListMaterialEventsResponse, MaterialEvent } from '@/generated/client/worldmonitor/intelligence/v1/service_client';
+} from '@wm/contracts/generated/client/worldmonitor/economic/v1/service_client';
+import type { GetHyperliquidFlowResponse, ListEtfFlowsResponse } from '@wm/contracts/generated/client/worldmonitor/market/v1/service_client';
+import type { GetShippingRatesResponse, ShippingIndex } from '@wm/contracts/generated/client/worldmonitor/supply_chain/v1/service_client';
+import type { ListMaterialEventsResponse, MaterialEvent } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
 import { MARKET_SYMBOLS } from '@/config/markets';
 import { MINUS, signed, usdCompact } from '../format';
 import { feedState, withReading, type FeedState, type Indicator } from './indicators';

@@ -3,7 +3,7 @@ import {
   type GetStockAnalysisHistoryRequest,
   type GetStockAnalysisHistoryResponse,
   type MarketServiceHandler,
-} from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import { STOCK_ANALYSIS_PRO_LIMIT } from '../../../../src/services/stock-analysis-targets';
 import { parseStringArray } from './_shared';
 import { getStoredStockAnalysisHistory } from './premium-stock-store';

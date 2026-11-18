@@ -666,15 +666,15 @@ describe('approved NRCan transport', () => {
 
 describe('proto source/category fields (P1)', () => {
   it('declares source=12 and category=13 so NRCan is not labeled USGS on proto/SDK/OpenAPI', () => {
-    const proto = readFileSync(resolve(here, '../proto/worldmonitor/seismology/v1/earthquake.proto'), 'utf8');
+    const proto = readFileSync(resolve(here, '../packages/contracts/proto/worldmonitor/seismology/v1/earthquake.proto'), 'utf8');
     assert.match(proto, /string source = 12;/);
     assert.match(proto, /string category = 13;/);
 
-    const client = readFileSync(resolve(here, '../src/generated/client/worldmonitor/seismology/v1/service_client.ts'), 'utf8');
+    const client = readFileSync(resolve(here, '../packages/contracts/generated/client/worldmonitor/seismology/v1/service_client.ts'), 'utf8');
     assert.match(client, /export interface Earthquake \{[\s\S]*\bsource: string;/);
     assert.match(client, /export interface Earthquake \{[\s\S]*\bcategory: string;/);
 
-    const openapi = readFileSync(resolve(here, '../docs/api/SeismologyService.openapi.yaml'), 'utf8');
+    const openapi = readFileSync(resolve(here, '../packages/contracts/openapi/SeismologyService.openapi.yaml'), 'utf8');
     const eqBlock = openapi.split('        Earthquake:')[1]?.split('        GeoCoordinates:')[0] || '';
     assert.match(eqBlock, /^\s+source:/m);
     assert.match(eqBlock, /^\s+category:/m);

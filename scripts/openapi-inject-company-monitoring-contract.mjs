@@ -15,7 +15,7 @@ import { isMainModule } from './lib/main-module.mjs';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const root = resolve(dirname(scriptPath), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const CHECK = process.argv.includes('--check');
 const LOGICAL_COMPANY_ID = '^cm_company_[0-9A-HJKMNP-TV-Z]{26}$';
 const LOGICAL_CLAIM_ID = '^cm_claim_[0-9A-HJKMNP-TV-Z]{26}$';

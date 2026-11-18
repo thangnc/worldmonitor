@@ -4,7 +4,7 @@ import type {
   ListServiceStatusesResponse,
   ServiceStatus,
   ServiceOperationalStatus,
-} from '../../../../src/generated/server/worldmonitor/infrastructure/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server';
 
 import { UPSTREAM_TIMEOUT_MS } from './_shared';
 import { cachedFetchJsonWithMeta, setCachedJson } from '../../../_shared/redis';

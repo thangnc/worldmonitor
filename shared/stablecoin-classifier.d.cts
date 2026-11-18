@@ -1,7 +1,7 @@
 // Type declarations for shared/stablecoin-classifier.cjs.
 //
 // The return shape matches the generated `Stablecoin` message
-// (src/generated/server/worldmonitor/market/v1/service_server.ts) field for
+// (packages/contracts/generated/server/worldmonitor/market/v1/service_server.ts) field for
 // field — the classifier is what produces the rows that message describes,
 // both in the Redis snapshot and in RPC gap lookups.
 

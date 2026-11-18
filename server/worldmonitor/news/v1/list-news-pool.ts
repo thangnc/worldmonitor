@@ -26,8 +26,8 @@ import type {
   NewsPoolCell,
   NewsPoolItem,
   ServerContext,
-} from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import { getCachedJsonBatch, readCachedJson } from '../../../_shared/redis';
 import { getOutletProfile } from '../../../_shared/outlet-profile';
 import { filterRevokedUrls } from '../../../_shared/digest-revocations';

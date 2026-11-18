@@ -108,7 +108,7 @@ test('GDELT: one untitled article in the seed is dropped, the valid articles are
 });
 
 test('generated intelligence routes preserve unavailable HTTP status and successful empty bodies', async t => {
-  const { createIntelligenceServiceRoutes } = await import('../src/generated/server/worldmonitor/intelligence/v1/service_server');
+  const { createIntelligenceServiceRoutes } = await import('../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server');
   const { mapErrorToResponse } = await import('../server/error-mapper');
   const routes = createIntelligenceServiceRoutes({ listSatellites, listSecurityAdvisories } as never, { onError: mapErrorToResponse });
   const redis = mockRedis(t);

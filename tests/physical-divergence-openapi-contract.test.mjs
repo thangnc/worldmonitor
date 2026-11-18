@@ -5,9 +5,9 @@ import { load as loadYaml } from 'js-yaml';
 import { PHYSICAL_DIVERGENCE_CONTRACT } from '../shared/physical-divergence-contract.js';
 
 const specs = [
-  ['service JSON', JSON.parse(readFileSync(new URL('../docs/api/MarketService.openapi.json', import.meta.url), 'utf8'))],
-  ['service YAML', loadYaml(readFileSync(new URL('../docs/api/MarketService.openapi.yaml', import.meta.url), 'utf8'))],
-  ['unified YAML', loadYaml(readFileSync(new URL('../docs/api/worldmonitor.openapi.yaml', import.meta.url), 'utf8'))],
+  ['service JSON', JSON.parse(readFileSync(new URL('../packages/contracts/openapi/MarketService.openapi.json', import.meta.url), 'utf8'))],
+  ['service YAML', loadYaml(readFileSync(new URL('../packages/contracts/openapi/MarketService.openapi.yaml', import.meta.url), 'utf8'))],
+  ['unified YAML', loadYaml(readFileSync(new URL('../packages/contracts/openapi/worldmonitor.openapi.yaml', import.meta.url), 'utf8'))],
 ];
 
 function schema(spec, name) {

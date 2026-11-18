@@ -23,7 +23,7 @@ import {
 // scripts/lib/openapi-codegen.mjs (the runtime entitlement gates were removed).
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head']);
 
 const PUBLIC_PATHS = readPublicNoAuthPaths();

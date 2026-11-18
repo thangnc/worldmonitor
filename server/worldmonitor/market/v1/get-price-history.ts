@@ -9,7 +9,7 @@ import type {
   GetPriceHistoryRequest,
   GetPriceHistoryResponse,
   PriceSeries,
-} from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import commodityConfig from '../../../../shared/commodities.json';
 import stockConfig from '../../../../shared/stocks.json';
 import gulfConfig from '../../../../shared/gulf.json';

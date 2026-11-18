@@ -275,7 +275,7 @@ describe('per-source parsers (captured fixtures)', () => {
 
 describe('seeder wiring', () => {
   it('requires country in the generated query contract', () => {
-    const spec = JSON.parse(readFileSync(new URL('../docs/api/EconomicService.openapi.json', import.meta.url), 'utf8'));
+    const spec = JSON.parse(readFileSync(new URL('../packages/contracts/openapi/EconomicService.openapi.json', import.meta.url), 'utf8'));
     const operation = spec.paths['/api/economic/v1/get-government-yield-curve'].get;
     assert.equal(operation.parameters.find((param: { name: string }) => param.name === 'country').required, true);
   });

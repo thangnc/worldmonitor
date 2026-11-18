@@ -1,5 +1,5 @@
-import type { IntelligenceServiceHandler } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+import type { IntelligenceServiceHandler } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { COUNTRY_SIGNAL_BYTES, COUNTRY_SIGNAL_FAMILIES, projectCountrySignalFamily, unavailableCountrySignal } from '../../../../shared/country-signal-observations';
 import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
 import { countryActivityQueries } from '../../../../shared/country-activity-query';

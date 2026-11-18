@@ -16,12 +16,12 @@ const root = resolve(import.meta.dirname, '..');
 const specs = [
   [
     'service JSON',
-    JSON.parse(readFileSync(resolve(root, 'docs/api/CompanyMonitoringService.openapi.json'), 'utf8')),
+    JSON.parse(readFileSync(resolve(root, 'packages/contracts/openapi/CompanyMonitoringService.openapi.json'), 'utf8')),
     '',
   ],
   [
     'service YAML',
-    loadYaml(readFileSync(resolve(root, 'docs/api/CompanyMonitoringService.openapi.yaml'), 'utf8')),
+    loadYaml(readFileSync(resolve(root, 'packages/contracts/openapi/CompanyMonitoringService.openapi.yaml'), 'utf8')),
     '',
   ],
   [

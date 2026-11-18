@@ -33,8 +33,8 @@ import { listEarthquakes } from '../../seismology/v1/list-earthquakes';
 import { ACLED_SEED_KEY, acledCountryCode } from '../../conflict/v1/list-acled-events';
 import { listIranEvents } from '../../conflict/v1/list-iran-events';
 import { listMilitaryFlights } from '../../military/v1/list-military-flights';
-import type { MilitaryFlight } from '../../../../src/generated/server/worldmonitor/military/v1/service_server';
-import type { ServerContext } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+import type { MilitaryFlight } from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
+import type { ServerContext } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 export type CoverageSourceState =
   | 'ok'

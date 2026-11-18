@@ -42,7 +42,7 @@ import { pathToFileURL } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const OPENAPI_DIR = join(ROOT, 'docs/api');
+const OPENAPI_DIR = join(ROOT, 'packages/contracts/openapi');
 const RATE_LIMIT_SRC = join(ROOT, 'server/_shared/rate-limit.ts');
 const API_EXCEPTIONS = join(ROOT, 'api/api-route-exceptions.json');
 const RUNTIME_RATE_LIMIT_DIRS = ['server', 'api'].map((dir) => join(ROOT, dir));
@@ -105,7 +105,7 @@ function extractRoutesFromOpenApi() {
 
 function extractEdgeFunctionRoutes() {
   // Top-level Vercel Edge Functions registered as non-proto exceptions in
-  // api/api-route-exceptions.json don't appear in docs/api/*.openapi.yaml
+  // api/api-route-exceptions.json don't appear in packages/contracts/openapi/*.openapi.yaml
   // (no proto → no generated path). They can still register a rate-limit
   // policy that's enforced in-handler via `checkScopedRateLimit` — most
   // notably /api/mcp-proxy (PR #3821 / #3805 review). Convert each exception
@@ -194,12 +194,12 @@ async function main() {
       console.error(`  - ${key}`);
     }
     console.error('\nEach key must be either:');
-    console.error('  (a) a proto-generated RPC path that appears in docs/api/<Service>.openapi.yaml');
+    console.error('  (a) a proto-generated RPC path that appears in packages/contracts/openapi/<Service>.openapi.yaml');
     console.error('      (gateway-enforced via checkEndpointRateLimit), OR');
     console.error('  (b) a top-level Vercel Edge Function registered in');
     console.error('      api/api-route-exceptions.json (enforced in-handler via checkScopedRateLimit).');
     console.error('\nChecklist:');
-    console.error('  1. The key matches the path in docs/api/<Service>.openapi.yaml exactly, OR');
+    console.error('  1. The key matches the path in packages/contracts/openapi/<Service>.openapi.yaml exactly, OR');
     console.error('     api/<that-key>.ts (or .js) is listed in api/api-route-exceptions.json.');
     console.error('  2. If you renamed the RPC in proto, update the policy key to match.');
     console.error('  3. If the policy is for a non-proto legacy route, remove it once that route is migrated.\n');

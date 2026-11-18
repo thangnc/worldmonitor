@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { loadUnifiedOpenApiSpec } from './_lib/openapi-spec-cache.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 
 const HIGH_RISK_SCHEMA_NAME =
   /(?:Cii|CountryRisk|CountryIntelBrief|RegionalBrief|StrategicRisk|ComputeEnergyShockScenario|Scenario|FearGreed|FeedDigest|NewsItem|Resilience|Chokepoint|FlowEstimate|StrategicProduct)/i;
@@ -401,7 +401,7 @@ function yamlBooleanOffenders(node, path) {
 
 // sebuf v0.11.1 renders format=json by passing its YAML through a YAML 1.1
 // converter, so a proto field named n, y, no, yes, on or off is emitted as the
-// property "false" or "true" in docs/api/*.openapi.json (#8867).
+// property "false" or "true" in packages/contracts/openapi/*.openapi.json (#8867).
 describe('per-service OpenAPI JSON property names', () => {
   it('never carries a YAML 1.1 boolean in place of a property name or enum value', () => {
     const offenders = readdirSync(apiDir)

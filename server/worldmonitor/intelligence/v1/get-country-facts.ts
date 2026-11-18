@@ -2,8 +2,8 @@ import type {
   ServerContext,
   GetCountryFactsRequest,
   GetCountryFactsResponse,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
 import { cachedFetchJson } from '../../../_shared/redis';

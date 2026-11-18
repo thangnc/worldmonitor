@@ -8,7 +8,7 @@ import type {
   GetFredSeriesBatchRequest,
   GetFredSeriesBatchResponse,
   FredSeries,
-} from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
 import { getCachedJsonBatch } from '../../../_shared/redis';
 import { toUniqueSortedLimited } from '../../../_shared/normalize-list';

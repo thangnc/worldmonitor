@@ -10,7 +10,7 @@ import { __resetKeyPrefixCacheForTests } from '../server/_shared/redis';
 import { drainResponseHeaders } from '../server/_shared/response-headers';
 import { rssFeedCacheKey } from '../server/worldmonitor/news/v1/_rss-cache';
 import { INTEL_SOURCES, VARIANT_FEEDS } from '../server/worldmonitor/news/v1/_feeds';
-import { createNewsServiceRoutes, type ListSourceItemsResponse } from '../src/generated/server/worldmonitor/news/v1/service_server';
+import { createNewsServiceRoutes, type ListSourceItemsResponse } from '../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import { validateGeneratedRequest } from '../server/request-validator';
 
 const route = createNewsServiceRoutes(newsHandler, { validateRequest: validateGeneratedRequest })

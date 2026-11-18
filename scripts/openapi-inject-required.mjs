@@ -17,9 +17,9 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const bundlePath = resolve(apiDir, 'worldmonitor.openapi.yaml');
-const protoWorldmonitorDir = resolve(root, 'proto/worldmonitor');
+const protoWorldmonitorDir = resolve(root, 'packages/contracts/proto/worldmonitor');
 const CHECK = process.argv.includes('--check');
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head']);
 // sebuf v0.11.1 places repeated bounds on the item schema. Move the new

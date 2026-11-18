@@ -3,7 +3,7 @@ import type {
   SearchClaimHeadlinesRequest,
   SearchClaimHeadlinesResponse,
   ServerContext,
-} from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import type { NewsItemCore } from '../../../../shared/news-clustering-core.js';
 import { getCachedJsonBatch } from '../../../_shared/redis';
 import { readRevokedUrlSet } from '../../../_shared/digest-revocations';

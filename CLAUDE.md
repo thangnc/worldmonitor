@@ -9,7 +9,7 @@ Claude Code is the only supported coding agent for this repository. This file is
 | `.claude/rules/` | Path-scoped rules. Each loads only when Claude works on matching files: edge API, seeders, proto, browser, tests, CI, docs. Keep them short and link to the canonical docs. |
 | `.claude/skills/` | Engineering skills: `verify-worldmonitor` (browser proof), `sentry-triage`, `learn` (`/learn`: record a lesson in the engineering knowledge base), and `ship` (user-invoked `/ship`: deliver a worktree's change as a PR on this fork). |
 | `.claude/agents/` | Subagents: `edge-contract-reviewer` (repo contract review of a diff). |
-| `.claude/hooks/` + `.claude/settings.json` | Block hand edits to `src/generated/`, `docs/api/`, the generated `docs/engineering/*/INDEX.md` files, and `package-lock.json`; Biome-lint each edited JS/TS file. |
+| `.claude/hooks/` + `.claude/settings.json` | Block hand edits to `packages/contracts/generated/`, `packages/contracts/openapi/`, the generated `docs/engineering/*/INDEX.md` files, and `package-lock.json`; Biome-lint each edited JS/TS file. |
 | `CLAUDE.local.md`, `.claude/settings.local.json` | Personal overrides. Git ignores them. |
 
 Deeper references: [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIBUTING.md), [CONCEPTS.md](CONCEPTS.md).
@@ -71,7 +71,7 @@ npm run test:dom                 # tests/dom (vitest, vitest.dom.config.mts)
 npm run test:server              # server/__tests__, correlation engine (vitest)
 npm run test:sidecar             # api/ node suites + the Docker Node API server (docker/local-api/)
 
-make generate                    # regenerate src/generated/ + docs/api/ from proto/
+make generate                    # regenerate packages/contracts/generated/ + packages/contracts/openapi/ from packages/contracts/proto/
 npm run generate                 # regenerate committed derived files (catalogs, source attribution, indexes)
 npm run seed:lite:watch          # keep the Lite seeders fresh in local Redis (seed:lite once, seed:lite:status read-only)
 npm run docs:check               # required after CI workflow changes: CI/CD table, sebuf version, /api/health examples
@@ -101,7 +101,7 @@ Production build: `npm run build` (the Lite UI into `dist/`; `build:full` is an 
 | Browser behavior | `src/lite/`, and the `src/services/`, `src/config/` and `src/utils/` modules it imports; [Lite spec](docs/engineering/architecture/lite.md) | Focused behavior check, `npm run typecheck`, `npm run lint:boundaries` |
 | API and handlers | `api/`, `server/`; [endpoint guide](docs/engineering/architecture/adding-endpoints.md) | Focused handler check, `npm run typecheck:api`; `npm run test:sidecar` owns the `api/` node suites; `edge-contract-reviewer` subagent before the PR |
 | Data workers and cache | `scripts/`, `server/_shared/`; [health contracts](docs/engineering/architecture/health-endpoints.md) | Producer and reader checks with fixtures; separately record live freshness evidence when required |
-| Proto and generated clients | `proto/`, `src/generated/`; [code generation](CONTRIBUTING.md#working-with-sebuf-rpc-framework) | `make generate` requires buf + sebuf v0.11.1 plugins; verify generated diff |
+| Proto and generated clients | `packages/contracts/proto/`, `packages/contracts/generated/`; [code generation](CONTRIBUTING.md#working-with-sebuf-rpc-framework) | `make generate` requires buf + sebuf v0.11.1 plugins; verify generated diff |
 | Docker Node API server | `docker/local-api/`, `docker/build-handlers.mjs` | `npm run test:sidecar` |
 | CI workflows | `.github/workflows/`; [CI/CD table](ARCHITECTURE.md#11-cicd) | Add or update each workflow's table entry. Run `npm run docs:check` and validate the changed workflow before pushing. The pre-push hook enforces the documentation check for workflow changes |
 | Committed derived files (catalogs, source attribution, indexes) | `scripts/generate-derived.mjs`; [derived files](CONTRIBUTING.md#derived-files) | `npm run generate`, then commit what it rewrote |
@@ -138,7 +138,7 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 **Request path is cache-first.** Most domain RPCs do not hit upstreams per request. Seeders write Redis keys through `atomicPublish()` / `writeSeedMeta` in `scripts/_seed-utils.mjs`, always alongside `seed-meta:<key>` (`fetchedAt`, `recordCount`). Edge handlers read via `cachedFetchJson()` (`server/_shared/redis.ts`), which coalesces concurrent misses. `api/health.js` grades staleness per key from that seed-meta. Some domains (scorecard, supply-chain vulnerability, physical divergence) are pure read models of a Railway-published cohort. A data change usually spans producer script → Redis key → handler → bootstrap/health registration → panel.
 
-**Proto/sebuf contract.** `proto/` defines services with `(sebuf.http.config)` annotations. `make generate` emits TS client stubs (`src/generated/client/`), server types (`src/generated/server/`) and OpenAPI (`docs/api/`). Handlers live in `server/worldmonitor/<domain>/v1/handler.ts`. The thin entry points `api/<domain>/v<N>/[rpc].ts` call `createDomainGateway` (`server/gateway.ts`), which runs origin check → CORS → API key (premium routes: operator key only) → rate limit → route → handler → ETag/304 → cache-tier headers. Every Edge function is esbuild-bundled per file; `tests/edge-functions.test.mjs` enforces that it stays self-contained. CI (`proto-check.yml`) fails when generated output is stale.
+**Proto/sebuf contract.** `packages/contracts/proto/` defines services with `(sebuf.http.config)` annotations. `make generate` emits TS client stubs (`packages/contracts/generated/client/`), server types (`packages/contracts/generated/server/`) and OpenAPI (`packages/contracts/openapi/`). Handlers live in `server/worldmonitor/<domain>/v1/handler.ts`. The thin entry points `api/<domain>/v<N>/[rpc].ts` call `createDomainGateway` (`server/gateway.ts`), which runs origin check → CORS → API key (premium routes: operator key only) → rate limit → route → handler → ETag/304 → cache-tier headers. Every Edge function is esbuild-bundled per file; `tests/edge-functions.test.mjs` enforces that it stays self-contained. CI (`proto-check.yml`) fails when generated output is stale.
 
 **Frontend.** The Lite UI (`src/lite/`, Preact and Tailwind, entry `lite.html` → `src/lite/main.tsx`) is the only web app; refactor Phase 1 removed the old vanilla-TS dashboard (`src/components/`, `src/app/`, `App.ts`). It reads data through the generated sebuf clients and the `src/services/` modules it imports, and draws maps with MapLibre (`src/lite/map/`). What was removed, and how to bring a feature back, is in [legacy features](docs/engineering/product/legacy-features.md).
 
@@ -148,15 +148,16 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 **`shared/` vs `src/shared/`.** The top-level `shared/` holds logic that both the browser and the server must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side.
 
-**Other surfaces.** `docs/` holds only `docs/engineering/` (engineering records, mapped by [its README](docs/engineering/README.md)) and `docs/api/` (OpenAPI generated by `make generate`). The Mintlify public site, the published `skills/` recipes, the SDKs, CLI, MCP server, agent-client plugins and the public agent and SEO outputs were removed in refactor Phase 1c.
+**Other surfaces.** `docs/` holds only `docs/engineering/` (engineering records, mapped by [its README](docs/engineering/README.md)). The `@wm/contracts` workspace package (`packages/contracts/`) holds the proto sources, the generated TypeScript (`generated/`) and the generated OpenAPI (`openapi/`). The Mintlify public site, the published `skills/` recipes, the SDKs, CLI, MCP server, agent-client plugins and the public agent and SEO outputs were removed in refactor Phase 1c.
 
 ## Critical boundaries
 
 The browser import direction is `types -> config -> services -> lite`, and `src/lite/` imports no removed dashboard code. [lint-boundaries.mjs](scripts/lint-boundaries.mjs) enforces import boundaries.
 
 - Legacy `api/*.js` entries are self-contained JavaScript. Import same-directory `_*.js` helpers or packages, never `server/` or `src/`.
-- TypeScript API entries may import `server/` and `src/generated/`, but no other browser code. `server/` must not import `src/lite/`.
-- Edit proto definitions and regenerate. Never hand-edit `src/generated/`.
+- TypeScript API entries may import `server/` and `packages/contracts/generated/`, but no other browser code. `server/` must not import `src/lite/`.
+- Browser code imports the contracts by package name (`@wm/contracts/generated/...`). `api/`, `server/`, `shared/` and `middleware.ts` import `packages/contracts/` by relative path until a Vercel preview proves workspace packages in Edge bundles (`lint:boundaries` enforces it).
+- Edit proto definitions and regenerate. Never hand-edit `packages/contracts/generated/`.
 - Use shared cache and response helpers. Use `cachedFetchJson()` when applicable. Include every request-varying parameter in cache keys.
 - Edge code must not import `node:http`, `node:https`, or `node:zlib`. Use `(...args) => globalThis.fetch(...args)`, never `fetch.bind(globalThis)`.
 - Include a `User-Agent` on server fetches. Stagger Yahoo Finance requests by 150 ms.

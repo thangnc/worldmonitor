@@ -288,7 +288,7 @@ describe('SearchFactChecks handler', () => {
   });
 
   it('documents the real caveat and a real state in the OpenAPI 200 example', () => {
-    const spec = JSON.parse(readFileSync(new URL('../docs/api/NewsService.openapi.json', import.meta.url), 'utf8'));
+    const spec = JSON.parse(readFileSync(new URL('../packages/contracts/openapi/NewsService.openapi.json', import.meta.url), 'utf8'));
     const example = spec.paths['/api/news/v1/search-fact-checks'].get.responses['200'].content['application/json'].example;
     assert.equal(example.caveat, FACT_CHECK_CAVEAT);
     assert.ok(['ok', 'unavailable', 'not-configured'].includes(example.state));

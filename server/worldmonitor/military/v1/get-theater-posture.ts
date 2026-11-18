@@ -2,7 +2,7 @@ import type {
   ServerContext,
   GetTheaterPostureRequest,
   GetTheaterPostureResponse,
-} from '../../../../src/generated/server/worldmonitor/military/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 
 import { getCachedJson } from '../../../_shared/redis';
 import {

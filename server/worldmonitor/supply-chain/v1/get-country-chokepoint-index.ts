@@ -2,8 +2,8 @@ import type {
   ServerContext,
   GetCountryChokepointIndexRequest,
   GetCountryChokepointIndexResponse,
-} from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 
 import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
 import { getCachedJson, setCachedJson } from '../../../_shared/redis';

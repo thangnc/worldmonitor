@@ -8,7 +8,7 @@ import type {
   ServerContext,
   ListFireDetectionsRequest,
   ListFireDetectionsResponse,
-} from '../../../../src/generated/server/worldmonitor/wildfire/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/wildfire/v1/service_server';
 
 import { getCachedJson } from '../../../_shared/redis';
 import { resolveFireDetectionTotalCount } from '../../../../src/services/wildfires/payload';

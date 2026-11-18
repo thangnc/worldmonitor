@@ -3,8 +3,8 @@ import type {
   ServerContext,
   GetIntelTimelineRequest,
   GetIntelTimelineResponse,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { validateHistoryScope } from '../../../_shared/intel-history-contract';
 
 /** Hard cap on `limit`, kept from the published contract. */

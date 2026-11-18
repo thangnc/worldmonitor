@@ -4,7 +4,7 @@ import type {
   ListMilitaryBasesResponse,
   MilitaryBaseEntry,
   MilitaryBaseCluster,
-} from '../../../../src/generated/server/worldmonitor/military/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 
 import filterParamContracts from '../../../../shared/openapi-filter-param-contracts.json';
 import { cachedFetchJson, getCachedJson, geoSearchByBox, getHashFieldsBatch } from '../../../_shared/redis';

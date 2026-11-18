@@ -20,9 +20,9 @@ vi.mock('../_shared/redis', async (original) => ({
 import { createDomainGateway } from '../gateway';
 import { getCachedJson } from '../_shared/redis';
 import { getTheaterPosture } from '../worldmonitor/military/v1/get-theater-posture';
-import { createMilitaryServiceRoutes, type MilitaryServiceHandler } from '../../src/generated/server/worldmonitor/military/v1/service_server';
+import { createMilitaryServiceRoutes, type MilitaryServiceHandler } from '../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 import { getCountrySignalObservations } from '../worldmonitor/intelligence/v1/get-country-signal-observations';
-import { createIntelligenceServiceRoutes, type IntelligenceServiceHandler } from '../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+import { createIntelligenceServiceRoutes, type IntelligenceServiceHandler } from '../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { issueSessionToken } from '../../api/_session.js';
 // The removed internal-MCP trust marker: a client-sent copy grants nothing.
 const FORGED_MCP_MARKER = 'x-wm-mcp-internal-verified';

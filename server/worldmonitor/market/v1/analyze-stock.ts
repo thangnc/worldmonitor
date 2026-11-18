@@ -8,7 +8,7 @@ import type {
   UpgradeDowngrade,
   ServerContext,
   StockAnalysisHeadline,
-} from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import { callLlm, type LlmRoutingPolicy } from '../../../_shared/llm';
 import { aiRoutingCacheSuffix, resolveAiRouting, toLlmRoutingPolicy } from '../../../_shared/ai-routing-policy';
 import { cachedFetchJson, getCachedJson } from '../../../_shared/redis';

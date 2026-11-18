@@ -9,7 +9,7 @@ on:
 # output written by `make generate`.
 env:
   CODEGEN_INPUT_PATHS: >-
-    proto/
+    packages/contracts/proto/
     Makefile
     package.json
     package-lock.json
@@ -98,8 +98,8 @@ env:
     src/shared/premium-paths.ts
     src/shared/public-rpc-cache.ts
   GENERATED_PATHS: >-
-    src/generated/
-    docs/api/
+    packages/contracts/generated/
+    packages/contracts/openapi/
 
 permissions: {}
 
@@ -182,7 +182,7 @@ jobs:
             |
             {
               codegen: any($paths[]; . as $path | matches_registry($path; $consumed) or matches_registry($path; $generated)),
-              breaking: any($paths[]; test("^proto(?:/|$)"))
+              breaking: any($paths[]; test("^(?:packages/contracts/)?proto(?:/|$)"))
             } as $classification
             |
             $classification + {
@@ -251,8 +251,15 @@ jobs:
         env:
           GOPROXY: 'https://proxy.golang.org,direct'
 
+      # The buf module moved from proto/ to packages/contracts/proto/ (refactor
+      # PR 2.1). main's Makefile still runs `cd proto` until that layout reaches
+      # main, so call buf directly against whichever path origin/main holds;
+      # the PR's proto files are its input, as they were with `make breaking`.
       - name: Check for breaking proto changes
-        run: make breaking
+        run: |
+          against=packages/contracts/proto
+          git cat-file -e "origin/main:$against/buf.yaml" 2>/dev/null || against=proto
+          buf breaking packages/contracts/proto --against ".git#branch=origin/main,subdir=$against"
 
   fork-artifact-check:
     needs: changes

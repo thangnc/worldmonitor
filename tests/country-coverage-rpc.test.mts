@@ -38,8 +38,8 @@ import type {
   GetCountryCoverageRequest,
   GetCountryCoverageResponse,
   ServerContext,
-} from '../src/generated/server/worldmonitor/intelligence/v1/service_server.ts';
-import { ValidationError } from '../src/generated/server/worldmonitor/intelligence/v1/service_server.ts';
+} from '../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server.ts';
+import { ValidationError } from '../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server.ts';
 
 const NOW_MS = Date.parse('2026-09-07T12:00:00.000Z');
 const HOUR = 3_600_000;

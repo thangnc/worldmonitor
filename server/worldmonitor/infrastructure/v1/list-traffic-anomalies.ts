@@ -8,7 +8,7 @@ import {
   type ServerContext,
   type ListInternetTrafficAnomaliesRequest,
   type ListInternetTrafficAnomaliesResponse,
-} from '../../../../src/generated/server/worldmonitor/infrastructure/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server';
 
 import { logCacheReadError, readCachedJson } from '../../../_shared/redis';
 

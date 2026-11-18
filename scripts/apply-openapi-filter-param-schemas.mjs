@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const OPENAPI_DIR = join(ROOT, 'docs/api');
+const OPENAPI_DIR = join(ROOT, 'packages/contracts/openapi');
 const JSON_SPEC_SUFFIX = '.openapi.json';
 const YAML_SPEC_SUFFIX = '.openapi.yaml';
 const ISO2_TO_ISO3 = JSON.parse(readFileSync(join(ROOT, 'shared/iso2-to-iso3.json'), 'utf8'));

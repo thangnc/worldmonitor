@@ -8,7 +8,7 @@ import type {
   GetFearGreedIndexResponse,
   GetHyperliquidFlowResponse,
   ListStablecoinMarketsResponse,
-} from '@/generated/client/worldmonitor/market/v1/service_client';
+} from '@wm/contracts/generated/client/worldmonitor/market/v1/service_client';
 import { price, signed } from '../format';
 import { feedState, sortFeeds, type FeedState, type Indicator } from './indicators';
 import { DRIVERS, LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';

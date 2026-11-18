@@ -26,7 +26,7 @@ vi.mock('../../server/_shared/premium-check', () => ({ isCallerPremium: async ()
 
 import { lazyFetchBilateralHs4, lazyFetchHeading } from '../../server/worldmonitor/supply-chain/v1/_bilateral-hs4-lazy';
 import { getCountryProducts } from '../../server/worldmonitor/supply-chain/v1/get-country-products';
-import { ValidationError } from '../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+import { ValidationError } from '../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 
 const SENTINEL = (iso2: string) => `comtrade:bilateral-hs4-lazy-sentinel:${iso2}:v1`;
 const CANONICAL = (iso2: string) => `comtrade:bilateral-hs4:${iso2}:v1`;

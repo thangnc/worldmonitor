@@ -178,9 +178,9 @@ Service domains cover every data vertical:
 
 **Code generation pipeline** — a `Makefile` drives `buf generate` with three custom sebuf protoc plugins:
 
-1. `protoc-gen-ts-client` → typed fetch-based client classes (`src/generated/client/`)
-2. `protoc-gen-ts-server` → handler interfaces and route descriptors (`src/generated/server/`)
-3. `protoc-gen-openapiv3` → OpenAPI 3.1.0 specs in YAML and JSON (`docs/api/`)
+1. `protoc-gen-ts-client` → typed fetch-based client classes (`packages/contracts/generated/client/`)
+2. `protoc-gen-ts-server` → handler interfaces and route descriptors (`packages/contracts/generated/server/`)
+3. `protoc-gen-openapiv3` → OpenAPI 3.1.0 specs in YAML and JSON (`packages/contracts/openapi/`)
 
 Proto definitions include `buf.validate` field constraints (e.g., latitude ∈ [−90, 90]), so request validation is generated automatically — handlers receive pre-validated data. Breaking changes are caught at CI time via `buf breaking` against the main branch.
 

@@ -446,9 +446,9 @@ export function readPublicNoAuthPaths() {
 // in server/_shared/entitlement-check.ts) and the billing-verification states
 // were deleted with Clerk and Convex: the gateway now serves every
 // PREMIUM_RPC_PATHS route to an operator key only. These literals keep the
-// committed docs/api output byte-identical until the OpenAPI auth contract is
+// committed packages/contracts/openapi output byte-identical until the OpenAPI auth contract is
 // rewritten for the operator-key-only model (a follow-up that regenerates
-// docs/api). Do not add entries here.
+// packages/contracts/openapi). Do not add entries here.
 const FROZEN_ENDPOINT_ENTITLEMENTS = [
   ['/api/forecast/v1/trigger-simulation', 1],
   ['/api/intelligence/v1/classify-event', 1],

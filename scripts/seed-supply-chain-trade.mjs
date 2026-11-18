@@ -520,7 +520,7 @@ export const WORLD_PARTNER_CODE = '000';
 // makes all 1-30 answerable from the same fetch.
 //
 // Must stay equal to the `years` maximum in
-// proto/worldmonitor/trade/v1/get_trade_flows.proto — a seeded window shorter
+// packages/contracts/proto/worldmonitor/trade/v1/get_trade_flows.proto — a seeded window shorter
 // than the contract maximum silently truncates the widest supported request.
 // tests/trade-flows-coverage.test.mts pins the two together.
 export const TRADE_FLOW_SEED_YEARS = 30;
@@ -1082,7 +1082,7 @@ async function fetchTradeRestrictions() {
 // makes all 1-30 answerable from the same fetch.
 //
 // Must stay equal to the `years` maximum in
-// proto/worldmonitor/trade/v1/get_tariff_trends.proto — a seeded window shorter
+// packages/contracts/proto/worldmonitor/trade/v1/get_tariff_trends.proto — a seeded window shorter
 // than the contract maximum silently truncates the widest supported request.
 // tests/tariff-trends-coverage.test.mts pins the two together.
 export const TARIFF_SEED_YEARS = 30;

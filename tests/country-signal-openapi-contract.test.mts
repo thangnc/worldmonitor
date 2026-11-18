@@ -4,12 +4,12 @@ import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import { countrySignalOutcomeSchema } from '../shared/country-signal-observations';
 
-const spec = JSON.parse(readFileSync(new URL('../docs/api/IntelligenceService.openapi.json', import.meta.url), 'utf8'));
+const spec = JSON.parse(readFileSync(new URL('../packages/contracts/openapi/IntelligenceService.openapi.json', import.meta.url), 'utf8'));
 const operation = spec.paths['/api/intelligence/v1/get-country-signal-observations'].get;
 
 it('keeps the same window and cursor bounds in both published YAML specs', () => {
   for (const name of ['IntelligenceService', 'worldmonitor']) {
-    const yaml = parse(readFileSync(new URL(`../docs/api/${name}.openapi.yaml`, import.meta.url), 'utf8'));
+    const yaml = parse(readFileSync(new URL(`../packages/contracts/openapi/${name}.openapi.yaml`, import.meta.url), 'utf8'));
     const parameters = Object.fromEntries(yaml.paths['/api/intelligence/v1/get-country-signal-observations'].get.parameters.map((parameter: { name: string }) => [parameter.name, parameter]));
     assert.equal(parameters.window_index.schema.minimum, 0);
     assert.equal(parameters.window_index.schema.maximum, 1);

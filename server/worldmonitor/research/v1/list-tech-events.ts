@@ -17,7 +17,7 @@ import type {
   ListTechEventsResponse,
   TechEvent,
   TechEventCoords,
-} from '../../../../src/generated/server/worldmonitor/research/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/research/v1/service_server';
 import { CITY_COORDS } from '../../../_shared/city-coords';
 import filterParamContracts from '../../../../shared/openapi-filter-param-contracts.json';
 import { CHROME_UA } from '../../../_shared/constants';

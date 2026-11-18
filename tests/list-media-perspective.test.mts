@@ -8,7 +8,7 @@ import { drainResponseHeaders } from '../server/_shared/response-headers';
 import { __resetKeyPrefixCacheForTests } from '../server/_shared/redis';
 import { MEDIA_PERSPECTIVE_CACHE_PREFIX } from '../server/worldmonitor/news/v1/list-media-perspective';
 import { unM49RegionCountries } from '../server/_shared/un-m49-regions';
-import { createNewsServiceRoutes, type ListMediaPerspectiveResponse } from '../src/generated/server/worldmonitor/news/v1/service_server';
+import { createNewsServiceRoutes, type ListMediaPerspectiveResponse } from '../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import { validateGeneratedRequest } from '../server/request-validator';
 
 const route = createNewsServiceRoutes(newsHandler, { validateRequest: validateGeneratedRequest })

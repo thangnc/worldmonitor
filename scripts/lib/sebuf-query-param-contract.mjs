@@ -169,7 +169,7 @@ function parseProtoQueryFields(protoFile) {
 }
 
 function handlerPathForProto(root, protoFile) {
-  const rel = slash(relative(join(root, 'proto'), protoFile));
+  const rel = slash(relative(join(root, 'packages', 'contracts', 'proto'), protoFile));
   const parts = rel.split('/');
   if (parts[0] !== 'worldmonitor' || parts.length < 4) return null;
 
@@ -331,7 +331,7 @@ export function collectQueryParamContractViolations(root, options = {}) {
   // so there is no handler to hold their query params to.
   const skipServices = options.skipServices ?? new Set();
   const seenQueryParams = new Set();
-  const protoRoot = join(root, 'proto', 'worldmonitor');
+  const protoRoot = join(root, 'packages', 'contracts', 'proto', 'worldmonitor');
   const protoFiles = walk(protoRoot).filter((file) => file.endsWith('.proto'));
   const violations = [];
   const stats = {
@@ -346,7 +346,7 @@ export function collectQueryParamContractViolations(root, options = {}) {
     const fields = parseProtoQueryFields(protoFile);
     if (fields.length === 0) continue;
 
-    const protoRel = slash(relative(join(root, 'proto'), protoFile));
+    const protoRel = slash(relative(join(root, 'packages', 'contracts', 'proto'), protoFile));
     const serviceKey = protoRel.split('/').slice(1, 3).join('/');
     if (skipServices.has(serviceKey)) continue;
     const isScopedProto = scopedProtoFiles.has(protoRel);

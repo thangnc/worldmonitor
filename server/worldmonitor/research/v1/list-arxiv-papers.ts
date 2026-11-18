@@ -7,9 +7,9 @@ import type {
   ServerContext,
   ListArxivPapersRequest,
   ListArxivPapersResponse,
-} from '../../../../src/generated/server/worldmonitor/research/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/research/v1/service_server';
 
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/research/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/research/v1/service_server';
 import trackedCategories from '../../../../scripts/shared/research-arxiv-categories.json';
 import { resolvePageSize } from '../../../_shared/constants';
 import { getCachedJson } from '../../../_shared/redis';
