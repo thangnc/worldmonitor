@@ -18,7 +18,7 @@
 FROM rust:1-trixie@sha256:8a4e90c7946b74626488b1446f712c0fe0ed1a596cbd3d871684bc9c5433ae07 AS rust
 
 # node:24-trixie (Debian 13; Debian 12 bookworm left regular security support on 2026-07-11)
-FROM node:24-trixie@sha256:5c6e2e57d7dd6652ce6f087ba0328312059d7c77f93baa8751865dbf103f1acb
+FROM node:24-trixie@sha256:6e5d4c38403930b420404f190be8563396dca2bd156a6cb4722707b0efcf6fc1
 
 ENV DEBIAN_FRONTEND=noninteractive \
     NODE_OPTIONS=--max-old-space-size=8192 \
