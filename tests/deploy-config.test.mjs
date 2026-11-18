@@ -333,23 +333,10 @@ describe('vercel.json source matching', () => {
   });
 });
 
-describe('open data under /data/v1', () => {
-  it('revalidates versioned open data hourly instead of caching it as immutable', () => {
-    assert.equal(effectiveCacheControl('/data/v1/chokepoints/latest.json'), 'public, max-age=3600');
-  });
-
-  it('keeps open data readable cross-origin', () => {
-    assert.equal(effectiveHeader('/data/v1/chokepoints/latest.csv', 'Access-Control-Allow-Origin'), '*');
-  });
-
-  it('lets the CDN serve stale open data briefly while it revalidates', () => {
-    assert.equal(
-      effectiveHeader('/data/v1/chokepoints/latest.json', 'CDN-Cache-Control'),
-      'public, s-maxage=3600, stale-while-revalidate=600',
-    );
-  });
-
-  it('leaves unversioned /data assets immutable', () => {
+// The /data/v1 open-data files (chokepoint CSV/JSON) left with the public
+// open-data product in 2026-11; /data keeps the map's static geometry.
+describe('static data under /data', () => {
+  it('leaves /data assets immutable', () => {
     assert.equal(effectiveCacheControl('/data/countries-50m.json'), 'public, max-age=31536000, immutable');
   });
 
@@ -359,11 +346,9 @@ describe('open data under /data/v1', () => {
     return match[1];
   };
 
-  it('gives the self-hosted image the same hourly, cross-origin rule for /data/v1/', () => {
-    const block = nginxLocation('/data/v1/');
-    assert.match(block, /add_header Cache-Control "public, max-age=3600";/);
-    assert.match(block, /add_header Access-Control-Allow-Origin "\*" always;/);
+  it('gives the self-hosted image the same immutable rule for /data/', () => {
     assert.match(nginxLocation('/data/'), /add_header Cache-Control "public, max-age=31536000, immutable";/);
+    assert.doesNotMatch(dockerNginxSource, /location \/data\/v1\//);
   });
 });
 
@@ -1575,8 +1560,6 @@ describe('Lite deploy contracts', () => {
       git('commit', '-qm', 'base');
 
       for (const path of [
-        'scripts/unranked-country-inventory.mjs',
-        'scripts/data/use-case-workflows.mjs',
         'scripts/slugify.mjs',
         'scripts/source-origin.mjs',
         'scripts/source-origin.d.mts',

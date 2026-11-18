@@ -14,9 +14,8 @@ body:
       description: Where did you see the bug?
       options:
         - Lite UI (web, /lite)
-        - Desktop app (Windows)
-        - Desktop app (macOS)
-        - Desktop app (Linux)
+        - API (/api)
+        - Seeders or relay
     validations:
       required: true
 
@@ -34,7 +33,6 @@ body:
         - Trending Keywords
         - Country Brief pages
         - Live video streams
-        - Desktop app (Tauri)
         - Settings / API keys
         - Settings / LLMs (Ollama, OpenRouter)
         - Live webcams

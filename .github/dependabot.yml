@@ -51,15 +51,6 @@ updates:
       - dependency-name: "node"
         update-types: ["version-update:semver-major"]
 
-  - package-ecosystem: "docker"
-    directory: "/.oss-scanner"
-    schedule:
-      interval: "weekly"
-    ignore:
-      # Hold the Node base image at the current LTS major (24). See PR #4709.
-      - dependency-name: "node"
-        update-types: ["version-update:semver-major"]
-
   # Every npm manifest in the repo. Without this block Dependabot raises alerts
   # but can never open a fix PR for them, which is how 69 open advisories
   # accumulated while `security-audit.yml` stayed green — the gate only blocks on
@@ -68,7 +59,6 @@ updates:
   #   /docker            — its manifest is `runtime-package.json`, a non-standard
   #                        name Dependabot cannot discover. Covered by the audit
   #                        matrix instead.
-  #   /cli               — declares no dependencies at all.
   - package-ecosystem: "npm"
     directories:
       - "/"
@@ -91,15 +81,5 @@ updates:
     groups:
       # One PR per directory per advisory batch instead of one per package.
       npm-security:
-        applies-to: security-updates
-        patterns: ["*"]
-
-  - package-ecosystem: "cargo"
-    directory: "/sdk/rust"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 0
-    groups:
-      cargo-security:
         applies-to: security-updates
         patterns: ["*"]

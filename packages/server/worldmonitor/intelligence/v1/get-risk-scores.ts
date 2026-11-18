@@ -82,7 +82,7 @@ import { CII_CLIMATE_ZONE_COUNTRIES } from '../../../../shared/cii-climate-zones
 // Change protocol when editing coefficient values in packages/shared/cii-weights.ts:
 //   1. Bump CII_FORMULA_VERSION in ./_risk-config.ts if server/API scores shift.
 //   2. Update docs/engineering/methodology/cii-risk-scores.md in the SAME commit.
-//   3. Mention the change in CHANGELOG.md (public-facing section).
+//   3. Say in the PR why the scores shift.
 // Climate-zone attribution has the same protocol when it changes server/API
 // scores; its canonical map documents that ownership in packages/shared/cii-climate-zones.ts.
 // ========================================================================

@@ -121,11 +121,9 @@ export const AGENT_NOT_FOUND_PASSTHROUGH_PREFIXES = [
   '/data',
   '/desktop-sign-in',
   '/favico',
-  '/map-styles',
   '/settings',
   '/stocks',
   '/story',
-  '/textures',
   '/verify',
   '/.well-known',
 ] as const;

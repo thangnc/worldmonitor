@@ -34,7 +34,7 @@ describe('root dependency cache (#8710)', () => {
     const cache = action.runs.steps.find((step) => step.id === 'node-modules');
     assert.match(cache.uses, /^actions\/cache\/restore@[a-f0-9]{40}$/);
     assert.equal(cache.with.path, 'node_modules');
-    assert.equal(cache.with.key, "node-modules-v3-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('package-lock.json', '.npmrc', 'vendor/braces/**', 'vendor/stream-json/**', 'vendor/vercel-og/**') }}-${{ steps.install-inputs.outputs.hash }}");
+    assert.equal(cache.with.key, "node-modules-v3-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('package-lock.json', '.npmrc', 'vendor/braces/**', 'vendor/stream-json/**') }}-${{ steps.install-inputs.outputs.hash }}");
     assert.equal(cache.with['restore-keys'], undefined);
   });
 
