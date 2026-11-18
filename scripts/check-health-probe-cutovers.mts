@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { unlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const HEALTH_URL = new URL('../api/health.js', import.meta.url);
@@ -165,25 +165,46 @@ function resolveCommit(ref: string): string {
   }).trim();
 }
 
-/**
- * Load the base revision's exported SEED_META registry in an isolated temporary module.
- */
-async function readBaseSeedMeta(ref: string) {
-  const commit = resolveCommit(ref);
-  const source = execFileSync('git', ['show', `${commit}:api/health.js`], {
+// Same-directory module specifiers in an api/ source: `./_x.js` in static
+// imports, re-exports and dynamic imports. api/*.js entries import only these
+// helpers and packages (CLAUDE.md "Critical boundaries").
+const SIBLING_IMPORT_RE = /(?:\bfrom\s*|\bimport\s*\(\s*|^\s*import\s+)['"]\.\/([^'"/]+\.js)['"]/gm;
+
+function showBaseFile(commit: string, path: string): string {
+  return execFileSync('git', ['show', `${commit}:${path}`], {
     encoding: 'utf8',
     maxBuffer: 10 * 1024 * 1024,
   });
-  const temporaryUrl = new URL(`../api/.health-cutover-base-${randomUUID()}.mjs`, import.meta.url);
-  writeFileSync(temporaryUrl, source, { flag: 'wx' });
+}
+
+/**
+ * Load the base revision's exported SEED_META registry in an isolated temporary
+ * directory. The base health.js is materialized together with the base
+ * revision of every api/ helper it reaches, so a helper whose exports changed
+ * on this branch cannot break the base import.
+ */
+async function readBaseSeedMeta(ref: string) {
+  const commit = resolveCommit(ref);
+  const directory = new URL(`../api/.health-cutover-base-${randomUUID()}/`, import.meta.url);
+  mkdirSync(directory);
   try {
-    const module = await import(temporaryUrl.href);
+    const pending = ['health.js'];
+    const written = new Set<string>();
+    while (pending.length > 0) {
+      const file = pending.pop() as string;
+      if (written.has(file)) continue;
+      written.add(file);
+      const source = showBaseFile(commit, `api/${file}`);
+      writeFileSync(new URL(file, directory), source, { flag: 'wx' });
+      for (const match of source.matchAll(SIBLING_IMPORT_RE)) pending.push(match[1]);
+    }
+    const module = await import(new URL('health.js', directory).href);
     if (!isRecord(module.__testing__) || !isRecord(module.__testing__.SEED_META)) {
       throw new Error(`api/health.js at ${commit} does not export __testing__.SEED_META`);
     }
     return { commit, seedMeta: module.__testing__.SEED_META };
   } finally {
-    unlinkSync(temporaryUrl);
+    rmSync(directory, { recursive: true, force: true });
   }
 }
 
