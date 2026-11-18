@@ -74,15 +74,16 @@ describe('built-output guard contract', () => {
   it('keeps the Lite build immediately before the marker-enabled built-output test in CI', () => {
     const workflow = readFileSync(workflowPath, 'utf8').replaceAll('\r\n', '\n');
     // The built-output suites must run against the dist the step above just
-    // built, with nothing between them that could leave dist/ stale or absent.
+    // built (or restored from the turbo cache, outputs dist/**), with nothing
+    // between them that could leave dist/ stale or absent.
     const expectedSequence = [
-      '      - run: npm run build',
+      '      - run: npx turbo run build',
       '      - run: WM_EXPECT_BUILT_OUTPUT=1 npm run test:data -- --built-output=only --concurrency=4',
     ].join('\n');
 
     assert.ok(
       workflow.includes(expectedSequence),
-      'the build job must run npm run build, then the built-output test:data run with WM_EXPECT_BUILT_OUTPUT=1 immediately after',
+      'the build job must run npx turbo run build, then the built-output test:data run with WM_EXPECT_BUILT_OUTPUT=1 immediately after',
     );
     assert.equal(
       workflow.match(/WM_EXPECT_BUILT_OUTPUT=1 npm run test:data/g)?.length ?? 0,

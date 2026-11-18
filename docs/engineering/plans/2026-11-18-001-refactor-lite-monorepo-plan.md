@@ -64,6 +64,22 @@ api/, middleware.ts   unchanged location until Phase 4
 - Move order: `packages/shared`, `packages/contracts`, `packages/server`, `packages/client`, then `apps/web`, `apps/ingest`, `apps/relay`; one PR each.
 - The Railway fleet registry (`scripts/railway-services.json`, its watch paths and audits) moves with `apps/ingest` and `apps/relay`, trimmed to the Lite seeders. Services outside Lite, such as `demos/verification-desk`, leave the registry and the repository together, after the owner stops them on Railway.
 
+### Revised sequence (2026-11-18, after Phase 1)
+
+A design pass against the post-Phase-1 tree changed the order and moved three items to Phase 4:
+
+- **Seeders and the relay stay in `scripts/` until Phase 4.** 50 of the 63 registry services build with `rootDirectory: scripts`, and `tests/scripts-railway-nixpacks-no-escape-import.test.mts` keeps every seeder import inside `scripts/`; `scripts/` also has its own lockfile. Moving them to `apps/ingest` and `apps/relay`, or `tools/`, changes how they deploy, which Phase 4 decides. The registry trim moves with them.
+- **`turbo-ignore` waits for Phase 4 too.** `api/`, `middleware.ts` and `vercel.json` stay at the root, outside every workspace, so `turbo-ignore web` would skip deploys for API-only changes. `scripts/vercel-ignore.sh` keeps the job and lists the new paths.
+- **New order, one PR each into `refactor/lite-monorepo`:**
+  1. **2.0 tooling:** workspaces globs, `packageManager`, pinned `turbo`, `tsconfig.base.json`, `turbo.json` with cached root tasks (the four typechecks and the build; `docs/engineering/**` and `tests/**` outside the hashes, `.env*` inside the build hash), CI through turbo with Vercel Remote Cache when `TURBO_TOKEN`/`TURBO_TEAM` exist.
+  2. **2.1 `packages/contracts`:** `proto/`, `src/generated/`, `docs/api/`, then `Makefile` and `buf.gen.yaml` outputs. First, because it has no deploy coupling.
+  3. **2.2 `packages/shared`:** `shared/`, with the Dockerfile `COPY` lines (relay, digest, bootstrap tiers, seed bundles), watch patterns and the attribution manifest regenerated. `scripts/shared/` stays as the seeders' mirror.
+  4. **2.3 `packages/server`:** `server/` with its `__tests__`. `api/` and `middleware.ts` keep relative imports until a Vercel preview proves workspace-package imports in Edge bundles.
+  5. **2.4 `packages/client`:** the `src/` modules the Lite UI imports.
+  6. **2.5 `apps/web`:** `src/lite`, `lite.html`, the Vite configs; the build still writes the root `dist/`.
+- **Tests stay in the root `tests/`** (one sharded runner, one durations file); `--affected` arrives when packages own tasks.
+- **Owner actions:** optional Vercel Remote Cache secrets (`TURBO_TOKEN` secret, `TURBO_TEAM` variable); before 2.2 reaches `main`, confirm each Render service's root directory and build/start commands; after 2.3, decide whether the upstream Railway registry (`koala73/worldmonitor` in `scripts/railway-native-autodeploy-fleet.json`) leaves the repository.
+
 ## Phase 3 — Bundler and Preact tooling (apps/web)
 
 - Vite 6 → 8 (Rolldown). Check `@tailwindcss/vite`, `vitest` (`^4.1.12`) and any Rollup-specific options (`worker.rollupOptions` in `vite.lite.config.ts`) against Vite 8.

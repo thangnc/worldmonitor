@@ -1189,7 +1189,7 @@ describe('docker-publish conditions', () => {
       .filter((source) => source !== '.');
     assert.ok(copied.length > 0, 'the Dockerfile must still COPY its configs from docker/');
     for (const source of copied) assert.match(source, /^docker\//, `${source} is COPYed into the image but outside docker/**`);
-    assert.match(ciWorkflow, /\n {6}- run: npm run build\n/, 'the pre-merge build that covers application changes');
+    assert.match(ciWorkflow, /\n {6}- run: npx turbo run build\n/, 'the pre-merge build that covers application changes');
   });
 
   it('keeps everything that is not main out of the pending slot main rebuilds evict', () => {

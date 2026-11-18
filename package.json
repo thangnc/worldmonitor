@@ -18,6 +18,11 @@
     "utf-8-validate": false
   },
   "type": "module",
+  "packageManager": "npm@11.19.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "lint": "biome lint ./src ./server ./api ./tests ./scripts ./middleware.ts && npm run lint:safe-html",
     "lint:fix": "biome check ./src ./server ./api ./tests ./scripts ./middleware.ts --fix",
@@ -140,6 +145,7 @@
     "pdfjs-dist": "6.2.108",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
+    "turbo": "2.11.10",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^6.4.5",
     "vite-plugin-pwa": "^1.2.0",

@@ -64,6 +64,7 @@ npm run typecheck:api            # api/ + server/ (tsconfig.api.json)
 npm run lint                     # biome + safe-html guard
 npm run lint:boundaries          # browser import-direction enforcement
 npm run lint:api-contract        # hand-written api/ routes must be listed in api/api-route-exceptions.json
+npx turbo run typecheck build    # the same tasks through the Turborepo cache (turbo.json); CI runs them this way
 
 npm run test:data                # tests/*.test.{mjs,mts} (node:test, sharded runner)
 npm run test:dom                 # tests/dom (vitest, vitest.dom.config.mts)

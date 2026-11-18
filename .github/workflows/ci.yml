@@ -18,6 +18,14 @@ concurrency:
 permissions:
   contents: read
 
+# Turborepo (refactor Phase 2) caches the typecheck and build tasks. With
+# TURBO_TOKEN/TURBO_TEAM set it shares Vercel Remote Cache across runs; without
+# them it runs everything, uncached. Telemetry stays off in CI.
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+  TURBO_TELEMETRY_DISABLED: '1'
+
 jobs:
   checks:
     name: typecheck and lint
@@ -29,10 +37,7 @@ jobs:
         with:
           node-version: '24'
       - uses: ./.github/actions/install-root-deps
-      - run: npm run typecheck
-      - run: npm run typecheck:api
-      - run: npm run typecheck:contract-tests
-      - run: npm run typecheck:dom-tests
+      - run: npx turbo run typecheck typecheck:api typecheck:contract-tests typecheck:dom-tests
       - run: npm run lint
       - run: npm run lint:boundaries
       - run: npm run lint:unicode
@@ -94,9 +99,9 @@ jobs:
         with:
           node-version: '24'
       - uses: ./.github/actions/install-root-deps
-      # The deploy build itself (vercel.json buildCommand), then the suites that
-      # read its output.
-      - run: npm run build
+      # The deploy build itself (vercel.json buildCommand, through the turbo
+      # cache), then the suites that read its output.
+      - run: npx turbo run build
       - run: WM_EXPECT_BUILT_OUTPUT=1 npm run test:data -- --built-output=only --concurrency=4
       - name: Edge function bundle check
         run: node scripts/check-edge-function-bundles.mjs --caller=ci
