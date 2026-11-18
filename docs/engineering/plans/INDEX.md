@@ -4,6 +4,12 @@
 
 Plans record intent when they were written. Check the code and git history before relying on one. The schema is in [README.md](README.md).
 
+## Active
+
+| Date | Plan | Evidence |
+|---|---|---|
+| 2026-11-18 | [Refactor: Preact-only app, npm workspaces + Turborepo, Vite 8, deployment last](2026-11-18-001-refactor-lite-monorepo-plan.md) |  |
+
 ## Done
 
 | Date | Plan | Evidence |
