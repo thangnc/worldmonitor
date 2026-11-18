@@ -53,6 +53,13 @@ export const LITE_SEED_SECTIONS = [
   // gpsjam.org publishes one file a day; 12 h keeps it inside the 24 h health gate.
   { label: 'GPSJam', script: 'fetch-gpsjam.mjs', seedMetaKey: 'intelligence:gpsjam', intervalMs: 12 * HOUR, timeoutMs: 300_000 },
   { label: 'PortWatch', script: 'seed-portwatch.mjs', seedMetaKey: 'supply_chain:portwatch', intervalMs: 6 * HOUR, timeoutMs: 300_000 },
+  // Tanker flow at the oil chokepoints, from the PortWatch key above and these
+  // baselines (sections run in order). In production the relay runs the flows
+  // seeder every 6 h; locally nothing else does, and without it or the relay's
+  // transit summaries the Finance map's chokepoint status has no source. The
+  // baselines are constants in their seeder, so a monthly run costs nothing.
+  { label: 'Chokepoint-Baselines', script: 'seed-chokepoint-baselines.mjs', seedMetaKey: 'energy:chokepoint-baselines', intervalMs: 30 * DAY, timeoutMs: 60_000 },
+  { label: 'Chokepoint-Flows', script: 'seed-chokepoint-flows.mjs', seedMetaKey: 'energy:chokepoint-flows', intervalMs: 6 * HOUR, timeoutMs: 120_000 },
   // Japan MoD needs a proxy; without one the tick reports a config error for this section only.
   { label: 'Cross-Strait-Activity', script: 'seed-cross-strait-activity.mjs', useBundledCa: true, seedMetaKey: 'military:cross-strait-activity:complete', sourceRetryMetaKey: 'seed-meta:military:cross-strait-activity:taiwan-mnd', sourceRetryDelayMs: 30 * MIN, intervalMs: 3 * HOUR, timeoutMs: 300_000, requiredEnv: [['JAPAN_MOD_PROXY_URL', 'PROXY_URL']] },
   { label: 'Security-Advisories', script: 'seed-security-advisories.mjs', seedMetaKey: 'intelligence:advisories', intervalMs: 60 * MIN, timeoutMs: 300_000 },

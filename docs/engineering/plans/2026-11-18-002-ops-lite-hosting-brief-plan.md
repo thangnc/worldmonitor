@@ -63,7 +63,10 @@ Two effects pull the other way. On Vercel, the `public=1` bootstrap and digest r
 
 1. **Where the API runs:** the VPS, Vercel Node functions, or a split.
 2. **Redis:** pay for Upstash by usage (about $9 to $100+ a month, depending on reductions 1 and 2), or run Redis on the VPS. The owner's stated preference is to keep Upstash.
-3. **The relay:** run it gated for Lite, or not at all. Lite does not load the vessel feed (`apps/web/src/lite/data/escalation.ts`). Of the Sources connectors, only cable health names the relay as its producer (`apps/web/src/lite/data/connectors.ts`).
+3. **The relay:** run it gated for Lite, or not at all. Lite does not load the vessel feed (`apps/web/src/lite/data/escalation.ts`), and of the Sources connectors only cable health names the relay as its producer (`apps/web/src/lite/data/connectors.ts`). The Finance map's chokepoint status also depends on it, through its handler (`packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts`):
+   - The handler reads the relay's transit summaries (`supply_chain:transit-summaries:v1`, built from the PortWatch key) and its AIS snapshot.
+   - In production the relay runs `seed-chokepoint-flows` every 6 h. Without the relay, a plain seeder schedule has to run that seeder, as the local runner does (`scripts/run-lite-seeders.mjs`).
+   - Without the relay the chokepoint status still renders, from tanker flows and NGA warnings, but reports partial coverage.
 4. **The command reductions above:** each is a behaviour change, so each needs approval before it is built.
 
 Before choosing, one day of `seed:lite:watch` and one open tab against a scratch Upstash database would replace the estimate with a meter reading. That needs the owner to create the database and put its credentials in `.env.local`.
