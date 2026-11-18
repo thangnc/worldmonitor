@@ -10,7 +10,7 @@ const scripts = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
 const NOT_DERIVED = new Map([
   ['scripts/generate-derived.mjs', 'the runner itself'],
   ['scripts/check-build-prereqs.mjs', 'validator'],
-  ['scripts/bundle-budgets.mjs', 'validator over build output'],
+  ['scripts/generate-public-product-facts.mjs', 'frozen since refactor Phase 1a: reads removed dashboard config; Phase 1b removes it'],
   ['scripts/check-no-public-source-maps.mjs', 'deploy gate over build output'],
   ['scripts/docs-stats.mjs', 'validator'],
   ['scripts/generate-inventory-facts.mjs', 'gitignored build input; the runner refreshes it before the checks'],

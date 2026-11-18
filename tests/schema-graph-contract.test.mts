@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import middleware from '../middleware';
 import { rewriteDocsLocaleHtml } from '../src/config/docs-locale-seo';
 import { DOCS_PAGE_DATES } from '../src/config/docs-page-dates.generated';
 import {
@@ -16,11 +15,6 @@ import {
   SOFTWARE_SHARED_PROPERTIES,
   WEBSITE_SHARED_PROPERTIES,
 } from '../src/config/schema-graph-ids';
-import {
-  WEB_DASHBOARD_VARIANTS,
-  renderVariantDashboardHtml,
-} from '../src/config/variant-dashboard-html';
-import { VARIANT_META } from '../src/config/variant-meta';
 import {
   guardProBuiltOutput,
   shouldSkipProBuiltOutput,
@@ -241,15 +235,13 @@ function jsonLdDocumentPaths(): string[] {
 }
 
 // Properties a consumer merges by UNION rather than reading as one value, so
-// they may legitimately hold DIFFERENT values per surface: the dashboard lists
-// its own alternateName/keywords, /pro advertises the Business and API tiers on
-// top of the shared offers, and featureList is rewritten per variant by
-// variant-dashboard-html.ts.
+// they may legitimately hold DIFFERENT values per surface: a surface may list
+// its own alternateName/keywords/featureList, and /pro advertises the Business
+// and API tiers on top of the shared offers.
 //
 // Every other property must agree wherever two surfaces both state it. Note
 // that this is about conflicting VALUES, not presence: a surface may still omit
-// a property entirely (welcome.html carries no `isPartOf`, index.html no
-// `datePublished`), and the check below only compares surfaces that both carry
+// a property entirely (welcome.html carries no `isPartOf`), and the check below only compares surfaces that both carry
 // it. Two stated values for one `@id` is the contradiction #7611 is about, so
 // `isPartOf`, `datePublished` and `dateModified` deliberately stay OUT of this
 // set even though they are absent on one surface each.
@@ -263,7 +255,6 @@ describe('canonical schema graph', () => {
   }, () => {
     const welcomeBlocks = jsonLdBlocks(read('public/pro/welcome.html'));
     const proBlocks = jsonLdBlocks(read('public/pro/index.html'));
-    const dashboardBlocks = jsonLdBlocks(read('index.html'));
 
     const organizations = blocksOfType(welcomeBlocks, 'Organization');
     assert.equal(organizations.length, 1, 'the canonical welcome page must declare Organization once');
@@ -272,14 +263,9 @@ describe('canonical schema graph', () => {
     assert.deepEqual(organizations[0].founder, PERSON_ROLE);
     assert.equal(organizations[0].foundingDate, '2026-01');
     assert.equal(blocksOfType(proBlocks, 'Organization').length, 0, '/pro must reference the canonical Organization');
-    assert.equal(blocksOfType(dashboardBlocks, 'Organization').length, 0, '/dashboard must reference the canonical Organization');
 
-    const dashboardApp = blocksOfType(dashboardBlocks, 'SoftwareApplication')[0];
-    const dashboardSite = blocksOfType(dashboardBlocks, 'WebSite')[0];
     const proApp = blocksOfType(proBlocks, 'SoftwareApplication')[0];
     const welcomeApp = blocksOfType(welcomeBlocks, 'SoftwareApplication')[0];
-    assert.deepEqual(dashboardApp.publisher, { '@id': ORGANIZATION_ID });
-    assert.deepEqual(dashboardSite.publisher, { '@id': ORGANIZATION_ID });
     assert.deepEqual(proApp.publisher, { '@id': ORGANIZATION_ID });
     assert.ok(proApp.sameAs.includes(PRODUCT_WIKIDATA_URL));
     assert.ok(welcomeApp.sameAs.includes(PRODUCT_WIKIDATA_URL));
@@ -312,39 +298,10 @@ describe('canonical schema graph', () => {
     assert.deepEqual(sourceCode.targetProduct, { '@id': SOFTWARE_ID });
   });
 
-  it('connects the canonical dashboard page to its product graph and visible SEO content', () => {
-    const blocks = jsonLdBlocks(read('index.html'));
-    const application = blocksOfType(blocks, 'SoftwareApplication')[0];
-    const webSite = blocksOfType(blocks, 'WebSite')[0];
-    const webPage = blocksOfType(blocks, 'WebPage')[0];
-    const crumbs = blocksOfType(blocks, 'BreadcrumbList')[0];
-    const dashboardUrl = 'https://www.worldmonitor.app/dashboard';
-
-    assert.equal(application['@id'], SOFTWARE_ID);
-    assert.equal(webSite['@id'], WEBSITE_ID);
-    assert.equal(webPage['@id'], `${dashboardUrl}#webpage`);
-    assert.equal(webPage.url, dashboardUrl);
-    assert.deepEqual(webPage.mainEntity, { '@id': SOFTWARE_ID });
-    assert.deepEqual(webPage.isPartOf, { '@id': WEBSITE_ID });
-    assert.deepEqual(webPage.publisher, { '@id': ORGANIZATION_ID });
-    assert.deepEqual(webPage.speakable, {
-      '@type': 'SpeakableSpecification',
-      cssSelector: ['h1', '.app-seo-summary'],
-    });
-    assert.deepEqual(webPage.breadcrumb, { '@id': `${dashboardUrl}#breadcrumb` });
-    assert.equal(crumbs['@id'], `${dashboardUrl}#breadcrumb`);
-    assert.deepEqual(crumbs.itemListElement, [
-      { '@type': 'ListItem', position: 1, name: 'World Monitor', item: CANONICAL_ORIGIN },
-      { '@type': 'ListItem', position: 2, name: 'Dashboard', item: dashboardUrl },
-    ]);
-  });
-
   it('binds every canonical product surface to the World Monitor Wikidata item (#7373)', () => {
-    const dashboardBlocks = jsonLdBlocks(read('index.html'));
     const proBlocks = jsonLdBlocks(read('pro-test/index.html'));
     const welcomeBlocks = jsonLdBlocks(read('pro-test/welcome.html'));
     const productNodes = [
-      ['dashboard', blocksOfType(dashboardBlocks, 'SoftwareApplication')[0]],
       ['Pro', blocksOfType(proBlocks, 'SoftwareApplication')[0]],
       ['welcome', blocksOfType(welcomeBlocks, 'SoftwareApplication')[0]],
     ] as const;
@@ -411,14 +368,12 @@ describe('canonical schema graph', () => {
     assert.ok(datasetIds.size > 0, 'build the corpus before checking Dataset identities');
     const pinned: Array<[string, Record<string, unknown>, string[]]> = [
       [SOFTWARE_ID, SOFTWARE_SHARED_PROPERTIES, withoutUnbuiltProPaths([
-        'index.html',
         'pro-test/index.html',
         'pro-test/welcome.html',
         'public/pro/index.html',
         'public/pro/welcome.html',
       ])],
       [WEBSITE_ID, WEBSITE_SHARED_PROPERTIES, withoutUnbuiltProPaths([
-        'index.html',
         'pro-test/welcome.html',
         'public/pro/welcome.html',
       ])],
@@ -536,48 +491,6 @@ describe('canonical schema graph', () => {
     assert.equal(checked, documents.size, 'every synthesized docs document must contribute an Article author');
   });
 
-  it('serves every variant dashboard identically to browsers and AI crawlers', () => {
-    const dashboardHtml = read('index.html');
-
-    for (const variant of WEB_DASHBOARD_VARIANTS) {
-      const renderedBlocks = jsonLdBlocks(renderVariantDashboardHtml(dashboardHtml, variant));
-      const application = blocksOfType(renderedBlocks, 'SoftwareApplication')[0];
-      assert.ok(application, `${variant} must retain its SoftwareApplication schema`);
-      assert.equal(blocksOfType(renderedBlocks, 'Organization').length, 0, `${variant} must not redeclare Organization`);
-      assert.equal(blocksOfType(renderedBlocks, 'WebSite').length, 0, `${variant} must not claim the canonical WebSite`);
-      assert.deepEqual(application.publisher, { '@id': ORGANIZATION_ID });
-      assert.deepEqual(application.isPartOf, { '@id': WEBSITE_ID });
-      assert.deepEqual(application.author, PERSON_ROLE);
-      assert.ok(application.sameAs.includes(PRODUCT_WIKIDATA_URL));
-
-      const webPage = blocksOfType(renderedBlocks, 'WebPage')[0];
-      const crumbs = blocksOfType(renderedBlocks, 'BreadcrumbList')[0];
-      assert.equal(blocksOfType(renderedBlocks, 'WebPage').length, 1, `${variant} must replace the canonical WebPage`);
-      assert.equal(blocksOfType(renderedBlocks, 'BreadcrumbList').length, 1, `${variant} must replace the canonical BreadcrumbList`);
-      assert.ok(webPage, `${variant} must declare a WebPage that joins the canonical graph`);
-      assert.equal(webPage['@id'], `${VARIANT_META[variant].url}#webpage`);
-      assert.deepEqual(webPage.isPartOf, { '@id': WEBSITE_ID });
-      assert.deepEqual(webPage.publisher, { '@id': ORGANIZATION_ID });
-      assert.deepEqual(webPage.mainEntity, { '@id': `${VARIANT_META[variant].url}#software` });
-      assert.equal(webPage.speakable?.['@type'], 'SpeakableSpecification');
-      assert.ok(Array.isArray(webPage.speakable?.cssSelector) && webPage.speakable.cssSelector.includes('h1'));
-      assert.deepEqual(webPage.breadcrumb, { '@id': `${VARIANT_META[variant].url}#breadcrumb` });
-      assert.ok(crumbs, `${variant} must declare BreadcrumbList`);
-      assert.equal(crumbs['@id'], `${VARIANT_META[variant].url}#breadcrumb`);
-      assert.equal(crumbs.itemListElement?.[0]?.item, CANONICAL_ORIGIN);
-
-      const host = new URL(VARIANT_META[variant].url).hostname;
-      const browser = middleware(new Request(`https://${host}/`, {
-        headers: { 'user-agent': 'Mozilla/5.0' },
-      }));
-      const crawler = middleware(new Request(`https://${host}/`, {
-        headers: { 'user-agent': 'Mozilla/5.0 GPTBot/1.1' },
-      }));
-      assert.equal(browser, undefined, `${variant} browser must continue to the production redirect`);
-      assert.equal(crawler, undefined, `${variant} crawler must continue to the same production redirect`);
-    }
-  });
-
   it('binds the Pro page to the canonical site and product with speakable content', () => {
     const blocks = jsonLdBlocks(read('pro-test/index.html'));
     const application = blocksOfType(blocks, 'SoftwareApplication')[0];
@@ -647,7 +560,7 @@ describe('canonical schema graph', () => {
       assert.ok(personMatch[1].includes(url), `canonical #person must include ${url}`);
     }
 
-    for (const path of ['index.html', 'pro-test/index.html', 'pro-test/welcome.html']) {
+    for (const path of ['pro-test/index.html', 'pro-test/welcome.html']) {
       const html = read(path);
       assert.match(
         html,

@@ -154,12 +154,3 @@ test('scripts/ais-relay.cjs RELAY_* literals match canonical JSON', async () => 
     'RELAY_DIPLOMACY_FLASHPOINT_PAIRS drifted from shared/diplomacy-keywords.json',
   );
 });
-
-test('src/services/parallel-analysis.ts FLASHPOINT_KEYWORDS matches canonical JSON', async () => {
-  const src = await readFromRoot('src/services/parallel-analysis.ts');
-  assert.deepEqual(
-    parseStringArrayLiteral(src, 'FLASHPOINT_KEYWORDS'),
-    canonical.flashpointKeywords,
-    'parallel-analysis.ts FLASHPOINT_KEYWORDS drifted from shared/diplomacy-keywords.json',
-  );
-});

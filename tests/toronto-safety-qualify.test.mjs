@@ -74,8 +74,6 @@ describe('Toronto safety qualification wiring (#7012)', () => {
     assert.match(coreSrc, /productionWriter: 'disabled'/);
     assert.match(coreSrc, /productionWriter: 'bundle'/);
     assert.equal(/safety:toronto-tfs:v1|safety:toronto-tps:v1/.test(coreSrc), false);
-    assert.match(read('src/services/toronto-safety.ts'), /SafetyServiceClient/);
-    assert.match(read('src/components/TorontoSafetyPanel.ts'), /reported occurrences/i);
     assert.match(read('server/worldmonitor/safety/v1/get-toronto-safety.ts'), /MAX_LIMIT = 100/);
   });
 
@@ -166,8 +164,6 @@ describe('Toronto safety qualification wiring (#7012)', () => {
     assert.equal(/gtaupdate\.com|gta-update-police|safety:toronto:gta-update/.test(healthSrc), false);
     const seedHealth = read('api/seed-health.js');
     assert.equal(SAFETY_HINT.test(seedHealth) && /gta-update/.test(seedHealth), false);
-    const mcpGrant = read('src/mcp-grant-main.ts');
-    assert.equal(/gtaupdate|gta-update/.test(mcpGrant), false);
     const mcpApi = read('api/mcp.ts');
     assert.equal(/gtaupdate|gta-update|safety:toronto:gta-update/.test(mcpApi), false);
   });
@@ -187,11 +183,9 @@ describe('Toronto safety qualification wiring (#7012)', () => {
     assert.match(tpsSeeder, /Capacity decision/);
   });
 
-  it('does not fold Toronto safety into canadaAlerts, canadaRoads, weather, or news', () => {
+  it('does not fold Toronto safety into canadaAlerts, weather, or news', () => {
     const alerts = read('scripts/lib/canada-alerts-union.mjs');
-    const roads = read('src/services/canada-roads-core.ts');
     assert.equal(SAFETY_HINT.test(alerts), false);
-    assert.equal(SAFETY_HINT.test(roads), false);
     assert.equal(TORONTO_SAFETY_SOURCES.every((source) => !source.canonicalKey.startsWith('alerts:canada')), true);
     assert.equal(TORONTO_SAFETY_SOURCES.every((source) => !source.canonicalKey.startsWith('infra:')), true);
   });

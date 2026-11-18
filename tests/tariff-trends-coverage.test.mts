@@ -12,8 +12,6 @@
 
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 
 import {
   COVERAGE_KEY,
@@ -544,10 +542,6 @@ describe('the dashboard asks for the series its tab labels', () => {
     assert.equal(JSON.parse(JSON.stringify(resp)).datapoints[0].weightedRate, 0);
   });
 
-  test('data-loader call site passes no partner and no sector', () => {
-    const src = readFileSync(resolve('src/app/data-loader.ts'), 'utf8');
-    assert.match(src, /fetchTariffTrends\('840',\s*'',\s*'',\s*10\)/);
-  });
 });
 
 // ── Legacy years baked into the key is gone ───────────────────────────────

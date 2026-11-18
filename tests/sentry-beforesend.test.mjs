@@ -15,7 +15,6 @@ import {
 import { isDebugBearRumScriptFrame } from '../src/bootstrap/debugbear-rum.ts';
 import { isIosLikeUserAgent } from '../src/bootstrap/platform-ua.ts';
 import { isolateNonProductionSentryEvent } from '../shared/sentry-build-metadata.ts';
-import { buildCheckoutReportTags } from '../src/services/checkout-sentry-policy.ts';
 import { scrubSentryCredentials } from '../shared/sensitive-url-params.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -64,15 +63,16 @@ const rawBeforeSend = new Function(
 // src/bootstrap/platform-ua.ts). `navigator` is passed as a Function parameter so it
 // shadows Node's global and each test can state the platform explicitly.
 /**
- * The REAL tag block src/services/checkout.ts puts on every checkout report,
- * built by the shipped helper rather than copied. A hand-written fixture here
- * would keep passing after the production tags changed shape, which is the
- * whole failure mode this suite exists to catch.
+ * A first-party checkout report's tag block, as the removed dashboard checkout
+ * reporter emitted it (WORLDMONITOR-Q4). beforeSend's zero-frame exemption keys
+ * on the PRESENCE of `tags.kind`, which only our own capture call sites set.
  */
-const CHECKOUT_REPORT_TAGS = buildCheckoutReportTags({
+const CHECKOUT_REPORT_TAGS = {
+  component: 'dodo-checkout',
   action: 'exception',
   code: 'service_unavailable',
-});
+  kind: 'checkout_request_failed',
+};
 
 const MAC_DESKTOP_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36';
 const IOS_GOOGLE_APP_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/432.9.954074404 Mobile/15E148 Safari/604.1';
@@ -211,7 +211,7 @@ describe('ignoreErrors filters', () => {
     }
     const publicDir = resolve(__dirname, '../public');
     const documents = [
-      resolve(__dirname, '../index.html'),
+      resolve(__dirname, '../lite.html'),
       ...readdirSync(publicDir).filter((f) => f.endsWith('.html')).map((f) => join(publicDir, f)),
     ];
     assert.ok(documents.length > 1, 'sanity: the scan must reach the shipped HTML documents');
@@ -912,12 +912,12 @@ describe('zero-frame async-rejection patterns (timeout / DOMException / OOM / DO
     assert.ok(files.length > 100, `sanity: expected to scan src/, got ${files.length} files`);
     const kindSetters = files.filter((f) => /tags:\s*\{[^}]*\bkind:/.test(readFileSync(f, 'utf-8')));
     assert.ok(
-      kindSetters.length >= 4,
+      kindSetters.length >= 2,
       `sanity: expected to find the per-call-site kind tags, found ${kindSetters.length}`,
     );
     assert.ok(
-      kindSetters.some((f) => f.endsWith('pending-panel-data.ts')),
-      'scan must reach the panel-dispatch kind setter',
+      kindSetters.some((f) => f.endsWith('wm-session.ts')),
+      'scan must reach the session-transport kind setter',
     );
   });
 
@@ -2339,61 +2339,6 @@ describe('bare "Failed to fetch" is decided by host, not stack shape (WORLDMONIT
       zgStack,
     );
     assert.equal(beforeSend(event), null, 'prefixed annotated message must still reach the allowlist');
-  });
-
-  it('the producer and consumer regexes accept the same phrasing set', () => {
-    // Belt-and-braces against the drift that caused the period-less gap. The
-    // module PRODUCES annotated messages; sentry-init CONSUMES them. They are
-    // separate literals in separate files (sentry-init's beforeSend body is
-    // eval'd standalone by this harness, so it cannot import a shared one), so
-    // assert equivalence behaviourally instead.
-    const attributionSrc = readFileSync(
-      resolve(__dirname, '../src/services/fetch-failure-attribution.ts'),
-      'utf-8',
-    );
-    const producerMatch = attributionSrc.match(
-      /const FETCH_FAILURE_MESSAGE =\s*(\/\^[\s\S]*?\/);/,
-    );
-    assert.ok(producerMatch, 'FETCH_FAILURE_MESSAGE must be a single regex literal');
-    // eslint-disable-next-line no-new-func
-    const producer = new Function(`return ${producerMatch[1]}`)();
-
-    for (const phrase of [
-      'Failed to fetch',
-      'NetworkError when attempting to fetch resource.',
-      'NetworkError when attempting to fetch resource',
-      'Load failed',
-    ]) {
-      assert.ok(producer.test(phrase), `producer must annotate: ${phrase}`);
-      // Anything the producer annotates must be routable by the consumer once
-      // the host suffix is appended — otherwise it is annotated-but-unsuppressable.
-      const annotated = `${phrase} (abacus.worldmonitor.app)`;
-      const verdict = beforeSend(makeEvent(annotated, 'TypeError', zgStack));
-      const ignored = isIgnored(`TypeError: ${annotated}`);
-      assert.ok(
-        verdict === null || ignored,
-        `consumer must be able to act on an annotated message the producer emits: ${annotated}`,
-      );
-    }
-  });
-
-  it('the attribution module does not set `cause`', () => {
-    // Belt-and-braces: assert the source-level invariant too, so the reason is
-    // discoverable from this file without reading the module.
-    const attributionSrc = readFileSync(
-      resolve(__dirname, '../src/services/fetch-failure-attribution.ts'),
-      'utf-8',
-    );
-    // Strip comments first — the module explains the hazard in prose, and that
-    // prose necessarily contains the very assignment we are banning.
-    const code = attributionSrc
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^[ \t]*\/\/.*$/gm, '');
-    assert.ok(
-      !/\.cause\s*=/.test(code),
-      'fetch-failure-attribution.ts must not assign .cause — it activates LinkedErrors '
-      + 'and moves the bare message to values[0], defeating host attribution',
-    );
   });
 
   it('no longer references Vite chunk names in the beforeSend policy', () => {

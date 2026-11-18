@@ -10,6 +10,15 @@ git worktree add ../wm-legacy archive/legacy-dashboard-2026-11   # run the old d
 
 Tag `archive/legacy-dashboard-2026-11` points at `3c01f573b` (main, 2026-11-18).
 
+## What else left with the dashboard (Phase 1a)
+
+Beyond the panels and layers inventoried below, Phase 1a removed:
+
+- **Pages:** `index.html` (the dashboard), `embed.html`, `settings.html`, `live-channels.html`, `verify.html`, `desktop-sign-in.html`, `mcp-grant.html` (the MCP consent page), and the MCP App pages `plugin.html`, `market.html` and `country.html`. The MCP endpoints stay in `api/` until 1c.
+- **Browser features with no Lite equivalent:** the PWA service worker, offline page and web push (`public/sw.js` now unregisters old workers), i18n beyond English, the command palette, saved layouts and the `lite-desk` preset, custom widgets, live video and webcams, country briefs and the export menu.
+- **Checks:** the Playwright e2e and visual suites, bundle-size budgets, the panel-content and overlay-reload lints, locale sync and zh-TW conversion, and the daily MCP-preset and live-video audits.
+- **Frozen, not deleted:** the product facts behind the `/pro` copy and the CLI's TUI catalog keep their last generated output; their generators read dashboard sources.
+
 ## How to bring a feature back to Lite
 
 Most features are a pipeline, and only the UI leaves with the dashboard. Before porting, trace the chain at the tag:

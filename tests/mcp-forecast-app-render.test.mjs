@@ -1,8 +1,8 @@
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { Window } from 'happy-dom';
 import { FORECASTS_APP_HTML } from '../api/mcp/ui/forecasts-app.ts';
+import { RECEIPT_VOID_REASON_LABELS } from '../scripts/_forecast-scorecard.mjs';
 
 const windows = [];
 const forecast = {
@@ -137,7 +137,8 @@ describe('forecast public request errors', () => {
 });
 
 describe('public forecast scored horizons render', () => {
-  const gradingNote = JSON.parse(readFileSync(new URL('../src/locales/en.json', import.meta.url))).components.forecast.horizons.hint;
+  // The website grading note the app mirrors verbatim (formerly components.forecast.horizons.hint in the dashboard locale).
+  const gradingNote = "The headline probability is graded at the forecast's own horizon. The projection at each of these horizons is graded too, against its source feed, using the value first published for this forecast. Projection values are not shown because the current value can differ from the graded one.";
   const history = [{ forecastId: forecast.id, outcome: 'VOID', voidReason: 'judge_disagreement' }];
   const compact = (rows, reliability) => {
     const value = payload([
@@ -211,7 +212,7 @@ describe('public forecast scored horizons render', () => {
     send(compact(changed)); retained(); const liftedHistory = doc.querySelector('.fc-family-history details');
     assert.notStrictEqual(liftedHistory, auditedHistory); assert.equal(doc.querySelector('.fc-family-history').getAttribute('data-unverified'), null);
     send(compact(changed)); retained(); assert.strictEqual(doc.querySelector('.fc-family-history details'), liftedHistory);
-    const labels = JSON.parse(readFileSync(new URL('../src/locales/en.json', import.meta.url))).components.forecast.resolution.void;
+    const labels = RECEIPT_VOID_REASON_LABELS;
     for (const row of changed) assert.ok(liftedHistory.textContent.includes(labels[row.voidReason]), `retained public label for ${row.voidReason}`);
   });
 });
@@ -281,7 +282,7 @@ describe('public forecast family history render', () => {
     assert.equal(doc.querySelectorAll('.fc-res-mark').length, 5);
     const domain = doc.getElementById('domain'); domain.value = 'energy'; domain.dispatchEvent(new win.Event('change')); assert.match(doc.querySelector('.fc-family-history').textContent, /Last: VOID/);
     send(compact(undefined)); assert.equal(doc.querySelector('.fc-family-history'), null); send(compact(history)); assert.match(doc.querySelector('.fc-family-history').textContent, /Last: YES/);
-    const labels = JSON.parse(readFileSync(new URL('../src/locales/en.json', import.meta.url))).components.forecast.resolution.void;
+    const labels = RECEIPT_VOID_REASON_LABELS;
     for (const [reason, label] of Object.entries(labels)) {
       send(compact([{ forecastId: forecast.id, outcome: 'VOID', voidReason: reason }]));
       assert.ok(doc.querySelector('.fc-family-history').textContent.includes(label), `public label for ${reason}`);

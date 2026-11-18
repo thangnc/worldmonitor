@@ -8,7 +8,6 @@ import { guardProBuiltOutput, shouldSkipProBuiltOutput } from './_lib/pro-built-
 import { TRUSTED_RETURN_URL_ORIGINS } from '../convex/payments/returnUrlOrigin.ts';
 import { DEBUGBEAR_RUM_HOSTS } from '../src/bootstrap/debugbear-rum.ts';
 import { SENTRY_ALLOW_URLS } from '../src/bootstrap/sentry-allow-urls.ts';
-import { WEB_DASHBOARD_VARIANTS } from '../src/config/variant-dashboard-html.ts';
 import { DEBUGBEAR_RUM_HOSTS as MARKETING_DEBUGBEAR_RUM_HOSTS } from '../pro-test/src/debugbear-rum.ts';
 import { SENTRY_ALLOW_URLS as MARKETING_SENTRY_ALLOW_URLS } from '../pro-test/src/sentry-allow-urls.ts';
 
@@ -78,14 +77,6 @@ const ALLOWLISTS: ReadonlyArray<readonly [string, RegExp[]]> = [
  */
 const SERVED_HOSTS = TRUSTED_RETURN_URL_ORIGINS.map((origin) => new URL(origin).host);
 
-/**
- * Variant subdomains served by the web deployment, so a new variant fails here even
- * if nobody updates the origin list. WEB_DASHBOARD_VARIANTS (not SITE_VARIANTS) is
- * the web-served registry — it excludes desktop-only variants and is itself pinned
- * to vercel.json's /dashboard host rewrites by tests/deploy-config.test.mjs.
- */
-const VARIANT_HOSTS = WEB_DASHBOARD_VARIANTS.map((variant) => `${variant}.worldmonitor.app`);
-
 describe('Sentry allowUrls ingest allowlist (#6545)', () => {
   guardProBuiltOutput();
   it('derives a non-empty served-host population', () => {
@@ -94,7 +85,6 @@ describe('Sentry allowUrls ingest allowlist (#6545)', () => {
     // floors are asserted — comparing a mapped array's length to its source's is
     // self-comparison, since `.map()` cannot change it.
     assert.ok(SERVED_HOSTS.length >= 9, `expected at least 9 app-serving hosts, got ${SERVED_HOSTS.length}`);
-    assert.ok(VARIANT_HOSTS.length >= 5, `expected at least 5 web variant hosts, got ${VARIANT_HOSTS.length}`);
   });
 
   it('admits a script URL from every host that serves the app', () => {
@@ -105,14 +95,6 @@ describe('Sentry allowUrls ingest allowlist (#6545)', () => {
           true,
           `${label}: Sentry drops every exception from ${host} — add its subdomain to SENTRY_ALLOW_URLS`,
         );
-      }
-    }
-  });
-
-  it('admits every variant subdomain, even one absent from the origin list', () => {
-    for (const [label, allowUrls] of ALLOWLISTS) {
-      for (const host of VARIANT_HOSTS) {
-        assert.equal(admits(allowUrls, host), true, `${label}: variant host ${host} is not admitted`);
       }
     }
   });

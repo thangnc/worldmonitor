@@ -1,11 +1,8 @@
 /**
  * Feature: World Monitor Lite UI at /lite (docs/engineering/architecture/lite.md "Lite UI").
  *
- * Launch with VITE_LITE_PROFILE=true and WM_VERIFY_EXPECT=lite (the default)
- * to prove the default route, the Briefing home and its three child screens,
- * and the full-dashboard escape.
- * Launch without the flag and WM_VERIFY_EXPECT=full to prove upstream is
- * unchanged: /dashboard stays the dashboard and /lite shows the off notice.
+ * Proves the default route (/ and /dashboard open /lite), the Briefing home
+ * and its three child screens at desktop and phone widths.
  */
 const SCREENS = [
   { nav: 'briefing', path: '/lite', title: 'Cross-domain briefing', card: 'priority-events' },
@@ -24,20 +21,6 @@ async function settle(page) {
 }
 
 export default async function ({ page, base, shot, log, expectVisible }) {
-  const expect = process.env.WM_VERIFY_EXPECT ?? 'lite';
-
-  if (expect === 'full') {
-    await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
-    await expectVisible('#panelsGrid .panel');
-    if (new URL(page.url()).pathname !== '/dashboard') throw new Error(`flag off: /dashboard moved to ${page.url()}`);
-    await shot('flag-off-dashboard');
-    await page.goto(`${base}/lite`, { waitUntil: 'domcontentloaded' });
-    await expectVisible('[data-lite-off="true"]');
-    await shot('flag-off-lite-notice');
-    log('flag off: /dashboard is the dashboard, /lite shows the off notice');
-    return;
-  }
-
   // 1. The default route: / and /dashboard open the Lite UI.
   for (const entry of ['/', '/dashboard']) {
     await page.goto(`${base}${entry}`, { waitUntil: 'domcontentloaded' });
@@ -87,17 +70,4 @@ export default async function ({ page, base, shot, log, expectVisible }) {
     log(screen.path, '390px horizontal overflow', overflow);
     await shot(`${screen.nav}-390`);
   }
-
-  // 4. The escape route: the full dashboard stays reachable.
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto(`${base}/lite`, { waitUntil: 'domcontentloaded' });
-  await page.click('[data-testid="open-full-dashboard"]');
-  await page.waitForURL((url) => url.pathname === '/dashboard');
-  await expectVisible('#panelsGrid .panel');
-  await page.waitForTimeout(1500); // urlState rewrite settles; the next reload proves the session flag
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await expectVisible('#panelsGrid .panel');
-  if (new URL(page.url()).pathname !== '/dashboard') throw new Error(`reload left the dashboard: ${page.url()}`);
-  await shot('full-dashboard-escape');
-  log('full dashboard reachable and kept for the tab session');
 }

@@ -262,23 +262,6 @@ test('no npm script builds or packages a per-variant desktop binary', () => {
   assert.deepEqual(offenders, [], 'desktop packaging is variant-agnostic under the one-binary model');
 });
 
-test('the desktop updater does not request a per-variant download asset', () => {
-  const updater = readRepoFile('src/app/desktop-updater.ts');
-  assert.match(
-    updater,
-    /api\/download\?platform=\$\{platform\}`/,
-    'the download URL must be exactly the platform query'
-  );
-  assert.doesNotMatch(
-    updater,
-    /[?&]variant=/,
-    'Asking /api/download for a per-variant asset can only ever 302 to the releases page.'
-  );
-  // A query built via URLSearchParams would carry no literal `variant=`, so the
-  // regex above would miss it.
-  assert.doesNotMatch(updater, /URLSearchParams|searchParams\.(set|append)/);
-});
-
 test('/api/download applies the binary-identity filter on every path', () => {
   // The updater sends no variant, so a variant-gated filter would leave the
   // app's own download unfiltered.

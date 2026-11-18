@@ -32,16 +32,13 @@ const ALLOWED_RAW_GLOBAL_READERS = new Set([
 
 const CONVERGED_CALL_SITES = [
   'src/config/variant.ts',
-  'src/config/basemap.ts',
-  'src/main.ts',
-  'src/services/push-notifications.ts',
   'src/utils/circuit-breaker.ts',
   'src/bootstrap/sentry-init.ts',
 ];
 
-// Config sits below services (scripts/lint-boundaries.mjs), so these two take
-// the detector from its config home rather than the services re-export.
-const CONFIG_CALL_SITES = ['src/config/variant.ts', 'src/config/basemap.ts'];
+// Config sits below services (scripts/lint-boundaries.mjs), so config call
+// sites take the detector from its config home rather than the services re-export.
+const CONFIG_CALL_SITES = ['src/config/variant.ts'];
 
 /**
  * Every code token that names a bridge global: identifiers (`window.__TAURI__`,
@@ -101,7 +98,7 @@ describe('desktop runtime detection has one owner (#5912)', () => {
     );
   });
 
-  it('the six formerly split-brained call sites import the shared detector', () => {
+  it('the formerly split-brained call sites that remain import the shared detector', () => {
     for (const rel of CONVERGED_CALL_SITES) {
       const code = read(rel);
       assert.match(

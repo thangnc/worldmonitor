@@ -1,7 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { DEFAULT_ROLLING_WINDOW_DAYS } from '../scripts/_forecast-scorecard.mjs';
+import { DEFAULT_ROLLING_WINDOW_DAYS, RECEIPT_VOID_REASON_LABELS } from '../scripts/_forecast-scorecard.mjs';
 import { TOOL_REGISTRY, toolAccess } from '../api/mcp/registry/index.ts';
 import { forecastReliability, forecastScorecardDescription } from '../api/mcp/registry/cache-tools.ts';
 import { FORECAST_ACCURACY_AUDIT_OVERRIDE, forecastAccuracyAudit } from '../shared/forecast-accuracy-audit.js';
@@ -83,7 +82,7 @@ describe('public forecast family history transport', () => {
   }
   it('advertises each new public VOID reason in the paid schema with only the public set', () => {
     const reasons = opening.outputSchema.properties.data.properties.familyOutcomes.items.properties.voidReason.enum;
-    const labels = JSON.parse(readFileSync(new URL('../src/locales/en.json', import.meta.url))).components.forecast.resolution.void;
+    const labels = RECEIPT_VOID_REASON_LABELS;
     assert.ok(Array.isArray(reasons), 'public reason schema enum must be present');
     assert.deepEqual([...reasons].sort(), Object.keys(labels).sort());
     assert.equal(reasons.includes('__proto__'), false);
@@ -136,7 +135,7 @@ describe('public forecast family history transport', () => {
     assert.equal(opening._outputBudgetBytes, 131072);
   });
   it('uses only the public VOID allowlist, drops private fields, and hides unavailable history', () => {
-    const labels = JSON.parse(readFileSync(new URL('../src/locales/en.json', import.meta.url))).components.forecast.resolution.void;
+    const labels = RECEIPT_VOID_REASON_LABELS;
     for (const reason of Object.keys(labels)) {
       const result = project({ familyOutcomes: [{ forecastId: 'case-0', outcome: 'VOID', voidReason: reason }] });
       assert.ok(Array.isArray(result.familyOutcomes), 'valid VOID history must be present');
@@ -255,12 +254,9 @@ describe('published forecast reliability transport', () => {
     const loaded = opening._postFilter(data, {}, paid).predictions.predictions.map(prediction => prediction.domain);
     return forecastReliability(data, loaded, null);
   };
-  it('matches the website and producer window fallback for missing or invalid windows', () => {
-    const website = readFileSync(new URL('../src/components/forecast-record.ts', import.meta.url), 'utf8');
-    const websiteWindowDays = Number(website.match(/const DEFAULT_WINDOW_DAYS = (\d+);/)?.[1]);
-    assert.equal(websiteWindowDays, DEFAULT_ROLLING_WINDOW_DAYS);
+  it('matches the producer window fallback for missing or invalid windows', () => {
     for (const rollingWindowDays of [undefined, null, 0, -1, NaN, Infinity, '90']) {
-      assert.equal(project({ schemaVersion: 2, publishedByDomain: [row()], rollingWindowDays }).windowDays, websiteWindowDays);
+      assert.equal(project({ schemaVersion: 2, publishedByDomain: [row()], rollingWindowDays }).windowDays, DEFAULT_ROLLING_WINDOW_DAYS);
     }
     assert.equal(project({ schemaVersion: 2, publishedByDomain: [row()], rollingWindowDays: 90 }).windowDays, 90);
   });

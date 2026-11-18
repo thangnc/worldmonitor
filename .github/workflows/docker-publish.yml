@@ -54,7 +54,7 @@ on:
     # multi-arch image on almost every merge (#7808 chose that). Test's
     # unit-built-output job already builds /pro and runs the vite build before
     # merge, so what an application merge can still break here is the
-    # image-only part (build:crawlable-corpus, build:sitemap, the smoke test),
+    # image-only part (the handler build and the smoke test),
     # and the next daily run finds that. No consumer needs a
     # `sha-*` tag per merge; `latest` moves only with a release.
     paths:
@@ -66,7 +66,7 @@ on:
     # queue late when it is loaded and that load peaks on the hour, and outside
     # the 03:00–05:00 UTC band the other crons in this directory already share.
     # This is what rebuilds main after application changes, CHANGELOG.md and
-    # docs/snapshots/ refreshes (build:crawlable-corpus renders both), and
+    # docs/snapshots/ refreshes, and
     # whatever a push trigger can silently miss (a delayed or dropped webhook
     # delivery).
     - cron: '19 2 * * *'
@@ -207,14 +207,14 @@ jobs:
 
           failed=""
           # Exactly the two routes docker/Dockerfile asserts the inputs for, so
-          # this gate can only go red on a genuinely broken image: `/` must
-          # serve the SPA entry (Vite renames index.html to dashboard.html and
-          # nginx falls back to it, so a rename that breaks the contract 404s
-          # here rather than in the registry), and `/pro` is a live nginx route
+          # this gate can only go red on a genuinely broken image: `/lite` must
+          # serve the SPA entry (nginx rewrites it to lite.html, so a missing
+          # entry 404s here rather than in the registry; `/` only redirects to
+          # it), and `/pro` is a live nginx route
           # that 404s whenever the pro build did not survive the copy (#6898).
           # Adding a path whose file nothing asserts would turn a green build
           # red for the wrong reason.
-          for path in / /pro/; do
+          for path in /lite /pro/; do
             code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8080${path}")"
             if [ "$code" != "200" ]; then
               echo "::error::GET ${path} returned ${code}, expected 200"

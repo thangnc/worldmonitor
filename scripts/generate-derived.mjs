@@ -31,7 +31,6 @@ const MAX_PASSES = 3;
 // search and the crawlable pages.
 export const STEPS = [
   ['browser news catalog', [...TSX, 'scripts/generate-browser-news-catalog.mjs']],
-  ['product facts', [...TSX, 'scripts/generate-public-product-facts.mjs']],
   ['entitlement crosswalk', [NODE, 'scripts/generate-entitlement-crosswalk.mjs']],
   ['country corpus slugs', [...TSX, 'scripts/generate-country-corpus-slugs.mjs']],
   ['llms.txt', [...TSX, 'scripts/build-llms-full.mjs']],
@@ -41,11 +40,8 @@ export const STEPS = [
   ['agent skills index', [NODE, 'scripts/build-agent-skills-index.mjs']],
   ['engineering index', [NODE, 'scripts/generate-engineering-index.mjs']],
   ['source attribution', [NODE, 'scripts/source-attribution.mjs'], '--write'],
-  ['locale keys', [NODE, 'scripts/sync-locale-keys.mjs']],
-  ['zh-TW locales', ['python3', 'scripts/convert-zh-tw.py']],
   ['bootstrap tier keys', [NODE, 'scripts/sync-bootstrap-tier-keys.mjs']],
   ['live video channels', [...TSX, 'scripts/sync-live-video-refresh-channels.mjs']],
-  ['TUI catalog', [...TSX, 'scripts/sync-tui-catalog.mjs']],
   ['sandbox fixtures', [NODE, 'scripts/generate-sandbox-fixtures.mjs']],
   ['scorecard edge mirrors', [NODE, 'scripts/generate-scorecard-edge-mirrors.mjs']],
   ['Sentry Convex probe filters', [NODE, 'scripts/sync-sentry-convex-probe-filters.mjs'], '--write'],
@@ -71,9 +67,7 @@ function main() {
       return 1;
     }
   }
-  const hasOpenCC = spawnSync('python3', ['-c', 'import opencc'], { stdio: 'ignore' }).status === 0;
-  const steps = STEPS.filter(([name]) => name !== 'zh-TW locales' || hasOpenCC);
-  if (!hasOpenCC) console.warn('generate: skipped zh-TW locales (pip install opencc-python-reimplemented==0.1.7)');
+  const steps = STEPS;
 
   const regenerated = new Set();
   for (let pass = 0; ; pass++) {

@@ -1,28 +1,26 @@
 # Lite UI
 
-The owner's front page under the World Monitor Lite profile ([spec](../../../../docs/engineering/architecture/lite.md#lite-ui-lite)): a sidebar, the cross-domain Briefing home and its three domain screens, built with Preact and Tailwind in `src/lite/`. With `VITE_LITE_PROFILE=true`, `/` and `/dashboard` open it, and `/dashboard?full=1` keeps the full dashboard reachable for the tab. Without the flag, `/lite` shows a notice and nothing else changes.
+The owner's web app, World Monitor Lite ([spec](../../../../docs/engineering/architecture/lite.md#lite-ui-lite)): a sidebar, the cross-domain Briefing home and its three domain screens, built with Preact and Tailwind in `src/lite/`. `/` and the old dashboard routes (`/dashboard`, `/stocks`, `/story`) redirect to it.
 
 ## Sub-features
 
-- `lite-default-route`: `/` (middleware on Vercel, the `src/main.ts` guard elsewhere) and `/dashboard` land on `/lite`.
+- `lite-default-route`: `/` and `/dashboard` land on `/lite` (vercel.json redirects, nginx in Docker, `vite.dev-api.ts` in dev).
 - `lite-screens`: the Briefing (`/lite`) and its children `/lite/geopolitics`, `/lite/finance` and `/lite/tech` render through the sidebar links, and the Briefing's domain tags and panel links, without a page load.
 - `lite-badges`: sample widgets carry `[data-sample="true"]`; rule-based values carry `[data-derived="true"]`; a real source that is empty or failed renders `[data-source-state]`.
 - `lite-soon`: Alerts, Watchlists, Scoring rules, Settings and each domain screen's primary action are `[data-soon="true"]`.
 - `lite-sources`: `/lite/sources` lists the connectors Lite reads, failing first, from the compact health check and the digests. A row opens its detail; All and Degraded filter the table. It is read-only: no action button, no samples.
-- `lite-escape`: `[data-testid="open-full-dashboard"]` opens `/dashboard?full=1`, and a reload stays on the dashboard.
 
 ## How to get to it (user POV)
 
-- Open `/` or `/dashboard` on a profile build, or `/lite` directly.
+- Open `/`, `/dashboard` or `/lite`.
 - Use the sidebar's Briefing and DOMAINS items to switch screens, or a domain tag, "Finance →" or "Geopolitics →" on the Briefing.
 
 ## Driving it with wm-verify
 
-- **Flag on.** `VITE_LITE_PROFILE=true wm-verify.sh launch` (the owner's `.env.local` already sets it), then `WM_VERIFY_EXPECT=lite wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-ui.mjs --name lite-ui-on`. It asserts the redirects, visits each screen at 1440 and 390 px, logs every source state and sample count, checks there is no horizontal overflow, and proves the escape route.
-- **Flag off.** `cleanup`, then `VITE_LITE_PROFILE= wm-verify.sh launch` and `WM_VERIFY_EXPECT=full ... --name lite-ui-off`. `/dashboard` must stay the dashboard and `/lite` must show `[data-lite-off="true"]`.
-- **Sources.** `WM_VERIFY_EXPECT=lite wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-sources.mjs --name lite-sources`. By default the step routes `/api/health?compact=1` to a TEST DATA fixture (one failing, one degraded check), so its assertions do not depend on local Redis, and labels its screenshots `test-data`. `WM_VERIFY_LIVE_HEALTH=1` leaves the request alone: the dev server runs `api/health.js` (`healthDevPlugin` in `vite.config.ts`) against the Redis in `.env.local`, so the screen shows that Redis's real verdicts.
-- **Scrollbars.** `WM_VERIFY_EXPECT=lite wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-scroll.mjs --name lite-scroll`. The page scrolls in `<html>` (the overlay library makes it the viewport, so `window.scrollTo` still works) under `body > .os-scrollbar-vertical`; each `<OverlayScroll>` host carries `[data-lite-scroll]`. Headless Chromium has no window edge, so the step sends the `pointerleave` a real exit fires. Wait for a wheel scroll to settle before a screenshot: a frame mid-scroll shows the sticky sidebar mid-move. No local map card is long enough to scroll, so check one by appending labelled test content.
-- **Layers popover.** `WM_VERIFY_EXPECT=lite wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-layers-popover.mjs --name layers-popover`. The map `Card` clips with `overflow-hidden`, so the popover measures the room left in it when it opens and scrolls its rows; the step fails when the popover or its footer ends below the card.
+- **Screens.** `wm-verify.sh launch`, then `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-ui.mjs --name lite-ui`. It asserts the redirects, visits each screen at 1440 and 390 px, logs every source state and sample count, and checks there is no horizontal overflow.
+- **Sources.** `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-sources.mjs --name lite-sources`. By default the step routes `/api/health?compact=1` to a TEST DATA fixture (one failing, one degraded check), so its assertions do not depend on local Redis, and labels its screenshots `test-data`. `WM_VERIFY_LIVE_HEALTH=1` leaves the request alone: the dev server runs `api/health.js` (`healthDevPlugin` in `vite.dev-api.ts`) against the Redis in `.env.local`, so the screen shows that Redis's real verdicts.
+- **Scrollbars.** `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-scroll.mjs --name lite-scroll`. The page scrolls in `<html>` (the overlay library makes it the viewport, so `window.scrollTo` still works) under `body > .os-scrollbar-vertical`; each `<OverlayScroll>` host carries `[data-lite-scroll]`. Headless Chromium has no window edge, so the step sends the `pointerleave` a real exit fires. Wait for a wheel scroll to settle before a screenshot: a frame mid-scroll shows the sticky sidebar mid-move. No local map card is long enough to scroll, so check one by appending labelled test content.
+- **Layers popover.** `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-layers-popover.mjs --name layers-popover`. The map `Card` clips with `overflow-hidden`, so the popover measures the room left in it when it opens and scrolls its rows; the step fails when the popover or its footer ends below the card.
 - **Map ranges.** Geopolitics and Technology carry the shared 6h/24h/7d buttons (`[data-testid="time-range"]`, each with a `title`); each popover row's `[data-range-note]` says what that layer shows at the range. On Technology, 6h and 24h DDoS shading needs `cf:radar:ddos-windows:v1` (`seed-internet-outages`); without it locally the map shows "DDoS targets 6h: source unavailable" and shades nothing, which is the intended state, not a bug.
 - **Handles.** `[data-lite-screen]` on the root, `[data-nav="briefing|geopolitics|finance|tech|sources"]`, `tr[data-connector][data-status]` and `[data-testid="connector-detail|licensing|tier-policy"]` on Sources, `[data-open-screen]` on Briefing links, `[data-testid="priority-events|priority-incidents|market-events|tech-developments"]` for each screen's main card.
 

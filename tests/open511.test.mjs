@@ -359,20 +359,10 @@ test('pagination fails closed when max pages is exhausted before completion', as
 test('BC Open511 shares canadaRoads and does not invent a second MapLayers key', () => {
   const types = readFileSync(new URL('../src/types/index.ts', import.meta.url), 'utf8');
   const layers = readFileSync(new URL('../src/config/map-layer-definitions.ts', import.meta.url), 'utf8');
-  const client = readFileSync(new URL('../src/services/canada-roads.ts', import.meta.url), 'utf8');
-  // The descriptors moved to canada-roads-core.ts in #6763 so tests could import
-  // the real list rather than clone it, and both loader maps are now derived
-  // from that list — so the per-key literals this used to grep for are gone.
-  const core = readFileSync(new URL('../src/services/canada-roads-core.ts', import.meta.url), 'utf8');
   assert.match(types, /canadaRoads: boolean/);
   assert.doesNotMatch(types, /bcOpen511\?: boolean/);
   assert.match(layers, /canadaRoads:\s+def\('canadaRoads'/);
   assert.doesNotMatch(layers, /bcOpen511:\s+def\(/);
-  assert.match(client, /unionCanadaRoadRecords/);
-  assert.match(client, /HYDRATED_LOADERS[\s\S]{0,200}CANADA_ROAD_SOURCES\.map/);
-  assert.match(core, /ontario-511/);
-  assert.match(core, /bc-open511/);
-  assert.match(core, /key: 'bcOpen511', source: 'bc-open511'/);
 });
 
 test('bc open511 runs as a bundle member, not its own */15 service', () => {

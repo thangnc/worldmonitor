@@ -667,40 +667,6 @@ describe('the published success example depicts a response the handler can emit'
   });
 });
 
-// ── The dashboard call site ───────────────────────────────────────────────
-
-describe('the dashboard asks for a combination the seed can answer', () => {
-  // The production symptom of #6309 was this one call: the flows tab requested
-  // partner '156' (China), which the WTO indicators behind this RPC answer 204
-  // for, so the panel rendered the upstream-unavailable banner on every load.
-  // The handler and seeder suites above would all stay green if it came back.
-  //
-  // Static pin rather than a runtime one: importing data-loader.ts pulls the
-  // whole app graph under tsx. It parses the real argument list instead of
-  // grepping for a substring, so a changed partner reddens rather than matching
-  // some other occurrence of the same digits.
-  const dataLoader = readFileSync(
-    resolve(import.meta.dirname, '..', 'src/app/data-loader.ts'),
-    'utf8',
-  );
-
-  const calls = [...dataLoader.matchAll(/fetchTradeFlows\(([^)]*)\)/g)]
-    .map((m) => m[1].split(',').map((a) => a.trim()));
-
-  test('there is exactly one call, and it asks for World', () => {
-    assert.equal(calls.length, 1, `expected one fetchTradeFlows call, found ${calls.length}`);
-    assert.deepEqual(calls[0], ["'840'", "'000'", '10'],
-      'the flows tab must request partner 000 (World) — 156 is unanswerable upstream');
-  });
-
-  test('no call site requests a partner WTO cannot answer', () => {
-    for (const args of calls) {
-      assert.notEqual(args[1], "'156'",
-        'partner 156 returns HTTP 204 from ITS_MTV_AX/ITS_MTV_AM; it can never be seeded');
-    }
-  });
-});
-
 // ── Seeder: the whole run ─────────────────────────────────────────────────
 
 describe('fetchTradeFlows composes the loop, the counters, and the manifest', () => {

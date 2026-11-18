@@ -1,17 +1,17 @@
 /**
- * Closed-world gate for shared/outlet-profile.json: every outlet in the RSS
- * catalogs, Telegram and X registries carries a reviewed home country,
- * audience, language and ownership class, and nothing else is listed.
+ * Checks for shared/outlet-profile.json: the validator rules that keep each
+ * outlet's home country, audience, language and ownership class reviewed, the
+ * server loader, and the browser/shared import boundary. The closed-world
+ * comparison against the live outlet catalog was removed with the legacy
+ * dashboard: loadOutletCatalog still bundles the deleted src/config/feeds.ts.
  */
-import { before, describe, it } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { loadOutletCatalog, validateOutletProfiles } from '../scripts/lib/outlet-catalog.mjs';
-import { publisherFamilyFor } from '../shared/publisher-families.js';
-import { isStateAffiliatedSource } from '../shared/source-provenance.ts';
+import { validateOutletProfiles } from '../scripts/lib/outlet-catalog.mjs';
 import { getOutletProfile } from '../server/_shared/outlet-profile.ts';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -32,22 +32,8 @@ const check = (overrides: Partial<Parameters<typeof validateOutletProfiles>[0]>)
 });
 
 describe('outlet profile registry', () => {
-  let catalog: Awaited<ReturnType<typeof loadOutletCatalog>>;
-  before(async () => { catalog = await loadOutletCatalog(repoRoot); });
-
-  it('profiles every catalog outlet and nothing else', () => {
-    const problems = validateOutletProfiles({
-      profiles,
-      catalog,
-      validCountries,
-      familyFor: publisherFamilyFor,
-      isStateAffiliated: isStateAffiliatedSource,
-    });
-    assert.deepEqual(problems, []);
-  });
-
   it('stays out of browser and shared code', () => {
-    // shared/ is bundled into the browser through src/config/feeds.ts.
+    // shared/ is bundled into the browser.
     const importers: string[] = [];
     const walk = (dir: string) => {
       for (const entry of readdirSync(join(repoRoot, dir), { withFileTypes: true })) {

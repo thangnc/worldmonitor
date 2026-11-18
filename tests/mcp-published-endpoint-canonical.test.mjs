@@ -188,7 +188,6 @@ describe('published MCP URLs are the canonical endpoint (#9722)', () => {
     for (const remote of registry.remotes) assert.equal(remote.url, MCP_CANONICAL_ENDPOINT);
 
     for (const file of [
-      'src/components/UnifiedSettings.ts',
       'pro-test/src/welcome/Agents.tsx',
       'claude-plugin/README.md',
       '.antigravity-plugin/README.md',

@@ -10,7 +10,6 @@ import {
 } from "../constants";
 import { _ISO2_REGISTRY_FOR_TESTS, isValidIso2 } from "../lib/iso2";
 import { userIdToShard } from "../lib/shards";
-import { ISO2_TO_ISO3 } from "../../src/utils/country-codes";
 
 const modules = import.meta.glob("../**/*.ts");
 
@@ -164,10 +163,8 @@ async function seedFollowedCountries(
 }
 
 // ---------------------------------------------------------------------------
-// ISO-2 registry parity — the registry mirrored into convex/lib/iso2.ts
-// MUST stay in lockstep with the keys of `ISO2_TO_ISO3` in
-// `src/utils/country-codes.ts`. This test catches drift if either side is
-// edited without the other.
+// ISO-2 registry. Its client mirror (src/utils/country-codes.ts) left with
+// the dashboard in refactor Phase 1.
 // ---------------------------------------------------------------------------
 
 describe("iso2 registry — sanity & boundary cases", () => {
@@ -209,23 +206,9 @@ describe("iso2 registry — sanity & boundary cases", () => {
     }
   });
 
-  test("registry has 239 canonical alpha-2 codes (matches client mirror)", () => {
-    // If this number changes, update BOTH `convex/lib/iso2.ts` and
-    // `src/utils/country-codes.ts::ISO2_TO_ISO3` together.
-    // inventory-contract: iso2-country-registry; classification: exact; reason: this is the project's closed canonical alpha-2 standard and the next test enforces exact client parity
+  test("registry has 239 canonical alpha-2 codes", () => {
+    // inventory-contract: iso2-country-registry; classification: exact; reason: this is the project's closed canonical alpha-2 standard
     expect(_ISO2_REGISTRY_FOR_TESTS.size).toBe(239);
-  });
-
-  test("registry === Object.keys(ISO2_TO_ISO3) (set equality, not size only)", () => {
-    // P2 #13 — Catches drift where one registry has, e.g., 'XK' and the
-    // other has 'EU' (same size, different content). Set-equality is the
-    // only way to prove the two are in true lockstep.
-    const serverSet = _ISO2_REGISTRY_FOR_TESTS;
-    const clientSet = new Set(Object.keys(ISO2_TO_ISO3));
-    const onlyInServer = [...serverSet].filter((c) => !clientSet.has(c));
-    const onlyInClient = [...clientSet].filter((c) => !serverSet.has(c));
-    expect(onlyInServer).toEqual([]);
-    expect(onlyInClient).toEqual([]);
   });
 });
 

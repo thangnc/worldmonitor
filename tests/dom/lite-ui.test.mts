@@ -201,7 +201,8 @@ describe('Lite UI shell', () => {
     expect(soon).toEqual(expect.arrayContaining(['Alerts', 'Watchlists', 'Scoring rules', 'Settings']));
     expect(soon).not.toContain('Briefing');
     expect(soon).not.toContain('Sources');
-    expect(root.querySelector('[data-testid="open-full-dashboard"]')?.getAttribute('href')).toBe('/dashboard?full=1');
+    // Phase 1a removed the dashboard, so the sidebar offers no way back to it.
+    expect(root.querySelector('[data-testid="open-full-dashboard"]')).toBeNull();
 
     // The brief: lead, one line per story with its domain and its citation link.
     expect(root.querySelector('[data-testid="brief-lead"]')?.textContent).toContain('Red Sea shipping risk');

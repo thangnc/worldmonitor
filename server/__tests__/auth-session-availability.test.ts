@@ -11,7 +11,6 @@ import context from '../../api/internal/mcp-grant-context';
 import mint from '../../api/internal/mcp-grant-mint';
 import passkey from '../../api/user/passkey-offer';
 import { createDomainGateway } from '../gateway';
-import { classifyGrantDenial } from '../../src/services/mcp-grant-denial';
 
 afterEach(() => vi.resetAllMocks());
 describe('session verification availability', () => {
@@ -54,7 +53,8 @@ describe('session verification availability', () => {
       expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0);
       if (name === 'context' || name === 'mint') {
         const body = await response.json();
-        expect(classifyGrantDenial(response.status, body.error).action).toBe('retryable');
+        // A code the consent client treats as retryable, not terminal.
+        expect(['TIER_VERIFICATION_UNAVAILABLE', 'SERVICE_UNAVAILABLE']).toContain(body.error);
         expect(body.error_description).toContain('Session verification');
       }
     });

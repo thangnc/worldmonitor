@@ -135,15 +135,18 @@ describe('Sentry build and event release contract', () => {
       ];
       for (const [index, config] of configs.entries()) {
         assert.equal(JSON.parse(String(config.define?.__BUILD_HASH__)), sha);
-        const upload = uploadOptions(config);
-        assert.equal(upload.name, sha);
-        assert.equal(upload.dist, sha);
-        assert.equal(upload.inject, false);
-        const publishes = index === 0 && target === 'production';
-        assert.equal(upload.create, publishes);
-        assert.equal(upload.finalize, publishes);
-        assert.equal(upload.setCommits, publishes ? undefined : false);
-        assert.equal(upload.deploy, publishes ? undefined : false);
+        // The root (Lite) config carries no Sentry upload plugin; only the
+        // marketing build uploads source maps, and it never publishes the release.
+        if (index === 1) {
+          const upload = uploadOptions(config);
+          assert.equal(upload.name, sha);
+          assert.equal(upload.dist, sha);
+          assert.equal(upload.inject, false);
+          assert.equal(upload.create, false);
+          assert.equal(upload.finalize, false);
+          assert.equal(upload.setCommits, false);
+          assert.equal(upload.deploy, false);
+        }
 
         // A real SDK client produces the event envelope. Only delivery is
         // replaced; release, dist and scope tags pass through Sentry itself.
@@ -192,15 +195,4 @@ describe('Sentry build and event release contract', () => {
       }
     });
   }
-
-  it('does not publish a production release with a missing deployment SHA', async () => {
-    process.env.SENTRY_AUTH_TOKEN = 'test-only-never-sent';
-    process.env.VERCEL_ENV = 'production';
-    delete process.env.VERCEL_GIT_COMMIT_SHA;
-    const config = await loadDashboard({ mode: 'production', command: 'build' });
-    const upload = uploadOptions(config);
-    assert.equal(upload.create, false);
-    assert.equal(upload.finalize, false);
-    assert.equal(upload.setCommits, false);
-  });
 });

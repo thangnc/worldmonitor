@@ -17,9 +17,6 @@
           "path": "scripts/profile-news-hybrid-clustering-7782-dashboard.mjs"
         },
         {
-          "path": "src/services/desktop-sign-in-page.ts"
-        },
-        {
           "path": "src/services/runtime.ts"
         }
       ]
@@ -169,15 +166,10 @@
       "host": "accounts.google.com",
       "provider": "Google account sign-in",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: authentication/UI link",
       "attribution": "Excluded from the provider count: user sign-in redirect, not an ingested source.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/components/LiveNewsPanel.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "acleddata.com",
@@ -500,9 +492,6 @@
         },
         {
           "path": "server/worldmonitor/aviation/v1/list-aircraft-emergencies.ts"
-        },
-        {
-          "path": "src/components/MapPopup.ts"
         }
       ]
     },
@@ -517,9 +506,6 @@
       "references": [
         {
           "path": "scripts/seed-military-flights.mjs"
-        },
-        {
-          "path": "src/components/MapPopup.ts"
         }
       ]
     },
@@ -1124,15 +1110,10 @@
       "host": "api.rainviewer.com",
       "provider": "api.rainviewer.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Provider terms for this upstream API/dataset; verify before redistribution",
       "attribution": "Credit api.rainviewer.com and link to the original upstream API/dataset.",
-      "status": "terms-review",
-      "references": [
-        {
-          "path": "src/components/DeckGLMap.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "api.reliefweb.int",
@@ -1624,12 +1605,6 @@
           "path": "shared/news-catalog.json"
         },
         {
-          "path": "src/app/desktop-updater.ts"
-        },
-        {
-          "path": "src/mcp-grant-main.ts"
-        },
-        {
           "path": "src/services/runtime.ts"
         }
       ]
@@ -1998,15 +1973,10 @@
       "host": "basemaps.cartocdn.com",
       "provider": "basemaps.cartocdn.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/config/basemap-styles.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "bcovlive-a.akamaihd.net",
@@ -2173,15 +2143,10 @@
       "host": "browser.mcp.cloudflare.com",
       "provider": "Cloudflare Browser MCP",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: optional rendering/automation connector",
       "attribution": "Excluded from the provider count: user-configured MCP connector.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/services/mcp-store.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "budgetlab.yale.edu",
@@ -2655,18 +2620,10 @@
       "host": "commodity.worldmonitor.app",
       "provider": "commodity.worldmonitor.app",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/app/panel-layout.ts"
-        },
-        {
-          "path": "src/config/variant-meta.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "comtradeapi.un.org",
@@ -2807,9 +2764,6 @@
         },
         {
           "path": "server/worldmonitor/displacement/v1/cross-border-data.ts"
-        },
-        {
-          "path": "src/components/UkmtoIncidentsPanel.ts"
         }
       ]
     },
@@ -3898,18 +3852,10 @@
       "host": "energy.worldmonitor.app",
       "provider": "energy.worldmonitor.app",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/app/panel-layout.ts"
-        },
-        {
-          "path": "src/config/variant-meta.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "eng.lsm.lv",
@@ -4195,12 +4141,6 @@
         },
         {
           "path": "scripts/openapi-inject-examples.mjs"
-        },
-        {
-          "path": "src/services/mcp-store.ts"
-        },
-        {
-          "path": "src/utils/sanitize.ts"
         }
       ]
     },
@@ -4585,18 +4525,10 @@
       "host": "finance.worldmonitor.app",
       "provider": "finance.worldmonitor.app",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/app/panel-layout.ts"
-        },
-        {
-          "path": "src/config/variant-meta.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "finance.yahoo.com",
@@ -4985,13 +4917,7 @@
           "path": "server/_shared/agent-feedback.ts"
         },
         {
-          "path": "src/app/desktop-updater.ts"
-        },
-        {
           "path": "src/services/analytics.ts"
-        },
-        {
-          "path": "src/services/preferences-content.ts"
         }
       ]
     },
@@ -5006,12 +4932,6 @@
       "references": [
         {
           "path": "scripts/import-gem-pipelines.mjs"
-        },
-        {
-          "path": "src/components/PipelineStatusPanel.ts"
-        },
-        {
-          "path": "src/components/StorageFacilityMapPanel.ts"
         }
       ]
     },
@@ -5216,15 +5136,10 @@
       "host": "happy.worldmonitor.app",
       "provider": "happy.worldmonitor.app",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/config/variant-meta.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "havanatimes.org",
@@ -6484,9 +6399,6 @@
       "references": [
         {
           "path": "scripts/lib/imd-cyclone-marine.mjs"
-        },
-        {
-          "path": "src/app/data-loader.ts"
         }
       ]
     },
@@ -6494,29 +6406,19 @@
       "host": "mcp.linear.app",
       "provider": "Linear MCP",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: optional user-configured MCP connector",
       "attribution": "Excluded from the provider count: user-configured MCP connector.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/services/mcp-store.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "mcp.robtex.com",
       "provider": "Robtex MCP",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: optional user-configured MCP connector",
       "attribution": "Excluded from the provider count: user-configured MCP connector.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/services/mcp-store.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "me.liveuamap.com",
@@ -6940,9 +6842,6 @@
         },
         {
           "path": "shared/news-catalog.json"
-        },
-        {
-          "path": "src/services/country-coverage.ts"
         }
       ],
       "role": "transport"
@@ -7406,15 +7305,10 @@
       "host": "open-meteo.caseyjhand.com",
       "provider": "open-meteo.caseyjhand.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Community-hosted MCP service. Open-Meteo weather data is CC BY 4.0; free API access is non-commercial only. Commercial access requires a paid Open-Meteo plan and compatible hosting.",
       "attribution": "Weather data by Open-Meteo.com. MCP server hosted by cyanheads at open-meteo.caseyjhand.com. Preserve the attribution returned with weather results.",
-      "status": "terms-review",
-      "references": [
-        {
-          "path": "src/services/mcp-store.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "open.alberta.ca",
@@ -7464,9 +7358,6 @@
       "references": [
         {
           "path": "scripts/seed-military-flights.mjs"
-        },
-        {
-          "path": "src/components/MapPopup.ts"
         }
       ]
     },
@@ -7524,9 +7415,6 @@
         },
         {
           "path": "server/worldmonitor/military/v1/list-military-flights.ts"
-        },
-        {
-          "path": "src/components/MapPopup.ts"
         }
       ]
     },
@@ -7534,15 +7422,10 @@
       "host": "openstreetmap.org",
       "provider": "openstreetmap.org",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/config/basemap-styles.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "ott.tv5monde.com",
@@ -7948,15 +7831,10 @@
       "host": "protomaps.com",
       "provider": "protomaps.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/config/basemap-styles.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "protothema.gr",
@@ -8066,15 +7944,10 @@
       "host": "purl.org",
       "provider": "PURL namespace",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: schema/namespace reference",
       "attribution": "Excluded from the provider count: namespace reference, not an ingested source.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/services/rss.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "qevdnlpgjxpwusesmtpx.supabase.co",
@@ -8195,15 +8068,10 @@
       "host": "radar.mcp.cloudflare.com",
       "provider": "Cloudflare Radar MCP",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: optional user-configured MCP connector",
       "attribution": "Excluded from the provider count: user-configured MCP connector.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/services/mcp-store.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "radnet.epa.gov",
@@ -8316,9 +8184,6 @@
       "references": [
         {
           "path": "scripts/ais-relay.cjs"
-        },
-        {
-          "path": "src/services/story-share.ts"
         }
       ]
     },
@@ -8811,15 +8676,10 @@
       "host": "search.parallel.ai",
       "provider": "Parallel Search MCP",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: optional user-configured MCP connector",
       "attribution": "Excluded from the provider count: user-configured MCP connector.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/services/mcp-store.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "search.seznam.cz",
@@ -8848,15 +8708,10 @@
       "host": "search.yahoo.com",
       "provider": "search.yahoo.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/services/rss.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "searchadvisor.naver.com",
@@ -9619,12 +9474,6 @@
         },
         {
           "path": "server/worldmonitor/leads/v1/register-interest.ts"
-        },
-        {
-          "path": "src/services/story-share.ts"
-        },
-        {
-          "path": "src/services/telegram-intel.ts"
         }
       ]
     },
@@ -9744,18 +9593,10 @@
       "host": "tech.worldmonitor.app",
       "provider": "tech.worldmonitor.app",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/app/panel-layout.ts"
-        },
-        {
-          "path": "src/config/variant-meta.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "techcabal.com",
@@ -10196,9 +10037,6 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/basemap.ts"
-        },
-        {
           "path": "src/lite/map/style.ts"
         }
       ]
@@ -10319,15 +10157,10 @@
       "host": "tts.baidu.com",
       "provider": "tts.baidu.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/main.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "tuoitrenews.vn",
@@ -10407,15 +10240,10 @@
       "host": "twitter.com",
       "provider": "twitter.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/services/story-share.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "ua.usembassy.gov",
@@ -10723,9 +10551,6 @@
       "references": [
         {
           "path": "server/worldmonitor/leads/v1/register-interest.ts"
-        },
-        {
-          "path": "src/services/story-share.ts"
         }
       ]
     },
@@ -10877,15 +10702,10 @@
       "host": "wingbits.com",
       "provider": "wingbits.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/components/MapPopup.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "wits.worldbank.org",
@@ -11084,19 +10904,10 @@
           "path": "src/bootstrap/web-vitals-utils.ts"
         },
         {
-          "path": "src/components/UnifiedSettings.ts"
-        },
-        {
           "path": "src/config/web-origin.ts"
         },
         {
-          "path": "src/services/premium-fetch.ts"
-        },
-        {
           "path": "src/services/runtime.ts"
-        },
-        {
-          "path": "src/settings-main.ts"
         }
       ]
     },
@@ -11114,9 +10925,6 @@
         },
         {
           "path": "src/shared/public-rpc-cache.ts"
-        },
-        {
-          "path": "src/utils/dom-utils.ts"
         }
       ]
     },
@@ -12486,7 +12294,7 @@
     {
       "host": "www.euronews.com",
       "provider": "www.euronews.com",
-      "kind": "feed+structured",
+      "kind": "feed",
       "observed": true,
       "license": "Provider terms for this feed publisher; verify before redistribution",
       "attribution": "Credit www.euronews.com and link to the original feed publisher.",
@@ -12494,9 +12302,6 @@
       "references": [
         {
           "path": "shared/news-catalog.json"
-        },
-        {
-          "path": "src/main.ts"
         }
       ]
     },
@@ -12504,15 +12309,10 @@
       "host": "www.facebook.com",
       "provider": "www.facebook.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/services/story-share.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "www.factal.com",
@@ -12825,12 +12625,6 @@
       "references": [
         {
           "path": "scripts/ais-relay.cjs"
-        },
-        {
-          "path": "src/components/AviationCommandBar.ts"
-        },
-        {
-          "path": "src/components/MapPopup.ts"
         }
       ]
     },
@@ -13000,9 +12794,6 @@
       "references": [
         {
           "path": "scripts/seed-energy-intelligence.mjs"
-        },
-        {
-          "path": "src/components/EnergyCrisisPanel.ts"
         }
       ]
     },
@@ -13301,9 +13092,6 @@
         },
         {
           "path": "server/worldmonitor/leads/v1/register-interest.ts"
-        },
-        {
-          "path": "src/services/story-share.ts"
         }
       ]
     },
@@ -13445,9 +13233,6 @@
       "references": [
         {
           "path": "scripts/cross-strait-activity/adapters.mjs"
-        },
-        {
-          "path": "src/components/cross-strait-activity-summary.ts"
         }
       ]
     },
@@ -13462,9 +13247,6 @@
       "references": [
         {
           "path": "scripts/cross-strait-activity/adapters.mjs"
-        },
-        {
-          "path": "src/components/cross-strait-activity-summary.ts"
         }
       ]
     },
@@ -13552,9 +13334,6 @@
         },
         {
           "path": "server/worldmonitor/displacement/v1/cross-border-data.ts"
-        },
-        {
-          "path": "src/components/UkmtoIncidentsPanel.ts"
         }
       ]
     },
@@ -14983,15 +14762,10 @@
       "host": "www.w3.org",
       "provider": "W3C schema reference",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: schema/standards reference",
       "attribution": "Excluded from the provider count: standards reference, not an ingested source.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/embed/panels/fear-greed.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "www.war.gov",
@@ -15086,9 +14860,6 @@
         },
         {
           "path": "server/worldmonitor/webcam/v1/get-webcam-image.ts"
-        },
-        {
-          "path": "src/services/webcams/index.ts"
         }
       ]
     },
@@ -15270,37 +15041,10 @@
           "path": "server/worldmonitor/intelligence/v1/_country-brief-evidence.ts"
         },
         {
-          "path": "src/app/panel-layout.ts"
-        },
-        {
-          "path": "src/components/CountryBriefController.ts"
-        },
-        {
-          "path": "src/components/CountryDeepDivePanel.ts"
-        },
-        {
-          "path": "src/components/RuntimeConfigPanel.ts"
-        },
-        {
           "path": "src/config/docs-locale-seo.ts"
         },
         {
           "path": "src/config/schema-graph-ids.ts"
-        },
-        {
-          "path": "src/config/variant-meta.ts"
-        },
-        {
-          "path": "src/embed/embed-url.ts"
-        },
-        {
-          "path": "src/plugin-country-main.ts"
-        },
-        {
-          "path": "src/services/country-brief-host-transport.ts"
-        },
-        {
-          "path": "src/services/country-brief-source.ts"
         }
       ]
     },
@@ -15386,9 +15130,6 @@
         },
         {
           "path": "src/config/live-video-sources.ts"
-        },
-        {
-          "path": "src/services/live-video/session.ts"
         }
       ]
     },

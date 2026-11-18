@@ -29,7 +29,7 @@
  * globalThis.fetch + premiumClient with premiumFetch on the same class)
  * stay clean, since publicClient never calls a premium method.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
@@ -437,8 +437,12 @@ function checkFile(filePath, clientClassMap, premiumPaths) {
 }
 
 async function main() {
-  // Before trusting any adapter exemption, prove the exemption is real.
-  assertDelegatingAdapters();
+  // Before trusting any adapter exemption, prove the exemption is real. The
+  // Lite UI has no premiumFetch (refactor Phase 1 removed the dashboard's
+  // premium clients), so without it no adapter is exempt and any premium
+  // call fails below.
+  if (existsSync(PREMIUM_FETCH_SRC)) assertDelegatingAdapters();
+  else DELEGATING_ADAPTERS.clear();
   const premiumPaths = await loadPremiumPaths();
   const clientClassMap = loadClientClassMap();
   const files = collectSourceFiles();

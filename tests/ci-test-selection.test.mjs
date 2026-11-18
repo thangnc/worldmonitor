@@ -73,13 +73,6 @@ test('Railway-only changes retain unit proof and intentionally skip the browser'
     assert.equal(result.code, 'true');
     assert.equal(result.browser, 'false');
   }
-  assert.equal(workflow.jobs['variant-smoke-shards'].if, "needs.changes.outputs.browser == 'true'");
-  assert.equal(workflow.jobs['variant-smoke-pro-webmcp'].if, "needs.changes.outputs.browser == 'true'");
-  assert.deepEqual(
-    workflow.jobs['variant-smoke-full'].needs,
-    ['changes', 'variant-smoke-shards', 'variant-smoke-pro-webmcp'],
-  );
-  assert.equal(workflow.jobs['variant-smoke-full'].if, 'always()');
 });
 
 test('runtime, browser harness, assets, build inputs and unknown paths run the browser', () => {
@@ -198,68 +191,4 @@ test('required unit aggregate rejects failed, cancelled and unexpected skips', (
     }
   }
   assert.equal(aggregate.steps[0].env.BUILT_OUTPUT_RESULT, '${{ needs.unit-built-output.result }}');
-});
-
-test('required variant-smoke aggregate rejects failed, cancelled and unexpected skips', () => {
-  const aggregate = workflow.jobs['variant-smoke-full'];
-  const shards = workflow.jobs['variant-smoke-shards'];
-  assert.deepEqual(aggregate.needs, ['changes', 'variant-smoke-shards', 'variant-smoke-pro-webmcp']);
-  assert.equal(aggregate.if, 'always()');
-  assert.deepEqual(aggregate.steps[0].env, {
-    CHANGES_RESULT: '${{ needs.changes.result }}',
-    BROWSER_CHANGED: '${{ needs.changes.outputs.browser }}',
-    SHARDS_RESULT: '${{ needs.variant-smoke-shards.result }}',
-    PRO_WEBMCP_RESULT: '${{ needs.variant-smoke-pro-webmcp.result }}',
-  });
-  assert.deepEqual(shards.strategy.matrix.shard, [1, 2, 3, 4]);
-  assert.equal(shards.strategy['fail-fast'], false);
-  assert.match(
-    shards.steps.find((step) => step.run?.includes('npm run test:e2e:ci-smoke:')).run,
-    /npm run test:e2e:ci-smoke:\$\{\{ matrix.shard \}\}/,
-  );
-  const truthTable = spawnSync('bash', ['-euo', 'pipefail', '-c', [
-    'aggregate_check() {',
-    aggregate.steps[0].run,
-    '}',
-    'for changes in success failure cancelled skipped; do',
-    '  for browser in true false empty; do',
-    '    for shards in success failure cancelled skipped; do',
-    '      for tail in success failure cancelled skipped; do',
-    '        if (',
-    '          export CHANGES_RESULT="$changes"',
-    '          export BROWSER_CHANGED="${browser#empty}"',
-    '          export SHARDS_RESULT="$shards"',
-    '          export PRO_WEBMCP_RESULT="$tail"',
-    '          aggregate_check',
-    '        ) >/dev/null 2>&1; then passed=true; else passed=false; fi',
-    '        printf "%s/%s/%s/%s=%s\\n" "$changes" "${browser#empty}" "$shards" "$tail" "$passed"',
-    '      done',
-    '    done',
-    '  done',
-    'done',
-  ].join('\n')], { encoding: 'utf8' });
-  assert.equal(truthTable.status, 0, truthTable.stderr);
-  const actual = new Map(
-    truthTable.stdout.trim().split('\n').map((line) => {
-      const separator = line.lastIndexOf('=');
-      return [line.slice(0, separator), line.slice(separator + 1) === 'true'];
-    }),
-  );
-  for (const changes of ['success', 'failure', 'cancelled', 'skipped']) {
-    for (const browser of ['true', 'false', '']) {
-      for (const shardsResult of ['success', 'failure', 'cancelled', 'skipped']) {
-        for (const tailResult of ['success', 'failure', 'cancelled', 'skipped']) {
-          const expected = changes === 'success' && (
-            (browser === 'true' && shardsResult === 'success' && tailResult === 'success')
-            || (browser === 'false' && shardsResult === 'skipped' && tailResult === 'skipped')
-          );
-          assert.equal(
-            actual.get(`${changes}/${browser}/${shardsResult}/${tailResult}`),
-            expected,
-            `${changes}/${browser}/${shardsResult}/${tailResult}`,
-          );
-        }
-      }
-    }
-  }
 });

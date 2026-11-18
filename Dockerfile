@@ -23,13 +23,6 @@ RUN npm ci --ignore-scripts
 # Copy full source
 COPY . .
 
-# The crawlable-corpus step runs the source-attribution drift gate against
-# scripts/, server/, api/, and src/. generate-inventory-facts and
-# build-handlers write untracked .js into those same roots, so the gate must
-# run on the pristine checkout first (#7435). tsc + vite stay later: they
-# need the generated inventory assets and compiled handlers.
-RUN npm run build:crawlable-corpus && npm run build:sitemap
-
 # Generated inventory modules are intentionally untracked. Recreate them in
 # the clean image context before handlers import or bundle them.
 RUN node scripts/generate-inventory-facts.mjs
@@ -54,7 +47,7 @@ ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}
 
 # Build the Vite frontend (outputs to dist/)
 # Skip blog build — blog-site has its own deps not installed here
-RUN npx tsc && npx vite build && npx vite build --config vite.lite.config.ts
+RUN npx tsc && npx vite build
 # Assert the /pro pages survived the public/ -> dist/ copy (#6898). build:pro
 # succeeding proves public/pro/ exists; it does NOT prove Vite copied it, and
 # docker/nginx.conf's SPA fallback would serve the dashboard shell at 200 for a

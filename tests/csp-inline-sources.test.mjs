@@ -28,12 +28,6 @@ const EXEMPT = {
   'api/slack/oauth/callback.ts': '/api/slack/oauth/callback',
   'api/discord/oauth/callback.ts': '/api/discord/oauth/callback',
   'public/wm-widget-sandbox.html': '/wm-widget-sandbox.html',
-  'embed.html': '/embed.html',
-  // MCP App resources: the MCP server inlines them and the host renders them
-  // in its own sandbox, under the host's CSP.
-  'plugin.html': null,
-  'market.html': null,
-  'country.html': null,
 };
 const EXEMPT_DIRS = ['api/mcp/ui/'];
 

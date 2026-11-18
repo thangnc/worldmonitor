@@ -67,7 +67,7 @@ for (const m of R('src/shared/pro-fresh-rpc.ts').matchAll(/^\s*'(\/api\/[^']+)',
 for (const m of R('src/config/map-layer-definitions.ts').matchAll(/^\s*([a-zA-Z0-9_]+):\s*def\('([^']+)'[^\n]*?,\s*(?:_desktop \? )?'(locked|enhanced)'/gm))
   add('layer', m[2], m[3]);
 // 7. FREE_* caps
-for (const f of ['src/config/panels.ts','convex/constants.ts','src/services/gates/export-resolver.ts','src/services/followed-countries.ts','api/mcp/upgrade-constants.ts'])
+for (const f of ['src/config/panels.ts','convex/constants.ts','src/services/gates/export-resolver.ts','api/mcp/upgrade-constants.ts'])
   for (const m of R(f).matchAll(/^export const (FREE_[A-Z_]+)\s*=\s*([^;]+);/gm)) add('cap', m[1], `${m[2].trim()} (${f})`);
 
 
@@ -384,23 +384,9 @@ const SITE_BASELINE = {
   "server/worldmonitor/trade/v1/get-tariff-trends.ts::isCallerPremium": 1,
   "server/worldmonitor/trade/v1/get-us-import-duty.ts::isCallerPremium": 1,
   "server/worldmonitor/trade/v1/list-comtrade-flows.ts::isCallerPremium": 1,
-  "src/app/data-loader.ts::hasPremiumAccess": 13,
-  "src/app/event-handlers.ts::isProUser": 2,
-  "src/app/panel-layout.ts::hasPremiumAccess": 1,
-  "src/components/RegionalIntelligenceBoard.ts::hasPremiumAccess": 1,
-  "src/components/TelegramIntelPanel.ts::hasPremiumAccess": 1,
-  "src/components/UnifiedSettings.ts::desktopKeyAccess": 1,
-  "src/components/UnifiedSettings.ts::isProUser": 1,
-  "src/services/analysis-framework-store.ts::hasPremiumAccess": 1,
-  "src/services/correlation-engine/engine.ts::hasPremiumAccess": 1,
-  "src/services/economic/index.ts::hasPremiumAccess": 1,
   "src/services/entitlements.ts::embedAccess": 1,
   "src/services/entitlements.ts::tier": 1,
   "src/services/gates/export-resolver.ts::dataExport": 4,
-  "src/services/gates/export.ts::dataExport": 1,
-  "src/services/sanctions-pressure.ts::hasPremiumAccess": 1,
-  "src/services/supply-chain/index.ts::hasPremiumAccess": 8,
-  "src/settings-window.ts::isProUser": 1
 };
 
 const all = [...rules, ...sites];

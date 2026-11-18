@@ -34,24 +34,6 @@ test('license-key help is discoverable from docs navigation and support', () => 
   assert.match(read('public/support.md'), /\/docs\/api-keys/);
 });
 
-test('desktop settings give blocked users an exact help path', () => {
-  const english = JSON.parse(read('src/locales/en.json'));
-  const englishShell = JSON.parse(read('src/locales/en.shell.json'));
-  const fullCopy = english.modals.settingsWindow.worldMonitor;
-  const shellCopy = englishShell.modals.settingsWindow.worldMonitor;
-
-  // Plan 2026-10-25-001 U6: Pro works through sign-in, so sign-in leads and
-  // the key box is the "Desktop key" alternative that API-plan keys also fit.
-  assert.equal(fullCopy.apiKey.title, 'Desktop key');
-  assert.match(fullCopy.signIn.description, /sign in/i);
-  assert.match(fullCopy.apiKey.description, /Settings → API Keys/);
-  assert.match(fullCopy.apiKey.description, /API-plan keys also work/);
-  assert.match(fullCopy.apiKey.description, /shared or public deployments need an API plan/);
-  assert.match(fullCopy.apiKey.description, /worldmonitor\.app\/docs\/api-keys/);
-  assert.equal(fullCopy.register.submitBtn, 'View plans');
-  assert.deepEqual(shellCopy, fullCopy);
-});
-
 test('every locale describes the launched key flow instead of a waitlist', () => {
   const localeDir = new URL('../src/locales/', import.meta.url);
   const localeFiles = readdirSync(localeDir).filter((file) => file.endsWith('.json'));

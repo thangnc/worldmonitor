@@ -232,16 +232,11 @@ test('this test file does not import the seeder module', () => {
 test('canadaAlerts is a distinct MapLayers key from weather and canadaRoads', () => {
   const types = readFileSync(join(root, 'src/types/index.ts'), 'utf8');
   const layers = readFileSync(join(root, 'src/config/map-layer-definitions.ts'), 'utf8');
-  const client = readFileSync(join(root, 'src/services/canada-alerts.ts'), 'utf8');
   assert.match(types, /canadaAlerts:\s*boolean/);
   assert.doesNotMatch(types, /albertaAea\?: boolean/);
   assert.match(layers, /canadaAlerts:\s+def\('canadaAlerts'/);
   assert.match(layers, /'Canada Alerts', \['deck'\]/);
   assert.doesNotMatch(layers, /canadaRoads:\s+def\('canadaAlerts'/);
-  assert.match(client, /getHydratedData\('canadaAlerts'\)/);
-  assert.match(client, /keys=canadaAlerts/);
-  assert.doesNotMatch(client, /weatherAlerts/);
-  assert.doesNotMatch(client, /canadaRoads/);
 });
 
 test('responses larger than 8MB are rejected', async () => {

@@ -375,7 +375,7 @@ describe('generated request validation', () => {
       'the generated validator registry must cover every generated route callback',
     );
 
-    const viteConfig = readFileSync(join(ROOT, 'vite.config.ts'), 'utf8');
+    const viteConfig = readFileSync(join(ROOT, 'vite.dev-api.ts'), 'utf8');
     assert.match(viteConfig, /validateRequest:\s*validateGeneratedRequest/);
   });
 });

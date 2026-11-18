@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-WorldMonitor is a real-time global intelligence dashboard for geopolitics, military activity, markets, climate, cyber threats, maritime traffic, and aviation. A TypeScript browser app uses Vercel Edge APIs, Railway data workers, and Upstash Redis. Tauri adds a desktop app and Node.js sidecar.
+WorldMonitor is a real-time global intelligence dashboard for geopolitics, military activity, markets, climate, cyber threats, maritime traffic, and aviation. The Lite web app (Preact) uses Vercel Edge APIs, data workers, and Upstash Redis. Tauri adds a desktop app and Node.js sidecar.
 
 Claude Code is the only supported coding agent for this repository. This file is the canonical agent guide. It covers workflow rules, commands, the change → check map, test-suite ownership, landmarks, and import boundaries. The project's Claude Code setup lives in `.claude/`:
 
@@ -59,8 +59,7 @@ Merge, auto-merge, and deployment require explicit authorization in the current 
 Node 24 (`.nvmrc`).
 
 ```bash
-npm run dev                      # Vite dev server, full variant (also serves registered sebuf RPC handlers via sebufApiPlugin)
-npm run dev:tech                 # other variants: dev:finance, dev:commodity, dev:energy, dev:happy
+npm run dev                      # Vite dev server for the Lite UI at /lite; also serves the API routes it calls (vite.dev-api.ts)
 npm run desktop:dev              # Tauri desktop app with sidecar
 
 npm run typecheck                # browser code (tsc --noEmit)
@@ -86,10 +85,9 @@ Running a single test:
 node --import tsx --test tests/<name>.test.mjs        # node:test suite (.mjs or .mts); find by subject: ls tests/ | grep <subject>
 npx vitest run --config vitest.dom.config.mts tests/dom/<file>
 npx vitest run --config vitest.config.mts <path>
-cross-env VITE_VARIANT=full npx playwright test e2e/<spec>.spec.ts --project=chromium
 ```
 
-Production build per variant: `npm run build:full` (or `build:tech`, `build:finance`, …). The pre-push hook (`.husky/pre-push`) runs tsc for src + API, edge-bundle checks, markdown/MDX lint, and the version sync check.
+Production build: `npm run build` (the Lite UI into `dist/`; `build:full` is an alias Vercel used). The pre-push hook (`.husky/pre-push`) runs tsc for src + API, edge-bundle checks, markdown/MDX lint, and the version sync check.
 
 ## Include UI evidence in pull requests
 
@@ -102,14 +100,14 @@ Production build per variant: `npm run build:full` (or `build:tech`, `build:fina
 
 | Change | Code and guidance | Required verification |
 |---|---|---|
-| Browser behavior | `src/components/`, `src/app/`, `src/services/`, `src/config/`; [architecture](ARCHITECTURE.md) | Focused behavior check, `npm run typecheck`, `npm run lint:boundaries` |
+| Browser behavior | `src/lite/`, and the `src/services/`, `src/config/` and `src/utils/` modules it imports; [Lite spec](docs/engineering/architecture/lite.md) | Focused behavior check, `npm run typecheck`, `npm run lint:boundaries` |
 | API and handlers | `api/`, `server/`; [endpoint guide](docs/adding-endpoints.mdx) | Focused handler check, `npm run typecheck:api`; `npm run test:sidecar` owns the `api/` node suites; `edge-contract-reviewer` subagent before the PR |
 | Data workers and cache | `scripts/`, `server/_shared/`; [health contracts](docs/health-endpoints.mdx) | Producer and reader checks with fixtures; separately record live freshness evidence when required |
 | Proto and generated clients | `proto/`, `src/generated/`; [code generation](CONTRIBUTING.md#working-with-sebuf-rpc-framework) | `make generate` requires buf + sebuf v0.11.1 plugins; verify generated diff |
 | Desktop and sidecar | `src-tauri/`; [architecture](ARCHITECTURE.md) | Focused Rust checks or `npm run test:sidecar` |
 | CI workflows | `.github/workflows/`; [CI/CD table](ARCHITECTURE.md#11-cicd) | Add or update each workflow's table entry. Run `npm run docs:check` and validate the changed workflow before pushing. The pre-push hook enforces the documentation check for workflow changes |
 | Committed derived files (product facts, llms, AI search, catalogs) | `scripts/generate-derived.mjs`; [derived files](CONTRIBUTING.md#derived-files) | `npm run generate`, then commit what it rewrote |
-| Tests and documentation | `tests/`, `e2e/`, `docs/`; [verification guide](CONTRIBUTING.md#verify-the-changed-path) | Relevant existing test or docs check, `git diff --check` |
+| Tests and documentation | `tests/`, `docs/`; [verification guide](CONTRIBUTING.md#verify-the-changed-path) | Relevant existing test or docs check, `git diff --check` |
 | Claude Code setup | `CLAUDE.md`, `.claude/` | Check that every path, symbol, and command it names exists; run the tests that read it (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/agent-page.test.mjs`, `tests/sentry-triage-skill.test.mjs`, `tests/engineering-docs.test.mjs`) and `npm run docs:check` |
 
 For public documents and API collections, use `https://www.worldmonitor.app` for website and documentation links. Keep MCP and OAuth endpoint identities on the apex host. Run `node --test tests/agent-corpus-canonical-host.test.mjs` after changing published URLs.
@@ -138,17 +136,17 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 ## Architecture at a glance
 
-**Runtime topology.** Browser SPA (`src/`) → Vercel Edge Functions (`api/`, `middleware.ts`) → Upstash Redis, which Railway workers (`scripts/seed-*.mjs`, the long-running relay `scripts/ais-relay.cjs`) fill from roughly 850 upstream hosts. The Tauri desktop app (`src-tauri/`) wraps the same SPA and redirects fetches to a local Node.js sidecar. Convex (`convex/`) holds user-scoped state: auth, entitlements, API keys, alert rules, notification channels, preferences.
+**Runtime topology.** Lite SPA (`src/lite/`) → Vercel Edge Functions (`api/`, `middleware.ts`) → Upstash Redis, which Railway workers (`scripts/seed-*.mjs`, the long-running relay `scripts/ais-relay.cjs`) fill from roughly 850 upstream hosts. The Tauri desktop app (`src-tauri/`) wraps the same SPA and redirects fetches to a local Node.js sidecar. Convex (`convex/`) holds user-scoped state: auth, entitlements, API keys, alert rules, notification channels, preferences.
 
 **Request path is cache-first.** Most domain RPCs do not hit upstreams per request. Seeders write Redis keys through `atomicPublish()` / `writeSeedMeta` in `scripts/_seed-utils.mjs`, always alongside `seed-meta:<key>` (`fetchedAt`, `recordCount`). Edge handlers read via `cachedFetchJson()` (`server/_shared/redis.ts`), which coalesces concurrent misses. `api/health.js` grades staleness per key from that seed-meta. Some domains (scorecard, supply-chain vulnerability, physical divergence) are pure read models of a Railway-published cohort. A data change usually spans producer script → Redis key → handler → bootstrap/health registration → panel.
 
 **Proto/sebuf contract.** `proto/` defines services with `(sebuf.http.config)` annotations. `make generate` emits TS client stubs (`src/generated/client/`), server types (`src/generated/server/`) and OpenAPI (`docs/api/`). Handlers live in `server/worldmonitor/<domain>/v1/handler.ts`. The thin entry points `api/<domain>/v<N>/[rpc].ts` call `createDomainGateway` (`server/gateway.ts`), which runs origin check → CORS → API key → rate limit → route → handler → ETag/304 → cache-tier headers. Every Edge function is esbuild-bundled per file; `tests/edge-functions.test.mjs` enforces that it stays self-contained. CI (`proto-check.yml`) fails when generated output is stale.
 
-**Frontend.** No framework and no state library (the Lite UI in `src/lite/` is the one Preact and Tailwind exception; see the Lite spec). `src/main.ts` → `App.init()`, which runs in phases: storage/i18n → ML worker → sidecar wait → two-tier `/api/bootstrap` hydration (fast and slow tiers) → layout → UI → `loadAllData()` → `startSmartPollLoop()` refresh. Shared mutable state lives in `AppContext`; URL state syncs through `src/utils/urlState.ts`. Panels extend `src/components/Panel.ts` and render through the debounced `setSafeContent()` with the `safeHtml` template (or `setContentNodes`) with event delegation (lint guards: `lint:safe-html`, `lint:panel-content-writes`). There are two map renderers, `DeckGLMap` (deck.gl/maplibre) and `GlobeMap` (globe.gl); layers are declared in `src/config/map-layer-definitions.ts`. Heavy work runs in `src/workers/` (clustering/correlation, ONNX ML).
+**Frontend.** The Lite UI (`src/lite/`, Preact and Tailwind, entry `lite.html` → `src/lite/main.tsx`) is the only web app; refactor Phase 1 removed the old vanilla-TS dashboard (`src/components/`, `src/app/`, `App.ts`). It reads data through the generated sebuf clients and the `src/services/` modules it imports, and draws maps with MapLibre (`src/lite/map/`). What was removed, and how to bring a feature back, is in [legacy features](docs/engineering/product/legacy-features.md).
 
 **Bootstrap data.** Startup datasets come from `api/bootstrap.js` and are read with `getHydratedData(key)`. Opt-in panels use `ensureHydrated(key)` (on-demand path). Each new key must also be registered in `api/health.js`.
 
-**Variants.** One codebase builds several sites (full, tech, finance, commodity, energy, happy), selected by `VITE_VARIANT` at build time and by hostname at runtime (`src/config/variant.ts`). Variants change default panels, layers, refresh intervals and theme. When a change affects one variant, check the others too (e2e scripts exist per variant).
+**Variants.** `VITE_VARIANT` and the variant configs in `src/config/` still exist for the server and seeders; the web build is the Lite UI only. Refactor Phase 1 removes the remaining variant and flag-off paths.
 
 **`shared/` vs `src/shared/`.** The top-level `shared/` holds logic that both the browser and server/MCP must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side.
 
@@ -156,7 +154,7 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 ## Critical boundaries
 
-The browser import direction is `types -> config -> services -> components -> app -> App.ts`. [lint-boundaries.mjs](scripts/lint-boundaries.mjs) enforces import boundaries.
+The browser import direction is `types -> config -> services -> lite`, and `src/lite/` imports no removed dashboard code. [lint-boundaries.mjs](scripts/lint-boundaries.mjs) enforces import boundaries.
 
 - Legacy `api/*.js` entries are self-contained JavaScript. Import same-directory `_*.js` helpers or packages, never `server/` or `src/`.
 - TypeScript API entries may import `server/` and `src/generated/`, but no other browser code. `server/` must not import `src/components/` or `src/app/`.

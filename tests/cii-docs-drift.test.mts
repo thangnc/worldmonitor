@@ -66,26 +66,6 @@ function markdownSection(text: string, heading: string): string {
     : text.slice(sectionStart, sectionStart + nextHeading);
 }
 
-function titleCase(value: string): string {
-  return value.slice(0, 1).toUpperCase() + value.slice(1);
-}
-
-function parseStrategicRiskDisplayBands(source: string): Array<{ min: number; label: string }> {
-  const match = source.match(/const STRATEGIC_RISK_BANDS:[\s\S]*?=\s*\[([\s\S]*?)\]\s*as const;/);
-  assert.ok(match, 'StrategicRiskPanel STRATEGIC_RISK_BANDS declaration not found');
-  return [...match[1]!.matchAll(/\{\s*min:\s*(\d+),\s*levelKey:\s*'([^']+)'/g)]
-    .map(([, min, label]) => ({ min: Number(min), label: titleCase(label!) }));
-}
-
-function displayBandRows(bands: Array<{ min: number; label: string }>): Array<{ range: string; label: string }> {
-  return bands.map((band, index) => {
-    const upper = index === 0 ? 100 : bands[index - 1]!.min - 1;
-    if (index === 0) return { range: `>=${band.min}`, label: band.label };
-    if (band.min === 0) return { range: `&lt;${upper + 1}`, label: band.label };
-    return { range: `${band.min}-${upper}`, label: band.label };
-  });
-}
-
 function parseStrategicRiskServerBands(source: string): Array<{ range: string; enumValue: string }> {
   const high = source.match(/overallScore\s*>=\s*(\d+)\s*\n\s*\?\s*'SEVERITY_LEVEL_HIGH'/);
   const medium = source.match(/overallScore\s*>=\s*(\d+)\s*\n\s*\?\s*'SEVERITY_LEVEL_MEDIUM'/);
@@ -161,9 +141,8 @@ describe('CII docs drift guards', () => {
     );
   });
 
-  it('strategic risk doc publishes current panel display bands, server severity bands, and roll-up', () => {
+  it('strategic risk doc publishes current server severity bands and roll-up', () => {
     const doc = readFileSync(resolve(root, 'docs', 'strategic-risk.mdx'), 'utf8');
-    const panelSource = readFileSync(resolve(root, 'src', 'components', 'StrategicRiskPanel.ts'), 'utf8');
     const serverSource = readFileSync(
       resolve(root, 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
       'utf8',
@@ -187,13 +166,6 @@ describe('CII docs drift guards', () => {
     );
     assert.match(riskLevels, /Panel-visible display labels/i);
     assert.match(riskLevels, /Server\/on-wire enum labels/i);
-    for (const { range, label } of displayBandRows(parseStrategicRiskDisplayBands(panelSource))) {
-      assert.match(
-        riskLevels,
-        new RegExp(`\\|\\s*${range}\\s*\\|\\s*\\*\\*${label}\\*\\*\\s*\\|`),
-        `strategic-risk doc must publish panel display band ${range} ${label}`,
-      );
-    }
     for (const { range, enumValue } of parseStrategicRiskServerBands(serverSource)) {
       assert.match(
         riskLevels,

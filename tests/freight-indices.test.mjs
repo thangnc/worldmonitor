@@ -904,23 +904,6 @@ describe('Handler cache-only (get-shipping-rates.ts)', () => {
   });
 });
 
-describe('Panel section grouping (SupplyChainPanel.ts)', () => {
-  const panelSrc = readFileSync(resolve(root, 'src/components/SupplyChainPanel.ts'), 'utf-8');
-
-  it('groups indices by type', () => {
-    for (const id of ['SCFI', 'CCFI', 'BDI', 'BCI', 'BPI', 'BSI', 'BHSI']) {
-      assert.ok(panelSrc.includes(`'${id}'`), `Missing grouping for ${id}`);
-    }
-  });
-
-  it('renders section headers for each group', () => {
-    assert.ok(panelSrc.includes('containerRates'));
-    assert.ok(panelSrc.includes('bulkShipping'));
-    assert.ok(panelSrc.includes('economicIndicators'));
-  });
-});
-
-
 describe('SSE weekly history retention', () => {
   it('keeps 56 weekly points for SCFI and CCFI while other series stay at 24', () => {
     const history = Array.from({ length: 60 }, (_, i) => ({ date: new Date(Date.UTC(2025, 0, 1 + i * 7)).toISOString().slice(0, 10), value: i + 100 }));

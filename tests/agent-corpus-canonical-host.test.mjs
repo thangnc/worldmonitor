@@ -417,7 +417,6 @@ describe('every published MCP endpoint is the canonical one (#9722)', () => {
       'sdk/ruby/lib/worldmonitor.rb',
       'sdk/rust/src/lib.rs',
       'skills/check-country-risk/SKILL.md',
-      'src/components/UnifiedSettings.ts',
       'pro-test/src/welcome/Agents.tsx',
       'public/agent/index.html',
       'public/.well-known/mcp/server-card.json',

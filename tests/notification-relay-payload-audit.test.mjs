@@ -33,8 +33,6 @@ const PRODUCER_FILES = [
   { path: 'scripts/regional-snapshot/alert-emitter.mjs', expected: 'domain' },
   // Builds the chokepoint_disruption payload that ais-relay.cjs publishes.
   { path: 'scripts/lib/chokepoint-disruption-alerts.cjs', expected: 'domain' },
-  // Browser-side RSS producer
-  { path: 'src/services/breaking-news-alerts.ts',       expected: 'rss' },
   // Server-side RSS producer: watchlist_story_alert events built from
   // RSS story-track rows (#4922 U3). Fixed payload shape — no description.
   { path: 'scripts/seed-digest-notifications.mjs',      expected: 'rss' },
@@ -82,16 +80,6 @@ describe('notification-relay payload audit', () => {
         `${path} (domain-origin) must NOT include \`description:\` in a publishNotificationEvent payload. RSS-only context. If you really need a description here, first change the file's @notification-source tag to rss.`,
       );
     }
-  });
-
-  it('RSS-origin file carries payload.description when the upstream item has a snippet', () => {
-    const src = readSrc('src/services/breaking-news-alerts.ts');
-    // The fetch payload at the top of dispatchAlert() now conditionally
-    // includes description — look for the spread pattern that guards it.
-    assert.ok(
-      /\.\.\.\(\s*alert\.description\s*\?\s*\{\s*description\s*:\s*alert\.description\s*\}\s*:\s*\{\s*\}\s*\)/.test(src),
-      'breaking-news-alerts.ts must conditionally include `description: alert.description` in the /api/notify payload (post-U7). Grep for `alert.description` in dispatchAlert().',
-    );
   });
 
   it('notification-relay render codepath gates snippet under NOTIFY_RELAY_INCLUDE_SNIPPET', () => {
