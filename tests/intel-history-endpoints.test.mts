@@ -16,7 +16,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 import { getIntelTimeline } from '../packages/server/worldmonitor/intelligence/v1/get-intel-timeline';
 import { getSimilarEvents } from '../packages/server/worldmonitor/intelligence/v1/get-similar-events';
 import { searchIntelHistory } from '../packages/server/worldmonitor/intelligence/v1/search-intel-history';

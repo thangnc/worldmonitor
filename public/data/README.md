@@ -20,7 +20,7 @@ see [`v1/chokepoints/README.md`](v1/chokepoints/README.md).
 | `countries-110m.json` | npm [`world-atlas@2`](https://www.npmjs.com/package/world-atlas) → `countries-110m.json` | `cp node_modules/world-atlas/countries-110m.json public/data/` |
 
 Consumed by `src/components/Map.ts` (the d3/SVG map) via `MAP_URLS` in
-`src/config/geo-map.ts`. Previously fetched from
+`packages/client/config/geo-map.ts`. Previously fetched from
 `cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json`; self-hosted to drop the
 third-party origin from the mobile map's critical path (PR #4383, issue #4374).
 

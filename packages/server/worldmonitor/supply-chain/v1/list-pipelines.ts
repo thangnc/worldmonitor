@@ -7,7 +7,7 @@ import type {
 } from '../../../../contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 import { ValidationError } from '../../../../contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 import { derivePublicBadge } from './_pipeline-evidence';
-import { pickNewerClassifierVersion, pickNewerIsoTimestamp } from '../../../../../src/shared/pipeline-evidence';
+import { pickNewerClassifierVersion, pickNewerIsoTimestamp } from '../../../_shared/pipeline-evidence';
 
 /**
  * Shape of the JSON emitted by scripts/seed-pipelines-{gas,oil}.mjs.

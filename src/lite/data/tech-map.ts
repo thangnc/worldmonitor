@@ -30,8 +30,8 @@ import type {
   ServiceStatus,
 } from '@wm/contracts/generated/client/worldmonitor/infrastructure/v1/service_client';
 import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cyber/v1/service_client';
-import type { CloudRegion } from '@/config/tech-geo';
-import type { AIDataCenter, UnderseaCable } from '@/types';
+import type { CloudRegion } from '@wm/client/config/tech-geo';
+import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
 import { resolveCountryCode } from '@wm/shared/country-code-resolve';
 import type { AggregateMarker, AssetMarker, EventMarker, LabelMarker } from '../map/LiteMap';
 import type { MarkGlyph, MarkState } from '../map/marks';

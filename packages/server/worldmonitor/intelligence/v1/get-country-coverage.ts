@@ -31,7 +31,7 @@ import { ValidationError } from '../../../../contracts/generated/server/worldmon
 import type { ThreatLevel as ProtoThreatLevel } from '../../../../contracts/generated/server/worldmonitor/news/v1/service_server';
 import type { ThreatLevel as SharedThreatLevel } from '../../../../shared/threat-keyword-classifier';
 
-import { TIER1_COUNTRIES } from '../../../../../src/config/countries';
+import { TIER1_COUNTRIES } from '../../../_shared/countries';
 import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
 import { countryDisplayName } from '../../../../shared/country-mention.js';
 import { getCountrySearchTerms } from '../../../../shared/country-headline-match';

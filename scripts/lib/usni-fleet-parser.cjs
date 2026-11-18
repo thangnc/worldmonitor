@@ -13,7 +13,7 @@ const HULL_TYPE_MAP = {
 
 // Theater and port centroids for every <h2> heading USNI has published in the
 // Fleet Tracker. Keep every key and coordinate identical to USNI_REGION_COORDINATES in
-// src/config/military.ts — tests/dom/usni-region-coords-parity.test.mts fails if
+// packages/client/config/military.ts — tests/dom/usni-region-coords-parity.test.mts fails if
 // the two drift. An unmapped heading is not harmless: the client falls through
 // to a hash-derived position, which plots the vessel at an arbitrary point on
 // the globe (#7548).

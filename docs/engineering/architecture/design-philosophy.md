@@ -398,7 +398,7 @@ Countries GeoJSON is lazy-loaded from a shared `getCountriesGeoJson()` function,
 
 ### Unified Layer Toggle Catalog
 
-All map layer toggle definitions — icon, localization key, fallback display label, and supported renderer types — are consolidated in a single shared registry (`src/config/map-layer-definitions.ts`). Each entry declares which map renderers support it via a `renderers: MapRenderer[]` field (e.g., `dayNight` is flat-only, `ciiChoropleth` is both flat and globe), preventing the two map components from showing inconsistent layer options.
+All map layer toggle definitions — icon, localization key, fallback display label, and supported renderer types — are consolidated in a single shared registry (`packages/client/config/map-layer-definitions.ts`). Each entry declares which map renderers support it via a `renderers: MapRenderer[]` field (e.g., `dayNight` is flat-only, `ciiChoropleth` is both flat and globe), preventing the two map components from showing inconsistent layer options.
 
 A `def()` factory function reduces per-entry boilerplate. Variant-specific layer ordering (`VARIANT_LAYER_ORDER`) defines the display sequence for each published dashboard variant without duplicating the definitions themselves. Adding a new map layer requires a single registry entry — both the flat map and 3D globe derive their toggle panels from this catalog automatically.
 

@@ -42,9 +42,11 @@ const GATES = [
   {
     file: 'scripts/enforce-safe-local-storage.mjs',
     setup(root) {
-      mkdirSync(join(root, 'src/services'), { recursive: true });
+      // The guard scans both browser roots and fails on a missing one.
+      mkdirSync(join(root, 'src'), { recursive: true });
+      mkdirSync(join(root, 'packages/client/services'), { recursive: true });
       writeFileSync(
-        join(root, 'src/services/failing-store.ts'),
+        join(root, 'packages/client/services/failing-store.ts'),
         "export const stored = localStorage.getItem('wm-key');\n",
       );
     },

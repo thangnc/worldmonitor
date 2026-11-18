@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { Bell, Database, Globe, LayoutDashboard, Settings, SlidersHorizontal, Star } from 'lucide-preact';
-import type { LiteScreen } from '@/config/lite-route';
-import { LITE_SCREEN_PATHS } from '@/config/lite-route';
+import type { LiteScreen } from '@wm/client/config/lite-route';
+import { LITE_SCREEN_PATHS } from '@wm/client/config/lite-route';
 import { navigate } from '../router';
 import { useDigest, useDomainCounts, useHealth } from '../data/hooks';
 import { utcClock } from '../format';

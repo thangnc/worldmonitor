@@ -24,7 +24,7 @@ import ISO3_TO_ISO2 from './iso3-to-iso2.json';
  * The sibling resolvers cannot serve this layer — `packages/shared/country-name-to-iso2.cjs`
  * is CommonJS (and has no alpha-3 step), `scripts/_country-resolver.mjs` reads
  * from disk and needs the caller to have already split iso2/iso3/name apart, and
- * `src/services/country-geometry.ts` is browser-only and built from loaded map
+ * `packages/client/services/country-geometry.ts` is browser-only and built from loaded map
  * geometry.
  */
 

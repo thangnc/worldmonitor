@@ -58,7 +58,7 @@ test('frontend session mint must not block API callers forever', async () => {
     init?.signal?.addEventListener('abort', () => reject(new Error('Aborted')), { once: true });
   })) as typeof fetch;
 
-  const mod = await import('../src/services/wm-session.ts');
+  const mod = await import('../packages/client/services/wm-session.ts');
   mod.__resetWmSessionForTests();
   mod.__setWmSessionFetchTimeoutForTests(50);
 
@@ -132,7 +132,7 @@ test('__resetWmSessionForTests restores the default mint timeout', async (t) => 
     return new Response(JSON.stringify({ exp: Date.now() + 3600000 }));
   };
 
-  const mod = await import('../src/services/wm-session.ts?reset-timeout-repro=1');
+  const mod = await import('../packages/client/services/wm-session.ts?reset-timeout-repro=1');
   mod.__resetWmSessionForTests();
   const timeout = t.mock.method(globalThis, 'setTimeout');
   mod.__setWmSessionFetchTimeoutForTests(50);

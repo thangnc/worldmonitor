@@ -1,12 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { hashString } from '../src/utils/hash.ts';
+import { hashString } from '../packages/client/utils/hash.ts';
 import {
   CACHE_VERSION,
   buildSummaryCacheKey,
   selectUniqueHeadlinePairs,
-} from '../src/utils/summary-cache-key.ts';
+} from '../packages/client/utils/summary-cache-key.ts';
 
 const HEADLINES = ['Inflation rises to 3.5%', 'Fed holds rates steady', 'Markets react'];
 

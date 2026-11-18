@@ -135,7 +135,7 @@ describe('security advisory source contract', () => {
 
   it('localized panel source copy does not advertise inactive feed countries', () => {
     const sourceCountries = travelAdvisorySourceCountries(extractAdvisoryFeeds());
-    const localeDir = resolve(root, 'src/locales');
+    const localeDir = resolve(root, 'packages/client/locales');
 
     for (const file of readdirSync(localeDir).filter((name) => name.endsWith('.json'))) {
       const locale = JSON.parse(readFileSync(resolve(localeDir, file), 'utf8'));

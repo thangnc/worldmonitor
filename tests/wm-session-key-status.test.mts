@@ -27,8 +27,8 @@ g.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
 };
 g.location = { href: 'https://worldmonitor.app/', origin: 'https://worldmonitor.app', hostname: 'worldmonitor.app', protocol: 'https:', host: 'worldmonitor.app' };
 
-let mod: typeof import('../src/services/wm-session.ts');
-before(async () => { mod = await import('../src/services/wm-session.ts'); });
+let mod: typeof import('../packages/client/services/wm-session.ts');
+before(async () => { mod = await import('../packages/client/services/wm-session.ts'); });
 beforeEach(() => { calls.length = 0; mod.__resetWmSessionForTests(); });
 
 function answer(status: number, body: string): void {

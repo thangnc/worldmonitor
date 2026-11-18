@@ -1,5 +1,5 @@
 // Build-time chunk ownership manifest — classifier, emitted snippet, and the
-// runtime reader (src/bootstrap/sentry-init.ts).
+// runtime reader (packages/client/bootstrap/sentry-init.ts).
 //
 // Why this exists: `beforeSend` runs in the browser before sourcemapping, so a
 // hashed filename was the only ownership signal and it was read with a
@@ -25,7 +25,7 @@ import {
 } from '../packages/shared/chunk-ownership.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const sentryInitSrc = readFileSync(resolve(here, '../src/bootstrap/sentry-init.ts'), 'utf8');
+const sentryInitSrc = readFileSync(resolve(here, '../packages/client/bootstrap/sentry-init.ts'), 'utf8');
 
 describe('chunkHasFirstPartyModule', () => {
   it('classifies a pure node_modules chunk as vendor', () => {

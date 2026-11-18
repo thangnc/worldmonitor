@@ -1,7 +1,7 @@
 /**
  * Port reference data. Lives in shared/ (no src/ imports) so server-side
  * analysis — the infrastructure-cascade core and the tools built on it — can
- * bundle it under Edge/esbuild. src/config/ports.ts re-exports this array
+ * bundle it under Edge/esbuild. packages/client/config/ports.ts re-exports this array
  * typed as the client-facing `Port`.
  */
 

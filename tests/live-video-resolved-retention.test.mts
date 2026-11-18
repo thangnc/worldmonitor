@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { it } from 'node:test';
 
 import { LAST_GOOD_MAX_AGE_MS } from '../scripts/seed-live-video-resolved.mjs';
-import { LIVE_VIDEO_TIMING } from '../src/services/live-video/model.ts';
+import { LIVE_VIDEO_TIMING } from '../packages/client/services/live-video/model.ts';
 
 // The seeder keeps an unreadable channel's last id for LAST_GOOD_MAX_AGE_MS; the player ignores any entry older
 // than resolvedMaxAgeMs. If they drift, either the player drops ids the seeder still vouches for, or it plays ids

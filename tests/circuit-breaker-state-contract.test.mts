@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import {
   clearAllCircuitBreakers,
   createCircuitBreaker,
-} from '../src/utils/circuit-breaker';
+} from '../packages/client/utils/circuit-breaker';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

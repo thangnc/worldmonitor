@@ -15,8 +15,8 @@ import {
   isKnownPublicPagePath,
   prefersAgentNotFound,
   suggestNotFoundSection,
-} from '../src/config/agent-not-found.ts';
-import { LITE_SCREEN_PATHS } from '../src/config/lite-route.ts';
+} from '../packages/server/_shared/agent-not-found.ts';
+import { LITE_SCREEN_PATHS } from '../packages/client/config/lite-route.ts';
 
 const vercelConfig = JSON.parse(
   readFileSync(resolve(import.meta.dirname, '../vercel.json'), 'utf8'),

@@ -7,7 +7,7 @@ import {
   COUNTRY_REGULATION_PROFILES,
   getUpcomingDeadlines,
   getRecentActions,
-} from '../src/config/ai-regulations.ts';
+} from '../packages/client/config/ai-regulations.ts';
 
 // Executive Order 14148, Sec. 2 (90 FR 8237, FR Doc. 2025-01901): "The following
 // executive actions are hereby revoked: ... (ggg) Executive Order 14110".

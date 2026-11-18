@@ -95,8 +95,8 @@ env:
     packages/shared/telegram-channel-trust.ts
     packages/shared/x-account-source-tiers.json
     packages/shared/x-account-trust.ts
-    src/shared/premium-paths.ts
-    src/shared/public-rpc-cache.ts
+    packages/client/shared/premium-paths.ts
+    packages/client/shared/public-rpc-cache.ts
   GENERATED_PATHS: >-
     packages/contracts/generated/
     packages/contracts/openapi/

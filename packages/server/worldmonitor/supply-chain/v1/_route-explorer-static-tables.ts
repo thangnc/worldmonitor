@@ -17,7 +17,7 @@ import { CHOKEPOINT_REGISTRY } from '../../../_shared/chokepoint-registry';
 
 /**
  * Minimum and maximum transit-day estimates per trade route, keyed by the
- * `id` field from `src/config/trade-routes.ts`. Ranges span different vessel
+ * `id` field from `packages/client/config/trade-routes.ts`. Ranges span different vessel
  * classes and seasonal routing choices.
  */
 export const TRANSIT_DAYS_BY_ROUTE_ID: Record<string, readonly [number, number]> = {

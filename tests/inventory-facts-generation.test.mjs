@@ -186,7 +186,7 @@ describe('inventory facts generation contract', () => {
       assert.notEqual(strictCli.status, 0, 'bootstrap must not weaken the strict attribution gate');
       assert.match(strictCli.stderr + strictCli.stdout, /stale manifest entry/);
 
-      writeFileSync(join(fixtureRoot, 'src/config/map-layer-definitions.ts'), 'export const UNRELATED = [];\n');
+      writeFileSync(join(fixtureRoot, 'packages/client/config/map-layer-definitions.ts'), 'export const UNRELATED = [];\n');
       const brokenInventory = runInventoryFixture(fixtureRoot);
       assert.notEqual(brokenInventory.status, 0);
       assert.match(brokenInventory.stderr, /could not find the complete LAYER_REGISTRY block/);

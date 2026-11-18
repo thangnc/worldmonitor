@@ -5,7 +5,7 @@ import type {
   EuFsiObservation,
 } from '../../../../contracts/generated/server/worldmonitor/economic/v1/service_server';
 import { getCachedJson } from '../../../_shared/redis';
-import { CISS_STALE_THRESHOLD_MS } from '../../../../../src/shared/ciss-staleness';
+import { CISS_STALE_THRESHOLD_MS } from '../../../_shared/ciss-staleness';
 
 const SEED_CACHE_KEY = 'economic:fsi-eu:v1';
 

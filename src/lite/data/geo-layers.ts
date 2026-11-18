@@ -6,7 +6,7 @@
  */
 import { HOTSPOT_COUNTRY_MAP } from '@wm/shared/hotspot-country-map';
 import { haversineKm } from '@wm/shared/geo-distance';
-import type { Hotspot } from '@/types';
+import type { Hotspot } from '@wm/client/types';
 import type { MilitaryAircraftType, MilitaryFlight } from '@wm/contracts/generated/client/worldmonitor/military/v1/service_client';
 import type { ListUkmtoIncidentsResponse, UkmtoIncident } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';
 import { countryName, shadingBasis } from './conflict';

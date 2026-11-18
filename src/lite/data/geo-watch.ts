@@ -7,7 +7,7 @@
 import { HOTSPOT_COUNTRY_MAP } from '@wm/shared/hotspot-country-map';
 import type { ChokepointInfo, GetChokepointStatusResponse } from '@wm/contracts/generated/client/worldmonitor/supply_chain/v1/service_client';
 import type { SecurityAdvisoryItem } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
-import type { CrossStraitActivitySnapshot, TaiwanMndActivityObservation } from '@/types/cross-strait-activity';
+import type { CrossStraitActivitySnapshot, TaiwanMndActivityObservation } from '@wm/client/types/cross-strait-activity';
 import { countryName } from './conflict';
 import { feeds, hotspotSubject, type Place } from './geo-layers';
 import { feedState, type FeedState, type Indicator } from './indicators';

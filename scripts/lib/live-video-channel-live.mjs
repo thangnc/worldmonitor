@@ -17,7 +17,7 @@ import { createRequire } from 'node:module';
 
 const { parseProxyConfigForAttempt, proxyFetch } = createRequire(import.meta.url)('../_proxy-utils.cjs');
 
-// Duplicated from src/services/live-video/model.ts, which is TypeScript and cannot be imported here.
+// Duplicated from packages/client/services/live-video/model.ts, which is TypeScript and cannot be imported here.
 const CHANNEL_ID = /^UC[A-Za-z0-9_-]{22}$/;
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 

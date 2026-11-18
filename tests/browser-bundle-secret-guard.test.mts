@@ -206,7 +206,7 @@ describe('browser bundle secret guard (#3704)', () => {
   });
 
   it('runtime env readers do not make the full Vite env object reachable', async () => {
-    for (const relPath of ['src/services/runtime.ts', 'src/services/runtime-config.ts']) {
+    for (const relPath of ['packages/client/services/runtime.ts', 'packages/client/services/runtime-config.ts']) {
       const source = await readRepoFile(relPath);
       assert.doesNotMatch(
         source,
@@ -227,7 +227,10 @@ describe('browser bundle secret guard (#3704)', () => {
   });
 
   it('client source uses only reviewed VITE_* browser env names', async () => {
-    const sourceFiles = await listFiles(resolve(repoRoot, 'src'), CLIENT_SOURCE_EXTENSIONS);
+    const sourceFiles = [
+      ...await listFiles(resolve(repoRoot, 'src'), CLIENT_SOURCE_EXTENSIONS),
+      ...await listFiles(resolve(repoRoot, 'packages/client'), CLIENT_SOURCE_EXTENSIONS),
+    ];
     const seen = new Map<string, string[]>();
 
     for (const file of sourceFiles) {
@@ -254,7 +257,7 @@ describe('browser bundle secret guard (#3704)', () => {
   });
 
   it('runtime-config.ts does not list a platform-only secret as a required feature secret', async () => {
-    const source = await readRepoFile('src/services/runtime-config.ts');
+    const source = await readRepoFile('packages/client/services/runtime-config.ts');
     // `requiredSecrets: [...]` literals are what seedSecretsFromEnvironment iterates.
     // Any platform-only key appearing inside one of those arrays would be
     // attempted at runtime, so flag it.

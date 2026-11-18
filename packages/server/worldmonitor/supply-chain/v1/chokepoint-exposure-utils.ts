@@ -1,4 +1,4 @@
-import { CHOKEPOINT_REGISTRY } from '../../../../../src/config/chokepoint-registry';
+import { CHOKEPOINT_REGISTRY } from '../../../../client/config/chokepoint-registry';
 import COUNTRY_PORT_CLUSTERS from '../../../../../scripts/shared/country-port-clusters.json';
 
 interface PortClusterEntry {

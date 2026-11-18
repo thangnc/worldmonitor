@@ -45,6 +45,7 @@ describe('outlet profile registry', () => {
       }
     };
     walk('src');
+    walk('packages/client');
     walk('packages/shared');
     assert.deepEqual(importers, []);
   });

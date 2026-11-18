@@ -161,8 +161,8 @@ const RELAY_INVENTORY_BUILD_INPUTS = Object.freeze([
   'scripts/source-attribution.mjs',
   'packages/shared/source-attribution-manifest.json',
   'packages/shared/news-catalog.json',
-  'src/config/map-layer-definitions.ts',
-  'src/locales/*.json',
+  'packages/client/config/map-layer-definitions.ts',
+  'packages/client/locales/*.json',
 ]);
 const RELAY_GENERATED_RUNTIME_OUTPUT = 'scripts/shared/inventory-facts.generated.json';
 

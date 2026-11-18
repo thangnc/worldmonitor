@@ -9,11 +9,11 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 import { __testing__ } from '../docker/local-api/local-api-server.mjs';
 
 const root = resolve(import.meta.dirname, '..');
-const runtimeConfig = readFileSync(resolve(root, 'src/services/runtime-config.ts'), 'utf8');
+const runtimeConfig = readFileSync(resolve(root, 'packages/client/services/runtime-config.ts'), 'utf8');
 
 const CLOUD_ROUTED: Record<string, string[]> = {
   internetOutages: ['/api/infrastructure/v1/list-internet-outages'],

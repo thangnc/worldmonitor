@@ -41,7 +41,7 @@ before(async () => {
   });
   loadDashboard = (await import(pathToFileURL(join(scratch, 'dashboard.mjs')).href)).default;
   {
-    const [entry, initialize] = ['src/bootstrap/sentry-init.ts', 'loadAndInitSentry'];
+    const [entry, initialize] = ['packages/client/bootstrap/sentry-init.ts', 'loadAndInitSentry'];
     const outfile = join(scratch, 'dashboard-init.mjs');
     await build({
       stdin: { contents: `import { ${initialize} } from ${JSON.stringify(resolve(entry))}; import { captured } from 'capture-sdk'; export default async () => { await ${initialize}(); return captured(); };`, resolveDir: resolve('.') },

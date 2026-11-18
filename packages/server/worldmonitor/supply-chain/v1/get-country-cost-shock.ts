@@ -10,7 +10,7 @@ import { ValidationError } from '../../../../contracts/generated/server/worldmon
 import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
 import { isCallerPremium } from '../../../_shared/premium-check';
 import { cachedFetchJson, getCachedJson } from '../../../_shared/redis';
-import { CHOKEPOINT_REGISTRY } from '../../../../../src/config/chokepoint-registry';
+import { CHOKEPOINT_REGISTRY } from '../../../../client/config/chokepoint-registry';
 import { computeEnergyShockScenario } from '../../intelligence/v1/compute-energy-shock';
 import { warRiskTierToInsurancePremiumBps } from './_insurance-tier';
 import { COST_SHOCK_KEY, CHOKEPOINT_STATUS_KEY } from '../../../_shared/cache-keys';

@@ -1,10 +1,10 @@
 import type { ComponentChildren } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
 import { Activity, BellOff, Check, CircleHelp, GitFork, Minus, Pin, Quote, Sparkles, TrendingDown, TrendingUp } from 'lucide-preact';
-import type { LiteDomainScreen } from '@/config/lite-route';
-import { LITE_SCREEN_PATHS } from '@/config/lite-route';
-import { getUpcomingDeadlines } from '@/config/ai-regulations';
-import type { ServerInsights } from '@/services/insights-loader';
+import type { LiteDomainScreen } from '@wm/client/config/lite-route';
+import { LITE_SCREEN_PATHS } from '@wm/client/config/lite-route';
+import { getUpcomingDeadlines } from '@wm/client/config/ai-regulations';
+import type { ServerInsights } from '@wm/client/services/insights-loader';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { BarStrip } from '../components/charts';
 import { Card, ColLabel, DerivedTag, Panel, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';

@@ -1,7 +1,7 @@
 /**
  * Build-time chunk ownership manifest.
  *
- * `beforeSend` in `src/bootstrap/sentry-init.ts` runs in the browser BEFORE
+ * `beforeSend` in `packages/client/bootstrap/sentry-init.ts` runs in the browser BEFORE
  * sourcemapping, so the only thing it knows about a frame is a hashed filename.
  * It used to infer ownership from that name against a hand-maintained
  * `vendorChunk` regex, which is unsound for two reasons:

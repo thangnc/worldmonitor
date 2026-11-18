@@ -1,4 +1,4 @@
-import { isKnownPublicPagePath, originNotFoundResponse } from './src/config/agent-not-found';
+import { isKnownPublicPagePath, originNotFoundResponse } from './packages/server/_shared/agent-not-found';
 import agentRequestPolicy from './packages/shared/agent-request-policy.json';
 
 const BOT_UA =

@@ -13,7 +13,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { detectDesktopRuntime, hasExplicitDesktopSignals } from '@/services/desktop-runtime';
+import { detectDesktopRuntime, hasExplicitDesktopSignals } from '@wm/client/services/desktop-runtime';
 
 type Probe = Parameters<typeof detectDesktopRuntime>[0];
 

@@ -16,7 +16,7 @@ import { sanitizeForPromptLine } from '../../../_shared/llm-sanitize.js';
 import { instabilityBand } from '../../../../shared/cii-band.js';
 import { CHOKEPOINT_COUNTRY_CODES } from '../../../../shared/chokepoint-countries.js';
 import { countryMentionTerms, mentionsCountry } from '../../../../shared/country-mention.js';
-import { MONITORED_AIRPORTS } from '../../../../../src/config/airports';
+import { MONITORED_AIRPORTS } from '../../../_shared/airports';
 import { TIER1_COUNTRIES } from './_shared';
 import type { ResolvedEnergyImportDependency } from './_energy-import-dependency';
 

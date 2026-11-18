@@ -1,13 +1,13 @@
 ---
 paths:
-  - "src/config/map-layer-definitions.ts"
+  - "packages/client/config/map-layer-definitions.ts"
   - "packages/shared/news-catalog.json"
   - "scripts/seed-*.mjs"
   - "scripts/railway-services.json"
   - "vercel.json"
   - "api/health.js"
   - "src/lite/**"
-  - "src/config/lite-route.ts"
+  - "packages/client/config/lite-route.ts"
   - "lite.html"
   - "middleware.ts"
   - "vite.dev-api.ts"
@@ -30,7 +30,7 @@ Source of truth: [docs/engineering/architecture/lite.md](../../docs/engineering/
 - **Lite map (`src/lite/map/`).** MapLibre with OpenFreeMap tiles (spec "Owner decisions"). The style reads the `@theme` variables through `readLiteMapTokens`; hex values appear only as its fallbacks. Draw anything over the map (markers, the click-to-open card and its leader line, controls, the legend, the layers popover, credits) as Preact elements with Tailwind classes, not MapLibre controls or popups. Every marker on every Lite map follows the one grammar in `src/lite/map/marks.tsx` (spec "Map marker grammar"): event, asset, aggregate or judgement, coloured by state (`mark-normal`, `mark-elev`, `mark-crit`), never by domain; a new layer picks one of the four shapes and, if needed, adds a Lucide glyph to `MARK_GLYPHS`, and its legend and popover rows draw the same components. Context geometry (lane lines, country fills) may be MapLibre layers through `LiteMap`'s `overlays` prop, coloured from the tokens by each feature's `tone` (`elev`, `crit`, or an intensity step `ramp-1` to `ramp-4`). Data shading (the reported-violence country fill, GPS hexagons, DDoS shading) may be a MapLibre fill layer coloured from the `@theme` tokens through `readLiteMapTokens` (owner's decision, 2026-11-08); intensity areas use the shared blue ramp. Clicks on it open the same Preact card. Keep the OpenStreetMap credit visible. Hotspot colour comes from `scoreHotspots` (`src/lite/data/escalation.ts`), which only maps Lite data onto the shared escalation core; do not add scoring there. A map with a time range uses `TimeRangeControl` (`src/lite/components/TimeRange.tsx`, 6h/24h/7d), and each layer row says what it shows at the range (`layerRangeNote`, `techLayerRangeNote`); a layer the range cannot change says so, and a missing window names its source instead of showing another window's data.
 - **Indicators.** Every early indicator renders through `src/lite/components/indicator.tsx` and finds its news through `linkNews` (`src/lite/data/news-link.ts`), with the domain's `LINK_WINDOW_HOURS`. Do not write a per-screen matcher or card. A fired indicator with no matching story shows "No linked news found", never a guessed cause.
 - **Real, derived or sample.** A Lite widget reads a real source, computes a stated rule (tag it `DerivedTag`), or shows design samples (badge it `SampleBadge`). A failed or empty real source renders `SourceState`, never samples. Update the data table in the spec's "Lite UI" section when a widget changes class.
-- **Default route.** `/` and `/dashboard`, with any query, always open `/lite` with a temporary redirect (307) that keeps the query string. `vercel.json` owns it on Vercel (its redirects run before `middleware.ts`, which has no route logic); `docker/nginx.conf*` and the dev server (`vite.dev-api.ts`) mirror it. Change all three together; `tests/deploy-config.test.mjs` pins the `vercel.json` and nginx rules (the dev-server redirect has no test). `src/config/lite-route.ts` names the `/lite/*` screen paths.
+- **Default route.** `/` and `/dashboard`, with any query, always open `/lite` with a temporary redirect (307) that keeps the query string. `vercel.json` owns it on Vercel (its redirects run before `middleware.ts`, which has no route logic); `docker/nginx.conf*` and the dev server (`vite.dev-api.ts`) mirror it. Change all three together; `tests/deploy-config.test.mjs` pins the `vercel.json` and nginx rules (the dev-server redirect has no test). `packages/client/config/lite-route.ts` names the `/lite/*` screen paths.
 
 ## Verify
 

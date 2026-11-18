@@ -293,7 +293,7 @@ const ON_DEMAND_KEY_NAMES = new Set([
  * (src/services/weather.ts) and that read needs a CDN entry of its own so the
  * BARE `?keys=weatherAlerts` URL — which credentialed callers also use — can
  * stay no-store. Exported so the handler's allowlist (api/bootstrap.js) and the
- * client's credential-less-read guard (src/services/wm-session.ts) name the same
+ * client's credential-less-read guard (packages/client/services/wm-session.ts) name the same
  * key instead of hardcoding it twice.
  */
 export const PUBLIC_WEATHER_BOOTSTRAP_KEY = 'weatherAlerts';

@@ -7,7 +7,7 @@ import {
   deriveStoragePublicBadge,
   STORAGE_BADGE_DERIVER_VERSION,
   type StorageEvidenceInput,
-} from '../src/shared/storage-evidence';
+} from '../packages/server/_shared/storage-evidence';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const raw = readFileSync(resolve(__dirname, '../scripts/data/storage-facilities.json'), 'utf-8');

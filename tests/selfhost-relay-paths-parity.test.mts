@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { SELFHOST_RELAY_PATHS, isSelfHostRelayPath } from '../packages/shared/selfhost-relay-paths.js';
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 
 // REST v2 is the API product; it is never relayed.
 const isRestV2Path = (p: string): boolean => p.startsWith('/api/v2/');

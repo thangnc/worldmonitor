@@ -31,7 +31,7 @@ vi.mock("../_shared/direct-llm-quota", async (importOriginal) => {
 import { createDomainGateway } from "../gateway";
 import { ENDPOINT_RATE_POLICIES } from "../_shared/rate-limit";
 import { operatorKeyQuotaPrincipal } from "../_shared/high-usage-alarm";
-import { PREMIUM_RPC_PATHS } from "../../../src/shared/premium-paths";
+import { PREMIUM_RPC_PATHS } from "../../client/shared/premium-paths";
 
 const SUMMARIZE_PATH = "/api/news/v1/summarize-article";
 const CACHE_PATH = "/api/news/v1/summarize-article-cache";

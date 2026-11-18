@@ -15,7 +15,7 @@ import { createDomainGateway, PUBLIC_NO_AUTH_RPC_PATHS } from '../packages/serve
 //
 // This spec is deliberately two-sided. Removing the exception is only correct
 // while a `wms_` session still reaches them, because that is what the public
-// dashboard presents (src/services/wm-session.ts attaches the token as both the
+// dashboard presents (packages/client/services/wm-session.ts attaches the token as both the
 // `wm-session` cookie and an `X-WorldMonitor-Key` header). A change that gated
 // these behind a real key would 401 every anonymous visitor.
 //

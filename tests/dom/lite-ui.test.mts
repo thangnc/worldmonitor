@@ -61,7 +61,7 @@ vi.mock('maplibre-gl', () => {
 });
 
 // The country shapes: one feature is enough for the shading layer to start.
-vi.mock('@/services/country-geometry', () => ({
+vi.mock('@wm/client/services/country-geometry', () => ({
   getCountriesGeoJson: vi.fn(async () => ({
     type: 'FeatureCollection',
     features: [{ type: 'Feature', properties: { 'ISO3166-1-Alpha-2': 'UA', name: 'Ukraine' }, geometry: { type: 'Polygon', coordinates: [[[22, 44], [40, 44], [40, 52], [22, 52], [22, 44]]] } }],
@@ -71,7 +71,7 @@ vi.mock('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url', () => ({ default: 
 
 // The bootstrap tiers are out of scope here: resolve them at once and hydrate
 // nothing, so every loader goes straight to its (stubbed) RPC.
-vi.mock('@/services/bootstrap', () => ({
+vi.mock('@wm/client/services/bootstrap', () => ({
   fetchBootstrapData: vi.fn(async () => undefined),
   waitForBootstrapSlowTier: vi.fn(async () => true),
   getHydratedData: vi.fn(() => undefined),
@@ -173,7 +173,7 @@ beforeEach(async () => {
   resetResourcesForTests();
   const { resetSourcesForTests } = await import('../../src/lite/data/sources');
   resetSourcesForTests();
-  const { __resetServerInsightsCacheForTests } = await import('../../src/services/insights-loader');
+  const { __resetServerInsightsCacheForTests } = await import('../../packages/client/services/insights-loader');
   __resetServerInsightsCacheForTests();
   root = document.createElement('div');
   document.body.appendChild(root);
@@ -291,7 +291,7 @@ describe('Lite UI shell', () => {
     // Africa, reach elevated from the one fresh headline, and only they are
     // drawn large; Kyiv (baseline 5, no news) is at watch. No hotspot shows its
     // name beside the diamond: it is in the card.
-    const { INTEL_HOTSPOTS } = await import('../../src/config/geo');
+    const { INTEL_HOTSPOTS } = await import('../../packages/client/config/geo');
     const drawn = [...root.querySelectorAll('[data-marker]')].map((m) => m.getAttribute('data-marker'));
     expect(drawn.sort()).toEqual(INTEL_HOTSPOTS.map((h) => `hotspot:${h.id}`).sort());
     // Every hotspot is a 16 px judgement diamond; from 3/5 it is amber and drawn above the aggregates.
@@ -635,7 +635,7 @@ describe('Lite indicator card', () => {
       return base(input, init);
     }));
     // The cyber keys ride the on-demand bootstrap path: KEV answers, the history misses.
-    const bootstrap = await import('@/services/bootstrap');
+    const bootstrap = await import('@wm/client/services/bootstrap');
     vi.mocked(bootstrap.ensureHydrated).mockImplementation(async (key: string) => (key === 'kevRecent'
       ? { fetchedAt: now - 3_600_000, days: 30, attribution: '', items: [
           { id: 'CVE-2026-0002', addedAt: day(10), dueAt: '', name: 'Old entry', vendorProduct: '', cvssScore: 7.5, cvssSeverity: 'HIGH', description: '' },
@@ -707,7 +707,7 @@ describe('Lite indicator card', () => {
       }
       return base(input, init);
     }));
-    const bootstrap = await import('@/services/bootstrap');
+    const bootstrap = await import('@wm/client/services/bootstrap');
     vi.mocked(bootstrap.ensureHydrated).mockImplementation(async (key: string) => (key === 'cyberThreats'
       ? { threats: [
         { id: 'f1', type: 'CYBER_THREAT_TYPE_C2_SERVER', source: 'CYBER_THREAT_SOURCE_FEODO', indicator: '1.2.3.4', indicatorType: 'CYBER_THREAT_INDICATOR_TYPE_IP', location: { latitude: 52.3, longitude: 4.9 }, country: 'NL', severity: 'CRITICALITY_LEVEL_HIGH', malwareFamily: 'QakBot', tags: [], firstSeenAt: 0, lastSeenAt: 0 },
@@ -965,7 +965,7 @@ describe('Lite Geopolitics: GDELT reported violence', () => {
         byCountry: { UA: 40 },
       })),
     };
-    const boot = await import('@/services/bootstrap');
+    const boot = await import('@wm/client/services/bootstrap');
     vi.mocked(boot.ensureHydrated).mockImplementation(async (key: string) => (key === 'gdeltConflictCounts' ? counts : undefined));
     const base = fetch;
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -1073,7 +1073,7 @@ describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS inte
     const HOUR = 3_600_000;
     const DAY = 86_400_000;
     const now = Date.now();
-    const { INTEL_HOTSPOTS } = await import('../../src/config/geo');
+    const { INTEL_HOTSPOTS } = await import('../../packages/client/config/geo');
     const kyiv = INTEL_HOTSPOTS.find((x) => x.id === 'kyiv')!;
     const ymd = (t: number) => new Date(t).toISOString().slice(0, 10);
     const CELL = '841f41dffffffff';
@@ -1090,7 +1090,7 @@ describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS inte
       operatorCountry: 'PL', location: { latitude: kyiv.lat + i * 0.1, longitude: kyiv.lon }, altitude: 30000, heading: 90, speed: 420,
       onGround: false, lastSeenAt: now - 60_000,
     }));
-    const boot = await import('@/services/bootstrap');
+    const boot = await import('@wm/client/services/bootstrap');
     vi.mocked(boot.ensureHydrated).mockImplementation(async (key: string) => (key === 'ukmtoIncidents' ? sea : key === 'gpsHighCells' ? highCells : undefined));
     const base = fetch;
     const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
@@ -1232,7 +1232,7 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
 
   it('fires the three feeds from the bootstrap and opens Taipei from the Taiwan card', async () => {
     const data = fixtures(Date.now());
-    const boot = await import('@/services/bootstrap');
+    const boot = await import('@wm/client/services/bootstrap');
     vi.mocked(boot.getHydratedData).mockImplementation((key: string) =>
       key === 'chokepoints' ? data.chokepoints : key === 'crossStraitActivity' ? data.strait : key === 'securityAdvisories' ? data.advisories : undefined);
     try {
@@ -1284,7 +1284,7 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
 
   it('keeps the Taiwan Strait snapshot after the bootstrap key is taken', async () => {
     const data = fixtures(Date.now());
-    const boot = await import('@/services/bootstrap');
+    const boot = await import('@wm/client/services/bootstrap');
     const src = await import('../../src/lite/data/sources');
     vi.mocked(boot.getHydratedData).mockImplementation((key: string) => (key === 'crossStraitActivity' ? data.strait : undefined));
     try {

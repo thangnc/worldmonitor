@@ -446,7 +446,7 @@ describe('locale integrity for provenance keys (#4927 review)', () => {
   it('every parity-tested locale carries compiledFrom with double-brace tokens', () => {
     const fs = readdirSyncLocales();
     for (const file of fs) {
-      const d = JSON.parse(readSrc(`src/locales/${file}`));
+      const d = JSON.parse(readSrc(`packages/client/locales/${file}`));
       const val = d?.components?.insights?.compiledFrom;
       assert.ok(typeof val === 'string' && val.length > 0, `${file} missing compiledFrom`);
       assert.ok(val.includes('{{stories}}') && val.includes('{{sources}}'),
@@ -457,7 +457,7 @@ describe('locale integrity for provenance keys (#4927 review)', () => {
 
 import { readdirSync } from 'node:fs';
 function readdirSyncLocales() {
-  return readdirSync(resolve(root, 'src/locales'))
+  return readdirSync(resolve(root, 'packages/client/locales'))
     .filter((f) => f.endsWith('.json') && f !== 'en.shell.json');
 }
 

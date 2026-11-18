@@ -12,7 +12,7 @@
 //   figures       packages/shared/brief-llm-core.js             extractNumericFacts, validateNoHallucinatedFacts
 //   anchor script packages/shared/brief-llm-core.js             the brief hallucination validators
 //   open web      packages/shared/brief-grounding.js            briefGroundingPublisherCount, briefGroundingGap
-//   wording       src/locales/en.json                  components.corroboration.*
+//   wording       packages/client/locales/en.json                  components.corroboration.*
 
 import { readFileSync } from 'node:fs';
 import { assessCorroboration, publisherRoster, toCorroborationJson } from '../../../packages/server/_shared/corroboration.ts';
@@ -30,7 +30,7 @@ import { briefGroundingGap, briefGroundingPublisherCount } from '../../../packag
 
 export { MIN_CORROBORATING_PUBLISHERS, TIER_MEANING, briefGroundingGap, briefGroundingPublisherCount };
 
-const EN = JSON.parse(readFileSync(new URL('../../../src/locales/en.json', import.meta.url), 'utf8'));
+const EN = JSON.parse(readFileSync(new URL('../../../packages/client/locales/en.json', import.meta.url), 'utf8'));
 /** WorldMonitor's own UI strings for corroboration (components.corroboration in en.json). */
 export const WM_TEXT = EN.components.corroboration;
 

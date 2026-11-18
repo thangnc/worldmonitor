@@ -155,7 +155,7 @@ daily rises as new regressions.
 
 CrUX cannot date the step more precisely than "early August" and neither can we: first-party
 RUM has no data between 2026-07-24 and 2026-08-14, because the 100%-sampled collector
-exhausted the DebugBear RUM monthly quota (`src/bootstrap/debugbear-rum.ts` now samples at
+exhausted the DebugBear RUM monthly quota (`packages/client/bootstrap/debugbear-rum.ts` now samples at
 10%).
 
 ## What to do

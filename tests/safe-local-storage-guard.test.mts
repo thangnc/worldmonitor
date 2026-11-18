@@ -105,12 +105,12 @@ describe('raw localStorage guard (#7833)', () => {
   });
 
   it('exempts the canonical helper and nothing else', () => {
-    assert.deepEqual([...GUARD_EXEMPT_FILES], ['src/utils/safe-storage.ts']);
+    assert.deepEqual([...GUARD_EXEMPT_FILES], ['packages/client/utils/safe-storage.ts']);
     // The helper is the one file that MUST dereference storage, so its
     // exemption has to be real — if the scan started including it, the
     // inventory would grow an entry nobody can ever remove.
     assert.equal(
-      scan.scannedFiles.some((abs) => abs.endsWith('src/utils/safe-storage.ts')),
+      scan.scannedFiles.some((abs) => abs.endsWith('packages/client/utils/safe-storage.ts')),
       false,
     );
   });
@@ -152,7 +152,7 @@ describe('raw localStorage guard (#7833)', () => {
     // These had genuinely unguarded, reachable dereferences before #7833.
     // Re-listing one here would silence the guard on a regression.
     for (const file of [
-      'src/services/runtime.ts',
+      'packages/client/services/runtime.ts',
       'src/services/tv-mode.ts',
       'src/settings-main.ts',
       // Re-listing this one would mean the private rawGet/rawSet/rawRemove

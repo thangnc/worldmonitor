@@ -60,7 +60,7 @@ import { OPERATOR_KEY_DAILY_CEILINGS, operatorKeyQuotaPrincipal } from "../_shar
 
 const OP_PRINCIPAL = await operatorKeyQuotaPrincipal(OP);
 const OP_LIMIT = OPERATOR_KEY_DAILY_CEILINGS.directLlmCalls;
-import { PREMIUM_RPC_PATHS } from "../../../src/shared/premium-paths";
+import { PREMIUM_RPC_PATHS } from "../../client/shared/premium-paths";
 import { createIntelligenceServiceRoutes } from "../../contracts/generated/server/worldmonitor/intelligence/v1/service_server";
 import { intelligenceHandler } from "../worldmonitor/intelligence/v1/handler";
 import {

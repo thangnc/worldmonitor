@@ -6,8 +6,8 @@ import {
   fetchServerInsights,
   getServerInsights,
   __resetServerInsightsCacheForTests,
-} from '../src/services/insights-loader';
-import { __testing__ as bootstrapTesting } from '../src/services/bootstrap';
+} from '../packages/client/services/insights-loader';
+import { __testing__ as bootstrapTesting } from '../packages/client/services/bootstrap';
 import { insightsSnapshotRejection } from '../packages/shared/insights-snapshot.js';
 
 describe('insights-loader', () => {

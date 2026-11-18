@@ -13,7 +13,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 
 // ========================================================================
 // 1. Pure helper: _multi-sector-shock.ts

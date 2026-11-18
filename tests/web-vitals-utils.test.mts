@@ -5,7 +5,7 @@ import {
   sanitizeWebVitalUrl,
   shouldSampleWebVital,
   WEB_VITAL_SAMPLE_RATE,
-} from '@/bootstrap/web-vitals-utils';
+} from '@wm/client/bootstrap/web-vitals-utils';
 import { withWindow } from './web-vitals-report-test-helpers.mts';
 
 test('getWebVitalsFormFactor defaults to desktop outside the browser', () => {

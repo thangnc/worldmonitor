@@ -279,7 +279,7 @@ describe('defense-patents deployment wiring', () => {
 
   it('does not attribute any app locale to the retired PatentsView source', () => {
     const here = dirname(fileURLToPath(import.meta.url));
-    const localeDir = join(here, '..', 'src', 'locales');
+    const localeDir = join(here, '..', 'packages', 'client', 'locales');
     const localeFiles = readdirSync(localeDir).filter((file) => file.endsWith('.json'));
 
     for (const file of localeFiles) {

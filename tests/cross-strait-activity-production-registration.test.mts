@@ -5,7 +5,7 @@ import { describe, it } from 'node:test';
 
 import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../packages/shared/bootstrap-tier-keys.js';
 import { CROSS_STRAIT_BLOCKED_SOURCE_REASONS as PRODUCER_BLOCKED_REASONS } from '../scripts/cross-strait-activity/adapters.mjs';
-import { CROSS_STRAIT_BLOCKED_SOURCE_REASONS as CLIENT_BLOCKED_REASONS } from '../src/types/cross-strait-activity';
+import { CROSS_STRAIT_BLOCKED_SOURCE_REASONS as CLIENT_BLOCKED_REASONS } from '../packages/client/types/cross-strait-activity';
 
 const root = resolve(import.meta.dirname, '..');
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8');

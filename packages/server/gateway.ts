@@ -17,7 +17,7 @@ import {
 
 import { createRouter, toHeadResponse, type RouteDescriptor } from './router';
 import { getCorsHeaders, getOriginDeniedCorsHeaders, isDisallowedOrigin, isAllowedOrigin } from './cors';
-import { isPublicSharedRpcRequest } from '../../src/shared/public-rpc-cache';
+import { isPublicSharedRpcRequest } from '../client/shared/public-rpc-cache';
 // @ts-expect-error — JS module, no declaration file
 import { getHeaderApiKey, validateApiKey } from '../../api/_api-key.js';
 // @ts-expect-error — JS module, no declaration file
@@ -472,7 +472,7 @@ const RPC_CACHE_TIER: Record<string, CacheTier> = {
   '/api/company-monitoring/v1/list-monitored-companies': 'no-store',
 };
 
-import { PREMIUM_RPC_PATHS } from '../../src/shared/premium-paths';
+import { PREMIUM_RPC_PATHS } from '../client/shared/premium-paths';
 
 export const PUBLIC_NO_AUTH_RPC_PATHS = new Set<string>([
   '/api/scorecard/v1/get-five-factor-scorecard',
@@ -483,7 +483,7 @@ export const PUBLIC_NO_AUTH_RPC_PATHS = new Set<string>([
   // Lead-capture RPCs serve ANONYMOUS prospects by definition: the /pro
   // marketing page contact form and the waitlist/desktop signup both POST
   // without a wms_ session or API key (see pro-test/src/App.tsx onSubmit and
-  // src/services/runtime.ts isKeyFreeApiTarget). A freely-mintable anonymous
+  // packages/client/services/runtime.ts isKeyFreeApiTarget). A freely-mintable anonymous
   // session token would add zero abuse protection here — the real gates live
   // in the handlers: server-side Turnstile (fails closed in production),
   // honeypot, free-email-domain rejection, per-IP endpoint rate limits

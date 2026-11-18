@@ -29,9 +29,6 @@ export default defineConfig(({ mode }) => {
     Number.isInteger(parsedDevPort) && parsedDevPort >= 1 && parsedDevPort <= 65535 ? parsedDevPort : 3000;
 
   return {
-    resolve: {
-      alias: { '@': resolve(__dirname, 'src') },
-    },
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
       // Vercel sets VERCEL_GIT_COMMIT_SHA on production and preview builds.

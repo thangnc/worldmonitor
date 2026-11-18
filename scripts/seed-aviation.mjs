@@ -302,7 +302,7 @@ const AIRPORT_META = Object.fromEntries(AVIATIONSTACK_LIST.map(a => [a.iata, a])
 
 // iata → FAA-row meta (icao/name/city/country for alert envelopes). NOTAM-
 // reachable rows carry inline lat/lon so notification payloads never depend on
-// src/config/airports.ts, which does not exist in the scripts-rooted Railway
+// packages/server/_shared/airports.ts, which does not exist in the scripts-rooted Railway
 // container. tests/aviation-notify-location.test.mjs holds both registries in
 // parity and fails CI on drift.
 const FAA_META = Object.fromEntries(
@@ -1190,7 +1190,7 @@ function mergeNotamWithExistingAlert(airport, notamReason, existing, severity = 
   };
 }
 
-// Parse src/config/airports.ts as text to recover the live RPC's MONITORED_AIRPORTS
+// Parse packages/server/_shared/airports.ts as text to recover the live RPC's MONITORED_AIRPORTS
 // registry without a TS build step. The RPC iterates this for "Normal operations"
 // filler; the seeder's local AIRPORTS list is a related-but-different set
 // (carries `sources` for which feed covers each airport, omits some RPC-only
@@ -1207,7 +1207,7 @@ function loadMonitoredAirportsFromConfigFile() {
   if (_monitoredAirportsCache !== null) return _monitoredAirportsCache;
   try {
     const here = dirname(fileURLToPath(import.meta.url));
-    const path = join(here, '..', 'src', 'config', 'airports.ts');
+    const path = join(here, '..', 'packages', 'server', '_shared', 'airports.ts');
     const src = readFileSync(path, 'utf8');
     const rows = [];
     // Match rows of shape: { iata: 'XXX', icao: 'YYYY', name: '...', city: '...',
@@ -1235,7 +1235,7 @@ function loadMonitoredAirportsFromConfigFile() {
     _monitoredAirportsCache = rows;
     return rows;
   } catch (err) {
-    console.warn(`[Bootstrap] failed to parse src/config/airports.ts: ${err?.message || err} — falling back to seeder AIRPORTS only`);
+    console.warn(`[Bootstrap] failed to parse packages/server/_shared/airports.ts: ${err?.message || err} — falling back to seeder AIRPORTS only`);
     _monitoredAirportsCache = [];
     return _monitoredAirportsCache;
   }

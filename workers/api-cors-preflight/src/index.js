@@ -190,7 +190,7 @@ function corsHeaderBag(allowOrigin) {
   return {
     'Access-Control-Allow-Origin': allowOrigin,
     // Required because the app fetch interceptor sends credentials: 'include'
-    // (HttpOnly session cookies, see src/services/wm-session.ts). Browsers
+    // (HttpOnly session cookies, see packages/client/services/wm-session.ts). Browsers
     // reject credentialed requests if this header is missing OR if
     // Access-Control-Allow-Origin is '*'.
     'Access-Control-Allow-Credentials': 'true',

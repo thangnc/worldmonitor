@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 
 import { COMPANY_MONITORING_RPC_SCOPES } from '../packages/shared/company-monitoring-contract.ts';
 import { PUBLIC_NO_AUTH_RPC_PATHS } from '../packages/server/gateway.ts';
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 
 // ---------------------------------------------------------------------------
 // Why this test exists

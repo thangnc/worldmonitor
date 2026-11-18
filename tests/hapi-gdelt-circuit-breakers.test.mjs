@@ -28,7 +28,7 @@ const root = resolve(__dirname, '..');
 
 describe('CircuitBreaker isolation — GDELT split breaker independence', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('GDELT: positive breaker failure does not trip regular breaker', async () => {

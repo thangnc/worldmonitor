@@ -98,7 +98,7 @@ Production build: `npm run build` (the Lite UI into `dist/`; `build:full` is an 
 
 | Change | Code and guidance | Required verification |
 |---|---|---|
-| Browser behavior | `src/lite/`, and the `src/services/`, `src/config/` and `src/utils/` modules it imports; [Lite spec](docs/engineering/architecture/lite.md) | Focused behavior check, `npm run typecheck`, `npm run lint:boundaries` |
+| Browser behavior | `src/lite/`, and the `packages/client/services/`, `packages/client/config/` and `packages/client/utils/` modules it imports; [Lite spec](docs/engineering/architecture/lite.md) | Focused behavior check, `npm run typecheck`, `npm run lint:boundaries` |
 | API and handlers | `api/`, `packages/server/`; [endpoint guide](docs/engineering/architecture/adding-endpoints.md) | Focused handler check, `npm run typecheck:api`; `npm run test:sidecar` owns the `api/` node suites; `edge-contract-reviewer` subagent before the PR |
 | Data workers and cache | `scripts/`, `packages/server/_shared/`; [health contracts](docs/engineering/architecture/health-endpoints.md) | Producer and reader checks with fixtures; separately record live freshness evidence when required |
 | Proto and generated clients | `packages/contracts/proto/`, `packages/contracts/generated/`; [code generation](CONTRIBUTING.md#working-with-sebuf-rpc-framework) | `make generate` requires buf + sebuf v0.11.1 plugins; verify generated diff |
@@ -118,7 +118,7 @@ Grep the named symbol. Do not scan these files top to bottom.
 |---|---|
 | Health keys and seed staleness | `api/health.js`: `BOOTSTRAP_KEYS`, `STANDALONE_KEYS`, `SEED_META`, `ON_DEMAND_KEYS`, `readSeedMeta`, `classifyKey` |
 | Shared seeder helpers | `scripts/_seed-utils.mjs`: `loadEnvFile`, `resolveSeedMetaKey`, `writeSeedMeta`, `writeExtraKeyWithMetaAtomically`, `withRetry` |
-| RPC access control | `validateApiKey` in `api/_api-key.js` (anonymous session or operator key); `PREMIUM_RPC_PATHS` in `src/shared/premium-paths.ts` (operator key only); `PUBLIC_NO_AUTH_RPC_PATHS` in `packages/server/gateway.ts` and `isPublicSharedRpcRequest` in `src/shared/public-rpc-cache.ts` (no credential) |
+| RPC access control | `validateApiKey` in `api/_api-key.js` (anonymous session or operator key); `PREMIUM_RPC_PATHS` in `packages/client/shared/premium-paths.ts` (operator key only); `PUBLIC_NO_AUTH_RPC_PATHS` in `packages/server/gateway.ts` and `isPublicSharedRpcRequest` in `packages/client/shared/public-rpc-cache.ts` (no credential) |
 | A shared term | `CONCEPTS.md`, one `###` heading per term; grep the term itself |
 
 Test path, command, and owning CI job (`.github/workflows/ci.yml`).
@@ -127,7 +127,7 @@ Test path, command, and owning CI job (`.github/workflows/ci.yml`).
 |---|---|---|
 | `tests/*.test.mjs`, `tests/*.test.mts`, `api/security/report.test.mjs` | `npm run test:data` | `unit` (3 shards); suites that read built output run in `build` |
 | `tests/dom/` | `npm run test:dom` | `dom` |
-| `packages/server/__tests__/`, `src/services/correlation-engine/` | `npm run test:server` | `server` |
+| `packages/server/__tests__/` | `npm run test:server` | `server` |
 | `api/` node suites except `api/security/report.test.mjs`, and `docker/local-api/` | `npm run test:sidecar` | `server` |
 
 Find a suite by subject with `ls tests/ | grep <subject>` before searching the tree.
@@ -140,23 +140,23 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 **Proto/sebuf contract.** `packages/contracts/proto/` defines services with `(sebuf.http.config)` annotations. `make generate` emits TS client stubs (`packages/contracts/generated/client/`), server types (`packages/contracts/generated/server/`) and OpenAPI (`packages/contracts/openapi/`). Handlers live in `packages/server/worldmonitor/<domain>/v1/handler.ts`. The thin entry points `api/<domain>/v<N>/[rpc].ts` call `createDomainGateway` (`packages/server/gateway.ts`), which runs origin check → CORS → API key (premium routes: operator key only) → rate limit → route → handler → ETag/304 → cache-tier headers. Every Edge function is esbuild-bundled per file; `tests/edge-functions.test.mjs` enforces that it stays self-contained. CI (`proto-check.yml`) fails when generated output is stale.
 
-**Frontend.** The Lite UI (`src/lite/`, Preact and Tailwind, entry `lite.html` → `src/lite/main.tsx`) is the only web app; refactor Phase 1 removed the old vanilla-TS dashboard (`src/components/`, `src/app/`, `App.ts`). It reads data through the generated sebuf clients and the `src/services/` modules it imports, and draws maps with MapLibre (`src/lite/map/`). What was removed, and how to bring a feature back, is in [legacy features](docs/engineering/product/legacy-features.md).
+**Frontend.** The Lite UI (`src/lite/`, Preact and Tailwind, entry `lite.html` → `src/lite/main.tsx`) is the only web app; refactor Phase 1 removed the old vanilla-TS dashboard (`src/components/`, `src/app/`, `App.ts`). It reads data through the generated sebuf clients and the `packages/client/services/` modules it imports, and draws maps with MapLibre (`src/lite/map/`). What was removed, and how to bring a feature back, is in [legacy features](docs/engineering/product/legacy-features.md).
 
 **Bootstrap data.** Startup datasets come from `api/bootstrap.js` and are read with `getHydratedData(key)`. Opt-in panels use `ensureHydrated(key)` (on-demand path). Each new key must also be registered in `api/health.js`.
 
 **No variants, no profile flag.** Refactor Phase 1d removed `VITE_VARIANT`/`SITE_VARIANT` and `VITE_LITE_PROFILE`. `/` and `/dashboard` always 307 to `/lite` (query kept): `vercel.json` owns that redirect, and `docker/nginx.conf*` and `vite.dev-api.ts` mirror it. A `variant` request parameter on the news RPCs (`full`, `tech`, `finance`) names a feed digest edition on the server, not a site variant.
 
-**`packages/shared/` vs `src/shared/`.** The `@wm/shared` workspace package (`packages/shared/`) holds logic that both the browser and the server must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side. `scripts/shared/` is the Railway seeders' byte-identical mirror of parts of it (mirror tests keep them in sync), because scripts-rooted services cannot see the rest of the repository.
+**`packages/shared/` vs `packages/client/`.** The `@wm/shared` workspace package (`packages/shared/`) holds logic that both the browser and the server must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side. The `@wm/client` workspace package (`packages/client/`) holds the browser modules the Lite UI builds on (`services/`, `config/`, `types/`, `utils/`, `bootstrap/`, `locales/`, and `shared/` for the premium and public RPC path lists the gateway also reads). `scripts/shared/` is the Railway seeders' byte-identical mirror of parts of it (mirror tests keep them in sync), because scripts-rooted services cannot see the rest of the repository.
 
 **Other surfaces.** `docs/` holds only `docs/engineering/` (engineering records, mapped by [its README](docs/engineering/README.md)). The `@wm/contracts` workspace package (`packages/contracts/`) holds the proto sources, the generated TypeScript (`generated/`) and the generated OpenAPI (`openapi/`). The `@wm/shared` workspace package (`packages/shared/`) holds the cross-runtime logic and data. The Mintlify public site, the published `skills/` recipes, the SDKs, CLI, MCP server, agent-client plugins and the public agent and SEO outputs were removed in refactor Phase 1c.
 
 ## Critical boundaries
 
-The browser import direction is `types -> config -> services -> lite`, and `src/lite/` imports no removed dashboard code. [lint-boundaries.mjs](scripts/lint-boundaries.mjs) enforces import boundaries.
+The browser import direction is `types -> config -> services -> lite` (`packages/client/{types,config,services}` → `src/lite/`), and `src/lite/` imports no removed dashboard code. [lint-boundaries.mjs](scripts/lint-boundaries.mjs) enforces import boundaries.
 
 - Legacy `api/*.js` entries are self-contained JavaScript. Import same-directory `_*.js` helpers or packages, never `packages/server/` or `src/`.
 - TypeScript API entries may import `packages/server/` and `packages/contracts/generated/`, but no other browser code. `packages/server/` must not import `src/lite/`.
-- Browser code imports the workspace packages by name (`@wm/contracts/generated/...`, `@wm/shared/...`). `api/`, `packages/server/` (`@wm/server`), `packages/shared/`, `middleware.ts`, `vite.dev-api.ts` and the `src/` modules they import use relative paths into `packages/contracts/`, `packages/shared/` and `packages/server/` until a Vercel preview proves workspace packages in Edge bundles; nothing imports `@wm/server` by name yet (`lint:boundaries` enforces both).
+- The Lite UI imports the workspace packages by name (`@wm/client/services/...`, `@wm/contracts/generated/...`, `@wm/shared/...`); there is no `@/` alias. Files inside `packages/client/` import each other by relative path. `api/`, `packages/server/` (`@wm/server`), `packages/shared/`, `middleware.ts`, `vite.dev-api.ts` and the `packages/client/` modules they import use relative paths into `packages/contracts/`, `packages/shared/`, `packages/server/` and `packages/client/` until a Vercel preview proves workspace packages in Edge bundles; nothing imports `@wm/server` by name yet (`lint:boundaries` enforces both).
 - Edit proto definitions and regenerate. Never hand-edit `packages/contracts/generated/`.
 - Use shared cache and response helpers. Use `cachedFetchJson()` when applicable. Include every request-varying parameter in cache keys.
 - Edge code must not import `node:http`, `node:https`, or `node:zlib`. Use `(...args) => globalThis.fetch(...args)`, never `fetch.bind(globalThis)`.
@@ -169,7 +169,7 @@ The browser import direction is `types -> config -> services -> lite`, and `src/
 - For browser behavior, invoke the `verify-worldmonitor` skill. Start with an existing strict feature test. Use manual driving for the interaction being changed.
 - For Sentry events, invoke the `sentry-triage` skill. Its default is read-only triage.
 - To deliver a change from a worktree, the user runs `/ship`. It verifies, commits signed, pushes `<type>/<slug>`, opens the PR on `thangnc/worldmonitor`, and watches CI. It never merges or deploys on its own.
-- After changing `api/`, `packages/server/`, `scripts/seed-*`, or `src/services/`, run the `edge-contract-reviewer` subagent on the diff before opening a PR.
+- After changing `api/`, `packages/server/`, `scripts/seed-*`, or `packages/client/services/`, run the `edge-contract-reviewer` subagent on the diff before opening a PR.
 - Before changing an area, check the [engineering knowledge base](docs/engineering/README.md). Grep [solutions/INDEX.md](docs/engineering/solutions/INDEX.md) for the area, symbol, or symptom: it lists every lesson by the area where the fix lives. [plans/INDEX.md](docs/engineering/plans/INDEX.md) shows which plans shipped. Use [CONCEPTS.md](CONCEPTS.md) for shared terms and [design philosophy](docs/engineering/architecture/design-philosophy.md) for design decisions.
 - When a session teaches a durable repo convention or exposes a trap, record it with the `learn` skill (`/learn`): a lesson in `docs/engineering/solutions/`, a line in the matching `.claude/rules/` file, or a term in CONCEPTS.md. Personal memory is not enough.
 

@@ -3,12 +3,12 @@
  * strategic waterways.
  *
  * This lives in `shared/` because both the browser dashboard (via
- * `src/config/geo.ts`) and server-side Edge/MCP handlers need it. Top-level
+ * `packages/client/config/geo.ts`) and server-side Edge/MCP handlers need it. Top-level
  * `shared/` modules are imported from code where `src/` imports are forbidden
  * (scripts/lint-boundaries.mjs), so the structural types below are declared
- * here instead of imported from `@/types`. They mirror the client-facing
- * interfaces in `src/types/index.ts` field for field, which is what lets
- * `src/config/geo.ts` re-export these arrays as the client types.
+ * here instead of imported from `@wm/client/types`. They mirror the client-facing
+ * interfaces in `packages/client/types/index.ts` field for field, which is what lets
+ * `packages/client/config/geo.ts` re-export these arrays as the client types.
  */
 
 export type EscalationTrend = 'escalating' | 'stable' | 'de-escalating';

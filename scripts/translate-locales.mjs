@@ -2,7 +2,7 @@
 /**
  * Backfill missing locale strings using Claude Haiku as the translator.
  *
- * - Source of truth: src/locales/en.json (or pro-test/src/locales/en.json with --pro-test)
+ * - Source of truth: packages/client/locales/en.json (or pro-test/src/locales/en.json with --pro-test)
  * - Diffs each non-English locale against EN, sends the missing AND the stale
  *   keys in batches to Claude, deep-merges the response back into the locale file.
  * - Staleness is tracked by an EN baseline snapshot (scripts/locale-baselines/).
@@ -61,7 +61,7 @@ const BATCH_SIZE = 50;
 const MODEL = 'claude-haiku-4-5-20251001';
 
 export function localesRootFor(proTest) {
-  return proTest ? 'pro-test/src/locales' : 'src/locales';
+  return proTest ? 'pro-test/src/locales' : 'packages/client/locales';
 }
 
 // The baseline records the English string each committed translation was
@@ -750,7 +750,7 @@ async function main() {
   for (const loc of targets) {
     const locPath = path.join(ROOT, `${loc}.json`);
     // Skip locales that don't exist in the active root. The unified LOCALES
-    // list serves both the main app (src/locales/) and the pro-test bundle
+    // list serves both the main app (packages/client/locales/) and the pro-test bundle
     // (pro-test/src/locales/), but the two roots are independent — a locale
     // added to main may not yet have a pro-test counterpart. Skip silently
     // so --pro-test and default modes both work without a placeholder file

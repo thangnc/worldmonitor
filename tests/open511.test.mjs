@@ -357,8 +357,8 @@ test('pagination fails closed when max pages is exhausted before completion', as
 });
 
 test('BC Open511 shares canadaRoads and does not invent a second MapLayers key', () => {
-  const types = readFileSync(new URL('../src/types/index.ts', import.meta.url), 'utf8');
-  const layers = readFileSync(new URL('../src/config/map-layer-definitions.ts', import.meta.url), 'utf8');
+  const types = readFileSync(new URL('../packages/client/types/index.ts', import.meta.url), 'utf8');
+  const layers = readFileSync(new URL('../packages/client/config/map-layer-definitions.ts', import.meta.url), 'utf8');
   assert.match(types, /canadaRoads: boolean/);
   assert.doesNotMatch(types, /bcOpen511\?: boolean/);
   assert.match(layers, /canadaRoads:\s+def\('canadaRoads'/);

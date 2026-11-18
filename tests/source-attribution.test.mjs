@@ -35,7 +35,7 @@ const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
  */
 function makeFixtureCheckout() {
   const dir = mkdtempSync(join(tmpdir(), 'source-attribution-'));
-  for (const root of ['scripts', 'packages/server', 'api', 'src', 'packages/shared', 'docs/engineering/architecture']) {
+  for (const root of ['scripts', 'packages/server', 'api', 'src', 'packages/client', 'packages/shared', 'docs/engineering/architecture']) {
     mkdirSync(join(dir, root), { recursive: true });
   }
   writeFileSync(
@@ -1073,13 +1073,13 @@ test('a playback-only host that gains a real fetch stops being excluded', () => 
     observed: true,
     kind: 'feed',
     status: 'excluded',
-    references: [{ path: 'src/config/live-video-sources.ts' }],
+    references: [{ path: 'packages/client/config/live-video-sources.ts' }],
   };
   const rebuilt = buildManifest(
     [{
       host: 'stream.example',
       kinds: ['structured'],
-      references: [{ path: 'scripts/seed-example.mjs' }, { path: 'src/config/live-video-sources.ts' }],
+      references: [{ path: 'scripts/seed-example.mjs' }, { path: 'packages/client/config/live-video-sources.ts' }],
     }],
     { entries: [playbackOnly], logicalEntries: [] },
   );
@@ -1091,7 +1091,7 @@ test('a playback-only host that gains a real fetch stops being excluded', () => 
   // The same host while still playback-only stays excluded — otherwise the
   // assertions above would pass against a rule that never fires.
   const unchanged = buildManifest(
-    [{ host: 'stream.example', kinds: ['feed'], references: [{ path: 'src/config/live-video-sources.ts' }] }],
+    [{ host: 'stream.example', kinds: ['feed'], references: [{ path: 'packages/client/config/live-video-sources.ts' }] }],
     { entries: [playbackOnly], logicalEntries: [] },
   );
   assert.equal(unchanged.entries.find((entry) => entry.host === 'stream.example').status, 'excluded');

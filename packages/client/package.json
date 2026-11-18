@@ -1,0 +1,13 @@
+{
+  "name": "@wm/client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "WorldMonitor browser modules the Lite UI builds on: services/ (runtime, bootstrap, RPC clients, session), config/, types/, utils/, bootstrap/ (Sentry and RUM), shared/ (premium and public RPC path lists) and locales/. The Lite UI and tests import @wm/client/<dir>/<file> by name; files inside this package import each other by relative path. api/, packages/server/, packages/shared/, middleware.ts and vite.dev-api.ts reach the modules they need (shared/, the trade-route and chokepoint config, utils/summary-cache-key) by relative path, never as @wm/client, and those modules use relative imports only (lint:boundaries Check 5). A .ts module is imported without its extension and .json files name theirs; @wm/client/types resolves to types/index.ts. There is deliberately no ./*.ts key: Vite 6 compiles the dot in a pattern key's suffix as a regex wildcard.",
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./types": "./types/index.ts",
+    "./*.json": "./*.json",
+    "./*": "./*.ts"
+  }
+}

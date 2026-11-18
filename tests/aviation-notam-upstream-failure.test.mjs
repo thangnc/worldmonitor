@@ -218,7 +218,7 @@ test('ICAO outage with fresh NMS closures publishes the NMS observation', () => 
   assert.equal(notice?.payload.source, 'FAA NMS NOTAM');
 });
 
-// Khartoum and London Gatwick were listed only in src/config/airports.ts, which
+// Khartoum and London Gatwick were listed only in packages/server/_shared/airports.ts, which
 // the Railway container does not ship, so their NMS closures and coverage were
 // dropped. tests/aviation-notify-location.test.mjs keeps the registries aligned.
 test('NMS closures and coverage reach airports that were dashboard-only', () => {

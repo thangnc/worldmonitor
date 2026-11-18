@@ -20,7 +20,7 @@ const walk = dir => readdirSync(dir).flatMap(name => {
 const generatedGetRoutes = walk(join(root, 'packages/contracts/generated/server'))
   .flatMap(file => [...readFileSync(file, 'utf8').matchAll(/method: "GET",\s*path: "(\/api\/[^"]+)"/g)])
   .map(match => match[1]);
-const premiumPaths = new Set([...read('src/shared/premium-paths.ts').matchAll(/'(\/api\/[^']+)'/g)].map(m => m[1]));
+const premiumPaths = new Set([...read('packages/client/shared/premium-paths.ts').matchAll(/'(\/api\/[^']+)'/g)].map(m => m[1]));
 
 describe('widget data request boundary', () => {
   it('preserves repeated scorecard bloc members advertised to the agent', () => {

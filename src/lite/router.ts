@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { LITE_SCREEN_PATHS, parseLiteScreen, type LiteScreen } from '@/config/lite-route';
+import { LITE_SCREEN_PATHS, parseLiteScreen, type LiteScreen } from '@wm/client/config/lite-route';
 import { scrollPageToTop } from './components/scroll';
 
 // A three-route history router. The screens share one data store, so moving

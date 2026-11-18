@@ -13,9 +13,9 @@ import { DRIVERS, LINK_WINDOW_HOURS, MAX_LINKED_STORIES, linkNews, matchReason, 
 import { STALE_FACTOR, feedCounts, feedState, sortFeeds, type FeedState, type Indicator } from '../src/lite/data/indicators.ts';
 import { centreCard, chokepointPins, featureIso2, newSanctionCountries, pinIdForFeed, sanctionFills, shippingLanes, signalCard, signalPins } from '../src/lite/data/markets-map.ts';
 import { buildPriceBoard } from '../src/lite/data/prices.ts';
-import { CENTRAL_BANKS } from '../src/config/finance-geo.ts';
-import { STRATEGIC_WATERWAYS } from '../src/config/geo.ts';
-import { TRADE_ROUTES } from '../src/config/trade-routes.ts';
+import { CENTRAL_BANKS } from '../packages/client/config/finance-geo.ts';
+import { STRATEGIC_WATERWAYS } from '../packages/client/config/geo.ts';
+import { TRADE_ROUTES } from '../packages/client/config/trade-routes.ts';
 import type { ChokepointInfo } from '../packages/contracts/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
 import { STABLECOIN_DEPEG_PCT, financeFeeds } from '../src/lite/data/finance-indicators.ts';
 import type { InternetOutage, ListInternetOutagesResponse, ListServiceStatusesResponse, ServiceStatus } from '../packages/contracts/generated/client/worldmonitor/infrastructure/v1/service_client.ts';
@@ -114,7 +114,7 @@ import {
 } from '../src/lite/data/geo-watch.ts';
 import type { GetChokepointStatusResponse } from '../packages/contracts/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
 import type { SecurityAdvisoryItem } from '../packages/contracts/generated/client/worldmonitor/intelligence/v1/service_client.ts';
-import type { CrossStraitActivitySnapshot } from '../src/types/cross-strait-activity.ts';
+import type { CrossStraitActivitySnapshot } from '../packages/client/types/cross-strait-activity.ts';
 
 const H = 3_600_000;
 const AT = Date.UTC(2026, 10, 8, 12);

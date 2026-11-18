@@ -29,8 +29,8 @@ import {
   PREMIUM_INTENT_INIT_KEY,
   hasPremiumIntent,
   withPremiumIntent,
-} from '../src/services/premium-intent.ts';
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
+} from '../packages/client/services/premium-intent.ts';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 
 const SUMMARIZE = '/api/news/v1/summarize-article';
 

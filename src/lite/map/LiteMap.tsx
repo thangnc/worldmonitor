@@ -6,7 +6,7 @@ import { Locate, Minus, Plus, X } from 'lucide-preact';
 import { OverlayScroll } from '../components/scroll';
 import { cx } from '../components/ui';
 import { COUNTRY_CODE_PROPERTY, COUNTRY_FILL_LAYER, COUNTRY_FILL_SOURCE, MAP_CREDITS, buildLiteMapStyle, countryFillLayer, readLiteMapTokens } from './style';
-import { getCountriesGeoJson } from '@/services/country-geometry';
+import { getCountriesGeoJson } from '@wm/client/services/country-geometry';
 import { type Bounds, WORLD_BOUNDS, markerBounds, placeCard } from './view';
 import {
   AggregateMark,

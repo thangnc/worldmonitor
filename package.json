@@ -24,8 +24,8 @@
     "packages/*"
   ],
   "scripts": {
-    "lint": "biome lint ./src ./packages/server ./api ./tests ./scripts ./middleware.ts && npm run lint:safe-html",
-    "lint:fix": "biome check ./src ./packages/server ./api ./tests ./scripts ./middleware.ts --fix",
+    "lint": "biome lint ./src ./packages/client ./packages/server ./api ./tests ./scripts ./middleware.ts && npm run lint:safe-html",
+    "lint:fix": "biome check ./src ./packages/client ./packages/server ./api ./tests ./scripts ./middleware.ts --fix",
     "lint:boundaries": "node scripts/lint-boundaries.mjs",
     "lint:api-contract": "node scripts/enforce-sebuf-api-contract.mjs",
     "lint:safe-html": "node scripts/enforce-safe-html.mjs",

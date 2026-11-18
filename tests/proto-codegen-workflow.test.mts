@@ -489,7 +489,7 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
       'scripts/openapi-inject-security.mjs',
       'packages/shared/openapi-filter-param-contracts.json',
       'packages/server/gateway.ts',
-      'src/shared/premium-paths.ts',
+      'packages/client/shared/premium-paths.ts',
       'Makefile',
     ]) {
       assert.ok(isInput(path), `${path} must be a codegen input`);

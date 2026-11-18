@@ -359,6 +359,7 @@ describe('Comtrade reporter-code source-of-truth guard', () => {
     ...collectRuntimeSources(join(root, 'scripts')),
     ...collectRuntimeSources(join(root, 'packages', 'server')),
     ...collectRuntimeSources(join(root, 'src')),
+    ...collectRuntimeSources(join(root, 'packages', 'client')),
   ];
   const inlineReporterMapDeclaration =
     /\b(?:ISO2_TO_COMTRADE(?:_OVERRIDES)?|COMTRADE_REPORTER_OVERRIDES)\b\s*(?::[^=]+)?=\s*\{([\s\S]*?)\}/g;

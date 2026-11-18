@@ -77,7 +77,7 @@ Highest value, in order:
 3. SSRF surfaces: `api/rss-proxy*`, `scripts/ais-relay.cjs` RSS path,
    `api/mcp-proxy.ts`, notification webhook delivery
    (`scripts/notification-relay.cjs`, `api/notification-channels.ts`).
-4. XSS in the SPA from feed/news/LLM content (`src/components/`, `src/services/`).
+4. XSS in the SPA from feed/news/LLM content (`src/components/`, `packages/client/services/`).
 5. Desktop trust boundary: `src-tauri/src/main.rs`, `src-tauri/capabilities/`,
    `docker/local-api/local-api-server.mjs`.
 6. Cache and rate-limit integrity: a per-user or Pro response served to

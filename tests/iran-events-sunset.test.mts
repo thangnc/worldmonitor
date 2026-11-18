@@ -22,7 +22,7 @@ import {
   isLayerExecutable,
   isSunsetLayer,
   sanitizeLayersForVariant,
-} from '../src/config/map-layer-definitions';
+} from '../packages/client/config/map-layer-definitions';
 import { buildForecastInputFetchKeys } from '../scripts/seed-forecasts.mjs';
 import { resolveBootstrapRegistry } from '../packages/shared/bootstrap-tier-keys.js';
 

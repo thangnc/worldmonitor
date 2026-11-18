@@ -16,12 +16,12 @@ afterEach(() => {
 describe('rssProxyUrl', () => {
   it('sends desktop feeds through the sidecar rss proxy', async () => {
     vi.stubGlobal('__TAURI_INTERNALS__', {});
-    const { rssProxyUrl } = await import('@/utils/proxy');
+    const { rssProxyUrl } = await import('@wm/client/utils/proxy');
     expect(rssProxyUrl(FEED)).toBe(`/api/rss-proxy?url=${encodeURIComponent(FEED)}`);
   });
 
   it('keeps the web rss proxy path', async () => {
-    const { rssProxyUrl } = await import('@/utils/proxy');
+    const { rssProxyUrl } = await import('@wm/client/utils/proxy');
     expect(rssProxyUrl(FEED)).toBe(`/api/rss-proxy?url=${encodeURIComponent(FEED)}`);
   });
 });

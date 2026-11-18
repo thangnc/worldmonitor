@@ -6,7 +6,7 @@ import type {
   PipelineEntry,
 } from '../../../../contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 import { projectPipeline } from './list-pipelines';
-import { pickNewerIsoTimestamp } from '../../../../../src/shared/pipeline-evidence';
+import { pickNewerIsoTimestamp } from '../../../_shared/pipeline-evidence';
 
 interface RawRegistry {
   updatedAt?: string;

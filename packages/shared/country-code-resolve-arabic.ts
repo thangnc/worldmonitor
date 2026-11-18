@@ -4,7 +4,7 @@ import ARABIC_COUNTRY_NAMES from './country-names-ar.json';
  * Arabic country names for caller-supplied country arguments (#9722).
  *
  * Kept apart from packages/shared/country-code-resolve.ts on purpose: that module ships
- * in the dashboard bundle (src/config/trade-route-lanes.ts), and these names
+ * in the dashboard bundle (packages/server/_shared/trade-route-lanes.ts), and these names
  * are only needed where an agent passes a country, at the MCP tool layer.
  *
  * The data is generated from CLDR by scripts/build-country-names-ar.mjs and

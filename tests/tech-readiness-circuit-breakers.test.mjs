@@ -18,7 +18,7 @@ const root = resolve(__dirname, '..');
 
 describe('CircuitBreaker isolation — independent per-indicator instances', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('two breakers with different names are independent (failure in one does not trip the other)', async () => {

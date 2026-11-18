@@ -27,7 +27,7 @@ import {
   PANEL_COL_SPANS_KEY,
   PANEL_COLLAPSED_KEY,
   PANEL_SPANS_KEY,
-} from '../src/utils/panel-storage';
+} from '../packages/client/utils/panel-storage';
 
 const ALL_KEYS = [PANEL_SPANS_KEY, PANEL_COL_SPANS_KEY, PANEL_COLLAPSED_KEY];
 

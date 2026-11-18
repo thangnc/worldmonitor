@@ -1,6 +1,6 @@
 ---
 name: edge-contract-reviewer
-description: Reviews a WorldMonitor diff for repo-specific contract violations that typecheck and lint miss — Edge runtime imports, fetch binding, cache-key completeness, api/ import boundaries, seed-meta writes, bootstrap/health registration. Use proactively after changing api/, packages/server/, scripts/seed-*, or src/services/, and before opening a PR.
+description: Reviews a WorldMonitor diff for repo-specific contract violations that typecheck and lint miss — Edge runtime imports, fetch binding, cache-key completeness, api/ import boundaries, seed-meta writes, bootstrap/health registration. Use proactively after changing api/, packages/server/, scripts/seed-*, or packages/client/services/, and before opening a PR.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -28,8 +28,8 @@ For each changed file, check the rules that apply to its location:
    - Legacy `api/*.js` imports only same-directory `_*.js` helpers or packages — never `packages/server/` or `src/`.
    - TypeScript API entries may import `packages/server/` and `packages/contracts/generated/` only, no other browser code.
    - `packages/server/` must not import `src/lite/`.
-   - Browser direction: `types -> config -> services -> lite` (`scripts/lint-boundaries.mjs`).
-   - Logic shared by browser and server lives once in `packages/shared/` (`@wm/shared`); flag a second copy. `api/`, `packages/server/`, `middleware.ts` and `packages/shared/` import it by relative path, never as `@wm/shared`, and import `packages/server/` by relative path, never as `@wm/server`.
+   - Browser direction: `types -> config -> services -> lite`, i.e. `packages/client/{types,config,services}/` then `src/lite/` (`scripts/lint-boundaries.mjs`).
+   - Logic shared by browser and server lives once in `packages/shared/` (`@wm/shared`); flag a second copy. `api/`, `packages/server/`, `middleware.ts` and `packages/shared/` import it by relative path, never as `@wm/shared`, and import `packages/server/` and `packages/client/` by relative path, never as `@wm/server` or `@wm/client`; the `packages/client/` modules they reach use relative imports only.
 
 3. **Caching**
    - Handlers fetching upstream on demand should use `cachedFetchJson()` (`packages/server/_shared/redis.ts`).
@@ -48,7 +48,7 @@ For each changed file, check the rules that apply to its location:
 
 6. **Generated and access-control code**
    - No hand edits under `packages/contracts/generated/`; proto changes must be accompanied by regenerated output.
-   - New RPC paths are classified consistently across `PREMIUM_RPC_PATHS` (`src/shared/premium-paths.ts`), `PUBLIC_NO_AUTH_RPC_PATHS` (`packages/server/gateway.ts`), and `api/api-route-exceptions.json` for hand-written routes.
+   - New RPC paths are classified consistently across `PREMIUM_RPC_PATHS` (`packages/client/shared/premium-paths.ts`), `PUBLIC_NO_AUTH_RPC_PATHS` (`packages/server/gateway.ts`), and `api/api-route-exceptions.json` for hand-written routes.
 
 ## Output
 

@@ -11,7 +11,7 @@ COPY package.json ./
 COPY packages/shared/ ./packages/shared/
 COPY packages/server/_shared/ ./packages/server/_shared/
 COPY scripts/ ./scripts/
-COPY src/locales/en.json ./src/locales/en.json
+COPY packages/client/locales/en.json ./packages/client/locales/en.json
 COPY demos/verification-desk/ ./demos/verification-desk/
 
 WORKDIR /app/demos/verification-desk

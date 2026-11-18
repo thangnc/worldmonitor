@@ -474,7 +474,7 @@ export function adaptSnapshot(raw: PersistedSnapshot): RegionalSnapshot {
  *   - The snapshot JSON is malformed
  *
  * This handler is premium-gated at the gateway layer (see
- * src/shared/premium-paths.ts and packages/server/gateway.ts RPC_CACHE_TIER).
+ * packages/client/shared/premium-paths.ts and packages/server/gateway.ts RPC_CACHE_TIER).
  */
 export const getRegionalSnapshot: IntelligenceServiceHandler['getRegionalSnapshot'] = async (
   _ctx: ServerContext,

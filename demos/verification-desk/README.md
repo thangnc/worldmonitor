@@ -104,7 +104,7 @@ The avatar says "WorldMonitor desk. Live." when it connects, then only the desk'
 | Is every figure grounded? | `extractNumericFacts`, `validateNoHallucinatedFacts` in `packages/shared/brief-llm-core.js`, the brief seeders' fact gate |
 | Is the anchor's script grounded? | `validateNoHallucinatedProperNouns`, `validateNoHallucinatedStatusQualifiers`, `validateNoHallucinatedFacts` |
 | Reveal: N sites, one publisher | `briefGroundingPublisherCount`, `briefGroundingGap` in `packages/shared/brief-grounding.js` |
-| Wording ("Single publisher", "Low-tier sources only", "Reported by N publishers, including N tier-1") | `components.corroboration` in `src/locales/en.json` |
+| Wording ("Single publisher", "Low-tier sources only", "Reported by N publishers, including N tier-1") | `components.corroboration` in `packages/client/locales/en.json` |
 
 The desk's own logic is limited to **retrieval**: matching a spoken headline to WorldMonitor clusters, and gathering every cluster of one event. On 2026-10-09 the diesel deal sat in 8 one-outlet clusters; all their feed labels go to `assessCorroboration` together. Change a rule in WorldMonitor and the desk changes with it.
 

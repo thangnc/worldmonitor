@@ -8,7 +8,7 @@ import {
   parseSourceEntry,
   type PlayerObservation,
   type YouTubeVideoSnapshot,
-} from '../src/services/live-video/model.ts';
+} from '../packages/client/services/live-video/model.ts';
 
 describe('parseSourceEntry', () => {
   const accepted: ReadonlyArray<readonly [string, string, Record<string, string>]> = [

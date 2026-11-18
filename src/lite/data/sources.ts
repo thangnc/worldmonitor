@@ -8,7 +8,7 @@
  *    /api/bootstrap), go to the generated RPC clients with plain fetch.
  * 3. The news digest goes through its public CDN shape (`publicRpcFetch`).
  *
- * No premium path is used (src/shared/premium-paths.ts).
+ * No premium path is used (packages/client/shared/premium-paths.ts).
  */
 import type { ListFeedDigestResponse } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
 import type {
@@ -26,15 +26,15 @@ import type { UcdpViolenceEvent } from '@wm/contracts/generated/client/worldmoni
 import type { UnrestEvent } from '@wm/contracts/generated/client/worldmonitor/unrest/v1/service_client';
 import type { Earthquake } from '@wm/contracts/generated/client/worldmonitor/seismology/v1/service_client';
 import type { MilitaryFlight } from '@wm/contracts/generated/client/worldmonitor/military/v1/service_client';
-import { MILITARY_QUERY_REGIONS } from '@/config/military';
+import { MILITARY_QUERY_REGIONS } from '@wm/client/config/military';
 import { isConflictCounts, type ConflictCounts } from './conflict';
 import { isGpsHighCells, type GpsHighCells } from './geo-layers';
 import { isDdosWindows, type DdosWindows } from './tech-map';
 import { isCrossStraitSnapshot, type EmbassyAlerts } from './geo-watch';
-import type { CrossStraitActivitySnapshot } from '@/types/cross-strait-activity';
+import type { CrossStraitActivitySnapshot } from '@wm/client/types/cross-strait-activity';
 import type { ListUkmtoIncidentsResponse } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';
 import { readUkmtoSnapshot } from '@wm/shared/ukmto-incidents';
-import { fetchGpsInterference, type GpsJamData } from '@/services/gps-interference';
+import { fetchGpsInterference, type GpsJamData } from '@wm/client/services/gps-interference';
 import type {
   GetEconomicCalendarResponse,
   GetGovernmentYieldCurveResponse,
@@ -51,8 +51,8 @@ import type {
   ListServiceStatusesResponse,
 } from '@wm/contracts/generated/client/worldmonitor/infrastructure/v1/service_client';
 import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cyber/v1/service_client';
-import type { CloudRegion } from '@/config/tech-geo';
-import type { AIDataCenter, UnderseaCable } from '@/types';
+import type { CloudRegion } from '@wm/client/config/tech-geo';
+import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
 import { decodeRecentKev, decodeThreatHistory, type RecentKev, type ThreatHistory } from './tech-indicators';
 import {
   ConflictServiceClient,
@@ -67,12 +67,12 @@ import {
   SeismologyServiceClient,
   SupplyChainServiceClient,
   UnrestServiceClient,
-} from '@/services/generated-rpc-clients';
-import { getRpcBaseUrl, rpcFetch } from '@/services/rpc-client';
-import { publicRpcFetch } from '@/services/public-rpc-fetch';
-import { toApiUrl } from '@/services/runtime';
-import { ensureHydrated, fetchBootstrapData, getHydratedData, waitForBootstrapSlowTier } from '@/services/bootstrap';
-import { fetchServerInsights, type ServerInsights } from '@/services/insights-loader';
+} from '@wm/client/services/generated-rpc-clients';
+import { getRpcBaseUrl, rpcFetch } from '@wm/client/services/rpc-client';
+import { publicRpcFetch } from '@wm/client/services/public-rpc-fetch';
+import { toApiUrl } from '@wm/client/services/runtime';
+import { ensureHydrated, fetchBootstrapData, getHydratedData, waitForBootstrapSlowTier } from '@wm/client/services/bootstrap';
+import { fetchServerInsights, type ServerInsights } from '@wm/client/services/insights-loader';
 
 const options = { fetch: rpcFetch };
 const market = new MarketServiceClient(getRpcBaseUrl(), options);
@@ -446,9 +446,9 @@ export interface TechGeo {
 /** Static geometry, imported on first use so only the Technology map downloads it. */
 export async function loadTechGeo(): Promise<TechGeo> {
   const [{ UNDERSEA_CABLES }, { CLOUD_REGIONS }, { AI_DATA_CENTERS }] = await Promise.all([
-    import('@/config/geo-map'),
-    import('@/config/tech-geo'),
-    import('@/config/ai-datacenters'),
+    import('@wm/client/config/geo-map'),
+    import('@wm/client/config/tech-geo'),
+    import('@wm/client/config/ai-datacenters'),
   ]);
   return { cables: UNDERSEA_CABLES, regions: CLOUD_REGIONS, datacenters: AI_DATA_CENTERS };
 }

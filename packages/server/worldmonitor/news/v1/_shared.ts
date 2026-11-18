@@ -15,9 +15,9 @@ export {
   buildSummaryCacheKey,
   buildSummaryCacheKey as getCacheKey,
   selectUniqueHeadlinePairs,
-} from '../../../../../src/utils/summary-cache-key';
-import { MAX_BODY_LEN } from '../../../../../src/utils/summary-cache-key';
-import { NEWS_LANGUAGES } from '../../../../../src/shared/public-rpc-cache';
+} from '../../../../client/utils/summary-cache-key';
+import { MAX_BODY_LEN } from '../../../../client/utils/summary-cache-key';
+import { NEWS_LANGUAGES } from '../../../../client/shared/public-rpc-cache';
 
 // ========================================================================
 // Output languages: the dashboard UI languages (src/services/i18n.ts
