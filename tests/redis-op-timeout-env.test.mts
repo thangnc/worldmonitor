@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseTimeoutEnv } from '../server/_shared/redis';
+import { parseTimeoutEnv } from '../packages/server/_shared/redis';
 
 // Guard for the REDIS_OP_TIMEOUT_MS / REDIS_PIPELINE_TIMEOUT_MS env knobs.
 //

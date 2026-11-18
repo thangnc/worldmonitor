@@ -312,7 +312,7 @@ node scripts/seed-military-flights.mjs
 > `SCRIPT` remain rejected.
 > Two consequences for a self-hosted stack:
 >
-> - `@upstash/ratelimit`'s Lua-based sliding-window limiter (`server/_shared/rate-limit.ts`,
+> - `@upstash/ratelimit`'s Lua-based sliding-window limiter (`packages/server/_shared/rate-limit.ts`,
 >   `api/_rate-limit.js`) can't run against it. Both automatically detect the rejection once and
 >   fall back to a non-Lua fixed-window limiter (`INCR` + `EXPIRE NX`) for the rest of the
 >   process — rate limiting still enforces, just with fixed- instead of sliding-window semantics.

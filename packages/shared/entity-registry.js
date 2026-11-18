@@ -4,7 +4,7 @@
  * the client share one registry. src/config/entities.ts re-exports from here.
  *
  * Dependency-free ESM (packages/shared/story-identity.js pattern): importable from the
- * Vite client build, Vercel functions (api/, server/), and node --test.
+ * Vite client build, Vercel functions (api/, packages/server/), and node --test.
  * Types live in entity-registry.d.ts.
  */
 

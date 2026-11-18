@@ -1,6 +1,6 @@
 /**
  * Temporal-anomaly severity thresholds — single source of truth shared by the
- * server baseline pipeline (server/worldmonitor/infrastructure/v1/_shared.ts)
+ * server baseline pipeline (packages/server/worldmonitor/infrastructure/v1/_shared.ts)
  * and the client mapper (src/services/temporal-baseline.ts), so the two sides
  * cannot drift on what "high" or "critical" means for a z-score.
  *

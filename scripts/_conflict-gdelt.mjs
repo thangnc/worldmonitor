@@ -14,7 +14,7 @@
 // are exactly the original 20 priority countries plus every
 // packages/shared/crawlable-crises.json coverage country, nothing hand-picked
 // (pinned by tests/conflict-gdelt-country-coverage.test.mts). It stays a literal
-// rather than a registry read because server/ and the bulk materializer import
+// rather than a registry read because packages/server/ and the bulk materializer import
 // this module, and the names must match the downstream country resolvers.
 export const GDELT_COUNTRY_NAMES = {
   AF: 'Afghanistan', SY: 'Syria', UA: 'Ukraine', SD: 'Sudan', SS: 'South Sudan',
@@ -60,7 +60,7 @@ export function gdeltSeenDateToIso(seendate) {
 
 // Same stamp family, full precision: GDELT 14-digit timestamp → epoch ms, NaN
 // if unparseable. Single home for the parser (#5856 review): the bulk-export
-// module delegates here, and server/ (chat-analyst headline ages) imports this
+// module delegates here, and packages/server/ (chat-analyst headline ages) imports this
 // pure module directly — Date.parse rejects the raw GDELT format, so every
 // consumer needs this ISO reconstruction.
 export function gdeltSeenDateToMs(value) {

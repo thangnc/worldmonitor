@@ -7,7 +7,7 @@ import ts from 'typescript';
  * never reaches an upstream itself (#5906).
  *
  * The desktop sidecar has no Upstash credentials, and a Redis miss is
- * graceful degradation in server/_shared/redis.ts, so such a handler answers
+ * graceful degradation in packages/server/_shared/redis.ts, so such a handler answers
  * an empty 200 locally and the sidecar's `!response.ok` cloud fallback never
  * fires. Every route this returns must therefore be cloud-preferred in
  * docker/local-api/local-api-server.mjs regardless of WS_RELAY_URL.
@@ -18,8 +18,8 @@ import ts from 'typescript';
  * with the user's keys) is never forced to the cloud.
  */
 
-// Redis read helpers exported by server/_shared/redis.ts, plus
-// readRequiredSeed (server/_shared/required-seed.ts), which wraps them.
+// Redis read helpers exported by packages/server/_shared/redis.ts, plus
+// readRequiredSeed (packages/server/_shared/required-seed.ts), which wraps them.
 const REDIS_READ = /getCachedJson|readCachedJson|getCachedJsonBatch|readCachedJsonList|getCachedEnvelopeJson|readCachedEnvelopeJson|getRawJson|getLargeRawJson|getCachedRawString|getHashFieldsBatch|readRequiredSeed|runRedisPipeline\(\s*\[\s*\[\s*['"]ZRANGEBYSCORE['"]/;
 
 // Anything that can leave the process: fetch and every helper spelled
@@ -75,7 +75,7 @@ function readHandlerImports(handlerSource) {
  * @returns {{ routes: Array<{ route: string, prefix: string, method: string, file: string, seedOnly: boolean }>, byPrefix: Map<string, { total: number, seedOnly: number }> }}
  */
 export function scanRpcHandlers(repoRoot) {
-  const root = join(repoRoot, 'server', 'worldmonitor');
+  const root = join(repoRoot, 'packages', 'server', 'worldmonitor');
   const routes = [];
   const byPrefix = new Map();
   const classified = new Map();

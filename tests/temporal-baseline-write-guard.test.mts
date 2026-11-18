@@ -4,8 +4,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { validateGeneratedRequest } from '../server/request-validator.ts';
-import { recordBaselineSnapshot } from '../server/worldmonitor/infrastructure/v1/record-baseline-snapshot.ts';
+import { validateGeneratedRequest } from '../packages/server/request-validator.ts';
+import { recordBaselineSnapshot } from '../packages/server/worldmonitor/infrastructure/v1/record-baseline-snapshot.ts';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };

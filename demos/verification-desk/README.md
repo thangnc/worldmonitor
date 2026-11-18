@@ -95,8 +95,8 @@ The avatar says "WorldMonitor desk. Live." when it connects, then only the desk'
 
 | Check on screen | WorldMonitor code it calls |
 |---|---|
-| Who said it: publishers, not feed labels (Reuters India + Reuters US = one) | `assessCorroboration`, `publisherRoster` in `server/_shared/corroboration.ts`; families in `packages/shared/publisher-families.js` |
-| How good are they: tier T1–T4 | `declaredSourceTier`, `getSourceTier`, `TIER_MEANING` in `server/_shared/source-tiers.ts` |
+| Who said it: publishers, not feed labels (Reuters India + Reuters US = one) | `assessCorroboration`, `publisherRoster` in `packages/server/_shared/corroboration.ts`; families in `packages/shared/publisher-families.js` |
+| How good are they: tier T1–T4 | `declaredSourceTier`, `getSourceTier`, `TIER_MEANING` in `packages/server/_shared/source-tiers.ts` |
 | Propaganda risk, state affiliation, provenance note | `getSourcePropagandaRisk`, `getSourceProvenanceState` in `packages/shared/source-provenance.ts` |
 | CRED n per source and for the story, low/medium/high | `computeCredibilityScore` in `packages/shared/news-credibility.js`, composed and banded as the dashboard's `resolveCredibilityScore` / `renderCredibilityBadge` (`src/components/news/source-provenance.ts`) |
 | Clears the corroboration bar? | `MIN_CORROBORATING_PUBLISHERS` (2), the same constant the brief and digest gates use |

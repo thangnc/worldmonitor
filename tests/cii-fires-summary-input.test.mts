@@ -21,8 +21,8 @@ delete process.env.ACLED_ACCESS_TOKEN;
 delete process.env.ACLED_EMAIL;
 delete process.env.ACLED_PASSWORD;
 
-const { getRiskScores } = await import('../server/worldmonitor/intelligence/v1/get-risk-scores');
-const { __clearLocalUnavailableBackoffForTests } = await import('../server/_shared/redis');
+const { getRiskScores } = await import('../packages/server/worldmonitor/intelligence/v1/get-risk-scores');
+const { __clearLocalUnavailableBackoffForTests } = await import('../packages/server/_shared/redis');
 const { summarizeWildfireDetections, WILDFIRE_FIRES_SUMMARY_KEY } = await import('../scripts/shared/wildfire-fires-summary.mjs');
 
 const CANONICAL_KEY = 'wildfire:fires:v1';

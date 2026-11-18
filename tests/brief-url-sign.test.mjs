@@ -1,6 +1,6 @@
 // Parity tests for the scripts-side HMAC signer.
 //
-// The signing algorithm lives in TWO places: server/_shared/brief-
+// The signing algorithm lives in TWO places: packages/server/_shared/brief-
 // url.ts (used by edge routes for verify, and by any TS code that
 // wants to mint URLs) and scripts/lib/brief-url-sign.mjs (used by
 // the consolidated digest cron to mint magazine URLs to embed in
@@ -22,14 +22,14 @@ import {
 import {
   signBriefToken as signTokenEdge,
   verifyBriefToken,
-} from '../server/_shared/brief-url.ts';
+} from '../packages/server/_shared/brief-url.ts';
 
 const SECRET = 'consolidation-parity-secret-0xdead';
 const USER_ID = 'user_consolidated123';
 // Slot format: YYYY-MM-DD-HHMM (per compose run, user's tz).
 const ISSUE_DATE = '2026-04-18-0800';
 
-describe('scripts/lib/brief-url-sign parity with server/_shared/brief-url', () => {
+describe('scripts/lib/brief-url-sign parity with packages/server/_shared/brief-url', () => {
   it('produces byte-identical tokens for the same inputs', async () => {
     const a = await signTokenScripts(USER_ID, ISSUE_DATE, SECRET);
     const b = await signTokenEdge(USER_ID, ISSUE_DATE, SECRET);

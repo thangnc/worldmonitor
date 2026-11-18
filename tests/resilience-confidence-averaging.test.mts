@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import {
   computeLowConfidence,
   computeOverallCoverage,
-} from '../server/worldmonitor/resilience/v1/_shared';
+} from '../packages/server/worldmonitor/resilience/v1/_shared';
 import type {
   GetResilienceScoreResponse,
   ResilienceDimension,

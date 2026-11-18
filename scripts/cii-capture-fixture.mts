@@ -16,9 +16,9 @@ import { parseArgs } from 'node:util';
 
 import { getRedisCredentials, loadEnvFile } from './_seed-utils.mjs';
 import { CII_FIXTURE_DIR, buildCiiFixture, ciiFiresInput, scoreCiiFixture } from './lib/cii-fixtures.mts';
-import { CROSS_BORDER_SOURCES } from '../server/worldmonitor/displacement/v1/cross-border-data.ts';
-import { unwrapEnvelope } from '../server/_shared/seed-envelope.ts';
-import { CII_FORMULA_VERSION } from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
+import { CROSS_BORDER_SOURCES } from '../packages/server/worldmonitor/displacement/v1/cross-border-data.ts';
+import { unwrapEnvelope } from '../packages/server/_shared/seed-envelope.ts';
+import { CII_FORMULA_VERSION } from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
 
 const { values } = parseArgs({
   options: {

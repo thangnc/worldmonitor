@@ -18,7 +18,7 @@ import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
 // 1. _insurance-tier.ts pure function
 // ========================================================================
 
-import { threatLevelToInsurancePremiumBps } from '../server/worldmonitor/supply-chain/v1/_insurance-tier.ts';
+import { threatLevelToInsurancePremiumBps } from '../packages/server/worldmonitor/supply-chain/v1/_insurance-tier.ts';
 
 describe('threatLevelToInsurancePremiumBps', () => {
   it('war_zone returns 300 bps', () => {

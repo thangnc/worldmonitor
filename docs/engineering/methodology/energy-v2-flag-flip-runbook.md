@@ -235,7 +235,7 @@ All must be green before flipping `RESILIENCE_ENERGY_V2_ENABLED=true`:
 
 3. **Bump the score-cache prefix.** Add a new commit to this branch
    bumping `RESILIENCE_SCORE_CACHE_PREFIX` from `v10` to `v11` in
-   `server/worldmonitor/resilience/v1/_shared.ts`. This guarantees the
+   `packages/server/worldmonitor/resilience/v1/_shared.ts`. This guarantees the
    flag flip does not serve pre-flip cached scores from the 6h TTL
    window. Without this bump, the next 6h of readers would see stale
    d6-formula scores even with the flag on.

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S npx tsx
 /**
- * Validates every key in ENDPOINT_RATE_POLICIES (server/_shared/rate-limit.ts)
+ * Validates every key in ENDPOINT_RATE_POLICIES (packages/server/_shared/rate-limit.ts)
  * is a real gateway route by checking the OpenAPI specs generated from protos.
  * Catches rename-drift that causes policies to become dead code (the
  * sanctions-entity-search review finding — the policy key was
@@ -43,9 +43,9 @@ import { parse as parseYaml } from 'yaml';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const OPENAPI_DIR = join(ROOT, 'packages/contracts/openapi');
-const RATE_LIMIT_SRC = join(ROOT, 'server/_shared/rate-limit.ts');
+const RATE_LIMIT_SRC = join(ROOT, 'packages/server/_shared/rate-limit.ts');
 const API_EXCEPTIONS = join(ROOT, 'api/api-route-exceptions.json');
-const RUNTIME_RATE_LIMIT_DIRS = ['server', 'api'].map((dir) => join(ROOT, dir));
+const RUNTIME_RATE_LIMIT_DIRS = ['packages/server', 'api'].map((dir) => join(ROOT, dir));
 const RUNTIME_SOURCE_EXTENSIONS = new Set(['.js', '.cjs', '.mjs', '.ts', '.tsx']);
 
 async function extractRateLimitPolicyModule() {
@@ -293,9 +293,9 @@ async function main() {
     console.error('external providers/LLMs, so it must NOT silently inherit the availability-first');
     console.error('global fallback on a Redis outage. Triage each route above into exactly one of:\n');
     console.error('  (a) ENDPOINT_RATE_POLICIES + FAIL_CLOSED_ENDPOINT_RATE_POLICY_REQUIRED');
-    console.error('      (server/_shared/rate-limit.ts) — the route is expensive / provider-backed /');
+    console.error('      (packages/server/_shared/rate-limit.ts) — the route is expensive / provider-backed /');
     console.error('      mutation-like and should return 503 when the limiter is unavailable, OR');
-    console.error('  (b) RATE_LIMIT_MUTATION_FALLBACK_EXEMPT (server/_shared/rate-limit.ts) — the');
+    console.error('  (b) RATE_LIMIT_MUTATION_FALLBACK_EXEMPT (packages/server/_shared/rate-limit.ts) — the');
     console.error('      route is safe to fail open (add a justification comment/reason explaining');
     console.error('      why: e.g. read-only despite POST, Redis-only write, already auth-gated).\n');
     process.exit(1);
@@ -309,7 +309,7 @@ async function main() {
     }
     console.error('\nRoutes in FAIL_CLOSED_ENDPOINT_RATE_POLICY_REQUIRED rely on');
     console.error('checkEndpointRateLimit defaulting to fail closed when Redis is unavailable.');
-    console.error('Do not pass { failClosed: false } from server/ or api/ runtime code;');
+    console.error('Do not pass { failClosed: false } from packages/server/ or api/ runtime code;');
     console.error('move genuinely safe non-GET routes to RATE_LIMIT_MUTATION_FALLBACK_EXEMPT');
     console.error('or documented read routes to GLOBAL_RATE_LIMIT_FALLBACK_READ_ROUTES instead.\n');
     process.exit(1);

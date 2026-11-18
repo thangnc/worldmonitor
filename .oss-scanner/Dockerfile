@@ -42,7 +42,7 @@ RUN rustc --version && cargo --version
 COPY . /src
 WORKDIR /src
 
-# Root workspace: web app, Vercel edge handlers (api/), server/, convex/, tests.
+# Root workspace: web app, Vercel edge handlers (api/), packages/server/, convex/, tests.
 # postinstall regenerates the untracked inventory modules.
 RUN npm ci
 

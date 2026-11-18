@@ -26,8 +26,8 @@ import {
   ResilienceConfigurationError,
   scoreEnergy,
   type ResilienceSeedReader,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
-import { createIndicatorTraceCollector } from '../server/worldmonitor/resilience/v1/_indicator-trace.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import { createIndicatorTraceCollector } from '../packages/server/worldmonitor/resilience/v1/_indicator-trace.ts';
 
 const TEST_ISO2 = 'ZZ'; // fictional country so test coverage checks don't flag it
 

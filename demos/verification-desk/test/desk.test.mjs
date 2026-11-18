@@ -15,7 +15,7 @@ import { heuristicSearchTerms, overlapScore } from '../lib/text.mjs';
 import { computeVerdict } from '../lib/verdict.mjs';
 import { coverage, credibilityBand, groundFigures, ratePublishers, sourceCredibility, validateScript, WM_TEXT } from '../lib/wm.mjs';
 import { computeCredibilityScore } from '../../../packages/shared/news-credibility.js';
-import { getSourceTier } from '../../../server/_shared/source-tiers.ts';
+import { getSourceTier } from '../../../packages/server/_shared/source-tiers.ts';
 import { getSourcePropagandaRisk } from '../../../packages/shared/source-provenance.ts';
 
 const anchor = new Anchor({ apiKey: '' });

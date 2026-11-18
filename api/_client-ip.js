@@ -2,21 +2,21 @@ export const UNKNOWN_CLIENT_IP = 'unknown';
 
 // Marker headers set on degraded fail-closed responses so observability can
 // correlate rate-limit outages without parsing JSON bodies. Mirrors
-// server/_shared/rate-limit.ts.
+// packages/server/_shared/rate-limit.ts.
 export const RATE_LIMIT_DEGRADED_HEADERS = Object.freeze({
   'X-RateLimit-Mode': 'degraded',
   'Retry-After': '5',
 });
 
 // Header a Cloudflare Transform Rule injects on every proxied request to prove
-// the request actually transited CF. Keep in sync with server/_shared/client-ip.ts.
+// the request actually transited CF. Keep in sync with packages/server/_shared/client-ip.ts.
 const CF_EDGE_PROOF_HEADER = 'x-wm-edge-proof';
 
 // Vercel's x-real-ip is its direct peer. Only a peer in Cloudflare's published
 // proxy ranges proves that an unproven cf-connecting-ip came from a genuine
 // Cloudflare hop rather than a direct-origin spoof. Sources:
 // https://www.cloudflare.com/ips-v4/ and https://www.cloudflare.com/ips-v6/
-// Keep in sync with server/_shared/client-ip.ts.
+// Keep in sync with packages/server/_shared/client-ip.ts.
 const CLOUDFLARE_IPV4_CIDRS = Object.freeze([
   '173.245.48.0/20',
   '103.21.244.0/22',
@@ -121,7 +121,7 @@ function isCloudflareProxyIp(value) {
 // Compare the edge-proof secret without an early exit on length mismatch.
 // Synchronous so getClientIp stays sync (it's on the per-request rate-limit hot
 // path with several callers that invoke it without await). Keep in sync with
-// server/_shared/client-ip.ts.
+// packages/server/_shared/client-ip.ts.
 function constantTimeEqual(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
   const len = b.length;
@@ -149,7 +149,7 @@ export function hasCloudflareTransitProof(request) {
  * cover this route. IP-scoped rate limits must reject it rather than fall
  * through to a shared PoP bucket (#8402). When the secret is unset, returns
  * false so local/dev without the secret keep working.
- * Keep in sync with server/_shared/client-ip.ts.
+ * Keep in sync with packages/server/_shared/client-ip.ts.
  */
 export function hasUnprovenCloudflareClientIp(request) {
   const secret = (process.env.CF_EDGE_PROOF_SECRET ?? '').trim();
@@ -165,7 +165,7 @@ export function hasUnprovenCloudflareClientIp(request) {
 // and x-real-ip in Cloudflare's proxy ranges, but the x-wm-edge-proof header
 // absent or mismatched. Direct-origin spoofs with non-CF peers must not warn
 // or consume the latch. Keep this dependency-free and in sync with
-// server/_shared/client-ip.ts. Symbol.for gives both mirror modules one
+// packages/server/_shared/client-ip.ts. Symbol.for gives both mirror modules one
 // collision-resistant, isolate-wide latch even when both are loaded together.
 const EDGE_PROOF_MISMATCH_LATCH = Symbol.for(
   'worldmonitor.client-ip.edge-proof-mismatch-warning.v1',

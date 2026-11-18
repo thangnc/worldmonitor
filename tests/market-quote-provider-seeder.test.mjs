@@ -155,7 +155,7 @@ describe('fetchAuthorizedEquityQuotes', () => {
 
   it('keeps the edge and seeder missing-credential messages in parity', () => {
     const edgeSource = readFileSync(
-      new URL('../server/worldmonitor/market/v1/_quote-provider.ts', import.meta.url),
+      new URL('../packages/server/worldmonitor/market/v1/_quote-provider.ts', import.meta.url),
       'utf8',
     );
     const edgeReason = edgeSource.match(

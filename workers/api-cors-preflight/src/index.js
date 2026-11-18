@@ -26,7 +26,7 @@ import { maybeShadowKvRead } from './kv-shadow.js';
 import { maybeServeBootstrapFromKv } from './kv-serve.js';
 
 // Keep in sync with api/_cors.js#ALLOWED_ORIGIN_PATTERNS and
-// server/cors.ts#PRODUCTION_PATTERNS. The Worker's allowlist must be a
+// packages/server/cors.ts#PRODUCTION_PATTERNS. The Worker's allowlist must be a
 // superset of (or identical to) the function-side allowlist; if it's narrower,
 // origins that the function would accept get the canonical fallback origin
 // echoed back and fail CORS at the browser.
@@ -40,7 +40,7 @@ const ALLOWED_ORIGIN_PATTERNS = [
   APP_ORIGIN_PATTERN,
   // Vercel previews under the "eliewm" team scope, e.g.
   //   worldmonitor-git-<branch>-eliewm.vercel.app / worldmonitor-<hash>-eliewm.vercel.app
-  // Mirror of api/_cors.js + server/cors.ts (see superset note above).
+  // Mirror of api/_cors.js + packages/server/cors.ts (see superset note above).
   /^https:\/\/worldmonitor-[a-z0-9-]+-eliewm\.vercel\.app$/,
   /^https?:\/\/tauri\.localhost(:\d+)?$/,
   /^https?:\/\/[a-z0-9-]+\.tauri\.localhost(:\d+)?$/i,
@@ -70,7 +70,7 @@ const ALLOW_METHODS = 'GET, POST, DELETE, HEAD, OPTIONS';
 
 // Absolute URL: this Worker serves api.worldmonitor.app, where a
 // root-relative /api-versioning.md would 404. Keep in sync with
-// server/_shared/deprecation-policy.ts.
+// packages/server/_shared/deprecation-policy.ts.
 const DEPRECATION_POLICY_LINK =
   '<https://www.worldmonitor.app/api-versioning.md>; rel="deprecation"; type="text/markdown"';
 const DEPRECATION_REL = /(?:^|,)\s*<[^>]+>\s*;[^,]*\brel="deprecation"/;
@@ -141,7 +141,7 @@ function stripTrailingDnsDots(hostname) {
 
 /**
  * Strip trailing DNS dots before allowlist match (#6411). Keep in sync with
- * api/_cors.js / server/cors.ts. ACAO still echoes the raw Origin.
+ * api/_cors.js / packages/server/cors.ts. ACAO still echoes the raw Origin.
  */
 function originForAllowlistMatch(origin) {
   if (!origin) return '';

@@ -26,7 +26,7 @@ import {
   EXTRACTION_RULES,
   buildIndicatorExtractionPlan,
 } from './compare-resilience-current-vs-proposed.mjs';
-import { INDICATOR_REGISTRY } from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
+import { INDICATOR_REGISTRY } from '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

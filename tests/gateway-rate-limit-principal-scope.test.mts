@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 
 // ─── WORLDMONITOR-12A: the limiter scope must be wired at the CALL SITE ──────
 //
-// `server/_shared/rate-limit.ts` can separate an API key's bucket from an
+// `packages/server/_shared/rate-limit.ts` can separate an API key's bucket from an
 // interactive session's, but only if the gateway actually tells it which
 // credential the caller presented. Those are two different failures, and the
 // module-level test in `tests/rate-limit.test.mts` cannot see the second one:
@@ -23,7 +23,7 @@ import { describe, it } from 'node:test';
 // back has to come back scoped.
 
 const GATEWAY_SOURCE = readFileSync(
-  new URL('../server/gateway.ts', import.meta.url),
+  new URL('../packages/server/gateway.ts', import.meta.url),
   'utf8',
 );
 

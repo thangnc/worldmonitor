@@ -15,15 +15,15 @@ import {
   HORMUZ_BYPASS_BY_EXPORTER,
   BYPASS_RAMP_DAYS,
   lostShareAfterBypass,
-} from '../server/worldmonitor/intelligence/v1/_hormuz-bypass.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/_hormuz-bypass.ts';
 import {
   computeEffectiveCoverDaysWithRamp,
   computeEffectiveCoverDays,
   computeMonthlyGulfShares,
   GLOBAL_MEDIAN_REFINERY_YIELD,
   GULF_PARTNER_ISO2,
-} from '../server/worldmonitor/intelligence/v1/_shock-compute.ts';
-import { computeEnergyShockScenario } from '../server/worldmonitor/intelligence/v1/compute-energy-shock.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/_shock-compute.ts';
+import { computeEnergyShockScenario } from '../packages/server/worldmonitor/intelligence/v1/compute-energy-shock.ts';
 import { buildCrudeImportOrigin, crudeImportOriginPeriods, CRUDE_ORIGIN_BYPASS_PARTNERS } from '../scripts/seed-oil-trade-series.mjs';
 import { installRedis } from './helpers/fake-upstash-redis.mts';
 

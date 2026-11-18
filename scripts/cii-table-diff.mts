@@ -27,13 +27,13 @@ import {
   spearman,
   type CiiFixture,
 } from './lib/cii-fixtures.mts';
-import { buildCiiAuxiliarySources } from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
-import { CII_FORMULA_VERSION } from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
+import { buildCiiAuxiliarySources } from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+import { CII_FORMULA_VERSION } from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-const SCORER_PATH = 'server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+const SCORER_PATH = 'packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
 // Everything the scorer imports, transitively.
-const ARCHIVE_PATHS = ['server', 'packages/shared', 'scripts/shared', 'packages/contracts/generated', 'src/config', 'src/shared', 'src/types', 'package.json', 'tsconfig.json'];
+const ARCHIVE_PATHS = ['packages/server', 'packages/shared', 'scripts/shared', 'packages/contracts/generated', 'src/config', 'src/shared', 'src/types', 'package.json', 'tsconfig.json'];
 
 const { values } = parseArgs({
   options: {

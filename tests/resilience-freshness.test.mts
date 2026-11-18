@@ -7,7 +7,7 @@ import {
   cadenceUnitMs,
   classifyStaleness,
   type ResilienceCadence,
-} from '../server/_shared/resilience-freshness.ts';
+} from '../packages/server/_shared/resilience-freshness.ts';
 
 // T1.5 Phase 1 of the country-resilience reference-grade upgrade plan.
 //

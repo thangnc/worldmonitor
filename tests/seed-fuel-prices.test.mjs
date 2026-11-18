@@ -203,7 +203,7 @@ test('new optional sources preserve core publish gates and missing-FX currencies
 });
 
 test('fuel RPC reads the new fixture rows through the seed envelope with prices, dates and attribution intact', async t => {
-  const { listFuelPrices } = await import('../server/worldmonitor/economic/v1/list-fuel-prices.ts');
+  const { listFuelPrices } = await import('../packages/server/worldmonitor/economic/v1/list-fuel-prices.ts');
   const countries = [
     parseNorwayFuel(fuelFixture('ssb-09654'), FUEL_NOW),
     parseIcelandFuel(fuelFixture('gasvaktin-stations'), '2026-11-04', FUEL_NOW),

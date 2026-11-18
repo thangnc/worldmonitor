@@ -55,8 +55,8 @@ Relevant public background:
 
 - **Pre-publication**: any time the published ranking is about to
   change externally (site, API consumers, newsletter, partner feed).
-- **Every merge touching a scorer file** in `server/worldmonitor/resilience/v1/_dimension-scorers.ts`,
-  `server/worldmonitor/resilience/v1/_shared.ts`, or a scorer-feeding
+- **Every merge touching a scorer file** in `packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts`,
+  `packages/server/worldmonitor/resilience/v1/_shared.ts`, or a scorer-feeding
   seeder in `scripts/seed-recovery-*.mjs`, `scripts/seed-bundle-resilience-*.mjs`.
 - **Before activating a feature flag** that alters the scorer
   (`RESILIENCE_ENERGY_V2_ENABLED`, `RESILIENCE_PILLAR_COMBINE_ENABLED`,

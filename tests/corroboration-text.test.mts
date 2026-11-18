@@ -13,8 +13,8 @@ import {
   evidenceFromItem,
   toCorroborationJson,
   type Corroboration,
-} from '../server/_shared/corroboration';
-import { encodeStoryCorroboration, STORY_CORROBORATION_FIELD } from '../server/_shared/label-history';
+} from '../packages/server/_shared/corroboration';
+import { encodeStoryCorroboration, STORY_CORROBORATION_FIELD } from '../packages/server/_shared/label-history';
 
 const require = createRequire(import.meta.url);
 const {

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { buildServerIntelSources, buildServerVariantFeeds } from '../packages/shared/news-catalog.ts';
-import { INTEL_SOURCES as SERVER_INTEL, VARIANT_FEEDS } from '../server/worldmonitor/news/v1/_feeds.ts';
+import { INTEL_SOURCES as SERVER_INTEL, VARIANT_FEEDS } from '../packages/server/worldmonitor/news/v1/_feeds.ts';
 
 // JSON round-trip drops undefined-valued keys so optional fields compare by presence.
 const plain = (value: unknown) => JSON.parse(JSON.stringify(value));

@@ -5,7 +5,7 @@
  * for the /chokepoints/* and /countries/* cross-links. It lives in `shared/`
  * so the edge country intel brief can cite the same relation without bundling
  * the page copy. Keyed by canonical chokepoint id
- * (server/_shared/chokepoint-registry.ts).
+ * (packages/server/_shared/chokepoint-registry.ts).
  */
 export const CHOKEPOINT_COUNTRY_CODES = Object.freeze({
   suez: Object.freeze(['EG']),

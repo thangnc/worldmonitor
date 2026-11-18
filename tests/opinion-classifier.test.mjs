@@ -9,7 +9,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyOpinion } from '../server/_shared/opinion-classifier.js';
+import { classifyOpinion } from '../packages/server/_shared/opinion-classifier.js';
 
 describe('classifyOpinion — STRONG signals (sufficient alone)', () => {
   it('URL path /opinion/ → opinion', () => {

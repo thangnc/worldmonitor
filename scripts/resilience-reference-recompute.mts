@@ -9,18 +9,18 @@ import type {
   ResilienceDomain,
   ResiliencePillar,
 } from '../packages/contracts/generated/server/worldmonitor/resilience/v1/service_server.ts';
-import { round } from '../server/_shared/resilience-stats.ts';
+import { round } from '../packages/server/_shared/resilience-stats.ts';
 import {
   buildDimensionList,
   buildDomainList,
   penalizedPillarScore,
-} from '../server/worldmonitor/resilience/v1/_shared.ts';
-import { buildPillarList } from '../server/worldmonitor/resilience/v1/_pillar-membership.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
+import { buildPillarList } from '../packages/server/worldmonitor/resilience/v1/_pillar-membership.ts';
 import {
   scoreAllDimensions,
   type ResilienceDimensionId,
   type ResilienceSeedReader,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 export type ReferenceFormula = 'd6' | 'pc';
 

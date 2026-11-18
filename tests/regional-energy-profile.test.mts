@@ -1,12 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { readRegionalEnergyFeeds } from '../server/worldmonitor/intelligence/v1/_regional-energy-feeds';
+import { readRegionalEnergyFeeds } from '../packages/server/worldmonitor/intelligence/v1/_regional-energy-feeds';
 import { fetchRegionalEnergyFeed, regionalEnergyContentMeta } from '../scripts/_regional-energy-source.mjs';
 import { buildEnvelope } from '../scripts/_seed-envelope-source.mjs';
-import { getCountryEnergyProfile } from '../server/worldmonitor/intelligence/v1/get-country-energy-profile';
+import { getCountryEnergyProfile } from '../packages/server/worldmonitor/intelligence/v1/get-country-energy-profile';
 import { installRedis } from './helpers/fake-upstash-redis.mts';
-import { drainResponseHeaders } from '../server/_shared/response-headers';
+import { drainResponseHeaders } from '../packages/server/_shared/response-headers';
 
 const now = Date.parse('2026-10-29T16:00:00Z');
 const snapshot = (sourceId = 'pgcb', overrides = {}) => ({

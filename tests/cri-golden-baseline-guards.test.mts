@@ -23,7 +23,7 @@ import {
 
 const TESTS_ROOT = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(TESTS_ROOT, '..');
-const SCORER_TREE_DIR = path.join(REPO_ROOT, 'server/worldmonitor/resilience/v1');
+const SCORER_TREE_DIR = path.join(REPO_ROOT, 'packages/server/worldmonitor/resilience/v1');
 const MODULE_URL = pathToFileURL(path.join(REPO_ROOT, 'scripts/generate-cri-golden-baseline.mts')).href;
 
 type EnvReadTiming = 'call-time' | 'module-load';
@@ -136,7 +136,7 @@ describe('CRI golden baseline generator guards', () => {
 
     it('refuses guarded dirty paths without --allow-dirty-fixture', () => {
       assert.throws(
-        () => assertGenerationGuards(guardsFixture({ dirtyStatusLines: [' M server/worldmonitor/resilience/v1/_shared.ts'] })),
+        () => assertGenerationGuards(guardsFixture({ dirtyStatusLines: [' M packages/server/worldmonitor/resilience/v1/_shared.ts'] })),
         /--allow-dirty-fixture/,
       );
     });
@@ -180,8 +180,8 @@ describe('CRI golden baseline generator guards', () => {
         writeFileSync(target, content);
       };
       const dependencies = [
-        'server/_shared/resilience-stats.ts',
-        'server/_shared/resilience-freshness.ts',
+        'packages/server/_shared/resilience-stats.ts',
+        'packages/server/_shared/resilience-freshness.ts',
         'packages/shared/iso2-to-iso3.json',
         'tsconfig.json',
       ];
@@ -246,13 +246,13 @@ describe('CRI golden baseline generator guards', () => {
 
   describe('env-read exhaustiveness', () => {
     const EXPECTED_ENV_READS = [
-      'call-time:RESILIENCE_EDUCATION_ENABLED (server/worldmonitor/resilience/v1/_dimension-scorers.ts)',
-      'call-time:RESILIENCE_ENERGY_V2_ENABLED (server/worldmonitor/resilience/v1/_dimension-scorers.ts)',
-      'call-time:RESILIENCE_ENERGY_V2_ENABLED (server/worldmonitor/resilience/v1/_shared.ts)',
-      'call-time:RESILIENCE_FIN_SYS_EXPOSURE_ENABLED (server/worldmonitor/resilience/v1/_dimension-scorers.ts)',
-      'call-time:RESILIENCE_FIN_SYS_EXPOSURE_ENABLED (server/worldmonitor/resilience/v1/_shared.ts)',
-      'call-time:RESILIENCE_PILLAR_COMBINE_ENABLED (server/worldmonitor/resilience/v1/_shared.ts)',
-      'module-load:RESILIENCE_SCHEMA_V2_ENABLED (server/worldmonitor/resilience/v1/_shared.ts)',
+      'call-time:RESILIENCE_EDUCATION_ENABLED (packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts)',
+      'call-time:RESILIENCE_ENERGY_V2_ENABLED (packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts)',
+      'call-time:RESILIENCE_ENERGY_V2_ENABLED (packages/server/worldmonitor/resilience/v1/_shared.ts)',
+      'call-time:RESILIENCE_FIN_SYS_EXPOSURE_ENABLED (packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts)',
+      'call-time:RESILIENCE_FIN_SYS_EXPOSURE_ENABLED (packages/server/worldmonitor/resilience/v1/_shared.ts)',
+      'call-time:RESILIENCE_PILLAR_COMBINE_ENABLED (packages/server/worldmonitor/resilience/v1/_shared.ts)',
+      'module-load:RESILIENCE_SCHEMA_V2_ENABLED (packages/server/worldmonitor/resilience/v1/_shared.ts)',
     ].sort();
 
     it('distinguishes module-load and call-time reads of the same flag', () => {
@@ -278,8 +278,8 @@ describe('CRI golden baseline generator guards', () => {
     });
 
     it('normalizes Windows paths to repository separators', () => {
-      assert.equal(repositoryPath('server\\worldmonitor\\resilience\\v1\\_shared.ts'),
-        'server/worldmonitor/resilience/v1/_shared.ts');
+      assert.equal(repositoryPath('packages\\server\\worldmonitor\\resilience\\v1\\_shared.ts'),
+        'packages/server/worldmonitor/resilience/v1/_shared.ts');
     });
 
     it('pins every RESILIENCE_* env-read occurrence to its file and capture timing', () => {

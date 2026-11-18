@@ -9,7 +9,7 @@ import {
   SOURCE_PROPAGANDA_RISK,
   SOURCE_TYPES,
 } from '../packages/shared/source-provenance.ts';
-import { SOURCE_TIERS } from '../server/_shared/source-tiers.ts';
+import { SOURCE_TIERS } from '../packages/server/_shared/source-tiers.ts';
 import { X_ACCOUNT_SOURCE_TIERS, X_ACCOUNT_TRUST } from '../packages/shared/x-account-trust.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

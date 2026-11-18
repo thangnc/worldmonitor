@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { callLlm, callLlmReasoning, callLlmReasoningStream, callLlmTool, getLlmAttemptTimeoutMs } from '../server/_shared/llm.ts';
-import { __testing__ as llmHealth, isModelUsable } from '../server/_shared/llm-health.ts';
+import { callLlm, callLlmReasoning, callLlmReasoningStream, callLlmTool, getLlmAttemptTimeoutMs } from '../packages/server/_shared/llm.ts';
+import { __testing__ as llmHealth, isModelUsable } from '../packages/server/_shared/llm-health.ts';
 
 const originalFetch = globalThis.fetch;
 const originalAbortSignalTimeout = AbortSignal.timeout;

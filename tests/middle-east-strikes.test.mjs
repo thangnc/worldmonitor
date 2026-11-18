@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { deflateRawSync } from 'node:zlib';
 import { TELEGRAM_CHANNEL_TRUST } from '../packages/shared/telegram-channel-trust.ts';
 import { GDELT_FIPS_TO_ISO2 } from '../scripts/_gdelt-country-codes.mjs';
-import { geoToCountry } from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+import { geoToCountry } from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
 
 const require = createRequire(import.meta.url);
 const gazetteer = require('../scripts/lib/middle-east-strikes-gazetteer.cjs');

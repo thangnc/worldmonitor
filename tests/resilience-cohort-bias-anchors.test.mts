@@ -20,7 +20,7 @@ import {
   scoreSocialCohesion,
   scoreSovereignFiscalBuffer,
   type ResilienceSeedReader,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 const currentYear = new Date().getFullYear();
 const DISPLACEMENT_KEY = `displacement:summary:v1:${currentYear}`;

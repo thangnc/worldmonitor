@@ -7,8 +7,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { deductSituation } from '../server/worldmonitor/intelligence/v1/deduct-situation.ts';
-import { __testing__ as llmHealth } from '../server/_shared/llm-health.ts';
+import { deductSituation } from '../packages/server/worldmonitor/intelligence/v1/deduct-situation.ts';
+import { __testing__ as llmHealth } from '../packages/server/_shared/llm-health.ts';
 
 const originalFetch = globalThis.fetch;
 const ENV_KEYS = [

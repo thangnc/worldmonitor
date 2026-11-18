@@ -27,7 +27,7 @@ import {
   clampClosureDays,
   computeMultiSectorShock,
   computeMultiSectorShocks,
-} from '../server/worldmonitor/supply-chain/v1/_multi-sector-shock.ts';
+} from '../packages/server/worldmonitor/supply-chain/v1/_multi-sector-shock.ts';
 
 describe('hs4ToHs2', () => {
   it('strips leading zeros for 4-digit HS codes', () => {

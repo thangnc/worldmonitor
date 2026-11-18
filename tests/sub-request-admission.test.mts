@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, it } from 'node:test';
-import { consumeSubRequestAdmission, issueSubRequestAdmission, SUB_REQUEST_MARKER_HEADER } from '../server/_shared/sub-request-admission.ts';
+import { consumeSubRequestAdmission, issueSubRequestAdmission, SUB_REQUEST_MARKER_HEADER } from '../packages/server/_shared/sub-request-admission.ts';
 import { installRedis } from './helpers/fake-upstash-redis.mts';
 
 const originalFetch = globalThis.fetch;

@@ -1,0 +1,14 @@
+{
+  "name": "@wm/server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "WorldMonitor server code: the sebuf gateway, the per-domain RPC handlers (worldmonitor/<domain>/v<N>/) and their shared helpers (_shared/), bundled into the Vercel Edge functions under api/. api/, middleware.ts, vite.dev-api.ts, packages/shared and this package import it by relative path, never as @wm/server, until a Vercel preview proves workspace packages in Edge bundles (lint:boundaries Check 5). A .ts module is imported without its extension; .js, .mjs and .json files name theirs (a .js or .mjs module's types come from its .d.ts or .d.mts sibling). There is deliberately no ./*.ts key: Vite 6 compiles the dot in a pattern key's suffix as a regex wildcard.",
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./*.js": "./*.js",
+    "./*.mjs": "./*.mjs",
+    "./*.json": "./*.json",
+    "./*": "./*.ts"
+  }
+}

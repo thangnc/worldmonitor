@@ -29,7 +29,7 @@ const ROOT = process.cwd();
 // swept in CI.
 export const SCAN_ROOTS = [
   'src',
-  'server',
+  'packages/server',
   'api',
   'scripts',
   'tests',

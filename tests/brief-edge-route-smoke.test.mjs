@@ -4,7 +4,7 @@
 // - readRawJsonFromUpstash (api/_upstash-json.js) must keep an infrastructure
 //   error distinct from a genuine miss, so callers never read a Redis outage
 //   as "no data".
-// - assertBriefEnvelope (server/_shared/brief-render.js) is the envelope
+// - assertBriefEnvelope (packages/server/_shared/brief-render.js) is the envelope
 //   validator the digest seeder renders through; a partial envelope must not
 //   pass as ready.
 
@@ -71,14 +71,14 @@ describe('assertBriefEnvelope is shared between renderer and preview', () => {
   // contradiction. The preview RPC must use the same validator the
   // renderer uses so no partial envelope escapes as a "ready" status.
 
-  it('exports assertBriefEnvelope from server/_shared/brief-render.js', async () => {
-    const mod = await import('../server/_shared/brief-render.js');
+  it('exports assertBriefEnvelope from packages/server/_shared/brief-render.js', async () => {
+    const mod = await import('../packages/server/_shared/brief-render.js');
     assert.equal(typeof mod.assertBriefEnvelope, 'function');
     assert.equal(typeof mod.renderBriefMagazine, 'function');
   });
 
   it('assertBriefEnvelope throws on partial envelope missing digest.numbers', async () => {
-    const { assertBriefEnvelope } = await import('../server/_shared/brief-render.js');
+    const { assertBriefEnvelope } = await import('../packages/server/_shared/brief-render.js');
     // Weak preview would have passed this envelope: dateLong string,
     // digest.greeting string, stories array. But it's missing
     // digest.numbers entirely — the renderer must reject it so the

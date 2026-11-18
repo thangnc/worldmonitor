@@ -8,7 +8,7 @@
 #
 # Historical context: before 2026-04-18 this service built from the
 # scripts/ root with plain `npm ci`. The consolidation PR introduced
-# cross-directory imports (packages/shared/*, server/_shared/*, api/*) so the
+# cross-directory imports (packages/shared/*, packages/server/_shared/*, api/*) so the
 # service now needs repo-root as build context with the specific
 # modules COPY'd in. The retired seed-brief-composer Dockerfile had
 # the same pattern.
@@ -34,7 +34,7 @@ FROM node:24-alpine@sha256:feb76650b7195319268c59cb2d419c732d6c499b13bf5296f16ab
 WORKDIR /app
 
 # The repo-root package.json has "type":"module" which tells Node to
-# parse .js files under packages/shared/, server/_shared/, api/ as ESM. Inside
+# parse .js files under packages/shared/, packages/server/_shared/, api/ as ESM. Inside
 # this image we don't ship the full root package.json (it would pull
 # in dev-deps metadata we don't need), but the .js files we DO ship
 # still need the nearest-pjson walk to resolve to an ESM declaration.
@@ -62,7 +62,7 @@ COPY scripts/lib/ ./scripts/lib/
 COPY scripts/clear-delivered-entry.mjs ./scripts/
 
 # Brief envelope contract + filter + renderer assertion. These live
-# under packages/shared/ and server/_shared/ in the repo and are imported from
+# under packages/shared/ and packages/server/_shared/ in the repo and are imported from
 # scripts/lib/brief-compose.mjs. Keep this COPY list tight — adding
 # unrelated packages/shared/* files expands the rebuild watch surface.
 COPY packages/shared/brief-envelope.js packages/shared/brief-envelope.d.ts ./packages/shared/
@@ -105,7 +105,7 @@ COPY scripts/shared/notify-fields.cjs ./scripts/shared/
 COPY packages/shared/publisher-families.js packages/shared/publisher-families.d.ts ./packages/shared/
 COPY scripts/shared/publisher-families.js ./scripts/shared/
 COPY packages/shared/brief-llm-core.js packages/shared/brief-llm-core.d.ts ./packages/shared/
-COPY server/_shared/brief-render.js server/_shared/brief-render.d.ts server/_shared/brief-fonts.generated.js ./server/_shared/
+COPY packages/server/_shared/brief-render.js packages/server/_shared/brief-render.d.ts packages/server/_shared/brief-fonts.generated.js ./packages/server/_shared/
 # llm-sanitize is imported by scripts/lib/brief-llm.mjs on the fallback
 # path (legacy whyMatters generator) to strip prompt-injection patterns
 # from story fields before they reach the LLM. Without this COPY, the
@@ -113,17 +113,17 @@ COPY server/_shared/brief-render.js server/_shared/brief-render.d.ts server/_sha
 # hits any story whose analyst endpoint call falls through to the
 # fallback. See feedback_validation_docker_ship_full_scripts_dir.md —
 # the cherry-pick pattern keeps biting when new cross-dir imports land.
-COPY server/_shared/llm-sanitize.js server/_shared/llm-sanitize.d.ts ./server/_shared/
+COPY packages/server/_shared/llm-sanitize.js packages/server/_shared/llm-sanitize.d.ts ./packages/server/_shared/
 
 # opinion-classifier is imported directly by scripts/seed-digest-notifications.mjs
 # (buildDigest's read-time opinion filter — F3). Without this COPY the cron
 # crashes at import with ERR_MODULE_NOT_FOUND on startup.
-COPY server/_shared/opinion-classifier.js server/_shared/opinion-classifier.d.ts ./server/_shared/
+COPY packages/server/_shared/opinion-classifier.js packages/server/_shared/opinion-classifier.d.ts ./packages/server/_shared/
 
 # feelgood-classifier is imported directly by scripts/seed-digest-notifications.mjs
 # (buildDigest's read-time feel-good filter — sibling to the opinion filter). Same
 # ERR_MODULE_NOT_FOUND failure mode if omitted.
-COPY server/_shared/feelgood-classifier.js server/_shared/feelgood-classifier.d.ts ./server/_shared/
+COPY packages/server/_shared/feelgood-classifier.js packages/server/_shared/feelgood-classifier.d.ts ./packages/server/_shared/
 
 # Upstash REST helper (brief compose uses redisPipeline + readRawJson).
 COPY api/_upstash-json.js ./api/

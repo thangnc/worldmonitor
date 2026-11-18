@@ -26,7 +26,7 @@ import { getCorsHeaders, isHostedAppOrigin } from './_cors.js';
 import { jsonResponse } from './_json-response.js';
 // @ts-expect-error — JS module, no declaration file
 import { issueSessionToken } from './_session.js';
-import { timingSafeEqual } from '../server/_shared/internal-auth';
+import { timingSafeEqual } from '../packages/server/_shared/internal-auth';
 
 type ProbeShape = 'envelope' | 'bare';
 

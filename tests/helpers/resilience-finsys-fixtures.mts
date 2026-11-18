@@ -30,7 +30,7 @@
 //   - LU / SG / CH / US / DE / LY / VE have no WB IDS row because the
 //     Debtor Reporting System only covers World Bank borrowers.
 
-import type { ResilienceSeedReader } from '../../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import type { ResilienceSeedReader } from '../../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 // Capture date for the whole file — quoted verbatim in calibration failure
 // messages, so it must describe every row, not just the newest. When adding a

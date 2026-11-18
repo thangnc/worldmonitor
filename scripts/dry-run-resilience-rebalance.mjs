@@ -36,7 +36,7 @@ if (process.env.CI === 'true') {
   process.exit(2);
 }
 
-const { RESILIENCE_RANKING_CACHE_KEY } = await import('../server/worldmonitor/resilience/v1/_shared.ts');
+const { RESILIENCE_RANKING_CACHE_KEY } = await import('../packages/server/worldmonitor/resilience/v1/_shared.ts');
 const POST_RANKING_KEY = RESILIENCE_RANKING_CACHE_KEY;
 const PRE_RANKING_KEY = process.env.PRE_RANKING_KEY ?? null;
 const IMF_LABOR_KEY = 'economic:imf:labor:v1';

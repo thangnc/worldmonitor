@@ -8,8 +8,8 @@
 import type { ListFeedDigestResponse, NewsItem } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
 import { getSourceType } from '@wm/shared/source-provenance';
 import { MIN_CORROBORATING_PUBLISHERS } from '@wm/shared/publisher-families.js';
-import { getSourceTier } from '../../../server/_shared/source-tiers';
-import { assessCorroboration, evidenceFromItem, type Corroboration } from '../../../server/_shared/corroboration';
+import { getSourceTier } from '../../../packages/server/_shared/source-tiers';
+import { assessCorroboration, evidenceFromItem, type Corroboration } from '../../../packages/server/_shared/corroboration';
 import { SIMILARITY_THRESHOLD, jaccardSimilarity, tokenize } from '@wm/shared/text-analysis-core.js';
 
 export type Tone = 'crit' | 'high' | 'elev' | 'ok' | 'muted' | 'dim';
@@ -72,7 +72,7 @@ export type CorroborationState = Corroboration['state'];
 
 /**
  * The dashboard's corroboration verdict for one digest item
- * (server/_shared/corroboration.ts), so Lite and the full dashboard never
+ * (packages/server/_shared/corroboration.ts), so Lite and the full dashboard never
  * disagree. It counts publisher families from the digest's origin-aware
  * corroborationCount and describes coverage, not accuracy. Tier 1 is not part
  * of it: isPrimarySource is shown beside it.

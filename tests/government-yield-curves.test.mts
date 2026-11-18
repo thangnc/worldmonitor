@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, it } from 'node:test';
 
-import { getGovernmentYieldCurve } from '../server/worldmonitor/economic/v1/get-government-yield-curve.ts';
+import { getGovernmentYieldCurve } from '../packages/server/worldmonitor/economic/v1/get-government-yield-curve.ts';
 import {
   COVERED_MARKETS,
   OECD_LT_KEY,
@@ -13,7 +13,7 @@ import {
   govYieldCurvesFromShards,
   govYieldLatestKey,
   govYieldYearKey,
-} from '../server/worldmonitor/economic/v1/government-yield-curves.ts';
+} from '../packages/server/worldmonitor/economic/v1/government-yield-curves.ts';
 import {
   collapseCurves,
   mergeCurveHistory,

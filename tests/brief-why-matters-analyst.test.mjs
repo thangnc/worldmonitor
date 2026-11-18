@@ -40,13 +40,13 @@ function story(overrides = {}) {
 
 describe('normalizeCountryToIso2', () => {
   let normalize;
-  it('loads from server/_shared/country-normalize.ts via tsx or compiled', async () => {
+  it('loads from packages/server/_shared/country-normalize.ts via tsx or compiled', async () => {
     // The module is .ts; in the repo's test setup, node 22 can load .ts
     // via tsx. If direct import fails under the test runner, fall back
     // to running the logic inline by importing the JSON and a mirror
     // function. The logic is trivial so this isn't a flaky compromise.
     try {
-      const mod = await import('../server/_shared/country-normalize.ts');
+      const mod = await import('../packages/server/_shared/country-normalize.ts');
       normalize = mod.normalizeCountryToIso2;
     } catch {
       const { default: COUNTRY_NAMES } = await import('../packages/shared/country-names.json', {
@@ -112,7 +112,7 @@ describe('normalizeCountryToIso2', () => {
 
 describe('displayNameForIso2', () => {
   it('resolves non-tier-1 codes such as Norway instead of leaking the ISO code', async () => {
-    const { displayNameForIso2 } = await import('../server/_shared/country-normalize.ts');
+    const { displayNameForIso2 } = await import('../packages/server/_shared/country-normalize.ts');
     assert.equal(displayNameForIso2('NO'), 'Norway');
     assert.equal(displayNameForIso2('no'), 'Norway');
     assert.equal(displayNameForIso2('US'), 'United States');

@@ -16,7 +16,7 @@ const {
   STATE_KEY,
   publishChokepointDisruptionAlerts,
 } = require('../scripts/lib/chokepoint-disruption-alerts.cjs');
-const { scoreToStatus, THREAT_LEVEL } = await import('../server/worldmonitor/supply-chain/v1/_scoring.mjs');
+const { scoreToStatus, THREAT_LEVEL } = await import('../packages/server/worldmonitor/supply-chain/v1/_scoring.mjs');
 
 const T0 = Date.parse('2026-10-17T12:00:00Z');
 const TICK = 30 * 60 * 1000;
@@ -79,7 +79,7 @@ describe('chokepoint disruption alerts', () => {
   it('uses the scorer\'s red band and threat levels', async () => {
     assert.equal(scoreToStatus(RED_THRESHOLD), 'red');
     assert.notEqual(scoreToStatus(RED_THRESHOLD - 1), 'red');
-    const { threatLevelToWarRiskTier } = await import('../server/worldmonitor/supply-chain/v1/_insurance-tier.ts');
+    const { threatLevelToWarRiskTier } = await import('../packages/server/worldmonitor/supply-chain/v1/_insurance-tier.ts');
     for (const [level, points] of Object.entries(THREAT_LEVEL)) {
       assert.equal(THREAT_POINTS_BY_TIER[threatLevelToWarRiskTier(level)], points, level);
     }

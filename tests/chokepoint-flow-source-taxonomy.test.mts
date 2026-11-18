@@ -32,9 +32,9 @@ process.env.LOCAL_API_MODE = 'tauri-sidecar';
 delete process.env.UPSTASH_REDIS_REST_URL;
 delete process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const { sidecarCacheSet } = await import('../server/_shared/sidecar-cache.ts');
+const { sidecarCacheSet } = await import('../packages/server/_shared/sidecar-cache.ts');
 const { getChokepointStatus } = await import(
-  '../server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts'
+  '../packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts'
 );
 // Safe to import: seed-chokepoint-flows.mjs guards its runSeed call behind
 // `isMain`, so nothing executes and no Redis credentials are read on import.

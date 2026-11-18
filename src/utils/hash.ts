@@ -28,7 +28,7 @@ export function hashString(input: string): string {
  * mints a cache key, which matters because client and server must derive the
  * same key byte-for-byte.
  *
- * Mirrors server/_shared/hash.ts::sha256Hex. Keep the two identical.
+ * Mirrors packages/server/_shared/hash.ts::sha256Hex. Keep the two identical.
  */
 export async function sha256Hex(input: string): Promise<string> {
   const buf = await crypto.subtle.digest(

@@ -14,12 +14,12 @@ import {
   getCountryCoverage,
   resolveCountryName,
   type CountryCoverageDependencies,
-} from '../server/worldmonitor/intelligence/v1/get-country-coverage.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/get-country-coverage.ts';
 import {
   collectStructuredIncidents,
   type StructuredDependencies,
   type StructuredSourceResult,
-} from '../server/worldmonitor/intelligence/v1/_country-coverage-structured.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/_country-coverage-structured.ts';
 import { countryBox, inBox } from '../packages/shared/country-bbox.ts';
 import {
   buildEventQueryTerms,
@@ -28,8 +28,8 @@ import {
   fetchCountryCoverageFeeds,
   splitGoogleNewsTitle,
   type CoverageFetch,
-} from '../server/worldmonitor/intelligence/v1/_country-coverage-feeds.ts';
-import * as feedDigest from '../server/worldmonitor/news/v1/list-feed-digest.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/_country-coverage-feeds.ts';
+import * as feedDigest from '../packages/server/worldmonitor/news/v1/list-feed-digest.ts';
 import { isCountryHeadline } from '../packages/shared/country-headline-match.ts';
 import { classifyByKeyword } from '../packages/shared/threat-keyword-classifier.ts';
 import { protoThreatLevelToLabel } from '../packages/shared/news-clustering-core.js';

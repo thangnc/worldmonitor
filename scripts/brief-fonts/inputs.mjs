@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const BRIEF_RENDERER = 'server/_shared/brief-render.js';
+export const BRIEF_RENDERER = 'packages/server/_shared/brief-render.js';
 const FONT_PROPS = /(?<![\w-])(font-weight|font-style|font-variant(?:-[a-z]+)?|font-feature-settings|font-variation-settings|font-synthesis(?:-[a-z]+)?|font-family|font-optical-sizing|font|text-transform|hyphens)\s*:\s*([^;{}\n]+)/g;
 const LANG_ATTR = /\blang=["']([^"']+)["']/g;
 

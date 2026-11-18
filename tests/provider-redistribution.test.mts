@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import {
   requiresRedistributableProviders,
-} from '../server/_shared/provider-redistribution';
+} from '../packages/server/_shared/provider-redistribution';
 import {
   hasRedistributableProviderAttribution,
   isOpenSkyProvider,

@@ -4,7 +4,7 @@
 // The source of truth is scripts/_seed-envelope-source.mjs. Two mirrored copies
 // live at:
 //   - api/_seed-envelope.js            (edge-safe, for api/*.js)
-//   - server/_shared/seed-envelope.ts  (TypeScript, for server/ and scripts/)
+//   - packages/server/_shared/seed-envelope.ts  (TypeScript, for packages/server/ and scripts/)
 //
 // The TypeScript copy carries additional type declarations, so the check is
 // function-by-function: every function exported from the source must appear in
@@ -24,7 +24,7 @@ const repoRoot = resolve(here, '..');
 // Source of truth: scripts/_seed-envelope-source.mjs (plain JS, hand-authored).
 // Must-match copy:  api/_seed-envelope.js           (plain JS, hand-authored).
 //
-// The TypeScript copy at server/_shared/seed-envelope.ts is type-checked by
+// The TypeScript copy at packages/server/_shared/seed-envelope.ts is type-checked by
 // `tsc` and reviewed manually. It is NOT diffed here because TS-specific casts
 // (`as any`, `as SeedMeta`, etc.) can't be stripped without introducing their
 // own bug class. The drift risk on the TS file is mitigated by (a) this header

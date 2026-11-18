@@ -2,7 +2,7 @@
   "name": "@wm/shared",
   "version": "0.0.0",
   "private": true,
-  "description": "WorldMonitor logic and data that the browser, the server and the seeders must apply the same way. Browser code imports @wm/shared/<file> by name; api/, server/, middleware.ts and this package use relative paths. A .ts module is imported without its extension; .js, .mjs, .cjs and .json files name theirs. There is deliberately no ./*.ts key: Vite 6 compiles the dot in a pattern key's suffix as a regex wildcard, so it would also match extensionless names ending in -ts (cii-weights) and send them to the wrong file.",
+  "description": "WorldMonitor logic and data that the browser, the server and the seeders must apply the same way. Browser code imports @wm/shared/<file> by name; api/, packages/server/, middleware.ts and this package use relative paths. A .ts module is imported without its extension; .js, .mjs, .cjs and .json files name theirs. There is deliberately no ./*.ts key: Vite 6 compiles the dot in a pattern key's suffix as a regex wildcard, so it would also match extensionless names ending in -ts (cii-weights) and send them to the wrong file.",
   "type": "module",
   "exports": {
     "./package.json": "./package.json",

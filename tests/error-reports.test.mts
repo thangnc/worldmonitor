@@ -10,14 +10,14 @@ import {
   PENDING_REPORTS_MAX,
   REVIEWED_REPORTS_KEY,
   TRUST_REVIEW_HEADER,
-} from '../server/_shared/error-reports.ts';
-import { LABEL_CHANGES_KEY, STORY_LABEL_HISTORY_KEY } from '../server/_shared/label-history.ts';
+} from '../packages/server/_shared/error-reports.ts';
+import { LABEL_CHANGES_KEY, STORY_LABEL_HISTORY_KEY } from '../packages/server/_shared/label-history.ts';
 import {
   listErrorReports,
   reviewErrorReport,
   submitErrorReport,
-} from '../server/worldmonitor/news/v1/error-reports.ts';
-import { listLabelChanges } from '../server/worldmonitor/news/v1/list-label-changes.ts';
+} from '../packages/server/worldmonitor/news/v1/error-reports.ts';
+import { listLabelChanges } from '../packages/server/worldmonitor/news/v1/list-label-changes.ts';
 
 type Command = Array<string | number>;
 

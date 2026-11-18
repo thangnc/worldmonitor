@@ -8,7 +8,7 @@ import {
   hasCloudflareTransitProof as serverProof,
   getClientIp as getServerClientIp,
   resetEdgeProofMismatchWarnedForTest as resetServer,
-} from '../server/_shared/client-ip.ts';
+} from '../packages/server/_shared/client-ip.ts';
 import {
   hasUnprovenCloudflareClientIp as apiUnproven,
   hasCloudflareTransitProof as apiProof,
@@ -21,7 +21,7 @@ import {
   checkFailClosedScopedIpRateLimit,
   ENDPOINT_RATE_POLICIES,
   resetEdgeProofRateLimitReportedForTest as resetServerEdgeProofReport,
-} from '../server/_shared/rate-limit.ts';
+} from '../packages/server/_shared/rate-limit.ts';
 import {
   EDGE_PROOF_TRANSFORM_EXPRESSION,
   EDGE_PROOF_PATH_PREFIXES,

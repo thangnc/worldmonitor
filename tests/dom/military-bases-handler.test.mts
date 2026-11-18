@@ -4,10 +4,10 @@ const { cachedFetchJson, geoSearchByBox } = vi.hoisted(() => ({
   cachedFetchJson: vi.fn(async (_key: string, _ttl: number, fetcher: () => Promise<unknown>) => fetcher()),
   geoSearchByBox: vi.fn(async () => []),
 }));
-vi.mock('../../server/_shared/redis', () => ({ cachedFetchJson, geoSearchByBox,
+vi.mock('../../packages/server/_shared/redis', () => ({ cachedFetchJson, geoSearchByBox,
   getCachedJson: async () => 'fixture-version', getHashFieldsBatch: vi.fn(),
 }));
-import { listMilitaryBases } from '../../server/worldmonitor/military/v1/list-military-bases';
+import { listMilitaryBases } from '../../packages/server/worldmonitor/military/v1/list-military-bases';
 
 it('uses identical normalized query bounds for requests in the same server cache bucket', async () => {
   const req = { swLat: 10.1, swLon: 20.1, neLat: 30.1, neLon: 40.1, zoom: 7, type: '', kind: '', country: '' };

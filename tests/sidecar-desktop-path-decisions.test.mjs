@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 
 /**
- * #5907: every sebuf route family under server/worldmonitor/ needs an explicit
+ * #5907: every sebuf route family under packages/server/worldmonitor/ needs an explicit
  * local-api path decision. A v1 family is served from api/{domain}/v1/[rpc].ts.
  * A versioned family (api/v{N}/{domain}/[rpc].ts) must be routed to the cloud
  * on purpose by the local-api server — otherwise it only reaches the cloud
@@ -30,9 +30,9 @@ function listFromSource(source, name) {
 
 const sidecarCloudOnlyPrefixes = listFromSource(sidecar, 'cloudOnlyRouteFamilyPrefixes');
 
-/** Every {domain, version} pair under server/worldmonitor/, with its api entry. */
+/** Every {domain, version} pair under packages/server/worldmonitor/, with its api entry. */
 function serverFamilies() {
-  const serverRoot = resolve(root, 'server/worldmonitor');
+  const serverRoot = resolve(root, 'packages/server/worldmonitor');
   const families = [];
   for (const domain of readdirSync(serverRoot).sort()) {
     const domainDir = join(serverRoot, domain);
@@ -55,7 +55,7 @@ function serverFamilies() {
   return families;
 }
 
-describe('local-api path decision per server/worldmonitor route family (#5907)', () => {
+describe('local-api path decision per packages/server/worldmonitor route family (#5907)', () => {
   const families = serverFamilies();
 
   it('finds the families the repo is known to have', () => {

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { looksLikeRssXml } from '../server/worldmonitor/news/v1/list-feed-digest';
+import { looksLikeRssXml } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
 
 describe('looksLikeRssXml: reject non-RSS bodies before they poison the cache', () => {
   it('accepts a standard RSS 2.0 body', () => {

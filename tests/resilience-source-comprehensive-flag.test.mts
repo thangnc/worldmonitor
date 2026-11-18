@@ -14,7 +14,7 @@ import { describe, it } from 'node:test';
 import {
   INDICATOR_REGISTRY,
   isIndicatorComprehensive,
-} from '../server/worldmonitor/resilience/v1/_indicator-registry';
+} from '../packages/server/worldmonitor/resilience/v1/_indicator-registry';
 
 describe('source-comprehensiveness flag (Plan 2026-04-26-002 §U5)', () => {
   it('every indicator entry carries an explicit `comprehensive` boolean', () => {

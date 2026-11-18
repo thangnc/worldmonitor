@@ -4,7 +4,7 @@
  *
  * The ShippingV2Service lets partners register a `callbackUrl` (RegisterWebhook)
  * that WorldMonitor POSTs signed events to. The delivery worker
- * (server/worldmonitor/shipping/v2/deliver-webhook.ts) signs every POST with a
+ * (packages/server/worldmonitor/shipping/v2/deliver-webhook.ts) signs every POST with a
  * versioned HMAC-SHA256 over the timestamp, delivery id, event and raw body.
  * The legacy body-only signature remains available during receiver migration.
  * The sebuf `protoc-gen-openapiv3` plugin only emits the

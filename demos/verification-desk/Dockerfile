@@ -9,7 +9,7 @@ WORKDIR /app
 # Only what the desk imports: WorldMonitor's grading modules and the desk itself.
 COPY package.json ./
 COPY packages/shared/ ./packages/shared/
-COPY server/_shared/ ./server/_shared/
+COPY packages/server/_shared/ ./packages/server/_shared/
 COPY scripts/ ./scripts/
 COPY src/locales/en.json ./src/locales/en.json
 COPY demos/verification-desk/ ./demos/verification-desk/

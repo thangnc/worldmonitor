@@ -46,9 +46,9 @@ import {
   buildAnalystSystemPrompt,
   type AnalystChatTurn,
   type AnalystLlmMessage,
-} from '../server/worldmonitor/intelligence/v1/chat-analyst-prompt.ts';
-import type { AnalystContext } from '../server/worldmonitor/intelligence/v1/chat-analyst-context.ts';
-import { anthropicComplete, getAnthropicApiKey, getAnthropicModel } from '../server/_shared/llm-anthropic.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/chat-analyst-prompt.ts';
+import type { AnalystContext } from '../packages/server/worldmonitor/intelligence/v1/chat-analyst-context.ts';
+import { anthropicComplete, getAnthropicApiKey, getAnthropicModel } from '../packages/server/_shared/llm-anthropic.ts';
 import { DEEPSEEK_V4_FLASH_MODEL_PREFIX, OPENROUTER_PROVIDER_ROUTING } from './_llm-model-timeouts.mjs';
 
 type Layout = 'legacy' | 'user-turn';

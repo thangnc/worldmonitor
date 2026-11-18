@@ -17,7 +17,7 @@ import {
   runWorker,
   validate,
 } from '../scripts/seed-recovery-import-hhi.mjs';
-import { ISO2_TO_COMTRADE } from '../server/worldmonitor/intelligence/v1/_comtrade-reporters.js';
+import { ISO2_TO_COMTRADE } from '../packages/server/worldmonitor/intelligence/v1/_comtrade-reporters.js';
 
 const seedSrc = readFileSync(new URL('../scripts/seed-recovery-import-hhi.mjs', import.meta.url), 'utf8');
 const reporterOverrides = JSON.parse(

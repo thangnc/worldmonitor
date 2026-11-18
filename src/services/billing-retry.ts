@@ -4,7 +4,7 @@
  * The server marks an entitlement lookup it could not complete as RETRYABLE:
  * HTTP 503 + `Retry-After` + `X-Billing-Verification: <code>` (built in one
  * place by `classifyBillingVerification` in
- * server/_shared/entitlement-check.ts, documented in docs/usage-errors.mdx).
+ * packages/server/_shared/entitlement-check.ts, documented in docs/usage-errors.mdx).
  * That contract is inert unless a client actually honors it.
  *
  * This module is the single client-side decision point, mirroring the server's
@@ -71,7 +71,7 @@ const DEFAULT_BILLING_RETRY_AFTER_SECONDS = 5;
  * Retrying EARLIER than the server asked is deliberately not an option either:
  * it violates the Retry-After contract and, because the server negative-caches
  * a transient answer for a few seconds
- * (UNAVAILABLE_NEGATIVE_CACHE_TTL_MS in server/_shared/entitlement-check.ts),
+ * (UNAVAILABLE_NEGATIVE_CACHE_TTL_MS in packages/server/_shared/entitlement-check.ts),
  * an early retry would deterministically be served the same cached failure.
  */
 export const BILLING_RETRY_MAX_DELAY_MS = 10_000;
@@ -167,7 +167,7 @@ export function sleepBeforeRetry(ms: number, signal: AbortSignal | null): Promis
  * obvious-sounding reason is wrong.
  *
  * The server's contract is genuinely route-agnostic — the legacy-Pro-bearer
- * gate (server/gateway.ts:1467) resolves `getEntitlements()` for ANY
+ * gate (packages/server/gateway.ts:1467) resolves `getEntitlements()` for ANY
  * authenticated request and can 503 a route in neither ENDPOINT_ENTITLEMENTS
  * nor PREMIUM_RPC_PATHS. But that does NOT mean the browser sees such routes.
  * Over the 30 days to 2026-08-12, `billing_verification_503` hit 12 routes /

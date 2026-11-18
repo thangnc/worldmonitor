@@ -6,7 +6,7 @@
 // and the additive X tier overlay. Existing RSS mastheads are reused.
 //
 // Extension point matches #6600: spread into packages/shared/source-provenance.ts and
-// server/_shared/source-tiers.ts. Keep this file X-only. Do not register
+// packages/server/_shared/source-tiers.ts. Keep this file X-only. Do not register
 // Telegram channels here.
 //
 // Types are duplicated (not imported) so this module stays a leaf and

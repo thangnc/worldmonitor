@@ -5,14 +5,14 @@ import {
   PENALTY_ALPHA,
   RESILIENCE_SCORE_CACHE_PREFIX,
   penalizedPillarScore,
-} from '../server/worldmonitor/resilience/v1/_shared.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
 import {
   PILLAR_DOMAINS,
   PILLAR_ORDER,
   PILLAR_WEIGHTS,
   buildPillarList,
   type ResiliencePillarId,
-} from '../server/worldmonitor/resilience/v1/_pillar-membership.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_pillar-membership.ts';
 import type { ResilienceDomain } from '../packages/contracts/generated/server/worldmonitor/resilience/v1/service_server.ts';
 
 function makeDomain(id: string, score: number, coverage: number, weight = 0.17): ResilienceDomain {

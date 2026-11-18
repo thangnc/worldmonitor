@@ -1,5 +1,5 @@
-// Types for scripts/shared/cii-country-borders.mjs so server/*.ts consumers stay
-// covered by `npm run typecheck:api` (tsconfig.api.json includes server/).
+// Types for scripts/shared/cii-country-borders.mjs so packages/server/*.ts consumers stay
+// covered by `npm run typecheck:api` (tsconfig.api.json includes packages/server/).
 
 /** Territorial sea: 12 nautical miles, in km. */
 export declare const CII_COASTAL_WATERS_KM: number;

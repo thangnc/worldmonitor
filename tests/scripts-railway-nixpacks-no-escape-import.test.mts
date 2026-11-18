@@ -2,7 +2,7 @@
  * Regression test for #3811: relative imports in scripts that ship via the
  * Railway nixpacks build with `root_dir=scripts` MUST NOT escape `scripts/`,
  * because nixpacks packages only `scripts/` contents into `/app/` in the
- * container. An `import '../server/_shared/X.mjs'` resolves to
+ * container. An `import '../packages/server/_shared/X.mjs'` resolves to
  * `/server/_shared/X.mjs` at runtime — a path that doesn't exist — and
  * crashes the worker on startup with `ERR_MODULE_NOT_FOUND`.
  *
@@ -169,7 +169,7 @@ describe('scripts/ Railway nixpacks packaging — no escape imports', () => {
           }
           // Stay inside scripts/: follow if it's a .mjs/.cjs/.js sibling so
           // we catch deeper transitive escapes (e.g. a helper added later
-          // that imports from ../server/_shared/X).
+          // that imports from ../packages/server/_shared/X).
           if (/\.(mjs|cjs|js)$/.test(resolved)) {
             queue.push(resolved);
           }

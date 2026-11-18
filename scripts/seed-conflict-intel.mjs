@@ -278,7 +278,7 @@ const HAPI_APP_IDENTIFIER = Buffer.from(
 // ─── ACLED Events ───
 
 async function fetchAcledToken() {
-  // Priority 1: ACLED_EMAIL + ACLED_PASSWORD -> OAuth flow (matches server/acled-auth.ts)
+  // Priority 1: ACLED_EMAIL + ACLED_PASSWORD -> OAuth flow (matches packages/server/_shared/acled-auth.ts)
   const email = process.env.ACLED_EMAIL?.trim();
   const password = process.env.ACLED_PASSWORD?.trim();
   if (email && password) {

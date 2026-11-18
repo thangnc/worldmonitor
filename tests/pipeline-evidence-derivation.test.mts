@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test, describe } from 'node:test';
-import { derivePublicBadge, DERIVER_VERSION } from '../server/worldmonitor/supply-chain/v1/_pipeline-evidence';
+import { derivePublicBadge, DERIVER_VERSION } from '../packages/server/worldmonitor/supply-chain/v1/_pipeline-evidence';
 import { pickNewerClassifierVersion, pickNewerIsoTimestamp } from '../src/shared/pipeline-evidence';
 
 const NOW = Date.parse('2026-04-22T12:00:00Z');

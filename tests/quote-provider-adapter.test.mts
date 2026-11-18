@@ -16,7 +16,7 @@ import {
   isYahooNotationSymbol,
   providerNotConfiguredReason,
   resolveMarketQuoteProvider,
-} from '../server/worldmonitor/market/v1/_quote-provider';
+} from '../packages/server/worldmonitor/market/v1/_quote-provider';
 
 const ORIGINAL_FETCH = globalThis.fetch;
 const ORIGINAL_ENV = {

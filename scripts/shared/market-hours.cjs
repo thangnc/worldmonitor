@@ -12,7 +12,7 @@
  * 13:00–17:00; weekends and full NYSE holidays are 'closed' all day.
  *
  * Server-side TypeScript twin: getUsEquitySessionAt() in
- * server/worldmonitor/market/v1/analyze-stock.ts (server code must not
+ * packages/server/worldmonitor/market/v1/analyze-stock.ts (server code must not
  * import this .cjs — Vercel bundling). tests/market-hours.test.mjs
  * cross-checks both implementations on the same fixtures.
  */

@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { IndicatorSpec } from '../../server/worldmonitor/resilience/v1/_indicator-registry.ts';
-import { INDICATOR_REGISTRY } from '../../server/worldmonitor/resilience/v1/_indicator-registry.ts';
-import { MACRO_FISCAL_INDICATOR_WEIGHTS } from '../../server/worldmonitor/resilience/v1/_macro-fiscal-weights.ts';
-import type { ResilienceDimensionId } from '../../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import type { IndicatorSpec } from '../../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
+import { INDICATOR_REGISTRY } from '../../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
+import { MACRO_FISCAL_INDICATOR_WEIGHTS } from '../../packages/server/worldmonitor/resilience/v1/_macro-fiscal-weights.ts';
+import type { ResilienceDimensionId } from '../../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 export type ScorerParityExtraction = 'scorer-source' | 'non-linear-allowlist' | 'custom-source';
 
@@ -48,7 +48,7 @@ interface ScorerTableBinding {
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
-const SCORER_SOURCE_PATH = resolve(here, '../../server/worldmonitor/resilience/v1/_dimension-scorers.ts');
+const SCORER_SOURCE_PATH = resolve(here, '../../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts');
 const SCORER_SOURCE = readFileSync(SCORER_SOURCE_PATH, 'utf8');
 
 const SCORER_TABLE_BINDINGS = [

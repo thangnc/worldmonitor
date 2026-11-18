@@ -3,7 +3,7 @@
  *
  * The batch endpoint (`tests/batch-execute.test.mts`) proves ONE fan-out
  * charges the caller's budget. This file proves the CLASS: the shared
- * dispatch path in `server/_shared/server-sub-request-dispatch.ts` owns the
+ * dispatch path in `packages/server/_shared/server-sub-request-dispatch.ts` owns the
  * charge, admission, marker, and fetch that every fan-out inherits, so a new
  * fan-out endpoint cannot omit one of those steps.
  *
@@ -33,9 +33,9 @@ import {
   isUnattributedSubRequestIdentity,
   resolveServerSubRequestCharge,
   TRUSTED_RATE_LIMIT_PRINCIPAL_HEADER,
-} from '../server/_shared/rate-limit.ts';
-import { dispatchServerSubRequest } from '../server/_shared/server-sub-request-dispatch.ts';
-import { SUB_REQUEST_MARKER_HEADER } from '../server/_shared/sub-request-admission.ts';
+} from '../packages/server/_shared/rate-limit.ts';
+import { dispatchServerSubRequest } from '../packages/server/_shared/server-sub-request-dispatch.ts';
+import { SUB_REQUEST_MARKER_HEADER } from '../packages/server/_shared/sub-request-admission.ts';
 import { installRedis } from './helpers/fake-upstash-redis.mts';
 
 const POLICY_PATH = '/api/market/v1/list-market-quotes';

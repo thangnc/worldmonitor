@@ -28,7 +28,7 @@ import {
   scoreEducation,
   EDUCATION_BEND,
   EDUCATION_BEND_SCORE,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.js';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.js';
 import sovereignStatus from '../scripts/shared/sovereign-status.json';
 
 const EDUCATION_KEY = 'resilience:education-attainment:v1';

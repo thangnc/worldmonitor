@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { buildInstrument } from '../scripts/seed-cot.mjs';
-import { mapCotPositioning } from '../server/worldmonitor/market/v1/get-cot-positioning.ts';
+import { mapCotPositioning } from '../packages/server/worldmonitor/market/v1/get-cot-positioning.ts';
 
 const target = { name: 'S&P 500 E-Mini', code: 'ES' };
 

@@ -1,7 +1,7 @@
 /**
  * Population exposure core — shared between the dashboard
  * (src/services/population-exposure.ts) and the server RPC handler
- * (server/worldmonitor/displacement/v1/get-population-exposure.ts).
+ * (packages/server/worldmonitor/displacement/v1/get-population-exposure.ts).
  *
  * Country-density approximation: nearest priority-country centroid supplies a
  * pop/area density, multiplied by the event radius disc. Deliberately coarse —

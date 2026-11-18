@@ -16,8 +16,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, before, describe, it } from 'node:test';
 
-import { createDomainGateway, type GatewayCtx } from '../server/gateway.ts';
-import { deriveCountry } from '../server/_shared/usage.ts';
+import { createDomainGateway, type GatewayCtx } from '../packages/server/gateway.ts';
+import { deriveCountry } from '../packages/server/_shared/usage.ts';
 import { issueSessionToken } from '../api/_session.js';
 import { createRedisFetch } from './helpers/fake-upstash-redis.mts';
 

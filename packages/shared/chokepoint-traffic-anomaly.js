@@ -3,7 +3,7 @@
  * the traffic-anomaly signal and the official-count summary.
  *
  * Lives in `shared/` rather than beside the other scoring helpers in
- * `server/worldmonitor/supply-chain/v1/_scoring.mjs` because the AIS relay
+ * `packages/server/worldmonitor/supply-chain/v1/_scoring.mjs` because the AIS relay
  * needs it too, and the relay image copies `shared/` but not `server/`
  * (see Dockerfile.relay). The relay previously carried a hand-maintained copy
  * kept honest by a source-comparison test; one module removes both.

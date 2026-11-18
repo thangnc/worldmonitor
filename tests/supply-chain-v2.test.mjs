@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { BOOTSTRAP_CACHE_KEYS } from '../packages/shared/bootstrap-tier-keys.js';
-import { MINERAL_PRODUCTION_2024 } from '../server/worldmonitor/supply-chain/v1/_minerals-data.ts';
+import { MINERAL_PRODUCTION_2024 } from '../packages/server/worldmonitor/supply-chain/v1/_minerals-data.ts';
 
 // The v2 rollout assertions that used to open this file pinned proto field
 // numbers, generated client types, OpenAPI paths, gateway tiers, panel markup
@@ -83,7 +83,7 @@ import {
   THREAT_LEVEL,
   warningComponent,
   aisComponent,
-} from '../server/worldmonitor/supply-chain/v1/_scoring.mjs';
+} from '../packages/server/worldmonitor/supply-chain/v1/_scoring.mjs';
 
 describe('Scoring integration with v2 minerals (top-3 slicing)', () => {
   it('HHI with 3 producers sums correctly', () => {
@@ -200,7 +200,7 @@ describe('Composite disruption score', () => {
 // 14. Chokepoint threat config + expanded keywords (behavioural)
 // ========================================================================
 
-import { CHOKEPOINTS, THREAT_CONFIG_LAST_REVIEWED } from '../server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts';
+import { CHOKEPOINTS, THREAT_CONFIG_LAST_REVIEWED } from '../packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts';
 
 const cpById = Object.fromEntries(CHOKEPOINTS.map(cp => [cp.id, cp]));
 

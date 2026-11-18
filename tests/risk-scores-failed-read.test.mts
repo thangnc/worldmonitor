@@ -22,9 +22,9 @@ delete process.env.ACLED_ACCESS_TOKEN;
 delete process.env.ACLED_EMAIL;
 delete process.env.ACLED_PASSWORD;
 
-const { getRiskScores, getCiiTrendPriorCandidateBuckets } = await import('../server/worldmonitor/intelligence/v1/get-risk-scores');
-const { CII_FORMULA_VERSION } = await import('../server/worldmonitor/intelligence/v1/_risk-config');
-const { __clearLocalUnavailableBackoffForTests } = await import('../server/_shared/redis');
+const { getRiskScores, getCiiTrendPriorCandidateBuckets } = await import('../packages/server/worldmonitor/intelligence/v1/get-risk-scores');
+const { CII_FORMULA_VERSION } = await import('../packages/server/worldmonitor/intelligence/v1/_risk-config');
+const { __clearLocalUnavailableBackoffForTests } = await import('../packages/server/_shared/redis');
 
 const SIGNAL_FAMILY_KEYS = [
   'conflict:ucdp-events:v1',

@@ -1,6 +1,6 @@
 // Reader policy for the scored CII inputs that the risk-scores build reports on
 // `seed-meta:intelligence:risk-scores` (see CII_HEALTH_INPUT_IDS in
-// server/worldmonitor/intelligence/v1/get-risk-scores.ts; the two lists are
+// packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts; the two lists are
 // pinned together by tests/cii-input-health.test.mts). Shared by /api/health
 // and /api/seed-health so both surfaces grade a dead input the same way.
 //

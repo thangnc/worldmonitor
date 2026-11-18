@@ -20,7 +20,7 @@ import {
   RESILIENCE_HISTORY_KEY_PREFIX,
   RESILIENCE_SCORE_CACHE_PREFIX,
   getCurrentCacheFormula,
-} from '../server/worldmonitor/resilience/v1/_shared.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
 import wholeIndexFixture from './fixtures/resilience-whole-index-pairs-2026-08-13.json' with { type: 'json' };
 
 // This is the NON-REGRESSION half of the CRI proof (issue #7728). The

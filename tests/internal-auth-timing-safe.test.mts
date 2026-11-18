@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { timingSafeEqual, authenticateInternalRequest } from '../server/_shared/internal-auth.ts';
+import { timingSafeEqual, authenticateInternalRequest } from '../packages/server/_shared/internal-auth.ts';
 import { timingSafeEqualSecret as apiTimingSafeEqual } from '../api/_crypto.js';
 
 async function withDigestSpy<T>(fn: (calls: Array<{ algorithm: AlgorithmIdentifier; bytes: number }>) => Promise<T>): Promise<T> {

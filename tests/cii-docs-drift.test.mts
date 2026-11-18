@@ -14,7 +14,7 @@ import {
   CII_FORMULA_VERSION,
   STRATEGIC_RISK_POSITIONAL_DECAY,
   STRATEGIC_RISK_TOP_N,
-} from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
 import { CII_COUNTRY_WEIGHTS } from '../packages/shared/cii-weights.ts';
 
 it('current and translated CII claims use the published formula version', () => {
@@ -140,7 +140,7 @@ describe('CII docs drift guards', () => {
 
   it('CII methodology doc keeps Strategic Risk positional-decay rationale aligned with the top-N cap', () => {
     const doc = readFileSync(resolve(root, 'docs/engineering/methodology/cii-risk-scores.md'), 'utf8');
-    const config = readFileSync(resolve(root, 'server/worldmonitor/intelligence/v1/_risk-config.ts'), 'utf8');
+    const config = readFileSync(resolve(root, 'packages/server/worldmonitor/intelligence/v1/_risk-config.ts'), 'utf8');
     const section = markdownSection(doc, '## 3. Strategic Risk roll-up');
     const nextOneBasedPosition = STRATEGIC_RISK_TOP_N + 1;
     const nextZeroBasedIndex = STRATEGIC_RISK_TOP_N;
@@ -318,7 +318,7 @@ describe('CII docs drift guards', () => {
     for (const id of ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 'P16']) {
       assert.match(brief, new RegExp(`^\\| ${id} \\|`, 'm'), `the brief's property table must list ${id}`);
     }
-    for (const path of ['server/worldmonitor/intelligence/v1/_risk-config.ts', 'server/worldmonitor/intelligence/v1/get-risk-scores.ts']) {
+    for (const path of ['packages/server/worldmonitor/intelligence/v1/_risk-config.ts', 'packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts']) {
       assert.ok(readFileSync(resolve(root, path), 'utf8').includes('docs/engineering/methodology/cii-change-brief.md'), `${path} change protocol must point at the brief`);
     }
   });

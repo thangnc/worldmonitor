@@ -7,7 +7,7 @@ import { build } from 'esbuild';
 import { isAllowedDomain } from '../api/_rss-allowed-domain-match.js';
 import { publisherFamilyFor } from '../packages/shared/publisher-families.js';
 import { SOURCE_PROPAGANDA_RISK, SOURCE_TYPES } from '../packages/shared/source-provenance.ts';
-import { SOURCE_TIERS } from '../server/_shared/source-tiers.ts';
+import { SOURCE_TIERS } from '../packages/server/_shared/source-tiers.ts';
 
 interface FeedEntry {
   name: string;
@@ -72,7 +72,7 @@ function findFeed(feeds: Record<string, FeedEntry[]>, category: string, name: st
 before(async () => {
   mkdirSync(tempDir, { recursive: true });
   const result = await build({
-    entryPoints: [join(repoRoot, 'server/worldmonitor/news/v1/_feeds.ts')],
+    entryPoints: [join(repoRoot, 'packages/server/worldmonitor/news/v1/_feeds.ts')],
     bundle: true,
     format: 'esm',
     platform: 'neutral',
@@ -108,7 +108,7 @@ describe('direct licensed news feed pack', () => {
   });
 
   it('contains no OpenNews transport, host, or route', () => {
-    const catalogText = readFileSync(join(repoRoot, 'server/worldmonitor/news/v1/_feeds.ts'), 'utf8').toLowerCase();
+    const catalogText = readFileSync(join(repoRoot, 'packages/server/worldmonitor/news/v1/_feeds.ts'), 'utf8').toLowerCase();
     assert.doesNotMatch(catalogText, /opennews|ai\.6551\.io|\/open\/news/);
   });
 

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest';
-import { __resetKeyPrefixCacheForTests } from '../server/_shared/redis';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
+import { __resetKeyPrefixCacheForTests } from '../packages/server/_shared/redis';
 
 const originalFetch = globalThis.fetch;
 const originalRedisUrl = process.env.UPSTASH_REDIS_REST_URL;

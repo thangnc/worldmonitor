@@ -24,7 +24,7 @@ on:
     branches: [main]
     paths:
       - 'src/config/feeds.ts'
-      - 'server/worldmonitor/news/v1/_feeds.ts'
+      - 'packages/server/worldmonitor/news/v1/_feeds.ts'
       - 'scripts/validate-rss-feeds.mjs'
       - 'scripts/_feed-health.mjs'
       - 'scripts/seed-recall-benchmark.mjs'

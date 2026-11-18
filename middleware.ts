@@ -147,7 +147,7 @@ export default function middleware(request: Request) {
 
   // Keyed API clients bypass UA filtering. This is a cheap edge heuristic,
   // not auth — the real check (validateApiKey against the operator keys)
-  // happens in server/gateway.ts. To keep the bot-UA shield meaningful,
+  // happens in packages/server/gateway.ts. To keep the bot-UA shield meaningful,
   // require the `wm_` prefix plus 40–64 lowercase hex chars. A random scraper
   // would still have to guess this format, and spoofed-but-well-shaped keys
   // still 401 at the gateway.

@@ -97,7 +97,7 @@ test('UK content budget absorbs a weekend gap plus a bank holiday and bundle pic
   const bankHoliday = DAY_MIN;
   const pickup = 6 * 60;
   assert.ok(BORDER_SOURCES.uk.maxContentAgeMin * CONTENT_AGE_PREWARNING_RATIO > weekendAge + bankHoliday + pickup);
-  const server = readFileSync(new URL('../server/worldmonitor/displacement/v1/cross-border-data.ts', import.meta.url), 'utf8');
+  const server = readFileSync(new URL('../packages/server/worldmonitor/displacement/v1/cross-border-data.ts', import.meta.url), 'utf8');
   const serverUk = server.split('\n').find(line => line.includes("id: 'uk'"));
   assert.match(serverUk, new RegExp(`maxContentAgeMin: ${String(BORDER_SOURCES.uk.maxContentAgeMin / DAY_MIN).replace('.', '\\.')} \\* 1440 }`));
 });

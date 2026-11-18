@@ -462,7 +462,7 @@ describe('OpenAPI security contract', () => {
   it('reads every public route from the gateway Set, comments included', () => {
     // An apostrophe in a comment inside the Set once paired with the next quote,
     // so later routes parsed as comment text and lost their `security: []`.
-    const gateway = readFileSync(resolve(root, 'server/gateway.ts'), 'utf8');
+    const gateway = readFileSync(resolve(root, 'packages/server/gateway.ts'), 'utf8');
     const block = gateway.match(/PUBLIC_NO_AUTH_RPC_PATHS\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/)[1];
     const declared = [...block.matchAll(/^\s*'(\/api\/[^']+)',?\s*$/gm)].map((m) => m[1]);
     assert.ok(declared.length > 0);
@@ -514,7 +514,7 @@ describe('OpenAPI security contract', () => {
     assert.deepEqual([...documented].sort(), [...TRUST_REVIEW_KEY_PATHS].sort());
     // A handler that gates on isTrustReviewer without the proto comment would
     // slip past the check above; one review-key path per call site.
-    const handlerDir = resolve(root, 'server/worldmonitor');
+    const handlerDir = resolve(root, 'packages/server/worldmonitor');
     const callSites = readdirSync(handlerDir, { recursive: true })
       .filter((file) => file.endsWith('.ts'))
       .flatMap((file) => [...readFileSync(resolve(handlerDir, file), 'utf8').matchAll(/\bisTrustReviewer\(/g)]);

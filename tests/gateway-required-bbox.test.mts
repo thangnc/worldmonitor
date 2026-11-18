@@ -6,9 +6,9 @@ import {
   createDomainGateway,
   REQUIRED_BBOX_QUERY_PARAMS,
   REQUIRED_BBOX_RPC_PATHS,
-} from '../server/gateway.ts';
-import { ENDPOINT_RATE_POLICIES } from '../server/_shared/rate-limit.ts';
-import type { RouteDescriptor } from '../server/router.ts';
+} from '../packages/server/gateway.ts';
+import { ENDPOINT_RATE_POLICIES } from '../packages/server/_shared/rate-limit.ts';
+import type { RouteDescriptor } from '../packages/server/router.ts';
 
 const originalValidKeys = process.env.WORLDMONITOR_VALID_KEYS;
 const TEST_KEY = 'bbox-test-key';

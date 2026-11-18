@@ -8,7 +8,7 @@ import {
   RESILIENCE_DOMAIN_ORDER,
   getResilienceDomainWeight,
   scoreAllDimensions,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import { installRedis } from './helpers/fake-upstash-redis.mts';
 import { RESILIENCE_FIXTURES } from './helpers/resilience-fixtures.mts';
 

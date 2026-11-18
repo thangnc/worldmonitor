@@ -35,7 +35,7 @@ const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
  */
 function makeFixtureCheckout() {
   const dir = mkdtempSync(join(tmpdir(), 'source-attribution-'));
-  for (const root of ['scripts', 'server', 'api', 'src', 'packages/shared', 'docs/engineering/architecture']) {
+  for (const root of ['scripts', 'packages/server', 'api', 'src', 'packages/shared', 'docs/engineering/architecture']) {
     mkdirSync(join(dir, root), { recursive: true });
   }
   writeFileSync(
@@ -466,16 +466,16 @@ test('uppercase URL constants are included in the upstream inventory', (t) => {
   // (travelpayouts_data.ts) left with the aviation gateway in the Lite refactor.
   const dir = mkdtempSync(join(tmpdir(), 'source-attribution-upper-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
-  mkdirSync(join(dir, 'server/demo'), { recursive: true });
+  mkdirSync(join(dir, 'packages/server/demo'), { recursive: true });
   writeFileSync(
-    join(dir, 'server/demo/provider_data.ts'),
+    join(dir, 'packages/server/demo/provider_data.ts'),
     "const BASE_V2 = 'https://api.upper-constant.example/v2/prices';\n"
       + 'export const load = (token: string) => fetchJson(`${BASE_V2}/latest`, token);\n',
   );
   const inventory = scanUpstreamHosts(dir);
   const entry = inventory.find((candidate) => candidate.host === 'api.upper-constant.example');
   assert.ok(entry, 'BASE_V2-style URL constants must be attributed');
-  assert.ok(entry.references.some((reference) => reference.path === 'server/demo/provider_data.ts'));
+  assert.ok(entry.references.some((reference) => reference.path === 'packages/server/demo/provider_data.ts'));
 });
 
 test('live HLS playback origins are observed with an explicit presentation exclusion', () => {

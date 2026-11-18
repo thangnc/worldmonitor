@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { __testing__ } from '../api/health.js';
 import { resolveSeedMetaTtl } from '../scripts/_seed-utils.mjs';
-import { mapCotPositioning } from '../server/worldmonitor/market/v1/get-cot-positioning.ts';
+import { mapCotPositioning } from '../packages/server/worldmonitor/market/v1/get-cot-positioning.ts';
 
 const source = readFileSync(new URL('../scripts/seed-cot.mjs', import.meta.url), 'utf8');
 const ttl = Number(source.match(/^const COT_TTL = (\d+);/m)?.[1]);

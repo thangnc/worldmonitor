@@ -25,7 +25,7 @@ export const SYNDICATION_TRANSPORT_HOSTS = Object.freeze(new Set([
 ]));
 
 // Every feed is declared once in packages/shared/news-catalog.json. src/config/feeds.ts
-// and server/worldmonitor/news/v1/_feeds.ts are views over it and hold no URLs.
+// and packages/server/worldmonitor/news/v1/_feeds.ts are views over it and hold no URLs.
 export const FEED_DECLARATION_FILES = Object.freeze([
   'packages/shared/news-catalog.json',
 ]);

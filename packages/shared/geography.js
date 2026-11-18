@@ -4,7 +4,7 @@
 // Used by:
 //   - scripts/seed-regional-snapshots.mjs (snapshot writer)
 //   - scripts/regional-snapshot/* (compute modules)
-//   - server/worldmonitor/intelligence/v1/* (Phase 1+ RPC handlers)
+//   - packages/server/worldmonitor/intelligence/v1/* (Phase 1+ RPC handlers)
 //   - src/components/RegionalIntelligenceBoard (Phase 1 UI)
 //
 // Region taxonomy is anchored to World Bank region codes (EAS/ECS/LCN/MEA/NAC/SAS/SSF)

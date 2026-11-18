@@ -2460,7 +2460,7 @@ test('Docker rejects native administration without changing configuration, cache
   const privatePort = await listen(privateProvider);
   // A minimal relay-backed handler: reads the relay URL and secret from the
   // process env at request time, as the server's relay helpers do
-  // (server/_shared/relay.ts), so the assertions below see whether a rejected
+  // (packages/server/_shared/relay.ts), so the assertions below see whether a rejected
   // admin request changed the outbound destination.
   const relayHandler = [
     'export default async function handler() {',

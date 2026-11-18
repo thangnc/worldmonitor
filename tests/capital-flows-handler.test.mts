@@ -1,8 +1,8 @@
 import { strict as assert } from 'node:assert';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { getCapitalFlows } from '../server/worldmonitor/economic/v1/get-capital-flows';
-import { buildCapitalFlowPair, buildCapitalFlowsResponse, CAPITAL_FLOWS_KEY, CAPITAL_FLOWS_PAIRS_KEY } from '../server/worldmonitor/economic/v1/capital-flows';
+import { getCapitalFlows } from '../packages/server/worldmonitor/economic/v1/get-capital-flows';
+import { buildCapitalFlowPair, buildCapitalFlowsResponse, CAPITAL_FLOWS_KEY, CAPITAL_FLOWS_PAIRS_KEY } from '../packages/server/worldmonitor/economic/v1/capital-flows';
 
 const originalFetch = globalThis.fetch;
 const originalRedisUrl = process.env.UPSTASH_REDIS_REST_URL;

@@ -24,7 +24,7 @@ import {
   issueDateInTz,
 } from '../../packages/shared/brief-filter.js';
 import { classifyEphemeralLiveCoverage } from '../../packages/shared/ephemeral-live-classifier.js';
-import { sanitizeForPrompt, sanitizeHeadline } from '../../server/_shared/llm-sanitize.js';
+import { sanitizeForPrompt, sanitizeHeadline } from '../../packages/server/_shared/llm-sanitize.js';
 
 // ── Rule dedupe (one brief per user, not per variant) ───────────────────────
 

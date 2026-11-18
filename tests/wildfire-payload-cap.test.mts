@@ -9,7 +9,7 @@ import {
   WILDFIRE_DASHBOARD_DETECTION_LIMIT,
   listFireDetections,
   limitFireDetectionsForDashboard,
-} from '../server/worldmonitor/wildfire/v1/list-fire-detections.ts';
+} from '../packages/server/worldmonitor/wildfire/v1/list-fire-detections.ts';
 import { resolveFireDetectionTotalCount } from '../src/services/wildfires/payload.ts';
 import {
   WILDFIRE_BOOTSTRAP_CWFIS_RESERVED,

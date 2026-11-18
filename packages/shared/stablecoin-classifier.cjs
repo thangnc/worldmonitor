@@ -4,7 +4,7 @@
 //   - scripts/ais-relay.cjs            (backup seeder, CJS: requireShared)
 //   - scripts/seed-stablecoin-markets.mjs (primary seeder, ESM: static import
 //     of the scripts/shared/ mirror)
-//   - server/worldmonitor/market/v1/list-stablecoin-markets.ts (gap lookups,
+//   - packages/server/worldmonitor/market/v1/list-stablecoin-markets.ts (gap lookups,
 //     TS: sibling .d.cts carries the types)
 //
 // #6308 unified the threshold NUMBERS into stablecoins.json; this module

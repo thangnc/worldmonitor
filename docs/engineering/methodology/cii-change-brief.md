@@ -1,6 +1,6 @@
 # CII change brief: read this before you touch CII scoring
 
-This brief applies to `server/worldmonitor/intelligence/v1/get-risk-scores.ts`, `server/worldmonitor/intelligence/v1/_risk-config.ts`, `packages/shared/cii-weights.ts`, any seeder or data file that the CII reads, and any change to `CII_FORMULA_VERSION`. Read all of it before you change anything.
+This brief applies to `packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts`, `packages/server/worldmonitor/intelligence/v1/_risk-config.ts`, `packages/shared/cii-weights.ts`, any seeder or data file that the CII reads, and any change to `CII_FORMULA_VERSION`. Read all of it before you change anything.
 
 It is the result of v9→v14: six versions in 44 hours. Each of those versions fixed the country that triggered it and missed the rule behind it. The 2026-10-23 first-principles review found that v14 is a static prior with floors on top. Live events supply about 15% of points and roughly none of the cross-country variance.
 

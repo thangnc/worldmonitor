@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, test } from 'node:test';
-import { listArxivPapers } from '../server/worldmonitor/research/v1/list-arxiv-papers';
-import { drainResponseHeaders } from '../server/_shared/response-headers';
+import { listArxivPapers } from '../packages/server/worldmonitor/research/v1/list-arxiv-papers';
+import { drainResponseHeaders } from '../packages/server/_shared/response-headers';
 import { ValidationError } from '../packages/contracts/generated/server/worldmonitor/research/v1/service_server';
 import { fetchArxivPapers } from '../scripts/seed-research.mjs';
 

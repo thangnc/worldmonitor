@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import ts from 'typescript';
 
-import { STORY_CORROBORATION_FIELD } from '../server/_shared/label-history';
+import { STORY_CORROBORATION_FIELD } from '../packages/server/_shared/label-history';
 import {
   attachDigestCorroboration,
   digestCoverageText,

@@ -12,8 +12,8 @@ import {
   claimTokens,
   evidenceFromMatches,
   matchClaimToClusters,
-} from '../server/_shared/claim-match.ts';
-import { assessCorroboration } from '../server/_shared/corroboration.ts';
+} from '../packages/server/_shared/claim-match.ts';
+import { assessCorroboration } from '../packages/server/_shared/corroboration.ts';
 import type { ClusteredEventCore, NewsItemCore } from '../packages/shared/news-clustering-core.js';
 
 function item(source: string, title: string, extra: Partial<NewsItemCore> = {}): NewsItemCore {

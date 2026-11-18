@@ -94,7 +94,7 @@ describe('isUsEquityMarketOpen / isUsEquityTradingDay (#4922d)', () => {
 
 describe('server TS twin stays in lockstep with the .cjs helper', () => {
   it('functional cross-check on every fixture', async () => {
-    const { getUsEquitySessionAt } = await import('../server/worldmonitor/market/v1/analyze-stock.ts');
+    const { getUsEquitySessionAt } = await import('../packages/server/worldmonitor/market/v1/analyze-stock.ts');
     for (const [iso, expected, label] of SESSION_FIXTURES) {
       assert.equal(getUsEquitySessionAt(new Date(iso)), expected, `TS twin diverges: ${label}`);
     }
@@ -102,7 +102,7 @@ describe('server TS twin stays in lockstep with the .cjs helper', () => {
 
   it('both files carry the same session-boundary markers', () => {
     const cjs = readSrc('scripts/shared/market-hours.cjs');
-    const ts = readSrc('server/worldmonitor/market/v1/analyze-stock.ts');
+    const ts = readSrc('packages/server/worldmonitor/market/v1/analyze-stock.ts');
     for (const marker of ["'09:30'", "'16:00'", "'04:00'", "'20:00'", "'13:00'", "'17:00'"]) {
       // markers live in a boundary comment adjacent to the constants
       assert.ok(cjs.includes(marker.slice(1, -1)), `cjs missing boundary marker ${marker}`);

@@ -9,7 +9,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { computeEnergyShockScenario } from '../server/worldmonitor/intelligence/v1/compute-energy-shock.ts';
+import { computeEnergyShockScenario } from '../packages/server/worldmonitor/intelligence/v1/compute-energy-shock.ts';
 import { buildCrudeImportOrigin, crudeImportOriginNationalSection, crudeImportOriginPeriods } from '../scripts/seed-oil-trade-series.mjs';
 import { installRedis } from './helpers/fake-upstash-redis.mts';
 

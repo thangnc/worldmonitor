@@ -4,8 +4,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { classifyEvent } from '../server/worldmonitor/intelligence/v1/classify-event.ts';
-import { __testing__ as llmHealth } from '../server/_shared/llm-health.ts';
+import { classifyEvent } from '../packages/server/worldmonitor/intelligence/v1/classify-event.ts';
+import { __testing__ as llmHealth } from '../packages/server/_shared/llm-health.ts';
 
 const ENV_KEYS = [
   'OPENROUTER_API_KEY', 'OLLAMA_API_URL', 'LLM_API_URL', 'LLM_API_KEY', 'LLM_MODEL',

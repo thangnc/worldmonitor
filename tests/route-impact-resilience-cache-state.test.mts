@@ -14,10 +14,10 @@ process.env.RESILIENCE_EDUCATION_ENABLED = 'true';
 process.env.RESILIENCE_PILLAR_COMBINE_ENABLED = 'true';
 
 const [{ sidecarCacheSet }, { ROUTE_IMPACT_KEY }, routeImpact, resilienceShared] = await Promise.all([
-  import('../server/_shared/sidecar-cache.js'),
-  import('../server/_shared/cache-keys.js'),
-  import('../server/worldmonitor/supply-chain/v1/get-route-impact.js'),
-  import('../server/worldmonitor/resilience/v1/_shared.js'),
+  import('../packages/server/_shared/sidecar-cache.js'),
+  import('../packages/server/_shared/cache-keys.js'),
+  import('../packages/server/worldmonitor/supply-chain/v1/get-route-impact.js'),
+  import('../packages/server/worldmonitor/resilience/v1/_shared.js'),
 ]);
 
 before(() => {

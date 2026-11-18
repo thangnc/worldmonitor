@@ -10,7 +10,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import * as provenance from '../packages/shared/source-provenance.ts';
 import { CONFIGURED_SOURCE_PROVENANCE_DECLARATIONS } from '../packages/shared/source-provenance-declarations.ts';
-import { getSourceTier } from '../server/_shared/source-tiers.ts';
+import { getSourceTier } from '../packages/server/_shared/source-tiers.ts';
 
 // Namespace access keeps each case red on its own when an export is missing.
 const api = provenance as unknown as Record<string, any>;

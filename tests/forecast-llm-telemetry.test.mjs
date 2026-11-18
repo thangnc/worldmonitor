@@ -1,6 +1,6 @@
 // Seeder-side llm_call telemetry (#4895 follow-up, post-#4901 review P1).
 //
-// server/_shared/llm.ts emits llm_call events, but the forecast seeder has
+// packages/server/_shared/llm.ts emits llm_call events, but the forecast seeder has
 // its own transport (callForecastLLM) — the cost-heavy stages
 // (market_implications, combined, scenario, critical_signals) were invisible
 // in wm_api_usage. callForecastLLM now emits the same per-ATTEMPT events:

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 import { fetchTrendingRepos, TRENDING_TTL } from '../scripts/seed-research.mjs';
-import { listTrendingRepos } from '../server/worldmonitor/research/v1/list-trending-repos';
+import { listTrendingRepos } from '../packages/server/worldmonitor/research/v1/list-trending-repos';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };

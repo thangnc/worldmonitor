@@ -138,8 +138,8 @@ describe('China macro production registration', () => {
     assert.match(read('api/health.js'), /chinaMacro:\s*\{ key: 'seed-meta:economic:china-macro-transport'/);
     assert.match(read('api/health.js'), new RegExp(`chinaMacro:\\s*\\{[^\\n]*maxStaleMin:\\s*${CHINA_MACRO_MAX_TRANSPORT_AGE_MIN.toLocaleString('en-US').replace(',', '_')}`));
     assert.match(read('api/seed-health.js'), /'economic:china-macro':\s*\{ key: 'seed-meta:economic:china-macro-transport'/);
-    assert.match(read('server/_shared/cache-keys.ts'), /CHINA_MACRO_KEY\s*=\s*BOOTSTRAP_CACHE_KEYS\.chinaMacro/);
-    assert.match(read('server/gateway.ts'), /'\/api\/economic\/v1\/get-china-macro-snapshot':\s*'slow'/);
+    assert.match(read('packages/server/_shared/cache-keys.ts'), /CHINA_MACRO_KEY\s*=\s*BOOTSTRAP_CACHE_KEYS\.chinaMacro/);
+    assert.match(read('packages/server/gateway.ts'), /'\/api\/economic\/v1\/get-china-macro-snapshot':\s*'slow'/);
   });
 
   it('keeps request, fetch, lock, and bundle timeouts in a safe sequential order', () => {

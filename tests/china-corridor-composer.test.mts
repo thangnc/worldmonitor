@@ -10,7 +10,7 @@ import {
   composeChinaCorridorControlTowers,
   type ChinaCorridorSourceBundle,
   type CorridorSourceSignal,
-} from '../server/worldmonitor/supply-chain/v1/china-corridor-control-towers';
+} from '../packages/server/worldmonitor/supply-chain/v1/china-corridor-control-towers';
 
 const ASSESSED_AT = '2026-07-25T12:00:00Z';
 

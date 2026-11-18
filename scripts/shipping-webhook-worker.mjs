@@ -234,7 +234,7 @@ export function reasonFor(chokepoint) {
 
 /**
  * The most each score input adds to disruptionScore: warningComponent and
- * aisComponent in server/worldmonitor/supply-chain/v1/_scoring.mjs, and the
+ * aisComponent in packages/server/worldmonitor/supply-chain/v1/_scoring.mjs, and the
  * transit anomaly bonus in get-chokepoint-status.ts. Pinned by a test.
  */
 export const SCORE_SOURCE_MAX_POINTS = Object.freeze({ navigationalWarnings: 15, ais: 15, transit: 10 });

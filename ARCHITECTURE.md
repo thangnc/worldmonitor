@@ -125,7 +125,7 @@ Refactor Phase 1d removed the site variants (`VITE_VARIANT`, `SITE_VARIANT`, the
 
 The `api/` directory holds two kinds of endpoints, both deployed as Vercel Edge Functions:
 
-- **Domain intelligence gateways** — generated from proto contracts and backed by handlers under `server/worldmonitor/**`. The per-domain thin entry points (`api/<domain>/v<N>/[rpc].ts`) are produced via `createDomainGateway` (`server/gateway.ts`) and esbuild-bundled, so the *deployed* artifact is self-contained even though the source composes server-side modules.
+- **Domain intelligence gateways** — generated from proto contracts and backed by handlers under `packages/server/worldmonitor/**`. The per-domain thin entry points (`api/<domain>/v<N>/[rpc].ts`) are produced via `createDomainGateway` (`packages/server/gateway.ts`) and esbuild-bundled, so the *deployed* artifact is self-contained even though the source composes server-side modules.
 - **Operational endpoints** — hand-written for concerns that don't fit the contract model: the anonymous session (`api/wm-session.js`), bootstrap and health (`api/bootstrap.js`, `api/health.js`, `api/seed-health.js`), GPS jamming (`api/gpsjam.js`), the security report sink, and ops probes. Refactor Phase 1c removed checkout, billing, MCP, OAuth, user keys and preferences, and notifications along with Convex and Clerk.
 
 Compact health separates actionable `problems` from bounded `pending` diagnostics. Both retain the source diagnosis. Pending deadlines also bound the Redis verdict cache lifetime.
@@ -143,7 +143,7 @@ Edge functions are bundled per file: each deployed function may not pull in unre
 
 ### Gateway Factory
 
-`server/gateway.ts` provides `createDomainGateway(routes)` for per-domain Edge Function bundles. Pipeline:
+`packages/server/gateway.ts` provides `createDomainGateway(routes)` for per-domain Edge Function bundles. Pipeline:
 
 1. Origin check (403 if disallowed)
 2. CORS headers
@@ -169,7 +169,7 @@ Edge functions are bundled per file: each deployed function may not pull in unre
 
 ### Domain Handlers
 
-`server/worldmonitor/<domain>/v1/handler.ts` exports handler objects with per-RPC functions. Each RPC function uses `cachedFetchJson()` from `server/_shared/redis.ts` for cache-miss coalescing: concurrent requests for the same key share a single upstream fetch and Redis write.
+`packages/server/worldmonitor/<domain>/v1/handler.ts` exports handler objects with per-RPC functions. Each RPC function uses `cachedFetchJson()` from `packages/server/_shared/redis.ts` for cache-miss coalescing: concurrent requests for the same key share a single upstream fetch and Redis write.
 
 The `scorecard/v1` domain is an exception to request-time upstream fetching. Its generated `ScorecardService` country, list, and bloc RPCs read one frozen cohort from `scorecard:five-factor:v1:read-model`, then use `scorecard:five-factor:v1` only as a bounded last-good fallback. The canonical pure adapters and country scorer live under `scripts/scorecard/v1/` for the scripts-root Railway publisher; a checked generator emits Edge-safe copies under the server domain, which owns Redis reads, bloc scoring, and public response conversion. See [Five-factor scorecard v1 architecture](docs/engineering/architecture/five-factor-scorecard-v1.md).
 
@@ -181,7 +181,7 @@ Its coverage half fetches Google News at request time through `news/v1`'s shared
 
 `MarketService.GetPhysicalDivergenceIndex` is also a read-model RPC. The daily macro seed bundle normalizes SGE SHAU/SHAG benchmarks against the independently timestamped COMEX and FX snapshots, appends bounded per-metal history, and atomically publishes `market:physical-divergence:v1`, its health metadata, activation marker, and transition cooldowns. The Edge handler revalidates the stored contract and re-ages every input clock before it serves the response; the route is `no-store` so independently aging cohorts are never joined through a stale shared cache. MCP reads the same normalized snapshot, and the commodities panel renders the same explicit `ok`, `insufficient_history`, `stale_input`, or `missing_input` states.
 
-**Source files**: `api/`, `server/gateway.ts`, `server/router.ts`, `server/_shared/redis.ts`, `server/worldmonitor/`
+**Source files**: `api/`, `packages/server/gateway.ts`, `packages/server/router.ts`, `packages/server/_shared/redis.ts`, `packages/server/worldmonitor/`
 
 ---
 
@@ -303,7 +303,7 @@ Per-IP sliding window via Upstash with per-endpoint overrides for high-traffic p
 
 Secrets are stored in the platform keyring (never plaintext), injected into the sidecar via Tauri IPC, and scoped to an allowlist of environment variable keys.
 
-**Source files**: `middleware.ts`, `vercel.json`, `index.html`, `src-tauri/tauri.conf.json`, `api/_api-key.js`, `server/_shared/rate-limit.ts`
+**Source files**: `middleware.ts`, `vercel.json`, `index.html`, `src-tauri/tauri.conf.json`, `api/_api-key.js`, `packages/server/_shared/rate-limit.ts`
 
 ---
 
@@ -327,7 +327,7 @@ Every RPC handler with shared cache MUST include request-varying parameters in t
 
 ### ETag / Conditional Requests
 
-`server/gateway.ts` computes an FNV-1a hash of each response body and returns it as an `ETag`. Clients send `If-None-Match` and receive `304 Not Modified` when content is unchanged.
+`packages/server/gateway.ts` computes an FNV-1a hash of each response body and returns it as an `ETag`. Clients send `If-None-Match` and receive `304 Not Modified` when content is unchanged.
 
 ### CDN Integration
 
@@ -341,7 +341,7 @@ Every cache write also writes `seed-meta:<key>` with `{ fetchedAt, recordCount }
 
 The five-factor scorecard adds an atomic two-key read pattern: `scorecard:five-factor:v1` is the auditable evidence-plus-result rollback unit, while `scorecard:five-factor:v1:read-model` serves country fields and the compact list without downloading the multi-megabyte canonical value. Both keys switch and retain TTL together; malformed hash fields fall back to the canonical last-good cohort.
 
-**Source files**: `server/_shared/redis.ts`, `server/gateway.ts`, `api/health.js`
+**Source files**: `packages/server/_shared/redis.ts`, `packages/server/gateway.ts`, `api/health.js`
 
 ---
 
@@ -357,7 +357,7 @@ The five-factor scorecard adds an atomic two-key read pattern: `scorecard:five-f
 
 ### Edge Function Guardrails
 
-`tests/edge-functions.test.mjs` validates that all non-helper `api/*.js` files are self-contained: no `node:` built-in imports, no cross-directory `../server/` or `../src/` imports. The pre-push hook also runs an esbuild bundle check on each endpoint.
+`tests/edge-functions.test.mjs` validates that all non-helper `api/*.js` files are self-contained: no `node:` built-in imports, no cross-directory `../packages/` or `../src/` imports. The pre-push hook also runs an esbuild bundle check on each endpoint.
 
 ### Pre-Push Hook
 
@@ -422,14 +422,15 @@ gates.
 ├── docs/                   Engineering records (docs/engineering/)
 ├── packages/
 │   ├── contracts/          @wm/contracts: proto/ (sebuf service definitions), generated/ (client/server stubs, DO NOT EDIT), openapi/ (generated specs)
+│   ├── server/             @wm/server: server-side code bundled into the Edge Functions (api/ imports it by relative path)
+│   │   ├── __tests__/      vitest suites (npm run test:server)
+│   │   ├── _shared/        Redis, rate-limit, LLM, caching utilities
+│   │   ├── gateway.ts      Domain gateway factory
+│   │   ├── router.ts       Route matching
+│   │   └── worldmonitor/   Domain handlers (mirrors proto structure)
 │   └── shared/             @wm/shared: logic and data the browser, server and seeders apply the same way (scripts/shared/ mirrors part of it)
 ├── public/                 Static assets served as-is (favicons, textures, map styles, data, robots.txt, 404.html)
 ├── scripts/                Seed scripts, build helpers, relay service
-├── server/                 Server-side code (bundled into Edge Functions)
-│   ├── _shared/            Redis, rate-limit, LLM, caching utilities
-│   ├── gateway.ts          Domain gateway factory
-│   ├── router.ts           Route matching
-│   └── worldmonitor/       Domain handlers (mirrors proto structure)
 ├── src/                    Browser SPA (TypeScript)
 │   ├── app/                App orchestration managers
 │   ├── bootstrap/          Startup/recovery (chunk reload, deferred Sentry, SW update)

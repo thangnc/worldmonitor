@@ -123,7 +123,7 @@ export function apiKeyDailyKey(userId, date) {
   return `rl:apikey:day:${userId}:${yyyy}-${mm}-${dd}`;
 }
 /** 48h TTL: covers UTC-midnight rollover + an inspection window. Mirrors
- *  PRO_DAILY_QUOTA_TTL_SECONDS (server/_shared/direct-llm-quota.ts). */
+ *  PRO_DAILY_QUOTA_TTL_SECONDS (packages/server/_shared/direct-llm-quota.ts). */
 export const API_DAILY_TTL_SECONDS = 172_800;
 /**
  * Increment the per-account daily meter and report whether the sold daily

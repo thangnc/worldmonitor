@@ -19,7 +19,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { NEWS_CATALOG, buildDigestWarmCells, buildNewsPoolLayout, projectBrowserCatalog } from '../packages/shared/news-catalog.ts';
-import { getOutletProfile } from '../server/_shared/outlet-profile.ts';
+import { getOutletProfile } from '../packages/server/_shared/outlet-profile.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const BROWSER_CATALOG_PATH = 'src/config/news-catalog.browser.generated.ts';

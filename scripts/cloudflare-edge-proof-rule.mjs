@@ -73,7 +73,7 @@ export function pathCoveredByExpression(pathname) {
 }
 
 function endpointPolicyPathsFromSource() {
-  const source = readFileSync(join(ROOT, 'server/_shared/rate-limit.ts'), 'utf8');
+  const source = readFileSync(join(ROOT, 'packages/server/_shared/rate-limit.ts'), 'utf8');
   const block = source.match(/export const ENDPOINT_RATE_POLICIES[\s\S]*?^};/m)?.[0];
   if (!block) throw new Error('ENDPOINT_RATE_POLICIES block not found in rate-limit.ts');
   return [...block.matchAll(/'(\/api\/[^']+)'/g)].map((match) => match[1]);

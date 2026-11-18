@@ -1,9 +1,9 @@
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { listCryptoQuotes } from '../server/worldmonitor/market/v1/list-crypto-quotes';
+import { listCryptoQuotes } from '../packages/server/worldmonitor/market/v1/list-crypto-quotes';
 import { createMarketServiceRoutes, type MarketServiceHandler } from '../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
-import { fetchCoinGeckoMarkets } from '../server/worldmonitor/market/v1/_shared';
+import { fetchCoinGeckoMarkets } from '../packages/server/worldmonitor/market/v1/_shared';
 import { GENERATED_MESSAGE_RULES } from '../packages/contracts/generated/server/request_validation';
 
 const SEED = {
@@ -321,7 +321,7 @@ describe('listCryptoQuotes parameterized gap resolution (#6306)', () => {
 
     // Advance past the short (3s) isolate-local unavailable backoff, then let
     // the provider recover. The next request retries the provider and resolves.
-    const { __clearLocalUnavailableBackoffForTests } = await import('../server/_shared/redis');
+    const { __clearLocalUnavailableBackoffForTests } = await import('../packages/server/_shared/redis');
     __clearLocalUnavailableBackoffForTests();
     coinGeckoOk = true;
     const out2 = await listCryptoQuotes(ctx(), { ids: ['dogecoin'] });

@@ -36,7 +36,7 @@ function makeRedisStub() {
 }
 
 // ─── cachedFetchJson re-implementation for testing ───────────────────────────
-// Tests the same logic as server/_shared/redis.ts cachedFetchJson
+// Tests the same logic as packages/server/_shared/redis.ts cachedFetchJson
 
 function makeCachedFetchJson(redis) {
   const inflight = new Map();
@@ -214,7 +214,7 @@ describe('cachedFetchJson — import verification', () => {
   it('cache keys do not collide with existing bootstrap keys', async () => {
     const { readFileSync } = await import('node:fs');
     const { resolve } = await import('node:path');
-    const cacheKeysSrc = readFileSync(resolve('server/_shared/cache-keys.ts'), 'utf-8');
+    const cacheKeysSrc = readFileSync(resolve('packages/server/_shared/cache-keys.ts'), 'utf-8');
     assert.ok(
       !cacheKeysSrc.includes('intel:enrichment:'),
       'intel:enrichment: prefix should not exist in bootstrap cache-keys.ts (on-demand keys)',

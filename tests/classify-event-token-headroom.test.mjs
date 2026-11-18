@@ -35,7 +35,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = resolve(root, 'server/worldmonitor/intelligence/v1/classify-event.ts');
+const SRC = resolve(root, 'packages/server/worldmonitor/intelligence/v1/classify-event.ts');
 
 /**
  * The lowest budget MEASURED to truncate nothing — not a rounded-down

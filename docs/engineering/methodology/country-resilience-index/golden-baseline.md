@@ -23,7 +23,7 @@ golden bytes plus the identity needed to interpret them:
   from.
 - `formula` and `scorerCacheIdentity` — the CRI cache identity at generation
   time (formula tag and score cache prefix from
-  `server/worldmonitor/resilience/v1/_shared.ts`).
+  `packages/server/worldmonitor/resilience/v1/_shared.ts`).
 - `frozenClockIso` and `envFlags` — the fixed clock and feature flags the
   comparison runs under.
 - `inputFixture` — path, capture date, and sha256 of the frozen input fixture

@@ -3,7 +3,7 @@
  *
  * Extracted from `CountryIntelManager` (src/app/country-intel.ts) in #7526 so
  * the country-coverage RPC decides "is this headline about this country?" the
- * same way the panel does. `server/` may not import `src/app/`
+ * same way the panel does. `packages/server/` may not import `src/app/`
  * (scripts/lint-boundaries.mjs), so the rules live here and both surfaces
  * import them. `CountryIntelManager` keeps its static methods as thin
  * delegates, so no UI call site changed.

@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 
 import { createMarketServiceRoutes, ValidationError } from '../packages/contracts/generated/server/worldmonitor/market/v1/service_server.ts';
-import { marketHandler } from '../server/worldmonitor/market/v1/handler.ts';
-import { resolvePhysicalPremiumMetals } from '../server/worldmonitor/market/v1/get-physical-premiums.ts';
-import { serverOptions } from '../server/gateway.ts';
+import { marketHandler } from '../packages/server/worldmonitor/market/v1/handler.ts';
+import { resolvePhysicalPremiumMetals } from '../packages/server/worldmonitor/market/v1/get-physical-premiums.ts';
+import { serverOptions } from '../packages/server/gateway.ts';
 
 const seed = {
   premiums: [

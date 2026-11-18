@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url';
 import countryNames from '../packages/shared/country-names.json';
 import iso2ToIso3Json from '../packages/shared/iso2-to-iso3.json';
 import { loadEnvFile } from './_seed-utils.mjs';
-import { normalizeCountryToken } from '../server/_shared/country-token.ts';
-import { getRawJson } from '../server/_shared/redis.ts';
+import { normalizeCountryToken } from '../packages/server/_shared/country-token.ts';
+import { getRawJson } from '../packages/server/_shared/redis.ts';
 import {
   RESILIENCE_HISTORY_KEY_PREFIX,
   RESILIENCE_RANKING_CACHE_KEY,
@@ -18,12 +18,12 @@ import {
   getCurrentCacheFormula,
   scoreCacheKey,
   warmMissingResilienceScores,
-} from '../server/worldmonitor/resilience/v1/_shared.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
 import {
   scoreAllDimensions,
   type ResilienceDimensionId,
   type ResilienceSeedReader,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import {
   compareReferenceResults,
   recomputeReferenceCountry,

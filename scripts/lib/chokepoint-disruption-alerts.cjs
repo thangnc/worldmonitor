@@ -11,7 +11,7 @@
 // rules opt in to the event and may narrow it to chosen chokepoints;
 // scripts/notification-relay.cjs does the per-rule matching.
 //
-// disruptionScore (server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts)
+// disruptionScore (packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts)
 // is a standing threat level set per chokepoint (war zone 70 ... normal 0)
 // plus live signals: navigational warnings, AIS disruption, a transit drop.
 // The score alone cannot drive an alert: Hormuz and Kerch sit at 70 with no

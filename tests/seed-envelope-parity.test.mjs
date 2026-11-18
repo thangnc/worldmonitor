@@ -11,7 +11,7 @@
 // literals, line/block comments, and template-literal interpolation — all
 // regressions the verifier's older brace-only counter would have hit.
 //
-// The TS mirror at server/_shared/seed-envelope.ts is validated by
+// The TS mirror at packages/server/_shared/seed-envelope.ts is validated by
 // `npm run typecheck` and reviewed manually (see header comment in that file).
 
 import test from 'node:test';

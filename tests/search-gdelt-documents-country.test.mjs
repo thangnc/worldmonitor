@@ -7,7 +7,7 @@ import {
   parseCountryQuery,
   searchGdeltDocuments,
   selectCountryArticles,
-} from '../server/worldmonitor/intelligence/v1/search-gdelt-documents.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/search-gdelt-documents.ts';
 
 // The `country:<ISO2>` query form (#7748): the crawlable country pages top up
 // their "Recent developments" from the materializer's per-country index when
@@ -37,7 +37,7 @@ describe('search-gdelt-documents country query', () => {
   });
 
   it('reads the key the materializer writes', () => {
-    const source = readFileSync(new URL('../server/worldmonitor/intelligence/v1/search-gdelt-documents.ts', import.meta.url), 'utf8');
+    const source = readFileSync(new URL('../packages/server/worldmonitor/intelligence/v1/search-gdelt-documents.ts', import.meta.url), 'utf8');
     assert.equal(GDELT_BULK_COUNTRY_ARTICLES_KEY, 'gdelt:bulk:country-articles:v1');
     assert.match(source, new RegExp(`'${GDELT_BULK_COUNTRY_ARTICLES_KEY.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`));
   });

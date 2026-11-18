@@ -3,7 +3,7 @@
  * `secret !== expected` for the x-probe-secret header, opening a
  * timing oracle on RELAY_SHARED_SECRET. Every other internal-auth
  * endpoint in the codebase uses the `timingSafeEqual` helper from
- * server/_shared/internal-auth.ts.
+ * packages/server/_shared/internal-auth.ts.
  *
  * This test scans every file under api/ for the pattern of comparing a
  * secret/token/bearer-bearing reference against an env-var value, an
@@ -316,7 +316,7 @@ describe('no non-timing-safe secret comparison in api/ (#3803)', () => {
       violations,
       [],
       `Non-timing-safe secret comparison detected in: ${violations.join(', ')}. ` +
-        `Use timingSafeEqual from server/_shared/internal-auth.ts instead. See issue #3803.`,
+        `Use timingSafeEqual from packages/server/_shared/internal-auth.ts instead. See issue #3803.`,
     );
   });
 

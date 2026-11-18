@@ -1,6 +1,6 @@
 // Shared yield-curve seed model used by every seed-yield-curve-*.mjs seeder
 // and their tests. The server-side twin lives in
-// server/worldmonitor/economic/v1/government-yield-curves.ts; both sides keep
+// packages/server/worldmonitor/economic/v1/government-yield-curves.ts; both sides keep
 // the same canonical shape: { curves: [{ date: 'YYYY-MM-DD', tenors: {...} }] }.
 //
 // Tenor keys are lowercase maturity labels ("3m", "1y", "10y", …).

@@ -3,8 +3,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { serverOptions } from '../server/gateway.ts';
-import { validateGeneratedRequest } from '../server/request-validator.ts';
+import { serverOptions } from '../packages/server/gateway.ts';
+import { validateGeneratedRequest } from '../packages/server/request-validator.ts';
 import { GENERATED_REQUEST_TYPES } from '../packages/contracts/generated/server/request_validation.ts';
 import {
   createMarketServiceRoutes,

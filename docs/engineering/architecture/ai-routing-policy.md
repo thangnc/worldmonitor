@@ -14,11 +14,11 @@ jobs that put that user's data into a prompt.
 
 | Surface | Handler | Under an `anthropic`-only policy |
 |---|---|---|
-| `analyze_situation` / deduct-situation | `server/worldmonitor/intelligence/v1/deduct-situation.ts` | Anthropic |
+| `analyze_situation` / deduct-situation | `packages/server/worldmonitor/intelligence/v1/deduct-situation.ts` | Anthropic |
 | `classify_event` | `classify-event.ts` | Anthropic |
 | `get_country_brief` | `get-country-intel-brief.ts` | Anthropic |
-| `get_stock_research` / analyze-stock | `server/worldmonitor/market/v1/analyze-stock.ts` | Anthropic |
-| `analyze_news_headlines` / summarize-article | `server/worldmonitor/news/v1/summarize-article.ts` | Anthropic, whatever provider the client named |
+| `get_stock_research` / analyze-stock | `packages/server/worldmonitor/market/v1/analyze-stock.ts` | Anthropic |
+| `analyze_news_headlines` / summarize-article | `packages/server/worldmonitor/news/v1/summarize-article.ts` | Anthropic, whatever provider the client named |
 | Dashboard chat analyst | `api/chat-analyst.ts` | Anthropic (streamed) |
 | Widget builder | `scripts/ais-relay.cjs` widget agent | Already Anthropic for every account |
 | `search_intel_history`, `get_similar_events` | query embeddings (OpenRouter only) | Refused with 403; no keyword index exists to fall back to |

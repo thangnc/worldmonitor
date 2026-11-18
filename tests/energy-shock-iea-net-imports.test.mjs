@@ -9,8 +9,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { computeEffectiveCoverDaysWithRamp } from '../server/worldmonitor/intelligence/v1/_shock-compute.ts';
-import { computeEnergyShockScenario } from '../server/worldmonitor/intelligence/v1/compute-energy-shock.ts';
+import { computeEffectiveCoverDaysWithRamp } from '../packages/server/worldmonitor/intelligence/v1/_shock-compute.ts';
+import { computeEnergyShockScenario } from '../packages/server/worldmonitor/intelligence/v1/compute-energy-shock.ts';
 import { buildCrudeImportOrigin, crudeImportOriginPeriods } from '../scripts/seed-oil-trade-series.mjs';
 import { installRedis } from './helpers/fake-upstash-redis.mts';
 

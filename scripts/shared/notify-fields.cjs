@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Notification field validation — CJS mirror of server/_shared/notify-fields.ts.
+ * Notification field validation — CJS mirror of packages/server/_shared/notify-fields.ts.
  *
  * scripts/notification-relay.cjs runs on Railway under scripts/package.json
  * (no TS loader) and Dockerfile.relay COPYs scripts/** explicitly, so the
@@ -12,7 +12,7 @@
  * both modules and runs every vector against both, failing on any divergence.
  *
  * DO NOT edit behaviour here without mirroring it in
- * server/_shared/notify-fields.ts (and vice versa).
+ * packages/server/_shared/notify-fields.ts (and vice versa).
  */
 
 const NOTIFY_TITLE_MAX_LENGTH = 200;

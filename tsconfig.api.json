@@ -4,6 +4,6 @@
     "types": ["vite/client"],
     "tsBuildInfoFile": "node_modules/.cache/tsconfig.api.tsbuildinfo"
   },
-  "include": ["api", "packages/contracts/generated", "server", "middleware.ts"],
-  "exclude": ["server/__tests__/**"]
+  "include": ["api", "packages/contracts/generated", "packages/server", "middleware.ts"],
+  "exclude": ["packages/server/__tests__/**"]
 }

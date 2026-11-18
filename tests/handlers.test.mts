@@ -2,10 +2,10 @@
  * Unit tests for server handler business logic.
  *
  * Covers exported pure functions from:
- *   - server/worldmonitor/cyber/v1/_shared.ts
- *   - server/worldmonitor/military/v1/get-usni-fleet-report.ts
- *   - server/worldmonitor/news/v1/_shared.ts  (+ dedup.mjs + hash.ts)
- *   - server/worldmonitor/infrastructure/v1/get-cable-health.ts
+ *   - packages/server/worldmonitor/cyber/v1/_shared.ts
+ *   - packages/server/worldmonitor/military/v1/get-usni-fleet-report.ts
+ *   - packages/server/worldmonitor/news/v1/_shared.ts  (+ dedup.mjs + hash.ts)
+ *   - packages/server/worldmonitor/infrastructure/v1/get-cable-health.ts
  *
  * USNI parsing now happens in the Railway relay seed path; these tests cover
  * the server handler's pure cache-response helpers without resurrecting the
@@ -17,7 +17,7 @@ import assert from 'node:assert/strict';
 // ---------------------------------------------------------------------------
 // Cyber domain helpers
 // ---------------------------------------------------------------------------
-import { clampInt, SEVERITY_RANK } from '../server/worldmonitor/cyber/v1/_shared.ts';
+import { clampInt, SEVERITY_RANK } from '../packages/server/worldmonitor/cyber/v1/_shared.ts';
 // Deduplication and proto conversion live in the Railway seeder, which is the
 // only code that still runs them. The RPC reads what the seeder already wrote.
 import {
@@ -34,14 +34,14 @@ import {
 import {
   buildUSNIFleetReportCacheResponse,
   buildUSNIFleetReportForceRefreshResponse,
-} from '../server/worldmonitor/military/v1/get-usni-fleet-report.ts';
+} from '../packages/server/worldmonitor/military/v1/get-usni-fleet-report.ts';
 import type { USNIFleetReport } from '../packages/contracts/generated/server/worldmonitor/military/v1/service_server.ts';
 
 // ---------------------------------------------------------------------------
 // News domain helpers
 // ---------------------------------------------------------------------------
-import { deduplicateHeadlines } from '../server/worldmonitor/news/v1/dedup.mjs';
-import { buildArticlePrompts, hashString, selectUniqueHeadlinePairs } from '../server/worldmonitor/news/v1/_shared.ts';
+import { deduplicateHeadlines } from '../packages/server/worldmonitor/news/v1/dedup.mjs';
+import { buildArticlePrompts, hashString, selectUniqueHeadlinePairs } from '../packages/server/worldmonitor/news/v1/_shared.ts';
 import { MAX_BODY_LEN, buildSummaryCacheKey } from '../src/utils/summary-cache-key.ts';
 
 // ---------------------------------------------------------------------------
@@ -55,7 +55,7 @@ import {
   parseIssueDate,
   processNgaSignals,
   computeHealthMap,
-} from '../server/worldmonitor/infrastructure/v1/get-cable-health.ts';
+} from '../packages/server/worldmonitor/infrastructure/v1/get-cable-health.ts';
 
 
 // ========================================================================

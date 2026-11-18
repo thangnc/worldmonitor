@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 // field, so `think: false` is dropped and a reasoning model thinks anyway.
 // `reasoning_effort: 'none'` is the field that endpoint reads.
 const OLLAMA_CALL_SITES = [
-  'server/_shared/llm.ts',
+  'packages/server/_shared/llm.ts',
   'scripts/lib/llm-chain.cjs',
   'scripts/ais-relay.cjs',
   'scripts/seed-insights.mjs',

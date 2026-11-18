@@ -49,7 +49,7 @@ Then, for how far over each account actually runs:
 Both queries read `wm_api_usage`, which is a REST-only view. MCP tool calls
 have never appeared in it: the MCP edge signs its downstream fetches with the
 internal HMAC (`api/mcp/auth.ts:178`), and the gateway's whole per-account
-meter block sits behind `if (!internalMcpVerified)` (`server/gateway.ts:1909`),
+meter block sits behind `if (!internalMcpVerified)` (`packages/server/gateway.ts:1909`),
 so an MCP-originated request never touches `rl:apikey:day:` and never emits a
 `wm_api_usage` row. The measurement below is therefore a floor, not the
 account's demand — see [Summing the two halves](#summing-the-two-halves).
@@ -77,7 +77,7 @@ each other. Neither one on its own is the number the flip will enforce.
 
 - **REST demand** — the Axiom queries above, or the meter key directly:
   `rl:apikey:day:<userId>:<YYYY-MM-DD>` in Upstash. In production
-  `envPrefix()` is empty (`server/_shared/pro-mcp-token.ts:481`), so the key
+  `envPrefix()` is empty (`packages/server/_shared/pro-mcp-token.ts:481`), so the key
   is exactly that; preview deploys carry an `<env>:<sha>:` prefix.
 - **MCP demand** — `mcp:pro-usage:<userId>:<YYYY-MM-DD>`, the dedicated
   counter API tiers charge while the flag is off.

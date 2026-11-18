@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { after, it } from 'node:test';
-import { createDomainGateway, serverOptions } from '../server/gateway';
+import { createDomainGateway, serverOptions } from '../packages/server/gateway';
 import { createNewsServiceRoutes } from '../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import { issueSessionToken } from '../api/_session.js';
-import { __resetRateLimitForTest } from '../server/_shared/rate-limit';
+import { __resetRateLimitForTest } from '../packages/server/_shared/rate-limit';
 
 const originalEnv = { ...process.env };
 const originalFetch = globalThis.fetch;

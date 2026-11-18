@@ -14,7 +14,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { __testing__ } from '../server/worldmonitor/resilience/v1/_shared.ts';
+import { __testing__ } from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
 
 const { coverageWeightedMean, IMPUTED_DIM_WEIGHT_FACTOR } = __testing__;
 

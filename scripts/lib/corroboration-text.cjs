@@ -3,7 +3,7 @@
 // Plain-text corroboration for alert and digest messages (#9213).
 //
 // The verdict itself comes from assessCorroboration in
-// server/_shared/corroboration.ts. These CommonJS runtimes (the notification
+// packages/server/_shared/corroboration.ts. These CommonJS runtimes (the notification
 // relay, the digest cron) cannot import that TypeScript module, so this file
 // holds three small pieces, each tied to it by tests/corroboration-text.test.mts:
 //   - corroborationFromItemCount: the verdict assessCorroboration gives a single

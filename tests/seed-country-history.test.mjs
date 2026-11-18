@@ -14,7 +14,7 @@ test('daily source namespaces match the current CII, resilience and news publish
   const resilience = readFileSync(new URL('../scripts/seed-resilience-scores.mjs', import.meta.url), 'utf8');
   const rankingKey = resilience.match(/RESILIENCE_RANKING_CACHE_KEY = '([^']+)'/)[1];
   assert.ok(source.includes(`const RANKING_KEY = '${rankingKey}'`));
-  const news = readFileSync(new URL('../server/worldmonitor/news/v1/list-feed-digest.ts', import.meta.url), 'utf8');
+  const news = readFileSync(new URL('../packages/server/worldmonitor/news/v1/list-feed-digest.ts', import.meta.url), 'utf8');
   assert.ok(news.includes('news:digest:v1:'));
   assert.ok(source.includes("const DIGEST_KEY = 'news:digest:v1:full:en'"));
 });

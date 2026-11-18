@@ -2,7 +2,7 @@
 // executed inside Redis so concurrent isolates cannot interleave a
 // read-decide-write.
 //
-// MIRROR of shouldReplaceAccepted in server/worldmonitor/news/v1/_lastgood.ts —
+// MIRROR of shouldReplaceAccepted in packages/server/worldmonitor/news/v1/_lastgood.ts —
 // the same rules, in the same order. This script is the AUTHORITATIVE gate on
 // every non-sidecar deployment; the TS function is the gate only in
 // tauri-sidecar mode, which has no EVAL. Change them together, and note that

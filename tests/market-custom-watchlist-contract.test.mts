@@ -28,8 +28,8 @@ import type {
 import {
   __clearLocalUnavailableBackoffForTests,
   __resetKeyPrefixCacheForTests,
-} from '../server/_shared/redis';
-import { listMarketQuotes } from '../server/worldmonitor/market/v1/list-market-quotes';
+} from '../packages/server/_shared/redis';
+import { listMarketQuotes } from '../packages/server/worldmonitor/market/v1/list-market-quotes';
 import {
   MARKET_WATCHLIST_MAX_ENTRIES,
   mergeWatchlistSymbols,

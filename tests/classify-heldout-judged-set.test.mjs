@@ -27,7 +27,7 @@ const load = (p) => JSON.parse(readFileSync(resolve(root, p), 'utf8'));
 const heldout = load(HELDOUT);
 const tuning = load('tests/fixtures/classify-judged-headlines.json');
 const relaySrc = readFileSync(resolve(root, 'scripts/ais-relay.cjs'), 'utf8');
-const rpcSrc = readFileSync(resolve(root, 'server/worldmonitor/intelligence/v1/classify-event.ts'), 'utf8');
+const rpcSrc = readFileSync(resolve(root, 'packages/server/worldmonitor/intelligence/v1/classify-event.ts'), 'utf8');
 const LEVELS = ['critical', 'high', 'medium', 'low', 'info'];
 
 const score = (name) => {

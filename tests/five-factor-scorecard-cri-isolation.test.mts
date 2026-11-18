@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 
 import wholeIndexFixture from './fixtures/resilience-whole-index-pairs-2026-08-13.json' with { type: 'json' };
-import { scoreAllDimensions, type ResilienceSeedReader } from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
-import { buildDimensionList, buildDomainList, penalizedPillarScore } from '../server/worldmonitor/resilience/v1/_shared.ts';
-import { buildPillarList } from '../server/worldmonitor/resilience/v1/_pillar-membership.ts';
+import { scoreAllDimensions, type ResilienceSeedReader } from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import { buildDimensionList, buildDomainList, penalizedPillarScore } from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
+import { buildPillarList } from '../packages/server/worldmonitor/resilience/v1/_pillar-membership.ts';
 
 const fixture = wholeIndexFixture as typeof wholeIndexFixture & {
   __fixture: { countries: string[] };

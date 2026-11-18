@@ -699,7 +699,7 @@ describe('computeIntervals', () => {
 
 describe('script is self-contained .mjs', () => {
   // The seeder runs in a bare-node Railway container with no TypeScript loader
-  // and no access to server/, so its import graph is a real deployment
+  // and no access to packages/server/, so its import graph is a real deployment
   // constraint that nothing executable can observe. The diagnostic-identifier
   // assertions that used to sit alongside these (createIntervalDiagnostics,
   // intervalClampCount, formulaSkipCount, …) just restated names the seeder
@@ -710,8 +710,8 @@ describe('script is self-contained .mjs', () => {
     'utf8',
   );
 
-  it('never reaches into server/ or a TypeScript loader', () => {
-    assert.equal(src.includes('../server/'), false, 'Must not import from ../server/');
+  it('never reaches into packages/server/ or a TypeScript loader', () => {
+    assert.equal(src.includes('../packages/server/'), false, 'Must not import from ../packages/server/');
     assert.equal(src.includes('tsx/esm'), false, 'Must not reference tsx/esm');
   });
 
@@ -1016,7 +1016,7 @@ describe('handler warm pipeline is chunked', () => {
     const { dirname, join } = await import('node:path');
     const dir = dirname(fileURLToPath(import.meta.url));
     const src = readFileSync(
-      join(dir, '..', 'server', 'worldmonitor', 'resilience', 'v1', '_shared.ts'),
+      join(dir, '..', 'packages', 'server', 'worldmonitor', 'resilience', 'v1', '_shared.ts'),
       'utf8',
     );
     assert.match(

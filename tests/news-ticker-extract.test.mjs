@@ -136,11 +136,11 @@ describe('buildTickerDictionary', () => {
 });
 
 describe('ingest wiring (source-textual + parse behavior)', () => {
-  const src = readSrc('server/worldmonitor/news/v1/list-feed-digest.ts');
+  const src = readSrc('packages/server/worldmonitor/news/v1/list-feed-digest.ts');
 
   it('list-feed-digest imports the shared extractor and stocks.json dictionary', () => {
-    assert.match(src, /from '\.\.\/\.\.\/\.\.\/\.\.\/packages\/shared\/ticker-extract\.js'/);
-    assert.match(src, /import stocksData from '\.\.\/\.\.\/\.\.\/\.\.\/packages\/shared\/stocks\.json'/);
+    assert.match(src, /from '\.\.\/\.\.\/\.\.\/\.\.\/shared\/ticker-extract\.js'/);
+    assert.match(src, /import stocksData from '\.\.\/\.\.\/\.\.\/\.\.\/shared\/stocks\.json'/);
     assert.match(src, /buildTickerDictionary\(stocksData\.symbols\)/);
   });
 
@@ -153,7 +153,7 @@ describe('ingest wiring (source-textual + parse behavior)', () => {
   });
 
   it('parseRssXml stamps tickers on parsed items end-to-end', async () => {
-    const { __testing__ } = await import('../server/worldmonitor/news/v1/list-feed-digest.ts');
+    const { __testing__ } = await import('../packages/server/worldmonitor/news/v1/list-feed-digest.ts');
     const xml = `<?xml version="1.0"?><rss version="2.0"><channel><item>
       <title>Microsoft beats estimates as $TSLA slides</title>
       <link>https://example.com/a</link>

@@ -7,7 +7,7 @@ import {
   isFreshNotice,
   NGA_CABLE_NOTICE_MAX_AGE_DAYS,
 } from '../packages/shared/nga-cable-notices.ts';
-import { processNgaSignals } from '../server/worldmonitor/infrastructure/v1/get-cable-health.ts';
+import { processNgaSignals } from '../packages/server/worldmonitor/infrastructure/v1/get-cable-health.ts';
 
 // Real NGA HYDROPAC 2939/23 text (Persian Gulf, Bahrain).
 const BAHRAIN_MV = `PERSIAN GULF.

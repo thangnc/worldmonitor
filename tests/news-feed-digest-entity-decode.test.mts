@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
 
 const { decodeXmlEntities, extractDescription } = __testing__;
 

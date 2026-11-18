@@ -1,5 +1,5 @@
 /**
- * Premium RPC paths. The gateway (server/gateway.ts) serves them only to an
+ * Premium RPC paths. The gateway (packages/server/gateway.ts) serves them only to an
  * operator key (WORLDMONITOR_VALID_KEYS); an anonymous wms_ session gets 401.
  *
  * Single source of truth consumed by both the server gateway (auth enforcement)

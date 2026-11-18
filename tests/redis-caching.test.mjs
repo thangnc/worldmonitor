@@ -10,7 +10,7 @@ import { createTempDir, removeTempDir } from './helpers/temp-dir.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 
-const REDIS_MODULE_URL = pathToFileURL(resolve(root, 'server/_shared/redis.ts')).href;
+const REDIS_MODULE_URL = pathToFileURL(resolve(root, 'packages/server/_shared/redis.ts')).href;
 
 function jsonResponse(payload, ok = true) {
   return {
@@ -1706,12 +1706,10 @@ describe('cachedFetchJson inflight timeout (#3539)', { concurrency: 1 }, () => {
 
 describe('country risk freshness behavior', { concurrency: 1 }, () => {
   async function importCountryRisk() {
-    return importPatchedTsModule('server/worldmonitor/intelligence/v1/get-country-risk.ts', {
-      './_shared': resolve(root, 'server/worldmonitor/intelligence/v1/_shared.ts'),
-      '../../../_shared/redis': resolve(root, 'server/_shared/redis.ts'),
-      '../../../_shared/cache-keys': resolve(root, 'server/_shared/cache-keys.ts'),
-      // #4921: citation verification + grounding telemetry import
-      '../../../../packages/shared/brief-llm-core.js': resolve(root, 'packages/shared/brief-llm-core.js'),
+    return importPatchedTsModule('packages/server/worldmonitor/intelligence/v1/get-country-risk.ts', {
+      './_shared': resolve(root, 'packages/server/worldmonitor/intelligence/v1/_shared.ts'),
+      '../../../_shared/redis': resolve(root, 'packages/server/_shared/redis.ts'),
+      '../../../_shared/cache-keys': resolve(root, 'packages/server/_shared/cache-keys.ts'),
     });
   }
 
@@ -1744,7 +1742,7 @@ describe('country risk freshness behavior', { concurrency: 1 }, () => {
         VERCEL_ENV: 'production',
         VERCEL_GIT_COMMIT_SHA: undefined,
       });
-      const redis = createRequire(import.meta.url)(resolve(root, 'server/_shared/redis.ts'));
+      const redis = createRequire(import.meta.url)(resolve(root, 'packages/server/_shared/redis.ts'));
       redis.__resetKeyPrefixCacheForTests();
       const originalFetch = globalThis.fetch;
       const readKeys = [];
@@ -1850,7 +1848,7 @@ describe('country risk freshness behavior', { concurrency: 1 }, () => {
         VERCEL_ENV: scenario.environment,
         VERCEL_GIT_COMMIT_SHA: 'abcdef0123456789',
       });
-      const redis = createRequire(import.meta.url)(resolve(root, 'server/_shared/redis.ts'));
+      const redis = createRequire(import.meta.url)(resolve(root, 'packages/server/_shared/redis.ts'));
       redis.__resetKeyPrefixCacheForTests();
       const originalFetch = globalThis.fetch;
       const riskKey = 'risk:scores:sebuf:stale:v14';
@@ -1932,12 +1930,12 @@ describe('country risk freshness behavior', { concurrency: 1 }, () => {
 
 describe('theater posture caching behavior', { concurrency: 1 }, () => {
   async function importTheaterPosture() {
-    return importPatchedTsModule('server/worldmonitor/military/v1/get-theater-posture.ts', {
-      './_shared': resolve(root, 'server/worldmonitor/military/v1/_shared.ts'),
-      '../../../_shared/constants': resolve(root, 'server/_shared/constants.ts'),
-      '../../../_shared/provider-redistribution': resolve(root, 'server/_shared/provider-redistribution.ts'),
-      '../../../_shared/redis': resolve(root, 'server/_shared/redis.ts'),
-      '../../../_shared/response-headers': resolve(root, 'server/_shared/response-headers.ts'),
+    return importPatchedTsModule('packages/server/worldmonitor/military/v1/get-theater-posture.ts', {
+      './_shared': resolve(root, 'packages/server/worldmonitor/military/v1/_shared.ts'),
+      '../../../_shared/constants': resolve(root, 'packages/server/_shared/constants.ts'),
+      '../../../_shared/provider-redistribution': resolve(root, 'packages/server/_shared/provider-redistribution.ts'),
+      '../../../_shared/redis': resolve(root, 'packages/server/_shared/redis.ts'),
+      '../../../_shared/response-headers': resolve(root, 'packages/server/_shared/response-headers.ts'),
     });
   }
 
@@ -2218,25 +2216,25 @@ describe('theater posture caching behavior', { concurrency: 1 }, () => {
 
 describe('country intel brief caching behavior', { concurrency: 1 }, () => {
   async function importCountryIntelBrief({ premium = false } = {}) {
-    return importPatchedTsModule('server/worldmonitor/intelligence/v1/get-country-intel-brief.ts', {
-      './_shared': resolve(root, 'server/worldmonitor/intelligence/v1/_shared.ts'),
-      './_country-brief-context': resolve(root, 'server/worldmonitor/intelligence/v1/_country-brief-context.ts'),
-      './_energy-import-dependency': resolve(root, 'server/worldmonitor/intelligence/v1/_energy-import-dependency.ts'),
-      '../../resilience/v1/_energy-import-dependency-source': resolve(root, 'server/worldmonitor/resilience/v1/_energy-import-dependency-source.ts'),
-      '../../resilience/v1/_indicator-source-policy': resolve(root, 'server/worldmonitor/resilience/v1/_indicator-source-policy.ts'),
-      '../../../_shared/constants': resolve(root, 'server/_shared/constants.ts'),
-      '../../../_shared/redis': resolve(root, 'server/_shared/redis.ts'),
+    return importPatchedTsModule('packages/server/worldmonitor/intelligence/v1/get-country-intel-brief.ts', {
+      './_shared': resolve(root, 'packages/server/worldmonitor/intelligence/v1/_shared.ts'),
+      './_country-brief-context': resolve(root, 'packages/server/worldmonitor/intelligence/v1/_country-brief-context.ts'),
+      './_energy-import-dependency': resolve(root, 'packages/server/worldmonitor/intelligence/v1/_energy-import-dependency.ts'),
+      '../../resilience/v1/_energy-import-dependency-source': resolve(root, 'packages/server/worldmonitor/resilience/v1/_energy-import-dependency-source.ts'),
+      '../../resilience/v1/_indicator-source-policy': resolve(root, 'packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts'),
+      '../../../_shared/constants': resolve(root, 'packages/server/_shared/constants.ts'),
+      '../../../_shared/redis': resolve(root, 'packages/server/_shared/redis.ts'),
       '../../../_shared/llm-health': resolve(root, 'tests/helpers/llm-health-stub.ts'),
-      '../../../_shared/llm': resolve(root, 'server/_shared/llm.ts'),
-      '../../../_shared/hash': resolve(root, 'server/_shared/hash.ts'),
+      '../../../_shared/llm': resolve(root, 'packages/server/_shared/llm.ts'),
+      '../../../_shared/hash': resolve(root, 'packages/server/_shared/hash.ts'),
       '../../../_shared/premium-check': resolve(
         root,
         premium ? 'tests/helpers/premium-check-stub-true.ts' : 'tests/helpers/premium-check-stub.ts',
       ),
-      '../../../_shared/llm-sanitize.js': resolve(root, 'server/_shared/llm-sanitize.js'),
-      '../../../_shared/cache-keys': resolve(root, 'server/_shared/cache-keys.ts'),
+      '../../../_shared/llm-sanitize.js': resolve(root, 'packages/server/_shared/llm-sanitize.js'),
+      '../../../_shared/cache-keys': resolve(root, 'packages/server/_shared/cache-keys.ts'),
       // #4921: citation verification + grounding telemetry import
-      '../../../../packages/shared/brief-llm-core.js': resolve(root, 'packages/shared/brief-llm-core.js'),
+      '../../../../shared/brief-llm-core.js': resolve(root, 'packages/shared/brief-llm-core.js'),
     });
   }
 
@@ -2986,14 +2984,14 @@ describe('military flights bbox behavior', { concurrency: 1 }, () => {
   const stableStaleCacheKey = 'military:flights:stable-stale:v1';
 
   async function importListMilitaryFlights() {
-    return importPatchedTsModule('server/worldmonitor/military/v1/list-military-flights.ts', {
-      './_shared': resolve(root, 'server/worldmonitor/military/v1/_shared.ts'),
-      './_bounds': resolve(root, 'server/worldmonitor/military/v1/_bounds.ts'),
-      '../../../_shared/constants': resolve(root, 'server/_shared/constants.ts'),
-      '../../../_shared/redis': resolve(root, 'server/_shared/redis.ts'),
-      '../../../_shared/relay': resolve(root, 'server/_shared/relay.ts'),
-      '../../../_shared/response-headers': resolve(root, 'server/_shared/response-headers.ts'),
-      '../../../_shared/provider-redistribution': resolve(root, 'server/_shared/provider-redistribution.ts'),
+    return importPatchedTsModule('packages/server/worldmonitor/military/v1/list-military-flights.ts', {
+      './_shared': resolve(root, 'packages/server/worldmonitor/military/v1/_shared.ts'),
+      './_bounds': resolve(root, 'packages/server/worldmonitor/military/v1/_bounds.ts'),
+      '../../../_shared/constants': resolve(root, 'packages/server/_shared/constants.ts'),
+      '../../../_shared/redis': resolve(root, 'packages/server/_shared/redis.ts'),
+      '../../../_shared/relay': resolve(root, 'packages/server/_shared/relay.ts'),
+      '../../../_shared/response-headers': resolve(root, 'packages/server/_shared/response-headers.ts'),
+      '../../../_shared/provider-redistribution': resolve(root, 'packages/server/_shared/provider-redistribution.ts'),
     });
   }
 

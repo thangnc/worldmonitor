@@ -1,5 +1,5 @@
 // Characterization + unit tests for RSS/Atom description extraction in
-// server/worldmonitor/news/v1/list-feed-digest.ts.
+// packages/server/worldmonitor/news/v1/list-feed-digest.ts.
 //
 // The parser must carry a cleaned article description on every ParsedItem so
 // downstream LLM surfaces (brief description card, whyMatters, SummarizeArticle,
@@ -10,7 +10,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   __testing__,
-} from '../server/worldmonitor/news/v1/list-feed-digest';
+} from '../packages/server/worldmonitor/news/v1/list-feed-digest';
 
 const { extractDescription, parseRssXml } = __testing__;
 

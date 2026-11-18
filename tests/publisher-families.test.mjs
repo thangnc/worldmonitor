@@ -296,7 +296,7 @@ describe('corroboration threshold is one constant, not three literals', () => {
   const GATES = [
     ['scripts/_clustering.mjs', /bucket\.sources\.size < MIN_CORROBORATING_PUBLISHERS/],
     ['scripts/_clustering.mjs', /ownPublisherCount\(cluster\) >= MIN_CORROBORATING_PUBLISHERS/],
-    ['server/worldmonitor/news/v1/list-feed-digest.ts', /bucket\.sources\.size < MIN_CORROBORATING_PUBLISHERS/],
+    ['packages/server/worldmonitor/news/v1/list-feed-digest.ts', /bucket\.sources\.size < MIN_CORROBORATING_PUBLISHERS/],
     ['scripts/seed-insights.mjs', />= MIN_CORROBORATING_PUBLISHERS/],
   ];
 

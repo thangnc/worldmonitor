@@ -93,7 +93,7 @@ describe('resilience static seed WGI indicator contract', () => {
 
   // packages/shared/wgi-indicator-keys.json plays TWO roles, and #6799 turns on keeping
   // them apart. It is the upstream request id for this seeder AND the key
-  // server/worldmonitor/resilience/v1/_dimension-scorers.ts reads back out of
+  // packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts reads back out of
   // the stored payload (`indicators[key]`).
   //
   // The World Bank archived the bare codes and moved the live series behind a
@@ -117,7 +117,7 @@ describe('resilience static seed WGI indicator contract', () => {
     // Reading the scorer's own source rather than restating the list: the whole
     // failure mode is these two drifting apart.
     const scorer = readFileSync(
-      resolve(dirname(fileURLToPath(import.meta.url)), '..', 'server/worldmonitor/resilience/v1/_dimension-scorers.ts'),
+      resolve(dirname(fileURLToPath(import.meta.url)), '..', 'packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts'),
       'utf8',
     );
     assert.match(

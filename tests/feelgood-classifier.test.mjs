@@ -22,7 +22,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyFeelGood } from '../server/_shared/feelgood-classifier.js';
+import { classifyFeelGood } from '../packages/server/_shared/feelgood-classifier.js';
 
 describe('classifyFeelGood — STRONG URL pathname segments (R1, sufficient alone subject to veto)', () => {
   it('T1: /lifestyle/ → feel-good', () => {

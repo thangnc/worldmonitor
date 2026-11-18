@@ -2,9 +2,9 @@
 // (scripts/shared/cii-country-borders.data.mjs, generated from the Natural Earth
 // 1:50m map by scripts/generate-cii-country-borders.mjs).
 //
-// Shared by the CII scorer (server/worldmonitor/intelligence/v1/get-risk-scores.ts)
+// Shared by the CII scorer (packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts)
 // and the military seeder (scripts/seed-military-cii.mjs), which Railway packages
-// from scripts/ alone and so cannot import server/.
+// from scripts/ alone and so cannot import packages/server/.
 //
 // A point inside a Tier-1 country's land is that country. A point on any other
 // land is in no Tier-1 country (null). A point at sea within 12 nautical miles

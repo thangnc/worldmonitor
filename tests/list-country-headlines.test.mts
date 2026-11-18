@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
-import { newsHandler } from '../server/worldmonitor/news/v1/handler';
-import { __testing__ as digest, fetchAndParseRss } from '../server/worldmonitor/news/v1/list-feed-digest';
-import { rssFeedCacheKey } from '../server/worldmonitor/news/v1/_rss-cache';
-import { REVOKED_URLS_KEY } from '../server/_shared/digest-revocations';
-import { drainResponseHeaders } from '../server/_shared/response-headers';
-import { __resetKeyPrefixCacheForTests } from '../server/_shared/redis';
+import { newsHandler } from '../packages/server/worldmonitor/news/v1/handler';
+import { __testing__ as digest, fetchAndParseRss } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
+import { rssFeedCacheKey } from '../packages/server/worldmonitor/news/v1/_rss-cache';
+import { REVOKED_URLS_KEY } from '../packages/server/_shared/digest-revocations';
+import { drainResponseHeaders } from '../packages/server/_shared/response-headers';
+import { __resetKeyPrefixCacheForTests } from '../packages/server/_shared/redis';
 import { createNewsServiceRoutes, type ListCountryHeadlinesResponse } from '../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
-import { validateGeneratedRequest } from '../server/request-validator';
+import { validateGeneratedRequest } from '../packages/server/request-validator';
 
 const route = createNewsServiceRoutes(newsHandler, { validateRequest: validateGeneratedRequest })
   .find(entry => entry.path.endsWith('/list-country-headlines'))!;

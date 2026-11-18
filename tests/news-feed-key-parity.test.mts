@@ -67,7 +67,7 @@ describe('news feed key parity (client FEEDS ⇔ server VARIANT_FEEDS)', () => {
         `These categories will render empty + 'UNAVAILABLE' on the panel because the\n` +
         `client looks up digest.categories[<key>] and the server emits a different key.\n\n` +
         `Missing on server: ${orphans.join(', ')}\n\n` +
-        `Fix: rename the server-side key in server/worldmonitor/news/v1/_feeds.ts under\n` +
+        `Fix: rename the server-side key in packages/server/worldmonitor/news/v1/_feeds.ts under\n` +
         `VARIANT_FEEDS.${serverKey} to match the client. (Or add the key to\n` +
         `\`knownGapsClientOnly\` in this test if the gap is intentional and tracked.)`,
       );

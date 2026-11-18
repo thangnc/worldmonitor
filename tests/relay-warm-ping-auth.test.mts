@@ -16,7 +16,7 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { isRelayWarmPingRequest, RELAY_WARM_PING_PATHS } from '../server/gateway.ts';
+import { isRelayWarmPingRequest, RELAY_WARM_PING_PATHS } from '../packages/server/gateway.ts';
 
 const SECRET = 'test-relay-warm-ping-secret-xxxxxxxxxxxxxxxxxxxx';
 const WARM_PATH = '/api/supply-chain/v1/get-chokepoint-status';
@@ -95,7 +95,7 @@ describe('relay warm-ping auth wiring (source guardrail)', () => {
   });
 
   it('uses timingSafeEqual (no direct equality) and is wired into both gates', async () => {
-    const src = await readFile(new URL('../server/gateway.ts', import.meta.url), 'utf8');
+    const src = await readFile(new URL('../packages/server/gateway.ts', import.meta.url), 'utf8');
     // verifier uses the timing-safe comparator against the env secret + header
     assert.match(src, /isRelayWarmPingRequest/);
     assert.match(src, /RELAY_WARM_PING_PATHS\.has\(pathname\)/);

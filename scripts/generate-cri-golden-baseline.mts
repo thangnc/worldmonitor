@@ -44,7 +44,7 @@ import wholeIndexFixture from '../tests/fixtures/resilience-whole-index-pairs-20
 import {
   scoreAllDimensions,
   type ResilienceSeedReader,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import {
   RESILIENCE_HISTORY_KEY_PREFIX,
   RESILIENCE_SCHEMA_V2_ENABLED,
@@ -53,8 +53,8 @@ import {
   buildDomainList,
   getCurrentCacheFormula,
   penalizedPillarScore,
-} from '../server/worldmonitor/resilience/v1/_shared.ts';
-import { buildPillarList } from '../server/worldmonitor/resilience/v1/_pillar-membership.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
+import { buildPillarList } from '../packages/server/worldmonitor/resilience/v1/_pillar-membership.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

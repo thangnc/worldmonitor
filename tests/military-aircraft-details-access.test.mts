@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { getAircraftDetails } from '../server/worldmonitor/military/v1/get-aircraft-details.ts';
-import { getAircraftDetailsBatch } from '../server/worldmonitor/military/v1/get-aircraft-details-batch.ts';
-import { _resetTrackedAircraftCacheForTests } from '../server/worldmonitor/military/v1/_tracked-aircraft.ts';
-import { sidecarCacheSet } from '../server/_shared/sidecar-cache.ts';
+import { getAircraftDetails } from '../packages/server/worldmonitor/military/v1/get-aircraft-details.ts';
+import { getAircraftDetailsBatch } from '../packages/server/worldmonitor/military/v1/get-aircraft-details-batch.ts';
+import { _resetTrackedAircraftCacheForTests } from '../packages/server/worldmonitor/military/v1/_tracked-aircraft.ts';
+import { sidecarCacheSet } from '../packages/server/_shared/sidecar-cache.ts';
 import {
   ENDPOINT_RATE_POLICIES,
   FAIL_CLOSED_ENDPOINT_RATE_POLICY_REQUIRED,
-} from '../server/_shared/rate-limit.ts';
+} from '../packages/server/_shared/rate-limit.ts';
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
 import { GENERATED_MESSAGE_RULES } from '../packages/contracts/generated/server/request_validation.ts';
 import { validationFailure } from './helpers/validation-failure.mts';

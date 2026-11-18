@@ -3,7 +3,7 @@ import { before, describe, it } from 'node:test';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
-import { __testing__ as digestTesting } from '../server/worldmonitor/news/v1/list-feed-digest';
+import { __testing__ as digestTesting } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
 
 type AttemptsModule = {
   FEED_ATTEMPT_OUTCOMES: readonly string[];
@@ -52,7 +52,7 @@ let attempts: AttemptsModule;
 before(async () => {
   const result = await build({
     stdin: {
-      contents: "export * from './server/worldmonitor/news/v1/_attempts.ts';",
+      contents: "export * from './packages/server/worldmonitor/news/v1/_attempts.ts';",
       loader: 'ts',
       resolveDir: root,
       sourcefile: 'digest-attempts-test-entry.ts',

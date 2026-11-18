@@ -13,9 +13,9 @@ import { publisherFamilyFor } from '../packages/shared/publisher-families.js';
 import { readFileSync } from 'node:fs';
 
 import { clusterNewsCore, clusterPublisherCount } from '../packages/shared/news-clustering-core.js';
-import { assignStoryIdentity } from '../server/worldmonitor/news/v1/dedup.mjs';
-import { assessCorroboration, evidenceFromCluster, evidenceFromStory, publisherRoster } from '../server/_shared/corroboration.ts';
-import { getSourceTier } from '../server/_shared/source-tiers.ts';
+import { assignStoryIdentity } from '../packages/server/worldmonitor/news/v1/dedup.mjs';
+import { assessCorroboration, evidenceFromCluster, evidenceFromStory, publisherRoster } from '../packages/server/_shared/corroboration.ts';
+import { getSourceTier } from '../packages/server/_shared/source-tiers.ts';
 
 const ZAP_TITLE = 'Zaporizhzhia airstrikes kill 17 as Russia intensifies attacks across Ukraine';
 const ZAP_LEAD = 'Zaporizhzhia was hit by deadly Russian airstrikes on Saturday, 10 October, killing at least 17 people, including three children, Ukrainian officials said. Rescuers searched rubble for survivors as the city faced renewed strikes on residential areas.';

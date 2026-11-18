@@ -18,7 +18,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Source-text extraction (same pattern as csp-filter.test.mjs) so the test
 // doesn't drag the handler's redis/llm import graph into the runner.
 const src = readFileSync(
-  resolve(__dirname, '../server/worldmonitor/intelligence/v1/deduct-situation.ts'),
+  resolve(__dirname, '../packages/server/worldmonitor/intelligence/v1/deduct-situation.ts'),
   'utf-8',
 );
 

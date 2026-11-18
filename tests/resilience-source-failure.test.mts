@@ -12,20 +12,20 @@ import {
   failedDimensionsFromDatasets,
   readStandaloneSourceFailureDimensions,
   readFailedDatasets,
-} from '../server/worldmonitor/resilience/v1/_source-failure.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_source-failure.ts';
 import {
   RESILIENCE_DIMENSION_ORDER,
   scoreAllDimensions,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import {
   getEffectiveIndicatorSourceKeys,
   resolveSeedMetaKey,
-} from '../server/worldmonitor/resilience/v1/_dimension-freshness.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-freshness.ts';
 import {
   INDICATOR_REGISTRY,
   getIndicatorSourceKeys,
-} from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
-import type { IndicatorSpec } from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
+import type { IndicatorSpec } from '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
 import sovereignStatus from '../scripts/shared/sovereign-status.json';
 
 const DAY_MS = 24 * 60 * 60 * 1000;

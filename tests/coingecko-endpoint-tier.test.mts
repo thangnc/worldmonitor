@@ -2,7 +2,7 @@ import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 
 import { coingeckoEndpoint as seedCoingeckoEndpoint } from "../scripts/_seed-utils.mjs";
-import { coingeckoEndpoint as serverCoingeckoEndpoint } from "../server/worldmonitor/market/v1/_shared.ts";
+import { coingeckoEndpoint as serverCoingeckoEndpoint } from "../packages/server/worldmonitor/market/v1/_shared.ts";
 
 type Endpoint = {
   baseUrl: string;

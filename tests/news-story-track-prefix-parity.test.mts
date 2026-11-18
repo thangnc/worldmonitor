@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 
-import { STORY_TRACK_KEY } from "../server/_shared/cache-keys.ts";
-import { __resetKeyPrefixCacheForTests } from "../server/_shared/redis.ts";
-import { __testing__ } from "../server/worldmonitor/news/v1/list-feed-digest.ts";
+import { STORY_TRACK_KEY } from "../packages/server/_shared/cache-keys.ts";
+import { __resetKeyPrefixCacheForTests } from "../packages/server/_shared/redis.ts";
+import { __testing__ } from "../packages/server/worldmonitor/news/v1/list-feed-digest.ts";
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };

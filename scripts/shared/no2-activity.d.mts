@@ -1,4 +1,4 @@
-// Types for scripts/shared/no2-activity.mjs so readers in server/ stay
+// Types for scripts/shared/no2-activity.mjs so readers in packages/server/ stay
 // covered by `npm run typecheck:api`.
 
 export declare const NO2_ACTIVITY_KEY: 'economic:no2-activity:v1';

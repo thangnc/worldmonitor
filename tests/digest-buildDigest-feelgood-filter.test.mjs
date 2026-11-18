@@ -46,9 +46,9 @@ const buildDigestEnd = Math.min(
 const buildDigestBody = seedSrc.slice(buildDigestStart, buildDigestEnd);
 
 describe('U3: buildDigest imports the feel-good classifier', () => {
-  it('imports classifyFeelGood from server/_shared', () => {
+  it('imports classifyFeelGood from packages/server/_shared', () => {
     assert.ok(
-      seedSrc.includes("import { classifyFeelGood } from '../server/_shared/feelgood-classifier.js'"),
+      seedSrc.includes("import { classifyFeelGood } from '../packages/server/_shared/feelgood-classifier.js'"),
       'must import classifyFeelGood as sibling to classifyOpinion',
     );
   });

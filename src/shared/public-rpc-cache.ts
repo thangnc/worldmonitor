@@ -84,7 +84,7 @@ function hasSingleValue(params: URLSearchParams, key: string): boolean {
  * Vercel serves these routes through `api/<domain>/v1/[rpc].ts` and its filesystem router
  * echoes the matched segment back as `?rpc=<lastPathSegment>`. The function therefore
  * sees a query the caller never sent, which fails the exhaustive shape checks below
- * and silently 401'd every public RPC in production (#5285). `server/_shared/
+ * and silently 401'd every public RPC in production (#5285). `packages/server/_shared/
  * mcp-internal-hmac.ts` strips the same echo before signing, for the same reason.
  *
  * Returns the RAW search string (no leading `?`) with the echo removed. Raw, not a

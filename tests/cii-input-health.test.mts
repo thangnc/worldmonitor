@@ -24,8 +24,8 @@ delete process.env.ACLED_ACCESS_TOKEN;
 delete process.env.ACLED_EMAIL;
 delete process.env.ACLED_PASSWORD;
 
-const { getRiskScores, CII_HEALTH_INPUT_IDS } = await import('../server/worldmonitor/intelligence/v1/get-risk-scores');
-const { __clearLocalUnavailableBackoffForTests } = await import('../server/_shared/redis');
+const { getRiskScores, CII_HEALTH_INPUT_IDS } = await import('../packages/server/worldmonitor/intelligence/v1/get-risk-scores');
+const { __clearLocalUnavailableBackoffForTests } = await import('../packages/server/_shared/redis');
 const { __testing__ } = await import('../api/health.js');
 const { assessCiiInputs, CII_INPUT_POLICY } = await import('../api/_cii-input-health.js');
 
