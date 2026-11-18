@@ -87,16 +87,6 @@ npm run dev
 
 Для источников данных отдельных функций могут понадобиться учётные данные — полный список в `.env.example`.
 
-Разработка конкретного варианта:
-
-```bash
-npm run dev:tech       # tech.worldmonitor.app
-npm run dev:finance    # finance.worldmonitor.app
-npm run dev:commodity  # commodity.worldmonitor.app
-npm run dev:happy      # happy.worldmonitor.app
-npm run dev:energy     # energy.worldmonitor.app
-```
-
 См. **[руководство по самостоятельному хостингу](https://www.worldmonitor.app/docs/getting-started)** (Vercel, Docker, статическая выкладка).
 
 ---

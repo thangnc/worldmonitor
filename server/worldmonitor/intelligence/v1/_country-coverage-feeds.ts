@@ -34,9 +34,9 @@ const EVENT_QUERY =
   'protest OR demonstration OR riot OR conflict OR attack OR military OR earthquake OR flood OR wildfire';
 
 /**
- * The panel classifies with SITE_VARIANT, which is 'full' for the app that owns
- * the country panel. The tech variant has no country panel, so pinning 'full'
- * here cannot diverge from a variant a user could actually be looking at.
+ * The classifier's `full` profile. The old dashboard's country panel classified
+ * with the `full` site variant; site variants are gone (refactor Phase 1d), so
+ * this pin is the only profile in use.
  */
 const CLASSIFIER_VARIANT = 'full';
 

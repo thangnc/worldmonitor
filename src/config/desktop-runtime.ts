@@ -2,16 +2,13 @@
  * "Am I running inside the Tauri desktop shell?" — and nothing else.
  *
  * Extracted from `runtime.ts` (#5911) because that module also owns API base
- * URLs and the desktop fetch patch, so it imports `@/config/variant` and
- * `@/services/clerk`. Anything that needs only this boolean — the external-URL
- * router, checkout — would otherwise drag that whole graph in, which both
- * widens bundles and makes the module unimportable in test harnesses that stub
- * a partial browser environment (`config/variant.ts` reads `location` at
- * module scope).
+ * URLs and the desktop fetch patch. Anything that needs only this boolean —
+ * the external-URL router — would otherwise drag that whole graph in, which
+ * both widens bundles and makes the module unimportable in test harnesses that
+ * stub a partial browser environment.
  *
- * It lives in `config/` (#5912) because `config/variant.ts` and
- * `config/basemap.ts` need it, and config sits below services in the import
- * direction (scripts/lint-boundaries.mjs). `services/desktop-runtime.ts`
+ * It lives in `config/` (#5912) because config sits below services in the
+ * import direction (scripts/lint-boundaries.mjs). `services/desktop-runtime.ts`
  * re-exports every public symbol and `runtime.ts` re-exports the detectors, so
  * existing importers and test stubs are unaffected and there is still one
  * implementation.

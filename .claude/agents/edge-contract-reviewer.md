@@ -27,8 +27,8 @@ For each changed file, check the rules that apply to its location:
 2. **Import boundaries**
    - Legacy `api/*.js` imports only same-directory `_*.js` helpers or packages — never `server/` or `src/`.
    - TypeScript API entries may import `server/` and `src/generated/` only, no other browser code.
-   - `server/` must not import `src/components/` or `src/app/`.
-   - Browser direction: `types -> config -> services -> components -> app -> App.ts`.
+   - `server/` must not import `src/lite/`.
+   - Browser direction: `types -> config -> services -> lite` (`scripts/lint-boundaries.mjs`).
    - Logic shared by browser and server lives once in top-level `shared/`; flag a second copy.
 
 3. **Caching**

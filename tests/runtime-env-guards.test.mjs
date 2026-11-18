@@ -17,7 +17,6 @@ const runtimeSrc = readFileSync(resolve(__dirname, '../src/services/runtime.ts')
 // The allow-list invariant follows the implementation: both halves are
 // asserted, so the split cannot be used to smuggle in a whole-env snapshot.
 const desktopRuntimeSrc = readFileSync(resolve(__dirname, '../src/config/desktop-runtime.ts'), 'utf-8');
-const variantSrc = readFileSync(resolve(__dirname, '../src/config/variant.ts'), 'utf-8');
 
 describe('runtime env guards', () => {
   it('reads only explicit import.meta.env properties through a guarded ENV wrapper', () => {
@@ -86,20 +85,5 @@ describe('runtime env guards', () => {
     assert.ok(runtimeSrc.includes('const configuredBaseUrl = ENV.VITE_TAURI_API_BASE_URL;'), 'Tauri API base should read from ENV');
     assert.ok(runtimeSrc.includes('const configuredRemoteBase = ENV.VITE_TAURI_REMOTE_API_BASE_URL;'), 'Remote API base should read from ENV');
     assert.ok(runtimeSrc.includes('...extractHostnames(WS_API_URL, ENV.VITE_WS_RELAY_URL)'), 'Relay host extraction should read from ENV');
-  });
-});
-
-describe('variant env guards', () => {
-  it('computes the build variant through a guarded import.meta.env access', () => {
-    assert.match(
-      variantSrc,
-      /const buildVariant = \(\(\) => \{\s*try \{\s*return import\.meta\.env\.VITE_VARIANT \|\| 'full';\s*\} catch \{\s*return 'full';\s*\}\s*\}\)\(\);/s,
-    );
-  });
-
-  it('reuses buildVariant for SSR, Tauri, missing-location, and localhost fallback paths', () => {
-    const buildVariantUses = variantSrc.match(/return buildVariant;/g) ?? [];
-    assert.equal(buildVariantUses.length, 4, `Expected four buildVariant fallbacks, got ${buildVariantUses.length}`);
-    assert.ok(variantSrc.includes("if (typeof window === 'undefined') return buildVariant;"), 'SSR should fall back to buildVariant');
   });
 });

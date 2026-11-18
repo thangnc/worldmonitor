@@ -97,6 +97,9 @@ real-device end-to-end speedup.
 
 ## Production-dashboard attribution
 
+Refactor Phase 1d removed this harness and its test with the dashboard it
+measured; the commands below record how the numbers were taken.
+
 Run the complete dashboard profile:
 
 ```sh

@@ -46,7 +46,6 @@ const result = await build({
       SSR: false,
       MODE: 'generator',
       BASE_URL: '/',
-      VITE_VARIANT: 'full',
       VITE_RSS_DIRECT_TO_RELAY: 'false',
     }),
   },

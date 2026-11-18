@@ -448,7 +448,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | lnc-abc-news.tubi.video (lnc-abc-news.tubi.video) | Excluded / candidate — No current fetch observed |
 | lobste.rs (lobste.rs) | feed — shared/news-catalog.json |
 | Local development transport (localhost) | structured — scripts/ais-relay.cjs, server/worldmonitor/research/v1/list-tech-events.ts, src/config/desktop-runtime.ts, src/services/wm-session.ts |
-| Local loopback transport (127.0.0.1) | structured — scripts/measure-trade-animation-rebuild.mjs, scripts/profile-news-hybrid-clustering-7782-dashboard.mjs, src/services/runtime.ts |
+| Local loopback transport (127.0.0.1) | structured — src/services/runtime.ts |
 | lowyinstitute.org (lowyinstitute.org) | feed — shared/news-catalog.json |
 | macleans.ca (macleans.ca) | feed — shared/news-catalog.json |
 | Mada Masr (madamasr.com) | feed — shared/news-catalog.json |

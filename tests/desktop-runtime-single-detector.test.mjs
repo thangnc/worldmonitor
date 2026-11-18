@@ -31,14 +31,9 @@ const ALLOWED_RAW_GLOBAL_READERS = new Set([
 ]);
 
 const CONVERGED_CALL_SITES = [
-  'src/config/variant.ts',
   'src/utils/circuit-breaker.ts',
   'src/bootstrap/sentry-init.ts',
 ];
-
-// Config sits below services (scripts/lint-boundaries.mjs), so config call
-// sites take the detector from its config home rather than the services re-export.
-const CONFIG_CALL_SITES = ['src/config/variant.ts'];
 
 /**
  * Every code token that names a bridge global: identifiers (`window.__TAURI__`,
@@ -143,18 +138,6 @@ describe('desktop runtime detection has one owner (#5912)', () => {
 });
 
 describe('the detector lives in a layer config may import (#5912)', () => {
-  it('config modules take the detector from @/config/desktop-runtime', () => {
-    for (const rel of CONFIG_CALL_SITES) {
-      const code = read(rel);
-      assert.match(code, /from '@\/config\/desktop-runtime';/, `${rel} must import the config-layer detector`);
-      assert.doesNotMatch(
-        code,
-        /from '@\/services\//,
-        `${rel} is config; importing services reverses the layer direction`,
-      );
-    }
-  });
-
   it('the services module is a pure re-export of every public detector symbol', () => {
     const detector = ts.createSourceFile(DETECTOR, read(DETECTOR), ts.ScriptTarget.Latest, false, ts.ScriptKind.TS);
     const service = ts.createSourceFile(SERVICE_REEXPORT, read(SERVICE_REEXPORT), ts.ScriptTarget.Latest, false, ts.ScriptKind.TS);

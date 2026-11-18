@@ -16,7 +16,6 @@ export async function seedProfile(page, overrides = {}) {
     localStorage.clear();
     sessionStorage.clear();
     sessionStorage.setItem('__wm_verify_seeded__', '1');
-    localStorage.setItem('worldmonitor-variant', opts.variant ?? 'full');
     // First-run overlays that would otherwise steal the click target.
     localStorage.setItem('wm-layer-warning-dismissed', 'true');
     localStorage.setItem('wm-pro-banner-launched-dismissed', String(Date.now()));

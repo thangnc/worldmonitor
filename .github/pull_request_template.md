@@ -25,8 +25,7 @@
 
 ## Checklist
 
-- [ ] Tested on [worldmonitor.app](https://worldmonitor.app) variant
-- [ ] Tested on [tech.worldmonitor.app](https://tech.worldmonitor.app) variant (if applicable)
+- [ ] Checked the Lite UI at `/lite` (if the change touches the UI)
 - [ ] New RSS feed domains added to `api/rss-proxy.js` allowlist (if adding feeds)
 - [ ] No API keys or secrets committed
 - [ ] TypeScript compiles without errors (`npm run typecheck`)

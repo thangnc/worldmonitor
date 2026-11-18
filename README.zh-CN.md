@@ -86,16 +86,6 @@ npm run dev
 
 特定功能的数据源可能需要凭据。完整列表请参阅 `.env.example`。
 
-针对特定变体进行开发：
-
-```bash
-npm run dev:tech       # tech.worldmonitor.app
-npm run dev:finance    # finance.worldmonitor.app
-npm run dev:commodity  # commodity.worldmonitor.app
-npm run dev:happy      # happy.worldmonitor.app
-npm run dev:energy     # energy.worldmonitor.app
-```
-
 部署选项（Vercel、Docker、静态托管）请参阅**[自托管指南](https://www.worldmonitor.app/docs/zh/getting-started)**。
 
 ---

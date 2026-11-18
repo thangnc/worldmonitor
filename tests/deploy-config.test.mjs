@@ -430,88 +430,61 @@ describe('welcome landing page routing', () => {
     assert.deepEqual(offenders, [], `public/${offenders[0] ?? ''} would shadow / as a directory index`);
   });
 
-  it('serves no plain / rewrite and sends variant roots through /dashboard to /lite', () => {
+  it('serves no plain / rewrite, so / can only redirect to /lite', () => {
     assert.deepEqual(plainRootRewrites(), [], 'a plain / rewrite would shadow the /lite redirect target with a removed page');
-
-    for (const host of ['commodity.worldmonitor.app', 'energy.worldmonitor.app', 'finance.worldmonitor.app',
-      'happy.worldmonitor.app', 'tech.worldmonitor.app']) {
-      const redirect = firstRedirectFor({ host, path: '/' });
-      assert.equal(redirect?.destination, '/dashboard', `${host}/ must 308 to /dashboard in production`);
-      assert.equal(redirect.permanent, true);
-      assert.equal(firstRedirectFor({ host, path: '/dashboard' })?.destination, '/lite', `${host}/dashboard must land on /lite`);
-    }
   });
 
-  it('opens deployment and branch preview roots through the dashboard route, which redirects to /lite', () => {
-    for (const host of [
+  // vercel.json owns the default route: its redirects run before middleware.ts,
+  // match on the path only (no `has: query` rule may intercept), and Vercel
+  // carries the request query string over to the destination. So a shared map
+  // link, the old ?full=1 escape and a preview or former variant host all
+  // land on /lite with their query, in one temporary (307) hop.
+  it('sends /, /dashboard and every query on them to /lite on every host, with one 307', () => {
+    const hosts = [
+      'www.worldmonitor.app',
+      'worldmonitor.app',
+      'tech.worldmonitor.app',
+      'finance.worldmonitor.app',
       'worldmonitor-h0zk88n4l-eliewm.vercel.app',
-      'worldmonitor-git-perf-defer-dashboard-app-eliewm.vercel.app',
-    ]) {
-      const redirect = firstRedirectFor({ host, path: '/' });
-      assert.equal(redirect?.destination, '/dashboard');
-      assert.equal(redirect.permanent, false);
-      // /dashboard is no longer served; it redirects on to the Lite UI.
-      assert.equal(firstRewriteFor({ host, path: redirect.destination }), null);
-      const lite = firstRedirectFor({ host, path: redirect.destination });
-      assert.equal(lite?.destination, '/lite');
-      assert.equal(lite.permanent, false);
-      assert.equal(firstRewriteFor({ host, path: lite.destination })?.destination, '/lite.html');
+      'monitor.example.com',
+    ];
+    const queries = [{}, { lat: '1', lon: '2' }, { full: '1' }, { layers: 'conflicts', zoom: '3' }, { mode: 'agent' }];
+    for (const host of hosts) {
+      for (const path of ['/', '/dashboard', '/dashboard/']) {
+        for (const query of queries) {
+          const label = `${host}${path}?${new URLSearchParams(query)}`;
+          const redirect = firstRedirectFor({ host, path, query });
+          assert.equal(redirect?.destination, '/lite', `${label} must redirect to /lite`);
+          assert.equal(redirect.permanent, false, `${label} must be a 307, not a cached 308`);
+          assert.equal(firstRewriteFor({ host, path: redirect.destination })?.destination, '/lite.html');
+        }
+      }
     }
-  });
-
-  it('keeps preview root routing off production homepages, unknown pages, and lookalike hosts', () => {
-    // These roots take the host-agnostic Lite redirect, not the preview
-    // /dashboard redirect.
-    for (const host of ['worldmonitor.app', 'www.worldmonitor.app', 'example.com', 'preview.vercel.app.evil.example']) {
-      assert.deepEqual(firstRedirectFor({ host, path: '/' }), {
-        source: '/',
-        destination: '/lite',
-        permanent: false,
-      });
+    for (const rule of vercelConfig.redirects.filter((r) => ['/', '/dashboard', '/dashboard/'].includes(r.source))) {
+      assert.ok(!String(rule.destination).includes('?'), `${rule.source}: a destination query would replace the request's`);
+      assert.ok(!(rule.has ?? []).some((c) => c.type === 'query'), `${rule.source}: no query-conditioned exception`);
     }
+    // api.worldmonitor.app is not a page host; its root goes to www, which then
+    // takes the rule above.
+    assert.equal(firstRedirectFor({ host: 'api.worldmonitor.app', path: '/' })?.destination, 'https://www.worldmonitor.app/');
     assert.equal(firstRedirectFor({ host: 'preview.vercel.app', path: '/missing-page' }), null);
   });
 
-  it('redirects legacy root map-state deep links to /dashboard before welcome routing', () => {
-    assert.match(
-      middlewareSource,
-      /LEGACY_DASHBOARD_ROOT_QUERY_KEYS = \['lat', 'lon', 'zoom', 'view', 'timeRange', 'layers', 'c', 'country', 'chokepoint'\]/,
-      'middleware must list dashboard URL-state params that bypass the root welcome page',
-    );
-    assert.match(
-      middlewareSource,
-      /path === '\/' && hasLegacyDashboardRootState\(url\.searchParams\)/,
-      'middleware must detect legacy dashboard state on root requests',
-    );
-    assert.match(
-      middlewareSource,
-      /dashboardUrl\.pathname = '\/dashboard'/,
-      'middleware must move legacy dashboard-state root links to /dashboard',
-    );
-    // Hand-built rather than Response.redirect() so the response can carry
-    // Vary (#7660). The same URL now yields two different Locations depending
-    // on the User-Agent, and a 308 is cacheable by default (RFC 9110
-    // §15.4.9) — an unkeyed cache would replay one branch's Location to the
-    // other's client.
-    assert.match(
-      middlewareSource,
-      /headers: uaConditionedRedirectHeaders\(dashboardUrl\)/,
-      'the legacy root redirect must preserve the query string AND declare the User-Agent cache key',
-    );
+  it('leaves the default route to vercel.json: middleware.ts has no dashboard or profile branch', () => {
+    assert.doesNotMatch(middlewareSource, /['"]\/dashboard/, 'middleware must not redirect to the deleted dashboard');
+    assert.doesNotMatch(middlewareSource, /VITE_LITE_PROFILE|lite-route|LEGACY_DASHBOARD/);
     assert.match(
       middlewareSource,
       /'CDN-Cache-Control': 'no-store',\n\s*'Vercel-CDN-Cache-Control': 'no-store',/,
-      'Cache-Control alone loses to the CDN directives on the / route',
-    );
-    assert.doesNotMatch(
-      middlewareSource,
-      /Response\.redirect\(dashboardUrl\.toString\(\), 308\)/,
-      'Response.redirect() cannot set Vary, so it cannot be used for a UA-conditioned redirect',
+      'the crawler redirect must stay out of every shared cache',
     );
   });
 
   it('redirects / and the old dashboard routes to /lite temporarily, and serves no dashboard document', () => {
     assert.deepEqual(vercelConfig.redirects.filter((r) => r.destination === '/lite'), [
+      { source: '/CLERK-ROUTER/:path*', destination: '/lite', permanent: false },
+      { source: '/settings', destination: '/lite', permanent: false },
+      { source: '/dashboard/', destination: '/lite', permanent: false },
       { source: '/', destination: '/lite', permanent: false },
       { source: '/dashboard', destination: '/lite', permanent: false },
       { source: '/stocks', destination: '/lite', permanent: false },
@@ -528,7 +501,6 @@ describe('welcome landing page routing', () => {
       assert.equal(firstRewriteFor({ host, path: '/', query: { mode: 'agent' } }), null);
     }
     // Trailing-slash forms canonicalise first, then take the redirect above.
-    assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path: '/dashboard/' })?.destination, '/dashboard');
     assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path: '/story/' })?.destination, '/story');
     // No rewrite targets a deleted dashboard document, or the deleted
     // /embed, /mcp-grant, /desktop-sign-in and /verify pages.
@@ -577,13 +549,13 @@ describe('welcome landing page routing', () => {
     );
   });
 
-  it('sends a followed Clerk virtual-router href back to the dashboard instead of a 404', () => {
+  it('sends a followed Clerk virtual-router href to /lite instead of a 404', () => {
     const redirect = firstRedirectFor({
       host: 'www.worldmonitor.app',
       path: '/CLERK-ROUTER/VIRTUAL/sign-in/factor-one',
     });
     assert.ok(redirect, 'expected a redirect for /CLERK-ROUTER/*');
-    assert.equal(redirect.destination, '/dashboard');
+    assert.equal(redirect.destination, '/lite');
     assert.equal(redirect.permanent, false);
   });
 
@@ -1343,10 +1315,12 @@ describe('self-hosted docker nginx SPA entry', () => {
     for (const conf of ['docker/nginx.conf', 'docker/nginx.conf.template']) {
       const src = readFileSync(resolve(__dirname, `../${conf}`), 'utf-8');
       assert.match(src, /^ {4}index index\.html;$/m, `${conf}: index directive must serve corpus index.html only`);
-      assert.match(src, /^ {4}location = \/ \{ return 302 \/lite; \}$/m, `${conf}: / must redirect to /lite`);
+      assert.match(src, /^ {4}location = \/ \{ return 307 \/lite\$is_args\$args; \}$/m, `${conf}: / must 307 to /lite with its query`);
+      // A relative Location: nginx does not know the published port or scheme.
+      assert.match(src, /^ {4}absolute_redirect off;$/m, `${conf}: redirects must keep a relative Location`);
       assert.match(
         src,
-        /^ {4}location ~ \^\/\(\?:dashboard\|story\|stocks\(\?:\/\[\^\/\]\+\)\?\)\/\?\$ \{ return 302 \/lite; \}$/m,
+        /^ {4}location ~ \^\/\(\?:dashboard\|story\|stocks\(\?:\/\[\^\/\]\+\)\?\)\/\?\$ \{ return 307 \/lite\$is_args\$args; \}$/m,
         `${conf}: the old dashboard routes must redirect to /lite`,
       );
       assert.match(
@@ -1435,24 +1409,6 @@ describe('vercel deployment excludes api test files', () => {
 // shared HTML/XML on tech/finance/commodity/happy/energy/api is crawled as
 // alternates (or, for RSS, duplicates with no user-selected canonical).
 describe('variant-host canonicalization (#6833–#6836)', () => {
-  const dashboardVariantHosts = VARIANT_HOSTS.filter((host) => host !== 'www.worldmonitor.app');
-
-  it('308s product-variant / to same-host /dashboard (#6833)', () => {
-    const redirect = vercelConfig.redirects.find((r) =>
-      r.source === '/' && r.destination === '/dashboard'
-    );
-    assert.ok(redirect, 'expected a host-conditioned 308 for product-variant /');
-    assert.equal(redirect.destination, '/dashboard');
-    assert.equal(redirect.permanent, true);
-    const hostRe = new RegExp((redirect.has ?? []).find((h) => h.type === 'host')?.value ?? '');
-    for (const host of dashboardVariantHosts) {
-      assert.match(host, hostRe, `${host}/ must 308 to /dashboard`);
-    }
-    assert.ok(!hostRe.test('www.worldmonitor.app'), 'www / must stay the welcome page');
-    assert.ok(!hostRe.test('worldmonitor.app'), 'apex / must stay the welcome page');
-    assert.ok(!hostRe.test('api.worldmonitor.app'), 'api / is not a product variant');
-  });
-
   it('308s api / to www / (#6833)', () => {
     const redirect = firstRedirectFor({ host: 'api.worldmonitor.app', path: '/' });
     assert.ok(redirect, 'expected a host-conditioned 308 for api.worldmonitor.app/');
@@ -1465,7 +1421,7 @@ describe('variant-host canonicalization (#6833–#6836)', () => {
 
   it('evaluates first-match redirects by host and path (#6833)', () => {
     const tech = 'tech.worldmonitor.app';
-    assert.equal(firstRedirectFor({ host: tech, path: '/' })?.destination, '/dashboard');
+    assert.equal(firstRedirectFor({ host: tech, path: '/' })?.destination, '/lite');
     assert.equal(firstRedirectFor({ host: 'www.worldmonitor.app', path: '/' })?.destination, '/lite');
     assert.equal(firstRedirectFor({ host: 'worldmonitor.app', path: '/' })?.destination, '/lite');
     assert.equal(firstRedirectFor({ host: 'api.worldmonitor.app', path: '/' })?.destination, 'https://www.worldmonitor.app/');

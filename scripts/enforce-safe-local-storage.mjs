@@ -266,7 +266,6 @@ export const GUARD_EXEMPT_FILES = new Set(['src/utils/safe-storage.ts']);
  * registry; do not duplicate those shrinking counts in this comment.
  */
 export const LEGACY_RAW_LOCAL_STORAGE = [
-  'src/config/variant.ts :: localStorage.<member> x1',
   'src/services/market-watchlist.ts :: localStorage.<member> x6',
   'src/services/persistent-cache.ts :: localStorage.<member> x3',
   'src/services/runtime-config.ts :: localStorage.<member> x2',

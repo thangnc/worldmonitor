@@ -2,7 +2,7 @@
  * Feature: the Lite Sources screen at /lite/sources
  * (docs/engineering/architecture/lite.md "Sources").
  *
- * Launch with VITE_LITE_PROFILE=true. By default this step routes
+ * Launch with `wm-verify.sh launch`. By default this step routes
  * `/api/health?compact=1` to a TEST DATA fixture with one failing and one
  * degraded check, so its assertions do not depend on local Redis, and labels
  * its screenshots so. Set WM_VERIFY_LIVE_HEALTH=1 to leave the request alone:

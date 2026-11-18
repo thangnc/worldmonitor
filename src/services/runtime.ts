@@ -1,10 +1,9 @@
-import { SITE_VARIANT } from '@/config/variant';
 import { safeStorageGet } from '@/utils/safe-storage';
 import { sleepBeforeRetry, withBillingVerificationRetry } from '@/services/billing-retry';
 import { hasExplicitDesktopSignals, isDesktopRuntime } from './desktop-runtime';
 
 // The detector lives in a dependency-free leaf (#5911) so consumers that need
-// only the boolean do not pull this module's variant/Clerk graph. Re-exported
+// only the boolean do not pull this module's graph. Re-exported
 // here because every existing caller imports it from `@/services/runtime`.
 export { detectDesktopRuntime, isDesktopRuntime, type RuntimeProbe } from './desktop-runtime';
 
@@ -23,14 +22,6 @@ const ENV = (() => {
 
 const WS_API_URL = ENV.VITE_WS_API_URL || '';
 const DEFAULT_WEB_API_URL = 'https://api.worldmonitor.app';
-
-const DEFAULT_REMOTE_HOSTS: Record<string, string> = {
-  tech: WS_API_URL,
-  full: WS_API_URL,
-  finance: WS_API_URL,
-  world: WS_API_URL,
-  happy: WS_API_URL,
-};
 
 const DEFAULT_LOCAL_API_PORT = 46123;
 
@@ -177,8 +168,7 @@ export function getRemoteApiBaseUrl(): string {
     return webApiBase;
   }
 
-  const fromHosts = DEFAULT_REMOTE_HOSTS[SITE_VARIANT] ?? DEFAULT_REMOTE_HOSTS.full ?? '';
-  if (fromHosts) return fromHosts;
+  if (WS_API_URL) return WS_API_URL;
 
   // Desktop builds may not set VITE_WS_API_URL; default to production.
   if (isDesktopRuntime()) return 'https://worldmonitor.app';

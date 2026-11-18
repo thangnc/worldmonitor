@@ -93,7 +93,6 @@ export async function bundleFeedsModule(repoRoot) {
           SSR: false,
           MODE: 'test',
           BASE_URL: '/',
-          VITE_VARIANT: 'full',
           VITE_RSS_DIRECT_TO_RELAY: 'false',
         }),
       },

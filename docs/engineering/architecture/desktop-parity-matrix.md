@@ -1,5 +1,9 @@
 # Desktop / Web Parity Matrix
 
+> **Historical.** The Tauri desktop app (refactor Phase 1b), the old dashboard
+> (Phase 1a) and the site variants (Phase 1d) were removed, so the files and
+> tests this matrix cites no longer exist. Kept as a record; do not maintain it.
+
 > Baseline established 2026-07-31 for #5902 from `origin/main` @ `7fc700303`.
 > Maintained document: update rows when desktop-coupled behavior changes, and
 > re-verify the whole matrix before each desktop release. Supersedes

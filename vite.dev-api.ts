@@ -16,10 +16,12 @@ function liteDevRoutePlugin(): Plugin {
     apply: 'serve',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        // Parity with the vercel.json redirects: / and the old dashboard routes open /lite.
-        if (req.url && /^\/(?:dashboard|story|stocks(?:\/[^/?#]+)?)?\/?(?:[?#]|$)/.test(req.url) && !/[?&]mode=agent\b/.test(req.url)) {
-          res.statusCode = 302;
-          res.setHeader('Location', '/lite');
+        // Parity with the vercel.json redirects: / and the old dashboard routes
+        // open /lite with a 307 that keeps the query string.
+        const legacyRoute = req.url?.match(/^\/(?:dashboard|story|stocks(?:\/[^/?#]+)?)?\/?(\?[^#]*)?(?:#|$)/);
+        if (legacyRoute) {
+          res.statusCode = 307;
+          res.setHeader('Location', `/lite${legacyRoute[1] ?? ''}`);
           res.end();
           return;
         }

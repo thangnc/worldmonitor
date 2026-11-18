@@ -86,16 +86,6 @@ npm run dev
 
 一部の機能固有のデータソースには認証情報が必要な場合があります。全一覧は `.env.example` を参照してください。
 
-バリアント別の開発:
-
-```bash
-npm run dev:tech       # tech.worldmonitor.app
-npm run dev:finance    # finance.worldmonitor.app
-npm run dev:commodity  # commodity.worldmonitor.app
-npm run dev:happy      # happy.worldmonitor.app
-npm run dev:energy     # energy.worldmonitor.app
-```
-
 デプロイ方法 (Vercel、Docker、静的ホスティング) については **[セルフホスティングガイド](https://www.worldmonitor.app/docs/getting-started)** を参照してください。
 
 ---

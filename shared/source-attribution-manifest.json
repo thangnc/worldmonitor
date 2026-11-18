@@ -11,12 +11,6 @@
       "status": "excluded",
       "references": [
         {
-          "path": "scripts/measure-trade-animation-rebuild.mjs"
-        },
-        {
-          "path": "scripts/profile-news-hybrid-clustering-7782-dashboard.mjs"
-        },
-        {
           "path": "src/services/runtime.ts"
         }
       ]

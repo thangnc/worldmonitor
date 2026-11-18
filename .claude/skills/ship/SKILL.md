@@ -31,7 +31,7 @@ Fork facts that override the upstream wording:
    - `api/`, `server/`, `scripts/seed-*`, `src/services/`: also `npm run typecheck:api`, and run the `edge-contract-reviewer` agent on the diff. Include what it found.
    - `.github/workflows/`: `actionlint` on the changed workflow and `npm run docs:check`.
    - `CLAUDE.md` or `.claude/`: the tests that read them (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/sentry-triage-skill.test.mjs`) and `npm run docs:check`.
-   - `src/lite/`, `lite.html`, the Lite routes: `tests/lite-ui.test.mts`, `tests/lite-profile.test.mts`, `npx vitest run --config vitest.dom.config.mts tests/dom/lite-ui.test.mts`, and `npm run build:full` (its `bundle:check` budget too).
+   - `src/lite/`, `lite.html`, the Lite routes (`vercel.json`, `middleware.ts`, `docker/nginx.conf*`, `vite.dev-api.ts`): `tests/lite-ui.test.mts`, `tests/deploy-config.test.mjs`, `npx vitest run --config vitest.dom.config.mts tests/dom/lite-ui.test.mts`, and `npm run build`.
    - A suite that also fails on a clean `origin/main` is a baseline failure, not this change's. Prove it with a detached worktree of `origin/main` before saying so.
 3. **UI evidence.** When the change adds or alters UI:
    - Drive it with the `verify-worldmonitor` skill. For `/lite`, use `steps/lite-ui.mjs`.
