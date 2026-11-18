@@ -30,7 +30,7 @@ const GET_METHOD = new Set(['get']);
 // No projection-disabled roster any more: EVERY GET advertises the parameter,
 // and the licence obligation on the four paths that used to refuse it is
 // discharged by the attribution rider the gateway merges into the projected
-// response (shared/attribution-rider.ts).
+// response (packages/shared/attribution-rider.ts).
 const serviceJsonSpecs = readdirSync(apiDir)
   .filter((f) => /Service\.openapi\.json$/.test(f))
   .sort();

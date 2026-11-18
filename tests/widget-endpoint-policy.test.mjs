@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveBootstrapRegistry } from '../shared/bootstrap-tier-keys.js';
+import { resolveBootstrapRegistry } from '../packages/shared/bootstrap-tier-keys.js';
 
 const require = createRequire(import.meta.url);
 const {

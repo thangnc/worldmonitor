@@ -9,10 +9,10 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 import { CROSS_BORDER_SOURCES, projectCrossBorderSnapshots } from '../../displacement/v1/cross-border-data';
-import iso3ToIso2Json from '../../../../shared/iso3-to-iso2.json';
+import iso3ToIso2Json from '../../../../packages/shared/iso3-to-iso2.json';
 import { getCachedJson, readCachedJson, readCachedEnvelopeJson, setCachedJson, cachedFetchJsonWithMeta, runRedisPipeline } from '../../../_shared/redis';
 import { CLIMATE_ANOMALIES_KEY, CII_RISK_SCORE_CACHE_KEYS } from '../../../_shared/cache-keys';
-import { CII_DAY_MS, parseCiiDailyPoints } from '../../../../shared/cii-daily-history';
+import { CII_DAY_MS, parseCiiDailyPoints } from '../../../../packages/shared/cii-daily-history';
 import { ciiCountryAt, ciiCountryForIso2, ciiIsLand } from '../../../../scripts/shared/cii-country-borders.mjs';
 import {
   parseWildfireFiresSummary,
@@ -64,27 +64,27 @@ import {
   CII_EVENT_MULTIPLIER,
   DEFAULT_CII_BASELINE_RISK,
   DEFAULT_CII_EVENT_MULTIPLIER,
-} from '../../../../shared/cii-weights';
-import { CII_CLIMATE_ZONE_COUNTRIES } from '../../../../shared/cii-climate-zones';
+} from '../../../../packages/shared/cii-weights';
+import { CII_CLIMATE_ZONE_COUNTRIES } from '../../../../packages/shared/cii-climate-zones';
 
 // ========================================================================
 // Country risk baselines and multipliers
 // ------------------------------------------------------------------------
 // Editorial values — see docs/engineering/methodology/cii-risk-scores.md for the
 // published table and the rationale. The authoritative coefficient table
-// lives in shared/cii-weights.ts so browser-side scoring and server-side
+// lives in packages/shared/cii-weights.ts so browser-side scoring and server-side
 // scoring cannot drift.
 //
 // Before any change that can move a score, read
 // docs/engineering/methodology/cii-change-brief.md: claim the version in
 // docs/engineering/methodology/cii-next.json, run tests/cii-invariants.test.mts and post
 // scripts/cii-table-diff.mts output for tests/fixtures/cii/.
-// Change protocol when editing coefficient values in shared/cii-weights.ts:
+// Change protocol when editing coefficient values in packages/shared/cii-weights.ts:
 //   1. Bump CII_FORMULA_VERSION in ./_risk-config.ts if server/API scores shift.
 //   2. Update docs/engineering/methodology/cii-risk-scores.md in the SAME commit.
 //   3. Mention the change in CHANGELOG.md (public-facing section).
 // Climate-zone attribution has the same protocol when it changes server/API
-// scores; its canonical map documents that ownership in shared/cii-climate-zones.ts.
+// scores; its canonical map documents that ownership in packages/shared/cii-climate-zones.ts.
 // ========================================================================
 
 // Exported so tests and any internal diagnostics can assert the published

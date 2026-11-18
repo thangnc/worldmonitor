@@ -1,6 +1,6 @@
 // Railway builds macro/health seeders with rootDirectory=scripts, so this
 // runtime-safe mirror must stay inside scripts/. Keep it in parity with
-// shared/china-macro-contract.js; tests/china-macro-production-registration
+// packages/shared/china-macro-contract.js; tests/china-macro-production-registration
 // pins every constant and helper across the container boundary.
 
 export const CHINA_MACRO_SCHEMA_VERSION = 2;

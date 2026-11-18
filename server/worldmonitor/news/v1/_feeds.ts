@@ -1,4 +1,4 @@
-import { NEWS_CATALOG, buildServerIntelSources, buildServerVariantFeeds } from '../../../../shared/news-catalog';
+import { NEWS_CATALOG, buildServerIntelSources, buildServerVariantFeeds } from '../../../../packages/shared/news-catalog';
 import { hashString } from '../../../_shared/hash';
 
 export interface ServerFeed {
@@ -57,7 +57,7 @@ export function orderServerFeedEntries<T extends {
     .map(({ entry }) => entry);
 }
 
-// Feeds are declared once in shared/news-catalog.json; these are its server
+// Feeds are declared once in packages/shared/news-catalog.json; these are its server
 // view, in server order.
 export const VARIANT_FEEDS: Record<string, Record<string, ServerFeed[]>> = buildServerVariantFeeds();
 

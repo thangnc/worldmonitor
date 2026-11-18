@@ -82,8 +82,8 @@ COPY scripts/data/outbreak-places.json ./scripts/data/outbreak-places.json
 COPY scripts/_conflict-gdelt-bulk.mjs ./scripts/_conflict-gdelt-bulk.mjs
 COPY scripts/_conflict-gdelt.mjs ./scripts/_conflict-gdelt.mjs
 COPY scripts/_gdelt-country-codes.mjs ./scripts/_gdelt-country-codes.mjs
-# Jev shadow observer required by ais-relay.cjs; its shared/jev-classify.js
-# half ships with the `COPY shared/` below.
+# Jev shadow observer required by ais-relay.cjs; its packages/shared/jev-classify.js
+# half ships with the `COPY packages/shared/` below.
 COPY scripts/lib/jev-classify-relay.cjs ./scripts/lib/jev-classify-relay.cjs
 COPY scripts/shared/country-name-to-iso2.cjs ./scripts/shared/country-name-to-iso2.cjs
 # country-names.json backs the full name→ISO2 map (#5359 uniform country
@@ -146,7 +146,7 @@ COPY scripts/shared/ucdp-candidate.cjs ./scripts/shared/ucdp-candidate.cjs
 # in _seed-utils.mjs and the AIS relay. Missing it = ERR_MODULE_NOT_FOUND when
 # any COPY'd seeder loads _seed-utils.mjs (guarded by dockerfile-relay-imports).
 COPY scripts/shared/compare-and-delete-script.cjs ./scripts/shared/compare-and-delete-script.cjs
-# Edition list for the classify loop, generated from shared/news-catalog.json.
+# Edition list for the classify loop, generated from packages/shared/news-catalog.json.
 COPY scripts/shared/news-digest-editions.json ./scripts/shared/news-digest-editions.json
 COPY scripts/shared/news-digest-warm-cells.json ./scripts/shared/news-digest-warm-cells.json
 # A missing inventory artifact fails the image build before relay startup.
@@ -193,8 +193,9 @@ COPY scripts/_upstash-rest.mjs ./scripts/_upstash-rest.mjs
 COPY scripts/lib/yield-curves/model.mjs ./scripts/lib/yield-curves/model.mjs
 COPY scripts/lib/yield-curves/rba.mjs ./scripts/lib/yield-curves/rba.mjs
 
-# Shared helper required by the relay (rss-allowed-domains.cjs)
-COPY shared/ ./shared/
+# @wm/shared, required by the relay (rss-allowed-domains.cjs, the chokepoint
+# and AIS helpers). package.json comes along and marks the .js files as ESM.
+COPY packages/shared/ ./packages/shared/
 
 # Data files required by the relay (telegram-channels.json, etc.)
 COPY data/ ./data/

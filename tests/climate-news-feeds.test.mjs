@@ -21,7 +21,7 @@ const SEEDER_SOURCE = readFileSync(new URL('../scripts/seed-climate-news.mjs', i
 const VARIANT_DOCS = readFileSync(new URL('../docs/engineering/plans/climate-variant-full.md', import.meta.url), 'utf8');
 const ATTRIBUTION_DOCS = readFileSync(new URL('../docs/engineering/architecture/source-attribution.md', import.meta.url), 'utf8');
 const ATTRIBUTION_MANIFEST = JSON.parse(
-  readFileSync(new URL('../shared/source-attribution-manifest.json', import.meta.url), 'utf8'),
+  readFileSync(new URL('../packages/shared/source-attribution-manifest.json', import.meta.url), 'utf8'),
 );
 
 const EXPECTED_SOURCE_NAMES = [

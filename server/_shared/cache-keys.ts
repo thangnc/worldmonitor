@@ -1,4 +1,4 @@
-import { BOOTSTRAP_CACHE_KEYS } from '../../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS } from '../../packages/shared/bootstrap-tier-keys.js';
 
 // ── Story persistence tracking keys (E3) ─────────────────────────────────────
 // Hash: firstSeen, lastSeen, mentionCount, currentScore,
@@ -169,7 +169,7 @@ export const CHOKEPOINT_STATUS_KEY = 'supply_chain:chokepoints:v4' as const;
  * Static cache keys and tier assignments for the bootstrap endpoint.
  * The authored source lives in shared/ so the publisher can consume it too.
  */
-export { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../../shared/bootstrap-tier-keys.js';
+export { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../../packages/shared/bootstrap-tier-keys.js';
 
 export const PORTWATCH_PORT_ACTIVITY_KEY_PREFIX = 'supply_chain:portwatch-ports:v1:';
 export const PORTWATCH_PORT_ACTIVITY_COUNTRIES_KEY = 'supply_chain:portwatch-ports:v1:_countries';

@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { buildRegions, parseOverview, slug } from '../scripts/build-un-m49-regions.mjs';
 
-const table = JSON.parse(readFileSync(new URL('../shared/un-m49-regions.json', import.meta.url), 'utf8'));
-const outlets = JSON.parse(readFileSync(new URL('../shared/outlet-profile.json', import.meta.url), 'utf8'));
+const table = JSON.parse(readFileSync(new URL('../packages/shared/un-m49-regions.json', import.meta.url), 'utf8'));
+const outlets = JSON.parse(readFileSync(new URL('../packages/shared/outlet-profile.json', import.meta.url), 'utf8'));
 
 function overview(rows) {
   const header = ['Region Code', 'Region Name', 'Sub-region Code', 'Sub-region Name', 'Intermediate Region Code', 'Intermediate Region Name', 'ISO-alpha2 Code'];

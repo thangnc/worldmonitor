@@ -2,16 +2,16 @@
  * Outlet profile: where an outlet is based, who it writes for, in what
  * language, and who owns it.
  *
- * Canonical data: shared/outlet-profile.json, one reviewed entry per source
+ * Canonical data: packages/shared/outlet-profile.json, one reviewed entry per source
  * name. The key space is the same flat name space SOURCE_TIERS uses, so an RSS
  * feed and a Telegram channel or X account with the same name are one outlet.
  * tests/outlet-profile-completeness.test.mts keeps the file closed-world over
  * every catalog outlet.
  *
- * Server and MCP code only. shared/source-provenance.ts is bundled into the
+ * Server and MCP code only. packages/shared/source-provenance.ts is bundled into the
  * browser through src/config/feeds.ts, so the profile is joined here instead.
  */
-import outletProfileData from '../../shared/outlet-profile.json';
+import outletProfileData from '../../packages/shared/outlet-profile.json';
 
 export const OUTLET_AUDIENCES = ['domestic', 'international', 'diaspora'] as const;
 export type OutletAudience = typeof OUTLET_AUDIENCES[number];

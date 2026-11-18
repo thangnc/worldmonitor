@@ -78,7 +78,7 @@ test('each food bundle section leaves its fetch phase the snapshot read and marg
   const { extractBundleSections, stripNumericUnderscores } = await import('./helpers/bundle-section-parser.mjs');
   const { resolveFetchDeadlineMs } = await import('../scripts/_seed-utils.mjs');
   const { FOOD_FETCH_MARGIN_MS } = await import('../scripts/lib/food-prices-seed.mjs');
-  const sources = JSON.parse(readFileSync(new URL('../shared/food-price-sources.json', import.meta.url), 'utf8'));
+  const sources = JSON.parse(readFileSync(new URL('../packages/shared/food-price-sources.json', import.meta.url), 'utf8'));
   const sections = extractBundleSections(readFileSync(new URL('../scripts/seed-bundle-macro.mjs', import.meta.url), 'utf8'));
   for (const source of sources) {
     const section = sections.find(section => section.script === `seed-food-prices-${source.id}.mjs`);

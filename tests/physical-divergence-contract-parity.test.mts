@@ -9,7 +9,7 @@ import {
   isPhysicalDivergenceStoredCompositeReason,
   isPhysicalDivergenceStoredReadingReason,
   physicalDivergenceStateForFreshnessReason,
-} from '../shared/physical-divergence-contract.js';
+} from '../packages/shared/physical-divergence-contract.js';
 import { buildProducerBackedPhysicalComparisonFixture } from './helpers/mcp-producer-fixtures.mjs';
 
 const STATES = ['ok', 'insufficient_history', 'stale_input', 'missing_input'] as const;

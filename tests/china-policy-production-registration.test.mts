@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
-import { BOOTSTRAP_CACHE_KEYS } from '../shared/bootstrap-tier-keys.js';
-import { DECISION_SIGNAL_PROVENANCE_FAMILY_REGISTRATIONS } from '../shared/decision-signal-provenance-families';
+import { BOOTSTRAP_CACHE_KEYS } from '../packages/shared/bootstrap-tier-keys.js';
+import { DECISION_SIGNAL_PROVENANCE_FAMILY_REGISTRATIONS } from '../packages/shared/decision-signal-provenance-families';
 
 const root = resolve(import.meta.dirname, '..');
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8');

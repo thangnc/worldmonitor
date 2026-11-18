@@ -17,14 +17,14 @@ import {
   type OfflinePredictionCheckpoint,
   type OfflinePredictionReconciliation,
   type OfflineRetainedProviderResponse,
-} from '../shared/company-monitoring-offline-predictions.ts';
+} from '../packages/shared/company-monitoring-offline-predictions.ts';
 import {
   type BlindCorpus,
   type PredictionSet,
   type ScoreReport,
-} from '../shared/company-monitoring-blind-evaluation.ts';
-import type { CompanyMonitoringCurationManifest } from '../shared/company-monitoring-curation.ts';
-import { canonicalJson, type JsonObject } from '../shared/company-monitoring-evaluation.ts';
+} from '../packages/shared/company-monitoring-blind-evaluation.ts';
+import type { CompanyMonitoringCurationManifest } from '../packages/shared/company-monitoring-curation.ts';
+import { canonicalJson, type JsonObject } from '../packages/shared/company-monitoring-evaluation.ts';
 import { loadEnvFile } from './_seed-utils.mjs';
 import {
   CompanyMonitoringClassifierTransportError,

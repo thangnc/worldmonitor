@@ -810,7 +810,7 @@ function EvidenceMix({ state, region, range }: { state: ReturnType<typeof useDig
     : [];
   const mix = evidenceMix(items);
   return (
-    <Panel title="Evidence mix" sub={state.status === 'ready' ? `${items.length} reports` : undefined} right={<DerivedTag how="Source classes from shared/source-provenance.ts types and shared/source-tiers.json." />} testId="evidence-mix">
+    <Panel title="Evidence mix" sub={state.status === 'ready' ? `${items.length} reports` : undefined} right={<DerivedTag how="Source classes from packages/shared/source-provenance.ts types and packages/shared/source-tiers.json." />} testId="evidence-mix">
       {state.status !== 'ready' ? (
         <SourceState state={state} source="news digest (full edition)" pad={false} />
       ) : (

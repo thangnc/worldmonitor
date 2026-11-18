@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
 // Source-text guard for the relay side of the occurrence-event pipeline
-// (shared/event-triggers.json: news.breaking, market.move). The relay process
+// (packages/shared/event-triggers.json: news.breaking, market.move). The relay process
 // cannot be imported in a test (it opens sockets at load), so the contract is
 // pinned the way tests/notification-relay-coalesce-key.test.mjs pins the
 // coalesce keys: by reading scripts/ais-relay.cjs.

@@ -8,7 +8,7 @@ import "sebuf/http/annotations.proto";
 // GetRegionalSnapshotRequest asks for the latest persisted RegionalSnapshot
 // for a given region. See shared/geography.ts for the canonical region ids.
 message GetRegionalSnapshotRequest {
-  // Display region id (e.g. "mena", "east-asia", "europe"). See shared/geography.js.
+  // Display region id (e.g. "mena", "east-asia", "europe"). See packages/shared/geography.js.
   // Kebab-case: lowercase alphanumeric groups separated by single hyphens, no
   // trailing or consecutive hyphens.
   string region_id = 1 [
@@ -29,7 +29,7 @@ message GetRegionalSnapshotResponse {
 
 // RegionalSnapshot is the canonical intelligence object for one region.
 // See docs/internal/pro-regional-intelligence-upgrade.md for the full spec
-// and shared/regions.types.d.ts for the authoritative TypeScript contract.
+// and packages/shared/regions.types.d.ts for the authoritative TypeScript contract.
 message RegionalSnapshot {
   string region_id = 1;
   int64 generated_at = 2 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];

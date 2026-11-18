@@ -44,7 +44,7 @@
  * and plain `node --test`. The two JSON-import forms are mutually
  * incompatible across them — `with { type: 'json' }` breaks the Vercel
  * bundle, and a bare JSON import throws ERR_IMPORT_ATTRIBUTE_MISSING under
- * Node 22+. shared/ticker-extract.js:20-30 records that burn, and
+ * Node 22+. packages/shared/ticker-extract.js:20-30 records that burn, and
  * tests/no-json-import-attributes-on-edge-path.test.mjs now enforces it.
  * A literal is the one form that works everywhere.
  */

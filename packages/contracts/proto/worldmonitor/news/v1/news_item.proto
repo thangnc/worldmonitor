@@ -40,7 +40,7 @@ message NewsItem {
   // cycle. "Same story" is determined by edit-tolerant story-identity
   // clustering (headlines describing one event with different wording,
   // ordering, source suffixes, truncation, or morphology corroborate each
-  // other) — not exact-title matching. See shared/story-identity.js.
+  // other) — not exact-title matching. See packages/shared/story-identity.js.
   int32 corroboration_count = 10;
   // Story lifecycle metadata derived from cross-cycle persistence data.
   StoryMeta story_meta = 11;
@@ -52,8 +52,8 @@ message NewsItem {
   string snippet = 12;
   // Equity ticker symbols mentioned by the story, extracted at ingest from
   // cashtags ($AAPL) and the curated company dictionary
-  // (shared/stocks.json). Uppercase symbols, deduplicated, capped at 8.
-  // Empty when no tracked ticker is mentioned. See shared/ticker-extract.js.
+  // (packages/shared/stocks.json). Uppercase symbols, deduplicated, capped at 8.
+  // Empty when no tracked ticker is mentioned. See packages/shared/ticker-extract.js.
   repeated string tickers = 13 [(buf.validate.field).repeated.max_items = 8];
   // Credibility score (0-100), distinct from importance_score. Measures
   // source reliability / truthfulness, not newsworthiness. The base score

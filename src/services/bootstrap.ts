@@ -12,7 +12,7 @@ import {
 } from '@/bootstrap/bootstrap-transfer-rum';
 import { isDebugBearRumActive, reportBootstrapTransferRum } from '@/bootstrap/debugbear-rum';
 import { getWebVitalsFormFactor } from '@/bootstrap/web-vitals-utils';
-import { bootstrapTierKeyNames } from '../../shared/bootstrap-tier-keys.js';
+import { bootstrapTierKeyNames } from '@wm/shared/bootstrap-tier-keys.js';
 
 const hydrationCache = new Map<string, unknown>();
 const BOOTSTRAP_CACHE_PREFIX = 'bootstrap:tier:';

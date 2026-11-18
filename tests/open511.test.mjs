@@ -382,7 +382,7 @@ test('bootstrap fetches bcOpen511 and its Ontario sibling on demand, never on a 
   // Holding BC back while Ontario rode FAST was the #6763 bug — a tier is not
   // layer-gated, so the sibling this file was protecting the payload from
   // shipped 306,757 B to every visitor anyway.
-  const src = readFileSync(new URL('../shared/bootstrap-tier-keys.js', import.meta.url), 'utf8');
+  const src = readFileSync(new URL('../packages/shared/bootstrap-tier-keys.js', import.meta.url), 'utf8');
   assert.match(src, /canadaRoads: 'infra:ontario-511:v1'/);
   assert.match(src, /bcOpen511: 'infra:bc-open511:v1'/);
   const fast = src.slice(src.indexOf('const FAST_KEY_NAMES'), src.indexOf('const ON_DEMAND_KEY_NAMES'));

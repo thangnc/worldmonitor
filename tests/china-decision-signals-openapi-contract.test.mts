@@ -12,11 +12,11 @@ import { loadUnifiedOpenApiSpec } from './_lib/openapi-spec-cache.mjs';
 import {
   CHINA_DECISION_SIGNAL_GROUP_IDS,
   isChinaDecisionSignalSnapshot,
-} from '../shared/china-decision-signals';
+} from '../packages/shared/china-decision-signals';
 import {
   CHINA_DECISION_SIGNAL_GROUP_MANIFEST,
   CHINA_DECISION_SIGNAL_MAX_ITEMS_PER_GROUP,
-} from '../shared/china-decision-signal-manifest';
+} from '../packages/shared/china-decision-signal-manifest';
 import {
   parseChinaDecisionSignalManifest,
   provenanceValueSchema,

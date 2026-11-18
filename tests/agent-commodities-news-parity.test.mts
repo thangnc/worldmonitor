@@ -5,7 +5,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { INTEL_SOURCES, VARIANT_FEEDS } from '../server/worldmonitor/news/v1/_feeds.ts';
-import { NEWS_POOL_LAYOUT } from '../shared/news-pool-layout.generated.ts';
+import { NEWS_POOL_LAYOUT } from '../packages/shared/news-pool-layout.generated.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 

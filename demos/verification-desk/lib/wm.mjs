@@ -5,28 +5,28 @@
 // modules load directly from the repo.
 //
 //   coverage      server/_shared/corroboration.ts      assessCorroboration, publisherRoster
-//   families      shared/publisher-families.js         MIN_CORROBORATING_PUBLISHERS
+//   families      packages/shared/publisher-families.js         MIN_CORROBORATING_PUBLISHERS
 //   source tier   server/_shared/source-tiers.ts       getSourceTier, declaredSourceTier, TIER_MEANING
-//   provenance    shared/source-provenance.ts          getSourcePropagandaRisk, getSourceProvenanceState
-//   credibility   shared/news-credibility.js           computeCredibilityScore
-//   figures       shared/brief-llm-core.js             extractNumericFacts, validateNoHallucinatedFacts
-//   anchor script shared/brief-llm-core.js             the brief hallucination validators
-//   open web      shared/brief-grounding.js            briefGroundingPublisherCount, briefGroundingGap
+//   provenance    packages/shared/source-provenance.ts          getSourcePropagandaRisk, getSourceProvenanceState
+//   credibility   packages/shared/news-credibility.js           computeCredibilityScore
+//   figures       packages/shared/brief-llm-core.js             extractNumericFacts, validateNoHallucinatedFacts
+//   anchor script packages/shared/brief-llm-core.js             the brief hallucination validators
+//   open web      packages/shared/brief-grounding.js            briefGroundingPublisherCount, briefGroundingGap
 //   wording       src/locales/en.json                  components.corroboration.*
 
 import { readFileSync } from 'node:fs';
 import { assessCorroboration, publisherRoster, toCorroborationJson } from '../../../server/_shared/corroboration.ts';
 import { declaredSourceTier, getSourceTier, TIER_MEANING } from '../../../server/_shared/source-tiers.ts';
-import { getSourcePropagandaRisk, getSourceProvenanceState } from '../../../shared/source-provenance.ts';
-import { computeCredibilityScore } from '../../../shared/news-credibility.js';
-import { MIN_CORROBORATING_PUBLISHERS } from '../../../shared/publisher-families.js';
+import { getSourcePropagandaRisk, getSourceProvenanceState } from '../../../packages/shared/source-provenance.ts';
+import { computeCredibilityScore } from '../../../packages/shared/news-credibility.js';
+import { MIN_CORROBORATING_PUBLISHERS } from '../../../packages/shared/publisher-families.js';
 import {
   extractNumericFacts,
   validateNoHallucinatedFacts,
   validateNoHallucinatedProperNouns,
   validateNoHallucinatedStatusQualifiers,
-} from '../../../shared/brief-llm-core.js';
-import { briefGroundingGap, briefGroundingPublisherCount } from '../../../shared/brief-grounding.js';
+} from '../../../packages/shared/brief-llm-core.js';
+import { briefGroundingGap, briefGroundingPublisherCount } from '../../../packages/shared/brief-grounding.js';
 
 export { MIN_CORROBORATING_PUBLISHERS, TIER_MEANING, briefGroundingGap, briefGroundingPublisherCount };
 

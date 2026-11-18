@@ -41,8 +41,8 @@ import {
   ARM_STAGING_KEY_TTL_IF_INACTIVE_SCRIPT,
   BACKFILL_META_IF_ACTIVE_SCRIPT,
 } from '../scripts/seed-military-bases.mjs';
-import { CABLE_HEALTH_REPAIR_SCRIPT } from '../shared/cable-health-repair-script.mjs';
-import { COMPARE_AND_DELETE_SCRIPT } from '../shared/compare-and-delete-script.cjs';
+import { CABLE_HEALTH_REPAIR_SCRIPT } from '../packages/shared/cable-health-repair-script.mjs';
+import { COMPARE_AND_DELETE_SCRIPT } from '../packages/shared/compare-and-delete-script.cjs';
 import { recordHistoryCost } from '../scripts/lib/intel-history-cost.mjs';
 import { createTenderReceipt, writeTenderReceipt } from '../scripts/_global-tender-receipts.mjs';
 
@@ -119,7 +119,7 @@ it('accepts the emitted history-cost command and rejects a modified script', asy
 
 it('accepts the exact compare-and-delete script emitted by the Redis client', () => {
   const source = readFileSync(resolve(repoRoot, 'server/_shared/redis.ts'), 'utf8');
-  assert.match(source, /from '\.\.\/\.\.\/shared\/compare-and-delete-script\.cjs'/);
+  assert.match(source, /from '\.\.\/\.\.\/packages\/shared\/compare-and-delete-script\.cjs'/);
   const start = source.indexOf('export async function compareAndDeleteRedisKey');
   assert.ok(start >= 0, 'compareAndDeleteRedisKey export not found');
   const nextExport = source.slice(start + 1).search(/\nexport /);
@@ -160,7 +160,7 @@ function proxyFacingFiles() {
       // (p.ej. convex cli.bundle.cjs.map) y "descubre" tokens que no son
       // comandos Redis -- verde en CI (sin node_modules), rojo en local.
       '--exclude-dir=node_modules',
-      'server', 'scripts', 'shared', 'api'],
+      'server', 'scripts', 'packages/shared', 'api'],
     { cwd: repoRoot, encoding: 'utf8' },
   );
   return out.trim().split('\n').filter(Boolean).filter((f) => !/__tests__|\.test\.|(^|\/)tests\//.test(f));
@@ -499,7 +499,7 @@ it('accepts the exact PizzINT archive script and rejects arbitrary edits', async
 it('accepts the daily CII writer command and rejects modified scripts', () => {
   const output = execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '--eval', `
     import { persistCiiDailyHistory } from './server/worldmonitor/intelligence/v1/get-risk-scores.ts';
-    import { CII_COUNTRY_CODES } from './shared/cii-weights.ts';
+    import { CII_COUNTRY_CODES } from './packages/shared/cii-weights.ts';
     import { CII_FORMULA_VERSION } from './server/worldmonitor/intelligence/v1/_risk-config.ts';
     process.env.UPSTASH_REDIS_REST_URL = 'https://redis.example.test';
     process.env.UPSTASH_REDIS_REST_TOKEN = 'fixture';

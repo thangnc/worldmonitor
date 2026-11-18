@@ -16,7 +16,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderBriefMagazine } from '../server/_shared/brief-render.js';
-import { BRIEF_ENVELOPE_VERSION } from '../shared/brief-envelope.js';
+import { BRIEF_ENVELOPE_VERSION } from '../packages/shared/brief-envelope.js';
 
 // ---------------------------------------------------------------------------
 // Envelope fixture (mirrors brief-magazine-render.test.mjs)

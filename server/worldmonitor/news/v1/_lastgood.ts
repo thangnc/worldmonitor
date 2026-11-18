@@ -35,7 +35,7 @@ export const LASTGOOD_MAX_AGE_MS = LASTGOOD_TTL_S * 1000;
  * to stop is an order of magnitude (one item per category). A strict `<` here
  * froze the live `full` digest for ~6h on 2026-09-19: every fresh 289-item build
  * lost to a 294-item incumbent. MIRRORED as a literal in
- * shared/digest-lastgood-publish-script.mjs and docker/redis-rest-proxy.mjs;
+ * packages/shared/digest-lastgood-publish-script.mjs and docker/redis-rest-proxy.mjs;
  * tests/digest-lastgood.test.mts pins all three to this value.
  */
 export const LASTGOOD_MIN_ITEM_PCT = 80;

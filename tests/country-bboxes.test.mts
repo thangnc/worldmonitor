@@ -4,22 +4,22 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { test } from 'node:test';
-import COUNTRY_BBOXES from '../shared/country-bboxes.js';
-import { countryBox, inBox, splitCountryBox } from '../shared/country-bbox.ts';
+import COUNTRY_BBOXES from '../packages/shared/country-bboxes.js';
+import { countryBox, inBox, splitCountryBox } from '../packages/shared/country-bbox.ts';
 
 test('the bbox generator preserves dateline containment and all committed copies', () => {
   const root = new URL('../', import.meta.url);
   const dir = mkdtempSync(join(tmpdir(), 'country-bbox-generator-'));
   try {
-    for (const path of ['scripts/shared', 'shared', 'public/data']) mkdirSync(join(dir, path), { recursive: true });
+    for (const path of ['scripts/shared', 'packages/shared', 'public/data']) mkdirSync(join(dir, path), { recursive: true });
     for (const path of ['scripts/generate-country-bboxes.cjs', 'public/data/countries.geojson']) {
       cpSync(new URL(path, root), join(dir, path));
     }
     execFileSync(process.execPath, [join(dir, 'scripts/generate-country-bboxes.cjs')]);
-    for (const path of ['shared/country-bboxes.js', 'shared/country-bboxes.json', 'shared/country-bboxes.d.ts', 'scripts/shared/country-bboxes.json']) {
+    for (const path of ['packages/shared/country-bboxes.js', 'packages/shared/country-bboxes.json', 'packages/shared/country-bboxes.d.ts', 'scripts/shared/country-bboxes.json']) {
       assert.equal(readFileSync(join(dir, path), 'utf8'), readFileSync(new URL(path, root), 'utf8'), path);
     }
-    const generated = JSON.parse(readFileSync(join(dir, 'shared/country-bboxes.json'), 'utf8'));
+    const generated = JSON.parse(readFileSync(join(dir, 'packages/shared/country-bboxes.json'), 'utf8'));
     assert.deepEqual(generated.RU, [41.21, 19.6, 81.29, -169.7]);
     assert.deepEqual(generated.AQ, [-90, -180, -64.38, 180], 'polar geometry legitimately covers every longitude');
     assert.deepEqual(Object.entries(generated).filter(([, b]) => (b as number[])[3]! - (b as number[])[1]! >= 360).map(([code]) => code), ['AQ']);

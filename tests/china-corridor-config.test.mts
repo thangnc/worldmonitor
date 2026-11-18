@@ -6,7 +6,7 @@ import {
   CHINA_LOGISTICS_CORRIDOR_IDS,
   findCorridorsForSourceSelector,
   resolveCorridorForPoint,
-} from '../shared/china-logistics-corridors';
+} from '../packages/shared/china-logistics-corridors';
 
 describe('China logistics corridor configuration (#5578)', () => {
   it('publishes four reviewed corridors with stable IDs, boundaries, nodes, and signal families', () => {

@@ -40,7 +40,7 @@ import {
 } from '../scripts/seed-security-advisories.mjs';
 
 // The real feed descriptor: the url matters because fetchFeed refuses domains
-// outside shared/rss-allowed-domains.json, so a fake host would make the test
+// outside packages/shared/rss-allowed-domains.json, so a fake host would make the test
 // pass by returning [] rather than by exercising anything.
 const STATE_DEPT = {
   name: 'US State Dept',

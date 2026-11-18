@@ -5,7 +5,7 @@
 // 2023 World Oil Transit Chokepoints table shared with
 // scripts/seed-chokepoint-baselines.mjs.
 
-import { CHOKEPOINT_COUNTRY_CODES } from '../shared/chokepoint-countries.js';
+import { CHOKEPOINT_COUNTRY_CODES } from '../packages/shared/chokepoint-countries.js';
 import { buildEiaOilTransitBaselines } from './chokepoint-eia-baselines.mjs';
 
 export const CHOKEPOINT_PAGE_CONTENT_PATH = 'scripts/chokepoint-page-content.mjs';

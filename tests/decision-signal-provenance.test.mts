@@ -15,7 +15,7 @@ import {
   parseDecisionSignalProvenance,
   serializeDecisionSignalProvenance,
   validateDecisionSignalProvenance,
-} from '../shared/decision-signal-provenance';
+} from '../packages/shared/decision-signal-provenance';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fixtureRoot = join(root, 'tests/fixtures/decision-signal-provenance');

@@ -10,7 +10,7 @@ import { RSS_BROWSER_UA, RSS_ACCEPT } from '../api/_rss-fetch-headers.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // #4920: completeness is measured against both the browser and the server
 // (digest) views of the one catalog.
-const CATALOG_PATH = join(__dirname, '..', 'shared', 'news-catalog.json');
+const CATALOG_PATH = join(__dirname, '..', 'packages', 'shared', 'news-catalog.json');
 
 // Same seeder-convention browser UA the live RSS proxy sends (#6624).
 const CHROME_UA = RSS_BROWSER_UA;
@@ -41,7 +41,7 @@ const CONFIG_DRIFT_REASONS = Object.freeze({
 //      hop with allowlist re-check)
 const CI_MODE = process.argv.includes('--ci');
 
-// Feeds are declared once in shared/news-catalog.json (see shared/news-catalog.ts).
+// Feeds are declared once in packages/shared/news-catalog.json (see packages/shared/news-catalog.ts).
 // This script reads the JSON directly so it never executes app code.
 function loadCatalog() {
   return JSON.parse(readFileSync(CATALOG_PATH, 'utf8'));
@@ -323,8 +323,8 @@ async function main() {
   if (configDrift.length) {
     console.error(
       `\nFAIL: ${configDrift.length} feed(s) violate the CI guardrails ` +
-      `(allowlist drift or plaintext URL). Fix shared/news-catalog.json and/or the 4 ` +
-      `allowlist mirrors (shared/rss-allowed-domains.json, .cjs, ` +
+      `(allowlist drift or plaintext URL). Fix packages/shared/news-catalog.json and/or the 4 ` +
+      `allowlist mirrors (packages/shared/rss-allowed-domains.json, .cjs, ` +
       `scripts/shared/rss-allowed-domains.json, ` +
       `api/_rss-allowed-domains.js). vite.config.ts now imports isAllowedDomain ` +
       `from api/_rss-allowed-domain-match.js — no separate dev mirror to sync.`
@@ -346,7 +346,7 @@ async function main() {
     console.warn(
       `\nWARN: ${thirdPartyDead.length} third-party dead, ${stale.length} stale, ` +
       `${empty.length} empty. Third-party state — not a build failure. ` +
-      `Groom shared/news-catalog.json when the count crosses a threshold worth a PR.`
+      `Groom packages/shared/news-catalog.json when the count crosses a threshold worth a PR.`
     );
   }
 }

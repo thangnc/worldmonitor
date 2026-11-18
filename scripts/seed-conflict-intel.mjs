@@ -146,7 +146,7 @@ const PIZZINT_TTL = 600;
 export const CONFLICT_COUNTRIES = Object.freeze(Object.keys(GDELT_COUNTRY_NAMES));
 export const GDELT_MIN_SUCCESSFUL_COUNTRIES = Math.ceil(CONFLICT_COUNTRIES.length * 0.8);
 // DERIVED from the crisis-tracker registry, never hand-listed. This used to be a
-// hardcoded duplicate of shared/crawlable-crises.json's coverage codes with nothing
+// hardcoded duplicate of packages/shared/crawlable-crises.json's coverage codes with nothing
 // pinning the two together, so adding a tracker shipped a public /crises/<slug> page
 // whose country the seeder never requested — a page that fails closed forever with no
 // test, no alarm and no drift signal. Reading the registry makes it the single source.

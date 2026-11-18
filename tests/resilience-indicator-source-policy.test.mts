@@ -8,7 +8,7 @@ import {
   getObservedSourceDisplayMetadata,
   INDICATOR_SOURCE_POLICIES,
 } from '../server/worldmonitor/resilience/v1/_indicator-source-policy.ts';
-import { wgiObservationSource } from '../shared/wgi-source-provenance.js';
+import { wgiObservationSource } from '../packages/shared/wgi-source-provenance.js';
 
 const worldBank = (indicatorId: string) => ({
   providerName: 'World Bank Open Data',

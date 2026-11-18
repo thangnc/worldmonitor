@@ -24,7 +24,7 @@
 // Lives outside ais-relay.cjs because the relay boots a live server on
 // require, so nothing inside it can be unit-tested.
 
-const { jevEndpoint, checkJevEndpoint, buildJevRequest, parseJevAnswers, hasNonLatinLetters } = require('../../shared/jev-classify.js');
+const { jevEndpoint, checkJevEndpoint, buildJevRequest, parseJevAnswers, hasNonLatinLetters } = require('../../packages/shared/jev-classify.js');
 
 const SHADOW_LOG_KEY = 'classify:jev-shadow:v1';
 // Newest-first, trimmed on every push. ~30% of headlines disagree on level, so

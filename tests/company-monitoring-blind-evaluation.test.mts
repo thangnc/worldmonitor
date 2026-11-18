@@ -25,12 +25,12 @@ import {
   type Prediction,
   type PredictionSet,
   type ScoreReport,
-} from '../shared/company-monitoring-blind-evaluation.ts';
+} from '../packages/shared/company-monitoring-blind-evaluation.ts';
 import {
   syntheticDigest,
   thresholdDigest,
   type JsonObject,
-} from '../shared/company-monitoring-evaluation.ts';
+} from '../packages/shared/company-monitoring-evaluation.ts';
 
 const protocol = JSON.parse(readFileSync(
   new URL('./fixtures/company-monitoring-evaluation/protocol.json', import.meta.url),

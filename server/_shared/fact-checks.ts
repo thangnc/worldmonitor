@@ -13,7 +13,7 @@
  * parties, topics or countries, and no threshold varies by them
  * (tests/fact-checks.test.mts checks this).
  */
-import FACT_CHECKERS from '../../shared/fact-checkers.json';
+import FACT_CHECKERS from '../../packages/shared/fact-checkers.json';
 import { claimOverlap, claimTokens } from './claim-match';
 
 /** Google Fact Check Tools API, claims:search (v1alpha1). */
@@ -56,7 +56,7 @@ const RATING_MAX_CHARS = 200;
 const REVIEWED_CLAIM_MAX_CHARS = 1000;
 const TITLE_MAX_CHARS = 200;
 
-/** IFCN-verified fact-checker domains (shared/fact-checkers.json). */
+/** IFCN-verified fact-checker domains (packages/shared/fact-checkers.json). */
 export const FACT_CHECKER_DOMAINS: ReadonlySet<string> = new Set(
   (FACT_CHECKERS as { domains: string[] }).domains.map(normalizeHost),
 );

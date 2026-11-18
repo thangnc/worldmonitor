@@ -566,7 +566,7 @@ describe('content-freshness constant parity', () => {
   });
 
   it('matches the China activity nowcast PortWatch budget', () => {
-    const registry = read('shared/china-activity-nowcast-registry.ts');
+    const registry = read('packages/shared/china-activity-nowcast-registry.ts');
     const definition = registry.match(
       /proxyDefinition\(\{\s*id:\s*'portwatch_tanker_calls_trend',([\s\S]*?)\n\s*\}\),/,
     )?.[1];

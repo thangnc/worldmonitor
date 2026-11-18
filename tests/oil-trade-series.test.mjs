@@ -8,7 +8,7 @@ import {
   compareOilWindows,
   compactCountry,
   expandCountry,
-} from '../shared/oil-trade-windows.js';
+} from '../packages/shared/oil-trade-windows.js';
 import {
   OIL_TRADE_COUNTRIES,
   buildEiaSeries,
@@ -28,7 +28,7 @@ import {
   fetchCrudeImportOriginRows,
 } from '../scripts/seed-oil-trade-series.mjs';
 import { GULF_PARTNER_CODES } from '../server/worldmonitor/intelligence/v1/_shock-compute.ts';
-import { PRE_CRISIS_WINDOW } from '../shared/hormuz-crisis.js';
+import { PRE_CRISIS_WINDOW } from '../packages/shared/hormuz-crisis.js';
 
 const NOW = Date.parse('2026-10-18T12:00:00Z');
 
@@ -315,10 +315,10 @@ describe('storage form', () => {
 describe('mirrored module', () => {
   // Railway builds the energy bundle from scripts/ only, so the seeder imports
   // the scripts/shared copy and the MCP tool the root copy. They must not drift.
-  it('shared/oil-trade-windows is byte-identical to its scripts/shared mirror', () => {
+  it('packages/shared/oil-trade-windows is byte-identical to its scripts/shared mirror', () => {
     const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
-    assert.equal(read('shared/oil-trade-windows.js'), read('scripts/shared/oil-trade-windows.js'));
-    assert.equal(read('shared/oil-trade-windows.d.ts'), read('scripts/shared/oil-trade-windows.d.ts'));
+    assert.equal(read('packages/shared/oil-trade-windows.js'), read('scripts/shared/oil-trade-windows.js'));
+    assert.equal(read('packages/shared/oil-trade-windows.d.ts'), read('scripts/shared/oil-trade-windows.d.ts'));
   });
 });
 

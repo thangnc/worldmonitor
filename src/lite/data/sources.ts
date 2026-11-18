@@ -33,7 +33,7 @@ import { isDdosWindows, type DdosWindows } from './tech-map';
 import { isCrossStraitSnapshot, type EmbassyAlerts } from './geo-watch';
 import type { CrossStraitActivitySnapshot } from '@/types/cross-strait-activity';
 import type { ListUkmtoIncidentsResponse } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';
-import { readUkmtoSnapshot } from '../../../shared/ukmto-incidents';
+import { readUkmtoSnapshot } from '@wm/shared/ukmto-incidents';
 import { fetchGpsInterference, type GpsJamData } from '@/services/gps-interference';
 import type {
   GetEconomicCalendarResponse,

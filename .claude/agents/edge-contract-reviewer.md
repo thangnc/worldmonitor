@@ -29,7 +29,7 @@ For each changed file, check the rules that apply to its location:
    - TypeScript API entries may import `server/` and `packages/contracts/generated/` only, no other browser code.
    - `server/` must not import `src/lite/`.
    - Browser direction: `types -> config -> services -> lite` (`scripts/lint-boundaries.mjs`).
-   - Logic shared by browser and server lives once in top-level `shared/`; flag a second copy.
+   - Logic shared by browser and server lives once in `packages/shared/` (`@wm/shared`); flag a second copy. `api/`, `server/`, `middleware.ts` and `packages/shared/` import it by relative path, never as `@wm/shared`.
 
 3. **Caching**
    - Handlers fetching upstream on demand should use `cachedFetchJson()` (`server/_shared/redis.ts`).

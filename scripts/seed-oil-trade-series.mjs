@@ -23,7 +23,7 @@
 // Comtrade declaration of HS 2709 imports from World and from the seven
 // exporters that load inside the Strait of Hormuz. The energy shock model
 // reads it for its pre-crisis and current-flows Gulf shares
-// (shared/hormuz-crisis.js). The mirror above cannot serve: it keeps each
+// (packages/shared/hormuz-crisis.js). The mirror above cannot serve: it keeps each
 // exporter's top buyers only and has no buyer total.
 //
 // `crudeImportOriginNational` fills importers that file no partner-level

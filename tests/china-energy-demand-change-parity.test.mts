@@ -4,8 +4,8 @@ import { describe, it } from 'node:test';
 
 import { buildChinaCorridorSourceBundle } from '../server/worldmonitor/supply-chain/v1/china-corridor-source-adapters';
 import { buildChinaActivityNowcastInputs } from '../server/worldmonitor/economic/v1/get-china-activity-nowcast';
-import { evaluateChinaActivityNowcast } from '../shared/china-activity-nowcast';
-import { CHINA_ENERGY_DEMAND_METRIC_KEYS } from '../shared/china-corridor-control-towers';
+import { evaluateChinaActivityNowcast } from '../packages/shared/china-activity-nowcast';
+import { CHINA_ENERGY_DEMAND_METRIC_KEYS } from '../packages/shared/china-corridor-control-towers';
 import { buildSpineEntry } from '../scripts/seed-energy-spine.mjs';
 import { extractCountryData } from '../scripts/seed-jodi-oil.mjs';
 import { DEMAND_CHANGE_BASIS } from '../scripts/shared/jodi-demand-change.mjs';

@@ -12,7 +12,7 @@ import {
 import {
   parseChinaCorridorWirePayload,
   validateChinaCorridorProvenanceForSurface,
-} from '../shared/china-corridor-control-towers.ts';
+} from '../packages/shared/china-corridor-control-towers.ts';
 
 const ASSESSED_AT = '2026-07-25T12:00:00.000Z';
 

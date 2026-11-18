@@ -17,7 +17,7 @@ export interface MarketWatchlistEntry {
   display?: string;
 }
 
-/** Shape of an entry in the fixed default symbol universe (`shared/stocks.json`). */
+/** Shape of an entry in the fixed default symbol universe (`packages/shared/stocks.json`). */
 export interface MarketSymbolMeta {
   symbol: string;
   name: string;

@@ -9,8 +9,8 @@ import type {
   GetCountryStockIndexResponse,
 } from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
-import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
-import filterParamContracts from '../../../../shared/openapi-filter-param-contracts.json';
+import { isAssignedCountryCode } from '../../../../packages/shared/country-code-resolve';
+import filterParamContracts from '../../../../packages/shared/openapi-filter-param-contracts.json';
 import { UPSTREAM_TIMEOUT_MS, type YahooChartResponse } from './_shared';
 import { CHROME_UA, yahooGate } from '../../../_shared/constants';
 import { cachedFetchJson, getCachedJson } from '../../../_shared/redis';

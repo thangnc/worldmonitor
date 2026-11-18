@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
-import { COMPANY_MONITORING_RPC_SCOPES } from '../shared/company-monitoring-contract.ts';
+import { COMPANY_MONITORING_RPC_SCOPES } from '../packages/shared/company-monitoring-contract.ts';
 import { PUBLIC_NO_AUTH_RPC_PATHS } from '../server/gateway.ts';
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
 

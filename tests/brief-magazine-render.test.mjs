@@ -17,12 +17,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderBriefMagazine } from '../server/_shared/brief-render.js';
-import { BRIEF_ENVELOPE_VERSION } from '../shared/brief-envelope.js';
+import { BRIEF_ENVELOPE_VERSION } from '../packages/shared/brief-envelope.js';
 
 /**
- * @typedef {import('../shared/brief-envelope.js').BriefEnvelope} BriefEnvelope
- * @typedef {import('../shared/brief-envelope.js').BriefStory} BriefStory
- * @typedef {import('../shared/brief-envelope.js').BriefThread} BriefThread
+ * @typedef {import('../packages/shared/brief-envelope.js').BriefEnvelope} BriefEnvelope
+ * @typedef {import('../packages/shared/brief-envelope.js').BriefStory} BriefStory
+ * @typedef {import('../packages/shared/brief-envelope.js').BriefThread} BriefThread
  */
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ function thread(tag, teaser) {
 }
 
 /**
- * @param {Partial<import('../shared/brief-envelope.js').BriefData>} overrides
+ * @param {Partial<import('../packages/shared/brief-envelope.js').BriefData>} overrides
  * @returns {BriefEnvelope}
  */
 function envelope(overrides = {}) {

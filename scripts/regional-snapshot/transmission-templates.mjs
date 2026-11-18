@@ -96,12 +96,12 @@ export const TRANSMISSION_TEMPLATES = [
  * Filter templates that should activate given the active triggers and region.
  *
  * @param {string} regionId
- * @param {import('../../shared/regions.types.js').TriggerLadder} triggers
- * @returns {import('../../shared/regions.types.js').TransmissionPath[]}
+ * @param {import('../../packages/shared/regions.types.js').TriggerLadder} triggers
+ * @returns {import('../../packages/shared/regions.types.js').TransmissionPath[]}
  */
 export function resolveTransmissions(regionId, triggers) {
   const activeIds = new Set(triggers.active.map((t) => t.id));
-  /** @type {import('../../shared/regions.types.js').TransmissionPath[]} */
+  /** @type {import('../../packages/shared/regions.types.js').TransmissionPath[]} */
   const out = [];
   for (const tpl of TRANSMISSION_TEMPLATES) {
     if (!activeIds.has(tpl.trigger)) continue;
@@ -116,7 +116,7 @@ export function resolveTransmissions(regionId, triggers) {
         confidence: step.confidence,
         latency_hours: step.latencyHours,
         impacted_asset_class: step.assetClass,
-        impacted_regions: /** @type {import('../../shared/regions.types.js').RegionId[]} */ (tpl.affectedRegions),
+        impacted_regions: /** @type {import('../../packages/shared/regions.types.js').RegionId[]} */ (tpl.affectedRegions),
         magnitude_low: step.magnitudeLow,
         magnitude_high: step.magnitudeHigh,
         magnitude_unit: step.magnitudeUnit,

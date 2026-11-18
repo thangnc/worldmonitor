@@ -2,7 +2,7 @@
   "_readme": [
     "Coverage policy for the geographic health audit (#5957, epic #5948).",
     "",
-    "floors: minimum globally default-on LOCAL sources (shared/source-geography.json)",
+    "floors: minimum globally default-on LOCAL sources (packages/shared/source-geography.json)",
     "including explicitly approved strategicDefault non-English desks.",
     "required per strategic keyCountry. v1 floors come from the epic sequencing:",
     "UA/PL after P0 (#5949/#5950), TW/PK after P1 Indo-Pacific (#5954),",

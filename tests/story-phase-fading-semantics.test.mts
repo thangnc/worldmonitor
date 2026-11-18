@@ -312,7 +312,7 @@ describe('#7081 finding 3 — fading is not observable at this call site', () =>
     const seeder = readFileSync(
       resolve(__dirname, '..', 'scripts', 'seed-digest-notifications.mjs'), 'utf-8');
     assert.match(seeder, /deriveNotificationStoryPhase/,
-      'the notification seeder derives fading via shared/story-phase.js');
+      'the notification seeder derives fading via packages/shared/story-phase.js');
   });
 });
 

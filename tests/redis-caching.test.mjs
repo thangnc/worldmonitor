@@ -1711,7 +1711,7 @@ describe('country risk freshness behavior', { concurrency: 1 }, () => {
       '../../../_shared/redis': resolve(root, 'server/_shared/redis.ts'),
       '../../../_shared/cache-keys': resolve(root, 'server/_shared/cache-keys.ts'),
       // #4921: citation verification + grounding telemetry import
-      '../../../../shared/brief-llm-core.js': resolve(root, 'shared/brief-llm-core.js'),
+      '../../../../packages/shared/brief-llm-core.js': resolve(root, 'packages/shared/brief-llm-core.js'),
     });
   }
 
@@ -2236,7 +2236,7 @@ describe('country intel brief caching behavior', { concurrency: 1 }, () => {
       '../../../_shared/llm-sanitize.js': resolve(root, 'server/_shared/llm-sanitize.js'),
       '../../../_shared/cache-keys': resolve(root, 'server/_shared/cache-keys.ts'),
       // #4921: citation verification + grounding telemetry import
-      '../../../../shared/brief-llm-core.js': resolve(root, 'shared/brief-llm-core.js'),
+      '../../../../packages/shared/brief-llm-core.js': resolve(root, 'packages/shared/brief-llm-core.js'),
     });
   }
 

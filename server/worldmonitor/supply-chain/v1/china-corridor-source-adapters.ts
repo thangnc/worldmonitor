@@ -3,14 +3,14 @@ import {
   CHINA_LOGISTICS_CORRIDOR_IDS,
   resolveCorridorForPoint,
   type ChinaCorridorSignalFamily,
-} from '../../../../shared/china-logistics-corridors';
+} from '../../../../packages/shared/china-logistics-corridors';
 import {
   CHINA_ENERGY_DEMAND_METRIC_KEYS,
   type ChinaCorridorSourceBundle,
   type CorridorFamilySource,
   type CorridorSourceSignal,
   type CorridorTimePrecision,
-} from '../../../../shared/china-corridor-control-towers';
+} from '../../../../packages/shared/china-corridor-control-towers';
 
 type UnknownRecord = Record<string, unknown>;
 

@@ -5,7 +5,7 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 import { readRequiredSeed } from '../../../_shared/required-seed';
-import { normalizeAdvisorySnapshot } from '../../../../shared/intelligence-snapshots.js';
+import { normalizeAdvisorySnapshot } from '../../../../packages/shared/intelligence-snapshots.js';
 
 const ADVISORY_KEY = 'intelligence:advisories:v1';
 

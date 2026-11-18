@@ -21,15 +21,15 @@
 //   - Brainstorm: docs/brainstorms/2026-04-17-worldmonitor-brief-magazine-requirements.md
 //   - Plan: docs/plans/2026-04-17-003-feat-worldmonitor-brief-magazine-plan.md
 
-import { BRIEF_ENVELOPE_VERSION, SUPPORTED_ENVELOPE_VERSIONS } from '../../shared/brief-envelope.js';
+import { BRIEF_ENVELOPE_VERSION, SUPPORTED_ENVELOPE_VERSIONS } from '../../packages/shared/brief-envelope.js';
 import { BRIEF_FONTS } from './brief-fonts.generated.js';
 
 /**
- * @typedef {import('../../shared/brief-envelope.js').BriefEnvelope} BriefEnvelope
- * @typedef {import('../../shared/brief-envelope.js').BriefData} BriefData
- * @typedef {import('../../shared/brief-envelope.js').BriefStory} BriefStory
- * @typedef {import('../../shared/brief-envelope.js').BriefThread} BriefThread
- * @typedef {import('../../shared/brief-envelope.js').BriefThreatLevel} BriefThreatLevel
+ * @typedef {import('../../packages/shared/brief-envelope.js').BriefEnvelope} BriefEnvelope
+ * @typedef {import('../../packages/shared/brief-envelope.js').BriefData} BriefData
+ * @typedef {import('../../packages/shared/brief-envelope.js').BriefStory} BriefStory
+ * @typedef {import('../../packages/shared/brief-envelope.js').BriefThread} BriefThread
+ * @typedef {import('../../packages/shared/brief-envelope.js').BriefThreatLevel} BriefThreatLevel
  */
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ const ALLOWED_STORY_KEYS = new Set([
   'description',
   'source',
   'sourceUrl',
-  // v4+ stable per-story-cluster identity (see shared/brief-envelope.js
+  // v4+ stable per-story-cluster identity (see packages/shared/brief-envelope.js
   // version-history doc-block). Required on v4 envelopes — checked
   // below in the per-story validator. Optional on v1-v3 envelopes
   // still in TTL.
@@ -529,7 +529,7 @@ function renderDigestGreeting({ greeting, lead, dateShort, pageIndex, totalPages
 }
 
 /**
- * @param {{ numbers: import('../../shared/brief-envelope.js').BriefNumbers; date: string; dateShort: string; pageIndex: number; totalPages: number }} opts
+ * @param {{ numbers: import('../../packages/shared/brief-envelope.js').BriefNumbers; date: string; dateShort: string; pageIndex: number; totalPages: number }} opts
  */
 function renderDigestNumbers({ numbers, date, dateShort, pageIndex, totalPages }) {
   const rows = [
@@ -1475,7 +1475,7 @@ function redactForPublic(data) {
 /**
  * Category-derived threads fallback for the public surface when the
  * envelope lacks `publicThreads`. Mirrors deriveThreadsFromStories
- * in shared/brief-filter.js (the composer's stub path) — keeps the
+ * in packages/shared/brief-filter.js (the composer's stub path) — keeps the
  * fallback shape identical to what v2 envelopes already render with.
  *
  * @param {Array<{ category?: unknown }>} stories

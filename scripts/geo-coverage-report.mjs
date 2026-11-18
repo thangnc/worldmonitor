@@ -5,9 +5,9 @@
  *   node scripts/geo-coverage-report.mjs          # table, exit 1 on violations
  *   node scripts/geo-coverage-report.mjs --json   # machine-readable rows
  *
- * Audits strategic keyCountries (shared/geography.js) against the feed catalog
- * via shared/source-geography.json and the policy in
- * shared/geo-coverage-policy.json. CI gate: tests/geo-coverage-health.test.mts.
+ * Audits strategic keyCountries (packages/shared/geography.js) against the feed catalog
+ * via packages/shared/source-geography.json and the policy in
+ * packages/shared/geo-coverage-policy.json. CI gate: tests/geo-coverage-health.test.mts.
  */
 import {
   computeGeoCoverage,

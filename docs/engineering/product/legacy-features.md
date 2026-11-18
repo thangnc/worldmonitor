@@ -35,7 +35,7 @@ Most features are a pipeline, and only the UI leaves with the dashboard. Before 
 2. **Browser service**: the `src/services/*` module the component imports. Port only what the widget needs into the client package.
 3. **RPC**: the generated client method the service calls, defined in `packages/contracts/proto/`. Contracts and handlers (`server/worldmonitor/<domain>/v1/`) stay in the repository.
 4. **Redis key and producer**: the handler's key in `api/health.js` (`BOOTSTRAP_KEYS`, `STANDALONE_KEYS`, `SEED_META`), and the seeder or relay loop that writes it. Producers stay in the repository; a port adds the producer to the Lite seeder allowlist and its key to the health subset.
-5. **Licence**: check the upstream host in `shared/source-attribution-manifest.json` against the spec's source policy.
+5. **Licence**: check the upstream host in `packages/shared/source-attribution-manifest.json` against the spec's source policy.
 
 Pages that explain how a number is computed (`docs/algorithms.mdx`, `docs/methodology/`, `docs/engineering/architecture/*`) stay even when their panel is gone.
 

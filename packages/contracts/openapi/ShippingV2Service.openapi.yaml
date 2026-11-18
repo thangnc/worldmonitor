@@ -757,7 +757,7 @@ components:
                 eventType:
                     type: string
                     maxLength: 64
-                    description: A shared/event-triggers.json key; `chokepoint.disruption` when omitted.
+                    description: A packages/shared/event-triggers.json key; `chokepoint.disruption` when omitted.
                 countries:
                     type: array
                     items:
@@ -831,7 +831,7 @@ components:
                 direction:
                     type: string
                     description: 'market.move: `up`, `down` or `any` (default any).'
-            description: Per-event filters for occurrence events. Each key applies to the events named in its comment; the handler validates against shared/event-triggers.json and stores the defaults.
+            description: Per-event filters for occurrence events. Each key applies to the events named in its comment; the handler validates against packages/shared/event-triggers.json and stores the defaults.
         RegisterWebhookResponse:
             type: object
             properties:

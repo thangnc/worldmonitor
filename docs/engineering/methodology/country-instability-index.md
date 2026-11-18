@@ -102,7 +102,7 @@ historical baseline floor. In the `riskScores` health/cache signal, the conflict
 family is covered when either ACLED or an in-window UCDP feed is present. ACLED
 auth being unconfigured degrades the conflict signal to UCDP-only; it becomes
 `COVERAGE_PARTIAL` only when ACLED is dark and UCDP is also absent, stale, or
-outside the 2-year scoring window (see the dual-source protest tracking in `shared/`).
+outside the 2-year scoring window (see the dual-source protest tracking in `packages/shared/`).
 
 ## Instability Levels
 

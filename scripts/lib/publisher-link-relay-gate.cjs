@@ -21,14 +21,14 @@
 // Self-contained on purpose: ais-relay.cjs boots on require, so anything it
 // needs must be a dependency-free CJS module importable without side
 // effects (same reason digest-stale-gate.cjs lives here). Pure logic is in
-// shared/publisher-link-gate.js; this file only wires the curated domain
+// packages/shared/publisher-link-gate.js; this file only wires the curated domain
 // table. The family table itself is duplicated from
-// shared/publisher-families.js PUBLISHER_FAMILY_DOMAINS — that module is ESM
+// packages/shared/publisher-families.js PUBLISHER_FAMILY_DOMAINS — that module is ESM
 // (`export`), which the relay's CJS `requireShared` cannot load. The subset
 // below covers the families whose feeds emit relay alerts; an unlisted
 // family fails closed (blank link, title still alerts).
 //
-// Keep in sync with PUBLISHER_FAMILY_DOMAINS in shared/publisher-families.js
+// Keep in sync with PUBLISHER_FAMILY_DOMAINS in packages/shared/publisher-families.js
 // (guarded by tests/publisher-link-relay-gate.test.mjs).
 
 const PUBLISHER_LINK_DOMAINS = {
@@ -88,7 +88,7 @@ const PUBLISHER_LINK_DOMAINS = {
   'white-house': ['whitehouse.gov'],
   // #8398: Dow Jones delivery host (feeds.content.dowjones.io) serves the
   // feed, but item links point at the publisher apex (wsj.com). Mirrors the
-  // domain-only 'wsj' family in shared/publisher-families.js.
+  // domain-only 'wsj' family in packages/shared/publisher-families.js.
   'wsj': ['wsj.com'],
 };
 
@@ -123,7 +123,7 @@ function isPublisherLink(link, expectedHosts) {
 }
 
 // Curated label -> family id, mirrored from the ESM-only
-// shared/publisher-families.js PUBLISHER_FAMILY_DATA (same sync rule as the
+// packages/shared/publisher-families.js PUBLISHER_FAMILY_DATA (same sync rule as the
 // domain table above — guarded by tests/publisher-link-relay-gate.test.mjs).
 // Labels are matched exact then case-insensitive; anything else resolves to
 // the `label:<name>` singleton namespace, which names no domains and
@@ -285,7 +285,7 @@ const PUBLISHER_LINK_LABELS = {
   "yahoo finance": "yahoo-finance",
   "yahoo finance commodities": "yahoo-finance",
   // #8398: publisher-name index for the domain-only 'wsj' family (mirrors
-  // the #6430 publisher-name indexing in shared/publisher-families.js).
+  // the #6430 publisher-name indexing in packages/shared/publisher-families.js).
   // The bare feed label "Wall Street Journal" intentionally stays a
   // singleton — only the publisher NAME resolves here.
   "wall street journal": "wsj",
@@ -361,7 +361,7 @@ module.exports = {
   familyForLabel,
   PUBLISHER_LINK_DOMAINS,
   PUBLISHER_LINK_LABELS,
-  // Exposed for unit tests (contract parity with shared/publisher-link-gate.js).
+  // Exposed for unit tests (contract parity with packages/shared/publisher-link-gate.js).
   normalizeLinkHostname,
   linkHostname,
   isPublisherLink,

@@ -113,7 +113,7 @@ describe('local-api path decision per server/worldmonitor route family (#5907)',
  * desktop key is denied (REST v2 is cloud-only AND API-only).
  */
 describe('self-host relay path decision', async () => {
-  const { SELFHOST_RELAY_PATHS } = await import('../shared/selfhost-relay-paths.js');
+  const { SELFHOST_RELAY_PATHS } = await import('../packages/shared/selfhost-relay-paths.js');
   const dispatchBody = sidecar.slice(sidecar.indexOf('async function dispatch('));
 
   it('relays no path of a cloud-only route family', () => {

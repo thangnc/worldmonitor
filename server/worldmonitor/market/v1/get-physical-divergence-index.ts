@@ -22,7 +22,7 @@ import { readCachedJson } from '../../../_shared/redis';
 import { markNoStoreFallbackResponse } from '../../../_shared/response-headers';
 import { parseStringArray } from './_shared';
 import { resolvePhysicalPremiumMetals } from './get-physical-premiums';
-import { PHYSICAL_DIVERGENCE_CONTRACT } from '../../../../shared/physical-divergence-contract.js';
+import { PHYSICAL_DIVERGENCE_CONTRACT } from '../../../../packages/shared/physical-divergence-contract.js';
 
 const PHYSICAL_DIVERGENCE_KEY = 'market:physical-divergence:v1';
 

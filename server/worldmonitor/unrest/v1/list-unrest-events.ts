@@ -12,7 +12,7 @@ import type {
 
 import { sortBySeverityAndRecency } from './_shared';
 import { readRequiredSeed } from '../../../_shared/required-seed';
-import { resolveCountryCode } from '../../../../shared/country-code-resolve';
+import { resolveCountryCode } from '../../../../packages/shared/country-code-resolve';
 
 const SEED_CACHE_KEY = 'unrest:events:v1';
 

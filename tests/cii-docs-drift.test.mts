@@ -15,7 +15,7 @@ import {
   STRATEGIC_RISK_POSITIONAL_DECAY,
   STRATEGIC_RISK_TOP_N,
 } from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
-import { CII_COUNTRY_WEIGHTS } from '../shared/cii-weights.ts';
+import { CII_COUNTRY_WEIGHTS } from '../packages/shared/cii-weights.ts';
 
 it('current and translated CII claims use the published formula version', () => {
   const paths = [

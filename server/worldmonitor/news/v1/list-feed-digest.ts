@@ -87,23 +87,23 @@ import {
   feedPublisherHost,
   isPublisherLink,
   linkHostname,
-} from '../../../../shared/publisher-link-gate.js';
-import { stripAttributionSuffix } from '../../../../shared/story-identity.js';
+} from '../../../../packages/shared/publisher-link-gate.js';
+import { stripAttributionSuffix } from '../../../../packages/shared/story-identity.js';
 // @ts-expect-error — JS module, no declaration file
-import { STORY_ALIAS_PUBLISH_SCRIPT } from '../../../../shared/story-alias-publish-script.mjs';
+import { STORY_ALIAS_PUBLISH_SCRIPT } from '../../../../packages/shared/story-alias-publish-script.mjs';
 import { classifyOpinion } from '../../../_shared/opinion-classifier.js';
 import { classifyFeelGood } from '../../../_shared/feelgood-classifier.js';
-import { classifyEphemeralLiveCoverage } from '../../../../shared/ephemeral-live-classifier.js';
-import { deriveCoreStoryPhase } from '../../../../shared/story-phase.js';
-import { buildTickerDictionary, extractTickers } from '../../../../shared/ticker-extract.js';
-import stocksData from '../../../../shared/stocks.json';
+import { classifyEphemeralLiveCoverage } from '../../../../packages/shared/ephemeral-live-classifier.js';
+import { deriveCoreStoryPhase } from '../../../../packages/shared/story-phase.js';
+import { buildTickerDictionary, extractTickers } from '../../../../packages/shared/ticker-extract.js';
+import stocksData from '../../../../packages/shared/stocks.json';
 import { buildClassifyCacheKey, isValidClassifyHit } from '../../intelligence/v1/_shared';
 import { declaredSourceTier, getSourceTier } from '../../../_shared/source-tiers';
 import {
   getSourcePropagandaRisk,
   hasReviewedPropagandaRisk,
-} from '../../../../shared/source-provenance';
-import { computeCredibilityScore } from '../../../../shared/news-credibility.js';
+} from '../../../../packages/shared/source-provenance';
+import { computeCredibilityScore } from '../../../../packages/shared/news-credibility.js';
 import {
   STORY_CORROBORATION_FIELD,
   STORY_LABEL_FIELD,
@@ -130,8 +130,8 @@ import {
   DIGEST_ACCUMULATOR_TTL,
 } from '../../../_shared/cache-keys';
 import { getRelayBaseUrl, getRelayHeaders } from '../../../_shared/relay';
-import diplomacyKeywordsData from '../../../../shared/diplomacy-keywords.json';
-import { normalizeFeedDateZone } from '../../../../shared/feed-date-zone.js';
+import diplomacyKeywordsData from '../../../../packages/shared/diplomacy-keywords.json';
+import { normalizeFeedDateZone } from '../../../../packages/shared/feed-date-zone.js';
 import { NEWS_LANGUAGES } from '../../../../src/shared/public-rpc-cache';
 // #6428: entity corroboration must count publishers, not feed labels.
 import {
@@ -140,7 +140,7 @@ import {
   PUBLISHER_FAMILY_DOMAIN_TABLE,
   publisherFamilyFor,
   publisherFamilyForItem,
-} from '../../../../shared/publisher-families.js';
+} from '../../../../packages/shared/publisher-families.js';
 
 const RSS_ACCEPT = 'application/rss+xml, application/xml, text/xml, */*';
 
@@ -587,7 +587,7 @@ export interface ParsedItem {
   // Stamped here and re-classified by buildDigest for pre-stamp residue.
   isEphemeralLiveCoverage: boolean;
   // #4922a: stock tickers extracted at parse time from title + description
-  // (cashtags + shared/stocks.json company names). Uppercase, deduped,
+  // (cashtags + packages/shared/stocks.json company names). Uppercase, deduped,
   // ≤8 (proto NewsItem.tickers max_items=8). Optional so items rehydrated
   // from pre-rollout cache rows stay valid; toProtoItem defaults to [].
   tickers?: string[];
@@ -693,7 +693,7 @@ function normalizeScoringText(text: string): string {
 }
 
 // Word-start containment in normalized text. Mirrors
-// shared/brief-filter.js:containsKeywordToken — prevents 'pact' inside
+// packages/shared/brief-filter.js:containsKeywordToken — prevents 'pact' inside
 // 'impact' (false positive) while still matching 'iran' inside
 // 'iranian' (demonym preserved). PR #3909 review (P2).
 function containsKeywordToken(text: string, kw: string): boolean {
@@ -1005,7 +1005,7 @@ const CACHE_TTL_EMPTY_S = 300;
  * feed URL, so a per-country query is keyed per country for free. Note that
  * `item.level` / `item.category` are stamped by the DIGEST classifier
  * (`./_classifier`); a caller that must agree with the browser re-labels the
- * title with shared/threat-keyword-classifier instead of reading those fields.
+ * title with packages/shared/threat-keyword-classifier instead of reading those fields.
  */
 export async function fetchAndParseRss(
   feed: ServerFeed,
@@ -2003,7 +2003,7 @@ interface StoryTrack {
  *      cycle and never reaches this function. Silence, the one signal that does
  *      identify a fading story, is only visible where the non-serving population
  *      is in scope: scripts/seed-digest-notifications.mjs calls
- *      deriveNotificationStoryPhase() from shared/story-phase.js, which
+ *      deriveNotificationStoryPhase() from packages/shared/story-phase.js, which
  *      applies the same core mention-count/age rules documented here and
  *      additionally treats >24h of silence as fading.
  *
@@ -2904,7 +2904,7 @@ function buildStoryTrackHsetFields(
     // threads card + magazine story-page + public-thread fallback
     // can display a meaningful per-story tag instead of defaulting
     // to 'General' for every story. Defensive empty-string write on
-    // missing/non-string: shared/brief-filter.js:384's
+    // missing/non-string: packages/shared/brief-filter.js:384's
     // `asTrimmedString(raw.category) || 'General'` fallback converts
     // empty back to 'General' for graceful degradation. See plan
     // docs/engineering/plans/2026-05-17-002-fix-persist-story-track-category-plan.md.

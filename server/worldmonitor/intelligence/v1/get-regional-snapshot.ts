@@ -29,7 +29,7 @@ import { getCachedJson, getCachedRawString } from '../../../_shared/redis';
 const LATEST_KEY_PREFIX = 'intelligence:snapshot:v1:';
 const BY_ID_KEY_PREFIX = 'intelligence:snapshot-by-id:v1:';
 
-// The set of valid region ids is defined in shared/geography.js. We don't
+// The set of valid region ids is defined in packages/shared/geography.js. We don't
 // import the shared module here to avoid cross-directory ESM-in-TS friction;
 // the server handler accepts any lowercase kebab id and lets Redis return
 // null for unknown regions. Validation happens at the proto layer via the
@@ -40,7 +40,7 @@ const BY_ID_KEY_PREFIX = 'intelligence:snapshot-by-id:v1:';
 // ---------------------------------------------------------------------------
 //
 // The seed writer in scripts/regional-snapshot/ constructs snapshots with
-// snake_case field names matching shared/regions.types.d.ts. The proto layer
+// snake_case field names matching packages/shared/regions.types.d.ts. The proto layer
 // uses camelCase per standard buf codegen. This handler reads the snake_case
 // payload from Redis and translates to the camelCase wire format on the way
 // out. The adapter is the single source of truth for the field mapping.

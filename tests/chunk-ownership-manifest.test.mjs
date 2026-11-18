@@ -22,7 +22,7 @@ import {
   appendChunkOwnership,
   buildChunkOwnershipSnippet,
   chunkHasFirstPartyModule,
-} from '../shared/chunk-ownership.ts';
+} from '../packages/shared/chunk-ownership.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const sentryInitSrc = readFileSync(resolve(here, '../src/bootstrap/sentry-init.ts'), 'utf8');

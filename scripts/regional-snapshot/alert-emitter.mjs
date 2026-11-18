@@ -75,7 +75,7 @@ function humanAxis(axis) {
 
 /**
  * @param {{id: string, label: string}} region
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} snapshot
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} snapshot
  * @param {{from: string, to: string}} regimeChange
  */
 function buildRegimeShiftEvent(region, snapshot, regimeChange) {
@@ -96,7 +96,7 @@ function buildRegimeShiftEvent(region, snapshot, regimeChange) {
 
 /**
  * @param {{id: string, label: string}} region
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} snapshot
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} snapshot
  * @param {{id: string, description: string}[]} activations
  */
 function buildTriggerActivationEvents(region, snapshot, activations) {
@@ -115,7 +115,7 @@ function buildTriggerActivationEvents(region, snapshot, activations) {
 
 /**
  * @param {{id: string, label: string}} region
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} snapshot
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} snapshot
  * @param {{corridor_id: string, from: string, to: string}[]} breaks
  */
 function buildCorridorBreakEvents(region, snapshot, breaks) {
@@ -134,7 +134,7 @@ function buildCorridorBreakEvents(region, snapshot, breaks) {
 
 /**
  * @param {{id: string, label: string}} region
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} snapshot
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} snapshot
  * @param {{axis: string, from: number, to: number}[]} failures
  */
 function buildBufferFailureEvents(region, snapshot, failures) {
@@ -159,8 +159,8 @@ function buildBufferFailureEvents(region, snapshot, failures) {
  * then trigger activations, then corridor breaks, then buffer failures.
  *
  * @param {{id: string, label: string}} region
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} snapshot
- * @param {import('../../shared/regions.types.js').SnapshotDiff} diff
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} snapshot
+ * @param {import('../../packages/shared/regions.types.js').SnapshotDiff} diff
  * @returns {object[]}
  */
 export function buildAlertEvents(region, snapshot, diff) {
@@ -470,8 +470,8 @@ export async function publishNotificationEvent(event) {
  * (so callers can log / telemetry independently of the queue result).
  *
  * @param {{id: string, label: string}} region
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} snapshot
- * @param {import('../../shared/regions.types.js').SnapshotDiff} diff
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} snapshot
+ * @param {import('../../packages/shared/regions.types.js').SnapshotDiff} diff
  * @param {{publishEvent?: (event: object) => Promise<boolean>}} [opts]
  * @returns {Promise<{enqueued: number, events: object[]}>}
  */

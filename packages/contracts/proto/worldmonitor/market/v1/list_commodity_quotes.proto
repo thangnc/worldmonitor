@@ -9,7 +9,7 @@ import "worldmonitor/market/v1/market_quote.proto";
 message ListCommodityQuotesRequest {
   // Commodity symbols to retrieve (Yahoo symbols). Empty returns the seed
   // defaults. Only symbols in the configured commodity set
-  // (shared/commodities.json) are supported; requesting an unsupported
+  // (packages/shared/commodities.json) are supported; requesting an unsupported
   // symbol returns HTTP 400.
   repeated string symbols = 1 [(sebuf.http.query) = { name: "symbols" }];
 }

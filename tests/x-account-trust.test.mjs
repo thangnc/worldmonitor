@@ -8,15 +8,15 @@ import { fileURLToPath } from 'node:url';
 import {
   SOURCE_PROPAGANDA_RISK,
   SOURCE_TYPES,
-} from '../shared/source-provenance.ts';
+} from '../packages/shared/source-provenance.ts';
 import { SOURCE_TIERS } from '../server/_shared/source-tiers.ts';
-import { X_ACCOUNT_SOURCE_TIERS, X_ACCOUNT_TRUST } from '../shared/x-account-trust.ts';
+import { X_ACCOUNT_SOURCE_TIERS, X_ACCOUNT_TRUST } from '../packages/shared/x-account-trust.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const xNews = require('../scripts/lib/x-news-accounts.cjs');
 const registry = JSON.parse(readFileSync(join(__dirname, '../data/x-accounts.json'), 'utf8'));
-const rssSourceTiers = JSON.parse(readFileSync(join(__dirname, '../shared/source-tiers.json'), 'utf8'));
+const rssSourceTiers = JSON.parse(readFileSync(join(__dirname, '../packages/shared/source-tiers.json'), 'utf8'));
 const healthSrc = readFileSync(join(__dirname, '../api/health.js'), 'utf8');
 const relaySrc = readFileSync(join(__dirname, '../scripts/ais-relay.cjs'), 'utf8');
 

@@ -4,7 +4,7 @@
  * activity (Taiwan MND) and US embassy security alerts for the curated
  * hotspots' countries. Pure rules: the screen passes the loaded data.
  */
-import { HOTSPOT_COUNTRY_MAP } from '../../../shared/hotspot-country-map';
+import { HOTSPOT_COUNTRY_MAP } from '@wm/shared/hotspot-country-map';
 import type { ChokepointInfo, GetChokepointStatusResponse } from '@wm/contracts/generated/client/worldmonitor/supply_chain/v1/service_client';
 import type { SecurityAdvisoryItem } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
 import type { CrossStraitActivitySnapshot, TaiwanMndActivityObservation } from '@/types/cross-strait-activity';

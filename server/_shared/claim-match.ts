@@ -7,11 +7,11 @@
  * over the matched clusters, so this module adds no verdict vocabulary and
  * never says a claim is true or false.
  */
-import { extractNumericFacts } from '../../shared/brief-llm-core.js';
-import { clusterNewsCore } from '../../shared/news-clustering-core.js';
-import type { ClusteredEventCore, NewsItemCore } from '../../shared/news-clustering-core.js';
-import { computeCredibilityScore } from '../../shared/news-credibility.js';
-import { getSourceProvenanceState, type SourceProvenanceState } from '../../shared/source-provenance';
+import { extractNumericFacts } from '../../packages/shared/brief-llm-core.js';
+import { clusterNewsCore } from '../../packages/shared/news-clustering-core.js';
+import type { ClusteredEventCore, NewsItemCore } from '../../packages/shared/news-clustering-core.js';
+import { computeCredibilityScore } from '../../packages/shared/news-credibility.js';
+import { getSourceProvenanceState, type SourceProvenanceState } from '../../packages/shared/source-provenance';
 import {
   assessCorroboration,
   publisherRoster,

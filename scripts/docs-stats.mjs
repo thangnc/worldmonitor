@@ -646,9 +646,9 @@ function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
   const metaBlock = dfs.slice(dfsStart, dfsClass >= 0 ? dfsClass : dfs.length);
   const freshnessSources = (metaBlock.match(/^\s+\w+:\s*\{\s*name:/gm) || []).length;
 
-  // ---- Feed definitions (shared/news-catalog.json) ----
+  // ---- Feed definitions (packages/shared/news-catalog.json) ----
   // One record per feed; a feed placed in several categories counts once.
-  const feedDefinitions = JSON.parse(read('shared/news-catalog.json')).feeds.length;
+  const feedDefinitions = JSON.parse(read('packages/shared/news-catalog.json')).feeds.length;
 
   // ---- Source attribution inventory (scripts/server/api/src URL contracts) ----
   // Keep this separate from the feed-label count: one provider can expose

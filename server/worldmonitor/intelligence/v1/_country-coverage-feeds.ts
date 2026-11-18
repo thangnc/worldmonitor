@@ -19,15 +19,15 @@ import {
   type ParseResult,
 } from '../../news/v1/list-feed-digest';
 import type { ServerFeed } from '../../news/v1/_feeds';
-import { classifyByKeyword, type ThreatClassification } from '../../../../shared/threat-keyword-classifier';
-import type { EventCategory, ThreatLevel } from '../../../../shared/threat-keyword-classifier';
-import { clusterCountryTimelineIncidents } from '../../../../shared/country-timeline-events';
+import { classifyByKeyword, type ThreatClassification } from '../../../../packages/shared/threat-keyword-classifier';
+import type { EventCategory, ThreatLevel } from '../../../../packages/shared/threat-keyword-classifier';
+import { clusterCountryTimelineIncidents } from '../../../../packages/shared/country-timeline-events';
 import type {
   CountryTimelineIncident,
   CountryTimelineLane,
   CountryTimelineSeverity,
-} from '../../../../shared/country-timeline-events';
-import { firstMentionPosition, isCountryHeadline } from '../../../../shared/country-headline-match';
+} from '../../../../packages/shared/country-timeline-events';
+import { firstMentionPosition, isCountryHeadline } from '../../../../packages/shared/country-headline-match';
 
 /** Mirrors EVENT_QUERY in src/services/country-coverage.ts. */
 const EVENT_QUERY =

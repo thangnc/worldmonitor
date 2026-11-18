@@ -12,7 +12,7 @@ import { briefFontInputs } from '../scripts/brief-fonts/inputs.mjs';
 import { BRIEF_FONTS } from '../server/_shared/brief-fonts.generated.js';
 import { briefFontPlatform } from '../server/_shared/brief-font-platform.js';
 import { renderBriefMagazine } from '../server/_shared/brief-render.js';
-import { BRIEF_ENVELOPE_VERSION } from '../shared/brief-envelope.js';
+import { BRIEF_ENVELOPE_VERSION } from '../packages/shared/brief-envelope.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const fontDir = path.join(root, 'public/assets/brief-fonts');

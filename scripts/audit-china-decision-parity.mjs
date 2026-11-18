@@ -40,12 +40,12 @@ const ACCESS_TIERS = Object.freeze([
 ]);
 
 const REQUIRED_REGISTRATIONS = Object.freeze([
-  ['shared/china-decision-signals.ts', ...CHINA_DECISION_PARITY_MANIFEST.map(({ groupId }) => `'${groupId}'`)],
-  ['shared/decision-signal-provenance-families.ts', ...CHINA_DECISION_PARITY_MANIFEST.map(({ provenanceFamily }) => `${provenanceFamily}: Object.freeze({`)],
+  ['packages/shared/china-decision-signals.ts', ...CHINA_DECISION_PARITY_MANIFEST.map(({ groupId }) => `'${groupId}'`)],
+  ['packages/shared/decision-signal-provenance-families.ts', ...CHINA_DECISION_PARITY_MANIFEST.map(({ provenanceFamily }) => `${provenanceFamily}: Object.freeze({`)],
   ['packages/contracts/proto/worldmonitor/intelligence/v1/get_china_decision_signals.proto', 'message GetChinaDecisionSignalsResponse'],
   ['packages/contracts/proto/worldmonitor/intelligence/v1/service.proto', 'GetChinaDecisionSignals'],
   ['server/gateway.ts', `'${ROUTE}': 'fast'`, `'${ROUTE}',`],
-  ['shared/bootstrap-tier-keys.js', `chinaDecisionSignals: '${CANONICAL_KEY}'`],
+  ['packages/shared/bootstrap-tier-keys.js', `chinaDecisionSignals: '${CANONICAL_KEY}'`],
   ['api/_bootstrap-tier-keys.js', `chinaDecisionSignals: '${CANONICAL_KEY}'`],
   ['api/bootstrap.js', 'chinaDecisionSignals: {', "s-maxage=900"],
   ['api/health.js', 'chinaDecisionSignals: BOOTSTRAP_CACHE_KEYS.chinaDecisionSignals', `key: '${META_KEY}'`],
@@ -158,7 +158,7 @@ export const CHINA_DECISION_STRUCTURAL_CHECKS = Object.freeze([
   }),
   Object.freeze({
     id: 'access-tier-composition',
-    file: 'shared/china-decision-signals.ts',
+    file: 'packages/shared/china-decision-signals.ts',
     intent: 'composeChinaDecisionSignals stamps all three access tiers',
     verify(source) {
       const composed = extractDelimitedBlock(source, 'export function composeChinaDecisionSignals');
@@ -185,7 +185,7 @@ export const CHINA_DECISION_STRUCTURAL_CHECKS = Object.freeze([
   }),
   Object.freeze({
     id: 'access-tier-validator',
-    file: 'shared/china-decision-signals.ts',
+    file: 'packages/shared/china-decision-signals.ts',
     intent: 'isChinaDecisionSignalSnapshot rejects every wrong access tier',
     verify(source) {
       const body = extractDelimitedBlock(source, 'export function isChinaDecisionSignalSnapshot');

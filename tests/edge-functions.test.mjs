@@ -8,7 +8,7 @@ import { listTrackedApiSourceFiles } from '../scripts/check-edge-function-bundle
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 const apiDir = join(root, 'api');
-const sharedDir = join(root, 'shared');
+const sharedDir = join(root, 'packages', 'shared');
 const scriptsSharedDir = join(root, 'scripts', 'shared');
 
 const trackedApiSources = listTrackedApiSourceFiles(root);
@@ -45,7 +45,7 @@ const allApiFiles = trackedApiSources.map((file) => ({
   path: join(root, file),
 }));
 
-describe('scripts/shared/ stays in sync with shared/', () => {
+describe('scripts/shared/ stays in sync with packages/shared/', () => {
   // Historical scope: .json (data) + .cjs (helpers).
   // Explicit additions (must be mirrored): edge-safe modules the cron consumes
   // (e.g. brief-llm-core.js + its .d.ts). Other .js files in shared/ are
@@ -77,21 +77,23 @@ describe('scripts/shared/ stays in sync with shared/', () => {
     'market-alert-core.js',
     'news-clustering-core.js',
   ]);
-  // The attribution manifest is canonical at shared/ and is consumed by
+  // The attribution manifest is canonical at packages/shared/ and is consumed by
   // repository-rooted build tooling. It is not a scripts-runtime input, so a
   // second committed copy would recreate the shared-file merge hotspot.
-  const canonicalOnlyFiles = new Set(['source-attribution-manifest.json']);
+  // package.json is the @wm/shared workspace manifest; scripts/shared/ keeps its
+  // own one-line module-type marker instead.
+  const canonicalOnlyFiles = new Set(['source-attribution-manifest.json', 'package.json']);
   const sharedFiles = readdirSync(sharedDir).filter(
     (f) => !canonicalOnlyFiles.has(f)
       && (f.endsWith('.json') || f.endsWith('.cjs') || explicitMirroredFiles.has(f)),
   );
   for (const file of sharedFiles) {
-    it(`scripts/shared/${file} matches shared/${file}`, () => {
+    it(`scripts/shared/${file} matches packages/shared/${file}`, () => {
       const srcPath = join(scriptsSharedDir, file);
-      assert.ok(existsSync(srcPath), `scripts/shared/${file} is missing — run: cp shared/${file} scripts/shared/`);
+      assert.ok(existsSync(srcPath), `scripts/shared/${file} is missing — run: cp packages/shared/${file} scripts/shared/`);
       const original = readFileSync(join(sharedDir, file), 'utf8');
       const copy = readFileSync(srcPath, 'utf8');
-      assert.strictEqual(copy, original, `scripts/shared/${file} is out of sync with shared/${file} — run: cp shared/${file} scripts/shared/`);
+      assert.strictEqual(copy, original, `scripts/shared/${file} is out of sync with packages/shared/${file} — run: cp packages/shared/${file} scripts/shared/`);
     });
   }
 });
@@ -112,7 +114,7 @@ describe('Edge Function shared helpers resolve', () => {
     assert.deepStrictEqual(
       domains,
       shared,
-      'api/_rss-allowed-domains.js is out of sync with shared/rss-allowed-domains.json — ' +
+      'api/_rss-allowed-domains.js is out of sync with packages/shared/rss-allowed-domains.json — ' +
         'update the literal array in api/_rss-allowed-domains.js to match',
     );
   });

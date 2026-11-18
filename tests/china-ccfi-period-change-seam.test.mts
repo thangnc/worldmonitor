@@ -10,7 +10,7 @@ import { buildChinaActivityNowcastInputs } from '../server/worldmonitor/economic
 import type {
   ChinaCorridorControlTowerResponse,
   CorridorSourceSignal,
-} from '../shared/china-corridor-control-towers';
+} from '../packages/shared/china-corridor-control-towers';
 
 // The CCFI period change crosses three modules that are otherwise only ever tested
 // against hand-built fixtures: the seeder writes the payload, the corridor adapter

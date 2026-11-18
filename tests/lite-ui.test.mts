@@ -28,7 +28,7 @@ import {
 } from '../src/lite/data/transforms.ts';
 import { actorName, eventDates, eventSpan, formatCoordinates, ucdpBackgroundLabel, ucdpMarkers, ucdpNewest } from '../src/lite/data/ucdp.ts';
 import { CONVERGENCE_RADIUS_KM, MILITARY_RADIUS_KM, escalationLevel, scoreHotspots } from '../src/lite/data/escalation.ts';
-import { computeEscalationScore } from '../shared/analysis-hotspot-escalation.ts';
+import { computeEscalationScore } from '../packages/shared/analysis-hotspot-escalation.ts';
 import { TIME_RANGE_HOURS, inTimeRange } from '../src/lite/data/transforms.ts';
 import type { Hotspot } from '../src/types/index.ts';
 import type { UcdpViolenceEvent } from '../packages/contracts/generated/client/worldmonitor/conflict/v1/service_client.ts';
@@ -47,7 +47,7 @@ import type { CompactHealth } from '../src/lite/data/sources.ts';
 import type { ResourceState } from '../src/lite/data/store.ts';
 import { SOURCE_TIERS } from '../server/_shared/source-tiers.ts';
 import { __testing__ as healthTesting } from '../api/health.js';
-import attributionManifest from '../shared/source-attribution-manifest.json' with { type: 'json' };
+import attributionManifest from '../packages/shared/source-attribution-manifest.json' with { type: 'json' };
 import { AGGREGATE_LABEL_MIN, AGGREGATE_MAX, AGGREGATE_MIN, WORLD_BOUNDS, aggregateDiameter, compactCount, markerBounds, placeCard } from '../src/lite/map/view.ts';
 import type { ListFeedDigestResponse, NewsItem } from '../packages/contracts/generated/client/worldmonitor/news/v1/service_client.ts';
 import {

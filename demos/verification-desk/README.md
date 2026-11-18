@@ -95,15 +95,15 @@ The avatar says "WorldMonitor desk. Live." when it connects, then only the desk'
 
 | Check on screen | WorldMonitor code it calls |
 |---|---|
-| Who said it: publishers, not feed labels (Reuters India + Reuters US = one) | `assessCorroboration`, `publisherRoster` in `server/_shared/corroboration.ts`; families in `shared/publisher-families.js` |
+| Who said it: publishers, not feed labels (Reuters India + Reuters US = one) | `assessCorroboration`, `publisherRoster` in `server/_shared/corroboration.ts`; families in `packages/shared/publisher-families.js` |
 | How good are they: tier T1–T4 | `declaredSourceTier`, `getSourceTier`, `TIER_MEANING` in `server/_shared/source-tiers.ts` |
-| Propaganda risk, state affiliation, provenance note | `getSourcePropagandaRisk`, `getSourceProvenanceState` in `shared/source-provenance.ts` |
-| CRED n per source and for the story, low/medium/high | `computeCredibilityScore` in `shared/news-credibility.js`, composed and banded as the dashboard's `resolveCredibilityScore` / `renderCredibilityBadge` (`src/components/news/source-provenance.ts`) |
+| Propaganda risk, state affiliation, provenance note | `getSourcePropagandaRisk`, `getSourceProvenanceState` in `packages/shared/source-provenance.ts` |
+| CRED n per source and for the story, low/medium/high | `computeCredibilityScore` in `packages/shared/news-credibility.js`, composed and banded as the dashboard's `resolveCredibilityScore` / `renderCredibilityBadge` (`src/components/news/source-provenance.ts`) |
 | Clears the corroboration bar? | `MIN_CORROBORATING_PUBLISHERS` (2), the same constant the brief and digest gates use |
 | Entity-corroboration gate | the insights seeder's `entityCorroboration` / `corroborationSourceCount`, read from `get_news_intelligence` |
-| Is every figure grounded? | `extractNumericFacts`, `validateNoHallucinatedFacts` in `shared/brief-llm-core.js`, the brief seeders' fact gate |
+| Is every figure grounded? | `extractNumericFacts`, `validateNoHallucinatedFacts` in `packages/shared/brief-llm-core.js`, the brief seeders' fact gate |
 | Is the anchor's script grounded? | `validateNoHallucinatedProperNouns`, `validateNoHallucinatedStatusQualifiers`, `validateNoHallucinatedFacts` |
-| Reveal: N sites, one publisher | `briefGroundingPublisherCount`, `briefGroundingGap` in `shared/brief-grounding.js` |
+| Reveal: N sites, one publisher | `briefGroundingPublisherCount`, `briefGroundingGap` in `packages/shared/brief-grounding.js` |
 | Wording ("Single publisher", "Low-tier sources only", "Reported by N publishers, including N tier-1") | `components.corroboration` in `src/locales/en.json` |
 
 The desk's own logic is limited to **retrieval**: matching a spoken headline to WorldMonitor clusters, and gathering every cluster of one event. On 2026-10-09 the diesel deal sat in 8 one-outlet clusters; all their feed labels go to `assessCorroboration` together. Change a rule in WorldMonitor and the desk changes with it.

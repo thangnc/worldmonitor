@@ -6,7 +6,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import iso3ToIso2 from '../../shared/iso3-to-iso2.json' with { type: 'json' };
+import iso3ToIso2 from '../../packages/shared/iso3-to-iso2.json' with { type: 'json' };
 import { ciiCountryForIso2 } from '../shared/cii-country-borders.mjs';
 import { parseWildfireFiresSummary, summarizeWildfireDetections } from '../shared/wildfire-fires-summary.mjs';
 import {

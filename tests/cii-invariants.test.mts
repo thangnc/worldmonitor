@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import { after, describe, it } from 'node:test';
 
-import iso3ToIso2 from '../shared/iso3-to-iso2.json' with { type: 'json' };
+import iso3ToIso2 from '../packages/shared/iso3-to-iso2.json' with { type: 'json' };
 import { loadCiiFixtures, pairsOrderedAgainstBlend, type CiiFixture } from '../scripts/lib/cii-fixtures.mts';
 import {
   assessCiiInputAvailability,

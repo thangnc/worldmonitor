@@ -38,8 +38,8 @@ import {
   planApply,
   runCloudflareCacheRule,
 } from '../scripts/cloudflare-cache-rule.mjs';
-import { nonDefaultLandingLocales } from '../shared/indexable-landing-locales.ts';
-import agentRequestPolicy from '../shared/agent-request-policy.json' with { type: 'json' };
+import { nonDefaultLandingLocales } from '../packages/shared/indexable-landing-locales.ts';
+import agentRequestPolicy from '../packages/shared/agent-request-policy.json' with { type: 'json' };
 
 /** The live "WWW entry HTML" rule as read from the zone on 2026-09-06, under a fixture id. */
 function retiredEntryRule(overrides = {}) {
@@ -230,7 +230,7 @@ describe('cloudflare corpus cache rule', () => {
 
   it('keeps the declared AI agents off the homepage entry, and only the homepage', () => {
     // middleware.ts rewrites GET / to /home.md for the User-Agents in
-    // shared/agent-request-policy.json (`Vary: User-Agent`, no-store). The
+    // packages/shared/agent-request-policy.json (`Vary: User-Agent`, no-store). The
     // no-store keeps that markdown out of the edge; the other direction is the
     // problem: Cloudflare answers from the stored browser HTML before the
     // middleware runs, so a crawler on a warm edge server never sees its

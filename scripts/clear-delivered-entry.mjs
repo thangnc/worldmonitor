@@ -82,7 +82,7 @@ const EXIT_TRANSPORT = 2;
 // exact-DEL mode (both --channel AND --rule supplied), the DEL is
 // against a single literal key — Redis treats DEL arguments as exact
 // strings, not patterns. Legitimate clusterIds can be the level-3
-// fallback `url:${sourceUrl}` from `shared/brief-filter.js:300` and
+// fallback `url:${sourceUrl}` from `packages/shared/brief-filter.js:300` and
 // real URLs commonly contain `?` (query strings). Rejecting glob chars
 // in exact-DEL mode would make those rows unrecoverable via this
 // primitive.

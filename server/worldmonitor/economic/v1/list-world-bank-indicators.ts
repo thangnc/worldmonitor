@@ -17,10 +17,10 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
-import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
+import { isAssignedCountryCode } from '../../../../packages/shared/country-code-resolve';
 import { cachedFetchJsonWithMeta, readCachedJson } from '../../../_shared/redis';
 import { SeedUnavailableError } from '../../../_shared/required-seed';
-import ISO3_TO_ISO2 from '../../../../shared/iso3-to-iso2.json';
+import ISO3_TO_ISO2 from '../../../../packages/shared/iso3-to-iso2.json';
 import {
   WORLD_BANK_DEFAULT_CACHE_COUNTRY,
   WORLD_BANK_LOOKBACKS,
@@ -29,7 +29,7 @@ import {
   WORLD_BANK_TECH_COUNTRIES,
   filterWorldBankRecords,
   worldBankRpcCacheKey,
-} from '../../../../shared/world-bank-rpc-cache.js';
+} from '../../../../packages/shared/world-bank-rpc-cache.js';
 
 const REDIS_CACHE_KEY = WORLD_BANK_RPC_CACHE_PREFIX;
 const REDIS_CACHE_TTL = 86400; // 24 hr — annual data

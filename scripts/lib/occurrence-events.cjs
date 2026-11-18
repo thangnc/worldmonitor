@@ -2,7 +2,7 @@
 
 /**
  * Stable event ids and the API fan-out list contract for occurrence events
- * (shared/event-triggers.json, kind "occurrence").
+ * (packages/shared/event-triggers.json, kind "occurrence").
  *
  * CommonJS so scripts/ais-relay.cjs can require it at the publish site; the
  * ESM delivery worker (scripts/shipping-webhook-worker.mjs) imports it too, so

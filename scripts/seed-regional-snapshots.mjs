@@ -25,9 +25,9 @@ import { pathToFileURL } from 'node:url';
 
 import { loadEnvFile, getRedisCredentials, writeExtraKeyWithMeta } from './_seed-utils.mjs';
 // Use scripts/shared mirror rather than the repo-root shared/ folder: the
-// Railway bundle service sets rootDirectory=scripts, so `../shared/` resolves
+// Railway bundle service sets rootDirectory=scripts, so `../packages/shared/` resolves
 // to filesystem / on deploy and the import fails with ERR_MODULE_NOT_FOUND.
-// scripts/shared/* is kept in sync with shared/* via tests.
+// scripts/shared/* is kept in sync with packages/shared/* via tests.
 import { REGIONS, GEOGRAPHY_VERSION } from './shared/geography.js';
 
 import { computeBalanceVector, SCORING_VERSION } from './regional-snapshot/balance-vector.mjs';
@@ -277,7 +277,7 @@ async function computeSnapshot(regionId, sources, metaSources = {}) {
   // Return the snapshot WITHOUT the diff. The diff is a runtime artifact for
   // alert emission; persisting it would leak a non-RegionalSnapshot field into
   // Redis and break Phase 1 proto codegen consumers.
-  /** @type {import('../shared/regions.types.js').RegionalSnapshot} */
+  /** @type {import('../packages/shared/regions.types.js').RegionalSnapshot} */
   const snapshot = { ...tentativeSnapshot, meta: finalMeta };
   return { snapshot, diff };
 }

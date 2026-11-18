@@ -39,7 +39,7 @@ import { filterAndScore } from '../scripts/_prediction-scoring.mjs';
 import * as predictionScoring from '../scripts/_prediction-scoring.mjs';
 import * as countryIndex from '../scripts/_prediction-country-index.mjs';
 import predictionTags from '../scripts/data/prediction-tags.json' with { type: 'json' };
-import filterParamContracts from '../shared/openapi-filter-param-contracts.json' with { type: 'json' };
+import filterParamContracts from '../packages/shared/openapi-filter-param-contracts.json' with { type: 'json' };
 import fixture from './fixtures/prediction-markets-raw-candidates.json' with { type: 'json' };
 
 const RAW = fixture.markets;

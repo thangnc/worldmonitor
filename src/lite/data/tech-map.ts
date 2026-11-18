@@ -32,7 +32,7 @@ import type {
 import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cyber/v1/service_client';
 import type { CloudRegion } from '@/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@/types';
-import { resolveCountryCode } from '../../../shared/country-code-resolve';
+import { resolveCountryCode } from '@wm/shared/country-code-resolve';
 import type { AggregateMarker, AssetMarker, EventMarker, LabelMarker } from '../map/LiteMap';
 import type { MarkGlyph, MarkState } from '../map/marks';
 import type { CountryShapes } from './sources';

@@ -435,7 +435,7 @@ test('an ID the CoinPaprika fallback cannot map is unknown, not absent', async (
   const paprikaCalls: string[] = [];
   installHarness({
     // A snapshot WITHOUT tether, so both requested IDs are genuine gaps — the
-    // mixed-gap set is the whole point. tether is in shared/stablecoins.json's
+    // mixed-gap set is the whole point. tether is in packages/shared/stablecoins.json's
     // CoinPaprika mapping table; frax is not.
     seed: { ...SEED_SNAPSHOT, stablecoins: [seedCoin('dai')] },
     // CoinGecko is down, so the ladder falls through to CoinPaprika, which can

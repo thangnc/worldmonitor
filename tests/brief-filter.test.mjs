@@ -11,8 +11,8 @@ import {
   filterTopStories,
   assembleStubbedBriefEnvelope,
   issueDateInTz,
-} from '../shared/brief-filter.js';
-import { BRIEF_ENVELOPE_VERSION } from '../shared/brief-envelope.js';
+} from '../packages/shared/brief-filter.js';
+import { BRIEF_ENVELOPE_VERSION } from '../packages/shared/brief-envelope.js';
 
 function upstreamStory(overrides = {}) {
   return {

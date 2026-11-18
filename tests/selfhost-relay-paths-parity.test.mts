@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { SELFHOST_RELAY_PATHS, isSelfHostRelayPath } from '../shared/selfhost-relay-paths.js';
+import { SELFHOST_RELAY_PATHS, isSelfHostRelayPath } from '../packages/shared/selfhost-relay-paths.js';
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
 
 // REST v2 is the API product; it is never relayed.
@@ -10,7 +10,7 @@ const isRestV2Path = (p: string): boolean => p.startsWith('/api/v2/');
 // The Docker image ships neither src/ nor server/, so the self-host relay reads
 // a JS mirror of "premium paths minus API-only paths" (plan 2026-11-04-001,
 // KTD6). This suite is what keeps the mirror honest: a path added to either
-// source set without updating shared/selfhost-relay-paths.js fails here.
+// source set without updating packages/shared/selfhost-relay-paths.js fails here.
 describe('self-host relay path mirror', () => {
   it('equals PREMIUM_RPC_PATHS minus REST v2', () => {
     const expected = [...PREMIUM_RPC_PATHS].filter((p) => !isRestV2Path(p)).sort();

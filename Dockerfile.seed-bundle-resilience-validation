@@ -34,10 +34,10 @@ RUN npm install --prefix /app --no-save --no-audit --no-fund --no-package-lock t
 # dir is ~2 MB larger and robust to the next import.
 #
 # validate-resilience-sensitivity.mjs dynamic-imports ../server/*.ts so the
-# full server/ tree is copied (scorers pull from shared/ and data/ at runtime).
+# full server/ tree is copied (scorers pull from packages/shared/ and data/ at runtime).
 COPY scripts/ ./scripts/
 COPY server/ ./server/
-COPY shared/ ./shared/
+COPY packages/shared/ ./packages/shared/
 COPY data/ ./data/
 COPY tsconfig.base.json tsconfig.json tsconfig.api.json ./
 

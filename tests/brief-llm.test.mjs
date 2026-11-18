@@ -35,7 +35,7 @@ import {
   WHY_MATTERS_V1_MIN_CHARS,
   WHY_MATTERS_V2_MAX_CHARS,
   briefDateLine,
-} from '../shared/brief-llm-core.js';
+} from '../packages/shared/brief-llm-core.js';
 
 const MAX_TOKEN_CLIP =
   'Marine Le Pen\u2019s conviction on appeal leaves her legally eligible for the 2027 presidential election, creating a high-stakes';

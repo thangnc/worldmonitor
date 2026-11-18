@@ -13,7 +13,7 @@ if [ "$VERCEL_GIT_COMMIT_REF" = "main" ] && [ -n "$VERCEL_GIT_PREVIOUS_SHA" ]; t
   fi
   git cat-file -e "$VERCEL_GIT_PREVIOUS_SHA" 2>/dev/null && {
     WEB_CHANGES=$(git diff --name-only "$VERCEL_GIT_PREVIOUS_SHA" HEAD -- \
-      'src/' 'api/' 'server/' 'shared/' 'public/' 'blog-site/' 'pro-test/' 'convex/' \
+      'src/' 'api/' 'server/' 'public/' 'blog-site/' 'pro-test/' 'convex/' \
       'apps/' 'packages/' 'turbo.json' 'tsconfig.base.json' \
       'CHANGELOG.md' \
       'scripts/shared/prediction-country-language.json' \
@@ -83,7 +83,6 @@ git diff --name-only "$COMPARE_SHA" HEAD -- \
   'tsconfig.base.json' \
   'api/' \
   'server/' \
-  'shared/' \
   'public/' \
   'blog-site/' \
   'pro-test/' \

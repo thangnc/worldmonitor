@@ -10,8 +10,8 @@ import {
   PUBLISHER_FAMILIES,
   publisherFamilyFor,
   publisherNameForFamily,
-} from '../../shared/publisher-families.js';
-import { detectSyndication } from '../../shared/syndication.js';
+} from '../../packages/shared/publisher-families.js';
+import { detectSyndication } from '../../packages/shared/syndication.js';
 import { TIER_MEANING, declaredSourceTier, type DeclaredTier } from './source-tiers';
 
 /**

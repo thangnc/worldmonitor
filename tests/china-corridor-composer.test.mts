@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { validateDecisionSignalProvenance } from '../shared/decision-signal-provenance';
+import { validateDecisionSignalProvenance } from '../packages/shared/decision-signal-provenance';
 import {
   parseChinaCorridorWirePayload,
   validateChinaCorridorProvenanceForSurface,
-} from '../shared/china-corridor-control-towers.ts';
+} from '../packages/shared/china-corridor-control-towers.ts';
 import {
   composeChinaCorridorControlTowers,
   type ChinaCorridorSourceBundle,

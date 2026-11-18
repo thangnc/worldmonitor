@@ -14,8 +14,8 @@ import {
 } from '@sentry/browser';
 import { isDebugBearRumScriptFrame } from '../src/bootstrap/debugbear-rum.ts';
 import { isIosLikeUserAgent } from '../src/bootstrap/platform-ua.ts';
-import { isolateNonProductionSentryEvent } from '../shared/sentry-build-metadata.ts';
-import { scrubSentryCredentials } from '../shared/sensitive-url-params.ts';
+import { isolateNonProductionSentryEvent } from '../packages/shared/sentry-build-metadata.ts';
+import { scrubSentryCredentials } from '../packages/shared/sensitive-url-params.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -2460,7 +2460,7 @@ describe('beforeSend — Firefox bare-primitive throw (WORLDMONITOR-106)', () =>
     // The source-level invariant the suppression rests on, asserted here so it
     // cannot silently stop being true.
     const offenders = [];
-    for (const rel of ['../src', '../shared', '../api']) {
+    for (const rel of ['../src', '../packages/shared', '../api']) {
       for (const file of walk(resolve(__dirname, rel))) {
         const code = stripComments(readFileSync(file, 'utf-8'));
         if (BARE_PRIMITIVE_THROW.test(code)) offenders.push(file);
@@ -2485,7 +2485,7 @@ describe('beforeSend — Firefox bare-primitive throw (WORLDMONITOR-106)', () =>
   it('the scan reaches real files, and comment-stripping is what keeps it green', () => {
     // Two ways the invariant could pass vacuously, both closed here: a walk that
     // returns nothing, and a scan that would fail if it did NOT strip comments.
-    const files = ['../src', '../shared', '../api'].flatMap(rel => walk(resolve(__dirname, rel)));
+    const files = ['../src', '../packages/shared', '../api'].flatMap(rel => walk(resolve(__dirname, rel)));
     assert.ok(files.length > 100, `walk must reach the real tree, got ${files.length} files`);
     assert.ok(files.some(f => f.endsWith('bootstrap/sentry-init.ts')), 'walk must include sentry-init.ts');
 
@@ -2807,7 +2807,7 @@ describe('beforeSend — MapLibre 6 Object.hasOwn on pre-15.4 WebKit / old Chrom
   });
 
   it('pins the browser source (src/) as Object.hasOwn-free, the rule\'s licence', () => {
-    // api/ and the server-only shared/ leaves (e.g. shared/story-phase.js, used
+    // api/ and the server-only shared/ leaves (e.g. packages/shared/story-phase.js, used
     // by api/og-story) run under Node, where Object.hasOwn is universal and
     // nothing they throw reaches this beforeSend.
     const roots = ['src'].map((d) => resolve(__dirname, '..', d));

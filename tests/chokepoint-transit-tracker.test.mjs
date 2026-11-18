@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createTransitTracker } from '../shared/chokepoint-transit-tracker.js';
-import { CHOKEPOINT_TRANSIT_GATES } from '../shared/chokepoint-transit-gates.js';
+import { createTransitTracker } from '../packages/shared/chokepoint-transit-tracker.js';
+import { CHOKEPOINT_TRANSIT_GATES } from '../packages/shared/chokepoint-transit-gates.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const relaySrc = readFileSync(resolve(__dirname, '../scripts/ais-relay.cjs'), 'utf-8');

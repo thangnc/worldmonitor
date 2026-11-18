@@ -4,9 +4,9 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { createDurableTransitTracker } from '../shared/chokepoint-transit-store.js';
-import { createTransitTracker } from '../shared/chokepoint-transit-tracker.js';
-import { readTransitWindow } from '../shared/chokepoint-transit-window.js';
+import { createDurableTransitTracker } from '../packages/shared/chokepoint-transit-store.js';
+import { createTransitTracker } from '../packages/shared/chokepoint-transit-tracker.js';
+import { readTransitWindow } from '../packages/shared/chokepoint-transit-window.js';
 
 const HOUR = 3600000;
 const at = 1792800000000;

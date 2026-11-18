@@ -23,7 +23,7 @@ const ALIASES = {
 /**
  * @param {string} regionId
  * @param {Record<string, any>} sources
- * @returns {{ actors: import('../../shared/regions.types.js').ActorState[]; edges: import('../../shared/regions.types.js').LeverageEdge[] }}
+ * @returns {{ actors: import('../../packages/shared/regions.types.js').ActorState[]; edges: import('../../packages/shared/regions.types.js').LeverageEdge[] }}
  */
 export function scoreActors(regionId, sources) {
   const region = REGIONS.find((r) => r.id === regionId);
@@ -54,7 +54,7 @@ export function scoreActors(regionId, sources) {
     }
   }
 
-  /** @type {import('../../shared/regions.types.js').ActorState[]} */
+  /** @type {import('../../packages/shared/regions.types.js').ActorState[]} */
   const actors = [];
   const totalMentions = [...counts.values()].reduce((s, e) => s + e.mentions, 0) || 1;
   for (const [name, entry] of counts.entries()) {
@@ -64,7 +64,7 @@ export function scoreActors(regionId, sources) {
       actor_id: name.toLowerCase().replace(/\s+/g, '-'),
       name,
       role,
-      leverage_domains: /** @type {import('../../shared/regions.types.js').ActorLeverageDomain[]} */ ([...entry.domains]),
+      leverage_domains: /** @type {import('../../packages/shared/regions.types.js').ActorLeverageDomain[]} */ ([...entry.domains]),
       leverage_score: round(leverageScore),
       delta: 0, // No history in Phase 0
       evidence_ids: entry.evidence,
@@ -81,7 +81,7 @@ export function scoreActors(regionId, sources) {
 /**
  * @param {string} name
  * @param {{ domains: Set<string> }} entry
- * @returns {import('../../shared/regions.types.js').ActorRole}
+ * @returns {import('../../packages/shared/regions.types.js').ActorRole}
  */
 function inferRole(name, entry) {
   const aggressors = new Set(['Iran', 'IRGC', 'Russia', 'Houthis', 'Hamas', 'Hezbollah', 'China']);

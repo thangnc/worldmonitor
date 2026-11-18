@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   JEV_ENDPOINT, JEV_MODEL, THREAT_LEVELS, THREAT_CATEGORIES, LEVEL_CRITERIA, CATEGORY_CRITERIA,
   buildJevRequest, jevEndpoint, parseJevAnswers, sanitizeHeadline, hasNonLatinLetters,
-} from '../shared/jev-classify.js';
+} from '../packages/shared/jev-classify.js';
 
 const choice = (value, confidence, probabilities = { [value]: confidence }) => ({ type: 'choice', choice: value, confidence, probabilities });
 

@@ -95,7 +95,7 @@ describe('headline deduplication', () => {
       'Russia launches missile strike on Ukrainian energy infrastructure overnight',
       'EU approves new sanctions package against Russia',
     ];
-    // #4919: similarity now comes from shared/story-identity.js (dual-view
+    // #4919: similarity now comes from packages/shared/story-identity.js (dual-view
     // cosine >= STORY_SIMILARITY_THRESHOLD) — a one-token tail swap on an
     // otherwise identical headline is squarely inside the edit-variant
     // class it must merge.

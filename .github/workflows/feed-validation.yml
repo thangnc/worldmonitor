@@ -30,7 +30,7 @@ on:
       - 'scripts/seed-recall-benchmark.mjs'
       - 'api/_rss-allowed-domain-match.js'
       - 'api/_rss-allowed-domains.js'
-      - 'shared/rss-allowed-domains.json'
+      - 'packages/shared/rss-allowed-domains.json'
       - '.github/workflows/feed-validation.yml'
   schedule:
     - cron: '0 0 * * *'

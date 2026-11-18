@@ -28,7 +28,7 @@ import {
   MATCHED_PAIRS,
   evaluateWholeIndexMatchedPairs,
 } from '../tests/helpers/resilience-matched-pairs.mts';
-import wgiIndicatorKeys from '../shared/wgi-indicator-keys.json' with { type: 'json' };
+import wgiIndicatorKeys from '../packages/shared/wgi-indicator-keys.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..');

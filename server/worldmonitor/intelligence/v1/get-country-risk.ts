@@ -6,8 +6,8 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
-import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
-import { countryDisplayName } from '../../../../shared/country-mention.js';
+import { isAssignedCountryCode } from '../../../../packages/shared/country-code-resolve';
+import { countryDisplayName } from '../../../../packages/shared/country-mention.js';
 import { getCachedJson } from '../../../_shared/redis';
 import { CII_RISK_SCORE_CACHE_KEYS } from '../../../_shared/cache-keys';
 import { TIER1_COUNTRIES } from './_shared';

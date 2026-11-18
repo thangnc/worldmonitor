@@ -34,7 +34,7 @@ const FRED_SERIES = [
   { id: 'ECIALLCIV', title: 'Employment Cost Index - All Civilian Workers', units: 'Index (Dec 2005=100)', fredId: 'ECIALLCIV' },
 ];
 
-/** The ids the RPC may ask for; must stay equal to economicBlsSeriesIds in shared/openapi-filter-param-contracts.json. */
+/** The ids the RPC may ask for; must stay equal to economicBlsSeriesIds in packages/shared/openapi-filter-param-contracts.json. */
 export const BLS_SERIES_IDS = FRED_SERIES.map((def) => def.id);
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];

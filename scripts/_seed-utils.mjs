@@ -267,11 +267,11 @@ export const SHARED_FX_FALLBACKS = {
 };
 
 export function loadSharedConfig(filename) {
-  for (const base of [join(__seed_dirname, '..', 'shared'), join(__seed_dirname, 'shared')]) {
+  for (const base of [join(__seed_dirname, '..', 'packages', 'shared'), join(__seed_dirname, 'shared')]) {
     const p = join(base, filename);
     if (existsSync(p)) return JSON.parse(readFileSync(p, 'utf8'));
   }
-  throw new Error(`Cannot find shared/${filename} — checked ../shared/ and ./shared/`);
+  throw new Error(`Cannot find shared/${filename} — checked ../packages/shared/ and ./shared/`);
 }
 
 /**

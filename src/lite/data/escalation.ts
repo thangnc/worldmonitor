@@ -8,15 +8,15 @@ import {
   computeEscalationScore,
   countMilitaryNearHotspot,
   type DynamicEscalationScore,
-} from '../../../shared/analysis-hotspot-escalation';
-import { GEO_CONVERGENCE_WINDOW_MS, GeoConvergenceEngine, type GeoEventInput } from '../../../shared/analysis-geo-convergence';
-import { earthquakesToGeoEvents, unrestEventsToGeoEvents } from '../../../shared/analysis-mcp-adapters';
-import { getHotspotCountryScore } from '../../../shared/hotspot-country-map';
+} from '@wm/shared/analysis-hotspot-escalation';
+import { GEO_CONVERGENCE_WINDOW_MS, GeoConvergenceEngine, type GeoEventInput } from '@wm/shared/analysis-geo-convergence';
+import { earthquakesToGeoEvents, unrestEventsToGeoEvents } from '@wm/shared/analysis-mcp-adapters';
+import { getHotspotCountryScore } from '@wm/shared/hotspot-country-map';
 import type { Tone } from './transforms';
 
 /**
  * Live escalation for the curated hotspots, as the dashboard scores them:
- * shared/analysis-hotspot-escalation.ts does the scoring; this module only
+ * packages/shared/analysis-hotspot-escalation.ts does the scoring; this module only
  * maps Lite's data onto its inputs. Constants follow the dashboard's wiring.
  */
 /** News window: DeckGLMap.updateHotspotActivity counts the last 2 hours. */

@@ -172,7 +172,7 @@ function severityRank(severity) {
  *
  * @param {string} regionId
  * @param {Record<string, any>} sources
- * @returns {import('../../shared/regions.types.js').AirportNodeStatus[]}
+ * @returns {import('../../packages/shared/regions.types.js').AirportNodeStatus[]}
  */
 export function buildAirports(regionId, sources) {
   const faaAlerts = sources?.['aviation:delays:faa:v1']?.alerts;
@@ -182,7 +182,7 @@ export function buildAirports(regionId, sources) {
     ...(Array.isArray(intlAlerts) ? intlAlerts : []),
   ];
 
-  /** @type {import('../../shared/regions.types.js').AirportNodeStatus[]} */
+  /** @type {import('../../packages/shared/regions.types.js').AirportNodeStatus[]} */
   const out = [];
   for (const a of allAlerts) {
     if (airportToSnapshotRegion(a) !== regionId) continue;
@@ -262,7 +262,7 @@ const JAM_LEVEL_RANK = { low: 1, medium: 2, high: 3 };
  *
  * @param {string} regionId
  * @param {Record<string, any>} sources
- * @returns {import('../../shared/regions.types.js').AirspaceStatus[]}
+ * @returns {import('../../packages/shared/regions.types.js').AirspaceStatus[]}
  */
 export function buildAirspace(regionId, sources) {
   const hexes = sources?.['intelligence:gpsjam:v2']?.hexes;
@@ -290,7 +290,7 @@ export function buildAirspace(regionId, sources) {
   const subRegionList = [...subRegions].sort().join(', ');
   const summary = `GPS jamming active over ${subRegionList || regionId}: ${highCount} high / ${mediumCount} medium / ${lowCount} low hexes`;
 
-  /** @type {import('../../shared/regions.types.js').AirspaceStatus[]} */
+  /** @type {import('../../packages/shared/regions.types.js').AirspaceStatus[]} */
   const out = [{
     airspace_id: `gpsjam:${regionId}`,
     status: 'restricted',
@@ -339,7 +339,7 @@ export function buildRerouteIntensity(regionId, sources) {
  *
  * @param {string} regionId
  * @param {Record<string, any>} sources
- * @returns {import('../../shared/regions.types.js').MobilityState}
+ * @returns {import('../../packages/shared/regions.types.js').MobilityState}
  */
 export function buildMobilityState(regionId, sources) {
   try {

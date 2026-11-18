@@ -48,7 +48,7 @@ import {
   REST_ATTRIBUTION_EXPRESSIONS,
   buildAttributionRider,
   mergeAttributionRider,
-} from '../shared/attribution-rider';
+} from '../packages/shared/attribution-rider';
 import {
   enforceRestProjectionOutputLimit,
   projectJsonResponse,
@@ -1727,7 +1727,7 @@ export function createDomainGateway(
         let projection = projectJsonResponse(bodyStr, jmespathExpr);
         if (projection.ok) {
           // Attribution accompaniment — REST parity with the MCP dispatch rider
-          // (shared/attribution-rider.ts). These paths were refused outright
+          // (packages/shared/attribution-rider.ts). These paths were refused outright
           // before; refusal protected two supply-chain paths that carry no
           // licence field at all while `/api/safety/v1/get-toronto-safety`, which
           // does, was never on the list. The rider replaces the roster: the

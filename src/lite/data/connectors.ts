@@ -12,7 +12,7 @@
  *
  * `tests/lite-ui.test.mts` keeps `healthKeys` and `maxStaleMin` equal to
  * `SEED_META` in api/health.js (or its `ON_DEMAND_KEYS` for a presence check), and each host's `licence` equal to its row in
- * shared/source-attribution-manifest.json.
+ * packages/shared/source-attribution-manifest.json.
  */
 import type { ListFeedDigestResponse } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
 import { SOURCE_TIERS, TIER_MEANING, type DeclaredTier } from '../../../server/_shared/source-tiers';
@@ -21,7 +21,7 @@ import type { ResourceState } from './store';
 
 export type ConnectorDomain = 'geo' | 'fin' | 'tech' | 'all';
 export type ConnectorMethod = 'API' | 'RSS' | 'LLM' | 'Derived';
-/** `status` of the host's row in shared/source-attribution-manifest.json. */
+/** `status` of the host's row in packages/shared/source-attribution-manifest.json. */
 export type Licence = 'reviewed' | 'terms-review' | 'excluded';
 
 export interface ConnectorHost {

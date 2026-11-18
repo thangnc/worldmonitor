@@ -103,7 +103,7 @@ test('a seed row for the wrong country is rejected rather than served', async (t
 });
 
 test('every country in the public enum has an index definition', async () => {
-  const contracts = (await import('../shared/openapi-filter-param-contracts.json', {
+  const contracts = (await import('../packages/shared/openapi-filter-param-contracts.json', {
     with: { type: 'json' },
   })).default as {
     marketCountryStockIndexes: Record<string, {

@@ -20,7 +20,7 @@ import {
   deriveNotificationStoryPhase,
   formatStoryPhaseBadge,
   isStoryPhase,
-} from '../shared/story-phase.js';
+} from '../packages/shared/story-phase.js';
 
 const { derivePhase: deriveFeedPhase } = __testing__;
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -153,7 +153,7 @@ describe('#7154 intentional divergence — silence >24h is fading in notificatio
     assert.equal(PROTO_TO_CLIENT[phase as keyof typeof PROTO_TO_CLIENT], 'sustained');
   });
 
-  it('seeder source delegates to shared/story-phase.js', () => {
+  it('seeder source delegates to packages/shared/story-phase.js', () => {
     const seeder = readFileSync(
       resolve(__dirname, '..', 'scripts', 'seed-digest-notifications.mjs'),
       'utf-8',

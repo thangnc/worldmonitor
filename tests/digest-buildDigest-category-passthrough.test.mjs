@@ -5,7 +5,7 @@
 // so these are source-textual assertions (mirrors digest-no-reclassify
 // and digest-buildDigest-feelgood-filter). The behavioral contract
 // (track.category → envelope category) is exercised end-to-end by
-// shared/brief-filter.js tests + tests/brief-from-digest-stories.test.mjs.
+// packages/shared/brief-filter.js tests + tests/brief-from-digest-stories.test.mjs.
 //
 // What this file locks in:
 //   T6 — the stories.push object includes a defensively-typed

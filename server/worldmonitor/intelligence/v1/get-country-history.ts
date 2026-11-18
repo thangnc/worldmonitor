@@ -1,6 +1,6 @@
 import type { IntelligenceServiceHandler, CountryHistoryPoint } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
-import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
+import { isAssignedCountryCode } from '../../../../packages/shared/country-code-resolve';
 import { getCountryHistoryAccess } from '../../../_shared/country-history-access';
 import { runRedisPipeline } from '../../../_shared/redis';
 import { markNoCacheResponse } from '../../../_shared/response-headers';

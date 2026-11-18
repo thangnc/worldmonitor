@@ -5,7 +5,7 @@ import { writeFileSync } from 'node:fs';
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const feedConfigPath = join(rootDir, 'src/config/feeds.ts');
-const outputPath = join(rootDir, 'shared/source-provenance-declarations.ts');
+const outputPath = join(rootDir, 'packages/shared/source-provenance-declarations.ts');
 
 const result = await build({
   entryPoints: [feedConfigPath],

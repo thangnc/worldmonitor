@@ -36,8 +36,8 @@ export const REGIME_HISTORY_MAX = 100;
  * regime change — the caller must check for null before publishing.
  *
  * @param {{ id: string, label?: string }} region
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} snapshot
- * @param {import('../../shared/regions.types.js').SnapshotDiff} diff
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} snapshot
+ * @param {import('../../packages/shared/regions.types.js').SnapshotDiff} diff
  * @returns {{
  *   region_id: string,
  *   label: string,
@@ -180,8 +180,8 @@ async function defaultPublishEntry(entry) {
  * no-op (no regime change) or failure. Never throws, never blocks.
  *
  * @param {{ id: string, label?: string }} region
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} snapshot
- * @param {import('../../shared/regions.types.js').SnapshotDiff} diff
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} snapshot
+ * @param {import('../../packages/shared/regions.types.js').SnapshotDiff} diff
  * @param {{ publishEntry?: (entry: object) => Promise<{ pushed: boolean, trimmed: boolean }> }} [opts]
  * @returns {Promise<{ recorded: boolean, entry: object | null, pushed: boolean, trimmed: boolean }>}
  */

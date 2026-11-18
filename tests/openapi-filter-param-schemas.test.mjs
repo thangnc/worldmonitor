@@ -4,8 +4,8 @@ import { describe, it } from 'node:test';
 import { load as loadYaml } from 'js-yaml';
 import { loadUnifiedOpenApiSpec } from './_lib/openapi-spec-cache.mjs';
 
-const ISO2_CODES = Object.keys(JSON.parse(readFileSync('shared/iso2-to-iso3.json', 'utf8'))).sort();
-const FILTER_PARAM_CONTRACTS = JSON.parse(readFileSync('shared/openapi-filter-param-contracts.json', 'utf8'));
+const ISO2_CODES = Object.keys(JSON.parse(readFileSync('packages/shared/iso2-to-iso3.json', 'utf8'))).sort();
+const FILTER_PARAM_CONTRACTS = JSON.parse(readFileSync('packages/shared/openapi-filter-param-contracts.json', 'utf8'));
 const PREDICTION_MARKET_CATEGORIES = [
   ...FILTER_PARAM_CONTRACTS.predictionMarketTechCategories,
   ...FILTER_PARAM_CONTRACTS.predictionMarketFinanceCategories,

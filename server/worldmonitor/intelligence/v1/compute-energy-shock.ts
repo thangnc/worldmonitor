@@ -64,7 +64,7 @@ import type {
   RefineryProductKey,
 } from './_shock-compute';
 import { ISO2_TO_COMTRADE } from './_comtrade-reporters';
-import { CURRENT_FLOWS_WINDOW, PRE_CRISIS_WINDOW } from '../../../../shared/hormuz-crisis.js';
+import { CURRENT_FLOWS_WINDOW, PRE_CRISIS_WINDOW } from '../../../../packages/shared/hormuz-crisis.js';
 import { HORMUZ_BYPASS_AS_OF, HORMUZ_BYPASS_BY_EXPORTER, lostShareAfterBypass } from './_hormuz-bypass';
 import type { BypassScenario } from './_hormuz-bypass';
 

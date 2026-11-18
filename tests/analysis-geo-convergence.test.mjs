@@ -12,7 +12,7 @@ import {
   getLocationName,
   haversineKm,
   scoreGeoCell,
-} from '../shared/analysis-geo-convergence.ts';
+} from '../packages/shared/analysis-geo-convergence.ts';
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -400,7 +400,7 @@ describe('geo convergence signal projection', () => {
 
 describe('shared core stays bundler-agnostic', () => {
   it('keeps the shared core free of client-only imports', () => {
-    const core = readFileSync(new URL('../shared/analysis-geo-convergence.ts', import.meta.url), 'utf8');
+    const core = readFileSync(new URL('../packages/shared/analysis-geo-convergence.ts', import.meta.url), 'utf8');
     assert.doesNotMatch(core, /from '@\//, 'core must not use the src/ path alias');
     assert.doesNotMatch(core, /import\.meta/, 'core must stay bundler-agnostic');
   });

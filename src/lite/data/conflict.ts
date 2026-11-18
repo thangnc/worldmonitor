@@ -7,7 +7,7 @@
  * read as calm. Every rule compares a country with its own recent normal,
  * which removes most of the media-volume bias between countries.
  */
-import { HOTSPOT_COUNTRY_MAP } from '../../../shared/hotspot-country-map';
+import { HOTSPOT_COUNTRY_MAP } from '@wm/shared/hotspot-country-map';
 import type { Hotspot } from '@/types';
 import type { FeedState, Indicator } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews } from './news-link';

@@ -7,7 +7,7 @@ import {
   normalizeGdeltSearchResponse,
   normalizeGdeltTopicSnapshot,
   normalizeSatelliteSnapshot,
-} from '../shared/intelligence-snapshots.js';
+} from '../packages/shared/intelligence-snapshots.js';
 import { INTEL_TOPIC_IDS as SEED_INTEL_TOPIC_IDS } from '../scripts/seed-gdelt-intel.mjs';
 import { MIN_ADVISORY_COUNTRY_COVERAGE as SEED_MIN_ADVISORY_COUNTRY_COVERAGE } from '../scripts/seed-security-advisories.mjs';
 

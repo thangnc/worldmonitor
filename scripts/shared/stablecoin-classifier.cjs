@@ -17,7 +17,7 @@
 // byte-for-byte at scripts/shared/stablecoin-classifier.cjs for the Railway
 // rootDirectory=scripts deploys (locked by tests/scripts-shared-mirror.test.mjs).
 
-// Sibling resolution works in BOTH homes: shared/stablecoins.json and
+// Sibling resolution works in BOTH homes: packages/shared/stablecoins.json and
 // scripts/shared/stablecoins.json are themselves mirror-locked.
 const { pegThresholds: DEFAULT_PEG_THRESHOLDS } = require('./stablecoins.json');
 

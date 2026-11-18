@@ -148,7 +148,7 @@ describe('SSE period-over-period change contract (#6066)', () => {
 
   it('keeps the derived direction correct against a negative prior level', () => {
     // The denominator is |prior| (matching the evaluator's own percentage_change
-    // convention in shared/china-activity-nowcast.ts), so a rise off a negative
+    // convention in packages/shared/china-activity-nowcast.ts), so a rise off a negative
     // prior stays a rise. Without the guard the sign inverts and a strengthening
     // week would be reported as weakening.
     const rising = parse({ currentContent: -50, lastContent: -100 });

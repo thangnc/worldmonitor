@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { BOOTSTRAP_CACHE_KEYS } from '../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS } from '../packages/shared/bootstrap-tier-keys.js';
 import {
   CHINA_MACRO_MAX_CONTENT_AGE_MIN,
   CHINA_MACRO_MAX_TRANSPORT_AGE_MIN,
@@ -14,7 +14,7 @@ import {
   CHINA_MACRO_SERIES_MAX_AGE_DAYS,
   chinaMacroObservationDateMs,
   isChinaMacroObservationStale,
-} from '../shared/china-macro-contract.js';
+} from '../packages/shared/china-macro-contract.js';
 import * as railwayContract from '../scripts/_china-macro-contract.mjs';
 import { CHINA_COVERAGE_ENTRIES } from '../scripts/china-coverage-manifest.mjs';
 

@@ -267,11 +267,11 @@ import { publishFeedHealth } from '../scripts/validate-rss-feeds.mjs';
 import { getOptionalUpstashCreds } from '../scripts/_upstash-rest.mjs';
 
 describe('validator reads the URLs the views serve (#4927 review)', () => {
-  // The validator reads shared/news-catalog.json without executing app code.
+  // The validator reads packages/shared/news-catalog.json without executing app code.
   // Its extraction must equal what the server digest and the browser fetch,
   // or the health report validates URLs nobody requests (or skips ones they do).
   it('extractServerFeeds equals the server view', async () => {
-    const { buildServerVariantFeeds, buildServerIntelSources } = await import('../shared/news-catalog.ts');
+    const { buildServerVariantFeeds, buildServerIntelSources } = await import('../packages/shared/news-catalog.ts');
     const served = new Set([
       ...Object.values(buildServerVariantFeeds()).flatMap((byCategory) => Object.values(byCategory).flat()),
       ...buildServerIntelSources(),
@@ -283,7 +283,7 @@ describe('validator reads the URLs the views serve (#4927 review)', () => {
   });
 
   it('extractFeeds equals the browser view', async () => {
-    const { NEWS_CATALOG, buildBrowserCategoryFeeds, buildBrowserIntelSources } = await import('../shared/news-catalog.ts');
+    const { NEWS_CATALOG, buildBrowserCategoryFeeds, buildBrowserIntelSources } = await import('../packages/shared/news-catalog.ts');
     const urls = new Set();
     const add = (url) => (typeof url === 'string' ? urls.add(url) : Object.values(url).forEach((href) => urls.add(href)));
     for (const edition of Object.keys(NEWS_CATALOG.layout.browser)) {

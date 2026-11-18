@@ -16,7 +16,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { publisherFamilyFor } from '../shared/publisher-families.js';
+import { publisherFamilyFor } from '../packages/shared/publisher-families.js';
 import { assignStoryIdentity } from '../server/worldmonitor/news/v1/dedup.mjs';
 import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest.ts';
 

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../packages/shared/bootstrap-tier-keys.js';
 
 /**
  * Market breadth is served from a seeded Redis key through the bootstrap

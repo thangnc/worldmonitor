@@ -7,9 +7,9 @@ import type {
 import { getCachedJsonBatch } from '../../../_shared/redis';
 import { readRevokedUrlSet } from '../../../_shared/digest-revocations';
 import { markNoCacheResponse } from '../../../_shared/response-headers';
-import { countryMentionTerms, mentionsCountry } from '../../../../shared/country-mention.js';
-import { publisherFamilyFor } from '../../../../shared/publisher-families.js';
-import { isVerifiableArticleUrl } from '../../../../shared/article-url.js';
+import { countryMentionTerms, mentionsCountry } from '../../../../packages/shared/country-mention.js';
+import { publisherFamilyFor } from '../../../../packages/shared/publisher-families.js';
+import { isVerifiableArticleUrl } from '../../../../packages/shared/article-url.js';
 import { INTEL_SOURCES, isServerFeedReachableForLanguage, VARIANT_FEEDS } from './_feeds';
 import { FUTURE_DATE_TOLERANCE_MS, resolveMaxAgeMs, rssFeedCacheKey } from './_rss-cache';
 

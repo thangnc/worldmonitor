@@ -14,18 +14,18 @@
  *
  * Containment: the browser tests the loaded country polygon and falls back to a
  * hand-tuned box; the server has no polygon, so it uses the generated
- * shared/country-bboxes.js box for every country. That is reported to the
+ * packages/shared/country-bboxes.js box for every country. That is reported to the
  * caller in the response's `containment` field rather than hidden. Recognized
  * protest country labels take precedence over this approximate geometry.
  */
 
-import { countryBox, inBox, splitCountryBox, type CountryBox } from '../../../../shared/country-bbox';
-import { resolveCountryCode } from '../../../../shared/country-code-resolve';
-import { countryMentionTerms, mentionsCountry } from '../../../../shared/country-mention.js';
+import { countryBox, inBox, splitCountryBox, type CountryBox } from '../../../../packages/shared/country-bbox';
+import { resolveCountryCode } from '../../../../packages/shared/country-code-resolve';
+import { countryMentionTerms, mentionsCountry } from '../../../../packages/shared/country-mention.js';
 import type {
   CountryTimelineIncident,
   CountryTimelineSeverity,
-} from '../../../../shared/country-timeline-events';
+} from '../../../../packages/shared/country-timeline-events';
 import { readCachedEnvelopeJson } from '../../../_shared/redis';
 import { unwrapEnvelope } from '../../../_shared/seed-envelope';
 import { listUnrestEvents } from '../../unrest/v1/list-unrest-events';
@@ -357,7 +357,7 @@ async function collectEarthquakes(req: StructuredRequest, box: CountryBox | null
     //
     // NOT closed by this: an EXACT collision between a country name and a US
     // state, i.e. "Georgia". Word boundaries cannot separate those two — the
-    // token is identical — and shared/country-mention.js has no GE exclusion
+    // token is identical — and packages/shared/country-mention.js has no GE exclusion
     // (it likewise omits the "Georgian" demonym for the same ambiguity). A
     // quake in Atlanta still matches GE on the name arm; only the bbox test
     // distinguishes them.

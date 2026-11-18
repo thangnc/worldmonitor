@@ -1,7 +1,7 @@
-import countryNames from '../../../../shared/country-names.json';
-import iso2ToIso3Json from '../../../../shared/iso2-to-iso3.json';
-import wgiIndicatorKeys from '../../../../shared/wgi-indicator-keys.json';
-import { wgiObservationSource } from '../../../../shared/wgi-source-provenance.js';
+import countryNames from '../../../../packages/shared/country-names.json';
+import iso2ToIso3Json from '../../../../packages/shared/iso2-to-iso3.json';
+import wgiIndicatorKeys from '../../../../packages/shared/wgi-indicator-keys.json';
+import { wgiObservationSource } from '../../../../packages/shared/wgi-source-provenance.js';
 import { normalizeCountryToken } from '../../../_shared/country-token';
 import { getCachedEnvelopeJson, getCachedJson, readCachedEnvelopeJson, readCachedJson } from '../../../_shared/redis';
 import { unwrapEnvelope } from '../../../_shared/seed-envelope';
@@ -1142,7 +1142,7 @@ function matchesCountryIdentifier(value: unknown, countryCode: string): boolean 
 // matched unconditionally.
 //
 // Markers preferred over name forms because COUNTRY_NAME_ALIASES is built
-// from shared/country-names.json and may not contain every directional
+// from packages/shared/country-names.json and may not contain every directional
 // variant.
 const GEORGIA_COUNTRY_MARKERS = [
   'tbilisi', 'georgian', 'abkhazia', 'ossetia', 'caucasus',

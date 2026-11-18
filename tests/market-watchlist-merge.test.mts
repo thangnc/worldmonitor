@@ -3,7 +3,7 @@
  * not the merged default-plus-custom array.
  *
  * `src/app/data-loader.ts` used to stop merging once the merged array reached
- * 50. The default universe (`shared/stocks.json`) already carries 59 symbols,
+ * 50. The default universe (`packages/shared/stocks.json`) already carries 59 symbols,
  * so the very first custom ticker pushed the array past the bound and every
  * remaining pick was silently dropped — the watchlist editor happily stored up
  * to 50 tickers and told the user each one was tracked.
@@ -23,7 +23,7 @@ import {
 } from '../src/services/market-watchlist.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const STOCK_CONFIG = JSON.parse(readFileSync(resolve(root, 'shared/stocks.json'), 'utf8')) as {
+const STOCK_CONFIG = JSON.parse(readFileSync(resolve(root, 'packages/shared/stocks.json'), 'utf8')) as {
   symbols: MarketSymbolMeta[];
   defaultSymbols: string[];
 };

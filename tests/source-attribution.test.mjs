@@ -35,7 +35,7 @@ const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
  */
 function makeFixtureCheckout() {
   const dir = mkdtempSync(join(tmpdir(), 'source-attribution-'));
-  for (const root of ['scripts', 'server', 'api', 'src', 'shared', 'docs/engineering/architecture']) {
+  for (const root of ['scripts', 'server', 'api', 'src', 'packages/shared', 'docs/engineering/architecture']) {
     mkdirSync(join(dir, root), { recursive: true });
   }
   writeFileSync(
@@ -44,7 +44,7 @@ function makeFixtureCheckout() {
   );
   const inventory = scanUpstreamHosts(dir);
   const manifest = buildManifest(inventory, { entries: [], logicalEntries: [] });
-  const manifestPath = join(dir, 'shared/source-attribution-manifest.json');
+  const manifestPath = join(dir, 'packages/shared/source-attribution-manifest.json');
   const docsPath = join(dir, 'docs/engineering/architecture/source-attribution.md');
   const writeManifest = (value) => {
     const serialized = `${JSON.stringify(value, null, 2)}\n`;
@@ -122,7 +122,7 @@ test('source inventory has complete metadata and matches the generated catalog',
   assert.equal(byHost.get('ecs-api.wingbits.com')?.provider, 'wingbits.com');
 });
 
-const NEWS_CATALOG_PATH = 'shared/news-catalog.json';
+const NEWS_CATALOG_PATH = 'packages/shared/news-catalog.json';
 
 function loadNewsCatalog() {
   return JSON.parse(readFileSync(join(rootDir, NEWS_CATALOG_PATH), 'utf8'));
@@ -577,7 +577,7 @@ function writeUrlModule(path, host) {
 test('catalog Google News URLs count their site: publisher; a retired query quoted in notes does not', () => {
   const fixture = makeFixtureCheckout();
   try {
-    writeFileSync(join(fixture.dir, 'shared/news-catalog.json'), `${JSON.stringify({
+    writeFileSync(join(fixture.dir, 'packages/shared/news-catalog.json'), `${JSON.stringify({
       feeds: [{
         name: 'Native',
         url: 'https://native.example/rss',
@@ -601,7 +601,7 @@ test('catalog Google News URLs count their site: publisher; a retired query quot
 test('a note whose text equals an active catalog URL does not hide that URL', () => {
   const fixture = makeFixtureCheckout();
   try {
-    writeFileSync(join(fixture.dir, 'shared/news-catalog.json'), `${JSON.stringify({
+    writeFileSync(join(fixture.dir, 'packages/shared/news-catalog.json'), `${JSON.stringify({
       feeds: [
         {
           name: 'Active',
@@ -1288,7 +1288,7 @@ test('the check gate goes red on manifest, docs, and logical-entry drift', () =>
     }, /source-attribution-manifest\.json is out of date/],
     ['a reformatted manifest', (f) => {
       writeFileSync(
-        join(f.dir, 'shared/source-attribution-manifest.json'),
+        join(f.dir, 'packages/shared/source-attribution-manifest.json'),
         `${JSON.stringify(f.manifest)}\n`,
       );
     }, /source-attribution-manifest\.json is out of date/],

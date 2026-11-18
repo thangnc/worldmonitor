@@ -21,7 +21,7 @@ import {
   classifyPublicBootstrapRequest,
   classifyPublicBootstrapUrl,
 } from '../../../api/_bootstrap-public-tier.js';
-import { stripTrailingSlashes } from '../../../shared/strip-trailing-slashes.js';
+import { stripTrailingSlashes } from '../../../packages/shared/strip-trailing-slashes.js';
 import { maybeShadowKvRead } from './kv-shadow.js';
 import { maybeServeBootstrapFromKv } from './kv-serve.js';
 

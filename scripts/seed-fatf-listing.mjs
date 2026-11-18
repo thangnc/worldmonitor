@@ -476,7 +476,7 @@ export async function fetchFatfListings({
   }
 
   // Surface unmatched country-name candidates so ops can extend
-  // shared/country-names.json aliases when FATF introduces a new
+  // packages/shared/country-names.json aliases when FATF introduces a new
   // spelling. Reject the seed if too many candidates are missing —
   // silent drops would otherwise re-classify the missed countries as
   // "compliant" (default) and materially shift their financialSystemExposure
@@ -484,7 +484,7 @@ export async function fetchFatfListings({
   // "HTTP 200 + plausible bytes ≠ valid payload."
   const unmatched = [...new Set([...blackResult.unmatchedCandidates, ...greyResult.unmatchedCandidates])];
   if (unmatched.length > 0) {
-    console.warn(`[fatf-listing] ${unmatched.length} country-name candidates not found in shared/country-names.json: ${unmatched.join(', ')}. Extend the aliases map if any of these are real country names.`);
+    console.warn(`[fatf-listing] ${unmatched.length} country-name candidates not found in packages/shared/country-names.json: ${unmatched.join(', ')}. Extend the aliases map if any of these are real country names.`);
   }
   if (unmatched.length > 2) {
     // Diagnostic preview: when this gate trips, ops needs to know whether
@@ -495,7 +495,7 @@ export async function fetchFatfListings({
     const blackPreview = previewHtmlForDiagnostic(blackHtml);
     const greyPreview = previewHtmlForDiagnostic(greyHtml);
     console.warn(`[fatf-listing] diagnostic: black=${blackPreview} grey=${greyPreview}`);
-    const msg = `FATF parser found ${unmatched.length} unmatched country-name candidates (max 2 tolerated): ${unmatched.join(', ')}. Previous valid payload remains under cache TTL — extend shared/country-names.json or fix the parser before next plenary.`;
+    const msg = `FATF parser found ${unmatched.length} unmatched country-name candidates (max 2 tolerated): ${unmatched.join(', ')}. Previous valid payload remains under cache TTL — extend packages/shared/country-names.json or fix the parser before next plenary.`;
     console.warn(`[fatf-listing] parser sanity-check failed: ${msg}`);
     throw new Error(msg);
   }

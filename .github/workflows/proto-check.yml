@@ -77,24 +77,24 @@ env:
     server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts
     server/worldmonitor/consumer-prices/v1/_selection.ts
     server/worldmonitor/supply-chain/v1/scenario-templates.ts
-    shared/aircraft-emergencies.ts
-    shared/attribution-rider.ts
-    shared/compare-and-delete-script.cjs
-    shared/china-corridor-control-towers.ts
-    shared/china-decision-signal-manifest.ts
-    shared/china-decision-signals.ts
-    shared/china-logistics-corridors.ts
-    shared/decision-signal-provenance-contract.ts
-    shared/decision-signal-provenance-families.ts
-    shared/decision-signal-provenance.ts
-    shared/event-triggers.json
-    shared/iso2-to-iso3.json
-    shared/openapi-filter-param-contracts.json
-    shared/source-provenance-declarations.ts
-    shared/source-provenance.ts
-    shared/telegram-channel-trust.ts
-    shared/x-account-source-tiers.json
-    shared/x-account-trust.ts
+    packages/shared/aircraft-emergencies.ts
+    packages/shared/attribution-rider.ts
+    packages/shared/compare-and-delete-script.cjs
+    packages/shared/china-corridor-control-towers.ts
+    packages/shared/china-decision-signal-manifest.ts
+    packages/shared/china-decision-signals.ts
+    packages/shared/china-logistics-corridors.ts
+    packages/shared/decision-signal-provenance-contract.ts
+    packages/shared/decision-signal-provenance-families.ts
+    packages/shared/decision-signal-provenance.ts
+    packages/shared/event-triggers.json
+    packages/shared/iso2-to-iso3.json
+    packages/shared/openapi-filter-param-contracts.json
+    packages/shared/source-provenance-declarations.ts
+    packages/shared/source-provenance.ts
+    packages/shared/telegram-channel-trust.ts
+    packages/shared/x-account-source-tiers.json
+    packages/shared/x-account-trust.ts
     src/shared/premium-paths.ts
     src/shared/public-rpc-cache.ts
   GENERATED_PATHS: >-

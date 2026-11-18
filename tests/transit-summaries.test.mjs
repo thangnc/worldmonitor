@@ -4,14 +4,14 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { detectTrafficAnomaly, THREAT_LEVEL } from '../server/worldmonitor/supply-chain/v1/_scoring.mjs';
-import { summarizePortwatchHistory } from '../shared/chokepoint-traffic-anomaly.js';
+import { summarizePortwatchHistory } from '../packages/shared/chokepoint-traffic-anomaly.js';
 import {
   CANONICAL_CHOKEPOINTS,
   corridorRiskNameToId,
 } from '../server/worldmonitor/supply-chain/v1/_chokepoint-ids.ts';
 import { CHOKEPOINTS } from '../server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts';
-import { CHOKEPOINT_THREAT_LEVELS } from '../shared/chokepoint-threat-levels.js';
-import { readTransitWindow } from '../shared/chokepoint-transit-window.js';
+import { CHOKEPOINT_THREAT_LEVELS } from '../packages/shared/chokepoint-threat-levels.js';
+import { readTransitWindow } from '../packages/shared/chokepoint-transit-window.js';
 
 function transitStore() {
   const rows = new Map();
@@ -21,7 +21,7 @@ function transitStore() {
       .sort((a, b) => a[1] - b[1]).map(([member]) => member);
   };
 }
-import { CORRIDOR_RISK_NAME_MAP, deriveCorridorRiskLevel } from '../shared/corridor-risk.js';
+import { CORRIDOR_RISK_NAME_MAP, deriveCorridorRiskLevel } from '../packages/shared/corridor-risk.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
@@ -791,12 +791,12 @@ describe('corridorRiskNameToId', () => {
 });
 
 // ---------------------------------------------------------------------------
-// detectTrafficAnomaly (shared/chokepoint-traffic-anomaly.js) edge cases.
+// detectTrafficAnomaly (packages/shared/chokepoint-traffic-anomaly.js) edge cases.
 // The relay and the RPC handler both call this exact function now, so there is
 // no second implementation left to hold in sync.
 // ---------------------------------------------------------------------------
 
-describe('summarizePortwatchHistory (shared/chokepoint-traffic-anomaly.js)', () => {
+describe('summarizePortwatchHistory (packages/shared/chokepoint-traffic-anomaly.js)', () => {
   const baseline = { avgDaily: 87.42, days: 365, from: '2024-10-22', to: '2025-10-21' };
   const tail = [3, 7, 3, 2, 7, 0, 4].map((total, index) => ({ date: `2026-10-${12 + index}`, total }));
 
@@ -929,7 +929,7 @@ describe('detectTrafficAnomaly edge cases (_scoring.mjs)', () => {
 // ---------------------------------------------------------------------------
 // 7. CHOKEPOINT_THREAT_LEVELS sync between relay and handler
 // ---------------------------------------------------------------------------
-// Threat-level parity between shared/chokepoint-threat-levels.js and the
+// Threat-level parity between packages/shared/chokepoint-threat-levels.js and the
 // handler's CHOKEPOINTS config is asserted in tests/chokepoint-id-mapping.test.mjs,
 // which owns the canonical-registry contracts.
 

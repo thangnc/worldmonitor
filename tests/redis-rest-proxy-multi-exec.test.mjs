@@ -28,7 +28,7 @@ import crypto from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { readFileSync } from 'node:fs';
 
-import { STORY_ALIAS_PUBLISH_SCRIPT } from '../shared/story-alias-publish-script.mjs';
+import { STORY_ALIAS_PUBLISH_SCRIPT } from '../packages/shared/story-alias-publish-script.mjs';
 
 const source = readFileSync(new URL('../docker/redis-rest-proxy.mjs', import.meta.url), 'utf8')
   .replace(/^#!.*\n/, '')

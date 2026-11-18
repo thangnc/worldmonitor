@@ -1,5 +1,5 @@
 // Edge-compatible ESM wrapper for shared RSS allowed domains.
-// Source of truth: shared/rss-allowed-domains.json
+// Source of truth: packages/shared/rss-allowed-domains.json
 // NOTE: Cannot use `import ... with { type: "json" }` — Vercel esbuild doesn't support import attributes.
 export default [
   "14ymedio.com",

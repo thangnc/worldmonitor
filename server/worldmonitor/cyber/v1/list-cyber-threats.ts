@@ -10,7 +10,7 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/cyber/v1/service_server';
 
 import { readRequiredSeed } from '../../../_shared/required-seed';
-import { isCyberThreatSnapshot } from '../../../../shared/cyber-threat-snapshot';
+import { isCyberThreatSnapshot } from '../../../../packages/shared/cyber-threat-snapshot';
 import {
   DEFAULT_LIMIT,
   MAX_LIMIT,

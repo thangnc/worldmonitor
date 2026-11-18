@@ -8,11 +8,11 @@ import {
   copyContainment,
   copyShingles,
   detectSyndication,
-} from '../shared/syndication.js';
-import { publisherFamilyFor } from '../shared/publisher-families.js';
+} from '../packages/shared/syndication.js';
+import { publisherFamilyFor } from '../packages/shared/publisher-families.js';
 import { readFileSync } from 'node:fs';
 
-import { clusterNewsCore, clusterPublisherCount } from '../shared/news-clustering-core.js';
+import { clusterNewsCore, clusterPublisherCount } from '../packages/shared/news-clustering-core.js';
 import { assignStoryIdentity } from '../server/worldmonitor/news/v1/dedup.mjs';
 import { assessCorroboration, evidenceFromCluster, evidenceFromStory, publisherRoster } from '../server/_shared/corroboration.ts';
 import { getSourceTier } from '../server/_shared/source-tiers.ts';

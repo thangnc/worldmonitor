@@ -23,8 +23,8 @@ import {
   type GoldLabelSet,
   type PredictionSet,
   type ScoreReport,
-} from '../shared/company-monitoring-blind-evaluation.ts';
-import { canonicalJson, type JsonObject } from '../shared/company-monitoring-evaluation.ts';
+} from '../packages/shared/company-monitoring-blind-evaluation.ts';
+import { canonicalJson, type JsonObject } from '../packages/shared/company-monitoring-evaluation.ts';
 
 type Command = 'forecast' | 'score' | 'digest-corpus' | 'digest-gold'
   | 'digest-predictions' | 'digest-forecast' | 'digest-expansion';

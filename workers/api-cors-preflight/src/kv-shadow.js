@@ -13,10 +13,10 @@
 // is a fixed allowlist — never a request, user, credential, or header field.
 
 import { bootstrapTierFromPublicRequest } from '../../../api/_bootstrap-public-tier.js';
-import { BOOTSTRAP_TIER_ENVELOPE_SCHEMA_VERSION } from '../../../shared/bootstrap-tier-envelope.js';
+import { BOOTSTRAP_TIER_ENVELOPE_SCHEMA_VERSION } from '../../../packages/shared/bootstrap-tier-envelope.js';
 import { isBootstrapKvServingTier } from './kv-serve-mode.js';
 
-export { BOOTSTRAP_TIER_ENVELOPE_SCHEMA_VERSION } from '../../../shared/bootstrap-tier-envelope.js';
+export { BOOTSTRAP_TIER_ENVELOPE_SCHEMA_VERSION } from '../../../packages/shared/bootstrap-tier-envelope.js';
 
 export { bootstrapTierFromPublicRequest } from '../../../api/_bootstrap-public-tier.js';
 

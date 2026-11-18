@@ -1,6 +1,6 @@
 import { getHydratedData } from '@/services/bootstrap';
 import { toApiUrl } from '@/services/runtime';
-import { INSIGHTS_MAX_AGE_MS, isAcceptedInsightsSnapshot } from '../../shared/insights-snapshot.js';
+import { INSIGHTS_MAX_AGE_MS, isAcceptedInsightsSnapshot } from '@wm/shared/insights-snapshot.js';
 
 export interface ServerInsightStory {
   primaryTitle: string;

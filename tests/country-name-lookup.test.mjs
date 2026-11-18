@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 
-for (const path of ['../shared/country-name-to-iso2.cjs', '../scripts/shared/country-name-to-iso2.cjs']) {
+for (const path of ['../packages/shared/country-name-to-iso2.cjs', '../scripts/shared/country-name-to-iso2.cjs']) {
   const { countryNameToIso2 } = require(path);
   test(`${path} rejects Object prototype names`, () => {
     for (const name of ['constructor', '__proto__', 'constructor (former name)', '__proto__ (former name)', 'toString']) {

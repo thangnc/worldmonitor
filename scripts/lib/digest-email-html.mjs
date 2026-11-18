@@ -5,7 +5,7 @@
 // effects. The cron imports everything it renders from here.
 
 import { escapeHtml, safeHttpUrl } from '../_digest-markdown.mjs';
-import { formatStoryPhaseBadge } from '../../shared/story-phase.js';
+import { formatStoryPhaseBadge } from '../../packages/shared/story-phase.js';
 import { stripSourceSuffix } from './brief-dedup-jaccard.mjs';
 import { injectEmailSummary } from './email-summary-html.mjs';
 import { digestCoverageText } from './digest-corroboration.mjs';

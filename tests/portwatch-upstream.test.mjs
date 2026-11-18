@@ -5,7 +5,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { buildHistory, computeWow } from '../scripts/seed-portwatch.mjs';
-import { detectTrafficAnomaly } from '../shared/chokepoint-traffic-anomaly.js';
+import { detectTrafficAnomaly } from '../packages/shared/chokepoint-traffic-anomaly.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURE_DIR = resolve(__dirname, 'fixtures');

@@ -1,6 +1,6 @@
 export type { PortType, Port } from '@/types';
 import type { Port, PortType } from '@/types';
-import { PORTS as PORTS_DATA } from '../../shared/ports-data';
+import { PORTS as PORTS_DATA } from '../../packages/shared/ports-data';
 
 // The table itself lives in shared/ so server-side analysis can import it
 // without pulling in the src/ alias graph.

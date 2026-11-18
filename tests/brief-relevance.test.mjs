@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { briefIrrelevanceReason, isBriefRelevantTitle } from '../shared/brief-relevance.js';
+import { briefIrrelevanceReason, isBriefRelevantTitle } from '../packages/shared/brief-relevance.js';
 
 describe('briefIrrelevanceReason', () => {
   it('rejects the sports, awards and entertainment rows that grounded 2026-09-21 briefs', () => {

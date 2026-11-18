@@ -1,4 +1,4 @@
-import type { BriefEnvelope } from '../../shared/brief-envelope.js';
+import type { BriefEnvelope } from '../../packages/shared/brief-envelope.js';
 
 /**
  * Render options.

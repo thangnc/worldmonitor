@@ -31,7 +31,7 @@ message RegisterWebhookRequest {
     (buf.validate.field).int32.gte = 0,
     (buf.validate.field).int32.lte = 100
   ];
-  // A shared/event-triggers.json key; `chokepoint.disruption` when omitted.
+  // A packages/shared/event-triggers.json key; `chokepoint.disruption` when omitted.
   optional string event_type = 4 [
     (buf.validate.field).string.max_len = 64
   ];
@@ -46,7 +46,7 @@ message RegisterWebhookRequest {
   WebhookScope scope = 7;
 }
 
-// Per-event filters for occurrence events. Each key applies to the events named in its comment; the handler validates against shared/event-triggers.json and stores the defaults.
+// Per-event filters for occurrence events. Each key applies to the events named in its comment; the handler validates against packages/shared/event-triggers.json and stores the defaults.
 message WebhookScope {
   // news.breaking: whole-word terms, any-of, 1-20.
   repeated string keywords = 1;

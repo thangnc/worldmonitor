@@ -8,6 +8,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "shared/indexable-landing-locales.ts", "shared/pwa-precache.ts"],
+  "include": ["src", "packages/shared/indexable-landing-locales.ts", "packages/shared/pwa-precache.ts"],
   "exclude": ["src/workers/ml.worker.ts"]
 }

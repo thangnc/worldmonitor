@@ -6,7 +6,7 @@ import {
   compactThermalDashboardPayload,
 } from '../scripts/_thermal-dashboard.mjs';
 import { __testing__ as healthTesting } from '../api/health.js';
-import { BOOTSTRAP_CACHE_KEYS } from '../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS } from '../packages/shared/bootstrap-tier-keys.js';
 
 function makeWatch(clusterCount) {
   return {

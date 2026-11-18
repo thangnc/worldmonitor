@@ -7,23 +7,23 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
-import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
-import { countryDisplayName } from '../../../../shared/country-mention.js';
+import { isAssignedCountryCode } from '../../../../packages/shared/country-code-resolve';
+import { countryDisplayName } from '../../../../packages/shared/country-mention.js';
 import { cachedFetchJson, cachedFetchJsonWithMeta, getCachedJson, setCachedJsonIfAbsent } from '../../../_shared/redis';
 import { displayNameForIso2 } from '../../../_shared/country-normalize';
 import { UPSTREAM_TIMEOUT_MS, TIER1_COUNTRIES, sha256Hex } from './_shared';
 import { callLlm } from '../../../_shared/llm';
 import { aiRoutingCacheSuffix, resolveAiRouting, toLlmRoutingPolicy } from '../../../_shared/ai-routing-policy';
-import { verifyCitationIndexes, checkLeadGrounding, validateNoHallucinatedProperNouns, validateNoHallucinatedFacts, validateNoHallucinatedStatusQualifiers } from '../../../../shared/brief-llm-core.js';
+import { verifyCitationIndexes, checkLeadGrounding, validateNoHallucinatedProperNouns, validateNoHallucinatedFacts, validateNoHallucinatedStatusQualifiers } from '../../../../packages/shared/brief-llm-core.js';
 import { isCallerPremium } from '../../../_shared/premium-check';
 import { markUnservedLlmResponse } from '../../../_shared/response-headers';
 import { sanitizeForPrompt } from '../../../_shared/llm-sanitize.js';
 import { ENERGY_SPINE_KEY_PREFIX } from '../../../_shared/cache-keys';
 import { deriveCountryIntelCacheKey, fetchSharedCountryContext } from './_country-brief-context';
 import { buildCountryBriefEvidence, readCountryAirportNotams } from './_country-brief-evidence';
-import { isBriefRelevantTitle } from '../../../../shared/brief-relevance.js';
-import { energyEvidenceGrounded, evidenceNumbersGrounded, isEvidenceLimitClaim, sanctionsEvidenceGrounded } from '../../../../shared/brief-claim-rules.js';
-import { briefSectionHeading, type BriefSectionKey } from '../../../../shared/brief-sections.js';
+import { isBriefRelevantTitle } from '../../../../packages/shared/brief-relevance.js';
+import { energyEvidenceGrounded, evidenceNumbersGrounded, isEvidenceLimitClaim, sanctionsEvidenceGrounded } from '../../../../packages/shared/brief-claim-rules.js';
+import { briefSectionHeading, type BriefSectionKey } from '../../../../packages/shared/brief-sections.js';
 import {
   resolveEnergyImportDependency,
   UNAVAILABLE_ENERGY_IMPORT_DEPENDENCY,
@@ -172,7 +172,7 @@ function urgingRolesGrounded(text: string, titles: string[]): boolean {
 }
 
 // Each claim is checked only against what it cites. Numbers bind to the cited
-// data point whenever evidence is cited (shared/brief-claim-rules.js): a
+// data point whenever evidence is cited (packages/shared/brief-claim-rules.js): a
 // headline's "85 killed" or an as-of day must never license "the Country
 // Instability Index is 85". Headline titles still supply names, and status
 // qualifiers ("former", "acting") are checked per cited text because data

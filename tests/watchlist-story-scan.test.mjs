@@ -7,7 +7,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildTickerDictionary } from '../shared/ticker-extract.js';
+import { buildTickerDictionary } from '../packages/shared/ticker-extract.js';
 import {
   publishWatchlistNotificationEvent,
   scanAndEnqueueWatchlistStoryEvents,

@@ -4,7 +4,7 @@ import {
   findCorridorsForSourceSelector,
   type ChinaCorridorSignalFamily,
   type ChinaLogisticsCorridorId,
-} from '../../../../shared/china-logistics-corridors';
+} from '../../../../packages/shared/china-logistics-corridors';
 import {
   deriveChinaCorridorConditionAvailability,
   deriveChinaCorridorAvailability,
@@ -13,20 +13,20 @@ import {
   type ChinaCorridorSourceBundle,
   type CorridorFamilySource,
   type CorridorSourceSignal,
-} from '../../../../shared/china-corridor-control-towers';
+} from '../../../../packages/shared/china-corridor-control-towers';
 import {
   DECISION_SIGNAL_PROVENANCE_CONTRACT_VERSION,
   DECISION_SIGNAL_PROVENANCE_SURFACE_ADAPTERS,
   type DecisionSignalContentFreshness,
   type DecisionSignalProvenance,
   type DecisionSignalTransportFreshness,
-} from '../../../../shared/decision-signal-provenance';
+} from '../../../../packages/shared/decision-signal-provenance';
 
 export type {
   ChinaCorridorControlTowerResponse,
   ChinaCorridorSourceBundle,
   CorridorSourceSignal,
-} from '../../../../shared/china-corridor-control-towers';
+} from '../../../../packages/shared/china-corridor-control-towers';
 
 const transportRank: Record<DecisionSignalTransportFreshness['state'], number> = {
   fresh: 0,

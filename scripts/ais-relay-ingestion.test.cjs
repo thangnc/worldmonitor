@@ -9,7 +9,7 @@ const { setTimeout: sleep } = require('node:timers/promises');
 const test = require('node:test');
 // Node 24 loads the shared TypeScript module directly (type stripping), so the
 // emergency codes have one source of truth across TS, ESM and CommonJS.
-const { EMERGENCY_CODES } = require('../shared/aircraft-emergencies.ts');
+const { EMERGENCY_CODES } = require('../packages/shared/aircraft-emergencies.ts');
 
 function get(port, requestPath, headers) {
   return new Promise((resolve, reject) => {

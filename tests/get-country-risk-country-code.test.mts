@@ -3,7 +3,7 @@ import { afterEach, beforeEach, test } from 'node:test';
 
 import { getCountryRisk } from '../server/worldmonitor/intelligence/v1/get-country-risk.ts';
 import { CII_RISK_SCORE_CACHE_KEYS } from '../server/_shared/cache-keys.ts';
-import { isAssignedCountryCode } from '../shared/country-code-resolve.ts';
+import { isAssignedCountryCode } from '../packages/shared/country-code-resolve.ts';
 import { installRedis } from './helpers/fake-upstash-redis.mts';
 import { validationFailure } from './helpers/validation-failure.mts';
 

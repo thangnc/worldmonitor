@@ -1,11 +1,11 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { assignedCountryCodes, buildArabicCountryNames } from './build-country-names-ar.mjs';
-import ENGLISH_NAMES from '../shared/country-names.json' with { type: 'json' };
-import ISO3_TO_ISO2 from '../shared/iso3-to-iso2.json' with { type: 'json' };
+import ENGLISH_NAMES from '../packages/shared/country-names.json' with { type: 'json' };
+import ISO3_TO_ISO2 from '../packages/shared/iso3-to-iso2.json' with { type: 'json' };
 
 const OUTPUTS = [
-  new URL('../shared/country-names-localized.json', import.meta.url),
+  new URL('../packages/shared/country-names-localized.json', import.meta.url),
   new URL('./shared/country-names-localized.json', import.meta.url),
 ];
 

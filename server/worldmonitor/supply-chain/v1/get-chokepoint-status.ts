@@ -158,7 +158,7 @@ interface PreBuiltTransitSummary {
   todayCargo: number | null;
   todayOther: number | null;
   wowChangePct: number;
-  // IMF PortWatch official figures (shared/chokepoint-traffic-anomaly.js
+  // IMF PortWatch official figures (packages/shared/chokepoint-traffic-anomaly.js
   // summarizePortwatchHistory). null when PortWatch has nothing for the
   // chokepoint; absent entirely from writers before the fields existed.
   officialLatestDate?: string | null;

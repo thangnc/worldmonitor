@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Regenerates shared/un-m49-regions.json: UN M49 regions, sub-regions and
+// Regenerates packages/shared/un-m49-regions.json: UN M49 regions, sub-regions and
 // intermediate regions, each with its member ISO2 countries. Tools that take a
 // region ("how does Latin America cover Finland") expand it through this table,
 // so every region is a published standard rather than a hand-kept list.
@@ -13,7 +13,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const SOURCE_URL = 'https://unstats.un.org/unsd/methodology/m49/overview/';
-const TARGET = new URL('../shared/un-m49-regions.json', import.meta.url);
+const TARGET = new URL('../packages/shared/un-m49-regions.json', import.meta.url);
 // scripts/shared/ carries a byte-identical copy (tests/edge-functions.test.mjs).
 const MIRROR = new URL('./shared/un-m49-regions.json', import.meta.url);
 
@@ -99,7 +99,7 @@ async function main() {
   }, null, 2)}\n`;
   if (check) {
     if (readFileSync(TARGET, 'utf8') !== output || readFileSync(MIRROR, 'utf8') !== output) {
-      console.error('shared/un-m49-regions.json or its scripts/shared mirror is stale; run node scripts/build-un-m49-regions.mjs');
+      console.error('packages/shared/un-m49-regions.json or its scripts/shared mirror is stale; run node scripts/build-un-m49-regions.mjs');
       process.exit(1);
     }
     return;

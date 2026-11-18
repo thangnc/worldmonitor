@@ -5,12 +5,12 @@ import { pathToFileURL } from 'node:url';
 import {
   BOOTSTRAP_CACHE_KEYS,
   bootstrapTierKeyNames,
-} from '../shared/bootstrap-tier-keys.js';
+} from '../packages/shared/bootstrap-tier-keys.js';
 import {
   canadaAlertsCutoverFallbackValue,
   extraCanadaAlertsCutoverReadKeys,
-} from '../shared/canada-alerts-cutover.js';
-import { buildBootstrapTierEnvelope } from '../shared/bootstrap-tier-envelope.js';
+} from '../packages/shared/canada-alerts-cutover.js';
+import { buildBootstrapTierEnvelope } from '../packages/shared/bootstrap-tier-envelope.js';
 import { unwrapEnvelope } from './_seed-envelope-source.mjs';
 import { evaluatePublishedBootstrapVolume } from './_bootstrap-payload-budget.mjs';
 import { restoreWildfireBootstrapMetadata, sanitizeBootstrapValue } from './_bootstrap-public-payload.mjs';

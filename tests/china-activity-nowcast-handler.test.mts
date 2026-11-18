@@ -15,12 +15,12 @@ import {
   evaluateChinaActivityNowcast,
   parseChinaActivityNowcastWirePayload,
   type ChinaActivityComparisonState,
-} from '../shared/china-activity-nowcast';
+} from '../packages/shared/china-activity-nowcast';
 import type {
   ChinaCorridorControlTowerResponse,
   ChinaCorridorCondition,
   CorridorSourceSignal,
-} from '../shared/china-corridor-control-towers';
+} from '../packages/shared/china-corridor-control-towers';
 import type {
   ChinaCorridorDirectionalSnapshot,
 } from '../server/worldmonitor/economic/v1/china-corridor-breadth-history';

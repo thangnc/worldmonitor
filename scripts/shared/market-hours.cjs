@@ -172,7 +172,7 @@ function isUsEquityMarketOpen(date = new Date()) {
 
 // True when the ET calendar day has ANY US session (weekday, not a full
 // holiday). Seeders whose symbol lists mix US and non-US equities (the NSE
-// symbols in shared/stocks.json trade 09:15–15:30 IST — deep inside the US
+// symbols in packages/shared/stocks.json trade 09:15–15:30 IST — deep inside the US
 // weekday-overnight 'closed' window) gate on THIS rather than on
 // session === 'closed', so overnight fetches keep the non-US quotes live;
 // the quota win is the fully-dead days (weekends + US holidays).

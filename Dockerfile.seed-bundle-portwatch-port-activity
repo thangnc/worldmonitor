@@ -11,7 +11,7 @@
 #   - Node 22 Alpine (digest-pinned below; ESM, AbortSignal.any, fetch)
 #   - scripts/ tree (seeder + _seed-utils + _proxy-utils + _country-resolver
 #     + _bundle-runner + proxy helpers)
-#   - shared/ (country mappings that _country-resolver depends on)
+#   - packages/shared/ (country mappings that _country-resolver depends on)
 #   - .nvmrc? (not needed; node version baked into the base image)
 # =============================================================================
 
@@ -24,7 +24,7 @@ WORKDIR /app
 # was added without updating the Dockerfile (PR #3041, #3052, #3196). 2 MB of
 # scripts + robustness is a good trade.
 COPY scripts/ ./scripts/
-COPY shared/ ./shared/
+COPY packages/shared/ ./packages/shared/
 
 ENV NODE_OPTIONS="--max-old-space-size=1024 --dns-result-order=ipv4first"
 

@@ -6,7 +6,7 @@ import type {
 } from '../../../../packages/contracts/generated/server/worldmonitor/conflict/v1/service_server';
 import { getCachedJson } from '../../../_shared/redis';
 import { markNoStoreFallbackResponse } from '../../../_shared/response-headers';
-import { resolveCountryCode } from '../../../../shared/country-code-resolve';
+import { resolveCountryCode } from '../../../../packages/shared/country-code-resolve';
 
 const CACHE_KEY = 'conflict:ucdp-events:v1';
 

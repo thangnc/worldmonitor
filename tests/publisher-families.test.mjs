@@ -1,7 +1,7 @@
 /**
  * Publisher-family map contract (#6428).
  *
- * `shared/publisher-families.js` carries the data every corroboration gate now
+ * `packages/shared/publisher-families.js` carries the data every corroboration gate now
  * counts with. Curated data rots in two directions, so both are locked here:
  *
  *   - DEAD ENTRIES: a label in the map that no feed config declares is a typo
@@ -27,13 +27,13 @@ import {
   publisherFamilyForDomain,
   PUBLISHER_FAMILY_DOMAIN_TABLE,
   publisherNameForFamily,
-} from '../shared/publisher-families.js';
+} from '../packages/shared/publisher-families.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 
-const NEWS_CATALOG = resolve(ROOT, 'shared/news-catalog.json');
-const SOURCE_TIERS = resolve(ROOT, 'shared/source-tiers.json');
+const NEWS_CATALOG = resolve(ROOT, 'packages/shared/news-catalog.json');
+const SOURCE_TIERS = resolve(ROOT, 'packages/shared/source-tiers.json');
 
 /**
  * Hosts that carry someone else's journalism. Two labels sharing one of these
@@ -282,7 +282,7 @@ describe('publisher-families map data', () => {
       [],
       'these feed labels publish from the same host but count as separate publishers, ' +
         'so one publisher can corroborate itself. Add them to a family in ' +
-        'shared/publisher-families.js:\n  ' + split.join('\n  '),
+        'packages/shared/publisher-families.js:\n  ' + split.join('\n  '),
     );
   });
 });

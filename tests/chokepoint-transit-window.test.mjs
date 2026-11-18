@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { readTransitWindow, TRANSIT_WINDOW_MS } from '../shared/chokepoint-transit-window.js';
+import { readTransitWindow, TRANSIT_WINDOW_MS } from '../packages/shared/chokepoint-transit-window.js';
 
 const now = 1_790_000_000_000;
 const crossing = (ts, mmsi = '123456789', type = 'tanker') => ({ ts, mmsi, type });

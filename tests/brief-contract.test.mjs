@@ -19,7 +19,7 @@ import {
   extractAnchorTokens,
   validateNoHallucinatedFacts,
   validateNoHallucinatedProperNouns,
-} from '../shared/brief-llm-core.js';
+} from '../packages/shared/brief-llm-core.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const readSrc = (rel) => readFileSync(resolve(root, rel), 'utf-8');
@@ -179,7 +179,7 @@ describe('grounding spine port (#4921)', () => {
 
   it('brief-llm.mjs re-exports the core implementation (no drift possible)', async () => {
     const lib = await import('../scripts/lib/brief-llm.mjs');
-    const core = await import('../shared/brief-llm-core.js');
+    const core = await import('../packages/shared/brief-llm-core.js');
     assert.equal(lib.checkLeadGrounding, core.checkLeadGrounding, 'must be the SAME function object');
     assert.equal(lib.leadGroundsAgainstStory, core.leadGroundsAgainstStory);
   });
@@ -255,8 +255,8 @@ describe('brief-contract wiring (source-textual)', () => {
   });
 
   it('core and mirrors are byte-identical (grounding spine included)', () => {
-    assert.equal(readSrc('shared/brief-llm-core.js'), readSrc('scripts/shared/brief-llm-core.js'));
-    assert.equal(readSrc('shared/brief-llm-core.d.ts'), readSrc('scripts/shared/brief-llm-core.d.ts'));
+    assert.equal(readSrc('packages/shared/brief-llm-core.js'), readSrc('scripts/shared/brief-llm-core.js'));
+    assert.equal(readSrc('packages/shared/brief-llm-core.d.ts'), readSrc('scripts/shared/brief-llm-core.d.ts'));
   });
 });
 

@@ -103,7 +103,7 @@ const ALLOWED_COMMANDS = new Set([
 // The only sound way to allow them through a command allowlist is to pin the
 // exact script text.
 //
-// PINNED COPY of shared/digest-lastgood-publish-script.mjs. This image
+// PINNED COPY of packages/shared/digest-lastgood-publish-script.mjs. This image
 // bundles only this file, so it cannot import the shared module — a parity
 // test (tests/digest-lastgood.test.mts) asserts the two stay byte-identical.
 // Change them together or that test goes red.
@@ -215,7 +215,7 @@ const DIGEST_LASTGOOD_PUBLISH_SCRIPT = [
   'return 1',
 ].join('\n');
 
-// PINNED COPY of shared/story-alias-publish-script.mjs. The script verifies
+// PINNED COPY of packages/shared/story-alias-publish-script.mjs. The script verifies
 // a short publication-lease token inside Redis before it writes any aliases,
 // so a delayed older Edge request cannot overwrite a newer alias cohort.
 const STORY_ALIAS_PUBLISH_SCRIPT = [
@@ -226,7 +226,7 @@ const STORY_ALIAS_PUBLISH_SCRIPT = [
   'return 1',
 ].join('\n');
 
-// PINNED COPY of shared/mcp-quota-reserve-script.mjs. The script atomically
+// PINNED COPY of packages/shared/mcp-quota-reserve-script.mjs. The script atomically
 // reserves a Pro MCP daily-quota slot, rolls back only the rejecting request,
 // and — when the caller enables the clamp via ARGV[4] — clamps failed-rollback
 // residue without dropping below a higher successful same-day allowance.
@@ -560,7 +560,7 @@ const SOURCE_RETRY_CLAIM_SCRIPT = [
   "redis.call('SET', KEYS[1], ARGV[2], 'XX', 'KEEPTTL')",
   'return 1',
 ].join('\n');
-// Pinned copy of shared/cable-health-repair-script.mjs; command-parity tests check exact bytes.
+// Pinned copy of packages/shared/cable-health-repair-script.mjs; command-parity tests check exact bytes.
 const CABLE_HEALTH_REPAIR_SCRIPT = [
   "if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end",
   "local clock = redis.call('TIME')",
@@ -572,7 +572,7 @@ const CABLE_HEALTH_REPAIR_SCRIPT = [
   'end',
   'return 1',
 ].join('\n');
-// PINNED COPY of shared/free-account-allowance-scripts.mjs
+// PINNED COPY of packages/shared/free-account-allowance-scripts.mjs
 // RESERVE_FREE_ACCOUNT_ALLOWANCE_SCRIPT. Regenerate this block from the source
 // array literal; do not hand-edit it.
 const RESERVE_FREE_ACCOUNT_ALLOWANCE_SCRIPT = [
@@ -622,7 +622,7 @@ const RESERVE_FREE_ACCOUNT_ALLOWANCE_SCRIPT = [
   "redis.call('SET', KEYS[3], activity_value, 'PX', ARGV[2])",
   'return {1}',
 ].join('\n');
-// PINNED COPY of shared/free-account-allowance-scripts.mjs
+// PINNED COPY of packages/shared/free-account-allowance-scripts.mjs
 // READ_FREE_ACCOUNT_ALLOWANCE_SCRIPT. Read-only GET/PTTL snapshot; same pin
 // contract as the reserve script above.
 const READ_FREE_ACCOUNT_ALLOWANCE_SCRIPT = [
@@ -631,7 +631,7 @@ const READ_FREE_ACCOUNT_ALLOWANCE_SCRIPT = [
   "local activityPttl = redis.call('PTTL', KEYS[3])",
   'return {calls or false, requests or false, activityPttl}',
 ].join('\n');
-// Pinned to shared/compare-and-delete-script.cjs. Kept inline: this file
+// Pinned to packages/shared/compare-and-delete-script.cjs. Kept inline: this file
 // connects to Redis at import time, and the command-gate tests eval the
 // source instead of importing it.
 const COMPARE_AND_DELETE_SCRIPT = [

@@ -20,7 +20,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { NEWS_CATALOG } from '../shared/news-catalog.ts';
+import { NEWS_CATALOG } from '../packages/shared/news-catalog.ts';
 
 
 // Map client const names to the variant string used by the server.

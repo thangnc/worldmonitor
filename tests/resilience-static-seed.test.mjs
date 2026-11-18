@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import wgiIndicatorKeys from '../shared/wgi-indicator-keys.json' with { type: 'json' };
-import { wgiObservationSource } from '../shared/wgi-source-provenance.js';
+import wgiIndicatorKeys from '../packages/shared/wgi-indicator-keys.json' with { type: 'json' };
+import { wgiObservationSource } from '../packages/shared/wgi-source-provenance.js';
 
 import {
   RESILIENCE_STATIC_INDEX_KEY,
@@ -91,7 +91,7 @@ describe('resilience static seed WGI indicator contract', () => {
     assert.deepEqual(WGI_INDICATORS, wgiIndicatorKeys);
   });
 
-  // shared/wgi-indicator-keys.json plays TWO roles, and #6799 turns on keeping
+  // packages/shared/wgi-indicator-keys.json plays TWO roles, and #6799 turns on keeping
   // them apart. It is the upstream request id for this seeder AND the key
   // server/worldmonitor/resilience/v1/_dimension-scorers.ts reads back out of
   // the stored payload (`indicators[key]`).
@@ -549,7 +549,7 @@ describe('resilience static seed parsers', () => {
   });
 
   it('rejects full RSF feeds when no top-ranked countries resolve', () => {
-    const countryNames = JSON.parse(readFileSync(resolve('shared/country-names.json'), 'utf8'));
+    const countryNames = JSON.parse(readFileSync(resolve('packages/shared/country-names.json'), 'utf8'));
     const rows = [];
     const seenIso2 = new Set();
 

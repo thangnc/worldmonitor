@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { load as loadYaml } from 'js-yaml';
-import { PHYSICAL_DIVERGENCE_CONTRACT } from '../shared/physical-divergence-contract.js';
+import { PHYSICAL_DIVERGENCE_CONTRACT } from '../packages/shared/physical-divergence-contract.js';
 
 const specs = [
   ['service JSON', JSON.parse(readFileSync(new URL('../packages/contracts/openapi/MarketService.openapi.json', import.meta.url), 'utf8'))],

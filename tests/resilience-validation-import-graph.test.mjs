@@ -274,7 +274,7 @@ describe('parseDockerfileContractSrc self-test (synthetic Dockerfiles)', () => {
     'WORKDIR /app',
     'RUN npm install --prefix /app --no-save @org/pkg@1.2.3 lodash@^4.17.0 semver@~7.5.0 leftpad@latest tsx@4.21.0',
     'COPY scripts/ ./scripts/',
-    'COPY shared/ ./shared/',
+    'COPY packages/shared/ ./packages/shared/',
     'COPY tsconfig.json ./',
     'ENV NODE_OPTIONS="--max-old-space-size=1024"',
     'CMD ["node", "scripts/my-entry.mjs"]',
@@ -291,7 +291,7 @@ describe('parseDockerfileContractSrc self-test (synthetic Dockerfiles)', () => {
 
   it('derives COPY roots, CMD entry, and tsx presence from an install line', () => {
     const { copyRoots, entryScript, hasTsx } = parseDockerfileContractSrc(SYNTH_TSX_INSTALL, 'synthetic');
-    assert.deepEqual(copyRoots, ['scripts', 'shared'], 'dir-level COPY roots only (file COPYs excluded)');
+    assert.deepEqual(copyRoots, ['scripts', 'packages/shared'], 'dir-level COPY roots only (file COPYs excluded)');
     assert.equal(entryScript, 'scripts/my-entry.mjs');
     assert.equal(hasTsx, true, 'tsx@ on the install line must mark the container tsx-shaped');
   });

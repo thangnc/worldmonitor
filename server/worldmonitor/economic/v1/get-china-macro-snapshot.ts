@@ -8,7 +8,7 @@ import { CHINA_MACRO_KEY, CHINA_RELEASE_CALENDAR_KEY } from '../../../_shared/ca
 import {
   CHINA_MACRO_REQUIRED_SERIES,
   CHINA_MACRO_SCHEMA_VERSION,
-} from '../../../../shared/china-macro-contract.js';
+} from '../../../../packages/shared/china-macro-contract.js';
 import {
   normalizeChinaMacroObservations,
   normalizeChinaMacroPreflight,
@@ -16,7 +16,7 @@ import {
   normalizeChinaReleaseEvent,
   recomputeChinaMacroPillars,
   validateChinaMacroAvailabilityBindings,
-} from '../../../../shared/china-macro-normalization';
+} from '../../../../packages/shared/china-macro-normalization';
 
 type JsonRecord = Record<string, unknown>;
 

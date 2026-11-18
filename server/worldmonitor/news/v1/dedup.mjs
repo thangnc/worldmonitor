@@ -2,7 +2,7 @@
  * Headline dedup + story-identity assignment for the news pipeline.
  * Plain JS module so it can be imported from both TS source and .mjs tests.
  *
- * #4919: similarity is delegated to shared/story-identity.js — the single
+ * #4919: similarity is delegated to packages/shared/story-identity.js — the single
  * "same news story?" definition (previously this file carried its own
  * word-overlap>0.6 matcher, one of three inconsistent answers in the
  * codebase).
@@ -13,14 +13,14 @@ import {
   cosineSimilarity,
   clusterTexts,
   STORY_SIMILARITY_THRESHOLD,
-} from '../../../../shared/story-identity.js';
+} from '../../../../packages/shared/story-identity.js';
 // #6428: corroboration counts PUBLISHERS. `item.source` is a feed label, and
 // one newsroom ships many ("Reuters World", "Reuters US", …), so counting
 // labels let a wire corroborate itself.
-import { publisherFamilyForItem } from '../../../../shared/publisher-families.js';
+import { publisherFamilyForItem } from '../../../../packages/shared/publisher-families.js';
 // #9095: families whose items carry the same copy (title + lead) count once,
 // so an unlisted network under several mastheads cannot corroborate itself.
-import { detectSyndication } from '../../../../shared/syndication.js';
+import { detectSyndication } from '../../../../packages/shared/syndication.js';
 
 /** @param {string[]} headlines */
 export function deduplicateHeadlines(headlines) {

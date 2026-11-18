@@ -1,5 +1,5 @@
 {
-  "$comment": "Single source of truth for every news feed. Browser and server catalogs are derived views (shared/news-catalog.ts). Base fields are the server values; `browser` overrides fields the browser view serves differently (null = absent). Placement orders reproduce each view's order.",
+  "$comment": "Single source of truth for every news feed. Browser and server catalogs are derived views (packages/shared/news-catalog.ts). Base fields are the server values; `browser` overrides fields the browser view serves differently (null = absent). Placement orders reproduce each view's order.",
   "version": 1,
   "layout": {
     "browser": {

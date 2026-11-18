@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   buildDefenseIndustrialResponse,
   toDefenseIndustrialMetric,
-} from '../shared/defense-industrial-response.ts';
+} from '../packages/shared/defense-industrial-response.ts';
 import { validateGeneratedRequest } from '../server/request-validator.ts';
 import { isPublicSharedRpcRequest } from '../src/shared/public-rpc-cache.ts';
 

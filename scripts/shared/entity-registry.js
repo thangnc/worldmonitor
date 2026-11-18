@@ -3,7 +3,7 @@
  * Moved from src/config/entities.ts (issue #5697) so server-side MCP tools and
  * the client share one registry. src/config/entities.ts re-exports from here.
  *
- * Dependency-free ESM (shared/story-identity.js pattern): importable from the
+ * Dependency-free ESM (packages/shared/story-identity.js pattern): importable from the
  * Vite client build, Vercel functions (api/, server/), and node --test.
  * Types live in entity-registry.d.ts.
  */

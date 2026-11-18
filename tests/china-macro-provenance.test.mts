@@ -5,7 +5,7 @@ import { describe, it } from 'node:test';
 import {
   DECISION_SIGNAL_PROVENANCE_SURFACE_ADAPTERS,
   validateDecisionSignalProvenance,
-} from '../shared/decision-signal-provenance';
+} from '../packages/shared/decision-signal-provenance';
 import {
   parseNbsIndustrialRelease,
   parseSafeReserveRelease,

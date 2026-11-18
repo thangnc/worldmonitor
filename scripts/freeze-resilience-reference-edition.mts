@@ -6,8 +6,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import countryNames from '../shared/country-names.json';
-import iso2ToIso3Json from '../shared/iso2-to-iso3.json';
+import countryNames from '../packages/shared/country-names.json';
+import iso2ToIso3Json from '../packages/shared/iso2-to-iso3.json';
 import { loadEnvFile } from './_seed-utils.mjs';
 import { normalizeCountryToken } from '../server/_shared/country-token.ts';
 import { getRawJson } from '../server/_shared/redis.ts';
