@@ -1,7 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync as originalReadFileSync, existsSync, readdirSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { readFileSync as originalReadFileSync, existsSync, readdirSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 function readFileSync(path, options) {
   const content = originalReadFileSync(path, options);
@@ -21,6 +23,9 @@ const viteConfigSource = readFileSync(resolve(__dirname, '../vite.config.ts'), '
 const middlewareSource = readFileSync(resolve(__dirname, '../middleware.ts'), 'utf-8');
 const dockerfileSource = readFileSync(resolve(__dirname, '../Dockerfile'), 'utf-8');
 const dockerNginxSource = readFileSync(resolve(__dirname, '../docker/nginx.conf'), 'utf-8');
+const frontendDockerfileSource = readFileSync(resolve(__dirname, '../docker/Dockerfile'), 'utf-8');
+const dockerignoreSource = readFileSync(resolve(__dirname, '../.dockerignore'), 'utf-8');
+const vercelIgnoreSource = readFileSync(resolve(__dirname, '../scripts/vercel-ignore.sh'), 'utf-8');
 const SPA_HTML_CACHE_SOURCE = '/((?!api|assets|src|tmp|server|favico|map-styles|data|textures|sw\\.js|workbox-[a-f0-9]+\\.js|manifest\\.webmanifest|offline\\.html|robots\\.txt|\\.well-known|desktop-sign-in\\.html|desktop-sign-in).*)';
 const GLOBAL_SECURITY_HEADER_SOURCE = '/(.*)';
 const WEBMCP_PRODUCTION_HOST_PATTERN = '^(?:www|tech|finance|commodity|happy|energy)\\.worldmonitor\\.app$';
@@ -1511,5 +1516,334 @@ describe('variant-host canonicalization (#6833–#6836)', () => {
     assert.ok(SPA_HTML_CACHE_SOURCE.includes('|src|'), 'HTML cache catch-all must exclude /src');
     assert.ok(SPA_HTML_CACHE_SOURCE.includes('|tmp|'), 'HTML cache catch-all must exclude /tmp');
     assert.ok(SPA_HTML_CACHE_SOURCE.includes('|server|'), 'HTML cache catch-all must exclude /server');
+  });
+});
+
+// Lite deploy contracts: the build command, the Docker Lite build, the
+// Vercel ignore step and the Docker build context. They lived in the corpus
+// describe until refactor Phase 1c-3 deleted the corpus.
+describe('Lite deploy contracts', () => {
+  it('pins the deploy build command in vercel.json to the Lite build', () => {
+    // vercel.json overrides the dashboard's Build Command, which is where this
+    // used to live -- invisible to the repo and changeable without a diff.
+    // The Lite UI is the only web app: the deploy build is the secrets check,
+    // the browser typecheck, the Lite Vite build and the source-map gate.
+    // build:full stays as an alias so older callers build the same thing.
+    assert.equal(
+      vercelConfig.buildCommand,
+      'npm run build',
+      'vercel.json must pin buildCommand so the deploy contract lives in the repo, not the dashboard',
+    );
+    assert.equal(
+      packageJson.scripts.build,
+      'npm run security:vite-env-secrets -- --strict-local && tsc && vite build && npm run check:source-maps',
+    );
+    assert.equal(packageJson.scripts['build:full'], 'npm run build');
+    assert.equal(packageJson.scripts.prebuild, undefined, 'the deploy build must not run hidden prebuild generators');
+  });
+
+  it('builds only the Lite entry in the Docker images', () => {
+    // The /pro marketing site, the blog and the static corpus were deleted in
+    // refactor Phase 1b: no build script for them remains to call.
+    for (const script of ['build:pro', 'build:blog', 'build:crawlable-corpus', 'build:sitemap']) {
+      assert.equal(packageJson.scripts[script], undefined, script + ' was deleted with its surface');
+    }
+    for (const [name, source] of [
+      ['Dockerfile', dockerfileSource],
+      ['docker/Dockerfile', frontendDockerfileSource],
+    ]) {
+      // The images build only the Lite entry: no second Vite config, and no
+      // corpus or sitemap generation inside the image.
+      assert.match(source, /^RUN npx tsc && npx vite build$/m, name + ' must run the Lite Vite build');
+      assert.deepEqual(source.match(/^RUN .*vite build.*$/gm), ['RUN npx tsc && npx vite build'], name + ' must run exactly one Vite build');
+      assert.doesNotMatch(source, /--config vite\.lite\.config\.ts/, name + ' must not build a second Vite config');
+      assert.doesNotMatch(source, /npm run build:crawlable-corpus/, name + ' must not build the static corpus');
+      assert.doesNotMatch(source, /npm run build:sitemap/, name + ' must not generate the root sitemap');
+      assert.doesNotMatch(source, /npm run build:pro/, name + ' must not call the deleted /pro build');
+      assert.doesNotMatch(source, /dist\/pro\//, name + ' must not expect /pro pages in dist/');
+    }
+    // The self-host image bundles Edge handlers that read the generated
+    // inventory module, so it must exist before handler bundling.
+    const inventoryAt = dockerfileSource.indexOf('node scripts/generate-inventory-facts.mjs');
+    assert.ok(inventoryAt >= 0, 'the self-host image must generate the inventory facts');
+    assert.ok(
+      inventoryAt < dockerfileSource.indexOf('node docker/build-handlers.mjs'),
+      'the self-host image must generate the Edge inventory module before handler bundling',
+    );
+    // nginx serves the Lite routes from lite.html, so the image must ship it.
+    assert.match(frontendDockerfileSource, /^RUN test -s dist\/lite\.html$/m);
+    assert.doesNotMatch(frontendDockerfileSource, /dist\/dashboard\.html/);
+    assert.ok(!packageJson.scripts['build:full'].includes('npm run build:blog &&'), 'build:full must not regenerate inventory facts inside build:blog');
+  });
+
+  it('builds frontend assets on the host platform and keeps nginx on the target platform', () => {
+    const stages = frontendDockerfileSource.match(/^FROM .+$/gm);
+    assert.equal(stages.length, 2);
+    assert.match(stages[0], /^FROM --platform=\$BUILDPLATFORM node:.+ AS builder$/);
+    assert.match(stages[1], /^FROM nginx:.+ AS runtime$/);
+    assert.match(frontendDockerfileSource, /^COPY --from=builder \/app\/dist\/ \.\/$/m);
+    assert.doesNotMatch(frontendDockerfileSource, /^COPY --from=builder .*node_modules/m);
+  });
+
+  it('builds Vercel when the Lite entry or its Vite config changes, and watches no deleted entry', () => {
+    for (const path of ['lite.html', 'vite.config.ts', 'vite.dev-api.ts']) {
+      assert.equal(vercelIgnoreSource.split(`'${path}'`).length - 1, 2, `${path} must trigger main and preview builds`);
+    }
+    for (const path of ['index.html', 'vite.lite.config.ts']) {
+      assert.equal(vercelIgnoreSource.includes(`'${path}'`), false, `${path} was deleted and must not be watched`);
+    }
+  });
+
+  it('builds Vercel on main and preview for generated web-input changes', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'wm-vercel-ignore-'));
+    try {
+      const fixtureEnv = { ...process.env };
+      for (const key of ['GIT_COMMON_DIR', 'GIT_DIR', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_WORK_TREE']) {
+        delete fixtureEnv[key];
+      }
+      const git = (...args) => execFileSync('git', args, { cwd: fixture, env: fixtureEnv, encoding: 'utf8' });
+
+      git('init', '-q');
+      git('config', 'user.email', 'test@example.com');
+      git('config', 'user.name', 'Test');
+      writeFileSync(join(fixture, 'README.md'), 'base\n');
+      git('add', 'README.md');
+      git('commit', '-qm', 'base');
+
+      for (const path of [
+        'scripts/unranked-country-inventory.mjs',
+        'scripts/data/use-case-workflows.mjs',
+        'scripts/slugify.mjs',
+        'scripts/source-origin.mjs',
+        'scripts/source-origin.d.mts',
+        'scripts/generate-inventory-facts.mjs',
+        'scripts/docs-stats.mjs',
+        'scripts/source-attribution.mjs',
+        'scripts/data/country-centroids.json',
+      ]) {
+        const previous = git('rev-parse', 'HEAD').trim();
+        mkdirSync(dirname(join(fixture, path)), { recursive: true });
+        writeFileSync(join(fixture, path), `${path}\n`);
+        git('add', path);
+        git('commit', '-qm', path);
+        assert.throws(
+          () => execFileSync('/bin/bash', [resolve(__dirname, '../scripts/vercel-ignore.sh')], {
+            cwd: fixture,
+            env: { ...fixtureEnv, VERCEL_GIT_COMMIT_REF: 'main', VERCEL_GIT_PREVIOUS_SHA: previous },
+          }),
+          (error) => error?.status === 1,
+          `${path} must request a Vercel build`,
+        );
+        git('update-ref', 'refs/remotes/origin/main', previous);
+        assert.throws(
+          () => execFileSync('/bin/bash', [resolve(__dirname, '../scripts/vercel-ignore.sh')], {
+            cwd: fixture,
+            env: { ...fixtureEnv, VERCEL_GIT_COMMIT_REF: 'feature/source-catalog' },
+          }),
+          (error) => error?.status === 1,
+          `${path} must request a Vercel preview build`,
+        );
+      }
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it('builds the prediction policy merge on main and preview while skipping unrelated scripts and tests', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'wm-vercel-policy-'));
+    try {
+      const fixtureEnv = { ...process.env };
+      for (const key of ['GIT_COMMON_DIR', 'GIT_DIR', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_WORK_TREE']) {
+        delete fixtureEnv[key];
+      }
+      const git = (...args) => execFileSync('git', args, { cwd: fixture, env: fixtureEnv, encoding: 'utf8' });
+      git('init', '-q');
+      git('config', 'user.email', 'test@example.com');
+      git('config', 'user.name', 'Test');
+      writeFileSync(join(fixture, 'README.md'), 'base\n');
+      git('add', 'README.md');
+      git('commit', '-qm', 'base');
+      const actual = [];
+      const expected = [];
+      for (const { paths, status } of [
+        { paths: ['scripts/shared/prediction-country-language.json', 'tests/prediction-country-index.test.mjs', 'tests/prediction-country-markets-pools.test.mts'], status: 1 },
+        { paths: ['scripts/seed-unrelated.mjs'], status: 0 },
+        { paths: ['tests/unrelated.test.mjs'], status: 0 },
+      ]) {
+        const previous = git('rev-parse', 'HEAD').trim();
+        for (const path of paths) {
+          mkdirSync(dirname(join(fixture, path)), { recursive: true });
+          writeFileSync(join(fixture, path), `${path}\n`);
+        }
+        git('add', '.');
+        git('commit', '-qm', paths.join(', '));
+        git('update-ref', 'refs/remotes/origin/main', previous);
+        for (const ref of ['main', 'feature/prediction-policy']) {
+          const result = spawnSync('/bin/bash', [resolve(__dirname, '../scripts/vercel-ignore.sh')], {
+            cwd: fixture,
+            env: { ...fixtureEnv, VERCEL_GIT_COMMIT_REF: ref, VERCEL_GIT_PREVIOUS_SHA: previous },
+            encoding: 'utf8',
+          });
+          assert.ifError(result.error);
+          actual.push({ paths, ref, status: result.status });
+          expected.push({ paths, ref, status });
+        }
+      }
+      assert.deepEqual(actual, expected);
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it('builds a deliberate same-commit redeploy on main so rotated env vars reach production (#8216)', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'wm-vercel-redeploy-'));
+    try {
+      const fixtureEnv = { ...process.env };
+      for (const key of ['GIT_COMMON_DIR', 'GIT_DIR', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_WORK_TREE']) {
+        delete fixtureEnv[key];
+      }
+      const git = (...args) => execFileSync('git', args, { cwd: fixture, env: fixtureEnv, encoding: 'utf8' });
+      git('init', '-q');
+      git('config', 'user.email', 'test@example.com');
+      git('config', 'user.name', 'Test');
+      writeFileSync(join(fixture, 'README.md'), 'base\n');
+      git('add', 'README.md');
+      git('commit', '-qm', 'base');
+      const deployed = git('rev-parse', 'HEAD').trim();
+      const run = (previous) => spawnSync('/bin/bash', [resolve(__dirname, '../scripts/vercel-ignore.sh')], {
+        cwd: fixture,
+        env: { ...fixtureEnv, VERCEL_GIT_COMMIT_REF: 'main', VERCEL_GIT_PREVIOUS_SHA: previous },
+        encoding: 'utf8',
+      });
+
+      // Vercel sets VERCEL_GIT_PREVIOUS_SHA to the last successful deployment, so it
+      // equals HEAD only when that same commit is redeployed after an env change.
+      const redeploy = run(deployed);
+      assert.ifError(redeploy.error);
+      assert.equal(redeploy.status, 1, 'a same-commit redeploy must build');
+
+      mkdirSync(join(fixture, 'scripts'), { recursive: true });
+      writeFileSync(join(fixture, 'scripts/seed-unrelated.mjs'), 'seed\n');
+      git('add', '.');
+      git('commit', '-qm', 'seed only');
+      const push = run(deployed);
+      assert.ifError(push.error);
+      assert.equal(push.status, 0, 'a new commit with no web changes must still skip');
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it('builds a same-commit preview redeploy when the shallow clone has no origin/main', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'wm-vercel-preview-redeploy-'));
+    try {
+      const fixtureEnv = { ...process.env };
+      for (const key of ['GIT_COMMON_DIR', 'GIT_DIR', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_WORK_TREE']) {
+        delete fixtureEnv[key];
+      }
+      const git = (...args) => execFileSync('git', args, { cwd: fixture, env: fixtureEnv, encoding: 'utf8' });
+      git('init', '-q');
+      git('config', 'user.email', 'test@example.com');
+      git('config', 'user.name', 'Test');
+      writeFileSync(join(fixture, 'README.md'), 'base\n');
+      git('add', 'README.md');
+      git('commit', '-qm', 'base');
+      const deployed = git('rev-parse', 'HEAD').trim();
+      const run = (previous) => spawnSync('/bin/bash', [resolve(__dirname, '../scripts/vercel-ignore.sh')], {
+        cwd: fixture,
+        env: { ...fixtureEnv, VERCEL_GIT_COMMIT_REF: 'feat/env-flag', VERCEL_GIT_PREVIOUS_SHA: previous },
+        encoding: 'utf8',
+      });
+
+      // Vercel's preview clone has no origin/main, so the script falls back to
+      // PREVIOUS_SHA. A redeploy to pick up a preview env var sets it to HEAD.
+      const redeploy = run(deployed);
+      assert.ifError(redeploy.error);
+      assert.equal(redeploy.status, 1, 'a same-commit preview redeploy must build');
+
+      mkdirSync(join(fixture, 'scripts'), { recursive: true });
+      writeFileSync(join(fixture, 'scripts/seed-unrelated.mjs'), 'seed\n');
+      git('add', '.');
+      git('commit', '-qm', 'seed only');
+      const push = run(deployed);
+      assert.ifError(push.error);
+      assert.equal(push.status, 0, 'a new preview commit with no web changes must still skip');
+    } finally {
+      rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps local self-hosting credentials out of Docker build contexts', () => {
+    const ignoreRules = new Set(
+      dockerignoreSource
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'))
+    );
+
+    for (const path of ['docker-compose.override.yml', 'secrets/']) {
+      assert.ok(ignoreRules.has(path), `${path} must never enter Docker build contexts or caches`);
+    }
+  });
+
+  it('never guards a route with a trailing-slash-blind :param* header source', () => {
+    // Mintlify serves /docs/<page> with no trailing slash, so its proxy rewrite
+    // is the one place the shape is right. It is a rewrite, not a header rule,
+    // and is asserted separately — nothing here should need an exemption.
+    const EXEMPT = new Set();
+    const blind = vercelConfig.headers
+      .map((entry) => entry.source)
+      .filter((source) => /:[A-Za-z0-9_]+\*/.test(source) && !EXEMPT.has(source));
+    assert.deepEqual(
+      blind,
+      [],
+      'these header sources use a :param* catch-all, which Vercel compiles in strict mode'
+        + ' and which therefore never matches the trailing-slash form of the URL',
+    );
+
+    // Positive control: the sweep must actually be looking at rules.
+    assert.ok(vercelConfig.headers.length > 10, 'expected the header rule set to be non-trivial');
+  });
+
+  it('self-hosted docker/nginx.conf SPA fallback ships the full dashboard CSP', () => {
+    // Image A (root Dockerfile -> docker/nginx.conf, nginx + Node API under
+    // supervisord) inlines headers per location instead of including
+    // security_headers.conf. The SPA fallback (location /) must still carry the
+    // dashboard CSP, or the containerized dashboard runs CSP-less while /embed
+    // was locked down.
+    const canonicalCsp = getNginxHeaderValue('Content-Security-Policy');
+    assert.ok(canonicalCsp, 'docker/nginx-security-headers.conf must define a dashboard CSP');
+
+    const block = dockerNginxSource.match(/\n {4}location \/ \{\n([\s\S]*?)\n {4}\}/);
+    assert.ok(block, 'docker/nginx.conf must define a location / block');
+    const cspLine = block[1]
+      .split('\n')
+      .find((line) => /add_header Content-Security-Policy "/.test(line));
+    assert.ok(cspLine, 'docker/nginx.conf location / must ship a Content-Security-Policy header');
+    const value = cspLine.match(/add_header Content-Security-Policy "(.*)" always;/)?.[1];
+    assert.ok(value, 'could not extract CSP value from docker/nginx.conf location / Content-Security-Policy line');
+    assert.equal(
+      value,
+      canonicalCsp,
+      'docker/nginx.conf location / CSP must match docker/nginx-security-headers.conf (and thus vercel.json)',
+    );
+  });
+
+  it('runs no npm prebuild hooks: the build scripts are the whole build', () => {
+    // The Lite build dropped the variant builds and their prebuild hooks
+    // (product facts, agent-skills index, OpenAPI copy); nothing fires as a
+    // hidden hook.
+    assert.deepEqual(Object.keys(packageJson.scripts).filter((name) => name.startsWith('prebuild')), []);
+    for (const name of ['build', 'build:full']) {
+      assert.doesNotMatch(packageJson.scripts[name], /npm run (?:product:facts|build:openapi)\b/, `${name} must not chain a deleted generator`);
+    }
+    assert.match(packageJson.scripts.build, /&& tsc && vite build && /);
+  });
+
+  it('does not reintroduce a shadowing /api/:path* → /api/not-found rewrite', () => {
+    const shadow = (vercelConfig.rewrites ?? []).find((r) =>
+      r.destination === '/api/not-found' && /^\/api\/(?::[^/]*\*|\(\.\*\))$/.test(r.source ?? '')
+    );
+    assert.equal(shadow, undefined, 'do not add /api/:path* → /api/not-found; it shadows [rpc].ts gateways (#4724)');
   });
 });

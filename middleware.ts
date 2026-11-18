@@ -62,8 +62,8 @@ const INDEX_NOISE_QUERY_KEYS = new Set([
  *    for every one of them, so a crawler loses nothing by going straight there.
  *    Note this collapse reaches www only: Vercel applies vercel.json
  *    `redirects` before middleware, and the variant hosts have their own
- *    `/` -> `/dashboard` host redirect, so on those hosts robots.variant.txt
- *    is what keeps a crawler off the space (probed against production).
+ *    `/` -> `/dashboard` host redirect; robots.txt now disallows every
+ *    path on every host.
  * Bounded root entity links also move to `/dashboard`, retaining their state
  * in the same hop as attribution cleanup.
  *

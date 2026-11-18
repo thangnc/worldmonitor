@@ -29,3 +29,9 @@ secrets/
 docs/internal
 docs/engineering
 tests
+
+# Stale generated files from before refactor Phase 1c-3 (see .gitignore).
+public/product-facts.json
+public/openapi.yaml
+public/openapi.json
+docs/generated/

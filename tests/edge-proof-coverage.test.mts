@@ -42,7 +42,7 @@ afterEach(() => {
 });
 
 function requestWith(headers) {
-  return new Request('https://worldmonitor.app/api/skills/fetch-agentskills', { headers });
+  return new Request('https://worldmonitor.app/api/infrastructure/v1/reverse-geocode', { headers });
 }
 
 describe('unproven Cloudflare client IP (#8402)', () => {
@@ -110,7 +110,7 @@ describe('IP-scoped endpoint rate limits reject unproven CF client IP (#8402)', 
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
 
-    const pathname = '/api/skills/fetch-agentskills';
+    const pathname = '/api/infrastructure/v1/reverse-geocode';
     assert.ok(pathname in ENDPOINT_RATE_POLICIES, 'fixture path must carry an endpoint policy');
 
     const response = await checkEndpointRateLimit(
@@ -143,7 +143,7 @@ describe('IP-scoped endpoint rate limits reject unproven CF client IP (#8402)', 
         'cf-connecting-ip': '203.0.113.7',
         'x-real-ip': '198.51.100.9',
       }),
-      '/api/skills/fetch-agentskills',
+      '/api/infrastructure/v1/reverse-geocode',
       {},
       { principalUserId: 'user_test_principal' },
     );

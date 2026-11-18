@@ -30,6 +30,13 @@ public/crawlable-corpus.json
 # lifecycle, pricing, and catalog artifacts remain committed.
 api/_inventory-facts.generated.js
 scripts/shared/inventory-facts.generated.json
+# No longer generated (refactor Phase 1c-3), but older checkouts still hold
+# copies; keep them out of commits, `vite build` and Docker contexts.
+public/product-facts.json
+docs/generated/stats.json
+docs/generated/entitlement-crosswalk.json
+/public/openapi.yaml
+/public/openapi.json
 .DS_Store
 *.log
 .env
