@@ -42,6 +42,7 @@ import {
   BACKFILL_META_IF_ACTIVE_SCRIPT,
 } from '../scripts/seed-military-bases.mjs';
 import { CABLE_HEALTH_REPAIR_SCRIPT } from '../packages/shared/cable-health-repair-script.mjs';
+import { __testing__ as healthTesting } from '../api/health.js';
 import { COMPARE_AND_DELETE_SCRIPT } from '../packages/shared/compare-and-delete-script.cjs';
 import { recordHistoryCost } from '../scripts/lib/intel-history-cost.mjs';
 import { createTenderReceipt, writeTenderReceipt } from '../scripts/_global-tender-receipts.mjs';
@@ -297,6 +298,23 @@ describe('redis-rest-proxy command gate', () => {
     assert.equal(accepts(gate, command), true);
     assert.deepEqual(Array.from(gate.commandForExecution(command)), command);
     assert.equal(accepts(gate, ['EVAL', `${SOURCE_RETRY_CLAIM_SCRIPT} `, '1', 'k']), false);
+  });
+
+  it('pins the health verdict lock release and snapshot write by exact bytes', () => {
+    // Unpinned, every /api/health request behind the proxy logs
+    // "verdict snapshot write failed" and re-sweeps every key.
+    const gate = buildGate();
+    const { HEALTH_VERDICT_RELEASE_LOCK_SCRIPT, HEALTH_VERDICT_WRITE_SNAPSHOT_SCRIPT } = healthTesting;
+    for (const [name, script, keys] of [
+      ['HEALTH_VERDICT_RELEASE_LOCK_SCRIPT', HEALTH_VERDICT_RELEASE_LOCK_SCRIPT, ['1', 'lock']],
+      ['HEALTH_VERDICT_WRITE_SNAPSHOT_SCRIPT', HEALTH_VERDICT_WRITE_SNAPSHOT_SCRIPT, ['5', 'lock', 'snap', 'compact', 'last', 'compact-last']],
+    ]) {
+      assert.equal(typeof script, 'string', `api/health.js exposes ${name} through __testing__`);
+      assert.equal(gate.ALLOWED_EVAL_SCRIPTS.has(script), true, `${name} must be pinned in the proxy`);
+      const command = ['EVAL', script, ...keys, 'token'];
+      assert.deepEqual(Array.from(gate.commandForExecution(command)), command);
+      assert.equal(accepts(gate, ['EVAL', `${script} `, ...keys, 'token']), false, `a modified ${name} must be rejected`);
+    }
   });
 
   it('admits only the exact cable snapshot repair script', () => {

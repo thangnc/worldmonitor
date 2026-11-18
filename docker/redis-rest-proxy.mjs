@@ -643,6 +643,29 @@ const COMPARE_AND_DELETE_SCRIPT = [
 const LEGACY_COMPARE_AND_DELETE_SCRIPT = [
   'if redis.call("get",KEYS[1]) == ARGV[1] then return redis.call("del",KEYS[1]) else return 0 end',
 ].join('\n');
+// PINNED COPIES of HEALTH_VERDICT_RELEASE_LOCK_SCRIPT and
+// HEALTH_VERDICT_WRITE_SNAPSHOT_SCRIPT in api/health.js. Without them every
+// /api/health request behind the proxy logs "verdict snapshot write failed"
+// and re-sweeps every key, because the verdict is never cached. Both use only
+// GET, SET ... EX and DEL, which the proxy already allows on any key; the
+// script only makes the fenced write atomic. Kept inline for the same reason
+// as the scripts above; tests/redis-rest-proxy-command-parity.test.mjs proves
+// the bytes still match api/health.js. The third health script, the fenced
+// mutation, runs a caller-chosen command and stays unpinned.
+const HEALTH_VERDICT_RELEASE_LOCK_SCRIPT = [
+  "if redis.call('get', KEYS[1]) == ARGV[1] then",
+  "  return redis.call('del', KEYS[1])",
+  'end',
+  'return 0',
+].join('\n');
+const HEALTH_VERDICT_WRITE_SNAPSHOT_SCRIPT = [
+  "if redis.call('get', KEYS[1]) ~= ARGV[1] then return nil end",
+  "redis.call('set', KEYS[2], ARGV[2], 'EX', ARGV[4])",
+  "redis.call('set', KEYS[3], ARGV[3], 'EX', ARGV[4])",
+  "redis.call('set', KEYS[4], ARGV[2], 'EX', ARGV[5])",
+  "redis.call('set', KEYS[5], ARGV[3], 'EX', ARGV[5])",
+  "return 'OK'",
+].join('\n');
 // PINNED COPY of WRITE_LUA in scripts/shared/pizzint-history.cjs. Kept inline:
 // this file connects to Redis at import time, and the command-gate tests eval
 // the source instead of importing it. The EVAL gate matches script text exactly,
@@ -858,6 +881,8 @@ const ALLOWED_EVAL_SCRIPTS = new Set([
   COMPARE_AND_DELETE_SCRIPT,
   LEGACY_COMPARE_AND_DELETE_SCRIPT,
   CABLE_HEALTH_REPAIR_SCRIPT,
+  HEALTH_VERDICT_RELEASE_LOCK_SCRIPT,
+  HEALTH_VERDICT_WRITE_SNAPSHOT_SCRIPT,
   SOURCE_RETRY_CLAIM_SCRIPT,
   DIGEST_LASTGOOD_PUBLISH_SCRIPT,
   STORY_ALIAS_PUBLISH_SCRIPT,
