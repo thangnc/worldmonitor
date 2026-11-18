@@ -274,7 +274,6 @@ export async function summarizeArticle(
   const chargesTranslateBudget = mode === 'translate'
     && !isPremium
     && routingPolicy === null
-    && process.env.LOCAL_API_MODE !== 'tauri-sidecar'
     && provider !== 'ollama';
 
   const MAX_HEADLINES = 10;

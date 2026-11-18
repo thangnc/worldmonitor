@@ -575,9 +575,8 @@ export async function readMilitaryFlights(
       async () => {
         if (redistributableOnly) return null;
 
-        const isSidecar = (process.env.LOCAL_API_MODE || '').includes('sidecar');
-        const relayBase = isSidecar ? null : getRelayBaseUrl();
-        const baseUrl = isSidecar ? 'https://opensky-network.org/api/states/all' : relayBase ? relayBase + '/opensky' : null;
+        const relayBase = getRelayBaseUrl();
+        const baseUrl = relayBase ? relayBase + '/opensky' : null;
 
         if (!baseUrl) return null;
 

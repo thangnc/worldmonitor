@@ -879,20 +879,3 @@ test('exchange, authenticate, preserve, clear, and reject stale domain names', a
   assert.equal((await auth(remaining)).valid, false);
 });
 
-test('desktop legacy exchange uses host-only cookies and enterprise headers remain supported', async () => {
-  const { validateApiKey } = await import('./_api-key.js');
-  const response = await handler(new Request('https://api.worldmonitor.app/api/wm-session', {
-    method: 'POST',
-    headers: { origin: 'tauri://localhost', 'content-type': 'application/json' },
-    body: JSON.stringify({ widgetKey: 'widget-secret', proKey: 'enterprise-secret' }),
-  }));
-  assert.equal(response.status, 200);
-  const keys = setCookies(response).filter(c => c.startsWith('__Host-'));
-  assert.equal(keys.length, 2);
-  assert.ok(keys.every(c => !/Domain=/i.test(c)));
-  const auth = await validateApiKey(new Request('https://api.worldmonitor.app/api/test', {
-    headers: { origin: 'tauri://localhost', 'X-WorldMonitor-Key': 'enterprise-secret' },
-  }));
-  assert.equal(auth.valid, true);
-  assert.equal(auth.kind, 'enterprise');
-});

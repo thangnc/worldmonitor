@@ -10,9 +10,8 @@
  * That is exactly what `VITE_WS_API_URL=https://api.worldmonitor.app` in a
  * developer's .env.local does to `npm run dev`, because the configured base was
  * applied before any origin check. The same value is legitimate for the
- * production build, the Tauri desktop shell (whose tauri:// and asset://
- * origins ARE allow-listed), and the self-hosted image — whose nginx proxies
- * /api/ server-side anyway (docker/nginx.conf.template).
+ * production build and the self-hosted image — whose nginx proxies /api/
+ * server-side anyway (docker/nginx.conf.template).
  *
  * The rule under test: honour a configured base everywhere except when the page
  * itself is on loopback and the base is not.
@@ -27,8 +26,7 @@ async function loadRuntimeWith(
 ): Promise<typeof import('@wm/client/services/runtime')> {
   vi.resetModules();
   vi.stubEnv('VITE_WS_API_URL', apiBase ?? '');
-  // protocol/host matter: the desktop detector treats an https loopback origin
-  // as "might be Tauri", so the guard has to see the real scheme.
+  // protocol/host matter: the guard has to see the real scheme.
   vi.stubGlobal('location', {
     hostname,
     host: hostname,
@@ -72,19 +70,6 @@ describe('getConfiguredWebApiBaseUrl on a loopback page', () => {
       expect(runtime.getConfiguredWebApiBaseUrl()).toBe('');
     });
   }
-
-  it('keeps the exemption for a real desktop shell on a loopback origin', async () => {
-    // The positive control for the tightening above: an unambiguous Tauri
-    // signal still opts out, so the shell keeps its cloud API base.
-    vi.stubGlobal('__TAURI_INTERNALS__', {});
-    const runtime = await loadRuntimeWith({
-      apiBase: REMOTE_API,
-      hostname: 'localhost',
-      protocol: 'https:',
-    });
-
-    expect(runtime.getConfiguredWebApiBaseUrl()).toBe(REMOTE_API);
-  });
 
   it('still honours a loopback configured base, so a local API on another port works', async () => {
     const runtime = await loadRuntimeWith({
@@ -274,7 +259,7 @@ describe('installWebApiRedirect on deployed WorldMonitor pages', () => {
   });
 });
 
-describe('HTTPS loopback uses the web API path, not the sidecar', () => {
+describe('HTTPS loopback uses the same-origin web API path', () => {
   beforeEach(() => {
     vi.resetModules();
   });
@@ -285,18 +270,15 @@ describe('HTTPS loopback uses the web API path, not the sidecar', () => {
     vi.resetModules();
   });
 
-  it('installs the web wrapper and fetches same-origin, not 127.0.0.1:46123', async () => {
-    // The getter-only tests above are not enough: startup still used to pick
-    // the sidecar transport via `isDesktopRuntime()`, so `toApiUrl` and the
-    // installed fetch wrapper could point at the local API while the getter
-    // already returned the empty web base.
+  it('installs the web wrapper and fetches same-origin, not a remote base', async () => {
+    // The getter-only tests above are not enough: the installed fetch wrapper
+    // and toApiUrl must agree with the empty web base.
     const runtime = await loadRuntimeWith({
       apiBase: REMOTE_API,
       hostname: 'localhost',
       protocol: 'https:',
     });
     const win = window as unknown as Record<string, unknown>;
-    delete win.__wmFetchPatched;
     delete win.__wmWebRedirectPatched;
 
     const fetchTargets: string[] = [];
@@ -307,37 +289,15 @@ describe('HTTPS loopback uses the web API path, not the sidecar', () => {
       return new Response('{}', { status: 200 });
     }) as typeof fetch;
 
-    runtime.installRuntimeFetchPatch();
     runtime.installWebApiRedirect();
 
     expect(runtime.getConfiguredWebApiBaseUrl()).toBe('');
-    expect(runtime.getApiBaseUrl()).toBe('');
     expect(runtime.toApiUrl('/api/bootstrap')).toBe('/api/bootstrap');
-    expect(win.__wmFetchPatched).toBeUndefined();
     expect(win.__wmWebRedirectPatched).toBe(true);
 
     await window.fetch('/api/bootstrap');
 
     expect(fetchTargets).toEqual(['/api/bootstrap']);
-    expect(fetchTargets.some((url) => url.includes('127.0.0.1:46123'))).toBe(false);
   });
 
-  it('still selects the sidecar path for an unambiguous desktop shell', async () => {
-    vi.stubGlobal('__TAURI_INTERNALS__', {});
-    const runtime = await loadRuntimeWith({
-      apiBase: REMOTE_API,
-      hostname: 'localhost',
-      protocol: 'https:',
-    });
-    const win = window as unknown as Record<string, unknown>;
-    delete win.__wmFetchPatched;
-    delete win.__wmWebRedirectPatched;
-
-    runtime.installRuntimeFetchPatch();
-    runtime.installWebApiRedirect();
-
-    expect(runtime.toApiUrl('/api/bootstrap')).toBe('http://127.0.0.1:46123/api/bootstrap');
-    expect(win.__wmFetchPatched).toBe(true);
-    expect(win.__wmWebRedirectPatched).toBeUndefined();
-  });
 });

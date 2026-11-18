@@ -31,13 +31,6 @@
       "removal_issue": null
     },
     {
-      "path": "api/version.js",
-      "category": "ops-admin",
-      "reason": "Build-version probe for the desktop auto-updater. Tiny plain-JSON operator plumbing.",
-      "owner": "@SebastienMelki",
-      "removal_issue": null
-    },
-    {
       "path": "api/not-found.ts",
       "category": "ops-admin",
       "reason": "Structured JSON 404 responder for unmatched /api/* paths (mounted by api/[...notfound].ts). Fixed-shape error envelope for agents/scanners in place of Vercel's native text/plain NOT_FOUND; unmatched GET/HEAD /api/*.md probes are answered as heading-led text/markdown twins instead. Not a product API.",

@@ -69,9 +69,6 @@ export function filterRevokedUrls<T extends { link?: unknown }>(
  *    not be assumed empty.
  */
 export async function readRevokedUrlSet(): Promise<RevocationRead> {
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    return { urls: new Set(), readable: true };
-  }
   if (!isRedisConfigured()) {
     return { urls: new Set(), readable: true };
   }

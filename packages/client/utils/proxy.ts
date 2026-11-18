@@ -1,4 +1,4 @@
-import { isDesktopRuntime, toApiUrl, toRuntimeUrl } from '../services/runtime';
+import { toApiUrl } from '../services/runtime';
 import { getPersistentCache, setPersistentCache } from '../services/persistent-cache';
 
 const isDev = import.meta.env.DEV;
@@ -16,9 +16,6 @@ const RSS_PROXY_BASE = isDev
     : '';
 
 export function rssProxyUrl(feedUrl: string): string {
-  // Desktop fetches through the sidecar's rss-proxy. The WebView cannot read
-  // publisher feeds directly (CORS), and the relay's CORS excludes tauri://.
-  if (isDesktopRuntime()) return `/api/rss-proxy?url=${encodeURIComponent(feedUrl)}`;
   if (RSS_PROXY_BASE) {
     return `${RSS_PROXY_BASE}/rss?url=${encodeURIComponent(feedUrl)}`;
   }
@@ -43,12 +40,7 @@ export function hasNoStoreCacheDirective(headers: HeadersInit): boolean {
 
 // In production browser deployments, routes are handled by Vercel serverless functions.
 // In local dev, Vite proxy handles these routes.
-// In Tauri desktop mode, route requests need an absolute remote host.
 export function proxyUrl(localPath: string): string {
-  if (isDesktopRuntime()) {
-    return toRuntimeUrl(localPath);
-  }
-
   if (isDev) {
     return localPath;
   }

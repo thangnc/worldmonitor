@@ -259,8 +259,8 @@ test('feature-gated uncaptured keys match the Iran-enabled registry gap', () => 
   }
 });
 
-test('web and desktop bootstrap deadlines stay unchanged', () => {
+test('web bootstrap deadlines stay unchanged', () => {
   const src = readFileSync(join(root, 'packages/client/services/bootstrap.ts'), 'utf8');
   assert.match(src, /web:\s*\{\s*fast:\s*1_200,\s*slow:\s*3_000\s*\}/);
-  assert.match(src, /desktop:\s*\{\s*fast:\s*5_000,\s*slow:\s*8_000\s*\}/);
+  assert.doesNotMatch(src, /desktop:\s*\{/, 'the desktop deadlines left with the desktop app');
 });

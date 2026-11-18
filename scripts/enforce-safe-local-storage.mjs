@@ -268,7 +268,7 @@ export const GUARD_EXEMPT_FILES = new Set(['packages/client/utils/safe-storage.t
 export const LEGACY_RAW_LOCAL_STORAGE = [
   'packages/client/services/market-watchlist.ts :: localStorage.<member> x6',
   'packages/client/services/persistent-cache.ts :: localStorage.<member> x3',
-  'packages/client/services/runtime-config.ts :: localStorage.<member> x2',
+  'packages/client/services/runtime-config.ts :: localStorage.<member> x1',
   'packages/client/utils/panel-storage.ts :: localStorage.<member> x3',
 ];
 

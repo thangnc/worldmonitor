@@ -1,5 +1,3 @@
-import { isDesktopRuntime } from './runtime';
-import { invokeTauri } from './tauri-bridge';
 import { isStorageQuotaExceeded, isQuotaError, markStorageQuotaExceeded } from '../utils/storage-quota';
 import { safeStorageKeys, safeStorageRemove } from '../utils/safe-storage';
 
@@ -118,14 +116,6 @@ function validateBreakerPrefix(prefix: string): void {
 }
 
 export async function getPersistentCache<T>(key: string): Promise<CacheEnvelope<T> | null> {
-  if (isDesktopRuntime()) {
-    try {
-      const value = await invokeTauri<CacheEnvelope<T> | null>('read_cache_entry', { key });
-      return value ?? null;
-    } catch (error) {
-      console.warn('[persistent-cache] Desktop read failed; falling back to browser storage', error);
-    }
-  }
 
   if (isIndexedDbAvailable()) {
     try {
@@ -147,15 +137,6 @@ export async function getPersistentCache<T>(key: string): Promise<CacheEnvelope<
 export async function setPersistentCache<T>(key: string, data: T, updatedAt = Date.now()): Promise<void> {
   const payload: CacheEnvelope<T> = { key, data, updatedAt };
 
-  if (isDesktopRuntime()) {
-    try {
-      await invokeTauri<void>('write_cache_entry', { key, value: JSON.stringify(payload) });
-      return;
-    } catch (error) {
-      console.warn('[persistent-cache] Desktop write failed; falling back to browser storage', error);
-    }
-  }
-
   if (isIndexedDbAvailable() && !isStorageQuotaExceeded()) {
     try {
       await setInIndexedDb(payload);
@@ -176,14 +157,6 @@ export async function setPersistentCache<T>(key: string, data: T, updatedAt = Da
 }
 
 export async function deletePersistentCache(key: string): Promise<void> {
-  if (isDesktopRuntime()) {
-    try {
-      await invokeTauri<void>('delete_cache_entry', { key });
-      return;
-    } catch {
-      // Fall through to browser storage
-    }
-  }
 
   if (isIndexedDbAvailable()) {
     try {
@@ -211,15 +184,6 @@ export async function deletePersistentCache(key: string): Promise<void> {
 
 export async function deletePersistentCacheByPrefix(prefix: string): Promise<void> {
   validateBreakerPrefix(prefix);
-
-  if (isDesktopRuntime()) {
-    try {
-      await invokeTauri<void>('delete_cache_entries_by_prefix', { prefix });
-      return;
-    } catch {
-      // Fall through to browser storage
-    }
-  }
 
   if (isIndexedDbAvailable()) {
     try {

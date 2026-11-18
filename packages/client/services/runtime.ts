@@ -1,19 +1,13 @@
-import { safeStorageGet } from '../utils/safe-storage';
-import { sleepBeforeRetry, withBillingVerificationRetry } from './billing-retry';
-import { hasExplicitDesktopSignals, isDesktopRuntime } from './desktop-runtime';
+import { withBillingVerificationRetry } from './billing-retry';
 
-// The detector lives in a dependency-free leaf (#5911) so consumers that need
-// only the boolean do not pull this module's graph. Re-exported
-// here because every existing caller imports it from `@wm/client/services/runtime`.
-export { detectDesktopRuntime, isDesktopRuntime, type RuntimeProbe } from './desktop-runtime';
+// The desktop app (Tauri shell and Node sidecar) left in refactor Phase 1b and
+// its runtime branches in the 2026-11 Lite-only cleanup: every /api/ call is a
+// web call, same-origin unless VITE_WS_API_URL names an API base.
 
 const ENV = (() => {
   try {
     return {
-      VITE_TAURI_API_BASE_URL: import.meta.env.VITE_TAURI_API_BASE_URL,
-      VITE_TAURI_REMOTE_API_BASE_URL: import.meta.env.VITE_TAURI_REMOTE_API_BASE_URL,
       VITE_WS_API_URL: import.meta.env.VITE_WS_API_URL,
-      VITE_WS_RELAY_URL: import.meta.env.VITE_WS_RELAY_URL,
     };
   } catch {
     return {} as Record<string, string | undefined>;
@@ -23,63 +17,8 @@ const ENV = (() => {
 const WS_API_URL = ENV.VITE_WS_API_URL || '';
 const DEFAULT_WEB_API_URL = 'https://api.worldmonitor.app';
 
-const DEFAULT_LOCAL_API_PORT = 46123;
-
-let _resolvedPort: number | null = null;
-let _portPromise: Promise<number> | null = null;
-
-export async function resolveLocalApiPort(): Promise<number> {
-  if (_resolvedPort !== null) return _resolvedPort;
-  if (_portPromise) return _portPromise;
-  _portPromise = (async () => {
-    try {
-      const { tryInvokeTauri } = await import('./tauri-bridge');
-      const port = await tryInvokeTauri<number>('get_local_api_port');
-      if (port && port > 0) {
-        _resolvedPort = port;
-        return port;
-      }
-    } catch {
-      // IPC failed — allow retry on next call
-    } finally {
-      _portPromise = null;
-    }
-    return DEFAULT_LOCAL_API_PORT;
-  })();
-  return _portPromise;
-}
-
-export function getLocalApiPort(): number {
-  return _resolvedPort ?? DEFAULT_LOCAL_API_PORT;
-}
-
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/$/, '');
-}
-
-/**
- * Whether /api/ traffic should take the desktop sidecar path.
- *
- * Same predicate as `suppressesRemoteBase`: a bare `https://localhost` origin
- * is not enough. `isDesktopRuntime()` treats that origin as desktop, which
- * would install the sidecar fetch patch and skip the same-origin web path —
- * the exact HTTPS-dev failure `hasExplicitDesktopSignals()` exists to stop.
- */
-function routesApiViaDesktop(): boolean {
-  return hasExplicitDesktopSignals();
-}
-
-export function getApiBaseUrl(): string {
-  if (!routesApiViaDesktop()) {
-    return '';
-  }
-
-  const configuredBaseUrl = ENV.VITE_TAURI_API_BASE_URL;
-  if (configuredBaseUrl) {
-    return normalizeBaseUrl(configuredBaseUrl);
-  }
-
-  return `http://127.0.0.1:${getLocalApiPort()}`;
 }
 
 function isWorldMonitorWebHost(hostname: string): boolean {
@@ -109,24 +48,17 @@ function hostnameOf(url: string): string {
  *
  * `api/_cors.js` and `packages/server/cors.ts` both drop bare localhost/127.0.0.1 from
  * the allow-list in production, so every such call returns 403 and the whole
- * dashboard renders unavailable. `VITE_WS_API_URL=https://api.worldmonitor.app`
+ * UI renders unavailable. `VITE_WS_API_URL=https://api.worldmonitor.app`
  * in a developer's .env.local used to do exactly that to `npm run dev`, where
- * the Vite sebuf plugin serves those routes same-origin anyway.
+ * the Vite dev API plugin serves those routes same-origin anyway.
  *
- * Deliberately narrow. The Tauri shell is exempt: its tauri:// and asset://
- * origins are allow-listed by name and it has no same-origin API to fall back
- * to. A loopback base stays honoured, so pointing dev at a local API on another
- * port still works. Deployed and self-hosted pages are untouched — and the
- * self-hosted image proxies /api/ server-side (docker/nginx.conf.template).
- *
- * The exemption tests `hasExplicitDesktopSignals()`, NOT `isDesktopRuntime()`:
- * the latter counts a bare `https://localhost` origin as desktop, so a dev
- * server running over HTTPS would inherit the exemption and keep 403ing —
- * the exact failure this guard exists to stop.
+ * Deliberately narrow: a loopback base stays honoured, so pointing dev at a
+ * local API on another port still works. Deployed and self-hosted pages are
+ * untouched — and the self-hosted image proxies /api/ server-side
+ * (docker/nginx.conf.template).
  */
 function suppressesRemoteBase(configuredBaseUrl: string): boolean {
   if (typeof window === 'undefined') return false;
-  if (hasExplicitDesktopSignals()) return false;
   if (!isLoopbackHostname(window.location?.hostname ?? '')) return false;
   return !isLoopbackHostname(hostnameOf(configuredBaseUrl));
 }
@@ -138,10 +70,6 @@ export function getConfiguredWebApiBaseUrl(): string {
   }
 
   if (typeof window === 'undefined') {
-    return '';
-  }
-
-  if (isDesktopRuntime()) {
     return '';
   }
 
@@ -157,44 +85,9 @@ export function getCanonicalApiOrigin(): string {
   return getConfiguredWebApiBaseUrl() || DEFAULT_WEB_API_URL;
 }
 
-export function getRemoteApiBaseUrl(): string {
-  const configuredRemoteBase = ENV.VITE_TAURI_REMOTE_API_BASE_URL;
-  if (configuredRemoteBase) {
-    return normalizeBaseUrl(configuredRemoteBase);
-  }
-
-  const webApiBase = getConfiguredWebApiBaseUrl();
-  if (webApiBase) {
-    return webApiBase;
-  }
-
-  if (WS_API_URL) return WS_API_URL;
-
-  // Desktop builds may not set VITE_WS_API_URL; default to production.
-  if (isDesktopRuntime()) return 'https://worldmonitor.app';
-  return '';
-}
-
-export function toRuntimeUrl(path: string): string {
-  if (!path.startsWith('/')) {
-    return path;
-  }
-
-  const baseUrl = getApiBaseUrl();
-  if (!baseUrl) {
-    return path;
-  }
-
-  return `${baseUrl}${path}`;
-}
-
 export function toApiUrl(path: string): string {
   if (!path.startsWith('/')) {
     return path;
-  }
-
-  if (routesApiViaDesktop()) {
-    return toRuntimeUrl(path);
   }
 
   const webApiBase = getConfiguredWebApiBaseUrl();
@@ -203,63 +96,6 @@ export function toApiUrl(path: string): string {
   }
 
   return `${webApiBase}${path}`;
-}
-
-function extractHostnames(...urls: (string | undefined)[]): string[] {
-  const hosts: string[] = [];
-  for (const u of urls) {
-    if (!u) continue;
-    try { hosts.push(new URL(u).hostname); } catch {}
-  }
-  return hosts;
-}
-
-const APP_HOSTS = new Set([
-  'worldmonitor.app',
-  'www.worldmonitor.app',
-  'tech.worldmonitor.app',
-  'api.worldmonitor.app',
-  'localhost',
-  '127.0.0.1',
-  ...extractHostnames(WS_API_URL, ENV.VITE_WS_RELAY_URL),
-]);
-
-function isAppOriginUrl(urlStr: string): boolean {
-  try {
-    const u = new URL(urlStr);
-    const host = u.hostname;
-    return APP_HOSTS.has(host) || host.endsWith('.worldmonitor.app');
-  } catch {
-    return false;
-  }
-}
-
-function getApiTargetFromRequestInput(input: RequestInfo | URL): string | null {
-  if (typeof input === 'string') {
-    if (input.startsWith('/')) return input;
-    if (isAppOriginUrl(input)) {
-      const u = new URL(input);
-      return `${u.pathname}${u.search}`;
-    }
-    return null;
-  }
-
-  if (input instanceof URL) {
-    if (isAppOriginUrl(input.href)) {
-      return `${input.pathname}${input.search}`;
-    }
-    return null;
-  }
-
-  if (isAppOriginUrl(input.url)) {
-    const u = new URL(input.url);
-    return `${u.pathname}${u.search}`;
-  }
-  return null;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export {
@@ -273,174 +109,11 @@ export type {
   SmartPollReason,
 } from './smart-poll-loop';
 
-export async function waitForSidecarReady(timeoutMs = 3000): Promise<boolean> {
-  // Resolve the Tauri-confirmed port first. The main app window otherwise never
-  // calls resolveLocalApiPort, so getApiBaseUrl would fall back to the guessed
-  // default port and could report not-ready for a sidecar that is actually up
-  // on an EADDRINUSE-fallback port — a false alarm now that the caller acts on
-  // the result (#6779).
-  await resolveLocalApiPort();
-  const baseUrl = getApiBaseUrl();
-  if (!baseUrl) return false;
-  const pollInterval = 200;
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      // Probe the sidecar's own dependency-free liveness endpoint, not the
-      // generic /api/service-status page — /api/sidecar-health is served only
-      // by the local Node sidecar, so a 200 confirms *this* process is up on
-      // the resolved port rather than something else answering on it (#6779).
-      const res = await fetch(`${baseUrl}/api/sidecar-health`, { method: 'GET' });
-      if (res.ok) return true;
-    } catch {
-      // sidecar not ready yet
-    }
-    await sleep(pollInterval);
-  }
-  return false;
-}
-
-function isLocalOnlyApiTarget(target: string): boolean {
-  // Security boundary: endpoints that can carry local secrets must use the
-  // `/api/local-*` prefix so cloud fallback is automatically blocked.
-  return target.startsWith('/api/local-');
-}
-
-function isKeyFreeApiTarget(target: string): boolean {
-  return target.startsWith('/api/register-interest')
-    || target.startsWith('/api/leads/v1/register-interest')
-    || target.startsWith('/api/leads/v1/submit-contact')
-    || target.startsWith('/api/version');
-}
-
-function callerBearer(input: RequestInfo | URL, init?: RequestInit): string | undefined {
-  const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
-  const value = headers.get('Authorization');
-  return value?.startsWith('Bearer ') ? value : undefined;
-}
-
 function canRetryRequest(input: RequestInfo | URL, init?: RequestInit): boolean {
   const request = input instanceof Request ? input : undefined;
   const method = (init?.method ?? request?.method ?? 'GET').toUpperCase();
   const signal = init?.signal === undefined ? request?.signal : init.signal;
   return (method === 'GET' || method === 'HEAD') && !signal?.aborted;
-}
-
-async function fetchLocalWithStartupRetry(
-  target: string,
-  input: RequestInfo | URL,
-  init?: RequestInit,
-): Promise<Response> {
-  const maxAttempts = 4;
-  let lastError: unknown = null;
-  const signal = init?.signal === undefined ? (input instanceof Request ? input.signal : undefined) : init.signal;
-  // Routes that can carry local secrets never leave the machine, so they
-  // never need the user's cloud credential.
-  // The desktop cloud credential left with the desktop app (refactor Phase 1b).
-  const userAuthorization = isLocalOnlyApiTarget(target) ? undefined : callerBearer(input, init);
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    try {
-      const { proxyLocalApiRequest } = await import('./tauri-bridge');
-      return await proxyLocalApiRequest(target, input, init, userAuthorization);
-    } catch (error) {
-      lastError = error;
-
-      if (!canRetryRequest(input, init)) {
-        throw error;
-      }
-
-      if (attempt === maxAttempts) {
-        break;
-      }
-
-      await sleepBeforeRetry(125 * attempt, signal ?? null);
-    }
-  }
-
-  throw lastError instanceof Error
-    ? lastError
-    : new Error('Local API unavailable');
-}
-
-// ── Security threat model for the fetch patch ──────────────────────────
-// The native process exclusively owns LOCAL_API_TOKEN. Renderer API calls are
-// proxied through a narrow native command that rejects sidecar configuration
-// routes, so a compromised page cannot read the token or mutate the secret
-// cache through the local HTTP control plane.
-
-export function installRuntimeFetchPatch(): void {
-  if (!routesApiViaDesktop() || typeof window === 'undefined' || (window as unknown as Record<string, unknown>).__wmFetchPatched) {
-    return;
-  }
-
-  const nativeFetch = window.fetch.bind(window);
-  const dispatch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const target = getApiTargetFromRequestInput(input);
-    const debug = safeStorageGet('wm-debug-log') === '1';
-
-    if (!target?.startsWith('/api/')) {
-      if (debug) {
-        const raw = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-        console.log(`[fetch] passthrough → ${raw.slice(0, 120)}`);
-      }
-      return nativeFetch(input, init);
-    }
-
-    if (debug) console.log(`[fetch] intercept → ${target}`);
-    let allowCloudFallback = !isLocalOnlyApiTarget(target) && canRetryRequest(input, init);
-
-    if (allowCloudFallback && !isKeyFreeApiTarget(target)) {
-      try {
-        const { getSecretState, secretsReady } = await import('./runtime-config');
-        await Promise.race([secretsReady, new Promise<void>(r => setTimeout(r, 2000))]);
-        const wmKeyState = getSecretState('WORLDMONITOR_API_KEY');
-        if (!wmKeyState.present || !wmKeyState.valid) {
-          allowCloudFallback = false;
-        }
-      } catch {
-        allowCloudFallback = false;
-      }
-    }
-
-    const cloudFallback = async () => {
-      if (!allowCloudFallback || !canRetryRequest(input, init)) {
-        throw new Error(`Cloud fallback blocked for ${target}`);
-      }
-      const cloudUrl = `${getRemoteApiBaseUrl()}${target}`;
-      if (debug) console.log(`[fetch] cloud fallback → ${cloudUrl}`);
-      return nativeFetch(input instanceof Request ? new Request(cloudUrl, input) : cloudUrl, init);
-    };
-
-    try {
-      const t0 = performance.now();
-      const response = await fetchLocalWithStartupRetry(target, input, init);
-      if (debug) console.log(`[fetch] ${target} → ${response.status} (${Math.round(performance.now() - t0)}ms)`);
-
-      if (!response.ok) {
-        if (!allowCloudFallback) {
-          if (debug) console.log(`[fetch] local-only endpoint ${target} returned ${response.status}; skipping cloud fallback`);
-          return response;
-        }
-        if (debug) console.log(`[fetch] local ${response.status}, falling back to cloud`);
-        return cloudFallback();
-      }
-      return response;
-    } catch (error) {
-      if (debug) console.warn(`[runtime] Local API unavailable for ${target}`, error);
-      if (!allowCloudFallback || !canRetryRequest(input, init)) {
-        throw error;
-      }
-      return cloudFallback();
-    }
-  };
-  // Desktop reaches the same cloud gateway through the native proxy, so it sees
-  // the same retryable billing-verification 503. This patch and the web one are
-  // mutually exclusive (each returns early on the other's runtime), so wrapping
-  // both is what makes the contract honored everywhere rather than only on web.
-  window.fetch = withBillingVerificationRetry(dispatch);
-
-  (window as unknown as Record<string, unknown>).__wmFetchPatched = true;
 }
 
 import { PREMIUM_RPC_PATHS as WEB_PREMIUM_API_PATHS } from '../shared/premium-paths';
@@ -457,7 +130,7 @@ function isAllowedRedirectTarget(url: string): boolean {
 }
 
 export function installWebApiRedirect(): void {
-  if (routesApiViaDesktop() || typeof window === 'undefined') return;
+  if (typeof window === 'undefined') return;
   if ((window as unknown as Record<string, unknown>).__wmWebRedirectPatched) return;
 
   const apiBase = getConfiguredWebApiBaseUrl();

@@ -6,7 +6,6 @@
  * entry chunk. Keep pre-init queuing in `sentry-defer.ts`; keep SDK setup here.
  */
 
-import { isDesktopRuntime } from '../services/desktop-runtime';
 import { isIosLikeUserAgent } from './platform-ua';
 import { SENTRY_ALLOW_URLS } from './sentry-allow-urls';
 import { getSentryBuildMetadata, isolateNonProductionSentryEvent } from '@wm/shared/sentry-build-metadata';
@@ -83,10 +82,7 @@ function buildSentryInitOptions(): Parameters<SentryNs['init']>[0] {
     dsn: sentryDsn || undefined,
     ...getSentryBuildMetadata(__APP_VERSION__, __BUILD_HASH__, environment),
     environment,
-    // isDesktopRuntime(), not a raw `'__TAURI_INTERNALS__' in window` read: the
-    // desktop build must stay out of Sentry whether or not the bridge global has
-    // attached, and the flag-forced desktop build has none in a browser (#5912).
-    enabled: Boolean(sentryDsn) && !location.hostname.startsWith('localhost') && !isDesktopRuntime(),
+    enabled: Boolean(sentryDsn) && !location.hostname.startsWith('localhost'),
     allowUrls: SENTRY_ALLOW_URLS,
     maxValueLength: 2048,
     sendDefaultPii: environment === 'production',

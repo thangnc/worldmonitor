@@ -166,16 +166,6 @@ describe('redis caching behavior', { concurrency: 1 }, () => {
     }
   });
 
-  it('reports an oversized sidecar cache write as rejected', async () => {
-    const restoreEnv = withEnv({ LOCAL_API_MODE: 'tauri-sidecar' });
-    const redis = await importRedisFresh();
-    try {
-      assert.equal(await redis.setCachedJson('oversized:test:key', 'x'.repeat(1_048_577), 60), false);
-    } finally {
-      restoreEnv();
-    }
-  });
-
   it('coalesces concurrent misses into one upstream fetcher execution', async () => {
     const redis = await importRedisFresh();
     const restoreEnv = withEnv({
@@ -2102,7 +2092,6 @@ describe('theater posture caching behavior', { concurrency: 1 }, () => {
   it('falls back to stale/backup when both upstreams are down', async () => {
     const { module, cleanup } = await importTheaterPosture();
     const restoreEnv = withEnv({
-      LOCAL_API_MODE: 'sidecar',
       WS_RELAY_URL: undefined,
       WINGBITS_API_KEY: undefined,
       UPSTASH_REDIS_REST_URL: 'https://redis.test',
@@ -2148,7 +2137,6 @@ describe('theater posture caching behavior', { concurrency: 1 }, () => {
   it('returns empty theaters when all tiers exhausted', async () => {
     const { module, cleanup } = await importTheaterPosture();
     const restoreEnv = withEnv({
-      LOCAL_API_MODE: 'sidecar',
       WS_RELAY_URL: undefined,
       WINGBITS_API_KEY: undefined,
       UPSTASH_REDIS_REST_URL: 'https://redis.test',
@@ -4487,8 +4475,9 @@ describe('military flights bbox behavior', { concurrency: 1 }, () => {
   it('keeps global request recovery within legal OpenSky bounds', async () => {
     const { module, cleanup } = await importListMilitaryFlights();
     const restoreEnv = withEnv({
-      LOCAL_API_MODE: 'sidecar',
-      WS_RELAY_URL: undefined,
+      // The web path reaches OpenSky through the relay's /opensky route (the
+      // desktop sidecar's direct OpenSky call left with the desktop app).
+      WS_RELAY_URL: 'https://relay.test',
       UPSTASH_REDIS_REST_URL: undefined,
       UPSTASH_REDIS_REST_TOKEN: undefined,
     });
@@ -4538,8 +4527,9 @@ describe('military flights bbox behavior', { concurrency: 1 }, () => {
   it('fetches expanded quantized bbox but returns only flights inside the requested bbox', async () => {
     const { module, cleanup } = await importListMilitaryFlights();
     const restoreEnv = withEnv({
-      LOCAL_API_MODE: 'sidecar',
-      WS_RELAY_URL: undefined,
+      // The web path reaches OpenSky through the relay's /opensky route (the
+      // desktop sidecar's direct OpenSky call left with the desktop app).
+      WS_RELAY_URL: 'https://relay.test',
       UPSTASH_REDIS_REST_URL: undefined,
       UPSTASH_REDIS_REST_TOKEN: undefined,
     });
@@ -4549,7 +4539,7 @@ describe('military flights bbox behavior', { concurrency: 1 }, () => {
     globalThis.fetch = async (url) => {
       const raw = String(url);
       fetchUrls.push(raw);
-      if (!raw.includes('opensky-network.org/api/states/all')) {
+      if (!raw.startsWith('https://relay.test/opensky')) {
         throw new Error(`Unexpected fetch URL: ${raw}`);
       }
       return jsonResponse({
@@ -4610,7 +4600,7 @@ describe('military flights bbox behavior', { concurrency: 1 }, () => {
           }),
         });
       }
-      if (raw.includes('opensky-network.org/api/states/all')) {
+      if (raw.includes('opensky-network.org/api/states/all') || raw.startsWith('https://relay.test/opensky')) {
         openskyCalls += 1;
       }
       throw new Error(`Unexpected fetch URL: ${raw}`);
@@ -4637,8 +4627,9 @@ describe('military flights bbox behavior', { concurrency: 1 }, () => {
     const restoreEnv = withEnv({
       UPSTASH_REDIS_REST_URL: 'https://redis.test',
       UPSTASH_REDIS_REST_TOKEN: 'token',
-      LOCAL_API_MODE: 'sidecar',
-      WS_RELAY_URL: undefined,
+      // The web path reaches OpenSky through the relay's /opensky route (the
+      // desktop sidecar's direct OpenSky call left with the desktop app).
+      WS_RELAY_URL: 'https://relay.test',
       VERCEL_ENV: undefined,
       VERCEL_GIT_COMMIT_SHA: undefined,
     });
@@ -4659,7 +4650,7 @@ describe('military flights bbox behavior', { concurrency: 1 }, () => {
         store.set(key, value);
         return jsonResponse({ result: 'OK' });
       }
-      if (raw.includes('opensky-network.org/api/states/all')) {
+      if (raw.includes('opensky-network.org/api/states/all') || raw.startsWith('https://relay.test/opensky')) {
         openskyCalls += 1;
         return jsonResponse({
           states: [
@@ -4921,8 +4912,9 @@ describe('military flights bbox behavior', { concurrency: 1 }, () => {
     const restoreEnv = withEnv({
       UPSTASH_REDIS_REST_URL: undefined,
       UPSTASH_REDIS_REST_TOKEN: undefined,
-      LOCAL_API_MODE: 'sidecar',
-      WS_RELAY_URL: undefined,
+      // The web path reaches OpenSky through the relay's /opensky route (the
+      // desktop sidecar's direct OpenSky call left with the desktop app).
+      WS_RELAY_URL: 'https://relay.test',
     });
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async () => {

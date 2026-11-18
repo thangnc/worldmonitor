@@ -14,7 +14,7 @@ World Monitor is a real-time global intelligence dashboard built as a TypeScript
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│                        Browser / Desktop                        │
+│                             Browser                             │
 │  ┌──────────┐  ┌──────────┐  ┌───────────┐  ┌─────────────┐  │
 │  │ DeckGLMap│  │ GlobeMap │  │  Panels    │  │  Workers     │  │
 │  │(deck.gl) │  │(globe.gl)│  │(Panel base)│  │(ML, analysis)│  │
@@ -26,9 +26,9 @@ World Monitor is a real-time global intelligence dashboard built as a TypeScript
            ┌──────────────┼──────────────┐
            │              │              │
     ┌──────▼──────┐ ┌─────▼─────┐ ┌─────▼──────┐
-    │   Vercel    │ │  Railway  │ │   Tauri    │
-    │ Edge Funcs  │ │ AIS Relay │ │  Sidecar   │
-    │ + Middleware│ │ + Seeds   │ │ (Node.js)  │
+    │   Vercel    │ │  Railway  │ │ Docker API │
+    │ Edge Funcs  │ │ AIS Relay │ │ (Phase 4   │
+    │ + Middleware│ │ + Seeds   │ │  option)   │
     └──────┬──────┘ └─────┬─────┘ └─────┬──────┘
            │              │              │
            └──────────────┼──────────────┘
@@ -66,7 +66,7 @@ World Monitor is a real-time global intelligence dashboard built as a TypeScript
 | Redis | Upstash | Cache layer with stampede protection, seed-meta freshness tracking, rate limiting |
 | Container Image | GHCR | Multi-arch Docker image (nginx serving built SPA, proxies API to upstream) |
 
-**Source files**: `vercel.json`, `docker/Dockerfile`, `scripts/ais-relay.cjs`, `consumer-prices-core/Dockerfile`, `workers/api-cors-preflight/wrangler.toml`, `convex/schema.ts`, `src-tauri/tauri.conf.json`
+**Source files**: `vercel.json`, `docker/Dockerfile`, `scripts/ais-relay.cjs`, `consumer-prices-core/Dockerfile`, `workers/api-cors-preflight/wrangler.toml`, `convex/schema.ts`
 
 **Cloudflare zone config (dashboard-managed, NOT in this repo):** the apex `worldmonitor.app` → `www` 301 is a Cloudflare Dynamic Redirect rule ("apex to www (exclude agent-discoverable paths)") whose exemption list is load-bearing: `/.well-known/*`, `/robots.txt`, `/auth.md`, `/security.txt`, `/mcp`, `/mcp/*`, `/oauth/*`, and `/agent/auth` are served on the apex, never redirected. Dropping the `/mcp*` exemptions breaks every apex-URL MCP client; dropping `/oauth/*` re-breaks OAuth dynamic client registration — a redirected POST becomes a GET and dies with 405 (issue #4938); dropping `/auth.md` breaks the `agent_auth.skill` link, which readiness scanners require to equal `<issuer>/auth.md`. When editing the rule, mind expression precedence: `and` binds tighter than `or`, so a new exemption must be added as its own `or` term **inside** the `not (…)` group (appending `and not …` after the last term is a silent no-op). `mcp-live-smoke.yml` probes the MCP/OAuth members of this list (`/mcp`, `/.well-known/oauth-authorization-server`, its `agent_auth.skill` `/auth.md`, and the OAuth endpoints it declares) every 15 minutes and fails on the redirect fingerprint; the `robots.txt` / `security.txt` exemptions are crawler-facing and have no automated probe.
 
@@ -78,18 +78,17 @@ World Monitor is a real-time global intelligence dashboard built as a TypeScript
 
 ### Entry and Initialization
 
-`src/main.ts` initializes Sentry error tracking, Vercel analytics, dynamic meta tags, runtime fetch patches (desktop sidecar redirection), theme application, and creates the `App` instance.
+`src/main.ts` initializes Sentry error tracking, Vercel analytics, dynamic meta tags, the web API redirect, theme application, and creates the `App` instance.
 
 `App.init()` runs in 8 phases:
 
 1. **Storage + i18n**: IndexedDB, language detection, locale loading
 2. **ML Worker**: ONNX model prep (embeddings, sentiment, summarization)
-3. **Sidecar**: Wait for desktop sidecar readiness (desktop only)
-4. **Bootstrap**: Two-tier concurrent hydration from `/api/bootstrap` (fast 3s + slow 5s timeouts)
-5. **Layout**: PanelLayoutManager renders map and panels
-6. **UI**: SignalModal, IntelligenceGapBadge, BreakingNewsBanner, correlation engine
-7. **Data**: Parallel `loadAllData()` + viewport-conditional `primeVisiblePanelData()`
-8. **Refresh**: Variant-specific polling intervals via `startSmartPollLoop()`
+3. **Bootstrap**: Two-tier concurrent hydration from `/api/bootstrap` (fast 3s + slow 5s timeouts)
+4. **Layout**: PanelLayoutManager renders map and panels
+5. **UI**: SignalModal, IntelligenceGapBadge, BreakingNewsBanner, correlation engine
+6. **Data**: Parallel `loadAllData()` + viewport-conditional `primeVisiblePanelData()`
+7. **Refresh**: Variant-specific polling intervals via `startSmartPollLoop()`
 
 ### Component Model
 
@@ -136,7 +135,7 @@ Edge functions are bundled per file: each deployed function may not pull in unre
 
 | File | Purpose |
 |------|---------|
-| `_cors.js` | Origin allowlist (worldmonitor.app, Vercel previews, tauri://localhost, localhost) |
+| `_cors.js` | Origin allowlist (worldmonitor.app, Vercel previews, localhost outside production) |
 | `_rate-limit.js` | Upstash sliding window rate limiting, IP extraction |
 | `_api-key.js` | Credential check: anonymous `wms_` session or operator key (`WORLDMONITOR_VALID_KEYS`, header or `__Host-wm-pro-key` cookie) |
 | `_relay.js` | Factory for proxying requests to Railway relay service |
@@ -246,27 +245,9 @@ The market backup bundle also persists 14 days of timestamped hourly Yahoo close
 
 ---
 
-## 7. Desktop Architecture
+## 7. Desktop Architecture (removed)
 
-### Tauri Shell
-
-Tauri 2.x (Rust) manages the app lifecycle, system tray, and IPC commands:
-
-- **Secret management**: Read/write platform keyring (macOS Keychain, Windows Credential Manager, Linux keyring)
-- **Sidecar control**: Spawn Node.js process, probe port, inject environment variables
-- **Window management**: Three trusted windows (main, settings, live-channels) with Edit menu for macOS clipboard shortcuts
-
-### Node.js Sidecar
-
-`docker/local-api/local-api-server.mjs` runs on a dynamic port. It dynamically loads Edge Function handler modules from `api/`, injects secrets from the keyring via environment variables, and monkey-patches `globalThis.fetch` to force IPv4 (Node.js tries IPv6 first, but many government APIs have broken IPv6).
-
-### Fetch Patching
-
-`installRuntimeFetchPatch()` in `packages/client/services/runtime.ts` replaces `window.fetch` on the desktop renderer. All `/api/*` requests route to the sidecar with `Authorization: Bearer <token>` (5-min TTL from Tauri IPC). If the sidecar fails, requests fall back to the cloud API.
-
-Seed-owned scorecard RPC paths are always cloud-preferred on desktop. The sidecar does not carry the Railway-published scorecard cohort, so routing these paths locally would create a false unavailable state instead of using the authenticated cloud API.
-
-**Source files**: `src-tauri/src/main.rs`, `docker/local-api/local-api-server.mjs`, `packages/client/services/runtime.ts`, `packages/client/services/tauri-bridge.ts`
+The Tauri desktop app left in refactor Phase 1b, and its runtime branches (the desktop fetch patch, the sidecar cache, the Tauri CORS origins, the `/desktop-sign-in` route and the `/api/version` updater probe) left in the 2026-11 Lite-only cleanup. The section number stays so links to later sections keep working. `docker/local-api/local-api-server.mjs`, the former sidecar, remains as the Docker Node API option for Phase 4; it still carries its desktop-key relay and Tauri paths until that decision.
 
 ---
 
@@ -276,16 +257,14 @@ Seed-owned scorecard RPC paths are always cloud-preferred on desktop. The sideca
 
 ```
 Browser ↔ Vercel Edge ↔ Upstream APIs
-Desktop ↔ Sidecar ↔ Cloud API / Upstream APIs
 ```
 
 ### Content Security Policy
 
-Three CSP sources that must stay in sync:
+Two CSP sources that must stay in sync:
 
-1. `index.html` `<meta>` tag (development, Tauri fallback)
+1. `index.html` `<meta>` tag (development)
 2. `vercel.json` HTTP header (production, overrides meta)
-3. `src-tauri/tauri.conf.json` (desktop)
 
 ### Authentication
 
@@ -299,11 +278,7 @@ API keys are required for non-browser origins. Trusted browser origins (producti
 
 Per-IP sliding window via Upstash with per-endpoint overrides for high-traffic paths.
 
-### Desktop Secret Storage
-
-Secrets are stored in the platform keyring (never plaintext), injected into the sidecar via Tauri IPC, and scoped to an allowlist of environment variable keys.
-
-**Source files**: `middleware.ts`, `vercel.json`, `index.html`, `src-tauri/tauri.conf.json`, `api/_api-key.js`, `packages/server/_shared/rate-limit.ts`
+**Source files**: `middleware.ts`, `vercel.json`, `index.html`, `api/_api-key.js`, `packages/server/_shared/rate-limit.ts`
 
 ---
 
@@ -439,8 +414,6 @@ gates.
 │   └── shared/             @wm/shared: logic and data the browser, server and seeders apply the same way (scripts/shared/ mirrors part of it)
 ├── public/                 Static assets served as-is (favicons, textures, map styles, data, robots.txt, 404.html)
 ├── scripts/                Seed scripts, build helpers, relay service
-├── src-tauri/              Tauri desktop shell (Rust)
-│   └── sidecar/            Node.js sidecar API server
 ├── tests/                  Unit/integration tests (node:test)
 └── workers/                Cloudflare Workers (edge CORS preflight for api.worldmonitor.app)
 ```

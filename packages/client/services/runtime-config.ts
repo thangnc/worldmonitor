@@ -1,6 +1,4 @@
-import { isDesktopRuntime } from './runtime';
 import { safeStorageSet } from '../utils/safe-storage';
-import { invokeTauri } from './tauri-bridge';
 
 export type RuntimeSecretKey =
   | 'OPENROUTER_API_KEY'
@@ -61,7 +59,6 @@ export interface RuntimeFeatureDefinition {
   name: string;
   description: string;
   requiredSecrets: RuntimeSecretKey[];
-  desktopRequiredSecrets?: RuntimeSecretKey[];
   fallback: string;
 }
 
@@ -69,7 +66,7 @@ export interface RuntimeSecretState {
   /** Values are retained only for browser environment variables. Desktop vault
    * entries intentionally expose presence/status without returning plaintext. */
   value?: string;
-  source: 'env' | 'vault';
+  source: 'env';
 }
 
 export interface RuntimeConfig {
@@ -148,7 +145,6 @@ export const RUNTIME_FEATURES: RuntimeFeatureDefinition[] = [
     description: 'Macro indicators from Federal Reserve Economic Data.',
     requiredSecrets: ['FRED_API_KEY'],
     // Desktop reads this from the cloud seed cache; no local key is used (#5829).
-    desktopRequiredSecrets: [],
     fallback: 'Economic panel remains available with non-FRED metrics.',
   },
   {
@@ -157,7 +153,6 @@ export const RUNTIME_FEATURES: RuntimeFeatureDefinition[] = [
     description: 'US Energy Information Administration oil metrics.',
     requiredSecrets: ['EIA_API_KEY'],
     // Desktop reads this from the cloud seed cache; no local key is used (#5829).
-    desktopRequiredSecrets: [],
     fallback: 'Oil analytics cards show disabled state.',
   },
   {
@@ -166,7 +161,6 @@ export const RUNTIME_FEATURES: RuntimeFeatureDefinition[] = [
     description: 'Internet outages from Cloudflare Radar annotations API.',
     requiredSecrets: ['CLOUDFLARE_API_TOKEN'],
     // Desktop reads this from the cloud seed cache; no local key is used (#5829).
-    desktopRequiredSecrets: [],
     fallback: 'Outage layer is disabled and map continues with other feeds.',
   },
   {
@@ -216,7 +210,6 @@ export const RUNTIME_FEATURES: RuntimeFeatureDefinition[] = [
     name: 'AIS vessel tracking',
     description: 'Live vessel ingestion via AISStream WebSocket.',
     requiredSecrets: ['WS_RELAY_URL', 'AISSTREAM_API_KEY'],
-    desktopRequiredSecrets: ['AISSTREAM_API_KEY'],
     fallback: 'AIS layer is disabled.',
   },
   {
@@ -224,7 +217,6 @@ export const RUNTIME_FEATURES: RuntimeFeatureDefinition[] = [
     name: 'OpenSky military flights (legacy)',
     description: 'OpenSky OAuth credentials for military flight data (legacy direct proxy).',
     requiredSecrets: ['VITE_OPENSKY_RELAY_URL', 'OPENSKY_CLIENT_ID', 'OPENSKY_CLIENT_SECRET'],
-    desktopRequiredSecrets: ['OPENSKY_CLIENT_ID', 'OPENSKY_CLIENT_SECRET'],
     fallback: 'Military flights fall back to limited/no data.',
   },
   {
@@ -254,7 +246,6 @@ export const RUNTIME_FEATURES: RuntimeFeatureDefinition[] = [
     description: 'Trade restrictions, tariff trends, barriers, and flows from WTO.',
     requiredSecrets: ['WTO_API_KEY'],
     // Desktop reads this from the cloud seed cache; no local key is used (#5829).
-    desktopRequiredSecrets: [],
     fallback: 'Trade policy panel shows disabled state.',
   },
   {
@@ -263,7 +254,6 @@ export const RUNTIME_FEATURES: RuntimeFeatureDefinition[] = [
     description: 'Shipping rates via FRED Baltic Dry Index. Chokepoints and minerals use public data.',
     requiredSecrets: ['FRED_API_KEY'],
     // Desktop reads this from the cloud seed cache; no local key is used (#5829).
-    desktopRequiredSecrets: [],
     fallback: 'Chokepoints and minerals always available; shipping requires FRED key.',
   },
   {
@@ -322,11 +312,6 @@ const URL_SECRET_KEYS = new Set<RuntimeSecretKey>([
   'OLLAMA_API_URL',
 ]);
 
-export interface SecretVerificationResult {
-  valid: boolean;
-  message: string;
-}
-
 export function validateSecret(key: RuntimeSecretKey, value: string): { valid: boolean; hint?: string } {
   const trimmed = value.trim();
   if (!trimmed) return { valid: false, hint: 'Value is required' };
@@ -357,11 +342,6 @@ export function validateSecret(key: RuntimeSecretKey, value: string): { valid: b
   return { valid: true };
 }
 
-let secretsReadyResolve!: () => void;
-export const secretsReady = new Promise<void>(r => { secretsReadyResolve = r; });
-
-if (!isDesktopRuntime()) secretsReadyResolve();
-
 const listeners = new Set<() => void>();
 
 const runtimeConfig: RuntimeConfig = {
@@ -373,9 +353,9 @@ function notifyConfigChanged(): void {
   for (const listener of listeners) listener();
 }
 
+// Secrets come from the build environment only. The desktop keychain and its
+// sidecar validation left with the desktop app (refactor Phase 1b).
 function seedSecretsFromEnvironment(): void {
-  if (isDesktopRuntime()) return;
-
   const keys = new Set<RuntimeSecretKey>(RUNTIME_FEATURES.flatMap(feature => feature.requiredSecrets));
   for (const key of keys) {
     const value = readEnvSecret(key);
@@ -387,13 +367,11 @@ function seedSecretsFromEnvironment(): void {
 
 seedSecretsFromEnvironment();
 
-// Listen for cross-window state updates (settings ↔ main).
-// When one window saves secrets or toggles features, the `storage` event fires in other same-origin windows.
+// Feature toggles saved in another same-origin window reach this one through
+// the `storage` event.
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
-    if (e.key === 'wm-secrets-updated') {
-      void loadDesktopSecrets();
-    } else if (e.key === TOGGLES_STORAGE_KEY && e.newValue) {
+    if (e.key === TOGGLES_STORAGE_KEY && e.newValue) {
       try {
         const parsed = JSON.parse(e.newValue) as Partial<Record<RuntimeFeatureId, boolean>>;
         Object.assign(runtimeConfig.featureToggles, parsed);
@@ -419,131 +397,23 @@ export function isFeatureEnabled(featureId: RuntimeFeatureId): boolean {
   return runtimeConfig.featureToggles[featureId] !== false;
 }
 
-export function getSecretState(key: RuntimeSecretKey): { present: boolean; valid: boolean; source: 'env' | 'vault' | 'missing' } {
+export function getSecretState(key: RuntimeSecretKey): { present: boolean; valid: boolean; source: 'env' | 'missing' } {
   const state = runtimeConfig.secrets[key];
   if (!state) return { present: false, valid: false, source: 'missing' };
   return {
     present: true,
-    valid: state.source === 'vault' || validateSecret(key, state.value ?? '').valid,
+    valid: validateSecret(key, state.value ?? '').valid,
     source: state.source,
   };
 }
 
+// Web deployments validate credentials server-side, so an enabled feature is available.
 export function isFeatureAvailable(featureId: RuntimeFeatureId): boolean {
-  if (!isFeatureEnabled(featureId)) return false;
-
-  // Cloud/web deployments validate credentials server-side.
-  // Desktop runtime validates local secrets client-side for capability gating.
-  if (!isDesktopRuntime()) {
-    return true;
-  }
-
-  const feature = RUNTIME_FEATURES.find(item => item.id === featureId);
-  if (!feature) return false;
-  const secrets = feature.desktopRequiredSecrets ?? feature.requiredSecrets;
-  return secrets.every(secretKey => getSecretState(secretKey).valid);
-}
-
-export function getEffectiveSecrets(feature: RuntimeFeatureDefinition): RuntimeSecretKey[] {
-  return (isDesktopRuntime() && feature.desktopRequiredSecrets) ? feature.desktopRequiredSecrets : feature.requiredSecrets;
+  return isFeatureEnabled(featureId);
 }
 
 export function setFeatureToggle(featureId: RuntimeFeatureId, enabled: boolean): void {
   runtimeConfig.featureToggles[featureId] = enabled;
   safeStorageSet(TOGGLES_STORAGE_KEY, JSON.stringify(runtimeConfig.featureToggles));
   notifyConfigChanged();
-}
-
-export async function setSecretValue(key: RuntimeSecretKey, value: string): Promise<void> {
-  if (!isDesktopRuntime()) {
-    console.warn('[runtime-config] Ignoring secret write outside desktop runtime');
-    return;
-  }
-
-  const sanitized = value.trim();
-  if (sanitized) {
-    await invokeTauri<void>('set_secret', { key, value: sanitized });
-    runtimeConfig.secrets[key] = { source: 'vault' };
-  } else {
-    await invokeTauri<void>('delete_secret', { key });
-    delete runtimeConfig.secrets[key];
-  }
-
-  // Signal other windows (main ↔ settings) to reload secrets from keychain.
-  // The `storage` event fires in all same-origin windows except the one that wrote.
-  try {
-    localStorage.setItem('wm-secrets-updated', String(Date.now()));
-  } catch { /* localStorage may be unavailable */ }
-
-  notifyConfigChanged();
-}
-
-export async function verifySecretWithApi(
-  key: RuntimeSecretKey,
-  value: string,
-  context: Partial<Record<RuntimeSecretKey, string>> = {},
-): Promise<SecretVerificationResult> {
-  const localValidation = validateSecret(key, value);
-  if (!localValidation.valid) {
-    return { valid: false, message: localValidation.hint || 'Invalid value' };
-  }
-
-  if (!isDesktopRuntime()) {
-    return { valid: true, message: 'Saved' };
-  }
-
-  try {
-    const response = await invokeTauri<{ status: number; payload: unknown }>('validate_secret_with_sidecar', {
-      key,
-      value: value.trim(),
-      context,
-    });
-    const { payload } = response;
-
-    if (response.status < 200 || response.status >= 300) {
-      const message = payload && typeof payload === 'object'
-        ? String(
-          (payload as Record<string, unknown>).message
-          || (payload as Record<string, unknown>).error
-          || 'Secret validation failed'
-        )
-        : `Secret validation failed (${response.status})`;
-      return { valid: false, message };
-    }
-
-    if (!payload || typeof payload !== 'object') {
-      return { valid: false, message: 'Secret validation returned an invalid response' };
-    }
-
-    const valid = Boolean((payload as Record<string, unknown>).valid);
-    const message = String((payload as Record<string, unknown>).message || (valid ? 'Verified' : 'Verification failed'));
-    return { valid, message };
-  } catch (error) {
-    // Network errors reaching the sidecar should NOT block saving.
-    // Only explicit 401/403 from the provider means the key is invalid.
-    const message = error instanceof Error ? error.message : 'Secret validation failed';
-    return { valid: true, message: `Saved (could not verify – ${message})` };
-  }
-}
-
-export async function loadDesktopSecrets(): Promise<void> {
-  if (!isDesktopRuntime()) return;
-
-  try {
-    const configuredKeys = await invokeTauri<string[]>('list_configured_secret_keys');
-    for (const [key, state] of Object.entries(runtimeConfig.secrets)) {
-      if (state.source === 'vault') delete runtimeConfig.secrets[key as RuntimeSecretKey];
-    }
-    for (const key of configuredKeys) {
-      // The native process reports only key names; sidecar startup receives the
-      // values directly from the keychain and renderer state remains opaque.
-      runtimeConfig.secrets[key as RuntimeSecretKey] = { source: 'vault' };
-    }
-
-    notifyConfigChanged();
-  } catch (error) {
-    console.warn('[runtime-config] Failed to load desktop secrets from vault', error);
-  } finally {
-    secretsReadyResolve();
-  }
 }

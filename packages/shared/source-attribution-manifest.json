@@ -5,15 +5,10 @@
       "host": "127.0.0.1",
       "provider": "Local loopback transport",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: local development/desktop transport",
       "attribution": "Excluded from the provider count: local-only loopback URL.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "packages/client/services/runtime.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "24.hu",
@@ -859,9 +854,6 @@
       "attribution": "Credit api.github.com and link to the original upstream API/dataset.",
       "status": "terms-review",
       "references": [
-        {
-          "path": "api/_github-release.js"
-        },
         {
           "path": "scripts/resolve-railway-reconcile-control.mjs"
         },
@@ -6061,9 +6053,6 @@
       "status": "excluded",
       "references": [
         {
-          "path": "packages/client/config/desktop-runtime.ts"
-        },
-        {
           "path": "packages/client/services/wm-session.ts"
         },
         {
@@ -7195,9 +7184,6 @@
       "attribution": "Credit opensky-network.org and link to the original upstream API/dataset.",
       "status": "terms-review",
       "references": [
-        {
-          "path": "packages/server/worldmonitor/military/v1/list-military-flights.ts"
-        },
         {
           "path": "scripts/ais-relay.cjs"
         },
@@ -10443,9 +10429,6 @@
         },
         {
           "path": "packages/client/config/web-origin.ts"
-        },
-        {
-          "path": "packages/client/services/runtime.ts"
         },
         {
           "path": "packages/server/_shared/brief-url.ts"

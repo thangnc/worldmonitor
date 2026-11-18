@@ -1,6 +1,4 @@
 import type { MapLayers } from '../types';
-// boundary-ignore: isDesktopRuntime is a pure env probe with no service dependencies
-import { isDesktopRuntime } from '../services/runtime';
 
 /**
  * The three concrete map renderers a layer can be painted by. This is the
@@ -11,8 +9,6 @@ import { isDesktopRuntime } from '../services/runtime';
  */
 export type RendererKind = 'svg' | 'deck' | 'globe';
 export type MapVariant = 'full' | 'tech' | 'finance' | 'happy' | 'commodity' | 'energy';
-
-const _desktop = isDesktopRuntime();
 
 export interface LayerDefinition {
   key: keyof MapLayers;
@@ -57,7 +53,7 @@ const def = (
 });
 
 export const LAYER_REGISTRY: Record<keyof MapLayers, LayerDefinition> = {
-  iranAttacks:              def('iranAttacks',              '&#127919;', 'iranAttacks',              'Middle East Strikes', ['svg', 'deck', 'globe'], _desktop ? 'locked' : undefined),
+  iranAttacks:              def('iranAttacks',              '&#127919;', 'iranAttacks',              'Middle East Strikes', ['svg', 'deck', 'globe']),
   hotspots:                 def('hotspots',                 '&#127919;', 'intelHotspots',            'Intel Hotspots'),
   conflicts:                def('conflicts',                '&#9876;',   'conflictZones',            'Conflict Zones'),
 
@@ -90,12 +86,12 @@ export const LAYER_REGISTRY: Record<keyof MapLayers, LayerDefinition> = {
   waterways:                def('waterways',                '&#9875;',   'strategicWaterways',       'Chokepoints'),
   economic:                 def('economic',                 '&#128176;', 'economicCenters',          'Economic Centers'),
   minerals:                 def('minerals',                 '&#128142;', 'criticalMinerals',         'Critical Minerals'),
-  gpsJamming:               def('gpsJamming',               '&#128225;', 'gpsJamming',               'GPS Jamming', ['svg', 'deck', 'globe'], _desktop ? 'locked' : undefined),
+  gpsJamming:               def('gpsJamming',               '&#128225;', 'gpsJamming',               'GPS Jamming', ['svg', 'deck', 'globe']),
   // Painted by DeckGLMap AND GlobeMap (both build CII choropleth polygons);
   // the SVG/mobile fallback has no CII paint path, so this is deck + globe,
   // NOT svg. Previously mislabeled `['flat']`, which wrongly kept it out of
   // the globe layer picker even though GlobeMap renders it (#6773 / R8).
-  ciiChoropleth:            def('ciiChoropleth',            '&#127758;', 'ciiChoropleth',            'Country Instability', ['deck', 'globe'], _desktop ? 'enhanced' : undefined),
+  ciiChoropleth:            def('ciiChoropleth',            '&#127758;', 'ciiChoropleth',            'Country Instability', ['deck', 'globe']),
   // DeckGLMap owns the resilience choropleth; only DeckGL has a paint path.
   resilienceScore:          def('resilienceScore',          '&#128200;', 'resilienceScore',          'Country Resilience', ['deck'], 'locked'),
   dayNight:                 def('dayNight',                 '&#127763;', 'dayNight',                 'Day/Night', ['svg', 'deck']),

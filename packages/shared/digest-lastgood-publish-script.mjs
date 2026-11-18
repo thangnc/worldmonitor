@@ -3,9 +3,9 @@
 // read-decide-write.
 //
 // MIRROR of shouldReplaceAccepted in packages/server/worldmonitor/news/v1/_lastgood.ts —
-// the same rules, in the same order. This script is the AUTHORITATIVE gate on
-// every non-sidecar deployment; the TS function is the gate only in
-// tauri-sidecar mode, which has no EVAL. Change them together, and note that
+// the same rules, in the same order. This script is the AUTHORITATIVE gate;
+// the TS function was the gate only in the desktop sidecar (removed 2026-11)
+// and stays as the readable spec. Change them together, and note that
 // tests/digest-lastgood-script.test.mjs EXECUTES this text in a Lua VM — a
 // behavioural change here fails there, not just a byte-parity check.
 //

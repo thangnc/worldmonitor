@@ -119,7 +119,6 @@ export const AGENT_NOT_FOUND_PASSTHROUGH_PREFIXES = [
   '/CLERK-ROUTER',
   '/dashboard',
   '/data',
-  '/desktop-sign-in',
   '/favico',
   '/settings',
   '/stocks',

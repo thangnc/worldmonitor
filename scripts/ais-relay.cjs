@@ -12658,8 +12658,6 @@ const ALLOWED_ORIGINS = [
   'http://localhost:5173',   // Vite dev
   'http://localhost:5174',   // Vite dev alt port
   'http://localhost:4173',   // Vite preview
-  'https://localhost',       // Tauri desktop
-  'tauri://localhost',       // Tauri iOS/macOS
 ];
 
 function getCorsOrigin(req) {

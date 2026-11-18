@@ -13,9 +13,8 @@ import {
   readCachedJson,
   runRedisPipeline,
   runRedisTransaction,
-  setCachedJson,
 } from '../../../_shared/redis';
-import { REVOKED_URLS_KEY, readRevokedUrlSet } from '../../../_shared/digest-revocations';
+import { REVOKED_URLS_KEY } from '../../../_shared/digest-revocations';
 import { getUsageScope } from '../../../_shared/usage';
 import {
   ATTEMPT_META_TTL_S,
@@ -23,15 +22,11 @@ import {
   LASTGOOD_TTL_S,
   attemptMetaKey,
   isAcceptableDigest,
-  isCatalogChanged,
   isEligibleScope,
   isStaleReason,
   lastGoodKey,
-  nextPeak,
   parseAcceptedSnapshot,
-  shouldReplaceAccepted,
   type AcceptedSnapshot,
-  type AcceptedSnapshotMeta,
   type DigestLike,
   type StaleReason,
 } from './_lastgood';
@@ -182,15 +177,6 @@ export function publishFailedAttempt(
   const stored = { ts: Number.isFinite(ts) ? ts : Date.now(), outcome: attempt.reason };
   const persist = (async () => {
     try {
-      if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-        // The sidecar cache is single-process. Attempt first preserves the
-        // same visibility order even though it has no transaction primitive.
-        const attemptWritten = await setCachedJson(attemptMetaKey(variant, lang), stored, ATTEMPT_META_TTL_S);
-        if (attemptWritten) {
-          await setCachedJson(digestCacheKey, DIGEST_NEGATIVE_SENTINEL, sentinelTtlSeconds);
-        }
-        return;
-      }
       const results = await runRedisTransaction([
         ['SET', attemptMetaKey(variant, lang), JSON.stringify(stored), 'EX', String(ATTEMPT_META_TTL_S)],
         ['SET', digestCacheKey, JSON.stringify(DIGEST_NEGATIVE_SENTINEL), 'EX', String(sentinelTtlSeconds)],
@@ -334,113 +320,6 @@ export async function publishAcceptedSnapshot(
   const generatedAtMs = Date.parse(data.generatedAt ?? '');
   const acceptedAt = Number.isFinite(generatedAtMs) ? generatedAtMs : now;
   try {
-    if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-      const revoked = await readRevokedUrlSet();
-      if (!revoked.readable) {
-        console.warn(`[digest-publication] source unavailable variant=${variant} lang=${lang}`);
-        return 'unavailable';
-      }
-      const candidateRichness = measureServableRichness(data, revoked.urls, exemptCategories);
-      if (candidateRichness.totalCategoryCount < 1 || candidateRichness.itemCount < 1) {
-        console.log(`[digest-publication] candidate rejected after revocations variant=${variant} lang=${lang}`);
-        return 'rejected';
-      }
-      const read = await readAcceptedSnapshot<ListFeedDigestResponse>(variant, lang);
-      if (!read.readable) {
-        console.warn(`[digest-publication] publish unavailable variant=${variant} lang=${lang}`);
-        return 'unavailable';
-      }
-      const current = read.snapshot;
-      const currentCanonical = canonicalDigestKey
-        ? await readCachedJson(canonicalDigestKey)
-        : { status: 'miss' as const };
-      if (currentCanonical.status === 'error') {
-        console.warn(`[digest-publication] canonical read unavailable variant=${variant} lang=${lang}`);
-        return 'unavailable';
-      }
-      const canonicalValue = currentCanonical.status === 'hit'
-        && currentCanonical.value && typeof currentCanonical.value === 'object'
-        ? currentCanonical.value as ListFeedDigestResponse
-        : null;
-      const canonicalGeneratedAt = canonicalValue ? Date.parse(canonicalValue.generatedAt ?? '') : NaN;
-      const canonicalRichness = canonicalValue
-        ? measureServableRichness(canonicalValue, revoked.urls, exemptCategories)
-        : null;
-      const catalogChanged = current ? isCatalogChanged(current, catalogFingerprint) : false;
-      const canonicalMeta = canonicalRichness
-        && !catalogChanged
-        && canonicalRichness.totalCategoryCount >= 1
-        && canonicalRichness.itemCount >= 1
-        && Number.isFinite(canonicalGeneratedAt)
-        ? {
-            acceptedAt: canonicalGeneratedAt,
-            categoryCount: canonicalRichness.categoryCount,
-            itemCount: canonicalRichness.itemCount,
-          }
-        : null;
-      // Re-measure the incumbent BODY under the current revocation set, as the
-      // Lua gate does. Its stored itemCount is a publication-time count, and a
-      // URL revoked since must not keep inflating it and veto the repair.
-      const measuredCurrent = current
-        ? measureServableRichness(current.data, revoked.urls, exemptCategories)
-        : undefined;
-      const measuredCurrentItems = measuredCurrent?.itemCount;
-      // Breadth is re-measured too, with the same exemptions as the candidate:
-      // the stored count predates them.
-      const comparable = current && measuredCurrent
-        ? { ...current, categoryCount: measuredCurrent.categoryCount }
-        : current;
-      const candidateCounts = {
-        categoryCount: candidateRichness.categoryCount,
-        itemCount: candidateRichness.itemCount,
-      };
-      const decision = shouldReplaceAccepted(comparable, candidateCounts, now, measuredCurrentItems, catalogFingerprint);
-      const canonicalDecision = canonicalMeta
-        ? shouldReplaceAccepted(canonicalMeta, candidateCounts, now)
-        : null;
-      if (!decision.replace || canonicalDecision && !canonicalDecision.replace) {
-        // The single-process sidecar has no transaction primitive. Publish
-        // identity first, so a visible sentinel always has its matching reason.
-        const attemptWritten = await setCachedJson(
-          attemptMetaKey(variant, lang), { ts: now, outcome: 'gate-held' }, ATTEMPT_META_TTL_S,
-        );
-        if (!attemptWritten) return 'unavailable';
-        if (!decision.replace && canonicalDigestKey && currentCanonical.status === 'miss') {
-          const cooldownWritten = await setCachedJson(
-            canonicalDigestKey,
-            DIGEST_NEGATIVE_SENTINEL,
-            DIGEST_REJECTION_TTL_S,
-          );
-          if (!cooldownWritten) {
-            console.warn(`[digest-publication] publish unavailable variant=${variant} lang=${lang}`);
-            return 'unavailable';
-          }
-        }
-        rememberGateHeldAttempt(variant, lang, new Date(now).toISOString(), canonicalDigestKey);
-        reportGateRejection(variant, lang);
-        return 'rejected';
-      }
-      const meta: AcceptedSnapshotMeta = {
-        acceptedAt,
-        ...candidateCounts,
-        ...nextPeak(current, candidateRichness.itemCount, acceptedAt, now, measuredCurrentItems, catalogFingerprint),
-        ...(catalogFingerprint ? { catalogFingerprint } : {}),
-      };
-      const durableWritten = await setCachedJson(lastGoodKey(variant, lang), { ...meta, data }, LASTGOOD_TTL_S);
-      if (!durableWritten) {
-        console.warn(`[digest-publication] publish unavailable variant=${variant} lang=${lang}`);
-        return 'unavailable';
-      }
-      if (canonicalDigestKey) {
-        const canonicalWritten = await setCachedJson(canonicalDigestKey, data, DIGEST_CACHE_TTL_S);
-        if (!canonicalWritten) {
-          console.warn(`[digest-publication] publish unavailable variant=${variant} lang=${lang}`);
-          return 'unavailable';
-        }
-      }
-      return 'accepted';
-    }
-
     // ARGV[5] is the digest body ALONE, and the script splices it into the
     // stored JSON verbatim. Sending the wrapped `{ acceptedAt, data }` and
     // letting Lua rebuild it meant a cjson decode/encode round trip, which

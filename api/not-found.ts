@@ -29,7 +29,7 @@ import { buildMarkdownTwinResponse, isMarkdownTwinPath } from './_md-url-twin';
 // free discovery endpoints (middleware.ts PUBLIC_API_PATHS) qualify; every
 // other legacy `.md` path answers 404. Versioned RPC twins are served by the
 // domain gateway in-process and never reach this handler.
-const LEGACY_MARKDOWN_TWIN_SIBLINGS = new Set(['/api/health', '/api/version', '/api/product-catalog']);
+const LEGACY_MARKDOWN_TWIN_SIBLINGS = new Set(['/api/health', '/api/product-catalog']);
 
 function markdownNotFound(corsHeaders: Record<string, string>): Response {
   return new Response('# Not found\n', {
