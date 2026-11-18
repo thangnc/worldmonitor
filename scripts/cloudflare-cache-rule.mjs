@@ -97,8 +97,8 @@
  *
  * `--check` and `--apply` need `CLOUDFLARE_API_TOKEN` carrying **Zone > Cache
  * Rules > Edit on worldmonitor.app**. That is NOT the `CLOUDFLARE_API_TOKEN`
- * .github/workflows/deploy-worker.yml uses: that secret is scoped to Workers
- * Scripts:Edit + Workers Routes:Edit (see its header comment) and will fail here.
+ * the Worker deploy (the deploy-worker workflow, removed 2026-11-19) used: that
+ * secret was scoped to Workers Scripts:Edit + Workers Routes:Edit and fails here.
  * Wiring this into CI means provisioning a separate, cache-rules-scoped token.
  * Locally, `CLOUDFLARE_ALL_ACCESS_TOKEN` is accepted as a fallback because that
  * is what .env.local carries — note it is account-wide, so a mistake here runs

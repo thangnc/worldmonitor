@@ -1,5 +1,5 @@
 # Cloudflare Worker config for api-cors-preflight.
-# Deployed via `wrangler deploy` (manual) or .github/workflows/deploy-worker.yml (CI).
+# Deployed via `wrangler deploy` (manual). The CI deploy workflow was removed on 2026-11-19.
 # CF account_id is read from the CLOUDFLARE_ACCOUNT_ID env var so this file
 # stays publishable; CLOUDFLARE_API_TOKEN supplies auth.
 

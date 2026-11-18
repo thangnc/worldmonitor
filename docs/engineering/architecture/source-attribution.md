@@ -70,7 +70,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | api.fiscaldata.treasury.gov (api.fiscaldata.treasury.gov) | structured — scripts/seed-national-debt.mjs, scripts/seed-supply-chain-trade.mjs |
 | api.gdeltproject.org (api.gdeltproject.org) | structured — scripts/seed-gdelt-intel.mjs, scripts/seed-unrest-events.mjs |
 | api.gdeltproject.org (storage.googleapis.com) | structured — scripts/_conflict-gdelt-bulk.mjs, scripts/_gdelt-bulk-materializer.mjs |
-| api.github.com (api.github.com) | structured — api/_github-release.js, scripts/dispatch-stale-railway-reconcile.mjs, scripts/resolve-railway-reconcile-control.mjs, scripts/seed-fuel-prices.mjs, +1 more |
+| api.github.com (api.github.com) | structured — api/_github-release.js, scripts/resolve-railway-reconcile-control.mjs, scripts/seed-fuel-prices.mjs, scripts/seed-research.mjs |
 | api.groq.com (api.groq.com) | Excluded / candidate — No current fetch observed |
 | api.iea.org (api.iea.org) | structured — scripts/seed-iea-oil-stocks.mjs |
 | api.imf.org (api.imf.org) | structured — scripts/_seed-utils.mjs, scripts/backtest-capital-flow-episodes.mjs, scripts/seed-capital-flows.mjs, scripts/seed-gold-cb-reserves.mjs, +1 more |
