@@ -2,7 +2,7 @@ import type {
   GetChinaDecisionSignalsRequest,
   GetChinaDecisionSignalsResponse,
   ServerContext,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import {
   composeChinaDecisionSignals,
   type ChinaDecisionSignalSnapshot,

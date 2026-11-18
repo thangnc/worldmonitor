@@ -2,8 +2,8 @@ import type {
   ServerContext,
   GetCountryEnergyProfileRequest,
   GetCountryEnergyProfileResponse,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
-import { ApiError } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
+import { ApiError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import jodiMeasurementFields from '../../../../scripts/shared/jodi-measurement-fields.json';
 
 import { getRawJson } from '../../../_shared/redis';

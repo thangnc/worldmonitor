@@ -3,7 +3,7 @@
  * annotations describe the public surface; handlers enforce the same rules.
  */
 
-import { ValidationError } from '../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+import { ValidationError } from '../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 const HISTORY_DOMAINS = new Set(['conflict', 'military', 'energy']);
 

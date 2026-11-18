@@ -50,15 +50,16 @@ The web app is the Lite UI (`src/lite/`, served at `/lite`). Refactor Phase 1d r
 | `src/components/` | UI components |
 | `src/services/` | Data fetching modules — sebuf client wrappers, AI, signal analysis |
 | `src/config/` | Static data and route config (geo, military, ports, Lite routes) |
-| `src/generated/` | Auto-generated sebuf client + server stubs (**do not edit by hand**) |
+| `packages/contracts/generated/` | Auto-generated sebuf client + server stubs, workspace package `@wm/contracts` (**do not edit by hand**) |
 | `src/types/` | TypeScript type definitions |
 | `src/locales/` | i18n JSON files |
 | `src/workers/` | Web Workers for analysis |
 | `server/` | Sebuf handler implementations |
 | `api/` | Vercel Edge Functions (sebuf gateway + legacy endpoints) |
-| `proto/` | Protobuf service and message definitions |
+| `packages/contracts/proto/` | Protobuf service and message definitions |
 | `data/` | Static JSON datasets |
-| `docs/` | Documentation + generated OpenAPI specs |
+| `packages/contracts/openapi/` | Generated OpenAPI specs (**do not edit by hand**) |
+| `docs/` | Engineering records |
 | `src-tauri/` | Tauri v2 Rust app + Node.js sidecar for desktop builds |
 | `e2e/` | Playwright end-to-end tests |
 | `scripts/` | Build and packaging scripts |
@@ -439,7 +440,7 @@ This repository is developed with [Claude Code](https://claude.com/claude-code),
 - Edge function gateway and legacy endpoints go in `api/`
 - UI components (panels, map, modals) go in `src/components/`
 - Service modules (data fetching, client wrappers) go in `src/services/`
-- Proto definitions go in `proto/worldmonitor/{domain}/v1/`
+- Proto definitions go in `packages/contracts/proto/worldmonitor/{domain}/v1/`
 
 ## Working with Sebuf (RPC Framework)
 
@@ -447,10 +448,11 @@ Sebuf is the project's custom Proto-first HTTP RPC framework — a lightweight a
 
 ### How It Works
 
-1. **Proto definitions** in `proto/worldmonitor/{domain}/v1/` define services and messages
+1. **Proto definitions** in `packages/contracts/proto/worldmonitor/{domain}/v1/` define services and messages
 2. **Code generation** (`make generate`) produces:
-   - TypeScript clients in `src/generated/client/` (e.g., `MarketServiceClient`)
-   - Server route factories in `src/generated/server/` (e.g., `createMarketServiceRoutes`)
+   - TypeScript clients in `packages/contracts/generated/client/` (e.g., `MarketServiceClient`)
+   - Server route factories in `packages/contracts/generated/server/` (e.g., `createMarketServiceRoutes`)
+   - Browser code imports them as `@wm/contracts/generated/...`; `api/`, `server/` and `shared/` use relative paths into `packages/contracts/generated/`
 3. **Handlers** in `server/worldmonitor/{domain}/v1/handler.ts` implement the service interface
 4. **Gateway** in `api/[domain]/v1/[rpc].ts` registers all handlers and routes requests
 5. **Clients** in `src/services/{domain}/index.ts` wrap the generated client for app use
@@ -487,7 +489,7 @@ Source attribution (the manifest and `docs/engineering/architecture/source-attri
 
 ### Generated Artifacts in Pull Requests
 
-`make generate` writes generated files under `src/generated/` and `docs/api/`. These files remain committed to the repository, but they must never be edited by hand.
+`make generate` writes generated files under `packages/contracts/generated/` and `packages/contracts/openapi/`. These files remain committed to the repository, but they must never be edited by hand.
 
 For pull requests created from branches in this repository, a read-only job runs the pinned generator against the exact PR head. A fresh writer job applies only the validated generated-artifact patch; it does not execute repository-controlled code with a write token. When generated files drift, CI appends a `chore(proto): update generated artifacts` commit to the same branch. GitHub creates fresh PR runs for the automated update in an approval-required state; a maintainer must approve them in the merge box. `proto-generated-followup` remains pending until that new head produces no further drift. CI also regenerates against the synthetic merge result so concurrent proto changes on `main` cannot leave an internally consistent branch stale after merge. Proto Generation Check reports every proto job and the aggregate `proto-freshness` result on each pull request.
 
@@ -511,17 +513,17 @@ For Dependabot pull requests from this repository, use the same owner-review and
 
 | File | Purpose |
 | --- | --- |
-| `docs/api/{Service}.openapi.yaml` / `.json` | Per-service specs |
-| `docs/api/worldmonitor.openapi.yaml` | **Unified bundle** spanning every service (sebuf ≥ v0.11.0) — use this for external consumers, API explorers, or anywhere you want a single spec covering all RPCs |
+| `packages/contracts/openapi/{Service}.openapi.yaml` / `.json` | Per-service specs |
+| `packages/contracts/openapi/worldmonitor.openapi.yaml` | **Unified bundle** spanning every service (sebuf ≥ v0.11.0) — use this for external consumers, API explorers, or anywhere you want a single spec covering all RPCs |
 
-The unified bundle is emitted by a third `protoc-gen-openapiv3` invocation in `proto/buf.gen.yaml` using `bundle=true`, `bundle_only=true`, and `strategy: all`. Regenerate alongside the per-service files; do not edit by hand.
+The unified bundle is emitted by a third `protoc-gen-openapiv3` invocation in `packages/contracts/proto/buf.gen.yaml` using `bundle=true`, `bundle_only=true`, and `strategy: all`. Regenerate alongside the per-service files; do not edit by hand.
 
 ## Adding Data Sources
 
 To add a new data layer to the map:
 
 1. **Define the data source** — identify the API or dataset you want to integrate
-2. **Add the proto service** (if the data needs a backend proxy) — define messages and RPC methods in `proto/worldmonitor/{domain}/v1/`
+2. **Add the proto service** (if the data needs a backend proxy) — define messages and RPC methods in `packages/contracts/proto/worldmonitor/{domain}/v1/`
 3. **Generate stubs** — run `make generate`
 4. **Implement the handler** in `server/worldmonitor/{domain}/v1/`
 5. **Register the handler** in `api/[domain]/v1/[rpc].ts` and `vite.config.ts` (for local dev)

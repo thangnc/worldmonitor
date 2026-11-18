@@ -5,7 +5,7 @@
  * external I/O and shared attempt identity. The RPC handler still chooses the
  * serving tier and shapes the response.
  */
-import type { ListFeedDigestResponse } from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
+import type { ListFeedDigestResponse } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 // @ts-expect-error — JS module, no declaration file
 import { captureSilentError } from '../../../../api/_sentry-edge.js';
 import { DIGEST_LASTGOOD_PUBLISH_SCRIPT } from '../../../../shared/digest-lastgood-publish-script.mjs';

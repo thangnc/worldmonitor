@@ -4,7 +4,7 @@ import type {
   GetPipelineDetailRequest,
   GetPipelineDetailResponse,
   PipelineEntry,
-} from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 import { projectPipeline } from './list-pipelines';
 import { pickNewerIsoTimestamp } from '../../../../src/shared/pipeline-evidence';
 

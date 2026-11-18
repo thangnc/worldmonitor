@@ -16,7 +16,7 @@ import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { computeLane } from '../server/worldmonitor/supply-chain/v1/get-route-explorer-lane.ts';
-import type { GetRouteExplorerLaneRequest } from '../src/generated/server/worldmonitor/supply_chain/v1/service_server.ts';
+import type { GetRouteExplorerLaneRequest } from '../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server.ts';
 import { countryBox, inBox } from '../shared/country-bbox.ts';
 import { STRATEGIC_WATERWAYS } from '../shared/geo-data.ts';
 import { TRADE_ROUTES } from '../src/config/trade-routes.ts';

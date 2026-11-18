@@ -1,4 +1,4 @@
-import type { WarRiskTier } from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+import type { WarRiskTier } from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 
 export type ThreatLevel = 'war_zone' | 'critical' | 'high' | 'elevated' | 'normal';
 

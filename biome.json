@@ -19,7 +19,7 @@
 	},
 	"overrides": [
 		{
-			"includes": ["src/generated/**"],
+			"includes": ["packages/contracts/generated/**"],
 			"linter": { "enabled": false }
 		},
 		{

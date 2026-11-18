@@ -13,7 +13,7 @@
 // or the UI flickers from one color to another on hydration.
 //
 // Duck-typed input: the shared interface here intentionally does NOT import
-// from src/generated so it stays dependency-free; server + client both
+// from packages/contracts/generated so it stays dependency-free; server + client both
 // assign their proto-typed evidence bundles to it by structural subtyping.
 //
 // See docs/methodology/pipelines.mdx §"How public badges move".

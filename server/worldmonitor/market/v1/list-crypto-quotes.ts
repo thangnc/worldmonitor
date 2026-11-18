@@ -25,7 +25,7 @@ import type {
   ListCryptoQuotesRequest,
   ListCryptoQuotesResponse,
   CryptoQuote,
-} from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import {
   CRYPTO_META,
   fetchCoinGeckoMarkets,

@@ -17,7 +17,7 @@ const walk = dir => readdirSync(dir).flatMap(name => {
   const path = join(dir, name);
   return statSync(path).isDirectory() ? walk(path) : [path];
 });
-const generatedGetRoutes = walk(join(root, 'src/generated/server'))
+const generatedGetRoutes = walk(join(root, 'packages/contracts/generated/server'))
   .flatMap(file => [...readFileSync(file, 'utf8').matchAll(/method: "GET",\s*path: "(\/api\/[^"]+)"/g)])
   .map(match => match[1]);
 const premiumPaths = new Set([...read('src/shared/premium-paths.ts').matchAll(/'(\/api\/[^']+)'/g)].map(m => m[1]));

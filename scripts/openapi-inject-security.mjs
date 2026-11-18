@@ -2,7 +2,7 @@
 /**
  * Inject the auth security contract into the generated OpenAPI specs.
  *
- * The sebuf `protoc-gen-openapiv3` plugin (proto/buf.gen.yaml) has no option or
+ * The sebuf `protoc-gen-openapiv3` plugin (packages/contracts/proto/buf.gen.yaml) has no option or
  * annotation for describing authentication, so every generated spec omits
  * `components.securitySchemes`, a root `security` requirement, and the `401`
  * response — even though every non-public WorldMonitor RPC is authenticated at
@@ -15,13 +15,13 @@
  * followed by this step) yields byte-identical output.
  *
  * Two artifact families:
- *   1. docs/api/<Service>.openapi.json — full injection (schemes + root
+ *   1. packages/contracts/openapi/<Service>.openapi.json — full injection (schemes + root
  *      API-key security + per-operation bearer overrides where the gateway
  *      accepts Clerk bearer auth + per-operation 401 + entitlement/public 403
  *      responses/notes). Re-serialized byte-faithfully to the generator's
  *      format (recursively sorted keys, Go-style <>&/U+2028/U+2029 escaping, no
  *      trailing newline) so the diff is additions-only.
- *   2. docs/api/<Service>.openapi.yaml and docs/api/worldmonitor.openapi.yaml —
+ *   2. packages/contracts/openapi/<Service>.openapi.yaml and packages/contracts/openapi/worldmonitor.openapi.yaml —
  *      docs-facing YAML (the bundle is copied to public/openapi.yaml at build).
  *      The generator's YAML emitter cannot be reproduced by js-yaml (a re-dump
  *      reformats ~100% of 21k lines), so YAML gets formatting-preserving
@@ -51,7 +51,7 @@ import {
 } from './lib/openapi-codegen.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const bundlePath = resolve(apiDir, 'worldmonitor.openapi.yaml');
 
 const CHECK = process.argv.includes('--check');

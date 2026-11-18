@@ -122,15 +122,15 @@ describe('store-outage answer', () => {
 
 const read = (rel: string): string => readFileSync(resolve(root, rel), 'utf-8');
 
-const serviceProtoSrc = read('proto/worldmonitor/intelligence/v1/service.proto');
-const recordProtoSrc = read('proto/worldmonitor/intelligence/v1/intel_history_record.proto');
-const searchProtoSrc = read('proto/worldmonitor/intelligence/v1/search_intel_history.proto');
-const timelineProtoSrc = read('proto/worldmonitor/intelligence/v1/get_intel_timeline.proto');
-const similarProtoSrc = read('proto/worldmonitor/intelligence/v1/get_similar_events.proto');
+const serviceProtoSrc = read('packages/contracts/proto/worldmonitor/intelligence/v1/service.proto');
+const recordProtoSrc = read('packages/contracts/proto/worldmonitor/intelligence/v1/intel_history_record.proto');
+const searchProtoSrc = read('packages/contracts/proto/worldmonitor/intelligence/v1/search_intel_history.proto');
+const timelineProtoSrc = read('packages/contracts/proto/worldmonitor/intelligence/v1/get_intel_timeline.proto');
+const similarProtoSrc = read('packages/contracts/proto/worldmonitor/intelligence/v1/get_similar_events.proto');
 const handlerIndexSrc = read('server/worldmonitor/intelligence/v1/handler.ts');
 const gatewaySrc = read('server/gateway.ts');
 const rateLimitSrc = read('server/_shared/rate-limit.ts');
-const openApiJson = JSON.parse(read('docs/api/IntelligenceService.openapi.json')) as {
+const openApiJson = JSON.parse(read('packages/contracts/openapi/IntelligenceService.openapi.json')) as {
   paths: Record<string, Record<string, unknown>>;
 };
 

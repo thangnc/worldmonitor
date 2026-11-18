@@ -426,14 +426,14 @@ describe('#7081 consumers — FADING stays wire-compatible', () => {
   const read = (...p: string[]) => readFileSync(resolve(__dirname, '..', ...p), 'utf-8');
 
   it('the proto keeps the enum value and its number', () => {
-    const proto = read('proto', 'worldmonitor', 'news', 'v1', 'news_item.proto');
+    const proto = read('packages', 'contracts', 'proto', 'worldmonitor', 'news', 'v1', 'news_item.proto');
     assert.match(proto, /STORY_PHASE_FADING\s*=\s*4;/,
       'the wire value must not be removed or renumbered');
   });
 
   it('the generated client and server still carry the value', () => {
     for (const side of ['client', 'server']) {
-      const gen = read('src', 'generated', side, 'worldmonitor', 'news', 'v1',
+      const gen = read('packages', 'contracts', 'generated', side, 'worldmonitor', 'news', 'v1',
         side === 'client' ? 'service_client.ts' : 'service_server.ts');
       assert.match(gen, /"STORY_PHASE_FADING"/);
     }

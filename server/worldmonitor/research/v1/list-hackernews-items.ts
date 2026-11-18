@@ -7,7 +7,7 @@ import type {
   ServerContext,
   ListHackernewsItemsRequest,
   ListHackernewsItemsResponse,
-} from '../../../../src/generated/server/worldmonitor/research/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/research/v1/service_server';
 
 import filterParamContracts from '../../../../shared/openapi-filter-param-contracts.json';
 import { resolvePageSize } from '../../../_shared/constants';

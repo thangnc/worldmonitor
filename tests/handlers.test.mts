@@ -35,7 +35,7 @@ import {
   buildUSNIFleetReportCacheResponse,
   buildUSNIFleetReportForceRefreshResponse,
 } from '../server/worldmonitor/military/v1/get-usni-fleet-report.ts';
-import type { USNIFleetReport } from '../src/generated/server/worldmonitor/military/v1/service_server.ts';
+import type { USNIFleetReport } from '../packages/contracts/generated/server/worldmonitor/military/v1/service_server.ts';
 
 // ---------------------------------------------------------------------------
 // News domain helpers

@@ -4,7 +4,7 @@ import test from 'node:test';
 import { load as loadYaml } from 'js-yaml';
 import { getFredSeries } from '../server/worldmonitor/economic/v1/get-fred-series';
 import { ALLOWED_FRED_SERIES } from '../server/worldmonitor/economic/v1/_fred-shared';
-import { ValidationError } from '../src/generated/server/worldmonitor/economic/v1/service_server';
+import { ValidationError } from '../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
 const SUPPORTED = [...ALLOWED_FRED_SERIES].sort();
 
@@ -27,7 +27,7 @@ test('published OpenAPI lists every supported FRED series ID', () => {
     'worldmonitor.openapi.yaml': loadYaml,
   };
   for (const [file, parse] of Object.entries(specs)) {
-    const spec = parse(readFileSync(new URL(`../docs/api/${file}`, import.meta.url), 'utf8')) as {
+    const spec = parse(readFileSync(new URL(`../packages/contracts/openapi/${file}`, import.meta.url), 'utf8')) as {
       paths: Record<string, { get: { parameters: { name: string; schema: { enum?: string[] } }[] } }>;
     };
     const param = spec.paths['/api/economic/v1/get-fred-series']!.get.parameters.find(p => p.name === 'series_id');

@@ -31,7 +31,7 @@
  * structure left that would pay for another 3 KB entry; the contract test
  * pins the registry events to the header description instead.
  *
- * Only the bundle (docs/api/worldmonitor.openapi.yaml) is touched: it is copied
+ * Only the bundle (packages/contracts/openapi/worldmonitor.openapi.yaml) is touched: it is copied
  * to public/openapi.yaml and deserialized to public/openapi.json (the artifact
  * orank fetches) at build time. The per-service ShippingV2Service spec is left
  * alone — top-level `webhooks` is a bundle-level, cross-cutting concern and the
@@ -50,7 +50,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const bundlePath = resolve(root, 'docs/api/worldmonitor.openapi.yaml');
+const bundlePath = resolve(root, 'packages/contracts/openapi/worldmonitor.openapi.yaml');
 
 const CHECK = process.argv.includes('--check');
 

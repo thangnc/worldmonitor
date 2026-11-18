@@ -15,7 +15,7 @@
  *      (via tsx, same pattern as enforce-rate-limit-policies.mjs) → set of
  *      premium HTTP paths. Live import means reformatting the source literal
  *      can never desync the lint from the runtime (#3287 follow-up).
- *   2. Walk src/generated/client/ → map each ServiceClient class to its
+ *   2. Walk packages/contracts/generated/client/ → map each ServiceClient class to its
  *      method-name → path table (the `let path = "/api/..."` line each
  *      generated method opens with).
  *   3. Walk src/ (excluding generated) with the TypeScript AST. For each
@@ -37,7 +37,7 @@ import { isMainModule } from './lib/main-module.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const PREMIUM_PATHS_SRC = join(ROOT, 'src/shared/premium-paths.ts');
-const GEN_CLIENT_DIR = join(ROOT, 'src/generated/client');
+const GEN_CLIENT_DIR = join(ROOT, 'packages/contracts/generated/client');
 const SRC_DIR = join(ROOT, 'src');
 const PREMIUM_FETCH_SRC = join(ROOT, 'src/services/premium-fetch.ts');
 

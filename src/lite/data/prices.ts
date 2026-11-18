@@ -4,7 +4,7 @@
  * This shows what moved alongside the story. It does not prove the story
  * moved the price. Pure functions; Finance.tsx renders the result.
  */
-import type { NewsItem } from '@/generated/client/worldmonitor/news/v1/service_client';
+import type { NewsItem } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
 import { isWarStory, marketTag } from './transforms';
 import { signed } from '../format';
 

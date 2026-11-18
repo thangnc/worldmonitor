@@ -62,13 +62,13 @@ run() {
   "$@" || { echo "pre-push: FAILED: $*"; exit 1; }
 }
 
-if changed '^(src/|shared/|tests/|lite\.html$|vite\.|tsconfig|package\.json$)'; then
+if changed '^(src/|shared/|packages/contracts/generated/|tests/|lite\.html$|vite\.|tsconfig|package\.json$|packages/contracts/package\.json$)'; then
   run npm run --silent typecheck
 fi
-if changed '^(api/|server/|shared/|src/generated/|middleware\.ts$|tsconfig|package\.json$)'; then
+if changed '^(api/|server/|shared/|packages/contracts/generated/|middleware\.ts$|tsconfig|package\.json$)'; then
   run npm run --silent typecheck:api
 fi
-if changed '^(api/|server/|src/generated/|scripts/check-edge-function-bundles\.mjs$)'; then
+if changed '^(api/|server/|packages/contracts/generated/|scripts/check-edge-function-bundles\.mjs$)'; then
   run node scripts/check-edge-function-bundles.mjs --caller=prepush
 fi
 if changed '^src/'; then
@@ -81,11 +81,11 @@ fi
 if changed '^(\.github/workflows/|ARCHITECTURE\.md$|scripts/docs-stats\.mjs$|\.husky/pre-push$)'; then
   run npm run --silent docs:check
 fi
-if changed '^(proto/|Makefile$)'; then
+if changed '^(packages/contracts/proto/|Makefile$)'; then
   if command -v buf >/dev/null 2>&1; then
     run make generate
-    if ! git diff --quiet -- src/generated docs/api; then
-      echo "pre-push: FAILED: make generate changed src/generated or docs/api; commit the result."
+    if ! git diff --quiet -- packages/contracts/generated packages/contracts/openapi; then
+      echo "pre-push: FAILED: make generate changed packages/contracts/generated or packages/contracts/openapi; commit the result."
       exit 1
     fi
   else

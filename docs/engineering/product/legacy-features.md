@@ -33,7 +33,7 @@ Most features are a pipeline, and only the UI leaves with the dashboard. Before 
 
 1. **UI**: the panel or layer component (tables below). It is vanilla DOM code, so a Lite widget is rewritten in Preact, not copied.
 2. **Browser service**: the `src/services/*` module the component imports. Port only what the widget needs into the client package.
-3. **RPC**: the generated client method the service calls, defined in `proto/`. Contracts and handlers (`server/worldmonitor/<domain>/v1/`) stay in the repository.
+3. **RPC**: the generated client method the service calls, defined in `packages/contracts/proto/`. Contracts and handlers (`server/worldmonitor/<domain>/v1/`) stay in the repository.
 4. **Redis key and producer**: the handler's key in `api/health.js` (`BOOTSTRAP_KEYS`, `STANDALONE_KEYS`, `SEED_META`), and the seeder or relay loop that writes it. Producers stay in the repository; a port adds the producer to the Lite seeder allowlist and its key to the health subset.
 5. **Licence**: check the upstream host in `shared/source-attribution-manifest.json` against the spec's source policy.
 

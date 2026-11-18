@@ -7,8 +7,8 @@ import type {
   ServerContext,
   GetFredSeriesRequest,
   GetFredSeriesResponse,
-} from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
 import { getCachedJson } from '../../../_shared/redis';
 import { markNoStoreFallbackResponse, setResponseHeader } from '../../../_shared/response-headers';

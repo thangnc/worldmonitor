@@ -30,7 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { eq, serialize } from './lib/openapi-codegen.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const CHECK = process.argv.includes('--check');
 
 // Async-enqueue operations. `locationExample` must mirror the curated

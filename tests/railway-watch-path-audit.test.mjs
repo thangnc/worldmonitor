@@ -1494,6 +1494,7 @@ describe('closure detection layers', () => {
           '.dockerignore',
           'Dockerfile.seed-bundle-resilience-validation',
           'tsconfig.api.json',
+          'tsconfig.base.json',
           'tsconfig.json',
         ],
       );

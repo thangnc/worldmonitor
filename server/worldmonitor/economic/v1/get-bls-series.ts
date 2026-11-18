@@ -13,7 +13,7 @@ import type {
   GetBlsSeriesRequest,
   GetBlsSeriesResponse,
   BlsSeries,
-} from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 import filterParamContracts from '../../../../shared/openapi-filter-param-contracts.json';
 import { SeedUnavailableError, readRequiredSeed } from '../../../_shared/required-seed';
 

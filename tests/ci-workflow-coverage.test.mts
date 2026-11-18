@@ -510,24 +510,33 @@ describe('CI workflow coverage', () => {
     const breakingStep = workflowStepBlock(protoCheckWorkflow, 'Check for breaking proto changes');
     assert.match(
       breakingStep,
-      /^\s+run: make breaking\s*$/m,
-      'proto-check.yml must run the canonical buf breaking target against the fetched origin/main proto baseline',
+      /^\s+buf breaking packages\/contracts\/proto --against "\.git#branch=origin\/main,subdir=\$against"\s*$/m,
+      'proto-check.yml must run buf breaking against the fetched origin/main proto baseline',
+    );
+    assert.match(
+      breakingStep,
+      /^\s+git cat-file -e "origin\/main:\$against\/buf\.yaml" 2>\/dev\/null \|\| against=proto\s*$/m,
+      'the breaking baseline must fall back to proto/ while origin/main predates packages/contracts',
     );
     assert.doesNotMatch(breakingStep, /^\s+continue-on-error:/m);
 
-    // Pin the shared Makefile baseline. `run: make breaking` alone stays green if the
-    // recipe regresses to proto/.git#branch=main (no repo) or loses origin/main.
+    // Pin the shared Makefile baseline. The recipe must keep comparing against
+    // origin/main (not a bare `main` or a missing repository path).
     const makefile = read(resolve(root, 'Makefile'));
     assert.match(
       makefile,
-      /^breaking:[^\n]*\n\tcd \$\(PROTO_DIR\) && buf breaking --against '\.\.\/\.git#branch=origin\/main,subdir=proto'\s*$/m,
-      "make breaking must use '../.git#branch=origin/main,subdir=proto' from PROTO_DIR",
+      /^breaking:[^\n]*\n\tbuf breaking \$\(PROTO_DIR\) --against '\.git#branch=origin\/main,subdir=\$\(BREAKING_AGAINST_SUBDIR\)'\s*$/m,
+      "make breaking must use '.git#branch=origin/main,subdir=$(BREAKING_AGAINST_SUBDIR)' from the repository root",
+    );
+    assert.match(
+      makefile,
+      /^BREAKING_AGAINST_SUBDIR = \$\(shell git cat-file -e origin\/main:\$\(PROTO_DIR\)\/buf\.yaml 2>\/dev\/null && echo \$\(PROTO_DIR\) \|\| echo proto\)$/m,
     );
 
     // Pin the documented FILE/PACKAGE/WIRE_JSON policy (binary WIRE intentionally off).
-    const bufYaml = read(resolve(root, 'proto/buf.yaml'));
+    const bufYaml = read(resolve(root, 'packages/contracts/proto/buf.yaml'));
     const breakingUse = bufYaml.match(/\nbreaking:\n(?:[^\n]*\n)*?[ \t]+use:\n((?:[ \t]+-[^\n]*\n)+)/);
-    assert.ok(breakingUse, 'proto/buf.yaml must declare breaking.use');
+    assert.ok(breakingUse, 'packages/contracts/proto/buf.yaml must declare breaking.use');
     const rules = [...breakingUse[1].matchAll(/^[ \t]+-[ \t]+(\S+)\s*$/gm)].map((m) => m[1]).sort();
     assert.deepEqual(
       rules,

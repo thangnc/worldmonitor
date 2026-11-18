@@ -3,7 +3,7 @@ import type {
   GetUSNIFleetReportRequest,
   GetUSNIFleetReportResponse,
   USNIFleetReport,
-} from '../../../../src/generated/server/worldmonitor/military/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 
 import { getCachedJson } from '../../../_shared/redis';
 

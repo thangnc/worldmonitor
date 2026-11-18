@@ -25,8 +25,8 @@ function canonicalJson(value: unknown): string {
 
 describe('resilience indicator RPC contract', () => {
   it('registers a required ISO-2 GET RPC without changing the score proto', () => {
-    const service = read('proto/worldmonitor/resilience/v1/service.proto');
-    const indicators = read('proto/worldmonitor/resilience/v1/get_resilience_indicators.proto');
+    const service = read('packages/contracts/proto/worldmonitor/resilience/v1/service.proto');
+    const indicators = read('packages/contracts/proto/worldmonitor/resilience/v1/get_resilience_indicators.proto');
 
     assert.match(service, /import "worldmonitor\/resilience\/v1\/get_resilience_indicators\.proto";/);
     assert.match(service, /rpc GetResilienceIndicators\(GetResilienceIndicatorsRequest\) returns \(GetResilienceIndicatorsResponse\)/);
@@ -37,7 +37,7 @@ describe('resilience indicator RPC contract', () => {
   });
 
   it('carries trace-aligned state, contribution, provenance and version metadata', () => {
-    const proto = read('proto/worldmonitor/resilience/v1/get_resilience_indicators.proto');
+    const proto = read('packages/contracts/proto/worldmonitor/resilience/v1/get_resilience_indicators.proto');
     for (const field of [
       'included_in_dimension_score', 'state', 'reason', 'normalized_score_available',
       'nominal_weight', 'runtime_weight', 'scoring_weight_share', 'literal_contribution',
@@ -61,7 +61,7 @@ describe('resilience indicator RPC contract', () => {
   });
 
   it('keeps the existing get-resilience-score OpenAPI schema closure unchanged', () => {
-    const spec = JSON.parse(read('docs/api/ResilienceService.openapi.json')) as {
+    const spec = JSON.parse(read('packages/contracts/openapi/ResilienceService.openapi.json')) as {
       components: { schemas: Record<string, unknown> };
     };
     const names = [

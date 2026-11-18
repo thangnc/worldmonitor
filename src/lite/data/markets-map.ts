@@ -5,8 +5,8 @@
  * the map. Chokepoints, shipping lanes, new sanctions and financial centres
  * are context. Pure functions; Finance.tsx turns them into map markers.
  */
-import type { ChokepointInfo } from '@/generated/client/worldmonitor/supply_chain/v1/service_client';
-import type { CountrySanctionsPressure } from '@/generated/client/worldmonitor/sanctions/v1/service_client';
+import type { ChokepointInfo } from '@wm/contracts/generated/client/worldmonitor/supply_chain/v1/service_client';
+import type { CountrySanctionsPressure } from '@wm/contracts/generated/client/worldmonitor/sanctions/v1/service_client';
 import { CENTRAL_BANKS, FINANCIAL_CENTERS, STOCK_EXCHANGES, type FinancialCenter } from '@/config/finance-geo';
 import { TRADE_ROUTES, resolveTradeRouteSegments } from '@/config/trade-routes';
 import { STRATEGIC_WATERWAYS } from '@/config/geo';

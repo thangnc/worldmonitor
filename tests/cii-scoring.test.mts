@@ -2217,7 +2217,7 @@ describe('CII scoring', () => {
   it('proto schema constrains advisory_provenance vocabulary', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const proto = readFileSync(
-      resolve(root, 'proto', 'worldmonitor', 'intelligence', 'v1', 'intelligence.proto'),
+      resolve(root, 'packages', 'contracts', 'proto', 'worldmonitor', 'intelligence', 'v1', 'intelligence.proto'),
       'utf8',
     );
 
@@ -2233,21 +2233,21 @@ describe('CII scoring', () => {
     const expectedMilitary = 'Security-mobility contribution from military flights, military vessels, aviation disruption, and GPS interference (0-100).';
     const staleSourcePattern = /ACLED\/UCDP|AIS disruption/;
 
-    const proto = readRepoFile('proto/worldmonitor/intelligence/v1/intelligence.proto');
+    const proto = readRepoFile('packages/contracts/proto/worldmonitor/intelligence/v1/intelligence.proto');
     const protoBlock = proto.match(/message CiiComponents \{[\s\S]*?\n\}/)?.[0] ?? '';
     assert.ok(protoBlock, 'intelligence.proto must define CiiComponents.');
     assert.ok(protoBlock.includes(expectedGeo), 'intelligence.proto must describe geo_convergence with current ACLED-only sources.');
     assert.ok(protoBlock.includes(expectedMilitary), 'intelligence.proto must describe military_activity with military vessels.');
     assert.doesNotMatch(protoBlock, staleSourcePattern);
 
-    const serviceOpenApi = JSON.parse(readRepoFile('docs/api/IntelligenceService.openapi.json')) as {
+    const serviceOpenApi = JSON.parse(readRepoFile('packages/contracts/openapi/IntelligenceService.openapi.json')) as {
       components?: { schemas?: { CiiComponents?: { properties?: Record<string, { description?: string }> } } };
     };
     const ciiProperties = serviceOpenApi.components?.schemas?.CiiComponents?.properties ?? {};
     assert.equal(ciiProperties.geoConvergence?.description, expectedGeo);
     assert.equal(ciiProperties.militaryActivity?.description, expectedMilitary);
 
-    for (const path of ['docs/api/IntelligenceService.openapi.yaml', 'docs/api/worldmonitor.openapi.yaml']) {
+    for (const path of ['packages/contracts/openapi/IntelligenceService.openapi.yaml', 'packages/contracts/openapi/worldmonitor.openapi.yaml']) {
       const openApi = readRepoFile(path);
       const block = openApi.match(/\n {8}[A-Za-z0-9_]*CiiComponents:\n[\s\S]*?(?=\n {8}[A-Za-z][A-Za-z0-9_]*:\n)/)?.[0] ?? '';
       assert.ok(block, `${path} must define CiiComponents.`);
@@ -2503,9 +2503,9 @@ describe('CII scoring', () => {
 
   it('CII dynamicScore contract allows signed 24-hour movement deltas', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-    const proto = readFileSync(resolve(root, 'proto', 'worldmonitor', 'intelligence', 'v1', 'intelligence.proto'), 'utf8');
-    const serviceOpenapi = readFileSync(resolve(root, 'docs', 'api', 'IntelligenceService.openapi.yaml'), 'utf8');
-    const unifiedOpenapi = readFileSync(resolve(root, 'docs', 'api', 'worldmonitor.openapi.yaml'), 'utf8');
+    const proto = readFileSync(resolve(root, 'packages', 'contracts', 'proto', 'worldmonitor', 'intelligence', 'v1', 'intelligence.proto'), 'utf8');
+    const serviceOpenapi = readFileSync(resolve(root, 'packages', 'contracts', 'openapi', 'IntelligenceService.openapi.yaml'), 'utf8');
+    const unifiedOpenapi = readFileSync(resolve(root, 'packages', 'contracts', 'openapi', 'worldmonitor.openapi.yaml'), 'utf8');
 
     assert.match(
       proto,

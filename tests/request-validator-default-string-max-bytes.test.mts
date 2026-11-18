@@ -5,7 +5,7 @@ import {
   DEFAULT_STRING_MAX_BYTES,
   validateGeneratedRequest,
 } from '../server/request-validator.ts';
-import { GENERATED_MESSAGE_RULES } from '../src/generated/server/request_validation.ts';
+import { GENERATED_MESSAGE_RULES } from '../packages/contracts/generated/server/request_validation.ts';
 
 // #8402: un-annotated (and max_bytes-less) proto strings must still reject
 // payloads above a global UTF-8 ceiling so the platform body limit cannot

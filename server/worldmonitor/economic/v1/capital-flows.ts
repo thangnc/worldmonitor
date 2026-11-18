@@ -13,7 +13,7 @@ import type {
   CapitalFlowPosition,
   CapitalFlowTotals,
   GetCapitalFlowsResponse,
-} from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
 // Written by scripts/seed-capital-flows.mjs.
 export const CAPITAL_FLOWS_KEY = 'economic:capital-flows:v1';

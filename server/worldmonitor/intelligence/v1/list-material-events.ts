@@ -9,8 +9,8 @@ import type {
   ListMaterialEventsRequest,
   ListMaterialEventsResponse,
   MaterialEvent,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { getCachedJson } from '../../../_shared/redis';
 import { SEC_8K_STREAM_KEY } from '../../../_shared/sec-edgar';
 

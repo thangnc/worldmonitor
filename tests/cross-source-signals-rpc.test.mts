@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 
-import { createIntelligenceServiceRoutes } from '../src/generated/server/worldmonitor/intelligence/v1/service_server.ts';
+import { createIntelligenceServiceRoutes } from '../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server.ts';
 import { serverOptions } from '../server/gateway.ts';
 import { intelligenceHandler } from '../server/worldmonitor/intelligence/v1/handler.ts';
 

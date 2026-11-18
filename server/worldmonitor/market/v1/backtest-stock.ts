@@ -5,7 +5,7 @@ import {
   type BacktestStockResponse,
   type MarketServiceHandler,
   type ServerContext,
-} from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import { attachApiErrorHttpResponseMetadata } from '../../../error-mapper';
 import { cachedFetchJsonWithMeta, runRedisPipeline } from '../../../_shared/redis';
 import {

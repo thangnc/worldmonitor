@@ -1,4 +1,4 @@
-import type { NewsServiceHandler } from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
+import type { NewsServiceHandler } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 
 import { summarizeArticle } from './summarize-article';
 import { getSummarizeArticleCache } from './get-summarize-article-cache';

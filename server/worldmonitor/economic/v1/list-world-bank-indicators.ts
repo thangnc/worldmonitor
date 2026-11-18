@@ -14,8 +14,8 @@ import type {
   ListWorldBankIndicatorsRequest,
   ListWorldBankIndicatorsResponse,
   WorldBankCountryData,
-} from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
 import { isAssignedCountryCode } from '../../../../shared/country-code-resolve';
 import { cachedFetchJsonWithMeta, readCachedJson } from '../../../_shared/redis';

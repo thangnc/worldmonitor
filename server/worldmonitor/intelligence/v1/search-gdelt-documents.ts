@@ -3,7 +3,7 @@ import type {
   ServerContext,
   SearchGdeltDocumentsRequest,
   SearchGdeltDocumentsResponse,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 import { getLargeRawJson, logCacheReadError, readCachedJson } from '../../../_shared/redis';
 import { normalizeGdeltTopicSnapshot } from '../../../../shared/intelligence-snapshots.js';

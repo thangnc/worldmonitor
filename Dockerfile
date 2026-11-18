@@ -15,6 +15,9 @@ ENV npm_config_install_links=true
 
 # Install root dependencies (layer-cached until package.json changes)
 COPY package.json package-lock.json ./
+# Workspace manifests: npm ci links each workspace package (@wm/contracts) into
+# node_modules, so its package.json must exist before the install.
+COPY packages/contracts/package.json ./packages/contracts/
 COPY vendor/braces/ ./vendor/braces/
 COPY vendor/stream-json/ ./vendor/stream-json/
 COPY vendor/vercel-og/ ./vendor/vercel-og/

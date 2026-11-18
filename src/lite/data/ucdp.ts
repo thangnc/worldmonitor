@@ -1,4 +1,4 @@
-import type { UcdpViolenceEvent, UcdpViolenceType } from '@/generated/client/worldmonitor/conflict/v1/service_client';
+import type { UcdpViolenceEvent, UcdpViolenceType } from '@wm/contracts/generated/client/worldmonitor/conflict/v1/service_client';
 import type { AggregateMarker } from '../map/LiteMap';
 import { regionOfPoint, type GeoRegion } from './transforms';
 

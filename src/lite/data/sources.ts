@@ -10,7 +10,7 @@
  *
  * No premium path is used (src/shared/premium-paths.ts).
  */
-import type { ListFeedDigestResponse } from '@/generated/client/worldmonitor/news/v1/service_client';
+import type { ListFeedDigestResponse } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
 import type {
   CryptoQuote,
   GetFearGreedIndexResponse,
@@ -20,37 +20,37 @@ import type {
   ListStablecoinMarketsResponse,
   MarketQuote,
   CommodityQuote,
-} from '@/generated/client/worldmonitor/market/v1/service_client';
-import type { GetRiskScoresResponse, GetCountryHistoryResponse } from '@/generated/client/worldmonitor/intelligence/v1/service_client';
-import type { UcdpViolenceEvent } from '@/generated/client/worldmonitor/conflict/v1/service_client';
-import type { UnrestEvent } from '@/generated/client/worldmonitor/unrest/v1/service_client';
-import type { Earthquake } from '@/generated/client/worldmonitor/seismology/v1/service_client';
-import type { MilitaryFlight } from '@/generated/client/worldmonitor/military/v1/service_client';
+} from '@wm/contracts/generated/client/worldmonitor/market/v1/service_client';
+import type { GetRiskScoresResponse, GetCountryHistoryResponse } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
+import type { UcdpViolenceEvent } from '@wm/contracts/generated/client/worldmonitor/conflict/v1/service_client';
+import type { UnrestEvent } from '@wm/contracts/generated/client/worldmonitor/unrest/v1/service_client';
+import type { Earthquake } from '@wm/contracts/generated/client/worldmonitor/seismology/v1/service_client';
+import type { MilitaryFlight } from '@wm/contracts/generated/client/worldmonitor/military/v1/service_client';
 import { MILITARY_QUERY_REGIONS } from '@/config/military';
 import { isConflictCounts, type ConflictCounts } from './conflict';
 import { isGpsHighCells, type GpsHighCells } from './geo-layers';
 import { isDdosWindows, type DdosWindows } from './tech-map';
 import { isCrossStraitSnapshot, type EmbassyAlerts } from './geo-watch';
 import type { CrossStraitActivitySnapshot } from '@/types/cross-strait-activity';
-import type { ListUkmtoIncidentsResponse } from '@/generated/client/worldmonitor/maritime/v1/service_client';
+import type { ListUkmtoIncidentsResponse } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';
 import { readUkmtoSnapshot } from '../../../shared/ukmto-incidents';
 import { fetchGpsInterference, type GpsJamData } from '@/services/gps-interference';
 import type {
   GetEconomicCalendarResponse,
   GetGovernmentYieldCurveResponse,
   UsTreasuryParYieldCurve,
-} from '@/generated/client/worldmonitor/economic/v1/service_client';
-import type { GetChokepointStatusResponse, GetShippingRatesResponse } from '@/generated/client/worldmonitor/supply_chain/v1/service_client';
-import type { ListSanctionsPressureResponse } from '@/generated/client/worldmonitor/sanctions/v1/service_client';
-import type { ListMaterialEventsResponse } from '@/generated/client/worldmonitor/intelligence/v1/service_client';
-import type { ArxivPaper, HackernewsItem } from '@/generated/client/worldmonitor/research/v1/service_client';
+} from '@wm/contracts/generated/client/worldmonitor/economic/v1/service_client';
+import type { GetChokepointStatusResponse, GetShippingRatesResponse } from '@wm/contracts/generated/client/worldmonitor/supply_chain/v1/service_client';
+import type { ListSanctionsPressureResponse } from '@wm/contracts/generated/client/worldmonitor/sanctions/v1/service_client';
+import type { ListMaterialEventsResponse } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
+import type { ArxivPaper, HackernewsItem } from '@wm/contracts/generated/client/worldmonitor/research/v1/service_client';
 import type {
   GetCableHealthResponse,
   ListInternetDdosAttacksResponse,
   ListInternetOutagesResponse,
   ListServiceStatusesResponse,
-} from '@/generated/client/worldmonitor/infrastructure/v1/service_client';
-import type { CyberThreat } from '@/generated/client/worldmonitor/cyber/v1/service_client';
+} from '@wm/contracts/generated/client/worldmonitor/infrastructure/v1/service_client';
+import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cyber/v1/service_client';
 import type { CloudRegion } from '@/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@/types';
 import { decodeRecentKev, decodeThreatHistory, type RecentKev, type ThreatHistory } from './tech-indicators';

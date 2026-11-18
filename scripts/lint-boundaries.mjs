@@ -10,7 +10,8 @@
  *
  * Also checks:
  *   - api/ legacy .js: must not import from src/ or server/ (self-contained)
- *   - api/ RPC .ts: may import server/ and src/generated/, but not src/ app code
+ *   - api/ RPC .ts: may import server/ and packages/contracts/generated/, but not src/ app code
+ *   - api/, server/, shared/, middleware.ts reach @wm/contracts by relative path, not by package name
  *   - server/ must not import the Lite UI (src/lite/)
  *   - nothing outside src/lite/ imports the Lite UI
  *
@@ -123,7 +124,7 @@ for (const file of serverFiles) {
 
 // --- Check 3: api/ boundary rules ---
 // Legacy api/*.js: fully self-contained (no ../server/ or ../src/ imports)
-// Sebuf RPC api/**/*.ts: may import server/ and src/generated/ (bundled at deploy),
+// Sebuf RPC api/**/*.ts: may import server/ and packages/contracts/generated/ (bundled at deploy),
 //   but must NOT import src/ non-generated paths (lite, services, config, etc.)
 const apiFiles = walkDir(join(ROOT, 'api'), ['.js', '.mjs', '.ts']);
 for (const file of apiFiles) {
@@ -140,20 +141,20 @@ for (const file of apiFiles) {
     if (i > 0 && lines[i - 1].includes('boundary-ignore')) continue;
 
     if (isTs) {
-      // RPC .ts files: allow server/ and src/generated/, block src/ non-generated
-      if (line.match(/from\s+['"]\.\..*\/src\//) && !line.match(/\/src\/generated\//)) {
+      // RPC .ts files: allow server/ and packages/contracts/generated/, block src/
+      if (line.match(/from\s+['"]\.\..*\/src\//)) {
         violations.push({
           file: relative(ROOT, file),
           line: i + 1,
           from: 'api (RPC)',
-          to: 'src (non-generated)',
+          to: 'src',
           text: line.trim(),
-          remedy: 'RPC Edge Functions may import from server/ and src/generated/, but not from src/ application code (lite, services, config).',
+          remedy: 'RPC Edge Functions may import from server/ and packages/contracts/generated/, but not from src/ application code (lite, services, config).',
         });
       }
     } else {
       // Legacy .js files: fully self-contained
-      if (line.match(/from\s+['"]\.\.\/(?:src|server)\//)) {
+      if (line.match(/from\s+['"]\.\.\/(?:src|server|packages)\//)) {
         violations.push({
           file: relative(ROOT, file),
           line: i + 1,
@@ -188,6 +189,33 @@ for (const file of srcFiles) {
       violations.push({
         file: relative(ROOT, file), line: i + 1, from: 'src', to: spec, text: line.trim(),
         remedy: 'Only src/lite/ may import the Lite UI.',
+      });
+    }
+  }
+}
+
+// --- Check 5: Edge-reachable code imports the contracts by relative path ---
+// Vercel's Edge bundler has not been proven to resolve npm workspace packages,
+// so api/, server/, shared/ and middleware.ts import packages/contracts/
+// relatively. Only browser code (src/) uses the @wm/contracts package name.
+const edgeFiles = [
+  ...walkDir(join(ROOT, 'api'), ['.js', '.mjs', '.ts']),
+  ...walkDir(join(ROOT, 'server'), ['.js', '.mjs', '.ts']),
+  ...walkDir(join(ROOT, 'shared'), ['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts']),
+  // server/ and api/ import these browser-side modules directly.
+  ...walkDir(join(ROOT, 'src', 'shared'), ['.js', '.mjs', '.ts']),
+  join(ROOT, 'middleware.ts'),
+];
+for (const file of edgeFiles) {
+  const lines = readFileSync(file, 'utf8').split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.includes('boundary-ignore')) continue;
+    if (i > 0 && lines[i - 1].includes('boundary-ignore')) continue;
+    if (/(?:from\s+|import\(\s*|require\(\s*|^\s*import\s+)['"]@wm\/contracts(?:\/|['"])/.test(line)) {
+      violations.push({
+        file: relative(ROOT, file), line: i + 1, from: 'edge-reachable', to: '@wm/contracts', text: line.trim(),
+        remedy: 'Import packages/contracts/ by relative path from api/, server/, shared/ and middleware.ts.',
       });
     }
   }

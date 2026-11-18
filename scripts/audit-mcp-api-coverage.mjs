@@ -3,7 +3,7 @@
  * MCP↔API coverage audit (Tier-4 plan, U2).
  *
  * One-shot audit script that walks every OpenAPI operation in
- * `docs/api/*.openapi.json` and produces a categorized report mapping each
+ * `packages/contracts/openapi/*.openapi.json` and produces a categorized report mapping each
  * `(METHOD, path)` op -> `{ handler, classification, cacheKeys }`.
  *
  * The output is the SEED INPUT for U3's `_apiPaths` population on every
@@ -56,7 +56,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
-const SPECS_DIR = join(REPO_ROOT, 'docs', 'api');
+const SPECS_DIR = join(REPO_ROOT, 'packages', 'contracts', 'openapi');
 const HANDLERS_ROOT = join(REPO_ROOT, 'server', 'worldmonitor');
 const MCP_FILE = join(REPO_ROOT, 'api', 'mcp.ts');
 

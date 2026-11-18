@@ -3,7 +3,7 @@ import type {
   ServerContext,
   GetSocialVelocityRequest,
   GetSocialVelocityResponse,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 import { readRequiredSeed } from '../../../_shared/required-seed';
 import { normalizeSocialVelocity } from '../../../../api/_social-velocity.js';

@@ -39,7 +39,7 @@ COPY scripts/ ./scripts/
 COPY server/ ./server/
 COPY shared/ ./shared/
 COPY data/ ./data/
-COPY tsconfig.json tsconfig.api.json ./
+COPY tsconfig.base.json tsconfig.json tsconfig.api.json ./
 
 # Absolute path sidesteps bare-specifier resolution entirely — Node 22 can
 # resolve "tsx/esm" to the wrong node_modules when multiple exist, and "tsx/esm"

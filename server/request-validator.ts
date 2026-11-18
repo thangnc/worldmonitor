@@ -7,7 +7,7 @@
 import {
   GENERATED_MESSAGE_RULES,
   GENERATED_REQUEST_TYPES,
-} from '../src/generated/server/request_validation';
+} from '../packages/contracts/generated/server/request_validation';
 
 export interface RequestFieldViolation {
   field: string;

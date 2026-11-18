@@ -3,7 +3,7 @@ import {
   type ServerContext,
   type RecordBaselineSnapshotRequest,
   type RecordBaselineSnapshotResponse,
-} from '../../../../src/generated/server/worldmonitor/infrastructure/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server';
 
 /**
  * Client-supplied counts cannot update shared statistical state safely.

@@ -3,7 +3,7 @@ import type {
   ServerContext,
   ListXFeedRequest,
   ListXFeedResponse,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { getRelayBaseUrl, getRelayHeaders } from './_relay';
 
 interface XRelayPost {

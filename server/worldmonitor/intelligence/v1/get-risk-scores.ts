@@ -6,7 +6,7 @@ import type {
   StrategicRisk,
   TrendDirection,
   SeverityLevel,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 import { CROSS_BORDER_SOURCES, projectCrossBorderSnapshots } from '../../displacement/v1/cross-border-data';
 import iso3ToIso2Json from '../../../../shared/iso3-to-iso2.json';

@@ -17,7 +17,7 @@ import { readIdempotencyExemptPaths } from '../scripts/lib/openapi-codegen.mjs';
 // see the documented support. A fresh `make generate` must re-run the injector.
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 
 const serviceJson = readdirSync(apiDir)
   .filter((f) => /Service\.openapi\.json$/.test(f))

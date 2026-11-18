@@ -38,7 +38,7 @@ import { MIN_CIK_ENTRIES, slimCikMap, validateCikMap } from '../scripts/seed-sec
 import { getCompanyEnrichment } from '../server/worldmonitor/intelligence/v1/get-company-enrichment';
 import { listCompanySignals } from '../server/worldmonitor/intelligence/v1/list-company-signals';
 import { searchSecFilings } from '../server/worldmonitor/intelligence/v1/search-sec-filings';
-import { ValidationError } from '../src/generated/server/worldmonitor/intelligence/v1/service_server';
+import { ValidationError } from '../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 const ctx = { request: new Request('http://localhost/'), pathParams: {}, headers: {} } as never;
 

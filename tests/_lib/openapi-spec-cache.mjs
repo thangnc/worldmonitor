@@ -1,6 +1,6 @@
 // Cached loader for the unified OpenAPI bundle used by the contract tests.
 //
-// docs/api/worldmonitor.openapi.yaml is ~2.1 MB and a YAML parse of it costs
+// packages/contracts/openapi/worldmonitor.openapi.yaml is ~2.1 MB and a YAML parse of it costs
 // far more than the tens-of-milliseconds JSON.parse of the same document. The
 // contract suite loads the bundle from 15 separate test processes (some files
 // several times), which made the OpenAPI guards the slowest block of
@@ -157,12 +157,12 @@ export function loadYamlSpecCached(absPath) {
 
 /** The unified bundle, the one spec expensive enough to need the cache. */
 export function loadUnifiedOpenApiSpec() {
-  return loadYamlSpecCached(resolve(repoRoot, 'docs', 'api', 'worldmonitor.openapi.yaml'));
+  return loadYamlSpecCached(resolve(repoRoot, 'packages', 'contracts', 'openapi', 'worldmonitor.openapi.yaml'));
 }
 
 /** Service declarations discovered from the authoritative proto tree. */
 export function discoverProtoServiceNames() {
-  const protoRoot = resolve(repoRoot, 'proto', 'worldmonitor');
+  const protoRoot = resolve(repoRoot, 'packages', 'contracts', 'proto', 'worldmonitor');
   return readdirSync(protoRoot, { recursive: true })
     .filter((file) => file.endsWith('.proto'))
     .flatMap((file) => [

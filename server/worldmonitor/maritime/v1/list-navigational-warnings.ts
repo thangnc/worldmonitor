@@ -3,7 +3,7 @@ import type {
   ListNavigationalWarningsRequest,
   ListNavigationalWarningsResponse,
   NavigationalWarning,
-} from '../../../../src/generated/server/worldmonitor/maritime/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/maritime/v1/service_server';
 
 import { CHROME_UA } from '../../../_shared/constants';
 import { parseNgaBroadcastWarnings } from '../../../_shared/nga-broadcast-warnings';

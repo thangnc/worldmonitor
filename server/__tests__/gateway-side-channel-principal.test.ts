@@ -65,7 +65,7 @@ import {
   createScenarioServiceRoutes,
   type RunScenarioResponse,
   type ScenarioServiceHandler,
-} from "../../src/generated/server/worldmonitor/scenario/v1/service_server";
+} from "../../packages/contracts/generated/server/worldmonitor/scenario/v1/service_server";
 
 const RUN_PATH = "/api/scenario/v1/run-scenario";
 const STATUS_URL =

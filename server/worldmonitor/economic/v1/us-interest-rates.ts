@@ -2,7 +2,7 @@ import type {
   GetUsInterestRatesResponse,
   UsInterestRateObservation,
   UsInterestRateSeries,
-} from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
 export const RATES_CANONICAL_KEY = 'economic:us-interest-rates:v1';
 export const RATES_ACTIVATION_KEY = 'seed-activated:economic:us-interest-rates';

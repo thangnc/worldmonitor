@@ -13,7 +13,7 @@ import { afterEach, describe, it } from 'node:test';
 import type {
   ListMarketQuotesResponse,
   ServerContext,
-} from '../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import {
   __clearLocalUnavailableBackoffForTests,
   __resetKeyPrefixCacheForTests,

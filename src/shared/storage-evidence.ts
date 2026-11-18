@@ -13,7 +13,7 @@
 // first-paint badge must match post-RPC badge or the UI flickers.
 //
 // Duck-typed input: the shared interface here intentionally does NOT
-// import from src/generated so it stays dependency-free; server + client
+// import from packages/contracts/generated so it stays dependency-free; server + client
 // both assign their proto-typed evidence bundles to it by structural
 // subtyping.
 //

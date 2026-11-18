@@ -1,4 +1,4 @@
-import type { IntelligenceServiceHandler, ListWsbTickersResponse } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+import type { IntelligenceServiceHandler, ListWsbTickersResponse } from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 import { getCachedJson } from '../../../_shared/redis';
 
 export const listWsbTickers: IntelligenceServiceHandler['listWsbTickers'] = async () => {

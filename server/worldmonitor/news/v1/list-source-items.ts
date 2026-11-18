@@ -20,8 +20,8 @@ import type {
   NewsItem,
   ServerContext,
   SourceItemsState,
-} from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
-import { ValidationError } from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
+import { ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import { getCachedJsonBatch } from '../../../_shared/redis';
 import { filterRevokedUrls } from '../../../_shared/digest-revocations';
 import { markNoCacheResponse } from '../../../_shared/response-headers';

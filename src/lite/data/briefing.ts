@@ -5,7 +5,7 @@
  * Every rule here is a stated heuristic. The UI tags what it computes as
  * DERIVED and says how in a tooltip (docs/engineering/architecture/lite.md, "Lite UI").
  */
-import type { NewsItem } from '@/generated/client/worldmonitor/news/v1/service_client';
+import type { NewsItem } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
 import type { Corroboration } from '../../../server/_shared/corroboration';
 import { GEO_CATEGORIES, MARKET_CATEGORIES, TECH_CATEGORIES, corroborationOf, isPrimarySource, type LiteItem, type Tone } from './transforms';
 

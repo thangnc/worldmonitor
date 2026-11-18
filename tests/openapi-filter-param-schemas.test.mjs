@@ -59,7 +59,7 @@ const EXPECTED_PATTERNS = [
 ];
 
 function readJsonSpec(service) {
-  return JSON.parse(readFileSync(`docs/api/${service}.openapi.json`, 'utf8'));
+  return JSON.parse(readFileSync(`packages/contracts/openapi/${service}.openapi.json`, 'utf8'));
 }
 
 function readUnifiedSpec() {
@@ -73,7 +73,7 @@ function getParam(spec, path, method, name) {
 
 describe('OpenAPI filter parameter schemas', () => {
   it('keeps movement GET route length equal to its request schema', () => {
-    for (const spec of [readJsonSpec('DisplacementService'), loadYaml(readFileSync('docs/api/DisplacementService.openapi.yaml', 'utf8')), readUnifiedSpec()]) {
+    for (const spec of [readJsonSpec('DisplacementService'), loadYaml(readFileSync('packages/contracts/openapi/DisplacementService.openapi.yaml', 'utf8')), readUnifiedSpec()]) {
       const route = getParam(spec, '/api/displacement/v1/get-cross-border-movements', 'get', 'route');
       const request = Object.entries(spec.components.schemas).find(([name]) => name === 'GetCrossBorderMovementsRequest' || name.endsWith('_GetCrossBorderMovementsRequest'))[1];
       assert.equal(route.schema.maxLength, 120);
@@ -81,7 +81,7 @@ describe('OpenAPI filter parameter schemas', () => {
     }
   });
   it('publishes the country-headline request and response bounds in every contract', () => {
-    for (const spec of [readJsonSpec('NewsService'), loadYaml(readFileSync('docs/api/NewsService.openapi.yaml', 'utf8')), readUnifiedSpec()]) {
+    for (const spec of [readJsonSpec('NewsService'), loadYaml(readFileSync('packages/contracts/openapi/NewsService.openapi.yaml', 'utf8')), readUnifiedSpec()]) {
       const param = getParam(spec, '/api/news/v1/list-country-headlines', 'get', 'country_codes');
       assert.equal(param.required, true);
       assert.equal(param.schema.minItems, 1);
@@ -100,7 +100,7 @@ describe('OpenAPI filter parameter schemas', () => {
   it('accepts the documented empty region in every temporal baseline request component', () => {
     const specs = [
       readJsonSpec('InfrastructureService'),
-      loadYaml(readFileSync('docs/api/InfrastructureService.openapi.yaml', 'utf8')),
+      loadYaml(readFileSync('packages/contracts/openapi/InfrastructureService.openapi.yaml', 'utf8')),
       readUnifiedSpec(),
     ];
     for (const spec of specs) {
@@ -133,8 +133,8 @@ describe('OpenAPI filter parameter schemas', () => {
   });
 
   it('omits proto zero-value sentinels from public query parameter enums', () => {
-    for (const file of readdirSync('docs/api').filter((entry) => entry.endsWith('.openapi.json'))) {
-      const spec = JSON.parse(readFileSync(`docs/api/${file}`, 'utf8'));
+    for (const file of readdirSync('packages/contracts/openapi').filter((entry) => entry.endsWith('.openapi.json'))) {
+      const spec = JSON.parse(readFileSync(`packages/contracts/openapi/${file}`, 'utf8'));
       for (const [path, pathItem] of Object.entries(spec.paths ?? {})) {
         for (const [method, operation] of Object.entries(pathItem ?? {})) {
           for (const param of operation?.parameters ?? []) {

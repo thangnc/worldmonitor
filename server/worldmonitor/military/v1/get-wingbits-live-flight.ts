@@ -3,7 +3,7 @@ import type {
   GetWingbitsLiveFlightRequest,
   GetWingbitsLiveFlightResponse,
   WingbitsLiveFlight,
-} from '../../../../src/generated/server/worldmonitor/military/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 
 import { cachedFetchJson } from '../../../_shared/redis';
 import { CHROME_UA } from '../../../_shared/constants';

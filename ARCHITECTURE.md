@@ -190,18 +190,18 @@ Its coverage half fetches Google News at request time through `news/v1`'s shared
 The project uses the **sebuf** framework built on Protocol Buffers:
 
 ```
-proto/ definitions
+packages/contracts/proto/                (definitions)
     ↓ buf generate
-src/generated/client/   (TypeScript RPC client stubs)
-src/generated/server/   (TypeScript server message types)
-docs/api/               (OpenAPI v3 specs)
+packages/contracts/generated/client/     (TypeScript RPC client stubs)
+packages/contracts/generated/server/     (TypeScript server message types)
+packages/contracts/openapi/              (OpenAPI v3 specs)
 ```
 
 Service definitions use `(sebuf.http.config)` annotations to map RPCs to HTTP verbs and paths. GET fields require `(sebuf.http.query)` annotation. `repeated string` fields need `parseStringArray()` in the handler. `int64` maps to `string` in TypeScript.
 
 CI enforces generated code freshness via `.github/workflows/proto-check.yml`: runs `make generate` and fails if output differs from committed files.
 
-**Source files**: `proto/`, `Makefile`, `src/generated/`, `.github/workflows/proto-check.yml`
+**Source files**: `packages/contracts/proto/`, `Makefile`, `packages/contracts/generated/`, `.github/workflows/proto-check.yml`
 
 ---
 
@@ -361,7 +361,7 @@ The five-factor scorecard adds an atomic two-key read pattern: `scorecard:five-f
 
 ### Pre-Push Hook
 
-`.husky/pre-push` runs the local checks that match what the branch changed since it left `refactor/lite-monorepo` (or `main`): `tsc` for the browser and API, the edge-function bundle check, the import-boundary and `localStorage` guards, markdownlint, `npm run docs:check` when workflows, this table, the docs checker or the hook change, and `make generate` when `proto/` changes and `buf` is installed. CI runs the full set.
+`.husky/pre-push` runs the local checks that match what the branch changed since it left `refactor/lite-monorepo` (or `main`): `tsc` for the browser and API, the edge-function bundle check, the import-boundary and `localStorage` guards, markdownlint, `npm run docs:check` when workflows, this table, the docs checker or the hook change, and `make generate` when `packages/contracts/proto/` changes and `buf` is installed. CI runs the full set.
 
 **Source files**: `tests/`, `.husky/pre-push`
 
@@ -419,8 +419,9 @@ gates.
 ├── data/                   Static data (telegram channels, OREF threat translations, gamma irradiators)
 ├── deploy/                 Deployment configs (nginx)
 ├── docker/                 Dockerfile + nginx config for Railway
-├── docs/                   Engineering records (docs/engineering/) and generated OpenAPI (docs/api/)
-├── proto/                  Protobuf service definitions (sebuf framework)
+├── docs/                   Engineering records (docs/engineering/)
+├── packages/
+│   └── contracts/          @wm/contracts: proto/ (sebuf service definitions), generated/ (client/server stubs, DO NOT EDIT), openapi/ (generated specs)
 ├── public/                 Static assets served as-is (favicons, textures, map styles, data, robots.txt, 404.html)
 ├── scripts/                Seed scripts, build helpers, relay service
 ├── server/                 Server-side code (bundled into Edge Functions)
@@ -437,7 +438,6 @@ gates.
 │   ├── data/               Static JSON datasets (conservation, renewable, happiness)
 │   ├── e2e/                Map test harnesses (consumed by Playwright specs)
 │   ├── embed/              Embeddable widget loader
-│   ├── generated/          Proto-generated client/server stubs (DO NOT EDIT)
 │   ├── locales/            i18n translation files
 │   ├── services/           Business logic organized by domain
 │   ├── shared/             Cross-cutting helpers (premium paths, registries, staleness)

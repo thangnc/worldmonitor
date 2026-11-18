@@ -98,7 +98,7 @@ test('movement limits are per source and expose truncation without hiding anothe
   let result = projectCrossBorderSnapshots(snapshots, NOW);
   assert.equal(result.movements.length, 5000);
   assert.equal(result.sources.length, 5);
-  const spec = JSON.parse(readFileSync(new URL('../docs/api/DisplacementService.openapi.json', import.meta.url), 'utf8'));
+  const spec = JSON.parse(readFileSync(new URL('../packages/contracts/openapi/DisplacementService.openapi.json', import.meta.url), 'utf8'));
   const properties = spec.components.schemas.GetCrossBorderMovementsResponse.properties;
   assert.equal(properties.movements.maxItems, result.movements.length);
   assert.equal(properties.sources.maxItems, result.sources.length);

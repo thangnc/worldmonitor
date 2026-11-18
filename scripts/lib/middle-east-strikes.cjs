@@ -3,7 +3,7 @@
 // Middle East strike feed: Telegram + GDELT -> conflict:iran-events:v1.
 //
 // The key name and event schema are unchanged from the retired manual
-// LiveUAMap dump (proto/worldmonitor/conflict/v1/list_iran_events.proto), so
+// LiveUAMap dump (packages/contracts/proto/worldmonitor/conflict/v1/list_iran_events.proto), so
 // every consumer (map layer, CII strike pressure, country brief, MCP) keeps working.
 //
 // Pipeline, all pure except the injected I/O:

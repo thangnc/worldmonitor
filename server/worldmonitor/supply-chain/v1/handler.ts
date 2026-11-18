@@ -1,4 +1,4 @@
-import type { SupplyChainServiceHandler } from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+import type { SupplyChainServiceHandler } from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 
 import { getShippingRates } from './get-shipping-rates';
 import { getChokepointStatus } from './get-chokepoint-status';

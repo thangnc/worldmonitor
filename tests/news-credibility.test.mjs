@@ -158,7 +158,7 @@ describe('state-media vs wire — newsworthiness is not credibility', () => {
 
 describe('digest wiring (source-textual)', () => {
   const digestSrc = readSrc('server/worldmonitor/news/v1/list-feed-digest.ts');
-  const protoSrc = readSrc('proto/worldmonitor/news/v1/news_item.proto');
+  const protoSrc = readSrc('packages/contracts/proto/worldmonitor/news/v1/news_item.proto');
 
   it('proto NewsItem has a credibility_score field distinct from importance_score', () => {
     assert.match(protoSrc, /int32 importance_score = 9;/);
@@ -184,7 +184,7 @@ describe('digest wiring (source-textual)', () => {
 });
 
 describe('API surface', () => {
-  const openApiYaml = readSrc('docs/api/NewsService.openapi.yaml');
+  const openApiYaml = readSrc('packages/contracts/openapi/NewsService.openapi.yaml');
 
   it('OpenAPI NewsItem.credibilityScore is distinct from importanceScore', () => {
     assert.match(openApiYaml, /credibilityScore:\n\s+type: integer/s);

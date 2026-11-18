@@ -2,7 +2,7 @@ import type {
   ServerContext,
   GetCapitalFlowsRequest,
   GetCapitalFlowsResponse,
-} from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 import { getCachedJson, getCachedJsonBatch } from '../../../_shared/redis';
 import { CAPITAL_FLOWS_KEY, CAPITAL_FLOWS_PAIRS_KEY, buildCapitalFlowsResponse, unavailableCapitalFlows } from './capital-flows';
 

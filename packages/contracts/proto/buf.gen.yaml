@@ -13,27 +13,27 @@ managed:
 
 plugins:
   - local: protoc-gen-ts-client
-    out: ../src/generated/client
+    out: ../generated/client
     opt:
       - paths=source_relative
 
   - local: protoc-gen-ts-server
-    out: ../src/generated/server
+    out: ../generated/server
     opt:
       - paths=source_relative
 
   - local: protoc-gen-openapiv3
-    out: ../docs/api
+    out: ../openapi
 
   - local: protoc-gen-openapiv3
-    out: ../docs/api
+    out: ../openapi
     opt:
       - format=json
 
   # Unified bundle spanning all WorldMonitor services (sebuf >= 0.11.0).
-  # Emits docs/api/worldmonitor.openapi.yaml alongside the per-service files.
+  # Emits packages/contracts/openapi/worldmonitor.openapi.yaml alongside the per-service files.
   - local: protoc-gen-openapiv3
-    out: ../docs/api
+    out: ../openapi
     strategy: all
     opt:
       - bundle=true

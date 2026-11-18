@@ -3,7 +3,7 @@ import type {
   GetChokepointHistoryRequest,
   GetChokepointHistoryResponse,
   TransitDayCount,
-} from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 
 import { getCachedJson } from '../../../_shared/redis';
 import { markNoCacheResponse } from '../../../_shared/response-headers';

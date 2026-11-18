@@ -1,4 +1,4 @@
-import type { ListMilitaryFlightsRequest } from '../../../../src/generated/server/worldmonitor/military/v1/service_server';
+import type { ListMilitaryFlightsRequest } from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 
 /**
  * #6249: MapLibre's `getBounds()` returns longitudes outside [-180, 180]

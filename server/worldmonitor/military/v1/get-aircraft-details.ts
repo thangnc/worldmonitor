@@ -1,9 +1,9 @@
-import { ApiError, ValidationError } from '../../../../src/generated/server/worldmonitor/military/v1/service_server';
+import { ApiError, ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 import type {
   ServerContext,
   GetAircraftDetailsRequest,
   GetAircraftDetailsResponse,
-} from '../../../../src/generated/server/worldmonitor/military/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 
 import {
   AIRCRAFT_DETAILS_CACHE_KEY,

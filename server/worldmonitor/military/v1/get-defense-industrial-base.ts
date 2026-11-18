@@ -2,7 +2,7 @@ import type {
   GetDefenseIndustrialBaseRequest,
   GetDefenseIndustrialBaseResponse,
   ServerContext,
-} from '../../../../src/generated/server/worldmonitor/military/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/military/v1/service_server';
 import {
   buildDefenseIndustrialResponse,
   type StoredIndustrialSnapshot,

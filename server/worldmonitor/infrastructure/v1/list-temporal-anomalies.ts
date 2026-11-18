@@ -3,7 +3,7 @@ import type {
   ListTemporalAnomaliesRequest,
   ListTemporalAnomaliesResponse,
   TemporalAnomaly as TemporalAnomalyProto,
-} from '../../../../src/generated/server/worldmonitor/infrastructure/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server';
 
 import {
   getCachedJson,

@@ -5,11 +5,11 @@ file=$(jq -r '.tool_input.file_path // empty')
 [ -z "$file" ] && exit 0
 
 case "$file" in
-  */src/generated/*)
-    echo "Blocked: $file is generated from proto/. Edit the .proto definition and run 'make generate' instead (see CLAUDE.md)." >&2
+  */packages/contracts/generated/*)
+    echo "Blocked: $file is generated from packages/contracts/proto/. Edit the .proto definition and run 'make generate' instead (see CLAUDE.md)." >&2
     exit 2 ;;
-  */docs/api/*)
-    echo "Blocked: $file is OpenAPI generated from proto/. Edit the .proto definition and run 'make generate' instead (see CLAUDE.md)." >&2
+  */packages/contracts/openapi/*)
+    echo "Blocked: $file is OpenAPI generated from packages/contracts/proto/. Edit the .proto definition and run 'make generate' instead (see CLAUDE.md)." >&2
     exit 2 ;;
   */docs/engineering/solutions/INDEX.md|*/docs/engineering/plans/INDEX.md)
     echo "Blocked: $file is generated from lesson and plan frontmatter. Edit the records and run 'npm run generate' instead (see docs/engineering/solutions/README.md)." >&2

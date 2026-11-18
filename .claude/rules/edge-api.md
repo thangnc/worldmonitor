@@ -17,7 +17,7 @@ Source of truth: CLAUDE.md "Critical boundaries", [docs/engineering/architecture
 ## Rules
 
 - Every Edge entry is esbuild-bundled per file. Do not import `node:http`, `node:https`, or `node:zlib`. Pass fetch as `(...args) => globalThis.fetch(...args)`, never `fetch.bind(globalThis)`.
-- Legacy `api/*.js` imports only same-directory `_*.js` helpers or packages. TypeScript entries may import `server/` and `src/generated/` only. `server/` never imports `src/components/` or `src/app/`.
+- Legacy `api/*.js` imports only same-directory `_*.js` helpers or packages. TypeScript entries may import `server/` and `packages/contracts/generated/` only, by relative path (not `@wm/contracts`). `server/` never imports `src/components/` or `src/app/`.
 - Type handlers against the generated interface using indexed access, as shown in the endpoint guide.
 - Read upstream data through `cachedFetchJson()` (`server/_shared/redis.ts`). Put every request-varying input in the cache key: query and path params, user or plan scope, variant, locale.
 - Pick the cache tier from how often the data changes. Health responses are never cached.

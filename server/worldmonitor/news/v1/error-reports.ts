@@ -12,8 +12,8 @@ import type {
   ServerContext,
   SubmitErrorReportRequest,
   SubmitErrorReportResponse,
-} from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
-import { ApiError, ValidationError } from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
+import { ApiError, ValidationError } from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import { markNoCacheResponse } from '../../../_shared/response-headers';
 import {
   claimReview,

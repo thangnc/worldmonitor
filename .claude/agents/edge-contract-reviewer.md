@@ -26,7 +26,7 @@ For each changed file, check the rules that apply to its location:
 
 2. **Import boundaries**
    - Legacy `api/*.js` imports only same-directory `_*.js` helpers or packages — never `server/` or `src/`.
-   - TypeScript API entries may import `server/` and `src/generated/` only, no other browser code.
+   - TypeScript API entries may import `server/` and `packages/contracts/generated/` only, no other browser code.
    - `server/` must not import `src/lite/`.
    - Browser direction: `types -> config -> services -> lite` (`scripts/lint-boundaries.mjs`).
    - Logic shared by browser and server lives once in top-level `shared/`; flag a second copy.
@@ -47,7 +47,7 @@ For each changed file, check the rules that apply to its location:
    - A new key is registered in `api/health.js` (`BOOTSTRAP_KEYS` / `STANDALONE_KEYS` / `ON_DEMAND_KEYS` / `SEED_META`) and, if it is startup data, in `api/bootstrap.js`. Opt-in panels stay on the on-demand path.
 
 6. **Generated and access-control code**
-   - No hand edits under `src/generated/`; proto changes must be accompanied by regenerated output.
+   - No hand edits under `packages/contracts/generated/`; proto changes must be accompanied by regenerated output.
    - New RPC paths are classified consistently across `PREMIUM_RPC_PATHS` (`src/shared/premium-paths.ts`), `PUBLIC_NO_AUTH_RPC_PATHS` (`server/gateway.ts`), and `api/api-route-exceptions.json` for hand-written routes.
 
 ## Output

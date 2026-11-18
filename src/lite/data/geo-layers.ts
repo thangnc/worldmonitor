@@ -7,8 +7,8 @@
 import { HOTSPOT_COUNTRY_MAP } from '../../../shared/hotspot-country-map';
 import { haversineKm } from '../../../shared/geo-distance';
 import type { Hotspot } from '@/types';
-import type { MilitaryAircraftType, MilitaryFlight } from '@/generated/client/worldmonitor/military/v1/service_client';
-import type { ListUkmtoIncidentsResponse, UkmtoIncident } from '@/generated/client/worldmonitor/maritime/v1/service_client';
+import type { MilitaryAircraftType, MilitaryFlight } from '@wm/contracts/generated/client/worldmonitor/military/v1/service_client';
+import type { ListUkmtoIncidentsResponse, UkmtoIncident } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';
 import { countryName, shadingBasis } from './conflict';
 import { feedState, type FeedState, type Indicator } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';

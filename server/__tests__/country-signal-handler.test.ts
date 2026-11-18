@@ -12,8 +12,8 @@ import { readMilitaryFlights } from '../worldmonitor/military/v1/list-military-f
 import { getTheaterPosture } from '../worldmonitor/military/v1/get-theater-posture';
 import { drainResponseHeaders } from '../_shared/response-headers';
 import { countrySignalOutcomeSchema } from '../../shared/country-signal-observations';
-import type { GetCountrySignalObservationsRequest } from '../../src/generated/server/worldmonitor/intelligence/v1/service_server';
-import { createIntelligenceServiceRoutes, ValidationError, type IntelligenceServiceHandler } from '../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+import type { GetCountrySignalObservationsRequest } from '../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
+import { createIntelligenceServiceRoutes, ValidationError, type IntelligenceServiceHandler } from '../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 const context = (signal?: AbortSignal) => ({ request: new Request('https://example.com/api/intelligence/v1/get-country-signal-observations', { signal }), headers: {}, pathParams: {} });
 const req = (family: GetCountrySignalObservationsRequest['family']): GetCountrySignalObservationsRequest => ({ countryCode: 'FR', family, windowIndex: 0, cursor: '' });

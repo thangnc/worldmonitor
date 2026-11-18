@@ -21,7 +21,7 @@ import {
 } from './lib/openapi-codegen.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const CHECK = process.argv.includes('--check');
 const RPC_PATH = '/api/supply-chain/v1/get-china-corridor-control-towers';
 const UPSTREAM_DESCRIPTION =

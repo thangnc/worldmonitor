@@ -1,4 +1,4 @@
-import type { FlowSource } from '../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+import type { FlowSource } from '../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 
 /**
  * The one FlowSource taxonomy shared by every surface that serves

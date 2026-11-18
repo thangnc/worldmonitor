@@ -5,7 +5,7 @@
  * Every rule here is a labelled heuristic shown as "Derived" in the UI, never
  * presented as a confirmed fact (docs/engineering/architecture/lite.md, "Lite UI").
  */
-import type { ListFeedDigestResponse, NewsItem } from '@/generated/client/worldmonitor/news/v1/service_client';
+import type { ListFeedDigestResponse, NewsItem } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
 import { getSourceType } from '../../../shared/source-provenance';
 import { MIN_CORROBORATING_PUBLISHERS } from '../../../shared/publisher-families.js';
 import { getSourceTier } from '../../../server/_shared/source-tiers';

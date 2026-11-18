@@ -5,7 +5,7 @@ import type {
   CableHealthRecord,
   CableHealthEvidence,
   CableHealthStatus,
-} from '../../../../src/generated/server/worldmonitor/infrastructure/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server';
 
 import { cachedFetchJson, getCachedJson, runRedisPipeline, setCachedJson, setCachedJsonIfAbsent } from '../../../_shared/redis';
 import { CABLE_HEALTH_REPAIR_SCRIPT } from '../../../../shared/cable-health-repair-script.mjs';

@@ -8,7 +8,7 @@ import type {
   CrudeShareBaseline,
   LngShareBaseline,
   ReportedStocks,
-} from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 import { getCachedJson, setCachedJson } from '../../../_shared/redis';
 import { SPR_POLICIES_KEY } from '../../../_shared/cache-keys';

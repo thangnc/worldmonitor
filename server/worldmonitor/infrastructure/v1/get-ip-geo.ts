@@ -3,7 +3,7 @@ import type {
   ServerContext,
   GetIpGeoRequest,
   GetIpGeoResponse,
-} from '../../../../src/generated/server/worldmonitor/infrastructure/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server';
 import { hasCloudflareTransitProof } from '../../../_shared/client-ip';
 
 const ISO_COUNTRY_RE = /^[A-Z]{2}$/;

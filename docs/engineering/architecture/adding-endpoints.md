@@ -6,9 +6,9 @@ All JSON API endpoints in World Monitor **must** use sebuf. Do not create standa
 
 This guide walks through adding a new RPC to an existing service and adding an entirely new service.
 
-> **Enforcement:** `npm run lint:api-contract` runs in CI (see `.github/workflows/lint-code.yml`). It walks every file under `api/`, pairs each sebuf gateway (`api/<domain>/v<N>/[rpc].ts`) with a generated service under `src/generated/server/worldmonitor/`, and rejects any file that is neither a gateway nor listed in `api/api-route-exceptions.json`. The manifest is the only escape hatch for endpoints that genuinely cannot be proto — OAuth callbacks, binary responses, upstream proxies, operator plumbing — and every entry is pinned to @SebastienMelki via `.github/CODEOWNERS`. Expect reviewer pushback on new entries.
+> **Enforcement:** `npm run lint:api-contract` runs in CI (see `.github/workflows/lint-code.yml`). It walks every file under `api/`, pairs each sebuf gateway (`api/<domain>/v<N>/[rpc].ts`) with a generated service under `packages/contracts/generated/server/worldmonitor/`, and rejects any file that is neither a gateway nor listed in `api/api-route-exceptions.json`. The manifest is the only escape hatch for endpoints that genuinely cannot be proto — OAuth callbacks, binary responses, upstream proxies, operator plumbing — and every entry is pinned to @SebastienMelki via `.github/CODEOWNERS`. Expect reviewer pushback on new entries.
 >
-> **Generation freshness:** After modifying any `.proto` file, run `make generate` before pushing. The generated TypeScript in `src/generated/` is checked in and must stay in sync; `.github/workflows/proto-check.yml` fails the PR if it drifts.
+> **Generation freshness:** After modifying any `.proto` file, run `make generate` before pushing. The generated TypeScript in `packages/contracts/generated/` is checked in and must stay in sync; `.github/workflows/proto-check.yml` fails the PR if it drifts.
 
 ## Prerequisites
 
@@ -34,9 +34,9 @@ make generate   # regenerate all TypeScript + OpenAPI from protos
 
 This produces three outputs per service:
 
-- `src/generated/client/{domain}/v1/service_client.ts` — typed fetch client for the frontend
-- `src/generated/server/{domain}/v1/service_server.ts` — handler interface + route factory for the backend
-- `docs/api/{Domain}Service.openapi.yaml` + `.json` — OpenAPI v3 documentation
+- `packages/contracts/generated/client/{domain}/v1/service_client.ts` — typed fetch client for the frontend
+- `packages/contracts/generated/server/{domain}/v1/service_server.ts` — handler interface + route factory for the backend
+- `packages/contracts/openapi/{Domain}Service.openapi.yaml` + `.json` — OpenAPI v3 documentation
 
 ## Adding an RPC to an existing service
 
@@ -44,7 +44,7 @@ Example: adding `GetEarthquakeDetails` to `SeismologyService`.
 
 ### 1. Define the request/response messages
 
-Create `proto/worldmonitor/seismology/v1/get_earthquake_details.proto`:
+Create `packages/contracts/proto/worldmonitor/seismology/v1/get_earthquake_details.proto`:
 
 ```protobuf
 syntax = "proto3";
@@ -72,7 +72,7 @@ message GetEarthquakeDetailsResponse {
 
 ### 2. Add the RPC to the service definition
 
-Edit `proto/worldmonitor/seismology/v1/service.proto`:
+Edit `packages/contracts/proto/worldmonitor/seismology/v1/service.proto`:
 
 ```protobuf
 import "worldmonitor/seismology/v1/get_earthquake_details.proto";
@@ -105,7 +105,7 @@ import type {
   ServerContext,
   GetEarthquakeDetailsRequest,
   GetEarthquakeDetailsResponse,
-} from '../../../../src/generated/server/worldmonitor/seismology/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/seismology/v1/service_server';
 
 export const getEarthquakeDetails: SeismologyServiceHandler['getEarthquakeDetails'] = async (
   _ctx: ServerContext,
@@ -140,7 +140,7 @@ export const getEarthquakeDetails: SeismologyServiceHandler['getEarthquakeDetail
 Edit `server/worldmonitor/seismology/v1/handler.ts`:
 
 ```typescript
-import type { SeismologyServiceHandler } from '../../../../src/generated/server/worldmonitor/seismology/v1/service_server';
+import type { SeismologyServiceHandler } from '../../../../packages/contracts/generated/server/worldmonitor/seismology/v1/service_server';
 
 import { listEarthquakes } from './list-earthquakes';
 import { getEarthquakeDetails } from './get-earthquake-details';
@@ -161,7 +161,7 @@ The route is already live through the domain gateway in `api/seismology/v1/[rpc]
 
 ### 7. Check the generated docs
 
-Open `docs/api/SeismologyService.openapi.yaml` — the new endpoint should appear with all validation constraints from your proto annotations.
+Open `packages/contracts/openapi/SeismologyService.openapi.yaml` — the new endpoint should appear with all validation constraints from your proto annotations.
 
 ## Adding a new service
 
@@ -170,12 +170,12 @@ Example: adding a hypothetical `WeatherService`. (No `weather` domain exists in 
 ### 1. Create the proto directory
 
 ```
-proto/worldmonitor/weather/v1/
+packages/contracts/proto/worldmonitor/weather/v1/
 ```
 
 ### 2. Define entity messages
 
-Create `proto/worldmonitor/weather/v1/weather_station.proto`:
+Create `packages/contracts/proto/worldmonitor/weather/v1/weather_station.proto`:
 
 ```protobuf
 syntax = "proto3";
@@ -204,7 +204,7 @@ message WeatherStation {
 
 ### 3. Define request/response messages
 
-Create `proto/worldmonitor/weather/v1/list_weather_stations.proto`:
+Create `packages/contracts/proto/worldmonitor/weather/v1/list_weather_stations.proto`:
 
 ```protobuf
 syntax = "proto3";
@@ -235,7 +235,7 @@ message ListWeatherStationsResponse {
 
 ### 4. Define the service
 
-Create `proto/worldmonitor/weather/v1/service.proto`:
+Create `packages/contracts/proto/worldmonitor/weather/v1/service.proto`:
 
 ```protobuf
 syntax = "proto3";
@@ -278,7 +278,7 @@ import type {
   ServerContext,
   ListWeatherStationsRequest,
   ListWeatherStationsResponse,
-} from '../../../../src/generated/server/worldmonitor/weather/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/weather/v1/service_server';
 
 export const listWeatherStations: WeatherServiceHandler['listWeatherStations'] = async (
   _ctx: ServerContext,
@@ -291,7 +291,7 @@ export const listWeatherStations: WeatherServiceHandler['listWeatherStations'] =
 
 `server/worldmonitor/weather/v1/handler.ts`:
 ```typescript
-import type { WeatherServiceHandler } from '../../../../src/generated/server/worldmonitor/weather/v1/service_server';
+import type { WeatherServiceHandler } from '../../../../packages/contracts/generated/server/worldmonitor/weather/v1/service_server';
 
 import { listWeatherStations } from './list-weather-stations';
 
@@ -308,7 +308,7 @@ Create `api/weather/v1/[rpc].ts` as the thin Edge entry point for this service:
 export const config = { runtime: 'edge' };
 
 import { createDomainGateway, serverOptions } from '../../../server/gateway';
-import { createWeatherServiceRoutes } from '../../../src/generated/server/worldmonitor/weather/v1/service_server';
+import { createWeatherServiceRoutes } from '../../../packages/contracts/generated/server/worldmonitor/weather/v1/service_server';
 import { weatherHandler } from '../../../server/worldmonitor/weather/v1/handler';
 
 export default createDomainGateway(
@@ -331,7 +331,7 @@ import {
   WeatherServiceClient,
   type WeatherStation,
   type ListWeatherStationsResponse,
-} from '@/generated/client/worldmonitor/weather/v1/service_client';
+} from '@wm/contracts/generated/client/worldmonitor/weather/v1/service_client';
 import { createCircuitBreaker } from '@/utils';
 
 export type { WeatherStation };
@@ -456,8 +456,8 @@ The empty string base URL works because both Vite dev server and Vercel serve th
 
 Every time you run `make generate`, OpenAPI v3 specs are generated for each service:
 
-- `docs/api/{Domain}Service.openapi.yaml` — human-readable YAML
-- `docs/api/{Domain}Service.openapi.json` — machine-readable JSON
+- `packages/contracts/openapi/{Domain}Service.openapi.yaml` — human-readable YAML
+- `packages/contracts/openapi/{Domain}Service.openapi.json` — machine-readable JSON
 
 These specs include:
 

@@ -1,4 +1,4 @@
-import type { ListCyberThreatsResponse } from '../src/generated/client/worldmonitor/cyber/v1/service_client';
+import type { ListCyberThreatsResponse } from '../packages/contracts/generated/client/worldmonitor/cyber/v1/service_client';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);

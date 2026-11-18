@@ -2,7 +2,7 @@ import type {
   ServerContext,
   GetSectorDependencyRequest,
   GetSectorDependencyResponse,
-} from '../../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 import { isCallerPremium } from '../../../_shared/premium-check';
 import { markNoStoreFallbackResponse } from '../../../_shared/response-headers';
 

@@ -4,9 +4,9 @@ import { listWorldBankIndicators } from '../worldmonitor/economic/v1/list-world-
 import { __resetKeyPrefixCacheForTests } from '../_shared/redis';
 import { __resetRateLimitForTest } from '../_shared/rate-limit';
 import { createDomainGateway } from '../gateway';
-import { createEconomicServiceRoutes, type EconomicServiceHandler } from '../../src/generated/server/worldmonitor/economic/v1/service_server';
+import { createEconomicServiceRoutes, type EconomicServiceHandler } from '../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 import { issueSessionToken } from '../../api/_session.js';
-import type { ListWorldBankIndicatorsRequest, ServerContext } from '../../src/generated/server/worldmonitor/economic/v1/service_server';
+import type { ListWorldBankIndicatorsRequest, ServerContext } from '../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 import {
   WORLD_BANK_RPC_USER_AGENT,
   worldBankRpcCacheKey,

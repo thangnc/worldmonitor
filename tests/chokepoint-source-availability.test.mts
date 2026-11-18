@@ -69,8 +69,8 @@ afterEach(() => {
 
 describe('chokepoint source availability', () => {
   it('uses append-only proto fields and the private NGA cache key', async () => {
-    const maritimeProto = await readFile('proto/worldmonitor/maritime/v1/list_navigational_warnings.proto', 'utf8');
-    const supplyChainProto = await readFile('proto/worldmonitor/supply_chain/v1/supply_chain_data.proto', 'utf8');
+    const maritimeProto = await readFile('packages/contracts/proto/worldmonitor/maritime/v1/list_navigational_warnings.proto', 'utf8');
+    const supplyChainProto = await readFile('packages/contracts/proto/worldmonitor/supply_chain/v1/supply_chain_data.proto', 'utf8');
     const maritimeHandler = await readFile('server/worldmonitor/maritime/v1/list-navigational-warnings.ts', 'utf8');
     const cableHealthHandler = await readFile('server/worldmonitor/infrastructure/v1/get-cable-health.ts', 'utf8');
 

@@ -14,7 +14,7 @@ import { buildProducerBackedPhysicalComparisonFixture } from './helpers/mcp-prod
 
 const STATES = ['ok', 'insufficient_history', 'stale_input', 'missing_input'] as const;
 const proto = readFileSync(
-  new URL('../proto/worldmonitor/market/v1/get_physical_divergence_index.proto', import.meta.url),
+  new URL('../packages/contracts/proto/worldmonitor/market/v1/get_physical_divergence_index.proto', import.meta.url),
   'utf8',
 );
 

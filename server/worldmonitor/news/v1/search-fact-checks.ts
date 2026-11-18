@@ -2,7 +2,7 @@ import type {
   SearchFactChecksRequest,
   SearchFactChecksResponse,
   ServerContext,
-} from '../../../../src/generated/server/worldmonitor/news/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import { markNoCacheResponse } from '../../../_shared/response-headers';
 import { FACT_CHECK_CAVEAT } from '../../../_shared/fact-checks';
 import { lookupFactChecks } from '../../../_shared/fact-check-search';

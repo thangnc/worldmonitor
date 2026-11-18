@@ -1,4 +1,4 @@
-import type { ServerContext, GetFoodPricesRequest, GetFoodPricesResponse } from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
+import type { ServerContext, GetFoodPricesRequest, GetFoodPricesResponse } from '../../../../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 import { getCachedJsonBatch } from '../../../_shared/redis';
 import { markNoStoreFallbackResponse } from '../../../_shared/response-headers';
 import { FOOD_PRICE_SOURCES, buildFoodPriceSource, foodPriceKey } from './food-prices';

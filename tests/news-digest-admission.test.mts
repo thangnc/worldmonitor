@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, it } from 'node:test';
 import { createDomainGateway, serverOptions } from '../server/gateway';
-import { createNewsServiceRoutes } from '../src/generated/server/worldmonitor/news/v1/service_server';
+import { createNewsServiceRoutes } from '../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
 import { issueSessionToken } from '../api/_session.js';
 import { __resetRateLimitForTest } from '../server/_shared/rate-limit';
 

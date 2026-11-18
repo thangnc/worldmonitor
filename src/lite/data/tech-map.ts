@@ -28,8 +28,8 @@ import type {
   InternetOutage,
   ListInternetDdosAttacksResponse,
   ServiceStatus,
-} from '@/generated/client/worldmonitor/infrastructure/v1/service_client';
-import type { CyberThreat } from '@/generated/client/worldmonitor/cyber/v1/service_client';
+} from '@wm/contracts/generated/client/worldmonitor/infrastructure/v1/service_client';
+import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cyber/v1/service_client';
 import type { CloudRegion } from '@/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@/types';
 import { resolveCountryCode } from '../../../shared/country-code-resolve';

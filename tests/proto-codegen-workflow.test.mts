@@ -265,7 +265,7 @@ function runGenerationVerdict(
   seedGeneratedRepo(repo, generatedPaths);
 
   if (mode === 'generated-drift') {
-    writeFileSync(join(repo, 'src/generated/fixture.ts'), 'generated fixture changed\n');
+    writeFileSync(join(repo, 'packages/contracts/generated/fixture.ts'), 'generated fixture changed\n');
   } else if (mode === 'unexpected-tracked' || mode === 'unexpected-staged') {
     writeFileSync(join(repo, 'src/components/Panel.ts'), 'export const panel = 2;\n');
     if (mode === 'unexpected-staged') assert.equal(git(repo, ['add', 'src/components/Panel.ts']).status, 0);
@@ -323,9 +323,9 @@ function runMergeVerdict(mode: MergeVerdictMode, options: { poison?: boolean } =
   seedGeneratedRepo(repo, generatedPaths);
 
   if (mode === 'generated-drift' || mode === 'generated-staged') {
-    writeFileSync(join(repo, 'src/generated/fixture.ts'), 'generated fixture changed\n');
+    writeFileSync(join(repo, 'packages/contracts/generated/fixture.ts'), 'generated fixture changed\n');
     if (mode === 'generated-staged') {
-      assert.equal(git(repo, ['add', 'src/generated/fixture.ts']).status, 0);
+      assert.equal(git(repo, ['add', 'packages/contracts/generated/fixture.ts']).status, 0);
     }
   } else if (mode === 'unexpected-tracked' || mode === 'unexpected-staged') {
     writeFileSync(join(repo, 'src/components/Panel.ts'), 'export const panel = 2;\n');
@@ -378,9 +378,9 @@ function runWriter(mode: 'valid' | 'unexpected' | 'lease-failure' | 'current') {
   assert.equal(git(repo, ['init', '--quiet', '--initial-branch=writer']).status, 0);
   assert.equal(git(repo, ['config', 'user.email', 'fixture@example.invalid']).status, 0);
   assert.equal(git(repo, ['config', 'user.name', 'Fixture']).status, 0);
-  mkdirSync(join(repo, 'src/generated'), { recursive: true });
+  mkdirSync(join(repo, 'packages/contracts/generated'), { recursive: true });
   mkdirSync(join(repo, 'src/components'), { recursive: true });
-  writeFileSync(join(repo, 'src/generated/client.ts'), 'export const value = 1;\n');
+  writeFileSync(join(repo, 'packages/contracts/generated/client.ts'), 'export const value = 1;\n');
   writeFileSync(join(repo, 'src/components/Panel.ts'), 'export const panel = 1;\n');
   assert.equal(git(repo, ['add', '-A']).status, 0);
   assert.equal(git(repo, ['commit', '--quiet', '-m', 'base']).status, 0);
@@ -390,7 +390,7 @@ function runWriter(mode: 'valid' | 'unexpected' | 'lease-failure' | 'current') {
   assert.equal(git(repo, ['push', '--quiet', '-u', 'origin', 'writer']).status, 0);
 
   if (mode !== 'current') {
-    const target = mode === 'unexpected' ? 'src/components/Panel.ts' : 'src/generated/client.ts';
+    const target = mode === 'unexpected' ? 'src/components/Panel.ts' : 'packages/contracts/generated/client.ts';
     writeFileSync(join(repo, target), `export const value = ${mode === 'unexpected' ? 2 : 3};\n`);
     const patch = git(repo, ['diff', '--binary', '--full-index', '--', target]).stdout;
     writeFileSync(join(temp, 'generated.patch'), patch);
@@ -484,8 +484,8 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     assert.equal(workflow.env?.GENERATED_OUTPUT_REGEX, undefined);
 
     for (const path of [
-      'proto/worldmonitor/example/v1/service.proto',
-      'proto/café.proto',
+      'packages/contracts/proto/worldmonitor/example/v1/service.proto',
+      'packages/contracts/proto/café.proto',
       'scripts/openapi-inject-security.mjs',
       'shared/openapi-filter-param-contracts.json',
       'server/gateway.ts',
@@ -494,9 +494,9 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     ]) {
       assert.ok(isInput(path), `${path} must be a codegen input`);
     }
-    assert.equal(isGenerated('src/generated/client.ts'), true);
-    assert.equal(isGenerated('docs/api/worldmonitor.openapi.yaml'), true);
-    const unicode = runChangeClassifier(['proto/café.proto']);
+    assert.equal(isGenerated('packages/contracts/generated/client.ts'), true);
+    assert.equal(isGenerated('packages/contracts/openapi/worldmonitor.openapi.yaml'), true);
+    const unicode = runChangeClassifier(['packages/contracts/proto/café.proto']);
     assert.equal(unicode.status, 0, unicode.stderr);
     assert.match(unicode.output, /^codegen=true$/m);
     assert.match(unicode.output, /^breaking=true$/m);
@@ -524,13 +524,13 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     assert.match(unrelated.output, /^codegen=false$/m);
     assert.match(unrelated.output, /^breaking=false$/m);
 
-    const generatedOnly = runChangeClassifier(['docs/api/worldmonitor.openapi.yaml']);
+    const generatedOnly = runChangeClassifier(['packages/contracts/openapi/worldmonitor.openapi.yaml']);
     assert.equal(generatedOnly.status, 0, generatedOnly.stderr);
     assert.match(generatedOnly.output, /^codegen=true$/m);
     assert.match(generatedOnly.output, /^breaking=false$/m);
 
     const renamedProto = runChangeClassifier([
-      { filename: 'archive/service.proto', previous_filename: 'proto/service.proto', status: 'renamed' },
+      { filename: 'archive/service.proto', previous_filename: 'packages/contracts/proto/service.proto', status: 'renamed' },
     ]);
     assert.equal(renamedProto.status, 0, renamedProto.stderr);
     assert.match(renamedProto.output, /^codegen=true$/m);
@@ -539,7 +539,7 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     const renamedOutput = runChangeClassifier([
       {
         filename: 'archive/client.ts',
-        previous_filename: 'src/generated/client.ts',
+        previous_filename: 'packages/contracts/generated/client.ts',
         status: 'renamed',
       },
     ]);
@@ -569,7 +569,7 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
   it('classifies every paginated PR-files page', () => {
     const result = runChangeClassifier([
       [{ filename: 'src/components/Panel.ts' }],
-      [{ filename: 'proto/worldmonitor/example/v1/service.proto' }],
+      [{ filename: 'packages/contracts/proto/worldmonitor/example/v1/service.proto' }],
     ]);
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.output, /^codegen=true$/m);
@@ -582,7 +582,7 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
   });
 
   it('trusts only an owner-started exact-head fork synchronization with codegen changes', () => {
-    const trusted = runChangeClassifier(['proto/worldmonitor/example/v1/service.proto'], {
+    const trusted = runChangeClassifier(['packages/contracts/proto/worldmonitor/example/v1/service.proto'], {
       action: 'synchronize',
       actor: 'koala73',
     });
@@ -594,34 +594,34 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
       Parameters<typeof runChangeClassifier>[0],
       ChangeClassifierOptions,
     ]> = [
-      ['contributor push', ['proto/service.proto'], { action: 'synchronize', actor: 'contributor' }],
-      ['opened by owner', ['proto/service.proto'], { action: 'opened', actor: 'koala73' }],
-      ['reopened by owner', ['proto/service.proto'], { action: 'reopened', actor: 'koala73' }],
+      ['contributor push', ['packages/contracts/proto/service.proto'], { action: 'synchronize', actor: 'contributor' }],
+      ['opened by owner', ['packages/contracts/proto/service.proto'], { action: 'opened', actor: 'koala73' }],
+      ['reopened by owner', ['packages/contracts/proto/service.proto'], { action: 'reopened', actor: 'koala73' }],
       [
         'same-repository head',
-        ['proto/service.proto'],
+        ['packages/contracts/proto/service.proto'],
         { action: 'synchronize', actor: 'koala73', headRepository: 'koala73/worldmonitor' },
       ],
       [
         'Dependabot author',
-        ['proto/service.proto'],
+        ['packages/contracts/proto/service.proto'],
         { action: 'synchronize', actor: 'koala73', pullRequestAuthor: 'dependabot[bot]' },
       ],
       ['non-codegen change', ['src/components/Panel.ts'], { action: 'synchronize', actor: 'koala73' }],
-      ['missing actor', ['proto/service.proto'], { action: 'synchronize', actor: '' }],
+      ['missing actor', ['packages/contracts/proto/service.proto'], { action: 'synchronize', actor: '' }],
       [
         'missing repository owner',
-        ['proto/service.proto'],
+        ['packages/contracts/proto/service.proto'],
         { action: 'synchronize', actor: 'koala73', repositoryOwner: '' },
       ],
       [
         'missing head repository',
-        ['proto/service.proto'],
+        ['packages/contracts/proto/service.proto'],
         { action: 'synchronize', actor: 'koala73', headRepository: '' },
       ],
       [
         'missing pull request author',
-        ['proto/service.proto'],
+        ['packages/contracts/proto/service.proto'],
         { action: 'synchronize', actor: 'koala73', pullRequestAuthor: '' },
       ],
     ];
@@ -712,7 +712,13 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
 
     const restore = stepByName('proto-breaking', 'Restore the trusted main Makefile').run ?? '';
     assert.equal(restore, 'git show origin/main:Makefile > Makefile');
-    assert.equal(stepByName('proto-breaking', 'Check for breaking proto changes').run, 'make breaking');
+    // buf runs from the workflow, not from a Makefile recipe: main's Makefile
+    // still `cd proto`s until the packages/contracts layout reaches main.
+    const check = stepByName('proto-breaking', 'Check for breaking proto changes').run ?? '';
+    assert.match(check, /^against=packages\/contracts\/proto$/m);
+    assert.match(check, /^git cat-file -e "origin\/main:\$against\/buf\.yaml" 2>\/dev\/null \|\| against=proto$/m);
+    assert.match(check, /^buf breaking packages\/contracts\/proto --against "\.git#branch=origin\/main,subdir=\$against"$/m);
+    assert.doesNotMatch(check, /\bmake\b/);
   });
 
   it('runs trusted-fork generation read-only while keeping the writer internal-only', () => {
@@ -814,8 +820,8 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     assert.match(guard, /UNEXPECTED_UNTRACKED/);
 
     const generatedPaths = new Set((workflow.env?.GENERATED_PATHS ?? '').split(/\s+/).filter(Boolean));
-    assert.ok(generatedPaths.has('src/generated/'));
-    assert.ok(generatedPaths.has('docs/api/'));
+    assert.ok(generatedPaths.has('packages/contracts/generated/'));
+    assert.ok(generatedPaths.has('packages/contracts/openapi/'));
 
     const writer = stepByName(
       'internal-auto-generate',

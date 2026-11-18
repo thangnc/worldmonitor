@@ -4,7 +4,7 @@ import {
   type ServerContext,
   type GetBootstrapDataRequest,
   type GetBootstrapDataResponse,
-} from '../../../../src/generated/server/worldmonitor/infrastructure/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server';
 import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../../../_shared/cache-keys';
 // @ts-expect-error — Edge-safe JS helper
 import { sanitizeBootstrapValue } from '../../../../api/_bootstrap-public-payload.js';

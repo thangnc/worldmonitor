@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import type {
   ListMarketQuotesResponse,
   ServerContext,
-} from '../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import {
   __clearLocalUnavailableBackoffForTests,
   __resetKeyPrefixCacheForTests,

@@ -19,7 +19,7 @@ import { eq, serialize, readIdempotencyExemptPaths } from './lib/openapi-codegen
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const apiDir = process.env.WM_OPENAPI_API_DIR
   ? resolve(process.env.WM_OPENAPI_API_DIR)
-  : resolve(root, 'docs/api');
+  : resolve(root, 'packages/contracts/openapi');
 const CHECK = process.argv.includes('--check');
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head']);

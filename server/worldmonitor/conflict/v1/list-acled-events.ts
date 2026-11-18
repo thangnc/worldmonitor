@@ -2,7 +2,7 @@ import type {
   ServerContext,
   ListAcledEventsRequest,
   ListAcledEventsResponse,
-} from '../../../../src/generated/server/worldmonitor/conflict/v1/service_server';
+} from '../../../../packages/contracts/generated/server/worldmonitor/conflict/v1/service_server';
 
 import { getCachedJson } from '../../../_shared/redis';
 import { normalizeCountryToIso2 } from '../../../_shared/country-normalize';
