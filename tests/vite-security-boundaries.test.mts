@@ -35,6 +35,9 @@ before(async () => {
     return originalFetch(input, init);
   }) as typeof fetch;
   server = await createServer({
+    // The app's config (refactor PR 2.5 moved it to apps/web), so the dev API
+    // plugins under test are the ones `npm run dev` loads.
+    configFile: 'apps/web/vite.config.ts',
     mode: 'test', logLevel: 'error',
     server: { host: '127.0.0.1', port: 0, hmr: false },
     optimizeDeps: { noDiscovery: true, include: [] },

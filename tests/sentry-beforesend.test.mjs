@@ -203,7 +203,7 @@ describe('ignoreErrors filters', () => {
   // message-only entry is safe only while no script we ship declares the name.
   it('keeps the licence true: nativeIframe is absent from our own source', () => {
     const offenders = [];
-    for (const rel of ['../src', '../packages/client', '../api']) {
+    for (const rel of ['../apps/web/src', '../packages/client', '../api']) {
       for (const file of walkTsFiles(resolve(__dirname, rel))) {
         if (/sentry-init\.ts$/.test(file)) continue;
         if (/\bnativeIframe\b/.test(readFileSync(file, 'utf-8'))) offenders.push(file);
@@ -211,7 +211,7 @@ describe('ignoreErrors filters', () => {
     }
     const publicDir = resolve(__dirname, '../public');
     const documents = [
-      resolve(__dirname, '../lite.html'),
+      resolve(__dirname, '../apps/web/lite.html'),
       ...readdirSync(publicDir).filter((f) => f.endsWith('.html')).map((f) => join(publicDir, f)),
     ];
     assert.ok(documents.length > 1, 'sanity: the scan must reach the shipped HTML documents');
@@ -890,7 +890,7 @@ describe('zero-frame async-rejection patterns (timeout / DOMException / OOM / DO
   // silently disarm this entire block with nothing going red.
   it('keeps the licence true: `kind` is never set on a global Sentry scope', () => {
     const offenders = [];
-    for (const rel of ['../src', '../packages/client']) {
+    for (const rel of ['../apps/web/src', '../packages/client']) {
       for (const file of walkTsFiles(resolve(__dirname, rel))) {
         const text = readFileSync(file, 'utf-8');
         // A scope-level setter, or an init-time scope, anywhere near `kind`.
@@ -908,7 +908,7 @@ describe('zero-frame async-rejection patterns (timeout / DOMException / OOM / DO
   it('the kind-census scan actually reaches our source', () => {
     // A source scan that matches nothing is indistinguishable from one that is
     // silently broken (wrong path, wrong extension filter).
-    const files = ['../src', '../packages/client'].flatMap((rel) => walkTsFiles(resolve(__dirname, rel)));
+    const files = ['../apps/web/src', '../packages/client'].flatMap((rel) => walkTsFiles(resolve(__dirname, rel)));
     assert.ok(files.length > 100, `sanity: expected to scan src/ and packages/client/, got ${files.length} files`);
     const kindSetters = files.filter((f) => /tags:\s*\{[^}]*\bkind:/.test(readFileSync(f, 'utf-8')));
     assert.ok(
@@ -2460,7 +2460,7 @@ describe('beforeSend — Firefox bare-primitive throw (WORLDMONITOR-106)', () =>
     // The source-level invariant the suppression rests on, asserted here so it
     // cannot silently stop being true.
     const offenders = [];
-    for (const rel of ['../src', '../packages/client', '../packages/shared', '../api']) {
+    for (const rel of ['../apps/web/src', '../packages/client', '../packages/shared', '../api']) {
       for (const file of walk(resolve(__dirname, rel))) {
         const code = stripComments(readFileSync(file, 'utf-8'));
         if (BARE_PRIMITIVE_THROW.test(code)) offenders.push(file);
@@ -2485,7 +2485,7 @@ describe('beforeSend — Firefox bare-primitive throw (WORLDMONITOR-106)', () =>
   it('the scan reaches real files, and comment-stripping is what keeps it green', () => {
     // Two ways the invariant could pass vacuously, both closed here: a walk that
     // returns nothing, and a scan that would fail if it did NOT strip comments.
-    const files = ['../src', '../packages/client', '../packages/shared', '../api'].flatMap(rel => walk(resolve(__dirname, rel)));
+    const files = ['../apps/web/src', '../packages/client', '../packages/shared', '../api'].flatMap(rel => walk(resolve(__dirname, rel)));
     assert.ok(files.length > 100, `walk must reach the real tree, got ${files.length} files`);
     assert.ok(files.some(f => f.endsWith('bootstrap/sentry-init.ts')), 'walk must include sentry-init.ts');
 
@@ -2669,7 +2669,7 @@ describe('ignoreErrors — Android WebView Java bridge (WORLDMONITOR-117, -YN)',
   // suppression is only safe while our own bundle cannot mint the sentence.
   it('keeps the licence true: no `Error invoking` call site in our own source', () => {
     const offenders = [];
-    for (const rel of ['../src', '../packages/client', '../api']) {
+    for (const rel of ['../apps/web/src', '../packages/client', '../api']) {
       for (const file of walkTsFiles(resolve(__dirname, rel))) {
         // sentry-init.ts and sentry-filter-policy.ts hold the suppressors
         // themselves; every other textual hit would be a real call site.
@@ -2684,7 +2684,7 @@ describe('ignoreErrors — Android WebView Java bridge (WORLDMONITOR-117, -YN)',
   it('the licence scan actually reaches our source', () => {
     // A source scan that matches nothing is indistinguishable from one that is
     // silently broken (wrong path, wrong extension filter).
-    const files = ['../src', '../packages/client'].flatMap((rel) => walkTsFiles(resolve(__dirname, rel)));
+    const files = ['../apps/web/src', '../packages/client'].flatMap((rel) => walkTsFiles(resolve(__dirname, rel)));
     assert.ok(files.length > 100, `sanity: expected to scan src/ and packages/client/, got ${files.length} files`);
     assert.ok(files.some((f) => f.endsWith('sentry-init.ts')), 'scan must reach sentry-init.ts');
   });
@@ -2724,7 +2724,7 @@ describe('ignoreErrors — UC Browser bridge global (WORLDMONITOR-10W)', () => {
   // The source-level invariant the message-only suppression rests on.
   it('keeps the licence true: __BrowserJSBridgeObj is absent from our own source', () => {
     const offenders = [];
-    for (const rel of ['../src', '../packages/client', '../api']) {
+    for (const rel of ['../apps/web/src', '../packages/client', '../api']) {
       for (const file of walkTsFiles(resolve(__dirname, rel))) {
         if (/sentry-init\.ts$|sentry-filter-policy\.ts$/.test(file)) continue;
         if (/__BrowserJSBridgeObj/.test(readFileSync(file, 'utf-8'))) offenders.push(file);
@@ -2806,11 +2806,11 @@ describe('beforeSend — MapLibre 6 Object.hasOwn on pre-15.4 WebKit / old Chrom
     assert.ok(beforeSend(makeEvent('Object.groupBy is not a function', 'TypeError', [])) !== null);
   });
 
-  it('pins the browser source (src/) as Object.hasOwn-free, the rule\'s licence', () => {
+  it('pins the browser source (apps/web/src/, packages/client/) as Object.hasOwn-free, the rule\'s licence', () => {
     // api/ and the server-only shared/ leaves (e.g. packages/shared/story-phase.js, used
     // by api/og-story) run under Node, where Object.hasOwn is universal and
     // nothing they throw reaches this beforeSend.
-    const roots = ['src', 'packages/client'].map((d) => resolve(__dirname, '..', d));
+    const roots = ['apps/web/src', 'packages/client'].map((d) => resolve(__dirname, '..', d));
     const offenders = [];
     const walk = (dir) => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {

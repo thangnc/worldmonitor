@@ -2,11 +2,11 @@
 
 Machine-generated inventory of every source host World Monitor uses: provider
 identity, observed surface, and source references. The Lite UI's Sources screen
-(`src/lite/screens/Sources.tsx`) reads the same manifest.
+(`apps/web/src/lite/screens/Sources.tsx`) reads the same manifest.
 
 The inventory is **generated, not hand-written**: `scripts/source-attribution.mjs`
-scans source declarations in `scripts/`, `packages/server/`, `api/`, and `src/`, and
-joins them against the committed manifest
+scans source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/` and
+`packages/client/`, and joins them against the committed manifest
 (`packages/shared/source-attribution-manifest.json`). Run `npm run sources:generate` after
 adding or removing a host; `npm run sources:check` fails when this page or the
 manifest is stale. Do not edit the table by hand.
@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **846 active source hosts** representing **826 active providers** (**361 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, and `src/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **846 active source hosts** representing **826 active providers** (**361 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -721,7 +721,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | thestar.com.my (thestar.com.my) | feed — packages/shared/news-catalog.json |
 | thetyee.ca (thetyee.ca) | feed — packages/shared/news-catalog.json |
 | thinkglobalhealth.github.io (thinkglobalhealth.github.io) | structured — scripts/seed-disease-outbreaks.mjs, scripts/seed-vpd-tracker.mjs |
-| tiles.openfreemap.org (tiles.openfreemap.org) | structured — src/lite/map/style.ts |
+| tiles.openfreemap.org (tiles.openfreemap.org) | structured — apps/web/src/lite/map/style.ts |
 | Times of India (timesofindia.indiatimes.com) | feed — packages/shared/news-catalog.json |
 | Times of Israel (timesofisrael.com) | feed — packages/shared/news-catalog.json |
 | timesca.com (timesca.com) | feed — packages/shared/news-catalog.json |

@@ -25,14 +25,14 @@ import {
   relativeTime,
   thresholdState,
   timeBuckets,
-} from '../src/lite/data/transforms.ts';
-import { actorName, eventDates, eventSpan, formatCoordinates, ucdpBackgroundLabel, ucdpMarkers, ucdpNewest } from '../src/lite/data/ucdp.ts';
-import { CONVERGENCE_RADIUS_KM, MILITARY_RADIUS_KM, escalationLevel, scoreHotspots } from '../src/lite/data/escalation.ts';
+} from '../apps/web/src/lite/data/transforms.ts';
+import { actorName, eventDates, eventSpan, formatCoordinates, ucdpBackgroundLabel, ucdpMarkers, ucdpNewest } from '../apps/web/src/lite/data/ucdp.ts';
+import { CONVERGENCE_RADIUS_KM, MILITARY_RADIUS_KM, escalationLevel, scoreHotspots } from '../apps/web/src/lite/data/escalation.ts';
 import { computeEscalationScore } from '../packages/shared/analysis-hotspot-escalation.ts';
-import { TIME_RANGE_HOURS, inTimeRange } from '../src/lite/data/transforms.ts';
+import { TIME_RANGE_HOURS, inTimeRange } from '../apps/web/src/lite/data/transforms.ts';
 import type { Hotspot } from '../packages/client/types/index.ts';
 import type { UcdpViolenceEvent } from '../packages/contracts/generated/client/worldmonitor/conflict/v1/service_client.ts';
-import { OPENFREEMAP_TILEJSON, buildLiteMapStyle } from '../src/lite/map/style.ts';
+import { OPENFREEMAP_TILEJSON, buildLiteMapStyle } from '../apps/web/src/lite/map/style.ts';
 import {
   CONNECTORS,
   digestConnectorStatus,
@@ -42,13 +42,13 @@ import {
   sortConnectorRows,
   tierRows,
   type ConnectorRow,
-} from '../src/lite/data/connectors.ts';
-import type { CompactHealth } from '../src/lite/data/sources.ts';
-import type { ResourceState } from '../src/lite/data/store.ts';
+} from '../apps/web/src/lite/data/connectors.ts';
+import type { CompactHealth } from '../apps/web/src/lite/data/sources.ts';
+import type { ResourceState } from '../apps/web/src/lite/data/store.ts';
 import { SOURCE_TIERS } from '../packages/server/_shared/source-tiers.ts';
 import { __testing__ as healthTesting } from '../api/health.js';
 import attributionManifest from '../packages/shared/source-attribution-manifest.json' with { type: 'json' };
-import { AGGREGATE_LABEL_MIN, AGGREGATE_MAX, AGGREGATE_MIN, WORLD_BOUNDS, aggregateDiameter, compactCount, markerBounds, placeCard } from '../src/lite/map/view.ts';
+import { AGGREGATE_LABEL_MIN, AGGREGATE_MAX, AGGREGATE_MIN, WORLD_BOUNDS, aggregateDiameter, compactCount, markerBounds, placeCard } from '../apps/web/src/lite/map/view.ts';
 import type { ListFeedDigestResponse, NewsItem } from '../packages/contracts/generated/client/worldmonitor/news/v1/service_client.ts';
 import {
   PRIORITY_THRESHOLD,
@@ -63,7 +63,7 @@ import {
   sigmaMove,
   sinceStats,
   trendLabel,
-} from '../src/lite/data/briefing.ts';
+} from '../apps/web/src/lite/data/briefing.ts';
 import {
   FLAT_MOVE,
   buildPriceBoard,
@@ -73,7 +73,7 @@ import {
   linkPriceMoves,
   namedInstruments,
   priceMoveLabel,
-} from '../src/lite/data/prices.ts';
+} from '../apps/web/src/lite/data/prices.ts';
 import middleware from '../middleware.ts';
 
 function item(overrides: Partial<NewsItem> = {}): NewsItem {
@@ -759,7 +759,7 @@ describe('Lite Sources connectors', () => {
 });
 
 describe('Lite tech map', async () => {
-  const { attackHexes, cableLayer, cloudRegionMarkers, datacenterMarkers, ddosForRange, ddosLayer, incidentNamesRegion, isDdosWindows, outageMarkers, techLayerRangeNote, threatsInRange, HEX_CELL_DEG } = await import('../src/lite/data/tech-map.ts');
+  const { attackHexes, cableLayer, cloudRegionMarkers, datacenterMarkers, ddosForRange, ddosLayer, incidentNamesRegion, isDdosWindows, outageMarkers, techLayerRangeNote, threatsInRange, HEX_CELL_DEG } = await import('../apps/web/src/lite/data/tech-map.ts');
   const NOW = Date.UTC(2026, 10, 8, 12);
   const H = 3_600_000;
   type Threat = Parameters<typeof attackHexes>[0][number];
@@ -926,11 +926,11 @@ describe('Lite tech map', async () => {
 });
 
 describe('Lite map marker grammar (design "Spec — Map markers")', async () => {
-  const marks = await import('../src/lite/map/marks.tsx');
-  const { hotspotState, seaIncidentState } = await import('../src/lite/data/geo-layers.ts');
-  const { signalMark, chokepointState, ISSUERS } = await import('../src/lite/data/markets-map.ts');
-  const { rampTone, outageGlyph } = await import('../src/lite/data/tech-map.ts');
-  const { feedsStale } = await import('../src/lite/data/indicators.ts');
+  const marks = await import('../apps/web/src/lite/map/marks.tsx');
+  const { hotspotState, seaIncidentState } = await import('../apps/web/src/lite/data/geo-layers.ts');
+  const { signalMark, chokepointState, ISSUERS } = await import('../apps/web/src/lite/data/markets-map.ts');
+  const { rampTone, outageGlyph } = await import('../apps/web/src/lite/data/tech-map.ts');
+  const { feedsStale } = await import('../apps/web/src/lite/data/indicators.ts');
 
   it('carries the spec glyph catalogue, Lucide only, one glyph each', () => {
     assert.deepEqual(Object.keys(marks.MARK_GLYPHS).sort(), [
@@ -984,7 +984,7 @@ describe('Lite map marker grammar (design "Spec — Map markers")', async () => 
     assert.equal(feedsStale([state('stale'), state('quiet')]), false);
     assert.equal(feedsStale([]), false);
     // A finance pin is stale when every feed behind it is late.
-    const { signalPins } = await import('../src/lite/data/markets-map.ts');
+    const { signalPins } = await import('../apps/web/src/lite/data/markets-map.ts');
     const late = { kind: 'stale' as const, id: 'treasury', name: 'Treasury', detail: '' };
     const live = { kind: 'quiet' as const, id: 'macro-print', name: 'Macro', detail: '' };
     assert.deepEqual(signalPins([late], [], 10).map((p) => [p.id, p.stale]), [['signal:fed', true]]);

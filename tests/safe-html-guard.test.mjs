@@ -13,8 +13,8 @@ const legacyAuditMarker = 'wm-safe-html:' + ' audited';
 
 function makeFixture(source) {
   const root = path.join(tmpdir(), `wm-safe-html-${Date.now()}-${Math.random().toString(16).slice(2)}`);
-  mkdirSync(path.join(root, 'src'), { recursive: true });
-  writeFileSync(path.join(root, 'src', 'fixture.ts'), source);
+  mkdirSync(path.join(root, 'apps', 'web', 'src'), { recursive: true });
+  writeFileSync(path.join(root, 'apps', 'web', 'src', 'fixture.ts'), source);
   return root;
 }
 
@@ -130,7 +130,7 @@ describe('safe HTML lint guard', () => {
     const root = makeFixture('const ok = true;\n');
     writeFileSync(path.join(root, 'baseline.json'), JSON.stringify({
       entries: [{
-        file: 'src/fixture.ts',
+        file: 'apps/web/src/fixture.ts',
         line: 1,
         kind: 'direct-html-assignment',
         fingerprint: 'legacy',

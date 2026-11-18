@@ -25,10 +25,10 @@ For each changed file, check the rules that apply to its location:
    - Edge functions are bundled per file: flag new imports that pull unrelated modules into an entry point.
 
 2. **Import boundaries**
-   - Legacy `api/*.js` imports only same-directory `_*.js` helpers or packages — never `packages/server/` or `src/`.
+   - Legacy `api/*.js` imports only same-directory `_*.js` helpers or packages — never `packages/server/` or `apps/web/`.
    - TypeScript API entries may import `packages/server/` and `packages/contracts/generated/` only, no other browser code.
-   - `packages/server/` must not import `src/lite/`.
-   - Browser direction: `types -> config -> services -> lite`, i.e. `packages/client/{types,config,services}/` then `src/lite/` (`scripts/lint-boundaries.mjs`).
+   - Nothing under `packages/` imports `apps/web/` (`@wm/web`).
+   - Browser direction: `types -> config -> services -> lite`, i.e. `packages/client/{types,config,services}/` then `apps/web/src/lite/` (`scripts/lint-boundaries.mjs`).
    - Logic shared by browser and server lives once in `packages/shared/` (`@wm/shared`); flag a second copy. `api/`, `packages/server/`, `middleware.ts` and `packages/shared/` import it by relative path, never as `@wm/shared`, and import `packages/server/` and `packages/client/` by relative path, never as `@wm/server` or `@wm/client`; the `packages/client/` modules they reach use relative imports only.
 
 3. **Caching**

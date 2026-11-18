@@ -325,7 +325,7 @@ export function rawStorageUsesIn(source) {
 
 /** Scan the tree and return everything the assertions and the CLI both need. */
 export function scanRepo(root = REPO_ROOT) {
-  const allFiles = ['src', 'packages/client'].flatMap((dir) =>
+  const allFiles = ['apps/web/src', 'packages/client'].flatMap((dir) =>
     collectTsFiles(path.join(root, dir), { readdirSync, lstatSync, join: path.join }));
   const scanned = allFiles.filter(
     (abs) => !GUARD_EXEMPT_FILES.has(path.relative(root, abs)),
@@ -356,7 +356,7 @@ function main() {
 
   if (result.scannedFiles.length < MIN_SCANNED_FILES) {
     problems.push(
-      `Expected >= ${MIN_SCANNED_FILES} scanned files under src/ (93 after refactor PR 2.1), found ${result.scannedFiles.length} — the scan or the source layout has drifted.`,
+      `Expected >= ${MIN_SCANNED_FILES} scanned files under apps/web/src/ and packages/client/ (84 after refactor PR 2.4), found ${result.scannedFiles.length} — the scan or the source layout has drifted.`,
     );
   }
 

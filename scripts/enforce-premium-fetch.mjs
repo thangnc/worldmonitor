@@ -38,8 +38,8 @@ import { isMainModule } from './lib/main-module.mjs';
 const ROOT = new URL('..', import.meta.url).pathname;
 const PREMIUM_PATHS_SRC = join(ROOT, 'packages/client/shared/premium-paths.ts');
 const GEN_CLIENT_DIR = join(ROOT, 'packages/contracts/generated/client');
-// Browser source: the Lite UI (src/) and the modules it builds on (packages/client/).
-const SRC_DIRS = [join(ROOT, 'src'), join(ROOT, 'packages/client')];
+// Browser source: the Lite UI (apps/web/src/) and the modules it builds on (packages/client/).
+const SRC_DIRS = [join(ROOT, 'apps/web/src'), join(ROOT, 'packages/client')];
 const PREMIUM_FETCH_SRC = join(ROOT, 'src/services/premium-fetch.ts');
 
 /**
@@ -492,7 +492,7 @@ async function main() {
   }
 
   console.log(
-    `\u2713 premium-fetch parity clean: ${clientClassMap.size} ServiceClient classes scanned, ${premiumPaths.size} premium paths checked, ${files.length} src/ and packages/client/ files analyzed.`,
+    `\u2713 premium-fetch parity clean: ${clientClassMap.size} ServiceClient classes scanned, ${premiumPaths.size} premium paths checked, ${files.length} apps/web/src/ and packages/client/ files analyzed.`,
   );
 }
 

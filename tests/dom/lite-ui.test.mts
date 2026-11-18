@@ -1,4 +1,4 @@
-// World Monitor Lite UI shell (src/lite/, docs/engineering/architecture/lite.md "Lite UI").
+// World Monitor Lite UI shell (apps/web/src/lite/, docs/engineering/architecture/lite.md "Lite UI").
 // Renders the real App with fetch stubbed: one digest fixture, one insights
 // snapshot, every other source failing. Proves the Briefing home and its three
 // child screens render, planned items are marked "soon", sample widgets carry
@@ -9,7 +9,7 @@ import { h, render } from 'preact';
 import { act } from 'preact/test-utils';
 
 // MapLibre needs WebGL, which happy-dom lacks. This double covers only what
-// src/lite/map/LiteMap.tsx calls, and places a marker by appending its element.
+// apps/web/src/lite/map/LiteMap.tsx calls, and places a marker by appending its element.
 vi.mock('maplibre-gl', () => {
   class FakeMap {
     static last: FakeMap | null = null;
@@ -169,9 +169,9 @@ beforeEach(async () => {
   history.replaceState(null, '', '/lite');
   healthBody = null;
   healthPendingResponses = 0;
-  const { resetResourcesForTests } = await import('../../src/lite/data/store');
+  const { resetResourcesForTests } = await import('../../apps/web/src/lite/data/store');
   resetResourcesForTests();
-  const { resetSourcesForTests } = await import('../../src/lite/data/sources');
+  const { resetSourcesForTests } = await import('../../apps/web/src/lite/data/sources');
   resetSourcesForTests();
   const { __resetServerInsightsCacheForTests } = await import('../../packages/client/services/insights-loader');
   __resetServerInsightsCacheForTests();
@@ -186,7 +186,7 @@ afterEach(() => {
 
 describe('Lite UI shell', () => {
   it('opens on the Briefing: the AI brief, cross-domain priority events and derived panels', async () => {
-    const { App } = await import('../../src/lite/App');
+    const { App } = await import('../../apps/web/src/lite/App');
     await act(() => render(h(App, null), root));
     await vi.waitFor(async () => {
       await flush();
@@ -247,7 +247,7 @@ describe('Lite UI shell', () => {
   });
 
   it('opens Geopolitics from the Briefing with live digest rows', async () => {
-    const { App } = await import('../../src/lite/App');
+    const { App } = await import('../../apps/web/src/lite/App');
     await act(() => render(h(App, null), root));
     await flush();
 
@@ -351,7 +351,7 @@ describe('Lite UI shell', () => {
   });
 
   it('navigates to Finance and Technology without a page load', async () => {
-    const { App } = await import('../../src/lite/App');
+    const { App } = await import('../../apps/web/src/lite/App');
     await act(() => render(h(App, null), root));
     await flush();
 
@@ -415,7 +415,7 @@ describe('Lite indicator card', () => {
     }));
     try {
       history.replaceState(null, '', '/lite/finance');
-      const { App } = await import('../../src/lite/App');
+      const { App } = await import('../../apps/web/src/lite/App');
       await act(() => render(h(App, null), root));
       const panel = () => root.querySelector('[data-testid="risk-alerts"]') as HTMLElement;
       await vi.waitFor(async () => {
@@ -483,7 +483,7 @@ describe('Lite indicator card', () => {
     }));
     try {
       history.replaceState(null, '', '/lite/finance');
-      const { App } = await import('../../src/lite/App');
+      const { App } = await import('../../apps/web/src/lite/App');
       await act(() => render(h(App, null), root));
       const panel = () => root.querySelector('[data-testid="risk-alerts"]') as HTMLElement;
       await vi.waitFor(async () => {
@@ -532,7 +532,7 @@ describe('Lite indicator card', () => {
     }));
     try {
       history.replaceState(null, '', '/lite/finance');
-      const { App } = await import('../../src/lite/App');
+      const { App } = await import('../../apps/web/src/lite/App');
       await act(() => render(h(App, null), root));
       const map = () => root.querySelector('[data-testid="markets-map"]') as HTMLElement;
       await vi.waitFor(async () => {
@@ -643,7 +643,7 @@ describe('Lite indicator card', () => {
       : undefined));
     try {
       history.replaceState(null, '', '/lite/tech');
-      const { App } = await import('../../src/lite/App');
+      const { App } = await import('../../apps/web/src/lite/App');
       await act(() => render(h(App, null), root));
       const panel = () => root.querySelector('[data-testid="tech-indicators"]') as HTMLElement;
       const tile = (key: string) => root.querySelector(`[data-infra-tile="${key}"]`) as HTMLElement;
@@ -720,7 +720,7 @@ describe('Lite indicator card', () => {
         : undefined));
     try {
       history.replaceState(null, '', '/lite/tech');
-      const { App } = await import('../../src/lite/App');
+      const { App } = await import('../../apps/web/src/lite/App');
       await act(() => render(h(App, null), root));
       const map = () => root.querySelector('[data-testid="infra-map"]') as HTMLElement;
       await vi.waitFor(async () => {
@@ -836,7 +836,7 @@ describe('Lite indicator card', () => {
     }));
     try {
       history.replaceState(null, '', '/lite/tech');
-      const { App } = await import('../../src/lite/App');
+      const { App } = await import('../../apps/web/src/lite/App');
       await act(() => render(h(App, null), root));
       await vi.waitFor(async () => {
         await flush();
@@ -849,7 +849,7 @@ describe('Lite indicator card', () => {
   });
 
   it('says "No linked news found" with what it searched when no story matches', async () => {
-    const { IndicatorCard, IndicatorCardCompact } = await import('../../src/lite/components/indicator');
+    const { IndicatorCard, IndicatorCardCompact } = await import('../../apps/web/src/lite/components/indicator');
     const indicator = {
       id: 'btc-move', domain: 'fin' as const, name: 'Price move · BTC 24h', value: '$71,240', change: '−5.0% 24h', rule: '±4%',
       trust: { level: 'market' as const, source: 'CoinGecko' }, at: Date.UTC(2026, 10, 8, 8, 31),
@@ -880,7 +880,7 @@ describe('Lite Sources screen', () => {
         stablecoinMarkets: { status: 'STALE_SEED', records: 12, seedAgeMin: 74 },
       },
     };
-    const { App } = await import('../../src/lite/App');
+    const { App } = await import('../../apps/web/src/lite/App');
     await act(() => render(h(App, null), root));
     await flush();
     await act(() => (root.querySelector('[data-nav="sources"]') as HTMLAnchorElement).click());
@@ -918,7 +918,7 @@ describe('Lite Sources screen', () => {
 
   it('marks seeded connectors unknown, not live, when the health check is unavailable', async () => {
     history.replaceState(null, '', '/lite/sources');
-    const { App } = await import('../../src/lite/App');
+    const { App } = await import('../../apps/web/src/lite/App');
     await act(() => render(h(App, null), root));
     await vi.waitFor(async () => {
       await flush();
@@ -929,7 +929,7 @@ describe('Lite Sources screen', () => {
   });
 
   it('retries the health check while it answers refresh pending, and gives up after three attempts', async () => {
-    const { loadHealth } = await import('../../src/lite/data/sources');
+    const { loadHealth } = await import('../../apps/web/src/lite/data/sources');
     const waits: number[] = [];
     const wait = async (ms: number) => { waits.push(ms); };
     healthBody = { status: 'HEALTHY', summary: { total: 1, ok: 1, warn: 0 }, checkedAt: new Date().toISOString() };
@@ -984,7 +984,7 @@ describe('Lite Geopolitics: GDELT reported violence', () => {
     }));
     try {
       history.replaceState(null, '', '/lite/geopolitics');
-      const { App } = await import('../../src/lite/App');
+      const { App } = await import('../../apps/web/src/lite/App');
       await act(() => render(h(App, null), root));
       const maplib = (await import('maplibre-gl')) as unknown as {
         __FakeMap: { last: { sources: Map<string, unknown>; layers: Array<{ id: string; before?: string }>; featureState: Map<string, Record<string, unknown>>; clickCountry: string; fire: (type: string, e?: unknown) => void } | null };
@@ -1112,7 +1112,7 @@ describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS inte
     }));
     try {
       history.replaceState(null, '', '/lite/geopolitics');
-      const { App } = await import('../../src/lite/App');
+      const { App } = await import('../../apps/web/src/lite/App');
       await act(() => render(h(App, null), root));
       const maplib = (await import('maplibre-gl')) as unknown as {
         __FakeMap: { last: { sources: Map<string, { data: { features: unknown[] } }> } | null };
@@ -1237,7 +1237,7 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
       key === 'chokepoints' ? data.chokepoints : key === 'crossStraitActivity' ? data.strait : key === 'securityAdvisories' ? data.advisories : undefined);
     try {
       history.replaceState(null, '', '/lite/geopolitics');
-      const { App } = await import('../../src/lite/App');
+      const { App } = await import('../../apps/web/src/lite/App');
       await act(() => render(h(App, null), root));
       const panel = () => root.querySelector('[data-testid="geo-indicators"]')!;
       await vi.waitFor(async () => {
@@ -1270,7 +1270,7 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
 
   it('reads the three feeds unavailable without data, naming each seeder', async () => {
     history.replaceState(null, '', '/lite/geopolitics');
-    const { App } = await import('../../src/lite/App');
+    const { App } = await import('../../apps/web/src/lite/App');
     await act(() => render(h(App, null), root));
     const panel = () => root.querySelector('[data-testid="geo-indicators"]')!;
     await vi.waitFor(async () => {
@@ -1285,7 +1285,7 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
   it('keeps the Taiwan Strait snapshot after the bootstrap key is taken', async () => {
     const data = fixtures(Date.now());
     const boot = await import('@wm/client/services/bootstrap');
-    const src = await import('../../src/lite/data/sources');
+    const src = await import('../../apps/web/src/lite/data/sources');
     vi.mocked(boot.getHydratedData).mockImplementation((key: string) => (key === 'crossStraitActivity' ? data.strait : undefined));
     try {
       const first = await src.loadCrossStraitActivity();

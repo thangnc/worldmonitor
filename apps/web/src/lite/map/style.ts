@@ -29,7 +29,7 @@ export interface LiteMapTokens {
   crit: string;
 }
 
-// Mirrors src/lite/lite.css. Used only when the CSS variables are not
+// Mirrors apps/web/src/lite/lite.css. Used only when the CSS variables are not
 // readable (tests, or a style read before the stylesheet applies).
 const FALLBACK_TOKENS: LiteMapTokens = {
   bg: '#0a0c0f',

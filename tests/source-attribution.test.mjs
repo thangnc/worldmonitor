@@ -35,7 +35,7 @@ const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
  */
 function makeFixtureCheckout() {
   const dir = mkdtempSync(join(tmpdir(), 'source-attribution-'));
-  for (const root of ['scripts', 'packages/server', 'api', 'src', 'packages/client', 'packages/shared', 'docs/engineering/architecture']) {
+  for (const root of ['scripts', 'packages/server', 'api', 'apps/web/src', 'packages/client', 'packages/shared', 'docs/engineering/architecture']) {
     mkdirSync(join(dir, root), { recursive: true });
   }
   writeFileSync(

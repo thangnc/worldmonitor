@@ -12,7 +12,7 @@ import ts from 'typescript';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
-const browserDirs = [join(root, 'src'), join(root, 'packages', 'client')];
+const browserDirs = [join(root, 'apps', 'web', 'src'), join(root, 'packages', 'client')];
 
 function walkTsFiles(dir) {
   const files = [];

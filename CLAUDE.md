@@ -21,7 +21,7 @@ The owner runs a private, low-noise dashboard, World Monitor Lite, focused on th
 - New work serves one of the three domains, or passes the spec's decision rule for optional modules. Say which when proposing it.
 - Early indicators come first: feeds that report army activity, violence, macro releases, bond moves, hacking, releases and outages as soon as they happen. Link each indicator to the news around it, and say "No linked news found" rather than guess a cause (spec: Early indicators).
 - Upstream sync is dropped (2026-11-07): Lite is the product, and only the ingestion architecture is kept. The [refactor plan](docs/engineering/plans/2026-11-18-001-refactor-lite-monorepo-plan.md) removed the old dashboard, the profile flag and the site variants in Phase 1, then moves to npm workspaces + Turborepo and Vite 8, with hosting last. Build Lite work directly: no env flag, no flag-off path, no site variant. [Legacy features](docs/engineering/product/legacy-features.md) lists what leaves and how to bring it back.
-- The owner's front page is the Lite UI at `/lite` (`src/lite/`, Preact and Tailwind): the cross-domain Briefing, with the three domain screens as its children. Its widgets show real data, a labelled derived rule, or labelled samples, never unlabelled samples.
+- The owner's front page is the Lite UI at `/lite` (`apps/web/src/lite/`, Preact and Tailwind): the cross-domain Briefing, with the three domain screens as its children. Its widgets show real data, a labelled derived rule, or labelled samples, never unlabelled samples.
 - Reuse the existing `packages/shared/` intelligence modules (story identity, publisher families, credibility, corroboration, keyword spikes, grounded briefs) before writing new scoring, dedup, or brief code.
 - Add no new datastore (Supabase Postgres, R2 raw archive) until its phase gate in the spec is met. Redis stays the store the dashboard reads.
 - Model work at the event level, not the article level. Keep sources, timestamps, confidence, and the distinction between confirmed facts, attributed claims, and model inference visible.
@@ -57,14 +57,15 @@ Merge, auto-merge, and deployment require explicit authorization in the current 
 Node 24 (`.nvmrc`).
 
 ```bash
-npm run dev                      # Vite dev server for the Lite UI at /lite; also serves the API routes it calls (vite.dev-api.ts)
+npm run dev                      # Vite dev server for the Lite UI at /lite (apps/web); also serves the API routes it calls (apps/web/vite.dev-api.ts)
 
-npm run typecheck                # browser code (tsc --noEmit)
+npm run typecheck                # browser code (tsc --noEmit; the root tsconfig.json extends apps/web/tsconfig.json)
 npm run typecheck:api            # api/ + packages/server/ (tsconfig.api.json)
 npm run lint                     # biome + safe-html guard
 npm run lint:boundaries          # browser import-direction enforcement
 npm run lint:api-contract        # hand-written api/ routes must be listed in api/api-route-exceptions.json
 npx turbo run typecheck build    # the same tasks through the Turborepo cache (turbo.json); CI runs them this way
+npm run build                    # the deploy build (vercel.json): runs @wm/web's build, which writes the root dist/
 
 npm run test:data                # tests/*.test.{mjs,mts} (node:test, sharded runner)
 npm run test:dom                 # tests/dom (vitest, vitest.dom.config.mts)
@@ -98,7 +99,7 @@ Production build: `npm run build` (the Lite UI into `dist/`; `build:full` is an 
 
 | Change | Code and guidance | Required verification |
 |---|---|---|
-| Browser behavior | `src/lite/`, and the `packages/client/services/`, `packages/client/config/` and `packages/client/utils/` modules it imports; [Lite spec](docs/engineering/architecture/lite.md) | Focused behavior check, `npm run typecheck`, `npm run lint:boundaries` |
+| Browser behavior | `apps/web/` (the Lite UI in `src/lite/`, `lite.html`, the Vite configs), and the `packages/client/services/`, `packages/client/config/` and `packages/client/utils/` modules it imports; [Lite spec](docs/engineering/architecture/lite.md) | Focused behavior check, `npm run typecheck`, `npm run lint:boundaries` |
 | API and handlers | `api/`, `packages/server/`; [endpoint guide](docs/engineering/architecture/adding-endpoints.md) | Focused handler check, `npm run typecheck:api`; `npm run test:sidecar` owns the `api/` node suites; `edge-contract-reviewer` subagent before the PR |
 | Data workers and cache | `scripts/`, `packages/server/_shared/`; [health contracts](docs/engineering/architecture/health-endpoints.md) | Producer and reader checks with fixtures; separately record live freshness evidence when required |
 | Proto and generated clients | `packages/contracts/proto/`, `packages/contracts/generated/`; [code generation](CONTRIBUTING.md#working-with-sebuf-rpc-framework) | `make generate` requires buf + sebuf v0.11.1 plugins; verify generated diff |
@@ -134,17 +135,17 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 ## Architecture at a glance
 
-**Runtime topology.** Lite SPA (`src/lite/`) → Vercel Edge Functions (`api/`, `middleware.ts`) → Upstash Redis, which Railway workers (`scripts/seed-*.mjs`, the long-running relay `scripts/ais-relay.cjs`) fill from roughly 850 upstream hosts. There is no user-scoped backend: Convex, Clerk, billing, MCP and OAuth were removed in refactor Phase 1c.
+**Runtime topology.** Lite SPA (`apps/web/src/lite/`) → Vercel Edge Functions (`api/`, `middleware.ts`) → Upstash Redis, which Railway workers (`scripts/seed-*.mjs`, the long-running relay `scripts/ais-relay.cjs`) fill from roughly 850 upstream hosts. There is no user-scoped backend: Convex, Clerk, billing, MCP and OAuth were removed in refactor Phase 1c.
 
 **Request path is cache-first.** Most domain RPCs do not hit upstreams per request. Seeders write Redis keys through `atomicPublish()` / `writeSeedMeta` in `scripts/_seed-utils.mjs`, always alongside `seed-meta:<key>` (`fetchedAt`, `recordCount`). Edge handlers read via `cachedFetchJson()` (`packages/server/_shared/redis.ts`), which coalesces concurrent misses. `api/health.js` grades staleness per key from that seed-meta. Some domains (scorecard, supply-chain vulnerability, physical divergence) are pure read models of a Railway-published cohort. A data change usually spans producer script → Redis key → handler → bootstrap/health registration → panel.
 
 **Proto/sebuf contract.** `packages/contracts/proto/` defines services with `(sebuf.http.config)` annotations. `make generate` emits TS client stubs (`packages/contracts/generated/client/`), server types (`packages/contracts/generated/server/`) and OpenAPI (`packages/contracts/openapi/`). Handlers live in `packages/server/worldmonitor/<domain>/v1/handler.ts`. The thin entry points `api/<domain>/v<N>/[rpc].ts` call `createDomainGateway` (`packages/server/gateway.ts`), which runs origin check → CORS → API key (premium routes: operator key only) → rate limit → route → handler → ETag/304 → cache-tier headers. Every Edge function is esbuild-bundled per file; `tests/edge-functions.test.mjs` enforces that it stays self-contained. CI (`proto-check.yml`) fails when generated output is stale.
 
-**Frontend.** The Lite UI (`src/lite/`, Preact and Tailwind, entry `lite.html` → `src/lite/main.tsx`) is the only web app; refactor Phase 1 removed the old vanilla-TS dashboard (`src/components/`, `src/app/`, `App.ts`). It reads data through the generated sebuf clients and the `packages/client/services/` modules it imports, and draws maps with MapLibre (`src/lite/map/`). What was removed, and how to bring a feature back, is in [legacy features](docs/engineering/product/legacy-features.md).
+**Frontend.** The Lite UI (`apps/web/src/lite/`, Preact and Tailwind, entry `apps/web/lite.html` → `apps/web/src/lite/main.tsx`) is the only web app, the `@wm/web` workspace (`apps/web/`, with `vite.config.ts` and `vite.dev-api.ts`). Vite runs with `apps/web` as its root but reads the repository root's `.env*` and `public/` and writes the root `dist/`; refactor Phase 1 removed the old vanilla-TS dashboard (`src/components/`, `src/app/`, `App.ts`). It reads data through the generated sebuf clients and the `packages/client/services/` modules it imports, and draws maps with MapLibre (`apps/web/src/lite/map/`). What was removed, and how to bring a feature back, is in [legacy features](docs/engineering/product/legacy-features.md).
 
 **Bootstrap data.** Startup datasets come from `api/bootstrap.js` and are read with `getHydratedData(key)`. Opt-in panels use `ensureHydrated(key)` (on-demand path). Each new key must also be registered in `api/health.js`.
 
-**No variants, no profile flag.** Refactor Phase 1d removed `VITE_VARIANT`/`SITE_VARIANT` and `VITE_LITE_PROFILE`. `/` and `/dashboard` always 307 to `/lite` (query kept): `vercel.json` owns that redirect, and `docker/nginx.conf*` and `vite.dev-api.ts` mirror it. A `variant` request parameter on the news RPCs (`full`, `tech`, `finance`) names a feed digest edition on the server, not a site variant.
+**No variants, no profile flag.** Refactor Phase 1d removed `VITE_VARIANT`/`SITE_VARIANT` and `VITE_LITE_PROFILE`. `/` and `/dashboard` always 307 to `/lite` (query kept): `vercel.json` owns that redirect, and `docker/nginx.conf*` and `apps/web/vite.dev-api.ts` mirror it. A `variant` request parameter on the news RPCs (`full`, `tech`, `finance`) names a feed digest edition on the server, not a site variant.
 
 **`packages/shared/` vs `packages/client/`.** The `@wm/shared` workspace package (`packages/shared/`) holds logic that both the browser and the server must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side. The `@wm/client` workspace package (`packages/client/`) holds the browser modules the Lite UI builds on (`services/`, `config/`, `types/`, `utils/`, `bootstrap/`, `locales/`, and `shared/` for the premium and public RPC path lists the gateway also reads). `scripts/shared/` is the Railway seeders' byte-identical mirror of parts of it (mirror tests keep them in sync), because scripts-rooted services cannot see the rest of the repository.
 
@@ -152,11 +153,11 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 ## Critical boundaries
 
-The browser import direction is `types -> config -> services -> lite` (`packages/client/{types,config,services}` → `src/lite/`), and `src/lite/` imports no removed dashboard code. [lint-boundaries.mjs](scripts/lint-boundaries.mjs) enforces import boundaries.
+The browser import direction is `types -> config -> services -> lite` (`packages/client/{types,config,services}` → `apps/web/src/lite/`), and `apps/web/src/lite/` imports no removed dashboard code. [lint-boundaries.mjs](scripts/lint-boundaries.mjs) enforces import boundaries.
 
-- Legacy `api/*.js` entries are self-contained JavaScript. Import same-directory `_*.js` helpers or packages, never `packages/server/` or `src/`.
-- TypeScript API entries may import `packages/server/` and `packages/contracts/generated/`, but no other browser code. `packages/server/` must not import `src/lite/`.
-- The Lite UI imports the workspace packages by name (`@wm/client/services/...`, `@wm/contracts/generated/...`, `@wm/shared/...`); there is no `@/` alias. Files inside `packages/client/` import each other by relative path. `api/`, `packages/server/` (`@wm/server`), `packages/shared/`, `middleware.ts`, `vite.dev-api.ts` and the `packages/client/` modules they import use relative paths into `packages/contracts/`, `packages/shared/`, `packages/server/` and `packages/client/` until a Vercel preview proves workspace packages in Edge bundles; nothing imports `@wm/server` by name yet (`lint:boundaries` enforces both).
+- Legacy `api/*.js` entries are self-contained JavaScript. Import same-directory `_*.js` helpers or packages, never `packages/server/` or `apps/web/`.
+- TypeScript API entries may import `packages/server/` and `packages/contracts/generated/`, but no other browser code. Nothing under `packages/` imports `apps/` (`@wm/web`).
+- The Lite UI imports the workspace packages by name (`@wm/client/services/...`, `@wm/contracts/generated/...`, `@wm/shared/...`, `@wm/server/_shared/...`); there is no `@/` alias. Files inside `packages/client/` import each other by relative path. `api/`, `packages/server/` (`@wm/server`), `packages/shared/`, `middleware.ts`, `apps/web/vite.dev-api.ts` and the `packages/client/` modules they import use relative paths into `packages/contracts/`, `packages/shared/`, `packages/server/` and `packages/client/` until a Vercel preview proves workspace packages in Edge bundles (`lint:boundaries` enforces both).
 - Edit proto definitions and regenerate. Never hand-edit `packages/contracts/generated/`.
 - Use shared cache and response helpers. Use `cachedFetchJson()` when applicable. Include every request-varying parameter in cache keys.
 - Edge code must not import `node:http`, `node:https`, or `node:zlib`. Use `(...args) => globalThis.fetch(...args)`, never `fetch.bind(globalThis)`.

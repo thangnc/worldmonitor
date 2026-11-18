@@ -184,7 +184,7 @@ Service domains cover every data vertical:
 
 Proto definitions include `buf.validate` field constraints (e.g., latitude ∈ [−90, 90]), so request validation is generated automatically — handlers receive pre-validated data. Breaking changes are caught at CI time via `buf breaking` against the main branch.
 
-**Edge gateway** — proto-backed domain entry points (`api/[domain]/v1/[rpc].ts`) register their generated `createServiceRoutes()` descriptors with a flat path router. Each RPC uses the HTTP method declared in its proto/OpenAPI contract: most read endpoints are `GET` (for example, `GET /api/aviation/v1/list-airport-delays`), while mutating and batch operations use `POST`. The shared gateway adds CORS enforcement, a top-level error boundary that hides internal details on 5xx responses, and rate-limit support (`retryAfter` on 429). The same router runs locally via a Vite dev-server plugin (`sebufApiPlugin` in `vite.config.ts`) with HMR invalidation on handler changes.
+**Edge gateway** — proto-backed domain entry points (`api/[domain]/v1/[rpc].ts`) register their generated `createServiceRoutes()` descriptors with a flat path router. Each RPC uses the HTTP method declared in its proto/OpenAPI contract: most read endpoints are `GET` (for example, `GET /api/aviation/v1/list-airport-delays`), while mutating and batch operations use `POST`. The shared gateway adds CORS enforcement, a top-level error boundary that hides internal details on 5xx responses, and rate-limit support (`retryAfter` on 429). The same router runs locally via a Vite dev-server plugin (`sebufApiPlugin` in `apps/web/vite.dev-api.ts`) with HMR invalidation on handler changes.
 
 ### Bootstrap Hydration
 

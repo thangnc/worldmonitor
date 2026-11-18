@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const browserRoots = [join(repoRoot, 'src'), join(repoRoot, 'packages/client')];
+const browserRoots = [join(repoRoot, 'apps/web/src'), join(repoRoot, 'packages/client')];
 const githubApiUrlPattern = /https?:\/\/api\.github\.com\b/;
 
 async function* walk(dir: string): AsyncGenerator<string> {

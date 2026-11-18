@@ -29,7 +29,7 @@ describe('unicode safety scan scope', () => {
   // still pass. Changing either list should be a deliberate, reviewed edit.
   it('pins the scanned roots', () => {
     assert.deepEqual(SCAN_ROOTS, [
-      'src',
+      'apps/web/src',
       'packages/client',
       'packages/server',
       'api',

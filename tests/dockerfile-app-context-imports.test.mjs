@@ -12,7 +12,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -86,15 +86,6 @@ function relativeSpecs(file) {
   return new Set(importedFiles.map((f) => f.fileName).filter((spec) => spec.startsWith('.')));
 }
 
-function listSources(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) listSources(p, out);
-    else if (/\.(ts|tsx|mts)$/.test(name) && !name.endsWith('.d.ts')) out.push(p);
-  }
-  return out;
-}
-
 // Resolve the way tsc does (extensions, .tsx, index files, package.json
 // `types`, `.js` → `.ts` mapping) via TypeScript's resolver. Non-module assets
 // such as `import './x.css'` fall back to the literal path, since vite needs
@@ -127,12 +118,12 @@ function findOffenders(repoRoot, entries, rules, options) {
 
 describe('docker/Dockerfile — tsc inputs stay inside the build context', () => {
   const rules = parseDockerignore(readFileSync(resolve(root, '.dockerignore'), 'utf-8'));
-  const tsconfig = JSON.parse(readFileSync(resolve(root, 'tsconfig.json'), 'utf-8'));
-  const excludedEntries = new Set((tsconfig.exclude ?? []).map((p) => resolve(root, p)));
-  const files = tsconfig.include.flatMap((entry) => {
-    const abs = resolve(root, entry);
-    return statSync(abs).isDirectory() ? listSources(abs) : [abs];
-  }).filter((f) => !excludedEntries.has(f));
+  // The files `npx tsc` checks, as TypeScript resolves them: the root
+  // tsconfig.json extends apps/web/tsconfig.json (refactor PR 2.5), whose
+  // include and exclude lists are relative to apps/web.
+  const { config: tsconfig } = ts.readConfigFile(resolve(root, 'tsconfig.json'), ts.sys.readFile);
+  const files = ts.parseJsonConfigFileContent(tsconfig, ts.sys, root).fileNames
+    .filter((f) => /\.(ts|tsx|mts)$/.test(f) && !f.endsWith('.d.ts'));
 
   it('the matcher reads .dockerignore the way Docker does (sanity)', () => {
     assert.ok(files.length > 100, `expected the tsconfig include set to be large, got ${files.length}`);
@@ -183,6 +174,6 @@ describe('docker/Dockerfile — tsc inputs stay inside the build context', () =>
   });
 
   it('no type-checked file imports a path .dockerignore drops', () => {
-    assert.deepEqual(findOffenders(root, files, rules, repoTsOptions()), [], 'these imports resolve locally but are missing from the Docker build context; move the target under src/ or packages/shared/');
+    assert.deepEqual(findOffenders(root, files, rules, repoTsOptions()), [], 'these imports resolve locally but are missing from the Docker build context; move the target under apps/web/src/ or packages/shared/');
   });
 });

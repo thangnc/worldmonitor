@@ -208,11 +208,11 @@ describe('Edge Function module isolation', () => {
       );
     });
 
-    it(`${name} does not import from ../src/ (Edge Functions cannot resolve TS aliases)`, () => {
+    it(`${name} does not import from ../apps/ (Edge Functions cannot resolve cross-directory TS)`, () => {
       const src = readFileSync(path, 'utf-8');
       assert.ok(
-        !src.includes("from '../src/"),
-        `${name}: imports from ../src/ — Vercel Edge Functions cannot resolve @/ aliases or cross-directory TS. Inline the code instead.`,
+        !src.includes("from '../apps/"),
+        `${name}: imports from ../apps/ (the web app, apps/web) — Vercel Edge Functions cannot resolve cross-directory TS. Inline the code instead.`,
       );
     });
   }

@@ -173,7 +173,7 @@ export async function loadUcdpEvents(): Promise<UcdpViolenceEvent[] | null> {
   return events.filter((e) => e.location && Number.isFinite(e.location.latitude));
 }
 
-// Inputs to the hotspots' live escalation score (src/lite/data/escalation.ts).
+// Inputs to the hotspots' live escalation score (apps/web/src/lite/data/escalation.ts).
 
 export async function loadUnrestEvents(): Promise<UnrestEvent[] | null> {
   const { events } = await unrest.listUnrestEvents({

@@ -3,7 +3,7 @@
  *
  * Pure functions so node:test can cover them without a browser. `/` and
  * `/dashboard` always redirect here; vercel.json, docker/nginx.conf*, and the
- * dev server (vite.dev-api.ts) own that redirect.
+ * dev server (apps/web/vite.dev-api.ts) own that redirect.
  */
 
 /**

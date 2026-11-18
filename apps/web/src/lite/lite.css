@@ -6,7 +6,11 @@
 @import "@fontsource/ibm-plex-mono/500.css";
 @import "@fontsource/ibm-plex-mono/600.css";
 @import "overlayscrollbars/overlayscrollbars.css";
-@import "tailwindcss";
+/* Tailwind detects classes from the repository root, as it did when the Vite
+   root was the repository (before refactor PR 2.5 moved the app to apps/web),
+   so the built CSS stays byte-identical. Scanning apps/web alone drops about
+   130 stray utilities that only prose and code outside the UI spell. */
+@import "tailwindcss" source("../../../..");
 
 @theme {
 	--color-bg: #0a0c0f;
@@ -29,7 +33,7 @@
 	/* Indicator card: REPORTED trust label, and the "No linked news found" accent. */
 	--color-reported: #7fb2ff;
 	--color-nolink: #ff7ac6;
-	/* Map markers (design "Spec — Map markers"; src/lite/map/marks.tsx). Colour is
+	/* Map markers (design "Spec — Map markers"; apps/web/src/lite/map/marks.tsx). Colour is
 	   state, never domain: grey normal, amber elevated, red critical. Glyph ink
 	   sits on a solid event and fills assets, judgements and aggregates; the
 	   white ring marks the selected marker. */
@@ -66,7 +70,7 @@
 	}
 }
 
-/* Overlay scrollbars (src/lite/components/scroll.tsx): they float over the
+/* Overlay scrollbars (apps/web/src/lite/components/scroll.tsx): they float over the
    content, take no width, and show only while the pointer is over the area. */
 .os-theme-lite {
 	box-sizing: border-box;

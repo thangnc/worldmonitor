@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 const DEFAULT_BASELINE = path.join(repoRoot, 'scripts', 'safe-html-baseline.json');
 const TARGET_EXTENSIONS = new Set(['.js', '.mjs', '.ts', '.tsx']);
-const TARGET_DIRS = ['src', 'packages/client'];
+const TARGET_DIRS = ['apps/web/src', 'packages/client'];
 const INTERNAL_ALLOWLIST = new Set(['src/utils/dom-utils.ts']);
 const DIRECT_HTML_ASSIGNMENT_RE = /(?:\.(?:innerHTML|outerHTML)|\[\s*(['"])(?:innerHTML|outerHTML)\1\s*\])\s*(\+?=)(?!=)\s*(.*)$/;
 const HTML_INSERTION_CALL_RE = /(?:\.\s*insertAdjacentHTML|\[\s*(['"])insertAdjacentHTML\1\s*\])\s*\(/;
