@@ -270,7 +270,7 @@ describe('relay -> service worker contract', () => {
 });
 
 describe('push path carries no origin literal', () => {
-  // The published-corpus guard (tests/agent-corpus-canonical-host.test.mjs)
+  // The published-corpus guard (tests/agent-corpus-canonical-host.test.mjs, gone with 1c-3)
   // exists for exactly this bug class but scans only public/ text files, which
   // is why a literal in a .cjs script slipped past it. Widening that guard to
   // scripts/ is deferred: it would red 37 of 40 files, and only 9 occurrences

@@ -320,12 +320,12 @@ test('gate 9 requires both Core coverage and a real 181-country education sample
 });
 
 function readEducationAcceptanceArtifacts() {
-  const filenames = readdirSync(new URL('../docs/snapshots/', import.meta.url))
+  const filenames = readdirSync(new URL('../docs/engineering/methodology/country-resilience-index/snapshots/', import.meta.url))
     .filter((filename) => /^resilience-education-acceptance-\d{4}-\d{2}-\d{2}\.json$/.test(filename));
   return filenames.map((filename) => ({
     filename,
     artifact: JSON.parse(readFileSync(
-      new URL(`../docs/snapshots/${filename}`, import.meta.url),
+      new URL(`../docs/engineering/methodology/country-resilience-index/snapshots/${filename}`, import.meta.url),
       'utf8',
     )),
   }));
@@ -495,8 +495,8 @@ test('artifact validator rejects inconsistent verdicts, scores, gate 9 inputs, p
     change(artifact);
     return () => validateEducationAcceptanceArtifact(artifact, { filename });
   };
-  const artifactPathPattern = String.raw`docs/snapshots/resilience-education-acceptance-\d{4}-\d{2}-\d{2}\.json`;
-  const productionRecaptureCommandPattern = String.raw`DRY_RUN_OUTPUT=docs/snapshots/resilience-education-acceptance-\$\(date -u \+%F\)\.json node --import tsx/esm scripts/dry-run-resilience-education-flip\.mjs`;
+  const artifactPathPattern = String.raw`docs/engineering/methodology/country-resilience-index/snapshots/resilience-education-acceptance-\d{4}-\d{2}-\d{2}\.json`;
+  const productionRecaptureCommandPattern = String.raw`DRY_RUN_OUTPUT=docs/engineering/methodology/country-resilience-index/snapshots/resilience-education-acceptance-\$\(date -u \+%F\)\.json node --import tsx/esm scripts/dry-run-resilience-education-flip\.mjs`;
   const actionableArtifactMutation = new RegExp(
     `${artifactPathPattern}; re-capture against production seeds with: ${productionRecaptureCommandPattern}`,
   );

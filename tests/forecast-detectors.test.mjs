@@ -3954,12 +3954,6 @@ describe('forecast quality gating', () => {
       for (const pred of candidates) pred.publishDiagnostics = null;
     }
     assert.deepEqual([...WITHHELD_PUBLISH_FAMILIES].sort(), ['cyber', 'prediction_market']);
-    for (const path of ['docs/panels/forecast.mdx', 'docs/zh/panels/forecast.mdx']) {
-      const doc = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-      for (const term of ['WITHHELD_PUBLISH_FAMILIES', 'DEFAULT_MIN_DISTINCT_DOMAINS', '`Political`', '`withheld_family`', '`judged_evidence_unreliable`', '`market_price_not_outcome`']) {
-        assert.ok(doc.includes(term), `${path} documents ${term}`);
-      }
-    }
   });
 
   it('backfills an absent real domain before adding another represented hard forecast', () => {

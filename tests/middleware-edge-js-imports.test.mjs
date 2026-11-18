@@ -40,7 +40,9 @@ async function jsModulesImportingTs(root, entry) {
 
 test('no JavaScript module bundled into middleware.ts imports a TypeScript file', async () => {
   const { modules, offenders } = await jsModulesImportingTs(ROOT, 'middleware.ts');
-  assert.ok(modules > 5, `resolved only ${modules} modules; the graph walk is broken`);
+  // middleware.ts, agent-not-found, lite-route, strip-trailing-slashes.js and
+  // the agent request policy JSON since the docs proxy left (refactor 1c-3).
+  assert.ok(modules >= 5, `resolved only ${modules} modules; the graph walk is broken`);
   assert.deepEqual(offenders, [], `Edge middleware cannot bundle these imports:\n${offenders.join('\n')}`);
 });
 

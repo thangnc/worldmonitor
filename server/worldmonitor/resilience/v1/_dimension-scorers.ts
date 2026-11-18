@@ -876,7 +876,7 @@ export function normalizeBandLowerBetter(value: number): number {
 // GDP — the ROUNDED band's actual crossings, since 75.5 is where it rounds
 // above 75; the unrounded 5%/40.9% figures pull in two countries that round to
 // exactly 75 and earn no premium, per the derivation in
-// docs/methodology/financial-system-exposure.md) is documented as "healthy
+// docs/engineering/methodology/financial-system-exposure.md) is documented as "healthy
 // DIVERSIFIED financial system" —
 // but `normalizeBandLowerBetter` reads only the integration LEVEL. On the
 // 2026-08-12 production payload, 29 of the 77 premium-region countries held
@@ -2102,7 +2102,7 @@ function readEducationRankableRecordCount(meta: unknown): number | null {
 // `RESILIENCE_EDUCATION_ENABLED=false` in the production environment remains
 // the rollback kill switch — identical to the previous rollback story, just
 // inverted in which direction needs the explicit setting. See
-// `docs/methodology/education-flag-flip-runbook.md` § Rollback.
+// `docs/engineering/methodology/education-flag-flip-runbook.md` § Rollback.
 export function isEducationEnabled(): boolean {
   return (process.env.RESILIENCE_EDUCATION_ENABLED ?? 'true').toLowerCase() === 'true';
 }
@@ -2155,7 +2155,7 @@ export async function scoreEducation(
       `RESILIENCE_EDUCATION_ENABLED=true but required seed-meta absent or unhealthy for: ${RESILIENCE_EDUCATION_KEY}. ` +
         'Provision the macro bundle component seeder (seed-education-attainment) and confirm Redis ' +
         'populates BEFORE flipping the flag. Or set RESILIENCE_EDUCATION_ENABLED=false to keep the dim dark. ' +
-        'See docs/methodology/education-flag-flip-runbook.md.',
+        'See docs/engineering/methodology/education-flag-flip-runbook.md.',
       [RESILIENCE_EDUCATION_KEY],
     );
   }

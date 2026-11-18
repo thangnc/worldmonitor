@@ -64,9 +64,8 @@ on:
     # Daily at 02:19 UTC. Off the hour because GitHub runs the scheduled
     # queue late when it is loaded and that load peaks on the hour, and outside
     # the 03:00–05:00 UTC band the other crons in this directory already share.
-    # This is what rebuilds main after application changes, CHANGELOG.md and
-    # docs/snapshots/ refreshes, and
-    # whatever a push trigger can silently miss (a delayed or dropped webhook
+    # This is what rebuilds main after application changes and CHANGELOG.md
+    # refreshes, and whatever a push trigger can silently miss (a delayed or dropped webhook
     # delivery).
     - cron: '19 2 * * *'
   workflow_dispatch:

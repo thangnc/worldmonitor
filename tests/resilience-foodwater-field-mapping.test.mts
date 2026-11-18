@@ -15,7 +15,7 @@
 // produces a near-identical score across countries with the same
 // water-stress profile. That's the construct working — not a bug.
 //
-// See docs/methodology/known-limitations.md for the full write-up.
+// See docs/engineering/methodology/known-limitations.md for the full write-up.
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Freeze a resilience ranking with its country score details and identities.
-// Writes to docs/snapshots/resilience-ranking-<YYYY-MM-DD>.json.
+// Writes to docs/engineering/methodology/country-resilience-index/snapshots/resilience-ranking-<YYYY-MM-DD>.json.
 //
 // Usage:
 //   API_BASE=https://api.worldmonitor.app node scripts/freeze-resilience-ranking.mjs
@@ -31,6 +31,9 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const LEGACY_COUNTRY_SNAPSHOT_PATH = path.join(
   REPO_ROOT,
   'docs',
+  'engineering',
+  'methodology',
+  'country-resilience-index',
   'snapshots',
   'resilience-ranking-2026-05-28.json',
 );
@@ -728,7 +731,7 @@ function resolveRankingSnapshotOutputPath(capturedAt, outputBasename = OUTPUT_BA
       `RESILIENCE_RANKING_OUTPUT_BASENAME date ${match[1]} must match capturedAt ${capturedAt}`,
     );
   }
-  return path.join(REPO_ROOT, 'docs', 'snapshots', basename);
+  return path.join(REPO_ROOT, 'docs', 'engineering', 'methodology', 'country-resilience-index', 'snapshots', basename);
 }
 
 async function main() {

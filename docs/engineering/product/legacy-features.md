@@ -19,6 +19,14 @@ Beyond the panels and layers inventoried below, Phase 1a removed:
 - **Checks:** the Playwright e2e and visual suites, bundle-size budgets, the panel-content and overlay-reload lints, locale sync and zh-TW conversion, and the daily MCP-preset and live-video audits.
 - **Frozen, not deleted:** the product facts behind the `/pro` copy and the CLI's TUI catalog keep their last generated output; their generators read dashboard sources.
 
+## The public outputs (Phase 1c-3)
+
+The deployment is private, so 1c-3 removed everything it published for people and agents outside it. All of it is at the tag:
+
+- **Documentation site:** the Mintlify pages under `docs/` (English and `docs/zh/`), `docs/docs.json`, `docs/images/`, `docs/panels/`, the public methodology pages, `docs/openapi/`, `docs/research/seo-ai-visibility/`, and the non-resilience `docs/snapshots/`. The endpoint guide, health endpoints, design philosophy, CII methodology, the methodology internals and the source attribution inventory moved to `docs/engineering/`.
+- **Agent and SEO outputs:** `llms.txt` and its siblings, the markdown pages (`agents.md`, `home.md`, `pricing.md`, …), `agent-view.json`, `plugin.json`, the Postman collection, sitemaps, the per-host robots files (one `public/robots.txt` now disallows all), search-engine verification files, the `.well-known` agent, MCP, API-catalog and skill cards, `public/openapi.yaml`/`.json` (`build:openapi`), `skills/`, the sandbox, `/trust`, `/legal` and its PDFs, `embed.js` and the widget sandbox page.
+- **Routes:** `api/md-twin.ts` (page markdown twins), `api/story.js`, `api/og-story.js`, `api/download.js`, `api/http-message-signatures-directory.ts`, `api/skills/fetch-agentskills.ts`, and the middleware's docs proxy and twin crawler allowance. Gateway `/api/**/*.md` twins remain.
+
 ## How to bring a feature back to Lite
 
 Most features are a pipeline, and only the UI leaves with the dashboard. Before porting, trace the chain at the tag:

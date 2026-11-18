@@ -536,13 +536,6 @@ describe('CI workflow coverage', () => {
     );
   });
 
-  it('runs the public documentation boundary on docs-only pull requests', () => {
-    const publicDocsJob = workflowJobBlock(ciWorkflow, 'checks');
-
-    assert.match(publicDocsJob, /npm run lint:public-docs/);
-    assert.doesNotMatch(publicDocsJob, /needs: changes/);
-  });
-
   it('keeps required PR smoke scripts defined and wired into workflows', () => {
     for (const script of REQUIRED_PR_SCRIPTS) {
       assert.equal(typeof packageScripts[script], 'string', `package.json must define ${script}`);

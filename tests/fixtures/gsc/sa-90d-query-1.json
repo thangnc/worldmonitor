@@ -1,7 +1,0 @@
-{
-  "error": {
-    "code": 429,
-    "status": "RESOURCE_EXHAUSTED",
-    "message": "Quota exceeded for quota metric queries"
-  }
-}

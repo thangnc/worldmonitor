@@ -3,7 +3,7 @@
 The settled model for `report_issue`, the first MCP tool that writes state, and
 for its REST twin `POST /api/feedback/v1/submit-report`. The plan is #8721; this
 record is its phase 1. It answers the questions that
-[Mutating MCP tools](../../adding-endpoints.mdx#mutating-mcp-tools) requires before
+Mutating MCP tools (a checklist in the endpoint guide until refactor 1c-3 removed MCP) requires before
 any mutating operation gets an MCP wrapper.
 
 Read this before implementing phases 2 to 8, and before re-opening any decision

@@ -15,7 +15,7 @@
 // the generator and the test share one implementation and cannot drift apart.
 // The CLI entry (guarded main below) writes the artifact. Rationale, artifact
 // fields, and the regeneration flows:
-// docs/methodology/country-resilience-index/golden-baseline.md
+// docs/engineering/methodology/country-resilience-index/golden-baseline.md
 //
 //   npm run freeze:resilience-cri-golden
 //

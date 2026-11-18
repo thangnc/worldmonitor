@@ -31,15 +31,10 @@ ENV VITE_VARIANT=${VITE_VARIANT}
 ENV VITE_WS_API_URL=${VITE_WS_API_URL}
 ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}
 
-# Generated inventory assets are intentionally untracked. Recreate them in the
-# clean release image before Vite copies public/ into dist/.
-RUN node scripts/generate-inventory-facts.mjs
-
 # tsc + vite build directly like the sidecar image's builder. `npm run build`
-# would also run the Vite env secrets check and the OpenAPI copy, which the
+# would also run the Vite env secrets check, which the
 # image does not need.
 RUN npx tsc && npx vite build
-RUN test -s dist/product-facts.json
 # The SPA entry point: docker/nginx.conf.template rewrites /lite and its screens
 # to it, so without it every app route in the image serves a 404.
 RUN test -s dist/lite.html
@@ -56,7 +51,6 @@ ENV API_UPSTREAM=https://api.worldmonitor.app
 COPY --from=builder /app/dist/ ./
 COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template
 COPY docker/nginx-security-headers.conf /etc/nginx/security_headers.conf
-COPY docker/nginx-embed-security-headers.conf /etc/nginx/embed_security_headers.conf
 COPY docker/nginx-oauth-authorize-security-headers.conf /etc/nginx/oauth_authorize_security_headers.conf
 COPY docker/nginx-youtube-embed-security-headers.conf /etc/nginx/youtube_embed_security_headers.conf
 COPY docker/docker-entrypoint.sh /docker-entrypoint.sh

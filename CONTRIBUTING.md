@@ -507,7 +507,7 @@ The pinned sebuf version is set by `SEBUF_VERSION` in the `Makefile` (currently 
 
 ### Derived Files
 
-Product facts, `llms.txt`, the AI search briefing, source attribution, catalogs, locales and legal digests are committed outputs of generators in `scripts/`. Run `npm run generate` after changing anything they read; it runs each generator's `--check` and rewrites only what is stale, in dependency order. `npm run generate:check` reports without writing. The pre-push hook regenerates stale files and stops the push so you can commit them, and the always-on `docs-stats` CI job runs the check. Proto output is separate (`make generate`, below). App translations, internal links, the sitemap and docs page dates are not covered; see the header of `scripts/generate-derived.mjs`.
+Source attribution (the manifest and `docs/engineering/architecture/source-attribution.md`), catalogs, locales and the engineering indexes are committed outputs of generators in `scripts/`. Run `npm run generate` after changing anything they read; it runs each generator's `--check` and rewrites only what is stale, in dependency order. `npm run generate:check` reports without writing. The pre-push hook regenerates stale files and stops the push so you can commit them, and the always-on `docs-stats` CI job runs the check. Proto output is separate (`make generate`, below). App translations are not covered; see the header of `scripts/generate-derived.mjs`.
 
 ### Generated Artifacts in Pull Requests
 
@@ -535,7 +535,7 @@ For Dependabot pull requests from this repository, use the same owner-review and
 
 | File | Purpose |
 | --- | --- |
-| `docs/api/{Service}.openapi.yaml` / `.json` | Per-service specs — referenced individually by Mintlify in `docs/docs.json` |
+| `docs/api/{Service}.openapi.yaml` / `.json` | Per-service specs |
 | `docs/api/worldmonitor.openapi.yaml` | **Unified bundle** spanning every service (sebuf ≥ v0.11.0) — use this for external consumers, API explorers, or anywhere you want a single spec covering all RPCs |
 
 The unified bundle is emitted by a third `protoc-gen-openapiv3` invocation in `proto/buf.gen.yaml` using `bundle=true`, `bundle_only=true`, and `strategy: all`. Regenerate alongside the per-service files; do not edit by hand.
@@ -569,7 +569,7 @@ Any new outbound host that appears in a URL literal under `scripts/`, `server/`,
 
 ```bash
 npm run sources:check     # fails with "missing manifest entry for <host>"
-npm run sources:generate  # writes the row and regenerates docs/source-attribution.mdx
+npm run sources:generate  # writes the row and regenerates docs/engineering/architecture/source-attribution.md
 ```
 
 Give the host a display name only by adding it to `PROVIDER_OVERRIDES` in that script and bumping `PROVIDER_IDENTITY_REVIEW` to the recomputed digest; provider identities are hash-pinned so renaming one stays an explicit review event. Because the script lives inside the roots it scans, a URL you cite in one of its own strings counts as a discovered source — fine when that host is already registered (the licence links on existing rows), but citing an unregistered host invents a provider row for it.

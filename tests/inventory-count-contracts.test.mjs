@@ -29,9 +29,8 @@ const EXPECTED_INVENTORY_SURFACES = [
   ['feed-client-server-catalogs', 'tests/publisher-families.test.mjs', ['FEED_LABELS', 'withHosts']],
   ['feed-source-provenance', 'tests/source-provenance.test.mts', ['names', 'explicitUnknownDimensions']],
   ['product-catalog-inventories', 'tests/product-catalog-freshness.test.mjs', ['generatedProductIds', 'tiersJson', 'bundleHighlights']],
-  ['agent-skills-index', 'tests/agent-skills-index.test.mjs', ['index.skills']],
   ['notification-country-registry', 'tests/notification-relay-country-scope-5359.test.mjs', ['names']],
-  ['public-fixed-algorithm-claims', 'tests/cii-docs-drift.test.mts', ['llmsBrief', 'llmsFull', 'pressKit', 'communityGuide', 'publicHome', 'agentView.capabilities']],
+  ['public-fixed-algorithm-claims', 'tests/cii-docs-drift.test.mts', ['pressKit', 'communityGuide']],
 ];
 
 function inventorySurfaceRows(contracts) {

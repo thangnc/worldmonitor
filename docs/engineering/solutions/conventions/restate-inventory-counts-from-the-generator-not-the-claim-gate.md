@@ -66,7 +66,7 @@ Give the block `nonce="wm-static-bootstrap"`, as the other generated JSON-LD blo
 ### 4. Quote providers and hosts by their measured names
 
 - **Providers:** 774 on 2026-10-24, from `catalogProviderIdentities(manifest).size`.
-- **Hosts:** 789 active source hosts, from `activeHosts`. This is the figure published in `public/ai-search.md` and `docs/source-attribution.mdx`.
+- **Hosts:** 789 active source hosts, from `activeHosts`. This is the figure published in `public/ai-search.md` and `docs/engineering/architecture/source-attribution.md`.
 - **Not `observedHosts`:** 916, the raw inventory length, which includes hosts the ledger excludes. Don't publish it as a host total.
 - **The MCP `get_sources` trap:** its `summary.providerCount` is 789. Its output schema describes that field as active upstream hosts, not providers. Copy that quotes it as "789 providers" or "789 sources" overstates the provider count.
 

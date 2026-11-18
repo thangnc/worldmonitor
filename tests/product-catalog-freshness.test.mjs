@@ -141,7 +141,6 @@ describe('Generated product catalog', () => {
     for (const requiredWatch of [
       'scripts/generate-inventory-facts.mjs',
       'shared/source-attribution-manifest.json',
-      'public/.well-known/mcp/server-card.json',
     ]) {
       assert.ok(relayService.watchPatterns.includes(requiredWatch), `ais-relay must watch ${requiredWatch}`);
     }

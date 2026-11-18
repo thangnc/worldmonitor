@@ -289,6 +289,7 @@ async function main(): Promise<void> {
       __dirname,
       '..',
       'docs',
+      'engineering',
       'methodology',
       'country-resilience-index',
       'reference-edition',

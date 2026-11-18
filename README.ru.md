@@ -42,8 +42,6 @@
   <a href="https://www.worldmonitor.app/docs/contributing"><strong>Участие</strong></a>
 </p>
 
-![World Monitor Dashboard](docs/images/worldmonitor-7-mar-2026.jpg)
-
 ---
 
 ## Что делает
@@ -181,7 +179,7 @@ npm run build:full       # продакшен-сборка
 | Коммерческое использование / SaaS | Да, по AGPL-3.0-only при соблюдении обязательств AGPL |
 | Проприетарное использование с закрытым исходным кодом или права на официальный брендинг | Нужно отдельное коммерческое разрешение или разрешение на товарный знак |
 
-Полный текст: [LICENSE](LICENSE). Кратко: [docs/license.mdx](docs/license.mdx). Коммерческое лицензирование доступно как альтернатива для условий вне AGPL.
+Полный текст: [LICENSE](LICENSE). Коммерческое лицензирование доступно как альтернатива для условий вне AGPL.
 
 Copyright (C) 2024-2026 Elie Habib. All rights reserved.
 

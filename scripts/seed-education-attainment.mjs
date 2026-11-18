@@ -88,7 +88,7 @@ const EDUCATION_SECTION_TIMEOUT_MS = 300_000;
 // because `tests/resilience-indicator-tiering.test.mts` sets CORE_MIN_COVERAGE
 // = 180 and fails any tier='core' indicator below it. Measured coverage is 181,
 // so promotion clears that floor by one country. See
-// `docs/methodology/education-flag-flip-runbook.md`.
+// `docs/engineering/methodology/education-flag-flip-runbook.md`.
 const MIN_COUNTRIES = 150;
 const ACTIVATION_MIN_COUNTRIES = 180;
 const RANKABLE_COUNTRY_CODES = new Set(sovereignStatus.entries.map((entry) => entry.iso2));

@@ -16,6 +16,7 @@ const REPO_ROOT = path.resolve(path.dirname(__filename), '..');
 const MANIFEST_PATH = path.join(
   REPO_ROOT,
   'docs',
+  'engineering',
   'methodology',
   'country-resilience-index',
   'reference-edition',

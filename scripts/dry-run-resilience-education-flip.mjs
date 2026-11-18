@@ -4,7 +4,7 @@
 // Scores every rankable country TWICE against production-seeded data — once
 // with RESILIENCE_EDUCATION_ENABLED off (baseline) and once on (proposed) —
 // and evaluates the five acceptance gates from
-// `docs/methodology/education-flag-flip-runbook.md`.
+// `docs/engineering/methodology/education-flag-flip-runbook.md`.
 //
 // READ-ONLY. It calls `scoreAllDimensions` and the pure aggregation helpers,
 // never `buildResilienceScore` / `ensureResilienceScoreCached`, because those
@@ -90,8 +90,8 @@ const canonicalize = (value) => {
 const canonicalJson = (value) => JSON.stringify(canonicalize(value));
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const jsonEqual = (left, right) => canonicalJson(left) === canonicalJson(right);
-const ACCEPTANCE_ARTIFACT_DIRECTORY = 'docs/snapshots';
-const ACCEPTANCE_RECAPTURE_COMMAND = 'DRY_RUN_OUTPUT=docs/snapshots/resilience-education-acceptance-$(date -u +%F).json node --import tsx/esm scripts/dry-run-resilience-education-flip.mjs';
+const ACCEPTANCE_ARTIFACT_DIRECTORY = 'docs/engineering/methodology/country-resilience-index/snapshots';
+const ACCEPTANCE_RECAPTURE_COMMAND = 'DRY_RUN_OUTPUT=docs/engineering/methodology/country-resilience-index/snapshots/resilience-education-acceptance-$(date -u +%F).json node --import tsx/esm scripts/dry-run-resilience-education-flip.mjs';
 
 function formatAcceptanceArtifactPath(filename) {
   if (typeof filename !== 'string' || filename.length === 0) {

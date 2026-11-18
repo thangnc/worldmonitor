@@ -95,7 +95,7 @@ describe('five-factor scorecard CRI isolation', () => {
   // perturb CRI -- nothing more. Claims of "byte-identical CRI scores" must not
   // lean on it; the independent golden non-regression baseline lives in
   // tests/resilience-cri-golden-baseline.test.mts (#7728), with rationale in
-  // docs/methodology/country-resilience-index/golden-baseline.md.
+  // docs/engineering/methodology/country-resilience-index/golden-baseline.md.
   it('keeps CRI country scores and ranking bytes identical when source-safe scorecard fields are added', async () => {
     const beforeBytes = await frozenCriBytes(createReader(false));
     const afterBytes = await frozenCriBytes(createReader(true));

@@ -54,7 +54,6 @@ const REQUIRED_REGISTRATIONS = Object.freeze([
   ['scripts/seed-china-decision-signals.mjs', ROUTE, `CHINA_DECISION_SIGNALS_KEY = '${CANONICAL_KEY}'`],
   ['scripts/china-decision-alerts.mjs', 'buildChinaDecisionAlertEvents', 'dedupe_key', 'pending'],
   ['scripts/seed-china-decision-signals.mjs', 'CHINA_DECISION_SIGNAL_ALERT_OUTBOX_KEY', 'afterPublish'],
-  ['docs/china-decision-signals.mdx', ...ACCESS_TIERS.map(([, tier]) => tier)],
 ]);
 
 // Presence checks above prove a token was not deleted or renamed. They cannot

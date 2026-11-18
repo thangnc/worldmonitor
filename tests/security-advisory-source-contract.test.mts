@@ -133,43 +133,6 @@ describe('security advisory source contract', () => {
     }
   });
 
-  it('public advisory docs disclose only active travel-advisory feed countries', () => {
-    const feeds = extractAdvisoryFeeds();
-    const sourceCountries = travelAdvisorySourceCountries(feeds);
-    const dataSourcesSection = markdownSection(
-      readRepoFile('docs/data-sources.mdx'),
-      '### Security Advisory Aggregation',
-      '### Prediction Markets as Leading Indicators',
-    );
-    const pressKitAdvisoryLine = matchingLine(
-      readRepoFile('docs/engineering/product/PRESS_KIT.md'),
-      /^- \*\*Government travel advisories\*\*:/,
-      'PRESS_KIT.md government travel advisories bullet',
-    );
-    const docs = [
-      ['docs/data-sources.mdx Security Advisory Aggregation section', dataSourcesSection],
-      ['docs/engineering/product/PRESS_KIT.md government travel advisories bullet', pressKitAdvisoryLine],
-    ] as const;
-
-    for (const [path, text] of docs) {
-      assertDoesNotClaimInactiveSources(path, text, sourceCountries);
-    }
-
-    assert.match(
-      dataSourcesSection,
-      /fetches the complete advisory feed registry hourly/,
-      'docs/data-sources.mdx must describe the authoritative ADVISORY_FEEDS registry.',
-    );
-
-    for (const country of sourceCountries) {
-      const patterns = DISCLOSURE_PATTERNS_BY_COUNTRY[country] ?? [];
-      assert.ok(
-        patterns.some((pattern) => pattern.test(dataSourcesSection)),
-        `docs/data-sources.mdx must disclose active advisory source country ${country}.`,
-      );
-    }
-  });
-
   it('localized panel source copy does not advertise inactive feed countries', () => {
     const sourceCountries = travelAdvisorySourceCountries(extractAdvisoryFeeds());
     const localeDir = resolve(root, 'src/locales');

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Whole-table CII diff: scores every fixture in tests/fixtures/cii/ with the
 // scorer at a base git ref and with the working tree, and prints Markdown for
-// a PR body. Required by docs/methodology/cii-change-brief.md for every
+// a PR body. Required by docs/engineering/methodology/cii-change-brief.md for every
 // change that can move a CII score.
 //
 //   node --import tsx scripts/cii-table-diff.mts [--base origin/main] [--write-expected]

@@ -41,27 +41,6 @@ http {
     location = / { return 302 /lite; }
     location ~ ^/(?:dashboard|story|stocks(?:/[^/]+)?)/?$ { return 302 /lite; }
 
-    location = /embed {
-      include /etc/nginx/embed_security_headers.conf;
-      try_files /embed.html =404;
-      add_header Cache-Control "private, no-cache, must-revalidate";
-    }
-
-    location = /embed.html {
-      include /etc/nginx/embed_security_headers.conf;
-      try_files /embed.html =404;
-      add_header Cache-Control "private, no-cache, must-revalidate";
-    }
-
-    location = /embed.js {
-      include /etc/nginx/security_headers.conf;
-      add_header Access-Control-Allow-Origin "*" always;
-      add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
-      add_header Cross-Origin-Resource-Policy "cross-origin" always;
-      add_header Cache-Control "public, max-age=3600";
-      try_files /embed.js =404;
-    }
-
     # World Monitor Lite UI: /lite and its screens serve lite.html with the
     # shared security headers of the location below.
     rewrite ^/lite(?:/(?:geopolitics|finance|tech|sources))?/?$ /lite.html last;

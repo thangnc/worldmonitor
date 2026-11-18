@@ -543,43 +543,11 @@ For an endpoint on the Docker host itself, such as Ollama, use
 that name; on Linux add `- "host.docker.internal:host-gateway"` under
 `extra_hosts`. `localhost` inside the container is the container, not the host.
 
-## Documentation indexing
-
-This section matters only if you publish the bundled documentation; the Docker
-stack does not serve `/docs`.
-
-The bundled documentation identifies `https://www.worldmonitor.app/docs` as its
-original location. `docs/docs.json` sets this canonical base for Mintlify, and
-`src/config/docs-locale-seo.ts` uses `DOCS_PUBLIC_ORIGIN` to produce an absolute,
-page-specific canonical and language links.
-
-Deployments that run `middleware.ts` also return `X-Robots-Tag: noindex` for docs
-HTML on hosts other than the configured public host. This includes preview
-hosts. The policy also applies to HEAD and 304 responses, and preserves existing
-robots restrictions. It does not stop people from reading the docs. Static
-exports and proxies that bypass this middleware must set their own indexing
-headers; they retain the canonical metadata only if they preserve it.
+## Search indexing
 
 The Docker images' nginx configurations send `X-Robots-Tag: noindex, follow` on
-every route. Their pages keep `https://www.worldmonitor.app` canonicals, so a
-self-hosted copy stays out of search results instead of competing with the
-official pages. Visitors and the dashboard are unaffected.
-
-Inspect canonical URLs before publishing a static export. The pinned Mintlify
-CLI currently includes `/src/_props` in local preview and export canonicals;
-that local output does not establish the hosted provider's URL behavior.
-
-For a fork that publishes its own documentation, deliberately update the
-canonical base in `docs/docs.json`, `DOCS_PUBLIC_ORIGIN`, and the docs upstream and
-reverse-proxy routes (`DOCS_UPSTREAM_ORIGIN` and `vercel.json`) together. Configure
-the provider's base path to match. Check the resulting canonical URLs, language
-links, structured data, sitemap, and indexing headers before requesting indexing.
-Do not derive the canonical origin from the incoming request or a forwarded-host
-header. Keep shared caches separated by host and preserve the response's `Vary`
-selectors.
-
-Canonical metadata is a search-engine signal, not a guarantee. A proxy can rewrite
-or remove it, and older deployed copies will not receive changes to this repo.
+every route, so a self-hosted copy stays out of search results. Visitors and the
+dashboard are unaffected. The repository no longer ships a documentation site.
 
 ## 🐛 Troubleshooting
 

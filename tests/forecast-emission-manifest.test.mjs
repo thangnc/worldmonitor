@@ -275,12 +275,6 @@ describe('replay comparison (#9058)', () => {
     assert.equal(compareEntry({ key: 'b@9', id: 'b', baselineProbability: 0.6 }, [{ id: 'b', baselineProbability: 0.6 }], 'bets').match, true);
   });
 
-  it('documents the legacy match window in both languages', () => {
-    const minutes = LEGACY_RUN_MATCH_WINDOW_MS / 60_000;
-    assert.ok(readFileSync(new URL('../docs/panels/forecast.mdx', import.meta.url), 'utf8').includes(`minted up to ${minutes} minutes before`));
-    assert.ok(readFileSync(new URL('../docs/zh/panels/forecast.mdx', import.meta.url), 'utf8').includes(`不超过 ${minutes} 分钟`));
-  });
-
   it('runs only revisions on origin/main, and never fetches the revision itself', () => {
     const calls = [];
     const fakeGit = (onMain) => (args) => {

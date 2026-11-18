@@ -42,8 +42,6 @@
   <a href="https://www.worldmonitor.app/docs/contributing"><strong>コントリビューション</strong></a>
 </p>
 
-![World Monitor Dashboard](docs/images/worldmonitor-7-mar-2026.jpg)
-
 ---
 
 ## 主な機能
@@ -179,7 +177,7 @@ npm run build:full       # プロダクションビルド
 | 商用利用 / SaaS | 可 (AGPL の義務を遵守する場合、AGPL-3.0-only のもと) |
 | ソース非公開のプロプライエタリ利用、または公式ブランディングの利用 | 別途、商用ライセンスまたは商標の許諾が必要 |
 
-コードライセンスの全文は [LICENSE](LICENSE)、平易な言葉での要約は [docs/license.mdx](docs/license.mdx) を参照してください。AGPL 以外の条件が必要なチーム向けに、商用ライセンスも別途提供しています。
+コードライセンスの全文は [LICENSE](LICENSE) を参照してください。AGPL 以外の条件が必要なチーム向けに、商用ライセンスも別途提供しています。
 
 Copyright (C) 2024-2026 Elie Habib. All rights reserved.
 

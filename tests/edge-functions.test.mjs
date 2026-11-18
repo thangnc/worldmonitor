@@ -142,8 +142,12 @@ describe('Node-runtime routes load as native ESM', () => {
     .filter((file) => dirname(file) === 'api')
     .filter((file) => !/export\s+const\s+config\s*=\s*\{[^}]*\bruntime\s*:\s*['"]edge['"]/.test(readFileSync(join(root, file), 'utf-8')));
 
-  it('finds the Node-runtime routes, so the guard cannot pass vacuously', () => {
-    assert.ok(nodeRuntimeRoutes.includes('api/story.js'), `found: ${nodeRuntimeRoutes.join(', ')}`);
+  it('scans the route files, and knows which ones run on Node', () => {
+    // api/story.js was the last Node-runtime route; it left with the public
+    // story pages in refactor 1c-3. A new one is walked by the loop below and
+    // must be listed here, so the guard cannot quietly scan nothing.
+    assert.ok(trackedApiSources.some((file) => dirname(file) === 'api'), 'the route scan found no api/ entries');
+    assert.deepEqual(nodeRuntimeRoutes, []);
   });
 
   for (const route of nodeRuntimeRoutes) {
@@ -189,7 +193,7 @@ describe('Legacy JS entries import only _-prefixed relative modules', () => {
 
 // The legacy api/*.js allowlist that previously lived here was replaced by
 // api/api-route-exceptions.json + scripts/enforce-sebuf-api-contract.mjs (see
-// docs/adding-endpoints.mdx). The new check covers nested paths and .ts files,
+// docs/engineering/architecture/adding-endpoints.md). The new check covers nested paths and .ts files,
 // which this block missed.
 
 describe('Edge Function module isolation', () => {

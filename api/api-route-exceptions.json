@@ -1,39 +1,11 @@
 {
-  "$comment": "Single source of truth for non-proto /api/ endpoints. All new JSON data APIs MUST use sebuf (proto → buf generate → handler). This manifest is the only escape hatch, and every entry is reviewed by @SebastienMelki (see .github/CODEOWNERS). Categories: external-protocol (MCP / OAuth — shape dictated by external spec), non-json (binary/HTML/image responses), upstream-proxy (raw pass-through of an external feed), ops-admin (health/cron/version — operator plumbing, not a product API), internal-helper (dashboard-internal bundle, not user-facing), deferred (should migrate eventually — must have a removal_issue), migration-pending (actively being migrated in an open PR — removed as its commit lands). See docs/adding-endpoints.mdx.",
+  "$comment": "Single source of truth for non-proto /api/ endpoints. All new JSON data APIs MUST use sebuf (proto → buf generate → handler). This manifest is the only escape hatch, and every entry is reviewed by @SebastienMelki (see .github/CODEOWNERS). Categories: external-protocol (MCP / OAuth — shape dictated by external spec), non-json (binary/HTML/image responses), upstream-proxy (raw pass-through of an external feed), ops-admin (health/cron/version — operator plumbing, not a product API), internal-helper (dashboard-internal bundle, not user-facing), deferred (should migrate eventually — must have a removal_issue), migration-pending (actively being migrated in an open PR — removed as its commit lands). See docs/engineering/architecture/adding-endpoints.md.",
   "schema_version": 1,
   "exceptions": [
     {
       "path": "api/security/report.js",
       "category": "external-protocol",
       "reason": "Browser Reporting API collector for COOP/COEP reports. Request body and content type are dictated by the Reporting API, not a product data API contract.",
-      "owner": "@SebastienMelki",
-      "removal_issue": null
-    },
-    {
-      "path": "api/http-message-signatures-directory.ts",
-      "category": "external-protocol",
-      "reason": "Web Bot Auth key directory (draft-meunier-web-bot-auth-architecture / http-message-signatures-directory). Publishes an Ed25519 JWK Set at /.well-known/http-message-signatures-directory; body shape and application/http-message-signatures-directory+json content-type are dictated by the spec. Dynamic per-request so nbf/exp roll a <=24h validity window.",
-      "owner": "@SebastienMelki",
-      "removal_issue": null
-    },
-    {
-      "path": "api/download.js",
-      "category": "non-json",
-      "reason": "Binary file download (zip/csv/xlsx). Content-Type is not application/json.",
-      "owner": "@SebastienMelki",
-      "removal_issue": null
-    },
-    {
-      "path": "api/og-story.js",
-      "category": "non-json",
-      "reason": "Open Graph preview image (PNG via @vercel/og). Binary response.",
-      "owner": "@SebastienMelki",
-      "removal_issue": null
-    },
-    {
-      "path": "api/story.js",
-      "category": "non-json",
-      "reason": "Rendered HTML story page for social embeds — response is text/html, not JSON.",
       "owner": "@SebastienMelki",
       "removal_issue": null
     },
@@ -73,13 +45,6 @@
       "removal_issue": null
     },
     {
-      "path": "api/md-twin.ts",
-      "category": "non-json",
-      "reason": "Agent markdown URL-fallback generator. AfterFiles rewrite of unmatched /{page}.md (static files and /docs/* still win) returns heading-led text/markdown from the sibling page — not a JSON data API.",
-      "owner": "@SebastienMelki",
-      "removal_issue": null
-    },
-    {
       "path": "api/[...notfound].ts",
       "category": "ops-admin",
       "reason": "Filesystem catch-all mount for api/not-found.ts. Exists solely to preserve the structured JSON 404 for genuinely unmatched /api/* paths without using an afterFiles rewrite that can shadow dynamic sebuf gateways; not a product API.",
@@ -113,13 +78,6 @@
       "reason": "Aggregate seeded-cache hydration bundle assembled at request time. Kept outside sebuf because the shape is intentionally unversioned and aggregate, not a typed domain RPC; the added user-API-key validation does not change that shape.",
       "owner": "@SebastienMelki",
       "removal_issue": null
-    },
-    {
-      "path": "api/skills/fetch-agentskills.ts",
-      "category": "migration-pending",
-      "reason": "Migrating to analyst/v1.ListAgentSkills in commit 9 of #3207. Blocked on sebuf#150.",
-      "owner": "@SebastienMelki",
-      "removal_issue": "#3207"
     }
   ]
 }

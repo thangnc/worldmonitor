@@ -398,7 +398,7 @@ rewrote every branch SHA. Follow-up issue #8285.
   once ~62% of all Redis commands (~36M/day) at roughly 390 commands per poll with no memoization.
   The snapshot cache this bug disabled is the memoization that fixed it, which is why silently
   reverting to a per-poll sweep matters.
-- `docs/health-endpoints.mdx` (and `docs/zh/health-endpoints.mdx`) — the operator-facing reference.
+- `docs/engineering/architecture/health-endpoints.md` (and `docs/zh/health-endpoints.mdx`) — the operator-facing reference.
   The `RELAY_GATE_UNREACHABLE` row narrates this behaviour, including why the streak moves to
   `transportGraceExpiredAt` and why the relay is not re-probed per poll. Update both together; the
   Chinese translation is kept in sync.

@@ -42,8 +42,6 @@
   <a href="https://www.worldmonitor.app/docs/contributing"><strong>Contributing</strong></a>
 </p>
 
-![World Monitor Dashboard](docs/images/worldmonitor-7-mar-2026.jpg)
-
 ## Ways to Use It
 
 | Surface | Get it | Docs |
@@ -56,8 +54,6 @@
 | **MCP server** | `https://worldmonitor.app/mcp` | [MCP Overview](https://www.worldmonitor.app/docs/mcp-overview) |
 
 The terminal dashboard runs the same live data in your shell: world map, news, markets, conflict, military flights, cyber, climate, prediction markets and live TV, with mouse support and colour themes. No API key needed.
-
-![World Monitor terminal dashboard](docs/images/tui/overview.webp)
 
 ---
 
@@ -200,7 +196,7 @@ npm run build:full       # Production build
 | Commercial use / SaaS | Yes, under AGPL-3.0-only when you comply with AGPL obligations |
 | Private-source proprietary use or official branding rights | Separate commercial or trademark permission needed |
 
-See [LICENSE](LICENSE) for the full code license and [docs/license.mdx](docs/license.mdx) for a plain-language summary. Commercial licensing is available as an alternative option for teams that need non-AGPL terms.
+See [LICENSE](LICENSE) for the full code license. Commercial licensing is available as an alternative option for teams that need non-AGPL terms.
 
 Copyright (C) 2024-2026 Elie Habib. All rights reserved.
 

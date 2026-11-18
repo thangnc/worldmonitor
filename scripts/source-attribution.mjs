@@ -31,10 +31,9 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST_PATH = 'shared/source-attribution-manifest.json';
-const DOCS_PATH = 'docs/source-attribution.mdx';
-// MDX comments, not HTML ones: Mintlify parses docs/source-attribution.mdx as MDX v3,
-// which rejects `<!--` ("Unexpected character `!` before name") and fails the
-// whole deployment. The markers are interpolated into RegExp below, and `{`,
+const DOCS_PATH = 'docs/engineering/architecture/source-attribution.md';
+// MDX-style comment markers, kept from when this page was published by
+// Mintlify (MDX v3 rejects `<!--`); they are harmless in plain Markdown. The markers are interpolated into RegExp below, and `{`,
 // `*`, `}` are metacharacters, so every interpolation must go through
 // escapeRegExp — writing them raw silently stops the generator finding its own
 // block.

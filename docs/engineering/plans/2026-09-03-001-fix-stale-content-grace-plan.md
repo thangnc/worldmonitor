@@ -149,7 +149,7 @@ Both entries were correctly diagnosed as `STALE_CONTENT`, but both immediately i
 
 - Goal: Document that `summary.staleContent` remains diagnostic and can exceed `summary.warn` while one or more entries are inside grace.
 - Requirements: R3-R5.
-- Files: `docs/health-endpoints.mdx`, `docs/zh/health-endpoints.mdx`, `scripts/docs-stats.mjs`, `tests/docs-stats-health-total.test.mts`.
+- Files: `docs/engineering/architecture/health-endpoints.md`, `docs/zh/health-endpoints.mdx`, `scripts/docs-stats.mjs`, `tests/docs-stats-health-total.test.mts`.
 - Approach: Update both language variants. Narrow the existing subset validator so it continues to enforce `rolloutPending <= warn` but permits graced stale-content diagnostics outside the warning bucket.
 - Test scenarios:
   - A valid partition with `staleContent > warn` passes.

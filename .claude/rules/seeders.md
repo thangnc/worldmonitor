@@ -9,7 +9,7 @@ paths:
 
 # Railway seeders and the Redis cache
 
-Source of truth: CLAUDE.md "Critical boundaries", [docs/health-endpoints.mdx](../../docs/health-endpoints.mdx), `docs/engineering/solutions/` (grep `seed`, `railway`, `freshness`).
+Source of truth: CLAUDE.md "Critical boundaries", [docs/engineering/architecture/health-endpoints.md](../../docs/engineering/architecture/health-endpoints.md), `docs/engineering/solutions/` (grep `seed`, `railway`, `freshness`).
 
 ## Rules
 

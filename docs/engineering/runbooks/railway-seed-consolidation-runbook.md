@@ -1650,7 +1650,7 @@ fetch('https://backboard.railway.com/graphql/v2',{method:'POST',
 | seed-notam-nms | `node seed-notam-nms.mjs` | **planned — not provisioned** (registry cron `*/5 * * * *`, health budget 20 min) | FAA NOTAM Management Service: one daily bulk load per classification, then delta pulls; writes `aviation:notam:airspace:v1` and the closures key `seed-aviation` merges. Needs `NOTAM_KEY`/`NOTAM_SECRET` for the production host; scripts-root Nixpacks once provisioned |
 
 The IMD seeder reads public bulletin pages. It needs no IMD account, API key,
-or proxy. See [Configure the IMD Railway seeder](../../natural-disasters.mdx#configure-the-imd-railway-seeder).
+or proxy. See "Configure the IMD Railway seeder" in `docs/natural-disasters.mdx` (git history before refactor 1c-3).
 
 `seed-live-video-resolved` was provisioned on 2026-09-24 after #8596 merged.
 Its first deployment (`46c6d048-300c-4d7b-aa6c-6c04488d6cd2`, commit

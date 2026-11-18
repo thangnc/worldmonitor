@@ -23,7 +23,7 @@ import {
 loadEnvFile(import.meta.url);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const VALIDATION_DIR = join(__dirname, '..', 'docs', 'methodology', 'country-resilience-index', 'validation');
+const VALIDATION_DIR = join(__dirname, '..', 'docs', 'engineering', 'methodology', 'country-resilience-index', 'validation');
 const REFERENCE_DIR = join(VALIDATION_DIR, 'reference-data');
 const REDIS_KEY = 'resilience:benchmark:external:v1';
 const REDIS_TTL = 7 * 24 * 60 * 60;

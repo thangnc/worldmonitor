@@ -1,5 +1,5 @@
 // CII invariant suite: the required properties P1–P16 of
-// docs/methodology/cii-change-brief.md, measured with the scoring seam on the
+// docs/engineering/methodology/cii-change-brief.md, measured with the scoring seam on the
 // committed production fixtures (tests/fixtures/cii/) and on synthetic
 // scenarios. Thresholds come from the brief and must not be loosened to make
 // a formula pass.
