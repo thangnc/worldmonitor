@@ -1,9 +1,5 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
 import { corroborateRunListings, reduceRunListings } from '../scripts/lib/gh-run-listing.mjs';
 
 const old = { id: 1, created_at: '2026-09-20T00:00:00Z', run_attempt: 1, status: 'completed', conclusion: 'success' };
@@ -59,24 +55,3 @@ test('reduction orders tied creation times by id, attempt and settled status', (
   const result = reduceRunListings([listing([old, rerun]), listing([settled, nextId])]);
   assert.deepEqual(result, [nextId, settled]);
 });
-
-for (const script of ['check-railway-reconcile-age.mjs']) {
-  test(`${script} CLI reports UNKNOWN for contradictory listings`, () => {
-    const dir = mkdtempSync(join(tmpdir(), 'run-listing-'));
-    try {
-      mkdirSync(join(dir, 'docs/snapshots'), { recursive: true });
-      const today = new Date().toISOString().slice(0, 10);
-      writeFileSync(join(dir, `docs/snapshots/crawlable-live-pulse-${today}.json`), JSON.stringify({ capturedAt: today }));
-      writeFileSync(join(dir, 'gh'), `#!${process.execPath}\nconst args = process.argv.slice(2);\nif (!args.some(arg => arg.includes('/workflows/') && arg.includes('/runs?'))) { console.error('unexpected non-listing call'); process.exit(1); }\nconsole.log(JSON.stringify({total_count: 5, workflow_runs: []}));\n`, { mode: 0o755 });
-      const result = spawnSync(process.execPath, [resolve(`scripts/${script}`)], {
-        cwd: dir, encoding: 'utf8', timeout: 20_000,
-        env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, GITHUB_REPOSITORY: 'o/r', GITHUB_STEP_SUMMARY: '' },
-      });
-      assert.equal(result.status, 0, result.stderr);
-      assert.match(result.stdout, /::warning::UNKNOWN/);
-      assert.doesNotMatch(result.stdout + result.stderr, /::error::|unexpected non-listing call/);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  });
-}

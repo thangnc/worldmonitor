@@ -866,9 +866,6 @@
           "path": "api/_github-release.js"
         },
         {
-          "path": "scripts/dispatch-stale-railway-reconcile.mjs"
-        },
-        {
           "path": "scripts/resolve-railway-reconcile-control.mjs"
         },
         {

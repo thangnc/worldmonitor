@@ -80,5 +80,5 @@ Before choosing, one day of `seed:lite:watch` and one open tab against a scratch
 - The frozen OpenAPI auth contract and its deprecation `Link` to the deleted `api-versioning.md`.
 - README product text and `scripts/cloudflare-cache-rule.mjs`.
 - The forecast services that read `../packages/shared/country-names.json`, which a deploy rooted at `scripts/` cannot reach.
-- The `deploy-worker.yml` path filter gap.
+- The deploy pipelines: the owner removed every deploy and publish workflow until this phase picks the production environment (2026-11-19, ARCHITECTURE.md "CI/CD"). The chosen hosts get new pipelines then.
 - The Vite native config-loader follow-up from Phase 3.
