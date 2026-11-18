@@ -9,6 +9,7 @@ Plans record intent when they were written. Check the code and git history befor
 | Date | Plan | Evidence |
 |---|---|---|
 | 2026-11-18 | [Refactor: Preact-only app, npm workspaces + Turborepo, Vite 8, deployment last](2026-11-18-001-refactor-lite-monorepo-plan.md) |  |
+| 2026-11-18 | [Lite hosting brief: measurements for the Phase 4 decision](2026-11-18-002-ops-lite-hosting-brief-plan.md) |  |
 
 ## Done
 
