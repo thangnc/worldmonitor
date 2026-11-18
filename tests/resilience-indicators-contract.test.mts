@@ -5,7 +5,6 @@ import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { getRequiredTier, TIER_GATED_PATHS } from '../server/_shared/entitlement-check.ts';
 import { INDICATOR_REGISTRY } from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
 
@@ -78,10 +77,8 @@ describe('resilience indicator RPC contract', () => {
     assert.equal(digest, '01fc1918c9f4b1138cea5d93b8453ca07056b964cd84ded7ef27e36db5c827c1');
   });
 
-  it('registers matching legacy premium, modern tier-1 and slow-cache gates', () => {
+  it('registers the premium gate and slow cache tier', () => {
     assert.ok(PREMIUM_RPC_PATHS.has(ROUTE));
-    assert.ok(TIER_GATED_PATHS.has(ROUTE));
-    assert.equal(getRequiredTier(ROUTE), 1);
     const gateway = read('server/gateway.ts');
     assert.match(gateway, /'\/api\/resilience\/v1\/get-resilience-indicators': 'slow'/);
   });

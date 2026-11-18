@@ -13,11 +13,6 @@ import { setImmediate as nextTurn } from 'node:timers/promises';
 import { timingSafeIncludes } from '../api/_crypto.js';
 import { peekIdempotency } from '../server/_shared/idempotency.ts';
 import {
-  buildInternalMcpHeaders,
-  signInternalMcpRequest,
-  verifyInternalMcpRequestDetailed,
-} from '../server/_shared/mcp-internal-hmac.ts';
-import {
   _resetTrackedAircraftCacheForTests,
   getTrackedAircraftIcao24s,
 } from '../server/worldmonitor/military/v1/_tracked-aircraft.ts';
@@ -66,22 +61,6 @@ describe('constant-time comparisons hash their inputs in one wave', () => {
     const miss = await countDigestWaves(() => timingSafeIncludes('nope', ['key-a', 'key-b']));
     assert.equal(miss.result, false);
     assert.equal(miss.waves, 1);
-  });
-
-  it('verifyInternalMcpRequestDetailed compares the signature in one wave', async () => {
-    const url = 'https://api.worldmonitor.app/api/intelligence/v1/get-country-risk?country_code=IR';
-    const signed = await signInternalMcpRequest({
-      method: 'GET',
-      url,
-      userId: 'user_wave_test',
-      secret: 'wave-test-secret',
-    });
-    const request = new Request(url, { method: 'GET', headers: buildInternalMcpHeaders(signed) });
-    const { result, waves } = await countDigestWaves(() => verifyInternalMcpRequestDetailed(request, 'wave-test-secret'));
-    assert.equal(result.ok, true);
-    // One wave for the query and body hashes, one for the constant-time
-    // signature compare. A serialized compare adds a third.
-    assert.equal(waves, 2);
   });
 });
 

@@ -1,6 +1,6 @@
 import { getCorsHeaders, isDisallowedOrigin } from './_cors.js';
 import { jsonResponse } from './_json-response.js';
-import { USER_API_KEY_GATEWAY_VALIDATION_ERROR, validateApiKey } from './_api-key.js';
+import { validateApiKey } from './_api-key.js';
 import {
   hasPoolCoverageShortfall,
   parsePoolCounts,
@@ -5494,9 +5494,7 @@ export async function handleHealth(req, ctx, options = {}) {
   if (!compact || wantsHistory) {
     const keyCheck = await validateApiKey(req, { forceKey: true });
     if (keyCheck.required && !keyCheck.valid) {
-      const error = keyCheck.error === USER_API_KEY_GATEWAY_VALIDATION_ERROR
-        ? 'Invalid API key'
-        : keyCheck.error;
+      const error = keyCheck.error;
       // RFC 7235 §3.1 requires WWW-Authenticate on every 401. The challenge
       // must reflect what this gate actually accepts: validateApiKey reads the
       // X-WorldMonitor-Key / X-Api-Key headers (or tester cookies) — never

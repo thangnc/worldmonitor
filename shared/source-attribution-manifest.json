@@ -561,9 +561,6 @@
           "path": "scripts/seed-forecasts.mjs"
         },
         {
-          "path": "scripts/triage-agent-feedback.mjs"
-        },
-        {
           "path": "server/_shared/usage.ts"
         }
       ]
@@ -603,15 +600,10 @@
       "host": "api.clerk.com",
       "provider": "Clerk identity service",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: authentication/control-plane service",
       "attribution": "Excluded from the provider count: identity-control-plane request.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "server/auth-session.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "api.cloudflare.com",
@@ -4783,9 +4775,6 @@
         },
         {
           "path": "scripts/seed-research.mjs"
-        },
-        {
-          "path": "server/_shared/agent-feedback.ts"
         }
       ]
     },
@@ -10585,13 +10574,7 @@
           "path": "server/_shared/brief-url.ts"
         },
         {
-          "path": "server/_shared/intel-history-embed.ts"
-        },
-        {
           "path": "server/_shared/notify-fields.ts"
-        },
-        {
-          "path": "server/gateway.ts"
         },
         {
           "path": "server/worldmonitor/infrastructure/v1/reverse-geocode.ts"

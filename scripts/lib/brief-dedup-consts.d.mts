@@ -1,6 +1,5 @@
-// Declaration file for brief-dedup-consts.mjs so TS callers (currently
-// server/_shared/intel-history-client.ts, which shares the embedding model and
-// dimensions with the seed writer) don't need `// @ts-expect-error`. Kept
+// Declaration file for brief-dedup-consts.mjs so TS callers don't need
+// `// @ts-expect-error`. Kept
 // hand-written, same as scripts/_simulation-queue-constants.d.mts: the module
 // is a flat const-export shim with no runtime behaviour to mirror.
 

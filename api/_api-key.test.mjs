@@ -7,7 +7,7 @@ const ENTERPRISE_KEY = 'enterprise-test-key-123';
 process.env.WM_SESSION_SECRET = SECRET;
 process.env.WORLDMONITOR_VALID_KEYS = ENTERPRISE_KEY;
 
-const { USER_API_KEY_GATEWAY_VALIDATION_ERROR, getHeaderApiKey, validateApiKey } = await import('./_api-key.js');
+const { getHeaderApiKey, validateApiKey } = await import('./_api-key.js');
 const { issueSessionToken } = await import('./_session.js');
 
 function makeReq({ origin, referer, secFetchSite, key, cookie } = {}) {
@@ -166,7 +166,7 @@ test('a valid duplicate wm-session cookie still cannot satisfy forceKey', async 
 test('PR #3557 review: wms_ session token is REJECTED when forceKey=true (premium endpoints)', async () => {
   // wms_ tokens are anonymous and freely mintable via /api/wm-session — they
   // are NOT proof of a paying user. forceKey=true means the route demands a
-  // user-bound credential (Pro Bearer JWT, wm_ user key, or enterprise key).
+  // an operator (enterprise) key.
   const { token } = await issueSessionToken();
   const r = await validateApiKey(makeReq({ key: token }), { forceKey: true });
   assert.equal(r.valid, false);
@@ -335,16 +335,15 @@ test('invalid enterprise-shape key is rejected', async () => {
   assert.equal(r.valid, false);
 });
 
-// ── User API key (wm_-prefix) — gateway handles validation ──────────────────
+// ── Former user API key (wm_-prefix) — no longer a credential ───────────────
 
-test('wm_-prefixed user key returns required:true / valid:false so gateway can fall back', async () => {
-  // Gateway code at server/gateway.ts:440 does:
-  //   if (keyCheck.required && !keyCheck.valid && wmKey.startsWith('wm_')) { ...validateUserApiKey... }
-  // So validateApiKey must return that exact shape for wm_ keys to trigger the fallback.
+test('wm_-prefixed user key that is not an operator key is an invalid key', async () => {
+  // The Convex user-key table is gone; a wm_ key is checked only against the
+  // operator keys and otherwise fails like any unknown key.
   const r = await validateApiKey(makeReq({ key: 'wm_user_abc123' }));
   assert.equal(r.required, true);
   assert.equal(r.valid, false);
-  assert.equal(r.error, USER_API_KEY_GATEWAY_VALIDATION_ERROR);
+  assert.equal(r.error, 'Invalid API key');
 });
 
 test('getHeaderApiKey centralizes X-WorldMonitor-Key and X-Api-Key aliases', () => {
@@ -400,23 +399,13 @@ test('every api/ operator-key reader uses the shared trimming parser', async () 
   }
 });
 
-// ── Desktop (Tauri) — always requires enterprise key ────────────────────────
+// ── Origin is not a credential ──────────────────────────────────────────────
+// The desktop app is gone; a Tauri Origin gets the same rules as any caller.
 
-test('desktop Tauri origin without key is rejected', async () => {
+test('a Tauri origin without key is rejected like any keyless caller', async () => {
   const r = await validateApiKey(makeReq({ origin: 'tauri://localhost' }));
   assert.equal(r.valid, false);
-  assert.equal(r.error, 'API key required for desktop access');
-});
-
-test('desktop Tauri origin with valid enterprise key is accepted', async () => {
-  const r = await validateApiKey(makeReq({ origin: 'tauri://localhost', key: ENTERPRISE_KEY }));
-  assert.equal(r.valid, true);
-});
-
-test('desktop Tauri origin with wms_ session token is rejected (desktop must use enterprise key)', async () => {
-  const { token } = await issueSessionToken();
-  const r = await validateApiKey(makeReq({ origin: 'tauri://localhost', key: token }));
-  assert.equal(r.valid, false);
+  assert.equal(r.error, 'API key required');
 });
 
 // ── Total absence of credentials ────────────────────────────────────────────

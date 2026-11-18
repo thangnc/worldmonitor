@@ -2,14 +2,13 @@
 // sidecar sends their routes to the cloud and the gateway serves those routes
 // to a keyless desktop. If either changes, the layer or panel goes empty again.
 // A keyless desktop reaches the cloud with the anonymous wms_ session the
-// sidecar mints, which the gateway accepts on any route that is neither
-// tier-gated nor premium (forceKey rejects that session on those).
+// sidecar mints, which the gateway accepts on any route that is not premium
+// (forceKey rejects that session on those).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { TIER_GATED_PATHS } from '../server/_shared/entitlement-check.ts';
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
 import { __testing__ } from '../docker/local-api/local-api-server.mjs';
 
@@ -40,7 +39,6 @@ describe('desktop features that need no local key', () => {
     it(`${feature} is cloud-routed and served to an anonymous session`, () => {
       for (const route of routes) {
         assert.equal(__testing__.isCloudPreferred(route), true, `${route} is cloud-routed`);
-        assert.equal(TIER_GATED_PATHS.has(route), false, `${route} is not tier-gated`);
         assert.equal(PREMIUM_RPC_PATHS.has(route), false, `${route} is not premium`);
       }
     });

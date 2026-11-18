@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { TIER_GATED_PATHS } from '../server/_shared/entitlement-check.ts';
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
 import { isPublicSharedRpcRequest } from '../src/shared/public-rpc-cache.ts';
 
@@ -13,11 +12,10 @@ import { isPublicSharedRpcRequest } from '../src/shared/public-rpc-cache.ts';
 // caller-invariant shapes that get a shared CDN entry instead of a per-caller
 // one. It is not. server/gateway.ts computes
 //
-//   isTierGated = !internalMcpVerified && !isPublicNoAuthRpc && ... &&
-//                 getRequiredTier(pathname) !== null
+//   requiresOperatorKey = isPremiumRpc && !isPublicNoAuthRpc && ...
 //
-// so `isPublicNoAuthRpc` SUPPRESSES the tier gate. A path in both sets is
-// served to anonymous callers with the entitlement map silently ignored.
+// so `isPublicNoAuthRpc` SUPPRESSES the premium gate. A path in both sets is
+// served to anonymous callers with PREMIUM_RPC_PATHS silently ignored.
 //
 // That is exactly how `/api/military/v1/get-defense-industrial-base` (#6438)
 // stayed fully public: it was added to the public set for a CDN shield, and a
@@ -57,7 +55,7 @@ describe('public shared RPC shapes never bypass a tier gate', () => {
     );
   });
 
-  for (const path of [...TIER_GATED_PATHS].sort()) {
+  for (const path of [...PREMIUM_RPC_PATHS].sort()) {
     it(`${path} has no anonymous public shape`, () => {
       for (const search of CANDIDATE_SHAPES) {
         const url = `https://worldmonitor.app${path}${search}`;
@@ -65,15 +63,15 @@ describe('public shared RPC shapes never bypass a tier gate', () => {
           isPublicSharedRpcRequest(url),
           false,
           [
-            `${path} is tier-gated in ENDPOINT_ENTITLEMENTS but ALSO matches a`,
+            `${path} is in PREMIUM_RPC_PATHS but ALSO matches a`,
             `public shared-RPC shape (${search || '<no query>'}).`,
             ``,
-            `server/gateway.ts skips the entitlement check entirely when`,
+            `server/gateway.ts skips the premium gate entirely when`,
             `isPublicSharedRpcRequest() is true, so this route is served to`,
-            `anonymous callers and the tier map is dead code for it.`,
+            `anonymous callers and the premium gate is dead code for it.`,
             ``,
             `Pick one: remove the path from PUBLIC_SHARED_RPC_PATHS`,
-            `(src/shared/public-rpc-cache.ts), or drop its tier gate and`,
+            `(src/shared/public-rpc-cache.ts), or drop it from PREMIUM_RPC_PATHS and`,
             `document that the data is deliberately free.`,
           ].join('\n'),
         );

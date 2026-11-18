@@ -1,13 +1,11 @@
 // @vitest-environment node
 
 /**
- * Handler side channels for authenticated callers (server/_shared/response-headers.ts
- * -> server/gateway.ts). Once auth resolves a rate-limit principal, the gateway
- * hands the handler a clone stamped with that principal (withTrustedRateLimitPrincipal).
- * Every side channel is a WeakMap/WeakSet keyed by the Request object the handler
- * wrote on, so the gateway must drain them from that clone. The sibling suites
- * (gateway-status-override, gateway-idempotency) drive the public no-auth leads
- * path, where no principal is stamped and the clone never exists.
+ * Handler side channels for an operator-key caller on a premium route
+ * (server/_shared/response-headers.ts -> server/gateway.ts). Every side channel
+ * is a WeakMap/WeakSet keyed by the Request object the handler wrote on, so the
+ * gateway must drain them from the request it dispatched. No credential carries
+ * a user principal, so the gateway stamps none and strips a client-sent copy.
  */
 
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -32,29 +30,17 @@ vi.mock("../_shared/rate-limit", async (importActual) => {
   };
 });
 
-const checkEntitlementDetailed = vi.fn();
-const getEntitlements = vi.fn();
-vi.mock("../_shared/entitlement-check", async (importActual) => {
-  const actual =
-    await importActual<typeof import("../_shared/entitlement-check")>();
-  return {
-    ...actual,
-    checkEntitlementDetailed: (...a: unknown[]) =>
-      checkEntitlementDetailed(...a),
-    getEntitlements: (...a: unknown[]) => getEntitlements(...a),
-  };
-});
-
-const resolveClerkSession = vi.fn();
-vi.mock("../_shared/auth-session", () => ({
-  resolveClerkSession: (...a: unknown[]) => resolveClerkSession(...a),
+// The operator-key meter is unit-tested elsewhere; keep it out of the Redis
+// call sequence these tests pin.
+vi.mock("../_shared/api-key-rate-limit", async (importActual) => ({
+  ...(await importActual<typeof import("../_shared/api-key-rate-limit")>()),
+  checkBurst: async () => ({ ok: null, reason: "not_configured" }),
+  reserveDailyMeter: async () => ({ metered: false, overLimit: false, count: 0, retryAfterSec: 0, rollback: async () => {} }),
 }));
 
 const validateApiKey = vi.fn();
 vi.mock("../../api/_api-key.js", async (importActual) => ({
   ...(await importActual<Record<string, unknown>>()),
-  USER_API_KEY_GATEWAY_VALIDATION_ERROR:
-    "User API key requires gateway validation",
   validateApiKey: (...a: unknown[]) => validateApiKey(...a),
 }));
 
@@ -108,7 +94,7 @@ function post(headers: Record<string, string> = {}): Request {
   return new Request(`https://www.worldmonitor.app${RUN_PATH}`, {
     method: "POST",
     headers: {
-      Authorization: "Bearer pro",
+      "X-WorldMonitor-Key": "operator-test-key",
       "Content-Type": "application/json",
       "cf-connecting-ip": "203.0.113.7",
       ...headers,
@@ -121,25 +107,12 @@ beforeEach(() => {
   runRedisPipeline.mockReset().mockResolvedValue([]);
   checkRateLimit.mockReset().mockResolvedValue(null);
   checkEndpointRateLimit.mockReset().mockResolvedValue(null);
-  const entitlements = {
-    planKey: "pro",
-    features: { tier: 1, planLimits: { dashboardAiCallsPerDay: 50 } },
-    validUntil: Date.now() + 60_000,
-  };
-  resolveClerkSession
-    .mockReset()
-    .mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-  checkEntitlementDetailed
-    .mockReset()
-    .mockResolvedValue({ response: null, entitlements });
-  getEntitlements.mockReset().mockResolvedValue(entitlements);
-  validateApiKey
-    .mockReset()
-    .mockResolvedValue({
-      valid: false,
-      required: true,
-      error: "API key required",
-    });
+  validateApiKey.mockReset().mockResolvedValue({
+    valid: true,
+    required: true,
+    kind: "enterprise",
+    credential: "operator-test-key",
+  });
   deliverUsageEvents.mockReset().mockResolvedValue(undefined);
   runScenario.mockReset().mockImplementation(async (handlerCtx) => {
     setSuccessStatusOverride(handlerCtx.request, 202);
@@ -148,18 +121,16 @@ beforeEach(() => {
   });
 });
 
-describe("gateway side channels for an authenticated caller", () => {
-  test("the handler receives the principal-stamped clone", async () => {
-    await makeGateway()(post(), ctx);
+describe("gateway side channels for an operator-key caller", () => {
+  test("the handler never sees a rate-limit principal, even a client-sent one", async () => {
+    await makeGateway()(post({ [TRUSTED_RATE_LIMIT_PRINCIPAL_HEADER]: "session:forged" }), ctx);
 
     expect(runScenario).toHaveBeenCalledTimes(1);
     const handlerRequest = runScenario.mock.calls[0]![0].request;
-    expect(
-      handlerRequest.headers.get(TRUSTED_RATE_LIMIT_PRINCIPAL_HEADER),
-    ).toBeTruthy();
+    expect(handlerRequest.headers.get(TRUSTED_RATE_LIMIT_PRINCIPAL_HEADER)).toBeNull();
   });
 
-  test("a Pro run-scenario enqueue answers 202 with its Location header", async () => {
+  test("an operator-key run-scenario enqueue answers 202 with its Location header", async () => {
     const res = await makeGateway()(post(), ctx);
 
     expect(res.status).toBe(202);

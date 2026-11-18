@@ -13,21 +13,9 @@ export {
   isPublicWeatherBootstrapRequest,
 } from './_bootstrap-public-tier.js';
 import { getCorsHeaders, getPublicCorsHeaders, isDisallowedOrigin } from './_cors.js';
-import {
-  USER_API_KEY_GATEWAY_VALIDATION_ERROR,
-  getHeaderApiKey,
-  validateApiKey,
-} from './_api-key.js';
+import { getHeaderApiKey, validateApiKey } from './_api-key.js';
 import { jsonResponse } from './_json-response.js';
 import { checkRateLimit } from './_rate-limit.js';
-import {
-  checkBootstrapDesktopKeyBudget,
-  checkBootstrapDesktopKeyClient,
-  checkBootstrapUserApiKeyRateLimit,
-  isCanonicalUserApiKey,
-  resolveBootstrapUserKeyAccess,
-  validateBootstrapUserApiKeyPrincipal,
-} from './_user-api-key.js';
 // @ts-expect-error — JS module, no declaration file
 import { redisPipeline } from './_upstash-json.js';
 import { unwrapEnvelope } from './_seed-envelope.js';
@@ -387,94 +375,9 @@ async function validateBootstrapAuth(req, cors) {
     return { ok: true, kind: apiKeyResult.kind || 'unknown' };
   }
 
-  if (apiKeyResult.error === USER_API_KEY_GATEWAY_VALIDATION_ERROR && headerKey.startsWith('wm_')) {
-    if (!isCanonicalUserApiKey(headerKey)) {
-      return {
-        ok: false,
-        response: authFailure({ error: 'Invalid API key' }, 401, cors),
-      };
-    }
-
-    const rateLimitResult = await checkBootstrapUserApiKeyRateLimit(req);
-    if (!rateLimitResult.ok) {
-      return {
-        ok: false,
-        response: authFailure(
-          { error: rateLimitResult.error },
-          rateLimitResult.status,
-          cors,
-          rateLimitResult.headers,
-        ),
-      };
-    }
-
-    // Propagate the validation result's status/error/headers (all generic,
-    // leak-free strings) rather than hardcoding 401/403: a Convex outage surfaces
-    // as a retryable 503 + Retry-After (status 503, unavailable:true) instead of
-    // a misleading "Invalid API key" 401, mirroring the rate-limit path above.
-    //
-    // Desktop-aware (plan 2026-10-25-001, KTD3): the principal carries its
-    // kind, and resolveBootstrapUserKeyAccess decides whether the owner's
-    // API plan (today's path) or the desktop entitlement admits it. Bootstrap
-    // serves one payload to every credentialed caller, so a desktop principal
-    // gets what a signed-in Pro session gets here — under the desktop meter.
-    const userKeyResult = await validateBootstrapUserApiKeyPrincipal(headerKey);
-    if (!userKeyResult.ok) {
-      return {
-        ok: false,
-        response: authFailure(
-          { error: userKeyResult.error },
-          userKeyResult.status,
-          cors,
-          userKeyResult.headers,
-        ),
-      };
-    }
-
-    const entitlementResult = await resolveBootstrapUserKeyAccess(userKeyResult);
-    if (!entitlementResult.ok) {
-      return {
-        ok: false,
-        response: authFailure(
-          {
-            error: entitlementResult.error,
-            // Billing-verification denials (#4770) expose their machine-readable
-            // code in the body, matching the {error, code} shape the REST
-            // gateway emits for the same statuses.
-            ...(entitlementResult.headers?.['X-Billing-Verification']
-              ? { code: entitlementResult.reason }
-              : {}),
-          },
-          entitlementResult.status,
-          cors,
-          entitlementResult.headers,
-        ),
-      };
-    }
-
-    if (entitlementResult.scope === 'desktop') {
-      const client = checkBootstrapDesktopKeyClient(req);
-      if (!client.ok) {
-        return { ok: false, response: authFailure({ error: client.error }, client.status, cors) };
-      }
-      const budget = await checkBootstrapDesktopKeyBudget(userKeyResult.userId, entitlementResult.entitlement);
-      if (!budget.ok) {
-        return {
-          ok: false,
-          response: authFailure(budget.body ?? { error: budget.error }, budget.status, cors, budget.headers),
-        };
-      }
-    }
-
-    return { ok: true, kind: 'user' };
-  }
-
-  const error = apiKeyResult.error === USER_API_KEY_GATEWAY_VALIDATION_ERROR
-    ? 'Invalid API key'
-    : apiKeyResult.error;
   return {
     ok: false,
-    response: authFailure({ error }, 401, cors),
+    response: authFailure({ error: apiKeyResult.error || 'Invalid API key' }, 401, cors),
   };
 }
 

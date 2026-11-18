@@ -1,5 +1,5 @@
 // App-serving hosts only; sibling vendor hosts do not inherit browser trust.
-// Keep aligned with convex/payments/returnUrlOrigin.ts and CORS parity tests.
+// Keep aligned with the CORS parity tests.
 const APP_ORIGIN_PATTERN = /^https:\/\/(?:(?:www|app|api|tech|finance|commodity|happy|energy)\.)?worldmonitor\.app$/;
 const MAX_ORIGIN_BYTES = 300;
 const ORIGIN_ENCODER = new TextEncoder();
@@ -53,12 +53,9 @@ const EXPOSED_HEADERS = [
   // this list over every api.worldmonitor.app response, so it must be here
   // for browser agents to read it, not only in server/cors.ts.
   'Location',
-  // Billing-verification denials (server/_shared/entitlement-check.ts) carry
-  // the reason here alongside `Retry-After`. Docs advertise the header
-  // (docs/usage-errors.mdx) but it was not exposed, so a cross-origin browser
-  // client — the Tauri desktop shell, widget embeds, anything on
-  // api.worldmonitor.app — could not read it and had to parse `code` from the
-  // body to tell a retryable verification blip from a terminal lapse (#5622).
+  // Billing-verification denials carried their reason here (#5622). The
+  // entitlement backend is gone and nothing sets it now; it stays exposed
+  // because docs/usage-errors.mdx still advertises it.
   'X-Billing-Verification',
   // IETF RateLimit fields (draft-ietf-httpapi-ratelimit-headers): RateLimit-Policy
   // + RateLimit-Limit are advertised on every API response (vercel.json); the

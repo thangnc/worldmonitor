@@ -3,7 +3,7 @@
 import { describe, expect, test } from "vitest";
 
 import { DIRECT_LLM_DAILY_QUOTA_LIMIT } from "../_shared/direct-llm-quota";
-import { TRUSTED_USER_ID_HEADER } from "../_shared/mcp-internal-hmac";
+import { TRUSTED_USER_ID_HEADER } from "../_shared/rate-limit";
 import {
   BACKTEST_STOCK_DAILY_PROVIDER_QUOTA_LIMIT,
   BACKTEST_STOCK_REDIS_UNAVAILABLE_RETRY_AFTER_SECONDS,

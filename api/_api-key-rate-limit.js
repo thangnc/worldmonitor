@@ -14,7 +14,7 @@
 //
 // Patterns cloned: api/mcp/quota.ts (INCR-first meter + DECR rollback),
 // api/_rate-limit.js (lazy Upstash singleton, NODE_TEST_CONTEXT retry skip,
-// X-RateLimit-* header shape), server/_shared/pro-mcp-token.ts UTC helpers.
+// X-RateLimit-* header shape).
 import { getKeyPrefix } from './_upstash-json.js';
 import { loadUpstashRatelimit } from './_upstash-ratelimit.js';
 
@@ -123,7 +123,7 @@ export function apiKeyDailyKey(userId, date) {
   return `rl:apikey:day:${userId}:${yyyy}-${mm}-${dd}`;
 }
 /** 48h TTL: covers UTC-midnight rollover + an inspection window. Mirrors
- *  PRO_DAILY_QUOTA_TTL_SECONDS. */
+ *  PRO_DAILY_QUOTA_TTL_SECONDS (server/_shared/direct-llm-quota.ts). */
 export const API_DAILY_TTL_SECONDS = 172_800;
 /**
  * Increment the per-account daily meter and report whether the sold daily
