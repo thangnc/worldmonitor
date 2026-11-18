@@ -2,6 +2,8 @@
 
 Status: accepted scope and architecture, 2026-11-07. Phase 0 (repository review) is done. Phase 1 (profile shell) is implemented in code; the access gate is configured at deploy time.
 
+**2026-11-18: Lite is the product.** The owner dropped upstream sync and keeps only World Monitor's ingestion architecture. The [refactor plan](../plans/2026-11-18-001-refactor-lite-monorepo-plan.md) removes the old dashboard, the flag-off paths and the surfaces Lite does not use, then moves the repository to npm workspaces with Turborepo and the web app to Vite 8. Hosting is decided last. Sections below that describe the flag, upstream parity or the dashboard describe the code as it is until those phases land; [Legacy features](../product/legacy-features.md) catalogues what leaves and how to bring it back.
+
 This is the canonical spec for the owner's private, low-noise build of World Monitor. It records the original proposal, what review against the code changed, and the owner's decisions. `CLAUDE.md` holds the always-loaded summary and `.claude/rules/lite-profile.md` holds the file-level rules. Change this document first when scope or architecture changes.
 
 ## Purpose
@@ -22,9 +24,12 @@ The owner's priority (2026-11-08) is **early indicators**: see army activity, co
 |---|---|
 | Name and branding | Keep "World Monitor". The instance is private and gated to the owner, not offered to others ([trademark policy](../../trademark-policy.mdx)). If it is ever opened to other people, switch to a distinct name with "Based on World Monitor" attribution. |
 | Variant | Keep the existing `full` variant. No new `lite` variant. |
-| Lite mechanism | A deployment profile: one build/deploy env flag on the owner's deployment turns on the three-domain defaults and the owner's custom features. With the flag off, behavior is identical to upstream. |
+| Upstream sync | Dropped (2026-11-07). The owner builds their own dashboard and keeps World Monitor's ingestion architecture: seeders and relay → Upstash Redis → API handlers, the proto contracts and the `shared/` intelligence modules. Merge cost with upstream no longer constrains structure. |
+| Lite mechanism | A deployment profile: one build/deploy env flag on the owner's deployment turns on the three-domain defaults and the owner's custom features. With the flag off, behavior is identical to upstream. Superseded by the upstream-sync decision: refactor Phase 1 removes the flag-off paths together; new work does not add flag-off parity. |
+| Repository layout | npm workspaces + Turborepo (`apps/web`, `apps/ingest`, `apps/relay`, `packages/contracts`, `packages/server`, `packages/shared`, `packages/client`), per the [refactor plan](../plans/2026-11-18-001-refactor-lite-monorepo-plan.md) (2026-11-18). |
+| Web bundler | Vite 8 (Rolldown) with `@preact/preset-vite` (2026-11-18). Not Turbopack: it is Next.js-only and needs React. |
 | "For me only" | The profile flag plus an access gate in front of the owner's domain. |
-| Hosting | The owner's managed stack (see [Platform map](#platform-map)). The Docker compose stack stays a secondary option with the same flag. |
+| Hosting | The owner's managed stack (see [Platform map](#platform-map)). The Docker compose stack stays a secondary option with the same flag. Revisited last in the refactor (Phase 4): the owner pays for Vercel Pro and wants free tiers elsewhere, with an Oracle Cloud Always Free VPS replacing anything Render or Cloudflare would charge for. |
 | AI models | External APIs allowed, through the existing chain in `server/_shared/llm.ts`. Keys and per-call cost are an operating concern. Local Ollama stays optional. |
 | Conflict data | No ACLED (2026-11-07): API access is hard to obtain. UCDP (`seed-ucdp-events`, `UCDP_ACCESS_TOKEN`) supplies the map events and each country's conflict floor. GDELT country events (`seed-gdelt-bulk-materializer`, no key) supply the realtime conflict and unrest signal; `get-risk-scores.ts` scores them whenever ACLED returns no events. UCDP alone cannot do this, because it is an annual release. Health reports ACLED as `not_configured`, which is not a failure, and the `[CII] ACLED returned 0 events` log line is expected. |
 | Lite map | MapLibre on OpenFreeMap vector tiles, solid land (2026-11-07): free, no key, no usage limits, and already the dashboard's fallback basemap. The style (`src/lite/map/style.ts`) draws only land, water, country borders and place names, colored from the Lite `@theme` tokens; markers, the popup a marker click opens, zoom buttons and the OpenStreetMap credit are Tailwind-styled HTML. No popup is open until a marker is clicked. A card shows every line in full, never clamped; past 340 px it scrolls under an overlay scrollbar (2026-11-10). On every Lite map the marks carry no name beside them and the legend stays closed behind a "Legend" button, so nothing covers the map until the user clicks (owner's decision, 2026-11-08); the map body has a top border under the card header. MapLibre loads only when a screen with a map opens (Geopolitics, Finance or Technology). If OpenFreeMap is down, the map shows the background with markers still placed. Data shading (the reported-violence country fill, GPS-interference hexagons, DDoS shading) is a MapLibre fill layer coloured from the theme tokens (owner's decision, 2026-11-08); every marker follows the map marker grammar below; the country shapes come from `/data/countries.geojson`. Markers, cards, controls and credits stay Preact. |
@@ -359,6 +364,8 @@ Enable an optional panel, layer or feed only if it meets at least one test:
 
 ## Profile mechanism
 
+This section describes the code until refactor Phase 1, which deletes the dashboard and the flag-off paths.
+
 - `VITE_LITE_PROFILE=true` at build time turns the profile on (`LITE_PROFILE_ENABLED` in `src/config/lite-profile.ts`). The module also holds the Lite panel order, the cross-variant panel list, and the desktop and mobile layer sets.
 - Under the flag: Lite panel and layer defaults, the Lite mission preset, the Lite-only panels and features, the source-policy filter, and the Lite seeder allowlist.
 - Without the flag: no behavior change. Lite-only code paths are flag-gated so upstream merges stay cheap.
@@ -497,6 +504,7 @@ Each briefing states the development with its timestamp, keeps confirmed informa
 | 0. Repository review | This document | Done |
 | 1. Profile shell | `VITE_LITE_PROFILE`; Lite panel and layer defaults; Lite Desk preset; the five cross-variant panels; access gate at deploy time | Done in code: the dashboard boots into the Lite layout with the flag on and is unchanged with it off (`tests/lite-profile.test.mts`, `verify-worldmonitor` step `lite-profile.mjs`). The access gate is set up when deploying |
 | 1b. Lite UI | `/lite`: the cross-domain Briefing home and three child screens, real data where a source exists, labelled samples elsewhere (see [Lite UI](#lite-ui-lite)) | Done in code: `tests/lite-ui.test.mts`, `tests/dom/lite-ui.test.mts`, `verify-worldmonitor` step `lite-ui.mjs` with the flag on and off |
+| R. Repository refactor | The [refactor plan](../plans/2026-11-18-001-refactor-lite-monorepo-plan.md): record decisions and the legacy catalog; delete the dashboard and unused surfaces; npm workspaces + Turborepo; Vite 8 + `@preact/preset-vite`; hosting last | Each refactor phase merged with the Lite checks green; hosting chosen from measurements |
 | 1c. Early indicators | The [Early indicators](#early-indicators) catalogue, linked to the news, in its build order | Each indicator renders from its feed with its linked news or "No linked news found"; trigger rates reviewed with the owner |
 | 2. Core feeds on the owner's stack | Render services for the seeder allowlist; health key subset; source-policy filter; verify how much general news the `full` digest still carries | Lite panels fresh in `/api/health`; no unlicensed sources |
 | 3. Event intelligence | Event object and timeline, novelty, crypto-risk and AI-event detectors, non-Convex alerts (Supabase gate) | Sampled cluster and alert quality meet agreed targets |
@@ -515,4 +523,5 @@ Each briefing states the development with its timestamp, keeps confirmed informa
 ## Rejected alternatives
 
 - **A new `lite` variant.** About 30 registration points (variant list, CORS, Convex preference variants, digest editions, desktop download list, locales, SEO, e2e). About 21 `SITE_VARIANT === 'full'` checks gate CII, intelligence and theater loading (for example `src/app/data-loader.ts` CII refresh and the intelligence refresh in `src/App.ts`), so a new variant would silently lose that data. It also multiplies upstream merge conflicts.
+- **Turbopack for the web app** (2026-11-18). Turbopack ships inside Next.js and needs React; Preact on Next relies on unsupported `preact/compat` aliasing. Vite 8 with Rolldown gives the Rust-bundler speed-up and keeps Preact.
 - **A mission preset alone.** Presets are one-off rewrites of local state, not defaults, and cannot gate custom features or seeders. The profile still ships a preset for re-applying the layout.

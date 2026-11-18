@@ -19,7 +19,7 @@ Do not scan the tree top to bottom.
 | Starting or resuming a multi-step feature | [`plans/INDEX.md`](plans/INDEX.md) | Implementation plans by status (active, done, abandoned, superseded). [`plans/requirements/`](plans/requirements/) holds the requirement briefs they started from. |
 | Checking how a number or decision was measured | [`research/`](research/) | Dated evidence: perf baselines, audits, investigations, validation runs, reports, and source notes. True when written; re-measure before relying on a figure. |
 | Running the documentation alignment audit | [`process/`](process/) | Protocol and templates. |
-| Writing outward-facing copy | [`product/`](product/) | Press kit and community promotion guide. Tests check their claims against the code. |
+| Writing outward-facing copy, or bringing back a removed feature | [`product/`](product/) | Press kit and community promotion guide (tests check their claims against the code), and [`legacy-features.md`](product/legacy-features.md): what the refactor removed, tagged and traceable. |
 | Looking for something old | [`archive/`](archive/) | Superseded plans, legacy docs, and the old todo backlog. Not current guidance. |
 
 ## Status of what you read

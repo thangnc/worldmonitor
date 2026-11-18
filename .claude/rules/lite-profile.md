@@ -25,7 +25,7 @@ Source of truth: [docs/engineering/architecture/lite.md](../../docs/engineering/
 ## Rules
 
 - **No new variant.** Lite is a deployment profile on `full`, switched by one env flag. About 21 `SITE_VARIANT === 'full'` checks gate CII, intelligence and theater loading; a new variant would silently lose that data. See "Rejected alternatives".
-- **Flag-gate every Lite-only change** on `LITE_PROFILE_ENABLED` (`VITE_LITE_PROFILE=true`). With the flag off, panels, layers, presets, feeds and seeders behave exactly as upstream. Never optional-chain `import.meta.env`; `tests/browser-bundle-secret-guard.test.mts` rejects it.
+- **Upstream parity is no longer required** (spec: Owner decisions, "Upstream sync"). New Lite work needs no flag-off path. Existing gates on `LITE_PROFILE_ENABLED` (`VITE_LITE_PROFILE=true`) stay until refactor Phase 1 removes them together; do not strip them piecemeal. Never optional-chain `import.meta.env`; `tests/browser-bundle-secret-guard.test.mts` rejects it.
 - **One source of truth.** Lite panels, cross-variant panels and layers live in `src/config/lite-profile.ts` (`LITE_PANEL_ORDER`, `LITE_CROSS_VARIANT_PANELS`, `LITE_MAP_LAYERS`). Change them there, then mirror the lists in `.claude/skills/verify-worldmonitor/steps/lite-profile.mjs`.
 - **Cross-variant panels join `full` only under the flag** (`buildLitePanelCatalog` in `src/config/panels.ts`). Never add them to `FULL_PANELS` itself: that changes upstream. Panel keys can mean different panels per variant (`policy` is tech's AI policy news; `full` has `trade-policy`). Check the key's source catalog before adding it.
 - **Layers.** A Lite layer must be allowed on `full` (`getAllowedLayerKeys('full')`), or `sanitizeLayersForVariant` strips it.
