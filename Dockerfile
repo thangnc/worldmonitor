@@ -41,6 +41,9 @@ RUN node docker/build-handlers.mjs
 
 # Build the Vite frontend (apps/web; outputs to the repository root's dist/)
 # Skip blog build — blog-site has its own deps not installed here
+# Vite 8 lists every config-graph feature its future native config loader
+# lacks; the dev API handlers make that list ~960 lines (apps/web/vite.config.ts).
+ENV VITE_CONFIG_NATIVE_IGNORE_WARNING=true
 RUN npx tsc && npx vite build --config apps/web/vite.config.ts
 
 # ── Stage 2: Runtime dependencies ───────────────────────────────────────────

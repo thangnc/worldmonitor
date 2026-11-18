@@ -30,6 +30,9 @@ ENV VITE_WS_API_URL=${VITE_WS_API_URL}
 # would also run the Vite env secrets check, which the
 # image does not need. The root tsconfig.json is the web app's program, and the
 # app's Vite config (apps/web) writes the repository root's dist/.
+# Vite 8 lists every config-graph feature its future native config loader
+# lacks; the dev API handlers make that list ~960 lines (apps/web/vite.config.ts).
+ENV VITE_CONFIG_NATIVE_IGNORE_WARNING=true
 RUN npx tsc && npx vite build --config apps/web/vite.config.ts
 # The SPA entry point: docker/nginx.conf.template rewrites /lite and its screens
 # to it, so without it every app route in the image serves a 404.
