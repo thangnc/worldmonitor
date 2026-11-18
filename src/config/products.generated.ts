@@ -1,5 +1,5 @@
 // AUTO-GENERATED from convex/config/productCatalog.ts
-// Do not edit manually. Run: npm run product:facts
+// Do not edit manually. Run: npm run generate
 
 export const DODO_PRODUCTS = {
   PRO_MONTHLY: 'pdt_0Nbtt71uObulf7fGXhQup',

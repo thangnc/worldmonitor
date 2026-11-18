@@ -1,7 +1,5 @@
 import { describe, it } from 'node:test';
-import { guardProBuiltOutput, withoutUnbuiltProPaths } from './_lib/pro-built-output.mjs';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,13 +37,9 @@ const REQUIRED_ACQUISITION_CLAIM_ROOTS = [
   'README.ja-JP.md',
   'README.md',
   'README.zh-CN.md',
-  'blog-site/src/content/blog',
   'cli',
   'docs',
   'lite.html',
-  'pro-test/index.html',
-  'pro-test/src/locales',
-  'pro-test/welcome.html',
   'public',
   'public/.well-known/agent-skills',
   'public/.well-known/ai-catalog.json',
@@ -97,17 +91,6 @@ function machineReadablePricing() {
   return JSON.parse(match[1]);
 }
 
-function applicationJsonLd(path) {
-  const blocks = [...read(path).matchAll(
-    /<script\b(?=[^>]*\btype="application\/ld\+json")[^>]*>\s*([\s\S]*?)\s*<\/script>/g,
-  )].map((match) => JSON.parse(match[1]));
-  const application = blocks.find((block) => (
-    block['@type'] === 'SoftwareApplication' || block['@type'] === 'WebApplication'
-  ));
-  assert.ok(application, `${path} must publish application JSON-LD`);
-  return application;
-}
-
 const ACQUISITION_ROOTS = [
   'lite.html',
   'README.md',
@@ -116,13 +99,10 @@ const ACQUISITION_ROOTS = [
   'cli',
   'docs',
   'public',
-  'pro-test',
-  'blog-site/src',
 ];
 
 const ACQUISITION_EXTENSIONS = /\.(?:astro|html|json|md|mdx|mjs|txt)$/;
 const ACQUISITION_EXCLUDES = [
-  'blog-site/node_modules/',
   'docs/api/',
   'docs/engineering/archive/',
   'docs/engineering/plans/',
@@ -131,15 +111,6 @@ const ACQUISITION_EXCLUDES = [
   'docs/ideation/',
   'docs/internal/',
   'docs/plans/',
-  'pro-test/node_modules/',
-  'public/blog/',
-  // public/pro/ joins public/blog/ here for the same reason (#6898): both are
-  // BUILT output, so a filesystem walk would silently scan a larger or smaller
-  // population depending on whether someone ran the build -- shrinking the
-  // surface set without ever reporting a skip. The sources these compile from
-  // (pro-test/index.html, pro-test/welcome.html, pro-test/src/locales/) are
-  // committed and stay in scope, so nothing is actually left unchecked.
-  'public/pro/',
   'public/openapi',
 ];
 
@@ -161,11 +132,6 @@ function collectAcquisitionSurfaces() {
 
 const CURRENT_FACT_SURFACES = collectAcquisitionSurfaces();
 describe('public product facts generation contract', () => {
-  // Two cases below read the built public/pro/ pages, which `npm run build:pro`
-  // produces rather than git (#6898). They drop those paths in an unbuilt
-  // checkout; this makes CI fail instead when it says it built them.
-  guardProBuiltOutput();
-
   it('keeps the acquisition claim scan on the complete registered root set', () => {
     assertAcquisitionClaimRootClosure(ACQUISITION_CLAIM_ROOTS);
     assert.throws(
@@ -255,28 +221,6 @@ describe('public product facts generation contract', () => {
     for (const path of CURRENT_FACT_SURFACES) {
       assert.doesNotMatch(read(path), banned, `${path} still publishes a pre-launch lifecycle term`);
     }
-
-    const localePaths = readdirSync(join(ROOT, 'pro-test/src/locales'))
-      .filter((name) => name.endsWith('.json'));
-    for (const name of localePaths) {
-      const locale = readJson(`pro-test/src/locales/${name}`);
-      assert.equal(locale.nav?.reserveAccess, undefined, `${name}: legacy nav waitlist CTA`);
-      assert.equal(locale.hero?.reserveEarlyAccess, undefined, `${name}: legacy hero waitlist CTA`);
-      assert.equal(locale.hero?.emailPlaceholder, undefined, `${name}: legacy waitlist email field`);
-      assert.equal(locale.hero?.emailAriaLabel, undefined, `${name}: legacy waitlist email label`);
-      assert.equal(locale.twoPath?.proCta, undefined, `${name}: legacy product waitlist CTA`);
-      assert.equal(locale.finalCta?.getPro, undefined, `${name}: legacy final waitlist CTA`);
-      assert.equal(locale.footer?.beFirstInLine, undefined, `${name}: legacy queue copy`);
-      assert.equal(locale.form, undefined, `${name}: legacy waitlist form copy`);
-      assert.equal(locale.referral, undefined, `${name}: legacy waitlist referral copy`);
-      // The "Under the hood" band renders measured numerals (depth-stats.json),
-      // so the retired adjective value slots must not linger in any locale —
-      // a future re-wiring to t('welcome.depth.sNv') would resurrect the
-      // non-numeric band the subhead's "every number below is live" contradicts.
-      for (let slot = 1; slot <= 15; slot += 1) {
-        assert.equal(locale.welcome?.depth?.[`s${slot}v`], undefined, `${name}: retired depth slot value s${slot}v`);
-      }
-    }
   });
 
   it('keeps volatile inventory totals out of hand-authored acquisition copy', () => {
@@ -346,38 +290,11 @@ describe('public product facts generation contract', () => {
   it('keeps user-visible prices aligned with generated plan facts', () => {
     const facts = readJson('shared/product-facts.generated.json');
     const plans = Object.fromEntries(facts.plans.map((plan) => [plan.planKey, plan]));
-    const tiers = Object.fromEntries(
-      readJson('pro-test/src/generated/tiers.json').map((tier) => [tier.localeKey, tier]),
-    );
-
-    assert.equal(tiers.pro.monthlyPrice, plans.pro_monthly.price);
-    assert.equal(tiers.pro.annualPrice, plans.pro_annual.price);
-    assert.equal(tiers.api.monthlyPrice, plans.api_starter.price);
-    assert.equal(tiers.api.annualPrice, plans.api_starter_annual.price);
-    assert.equal(tiers.apiBusiness.monthlyPrice, plans.api_business.price);
-
-    const localePaths = readdirSync(join(ROOT, 'pro-test/src/locales'))
-      .filter((name) => name.endsWith('.json'));
-    for (const name of localePaths) {
-      const table = readJson(`pro-test/src/locales/${name}`).pricingTable;
-      const proPrice = Number(table.proHeader.match(/\$([0-9.,]+)/)?.[1].replace(',', '.'));
-      const apiPrice = Number(table.apiHeader.match(/\$([0-9.,]+)/)?.[1].replace(',', '.'));
-      assert.equal(proPrice, plans.pro_monthly.price, `${name}: visible Pro table price`);
-      assert.equal(apiPrice, plans.api_starter.price, `${name}: visible API table price`);
-    }
-
     const proMonthly = displayPrice(plans.pro_monthly.price);
     const proAnnual = displayPrice(plans.pro_annual.price);
     const apiMonthly = displayPrice(plans.api_starter.price);
     const apiAnnual = displayPrice(plans.api_starter_annual.price);
     const businessMonthly = displayPrice(plans.api_business.price);
-    // The Pro app reads the generated tier values asserted above; the welcome
-    // source and its built SSR output also surface the monthly entry price.
-    // Do not require the prerender script to carry a second crawler-only copy.
-    for (const path of withoutUnbuiltProPaths(['pro-test/welcome.html', 'public/pro/welcome.html'])) {
-      assert.match(read(path), new RegExp(`\\$${proMonthly.replace('.', '\\.')}[^\\d]`), `${path}: Pro monthly`);
-    }
-
     for (const path of ['docs/pricing.mdx', 'docs/zh/pricing.mdx', 'public/pricing.md']) {
       const source = read(path);
       for (const price of [proMonthly, proAnnual, apiMonthly, apiAnnual, businessMonthly]) {
@@ -395,53 +312,6 @@ describe('public product facts generation contract', () => {
     assert.equal(summaryPlans['API Business'].price_usd_monthly, plans.api_business.price);
   });
 
-  it('publishes valid, available, canonical offers in source and built HTML', () => {
-    const facts = readJson('shared/product-facts.generated.json');
-    const pricingUrl = facts.product.pricingUrl;
-    const plansByName = new Map(facts.plans.map((plan) => [plan.name, plan]));
-    for (const path of withoutUnbuiltProPaths([
-      'pro-test/index.html',
-      'pro-test/welcome.html',
-      'public/pro/index.html',
-      'public/pro/welcome.html',
-    ])) {
-      const application = applicationJsonLd(path);
-      assert.ok(Array.isArray(application.offers) && application.offers.length >= 3);
-      for (const offer of application.offers) {
-        const expected = plansByName.get(offer.name);
-        assert.ok(expected, `${path}: ${offer.name} must map to a generated public plan`);
-        assert.equal(offer.priceCurrency, 'USD', `${path}: ${offer.name} currency`);
-        assert.equal(offer.availability, 'https://schema.org/InStock', `${path}: ${offer.name} availability`);
-        assert.equal(offer.url, pricingUrl, `${path}: ${offer.name} canonical pricing URL`);
-        assert.equal(Number(offer.price), expected.price, `${path}: ${offer.name} price`);
-        if (Number(offer.price) > 0) {
-          assert.equal(
-            offer.priceSpecification?.billingDuration,
-            expected.billingDuration,
-            `${path}: ${offer.name} billing duration`,
-          );
-          assert.equal(offer.priceSpecification.priceCurrency, offer.priceCurrency);
-          assert.equal(Number(offer.priceSpecification.price), Number(offer.price));
-        }
-      }
-    }
-  });
-
-  it('keeps stable and build-owned generated facts fresh', { skip: PRODUCT_FACTS_FROZEN }, () => {
-    assert.doesNotThrow(() => {
-      execFileSync(
-        process.execPath,
-        ['--import', 'tsx', 'scripts/generate-public-product-facts.mjs', '--check'],
-        { cwd: ROOT, stdio: 'pipe' },
-      );
-      execFileSync(
-        process.execPath,
-        ['scripts/generate-inventory-facts.mjs', '--check'],
-        { cwd: ROOT, stdio: 'pipe' },
-      );
-    });
-  });
-
   it('states the measured source inventory on every surface that quotes it', { skip: PRODUCT_FACTS_FROZEN }, () => {
     const stats = buildSourceAttributionStats({ validate: false });
     const providers = `${stats.providerCount} attributed providers`;
@@ -450,7 +320,6 @@ describe('public product facts generation contract', () => {
       ['docs/about.mdx', [`${stats.feedHosts} news and OSINT feeds from ${providers}`, `all ${providers}`]],
       ['ARCHITECTURE.md', [hosts]],
       ['public/llms-full.txt', [`${providers} across ${hosts}`]],
-      ['blog-site/src/content/blog/what-is-worldmonitor-real-time-global-intelligence.md', [`${providers} across ${hosts}`]],
       ['api/oauth/authorize.js', [`events from ${providers}`]],
       ['mcp-grant.html', [`events from ${providers}`]],
     ];
@@ -471,79 +340,5 @@ describe('public product facts generation contract', () => {
     assert.equal(facts.heroProofStats.feeds, stats.feedHosts);
     assert.equal(facts.heroProofStats.providers, stats.providerCount);
     assert.equal(facts.heroProofStats.alertOrigins, 5);
-  });
-
-  it('derives depth proof stats from live registries, not literals', { skip: PRODUCT_FACTS_FROZEN }, async () => {
-    // The "Under the hood" band sits under a subhead promising "Every number
-    // below is live in the dashboard today" (#7745). Each slot must equal its
-    // registry — the same sources build-ai-search.mjs publishes in ai-search.md.
-    const { AI_DATA_CENTERS } = await import('../src/config/ai-datacenters.ts');
-    const { CHOKEPOINT_REGISTRY } = await import('../src/config/chokepoint-registry.ts');
-    const { UNDERSEA_CABLES } = await import('../src/config/geo-map.ts');
-    const { getCompleteLayerCatalogKeys } = await import('../src/config/map-layer-definitions.ts');
-    const { INTEL_HOTSPOTS } = await import('../shared/geo-data.ts');
-    const { PIPELINES } = await import('../shared/pipelines-data.ts');
-    const { lngFacilityCount } = await import('../scripts/_storage-facility-registry.mjs');
-    const { publishedRankedCountries } = await import('../scripts/build-crawlable-corpus.mjs');
-    const { commandPaletteCommandCount } = await import('../scripts/lib/command-palette-count.mjs');
-    const facts = readJson('shared/product-facts.generated.json');
-    const depth = facts.depthProofStats;
-    const stats = computeStats();
-    assert.equal(depth.mapLayers, getCompleteLayerCatalogKeys('full').length);
-    assert.equal(depth.chokepoints, CHOKEPOINT_REGISTRY.length);
-    assert.equal(depth.instabilityCountries, stats.tier1Countries);
-    assert.equal(depth.resilienceRanked, publishedRankedCountries(ROOT).ranked);
-    assert.equal(depth.submarineCables, UNDERSEA_CABLES.length);
-    assert.equal(depth.pipelinesLng, PIPELINES.length + lngFacilityCount());
-    assert.match(
-      read('public/ai-search.md'),
-      new RegExp(`- ${PIPELINES.length + lngFacilityCount()} pipelines and LNG assets`),
-    );
-    assert.equal(depth.aiDatacenters, AI_DATA_CENTERS.length);
-    assert.equal(depth.hotspots, INTEL_HOTSPOTS.length);
-    assert.equal(depth.stockExchanges, stats.stockExchangeCount);
-    assert.equal(depth.mcpTools, TOOL_REGISTRY.length);
-    assert.equal(depth.commands, commandPaletteCommandCount());
-    assert.equal(
-      readJson('pro-test/src/locales/en.json').welcome.depth.s13l,
-      '⌘K command definitions',
-    );
-    assert.equal(depth.languages, stats.locales);
-    // Slots whose labels match the hero rail publish the same figures.
-    assert.equal(depth.feeds, facts.heroProofStats.feeds);
-    assert.equal(depth.providers, facts.heroProofStats.providers);
-    assert.equal(depth.alertOrigins, facts.heroProofStats.alertOrigins);
-  });
-
-  it('fails closed when the command palette registry cannot be counted', async () => {
-    const { commandPaletteCommandCount } = await import('../scripts/lib/command-palette-count.mjs');
-    assert.throws(
-      () => commandPaletteCommandCount({ source: 'export const UNRELATED = 1;' }),
-      /could not isolate the COMMANDS array/,
-    );
-  });
-
-  it('renders the Under the hood band from generated numerals, not locale adjectives', () => {
-    const source = read('pro-test/src/welcome/Depth.tsx');
-    assert.match(
-      source,
-      /import depthProofStats from '\.\.\/generated\/depth-stats\.json';/,
-      'the band must render build-time measured numerals',
-    );
-    assert.doesNotMatch(
-      source,
-      /s\$\{n\}v/,
-      'depth slot values must not be read back out of locale keys',
-    );
-    assert.match(source, /welcome\.depth\.s1l/, 'slot labels stay localized');
-    const depthStats = readJson('pro-test/src/generated/depth-stats.json');
-    assert.equal(Object.keys(depthStats).length, 15, 'all 15 band slots must carry a measured value');
-    for (const [key, value] of Object.entries(depthStats)) {
-      assert.equal(
-        Number.isInteger(value) && value > 0,
-        true,
-        `depth-stats.json slot ${key} must be a positive integer, got ${JSON.stringify(value)}`,
-      );
-    }
   });
 });

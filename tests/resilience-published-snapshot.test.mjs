@@ -1,102 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import YAML from 'yaml';
-
-import * as crawlableCorpus from '../scripts/build-crawlable-corpus.mjs';
 
 const repoRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 
-function jsonLdObjects(html) {
-  return [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
-    .map(([, raw]) => JSON.parse(raw));
-}
-
 describe('published resilience snapshot freshness', () => {
-  it('selects the newest dated canonical snapshot and rejects filename drift', () => {
-    const tempRoot = mkdtempSync(join(tmpdir(), 'wm-resilience-snapshot-selection-'));
-    const snapshotDir = join(tempRoot, 'docs', 'snapshots');
-    try {
-      mkdirSync(snapshotDir, { recursive: true });
-      writeFileSync(
-        join(snapshotDir, 'resilience-ranking-2026-06-01.json'),
-        JSON.stringify({ capturedAt: '2026-06-01' }),
-      );
-      writeFileSync(
-        join(snapshotDir, 'resilience-ranking-2026-08-01.json'),
-        JSON.stringify({ capturedAt: '2026-08-01' }),
-      );
-      writeFileSync(
-        join(snapshotDir, 'resilience-ranking-live-post-pr1-2026-09-01.json'),
-        JSON.stringify({ capturedAt: '2026-09-01' }),
-      );
-
-      assert.equal(
-        crawlableCorpus.resolveLatestResilienceSnapshotPath(tempRoot),
-        'docs/snapshots/resilience-ranking-2026-08-01.json',
-      );
-
-      writeFileSync(
-        join(snapshotDir, 'resilience-ranking-2026-09-01.json'),
-        JSON.stringify({ capturedAt: '2026-08-31' }),
-      );
-      assert.throws(
-        () => crawlableCorpus.resolveLatestResilienceSnapshotPath(tempRoot),
-        /filename date 2026-09-01 does not match capturedAt 2026-08-31/,
-      );
-    } finally {
-      rmSync(tempRoot, { recursive: true, force: true });
-    }
-  });
-
-  it('publishes one truthful freshness contract on every country page', async () => {
-    const outDir = mkdtempSync(join(tmpdir(), 'wm-resilience-published-corpus-'));
-    try {
-      const data = await crawlableCorpus.loadCorpusData({ rootDir: repoRoot });
-      await crawlableCorpus.buildCorpus({ rootDir: repoRoot, outDir });
-      const norway = readFileSync(join(outDir, 'countries', 'norway', 'index.html'), 'utf8');
-      const webPage = jsonLdObjects(norway).find((entry) => entry['@type'] === 'WebPage');
-      const dataset = webPage?.mainEntity;
-
-      assert.equal(dataset?.datePublished, data.resilience.capturedAt);
-      assert.equal(dataset?.dateModified, data.resilience.capturedAt);
-      assert.equal(dataset?.temporalCoverage, data.resilience.capturedAt);
-      assert.ok(data.resilience.snapshotNote, 'canonical snapshots must explain their publication state');
-      assert.doesNotMatch(data.resilience.snapshotNote, /Post-P1-1/);
-      assert.ok(norway.includes(data.resilience.snapshotNote), 'country page must surface snapshotNote verbatim');
-      assert.match(norway, /href="\/docs\/corrections"/);
-      assert.match(
-        norway,
-        new RegExp(`<meta name="lastmod" content="${data.lastmod.countries}">`),
-      );
-      // The repo path stays machine-readable on the source line; the visible
-      // text names the snapshot by its date instead of a repository path.
-      assert.ok(
-        norway.includes(`data-snapshot-source="${data.sources.resilienceSnapshot}"`),
-        'country page must identify the selected dated snapshot',
-      );
-      assert.match(norway, /Source: World Monitor Country Resilience Index snapshot, \w+ \d{1,2}, \d{4}\./);
-      // Coverage-story pages (Tuvalu, Macau, San Marino) swap the shared snapshot
-      // note for a country-specific reading guide (#7527) but keep the corrections
-      // link and the dated snapshot source line.
-      const tuvalu = readFileSync(join(outDir, 'countries', 'tuvalu', 'index.html'), 'utf8');
-      assert.ok(
-        !tuvalu.includes(data.resilience.snapshotNote),
-        'coverage-story pages omit the shared snapshot note by design',
-      );
-      assert.match(tuvalu, /href="\/docs\/corrections"/);
-      assert.ok(
-        tuvalu.includes(`data-snapshot-source="${data.sources.resilienceSnapshot}"`),
-        'coverage-story pages must still identify the selected dated snapshot',
-      );
-    } finally {
-      rmSync(outDir, { recursive: true, force: true });
-    }
-  });
-
   it('documents the monthly publication cadence and the first methodology correction', () => {
     const methodology = readFileSync(
       join(repoRoot, 'docs', 'methodology', 'country-resilience-index.mdx'),
@@ -128,5 +38,4 @@ describe('published resilience snapshot freshness', () => {
       assert.match(source, /pull\/7535/);
     }
   });
-
 });

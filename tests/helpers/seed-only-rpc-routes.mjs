@@ -10,7 +10,7 @@ import ts from 'typescript';
  * graceful degradation in server/_shared/redis.ts, so such a handler answers
  * an empty 200 locally and the sidecar's `!response.ok` cloud fallback never
  * fires. Every route this returns must therefore be cloud-preferred in
- * src-tauri/sidecar/local-api-server.mjs regardless of WS_RELAY_URL.
+ * docker/local-api/local-api-server.mjs regardless of WS_RELAY_URL.
  *
  * Classification is textual and deliberately conservative in the "live"
  * direction: any outbound-looking token marks a handler live, so a handler

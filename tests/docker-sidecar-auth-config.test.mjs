@@ -123,7 +123,7 @@ test('shipped nginx configurations separate native management from Docker data A
   skip: !process.env.WM_TEST_NGINX,
 }, async () => {
   const browserFetch = globalThis.fetch;
-  const { createLocalApiServer } = await import('../src-tauri/sidecar/local-api-server.mjs');
+  const { createLocalApiServer } = await import('../docker/local-api/local-api-server.mjs');
   const tempDir = createTempDir('worldmonitor-nginx-admin-');
   const token = 'synthetic-ingress-token';
   const originalToken = process.env.LOCAL_API_TOKEN;

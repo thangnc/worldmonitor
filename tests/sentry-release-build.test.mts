@@ -8,7 +8,6 @@ import { build } from 'esbuild';
 import { BrowserClient, Scope } from '@sentry/browser';
 import type { BrowserOptions, ErrorEvent } from '@sentry/browser';
 import type { Envelope } from '@sentry/core';
-import { sentryVitePlugin } from '@sentry/vite-plugin';
 import type { ConfigEnv, UserConfig } from 'vite';
 import { Window } from 'happy-dom';
 
@@ -16,50 +15,34 @@ const originalEnv = { ...process.env };
 const sha = '0123456789abcdef0123456789abcdef01234567';
 let scratch: string;
 let loadDashboard: (env: ConfigEnv) => UserConfig;
-let marketingConfigUrl: string;
-const initializers: Array<() => Promise<BrowserOptions>> = [];
-type UploadOptions = NonNullable<Parameters<typeof sentryVitePlugin>[0]>;
-
-function uploadOptions(config: UserConfig): NonNullable<UploadOptions['release']> {
-  const plugins: unknown[] = config.plugins ?? [];
-  const plugin = plugins.flat(Infinity).find(p => p && typeof p === 'object' && 'name' in p && p.name === 'sentry-upload');
-  assert.ok(plugin && typeof plugin === 'object' && 'options' in plugin);
-  const options = plugin.options as UploadOptions;
-  assert.ok(options.release);
-  return options.release;
-}
+let initializeDashboard: () => Promise<BrowserOptions>;
 
 before(async () => {
   const { version } = JSON.parse(await readFile(resolve('package.json'), 'utf8'));
   assert.equal(typeof version, 'string');
-  const cache = resolve('pro-test/node_modules/.cache');
+  const cache = resolve('node_modules/.cache');
   await mkdir(cache, { recursive: true });
   scratch = await mkdtemp(join(cache, 'sentry-release-test-'));
-  // Execute both real configs, replacing only the upload boundary. No token
+  // Execute the real config, replacing only the upload boundary. No token
   // or network access is needed to observe what we pass to the Sentry plugin.
-  for (const [name, entry] of [['dashboard', 'vite.config.ts'], ['marketing', 'pro-test/vite.config.ts']]) {
-    await build({
-      entryPoints: [entry], outfile: join(scratch, `${name}.mjs`),
-      bundle: true, platform: 'node', format: 'esm', packages: 'external',
-      define: { __dirname: JSON.stringify(resolve(name === 'dashboard' ? '.' : 'pro-test')) },
-      plugins: [{
-        name: 'capture-sentry-upload-options',
-        setup(bundler) {
-          bundler.onResolve({ filter: /^@sentry\/vite-plugin$/ }, () => ({ path: 'sentry-upload', namespace: 'test' }));
-          bundler.onLoad({ filter: /.*/, namespace: 'test' }, () => ({
-            contents: 'export const sentryVitePlugin = options => ({ name: "sentry-upload", options });',
-          }));
-        },
-      }],
-    });
-  }
+  await build({
+    entryPoints: ['vite.config.ts'], outfile: join(scratch, 'dashboard.mjs'),
+    bundle: true, platform: 'node', format: 'esm', packages: 'external',
+    define: { __dirname: JSON.stringify(resolve('.')) },
+    plugins: [{
+      name: 'capture-sentry-upload-options',
+      setup(bundler) {
+        bundler.onResolve({ filter: /^@sentry\/vite-plugin$/ }, () => ({ path: 'sentry-upload', namespace: 'test' }));
+        bundler.onLoad({ filter: /.*/, namespace: 'test' }, () => ({
+          contents: 'export const sentryVitePlugin = options => ({ name: "sentry-upload", options });',
+        }));
+      },
+    }],
+  });
   loadDashboard = (await import(pathToFileURL(join(scratch, 'dashboard.mjs')).href)).default;
-  marketingConfigUrl = pathToFileURL(join(scratch, 'marketing.mjs')).href;
-  for (const [name, entry, initialize] of [
-    ['dashboard', 'src/bootstrap/sentry-init.ts', 'loadAndInitSentry'],
-    ['marketing', 'pro-test/src/sentry.ts', 'initSentry'],
-  ]) {
-    const outfile = join(scratch, `${name}-init.mjs`);
+  {
+    const [entry, initialize] = ['src/bootstrap/sentry-init.ts', 'loadAndInitSentry'];
+    const outfile = join(scratch, 'dashboard-init.mjs');
     await build({
       stdin: { contents: `import { ${initialize} } from ${JSON.stringify(resolve(entry))}; import { captured } from 'capture-sdk'; export default async () => { await ${initialize}(); return captured(); };`, resolveDir: resolve('.') },
       outfile, bundle: true, platform: 'node', format: 'esm', packages: 'external',
@@ -73,7 +56,7 @@ before(async () => {
         bundler.onLoad({ filter: /.*/, namespace: 'locale' }, () => ({ contents: 'export const currentLanguageBase = () => "en";' }));
       } }],
     });
-    initializers.push((await import(pathToFileURL(outfile).href)).default);
+    initializeDashboard = (await import(pathToFileURL(outfile).href)).default;
   }
 });
 
@@ -125,28 +108,13 @@ describe('Sentry build and event release contract', () => {
   });
 
   for (const target of ['production', 'preview', 'development']) {
-    it(`aligns both bundles and source-map uploads in ${target}`, async () => {
+    it(`aligns the dashboard build hash and event release in ${target}`, async () => {
       process.env.SENTRY_AUTH_TOKEN = 'test-only-never-sent';
       process.env.VERCEL_GIT_COMMIT_SHA = sha;
       process.env.VERCEL_ENV = target;
-      const configs = [
-        await loadDashboard({ mode: 'production', command: 'build' }),
-        (await import(`${marketingConfigUrl}?target=${target}`)).default,
-      ];
-      for (const [index, config] of configs.entries()) {
+      const configs: UserConfig[] = [await loadDashboard({ mode: 'production', command: 'build' })];
+      for (const config of configs) {
         assert.equal(JSON.parse(String(config.define?.__BUILD_HASH__)), sha);
-        // The root (Lite) config carries no Sentry upload plugin; only the
-        // marketing build uploads source maps, and it never publishes the release.
-        if (index === 1) {
-          const upload = uploadOptions(config);
-          assert.equal(upload.name, sha);
-          assert.equal(upload.dist, sha);
-          assert.equal(upload.inject, false);
-          assert.equal(upload.create, false);
-          assert.equal(upload.finalize, false);
-          assert.equal(upload.setCommits, false);
-          assert.equal(upload.deploy, false);
-        }
 
         // A real SDK client produces the event envelope. Only delivery is
         // replaced; release, dist and scope tags pass through Sentry itself.
@@ -157,7 +125,7 @@ describe('Sentry build and event release contract', () => {
         for (const key of globals) Object.defineProperty(globalThis, key, { value: key === 'window' ? window : window[key], configurable: true });
         let client: BrowserClient | undefined;
         try {
-          const options = await initializers[index]();
+          const options = await initializeDashboard();
           assert.equal(options.environment, target);
           assert.equal(options.enabled, true);
           const envelopes: Envelope[] = [];

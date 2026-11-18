@@ -10,7 +10,6 @@ import { parse as parseYaml } from 'yaml';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const workflowPath = resolve(root, '.github/workflows/proto-check.yml');
 const workflowSource = readFileSync(workflowPath, 'utf8');
-const deployGateScript = readFileSync(resolve(root, '.github/scripts/deploy-gate.sh'), 'utf8');
 const contributing = readFileSync(resolve(root, 'CONTRIBUTING.md'), 'utf8');
 const agentInstructions = readFileSync(resolve(root, 'CLAUDE.md'), 'utf8');
 const scorecardMirrorSource = readFileSync(
@@ -32,6 +31,7 @@ type Step = {
 
 type Job = {
   if?: string;
+  name?: string;
   needs?: string[] | string;
   outputs?: Record<string, string>;
   permissions?: Record<string, string>;
@@ -932,7 +932,10 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
       'internal-merge-freshness',
       'proto-freshness',
     ]) {
-      assert.match(deployGateScript, new RegExp(`"${checkName}"`), `${checkName} must remain required`);
+      // Branch protection requires these check names; renaming or dropping a
+      // job silently removes it from the required set.
+      const published = jobs[checkName] ?? Object.values(jobs).find((candidate) => candidate.name === checkName);
+      assert.ok(published, `proto-check.yml must keep publishing the ${checkName} check`);
     }
     const aggregateStep = stepByName('proto-freshness', 'Publish aggregate proto freshness result');
     assert.equal(aggregateStep.env?.OWNER_TRUSTED_HEAD, '${{ needs.changes.outputs.owner_trusted_head }}');

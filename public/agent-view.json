@@ -126,11 +126,9 @@
     "sectionLlmsTxt": {
       "api": "https://www.worldmonitor.app/api/llms.txt",
       "docs": "https://www.worldmonitor.app/docs/llms.txt",
-      "developers": "https://www.worldmonitor.app/developers/llms.txt",
-      "blog": "https://www.worldmonitor.app/blog/llms.txt"
+      "developers": "https://www.worldmonitor.app/developers/llms.txt"
     },
     "schemamap": "https://www.worldmonitor.app/schemamap.xml",
-    "markdownHomepage": "https://www.worldmonitor.app/index.md",
     "agentPlugin": "https://www.worldmonitor.app/plugin.json",
     "agentSkills": "https://worldmonitor.app/.well-known/agent-skills/index.json",
     "apiCatalog": "https://worldmonitor.app/.well-known/api-catalog",

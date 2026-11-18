@@ -238,7 +238,7 @@ describe('api/x-feed R4 first-party boundary', () => {
   it('rejects a credential-less request that forges Sec-Fetch-Site: same-origin', async () => {
     // Issue #3541 / closed PR #3554: no header-only browser signal is trusted.
     // The desktop sidecar strips sec-fetch-* on the way through in any case
-    // (src-tauri/sidecar/local-api-server.mjs toHeaders), so trusting it would
+    // (docker/local-api/local-api-server.mjs toHeaders), so trusting it would
     // admit only forgeries.
     const res = await get({ origin: 'https://worldmonitor.app', 'sec-fetch-site': 'same-origin' });
     assert.equal(res.status, 401);

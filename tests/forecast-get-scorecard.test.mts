@@ -5,18 +5,6 @@ import { issueSessionToken } from '../api/_session.js';
 import { createRedisFetch } from './helpers/fake-upstash-redis.mts';
 import { drainResponseHeaders } from '../server/_shared/response-headers.ts';
 import {
-  MARKET_ALERT_MIN_SAMPLE,
-  marketAlertMedianPublished,
-  SCORECARD_DECLARED_FIELDS,
-  SCORECARD_LIVE_ONLY_FIELDS,
-  SCORECARD_NESTED_CHILD_FIELDS,
-  SCORECARD_NESTED_OBJECT_FIELDS,
-  SCORECARD_NESTED_ROW_FIELDS,
-  HORIZON_GRADE_FIELDS as PAGE_HORIZON_GRADE_FIELDS,
-  HORIZON_GRADE_ROW_FIELDS as PAGE_HORIZON_GRADE_ROW_FIELDS,
-  selectDeclaredScorecardFields,
-} from '../scripts/build-accuracy-page.mjs';
-import {
   FAMILY_OUTCOME_FIELDS,
   HORIZON_GRADE_FIELDS,
   HORIZON_GRADE_MIN_FAMILIES,
@@ -37,7 +25,6 @@ import {
 import { PUBLIC_FAMILY_OUTCOME_FIELDS, PUBLIC_RECEIPT_FIELDS, SKILL_MIN_FAMILIES, SKILL_MIN_OUTCOME_FAMILIES } from '../scripts/_forecast-scorecard.mjs';
 import { FORECAST_ACCURACY_AUDIT_OVERRIDE, STANDING_ACCURACY_AUDIT, accuracyAuditOverride, forecastAccuracyAudit, headlineFamilyGate, isAccuracyAudit } from '../shared/forecast-accuracy-audit.js';
 import { computeScorecard } from '../scripts/_forecast-scorecard.mjs';
-import { accuracyDatasetDownload, accuracyStateAudit, classifyAccuracyState, renderAccuracyLlmsSection } from '../scripts/build-accuracy-page.mjs';
 import { forecastReliability, forecastScorecardDescription, projectForecastScorecard } from '../api/mcp/registry/cache-tools.ts';
 
 const originalFetch = globalThis.fetch;
@@ -247,10 +234,6 @@ describe('getForecastScorecard backend status', () => {
     assert.equal(response.status, 200);
     const serialized = await response.json();
     assert.deepEqual(
-      Object.keys(serialized).sort(),
-      [...SCORECARD_DECLARED_FIELDS, ...SCORECARD_LIVE_ONLY_FIELDS].sort(),
-    );
-    assert.deepEqual(
       serialized,
       { ...data, marketAlerts: MARKET_ALERTS_SERVED, ...LIVE_UNDER_AUDIT },
       'every declared field must survive the real gateway and serializer, and a null interval is omitted',
@@ -285,18 +268,6 @@ describe('getForecastScorecard backend status', () => {
     assert.deepEqual(res.underAudit, LIVE_UNDER_AUDIT.underAudit);
   });
 
-  it('filters the market-alert block with the member lists the /accuracy/ page keeps', () => {
-    const numbered = (fields: readonly string[]) => Object.fromEntries(fields.map((field, index) => [field, index + 1]));
-    const selected = selectDeclaredScorecardFields({
-      marketAlerts: {
-        ...numbered([...MARKET_ALERT_FIELDS, 'schemaVersion', 'totals', 'archive']),
-        byType: [numbered([...MARKET_ALERT_ROW_FIELDS, 'pending', 'resolved', 'hit', 'miss', 'void'])],
-      },
-    });
-    assert.deepEqual(Object.keys(selected.marketAlerts).sort(), [...MARKET_ALERT_FIELDS].sort());
-    assert.deepEqual(Object.keys(selected.marketAlerts.byType[0]).sort(), [...MARKET_ALERT_ROW_FIELDS].sort());
-  });
-
   it('filters receipt rows with the member list the producer publishes', () => {
     assert.deepEqual([...RECEIPT_FIELDS], [...PUBLIC_RECEIPT_FIELDS]);
     assert.deepEqual([...FAMILY_OUTCOME_FIELDS], [...PUBLIC_FAMILY_OUTCOME_FIELDS]);
@@ -314,14 +285,12 @@ describe('getForecastScorecard backend status', () => {
     const mcp = selectScorecardFields(data, { extended: true });
     assert.deepEqual(Object.keys(mcp.skill ?? {}).sort(), [...SKILL_FIELDS, ...SKILL_EXTENDED_FIELDS].sort());
     assert.deepEqual(Object.keys(mcp.publishedByDomain?.[0] ?? {}).sort(), [...PUBLISHED_DOMAIN_FIELDS, ...PUBLISHED_DOMAIN_EXTENDED_FIELDS].sort());
-    assert.deepEqual([...SKILL_FIELDS], [...SCORECARD_NESTED_OBJECT_FIELDS.skill], 'the /accuracy/ capture keeps the same skill members');
-    assert.deepEqual([...PUBLISHED_DOMAIN_FIELDS], [...SCORECARD_NESTED_ROW_FIELDS.publishedByDomain], 'and the same domain members');
   });
 
   // The count of headline rows with pre-#7071 anchors stays off every public
   // field (#9010); the methodology sentence states it instead (#8990).
-  it('keeps skill.preLineageAnchorCount off REST, MCP and the /accuracy/ capture', () => {
-    for (const list of [SKILL_FIELDS, SKILL_EXTENDED_FIELDS, SCORECARD_NESTED_OBJECT_FIELDS.skill]) {
+  it('keeps skill.preLineageAnchorCount off REST and MCP', () => {
+    for (const list of [SKILL_FIELDS, SKILL_EXTENDED_FIELDS]) {
       assert.ok(!list.includes('preLineageAnchorCount'));
     }
     const data = { skill: { count: 3, preLineageAnchorCount: 1 } };
@@ -330,14 +299,11 @@ describe('getForecastScorecard backend status', () => {
       assert.equal(skill?.count, 3);
       assert.ok(!Object.hasOwn(skill ?? {}, 'preLineageAnchorCount'));
     }
-    assert.ok(!Object.hasOwn((selectDeclaredScorecardFields(data) as { skill?: object }).skill ?? {}, 'preLineageAnchorCount'));
   });
 
   // Horizon grades (#9057) have no room in the public OpenAPI document, so
-  // only MCP serves them; /accuracy/ reads them through MCP with the same lists.
+  // only MCP serves them.
   it('serves horizon grades to MCP only, counts only below the family minimums', () => {
-    assert.deepEqual([...HORIZON_GRADE_FIELDS], [...PAGE_HORIZON_GRADE_FIELDS]);
-    assert.deepEqual([...HORIZON_GRADE_ROW_FIELDS], [...PAGE_HORIZON_GRADE_ROW_FIELDS]);
     const graded = { curvesVersion: 1, horizon: 'd7', scored: 40, yes: 8, no: 32, families: 30, yesFamilies: 6, noFamilies: 24, measurable: true, brier: { mean: 0.1, ci95: [0.05, 0.2] }, realizedRate: { count: 40, successes: 8, rate: 0.2, ci95: [0.1, 0.35] }, registered: 50 };
     const short = { ...graded, horizon: 'h24', measurable: false };
     const data = { generatedAt: 1, horizonGrades: { semantics: 'point_in_time', note: 'n', minimums: {}, unversionedScored: 0, rows: [graded, short], internal: 1 } };
@@ -346,7 +312,6 @@ describe('getForecastScorecard backend status', () => {
     assert.deepEqual(Object.keys(mcp.horizonGrades ?? {}).sort(), [...HORIZON_GRADE_FIELDS].sort());
     assert.deepEqual(Object.keys(mcp.horizonGrades?.rows[0] ?? {}).sort(), [...HORIZON_GRADE_ROW_FIELDS].sort());
     assert.ok(!('brier' in (mcp.horizonGrades?.rows[1] ?? {})) && !('realizedRate' in (mcp.horizonGrades?.rows[1] ?? {})));
-    assert.equal('horizonGrades' in (selectDeclaredScorecardFields(data) ?? {}), false, 'nor in the REST-shaped capture');
   });
 
   it('re-checks the horizon minimums from the counts, not the stored flag (#9057)', () => {
@@ -364,35 +329,22 @@ describe('getForecastScorecard backend status', () => {
   });
 
   // The corpus block is internal until the public contract has room (#7072).
-  it('keeps the internal corpus block off REST, MCP and the /accuracy/ capture', () => {
+  it('keeps the internal corpus block off REST and MCP', () => {
     const data = { totals: { entries: 1 }, corpus: { publishedCount: 4, resolvedWithinSlaCount: 1, voidByReason: { feed_unavailable: 1 } } };
     assert.equal('corpus' in selectScorecardFields(data), false);
     assert.equal('corpus' in selectScorecardFields(data, { extended: true }), false);
-    assert.equal('corpus' in (selectDeclaredScorecardFields(data) ?? {}), false);
   });
 
-  it('keeps the internal uncertainty intervals off REST, MCP and the /accuracy/ capture (#7072)', () => {
+  it('keeps the internal uncertainty intervals off REST and MCP (#7072)', () => {
     const internal = ['overallLogScore', 'skillLogScore', 'byDomain', 'byGenerationOrigin', 'vsMarket'];
     const uncertainty = { method: 'm', overallBrier: null, skillBrier: null, ...Object.fromEntries(internal.map((name) => [name, { count: 1 }])) };
     const outputs = [
       selectScorecardFields({ uncertainty }).uncertainty,
       selectScorecardFields({ uncertainty }, { extended: true }).uncertainty,
-      (selectDeclaredScorecardFields({ uncertainty }) as { uncertainty?: object }).uncertainty,
     ];
     for (const output of outputs) {
       assert.equal((output as { method?: string })?.method, 'm');
       for (const name of internal) assert.ok(!Object.hasOwn(output ?? {}, name), name);
-    }
-  });
-
-  it('filters the interval and funnel blocks with the same member lists the /accuracy/ page uses', () => {
-    for (const [block, { fields, children }] of Object.entries(SCORECARD_BLOCK_FIELDS)) {
-      assert.deepEqual([...fields], [...SCORECARD_NESTED_OBJECT_FIELDS[block]], `${block} members`);
-      assert.deepEqual(
-        Object.fromEntries(Object.entries(children).map(([key, list]) => [key, [...list]])),
-        Object.fromEntries(Object.entries(SCORECARD_NESTED_CHILD_FIELDS[block]).map(([key, list]) => [key, [...list]])),
-        `${block} children`,
-      );
     }
   });
 
@@ -415,7 +367,7 @@ describe('getForecastScorecard backend status', () => {
     assert.equal(res.marketAlerts?.byType[0]?.medianLeadTimeMs, 1001);
   });
 
-  it('serves the median lead time only once a type has 30 hits, the floor /accuracy/ applies (#8985)', async () => {
+  it('serves the median lead time only once a type has 30 hits (#8985)', async () => {
     const market = MARKET_ALERTS_STORED.byType[0];
     const stored = {
       ...MARKET_ALERTS_STORED,
@@ -431,10 +383,10 @@ describe('getForecastScorecard backend status', () => {
 
     const median = Object.fromEntries((res.marketAlerts?.byType ?? []).map((row) => [row.type, row.medianLeadTimeMs]));
     assert.deepEqual(median, { 'at-floor': 3600000, 'below-floor': undefined, 'no-hit-count': undefined });
-    assert.equal(MARKET_ALERT_MEDIAN_MIN_HITS, MARKET_ALERT_MIN_SAMPLE, 'the API and the page share one floor');
+    assert.equal(MARKET_ALERT_MEDIAN_MIN_HITS, 30, 'the published floor is 30 hits');
   });
 
-  it('withholds the median exactly where /accuracy/ reads Not yet measurable, control gate included (#8985)', () => {
+  it('withholds the median below the hit floor, control gate included (#8985)', () => {
     const rows = [];
     for (const type of ['silent_divergence', 'prediction_leads_news']) {
       for (const hit of [29, 30, 40]) {
@@ -452,9 +404,9 @@ describe('getForecastScorecard backend status', () => {
     assert.equal(served.length, rows.length);
     let shown = 0;
     served.forEach((row, index) => {
-      const pageShows = marketAlertMedianPublished({ ...row, medianLeadTimeMs: rows[index].medianLeadTimeMs });
-      shown += Number(pageShows);
-      assert.equal(Object.hasOwn(row, 'medianLeadTimeMs'), pageShows, JSON.stringify(rows[index]));
+      const shows = Object.hasOwn(row, 'medianLeadTimeMs');
+      shown += Number(shows);
+      if (rows[index].hit < MARKET_ALERT_MEDIAN_MIN_HITS) assert.equal(shows, false, JSON.stringify(rows[index]));
     });
     assert.ok(shown > 0 && shown < rows.length, 'the grid must cover both outcomes');
     const gated = served.find((row, index) => row.type === 'prediction_leads_news' && rows[index].hit === 40 && rows[index].baseN === 12);
@@ -610,8 +562,7 @@ describe('getForecastScorecard backend status', () => {
 
 // #8990: the audit lifts by itself once the seeder calls the headline
 // measurable. Every surface derives it from the same scorecard, so for one
-// seeded value REST, MCP, /accuracy/ (page, llms-full and download, built from
-// the frozen REST capture) all agree, on both sides of the family minimums.
+// seeded value REST and MCP agree, on both sides of the family minimums.
 describe('the accuracy audit lifts with the scorecard on every surface (#8990)', () => {
   const NOW = Date.parse('2026-10-08T00:00:00Z');
   const DAY = 86_400_000;
@@ -635,18 +586,10 @@ describe('the accuracy audit lifts with the scorecard on every surface (#8990)',
     serveRedis({ [REDIS_KEY]: envelope(data) });
     const { getForecastScorecard } = await import('../server/worldmonitor/forecast/v1/get-forecast-scorecard.ts');
     const rest = await getForecastScorecard(makeCtx() as never, {});
-    const capture = selectDeclaredScorecardFields(rest);
-    const section = { attemptedAt: '2026-10-08', attemptedAtMs: NOW, capturedAt: '2026-10-08', generatedAt: NOW, scorecard: capture, failureCode: '' };
-    const state = classifyAccuracyState(section);
-    const download = JSON.parse(accuracyDatasetDownload({ state, snapshotPath: 'fixture.json' }));
-    const llms = renderAccuracyLlmsSection(section);
     return {
       rest: rest.underAudit ?? null,
       mcpScorecard: projectForecastScorecard({ scorecard: data, scorecardMeta: { fetchedAt: Date.now() } }).underAudit,
       mcpReliability: (forecastReliability({ scorecard: data, scorecardMeta: { fetchedAt: Date.now() } }, ['market']) as { underAudit?: unknown }).underAudit ?? null,
-      download: download.underAudit,
-      llmsUnderAudit: /^Under audit since /m.test(llms),
-      coverage: state.coverage,
     };
   }
 
@@ -657,7 +600,7 @@ describe('the accuracy audit lifts with the scorecard on every surface (#8990)',
     const data = seed(30, 5);
     assert.equal(data.skill.measurable, true, 'the fixture sits exactly on the minimums');
     const got = await surfaces(data);
-    assert.deepEqual(got, { rest: null, mcpScorecard: null, mcpReliability: null, download: null, llmsUnderAudit: false, coverage: 'measurable' });
+    assert.deepEqual(got, { rest: null, mcpScorecard: null, mcpReliability: null });
   });
 
   for (const [label, families, yes] of [['29 families', 29, 5], ['4 YES families', 30, 4], ['4 NO families', 30, 26]] as const) {
@@ -666,11 +609,9 @@ describe('the accuracy audit lifts with the scorecard on every surface (#8990)',
       assert.equal(data.skill.measurable, false);
       const got = await surfaces(data);
       const held = FORECAST_ACCURACY_AUDIT_OVERRIDE ?? NOTICE;
-      for (const key of ['rest', 'mcpScorecard', 'mcpReliability', 'download'] as const) {
+      for (const key of ['rest', 'mcpScorecard', 'mcpReliability'] as const) {
         assert.deepEqual({ ...(got[key] as object) }, { since: held.since, issue: held.issue, reason: held.reason }, key);
       }
-      assert.equal(got.llmsUnderAudit, true);
-      assert.equal(got.coverage, 'small-sample');
     });
   }
 
@@ -679,8 +620,8 @@ describe('the accuracy audit lifts with the scorecard on every surface (#8990)',
     assert.equal(forecastAccuracyAudit(lifted, { override: null }), null);
     // The seeder's own verdict decides: flip it and the audit holds, interval notwithstanding.
     assert.equal(forecastAccuracyAudit({ ...lifted, skill: { ...lifted.skill, measurable: false } }, { override: null }), STANDING_ACCURACY_AUDIT);
-    // The REST capture has no skill.measurable; its interval flag agrees with it.
-    const capture = selectDeclaredScorecardFields(lifted);
+    // The REST selection has no skill.measurable; its interval flag agrees with it.
+    const capture = selectScorecardFields(lifted) as { skill: Record<string, unknown> };
     assert.equal(Object.hasOwn(capture.skill, 'measurable'), false);
     assert.equal(forecastAccuracyAudit(capture, { override: null }), null);
     for (const [families, yes] of [[30, 5], [29, 5], [30, 4], [30, 26], [40, 20], [1, 1]]) {
@@ -748,39 +689,8 @@ describe('the accuracy audit lifts with the scorecard on every surface (#8990)',
     }
   });
 
-  it('holds the audit on /accuracy/, scorecard.json and llms-full for a stale, failed or retained capture', async () => {
-    if (FORECAST_ACCURACY_AUDIT_OVERRIDE) return;
-    const capture = selectDeclaredScorecardFields(seed(30, 5));
-    const base = { attemptedAt: '2026-10-08', attemptedAtMs: NOW, capturedAt: '2026-10-08', generatedAt: NOW, scorecard: capture, failureCode: '' };
-    const read = (section: Record<string, unknown>) => {
-      const state = classifyAccuracyState(section);
-      return {
-        download: JSON.parse(accuracyDatasetDownload({ state, snapshotPath: 'fixture.json' })).underAudit,
-        llms: /^Under audit since /m.test(renderAccuracyLlmsSection(section)),
-        state: accuracyStateAudit(state),
-      };
-    };
-    assert.deepEqual(read(base), { download: null, llms: false, state: null }, 'a fresh measurable capture lifts');
-    const cases: Array<[string, Record<string, unknown>]> = [
-      ['older than the API stale budget', { ...base, attemptedAtMs: NOW + 37 * 3_600_000 }],
-      ['flagged stale by the API', { ...base, scorecard: { ...capture, stale: true } }],
-      ['retained after a failed capture', { ...base, failureCode: 'http-error', capturedAt: '2026-10-01' }],
-      ['flagged by the live API at capture time', { ...base, scorecard: { ...capture, underAudit: { since: '2027-01-02', reason: 'Live incident.', issue: 9999 } } }],
-      ['carrying a malformed live flag', { ...base, scorecard: { ...capture, underAudit: {} } }],
-    ];
-    for (const [label, section] of cases) {
-      const got = read(section);
-      assert.ok(got.download, label);
-      assert.equal(got.llms, true, label);
-      assert.ok(got.state, label);
-    }
-    const live = read(cases[3][1]);
-    assert.deepEqual(live.download, { since: '2027-01-02', reason: 'Live incident.', issue: 9999 }, 'the captured live notice is the one shown');
-    assert.deepEqual(read(cases[4][1]).download, NOTICE, 'a malformed live flag still holds, with the standing notice');
-  });
-
   it('reads the interval fallback as unknown when it covers other rows than the headline', () => {
-    const capture = selectDeclaredScorecardFields(seed(30, 5)) as { skill: { count: number; brier: number }; uncertainty: { skillBrier: { count: number; mean: number } } };
+    const capture = selectScorecardFields(seed(30, 5)) as unknown as { skill: { count: number; brier: number }; uncertainty: { skillBrier: { count: number; mean: number } } };
     assert.equal(headlineFamilyGate(capture), 'met');
     const withInterval = (patch: Record<string, unknown>) => ({ ...capture, uncertainty: { ...capture.uncertainty, skillBrier: { ...capture.uncertainty.skillBrier, ...patch } } });
     for (const [label, card] of [

@@ -26,7 +26,7 @@ const ROOT = process.cwd();
 // `--staged` matches purely on EXCLUDED_PREFIXES and extension, so it scans
 // anything a commit touches; the full-repo walk only descends these roots. That
 // asymmetry means a directory absent here is still gated on commit but never
-// swept in CI. pro-test/ is a full React app and was in exactly that position.
+// swept in CI.
 export const SCAN_ROOTS = [
   'src',
   'server',
@@ -34,7 +34,6 @@ export const SCAN_ROOTS = [
   'scripts',
   'tests',
   'e2e',
-  'pro-test',
   '.github',
   '.husky',
 ];
@@ -76,7 +75,7 @@ export const EXCLUDED_PREFIXES = [
 // the whole path would turn off Trojan Source detection exactly where nobody
 // eyeballs the rendered output. Verified sufficient: the only such characters in
 // either catalog today are U+200B/200C/200D, and no bidi control anywhere.
-export const LOCALE_DATA_PREFIXES = ['src/locales/', 'pro-test/src/locales/'];
+export const LOCALE_DATA_PREFIXES = ['src/locales/'];
 const LOCALE_ALLOWED_CODEPOINTS = new Set([0x200c, 0x200d]);
 
 export function isLocaleData(path) {

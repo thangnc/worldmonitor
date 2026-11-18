@@ -334,7 +334,7 @@ describe('decision-signal provenance contract (#5581)', () => {
     const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
       scripts?: Record<string, string>;
     };
-    const testWorkflow = readFileSync(join(root, '.github/workflows/test.yml'), 'utf8');
+    const testWorkflow = readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8');
     assert.match(packageJson.scripts?.['test:data'] ?? '', /tests\/\*\.test\.mts/);
     assert.match(testWorkflow, /npm run test:data/);
   });

@@ -34,9 +34,9 @@ const SEAT_STATEMENT = /\b(\d+)\s+(named users?|licensed users?|Pro licenses?|se
  * Sourced from docs/eula.mdx §4.1 — asserted below rather than trusted.
  */
 const SEATED_TIERS = [
-  { planKey: 'pro_monthly', localeKey: 'pro', seats: 1, eula: /Personal license \(Pro\)[\s\S]*?One named subscriber/ },
-  { planKey: 'pro_business_monthly', localeKey: 'proBusiness', seats: 1, eula: /Commercial license \(Pro Business\)[\s\S]*?One named subscriber/ },
-  { planKey: 'api_business', localeKey: 'apiBusiness', seats: 5, eula: /five included seats give named users at any corporate email domain/ },
+  { planKey: 'pro_monthly', seats: 1, eula: /Personal license \(Pro\)[\s\S]*?One named subscriber/ },
+  { planKey: 'pro_business_monthly', seats: 1, eula: /Commercial license \(Pro Business\)[\s\S]*?One named subscriber/ },
+  { planKey: 'api_business', seats: 5, eula: /five included seats give named users at any corporate email domain/ },
 ];
 
 function catalogCopy(planKey: string): string {
@@ -51,9 +51,8 @@ describe('a seated plan says how many seats it has', () => {
   // Comments stripped: a REVIEW note is not a term, and matching one is how a
 // guard passes against a document that does not say what it claims.
 const eula = read('docs/eula.mdx').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
-  const en = JSON.parse(read('pro-test/src/locales/en.json'));
 
-  for (const { planKey, localeKey, seats, eula: eulaPattern } of SEATED_TIERS) {
+  for (const { planKey, seats, eula: eulaPattern } of SEATED_TIERS) {
     it(`the EULA still states the seat count for ${planKey}`, () => {
       // The anchor. If the licence stops saying this, the assertions below are
       // enforcing a rule that no longer exists and must be re-derived.
@@ -65,18 +64,6 @@ const eula = read('docs/eula.mdx').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
       const match = copy.match(SEAT_STATEMENT);
       assert.ok(match, `${planKey} sells without stating a seat count: ${copy}`);
       assert.equal(Number(match[1]), seats, `${planKey} states ${match[1]} seats, licence says ${seats}`);
-    });
-
-    it(`the /pro card copy for ${localeKey} states ${seats}`, () => {
-      // Locale features override the catalog at render time
-      // (PricingSection.localizeTier), so the catalog alone proves nothing
-      // about what a buyer sees.
-      const tier = en.pricing.tiers[localeKey];
-      assert.ok(tier, `pricing.tiers.${localeKey} missing from en.json`);
-      const copy = [...(tier.features ?? []), ...(tier.highlightFeatures ?? [])].join(' | ');
-      const match = copy.match(SEAT_STATEMENT);
-      assert.ok(match, `the ${localeKey} card sells without stating a seat count: ${copy}`);
-      assert.equal(Number(match[1]), seats, `${localeKey} card states ${match[1]} seats, licence says ${seats}`);
     });
   }
 
@@ -110,7 +97,6 @@ const eula = read('docs/eula.mdx').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
     );
     const policySources = [
       ['catalog source', read('convex/config/productCatalog.ts')],
-      ['public-facts generator', read('scripts/generate-public-product-facts.mjs')],
       ['generated product catalog', read('shared/product-catalog.generated.json')],
       ['generated product facts', read('shared/product-facts.generated.json')],
       ['public pricing', apiBusinessBlock],
@@ -129,18 +115,9 @@ const eula = read('docs/eula.mdx').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
     assert.doesNotMatch(eula, /includes no World Monitor dashboard seat/i);
     assert.match(read('docs/terms.mdx'), /API Starter includes \*\*one dashboard seat\*\*[^.]*internal use only, never customer-facing/i);
     const seatLine = /^Full Pro dashboard included \(1 named user\)$/;
-    assert.ok(en.pricing.tiers.api.features.some((f: string) => seatLine.test(f)), 'the /pro API Starter card must list the dashboard seat');
     assert.ok(
       PRODUCT_CATALOG.api_starter.marketingFeatures.some((f: string) => seatLine.test(f)),
       'the catalog API Starter features must list the dashboard seat',
-    );
-    assert.ok(
-      en.pricing.tiers.api.highlightFeatures.some((f: string) => /internal only, not customer-facing/i.test(f)),
-      'the API Starter card must say its commercial use is internal only',
-    );
-    assert.ok(
-      en.pricing.tiers.apiBusiness.highlightFeatures.some((f: string) => /customer-facing/i.test(f)),
-      'the API Business card must name customer-facing use',
     );
   });
 
@@ -148,12 +125,6 @@ const eula = read('docs/eula.mdx').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
     // "teams" over a column whose first card is one seat is the invitation
     // #5726 was filed about. Narrow on purpose: this is not a style rule, it
     // is the specific phrase that contradicted the licence.
-    assert.doesNotMatch(
-      en.pricing.axisCommercialNote,
-      /\bteams?\b/i,
-      'the commercial axis spans Pro Business, which is one seat — "teams" invites the breach',
-    );
-
     const sheet = read('public/pricing.md');
     const proBusinessBlock = sheet.slice(sheet.indexOf('## Pro Business'), sheet.indexOf('## API Starter'));
     assert.doesNotMatch(

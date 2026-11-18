@@ -7,11 +7,11 @@
  * .../x/. The twin now repeats the page's own <link rel="canonical">.
  *
  * Iterates the whole twin set, not one example: every www page in the main
- * sitemap plus every blog post and buying guide the blog builds.
+ * sitemap.
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { load } from 'js-yaml';
 
 import { buildMarkdownTwinResponse } from '../api/_md-url-twin.ts';
@@ -27,19 +27,7 @@ function sitemapPages() {
     .filter((loc) => loc.startsWith(`${ORIGIN}/`) && loc !== `${ORIGIN}/`);
 }
 
-function blogPages() {
-  const content = new URL('blog-site/src/content/', root);
-  const posts = readdirSync(new URL('blog/', content))
-    .filter((f) => /\.mdx?$/.test(f))
-    .map((f) => `${ORIGIN}/blog/posts/${f.replace(/\.mdx?$/, '')}/`);
-  const guides = readdirSync(new URL('guides/', content)).flatMap((category) =>
-    readdirSync(new URL(`guides/${category}/`, content))
-      .filter((f) => /\.mdx?$/.test(f))
-      .map((f) => `${ORIGIN}/blog/${category}/${f.replace(/\.mdx?$/, '')}/`));
-  return [`${ORIGIN}/blog/`, ...posts, ...guides];
-}
-
-const TWIN_SET = [...new Set([...sitemapPages(), ...blogPages()])];
+const TWIN_SET = [...new Set(sitemapPages())];
 
 /**
  * A stand-in for production static hosting: each page answers 200 at both its
@@ -80,10 +68,10 @@ function linkCanonical(response) {
 }
 
 describe('markdown twin canonical parity', () => {
-  it('covers the real twin set, trailing-slash blog pages included', () => {
-    assert.ok(TWIN_SET.length > 300, `twin set unexpectedly small: ${TWIN_SET.length}`);
-    assert.ok(TWIN_SET.some((u) => u.startsWith(`${ORIGIN}/blog/best/`)));
+  it('covers the real twin set, trailing-slash pages included', () => {
+    assert.ok(TWIN_SET.length > 200, `twin set unexpectedly small: ${TWIN_SET.length}`);
     assert.ok(TWIN_SET.some((u) => u.startsWith(`${ORIGIN}/sources/`)));
+    assert.ok(TWIN_SET.some((u) => u.endsWith('/')), 'trailing-slash canonicals must be covered');
     assert.ok(TWIN_SET.some((u) => !u.endsWith('/')), 'slash-less canonicals must be covered too');
   });
 

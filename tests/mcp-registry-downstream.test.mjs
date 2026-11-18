@@ -159,7 +159,7 @@ describe('downstream transport boundaries', () => {
     const { mkdtemp, mkdir, writeFile, rm } = await import('node:fs/promises');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
-    const { createLocalApiServer } = await import('../src-tauri/sidecar/local-api-server.mjs');
+    const { createLocalApiServer } = await import('../docker/local-api/local-api-server.mjs');
     const root = await mkdtemp(join(tmpdir(), 'mcp-sidecar-token-'));
     const apiDir = join(root, 'api');
     await mkdir(join(apiDir, 'intelligence/v1'), { recursive: true });

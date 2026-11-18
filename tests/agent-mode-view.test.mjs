@@ -1,5 +1,4 @@
 import { describe, it } from 'node:test';
-import { guardProBuiltOutput, shouldSkipProBuiltOutput } from './_lib/pro-built-output.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -20,10 +19,9 @@ const productFacts = JSON.parse(readFileSync(join(ROOT, 'public/product-facts.js
 
 // Guards for the ?mode=agent machine-readable homepage view (orank Identity
 // `agent-mode-view` bonus): the static JSON must stay in parity with the real
-// discovery artifacts it summarizes, and the query-gated rewrite must fire
-// BEFORE the / → welcome rewrite or the marketing page wins.
+// discovery artifacts it summarizes, and the / → /lite redirect must leave the
+// query-gated rewrite reachable.
 describe('agent-mode view (/?mode=agent)', () => {
-  guardProBuiltOutput();
   it('agent-view.json carries the machine-readable essentials', () => {
     assert.equal(view.kind, 'agent-view');
     for (const key of ['product', 'url', 'description', 'endpoints', 'authentication', 'rateLimits', 'documentation', 'capabilities', 'discovery']) {
@@ -67,27 +65,6 @@ describe('agent-mode view (/?mode=agent)', () => {
     }
   });
 
-  it('the marketing homepage advertises its machine-readable alternate views', { skip: shouldSkipProBuiltOutput() }, () => {
-    // Source/build pair: public/pro/welcome.html is produced by
-    // `npm run build:pro` rather than committed (#6898), so this asserts the
-    // pointer survives the prerender rather than that two committed files agree.
-    const alternateLinks = [
-      ['application/json', 'https://www.worldmonitor.app/?mode=agent'],
-      ['text/plain', '/llms.txt'],
-      ['text/markdown', '/index.md'],
-      ['text/markdown', '/world-monitor.md'],
-    ];
-    for (const path of ['pro-test/welcome.html', 'public/pro/welcome.html']) {
-      const html = readFileSync(join(ROOT, path), 'utf-8');
-      for (const [type, href] of alternateLinks) {
-        assert.ok(
-          html.includes(`<link rel="alternate" type="${type}" href="${href}"`),
-          `${path} must advertise ${href} via <link rel="alternate">`,
-        );
-      }
-    }
-  });
-
   it('the homepage markdown mirror gives agents useful follow-on context', () => {
     const markdown = readFileSync(join(ROOT, 'public/home.md'), 'utf-8');
     const wordCount = markdown.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu)?.length ?? 0;
@@ -110,11 +87,10 @@ describe('agent-mode view (/?mode=agent)', () => {
     assert.equal(view.discovery.schemamap, 'https://www.worldmonitor.app/schemamap.xml');
     assert.doesNotThrow(() => readFileSync(join(ROOT, 'public/schemamap.xml')));
     const sections = view.discovery.sectionLlmsTxt;
-    assert.deepEqual(Object.keys(sections).sort(), ['api', 'blog', 'developers', 'docs']);
+    assert.deepEqual(Object.keys(sections).sort(), ['api', 'developers', 'docs']);
     const trackedSectionFiles = {
       api: 'public/api/llms.txt',
       developers: 'public/developers/llms.txt',
-      blog: 'blog-site/src/pages/llms.txt.ts', // generated at /blog/llms.txt by Astro
     };
     for (const [section, path] of Object.entries(trackedSectionFiles)) {
       assert.doesNotThrow(
@@ -149,7 +125,7 @@ describe('agent-mode view (/?mode=agent)', () => {
     );
   });
 
-  it('vercel.json serves it for /?mode=agent ahead of the welcome rewrite', () => {
+  it('vercel.json serves it for /?mode=agent', () => {
     const rewrites = vercelConfig.rewrites;
     const agentIdx = rewrites.findIndex(
       (r) =>
@@ -158,12 +134,15 @@ describe('agent-mode view (/?mode=agent)', () => {
         r.has.some((h) => h.type === 'query' && h.key === 'mode' && h.value === 'agent') &&
         r.destination === '/agent-view.json',
     );
-    const welcomeIdx = rewrites.findIndex(
-      (r) => r.source === '/' && r.destination === '/pro/welcome.html',
-    );
     assert.ok(agentIdx >= 0, 'missing /?mode=agent rewrite to /agent-view.json');
-    assert.ok(welcomeIdx >= 0, 'welcome rewrite missing');
-    assert.ok(agentIdx < welcomeIdx, '?mode=agent rewrite must precede the welcome rewrite (first match wins)');
+    // Redirects run before rewrites, so the / -> /lite redirect must skip
+    // ?mode=agent or the rewrite is unreachable.
+    const liteRedirect = vercelConfig.redirects.find((r) => r.source === '/' && r.destination === '/lite' && !r.has);
+    assert.ok(liteRedirect, '/ -> /lite redirect missing');
+    assert.ok(
+      liteRedirect.missing?.some((m) => m.type === 'query' && m.key === 'mode' && m.value === 'agent'),
+      'the / -> /lite redirect must not catch /?mode=agent',
+    );
   });
 
   it('every discovery URL it advertises resolves to a tracked file or a live rewrite', () => {
@@ -188,8 +167,5 @@ describe('agent-mode view (/?mode=agent)', () => {
       );
       assert.doesNotThrow(() => readFileSync(join(ROOT, path)), `${path} must exist for ${url}`);
     }
-    // /index.md is rewrite-served (public/home.md) since #4830.
-    const mdRewrite = vercelConfig.rewrites.find((r) => r.source === '/index.md');
-    assert.ok(mdRewrite, 'markdownHomepage advertised but /index.md rewrite is gone');
   });
 });

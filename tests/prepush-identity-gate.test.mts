@@ -148,9 +148,10 @@ describe('pre-push hook hygiene wiring', () => {
     assert.match(hook, /--local-env-vars/,
       'pre-push must unset $(git rev-parse --local-env-vars) so hook-run test fixtures cannot write into the real repo');
     const stripIdx = hook.indexOf('--local-env-vars');
-    const firstTestIdx = hook.search(/npx tsx --test|prepush-changed-tests/);
-    assert.ok(stripIdx >= 0 && firstTestIdx > stripIdx,
-      'the env strip must come before any test invocation');
+    // The first child that could run repository code: a node script or an npm run.
+    const firstRunIdx = hook.search(/\bnode scripts\/|npm run /);
+    assert.ok(stripIdx >= 0 && firstRunIdx > stripIdx,
+      'the env strip must come before any script or check invocation');
   });
 
   it('wires the identity gate on the push stdin', () => {

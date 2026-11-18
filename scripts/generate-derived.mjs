@@ -12,11 +12,11 @@
 // are already current. Generators read each other's outputs, so passes repeat
 // until every check is green.
 //
-// Not covered: `make generate` (proto + OpenAPI; the pre-push hook runs it),
-// app translations (scripts/translate-locales.mjs needs ANTHROPIC_API_KEY),
-// scripts/internal-links.mjs (needs TYPESAFE_API_KEY), and the sitemap and
-// docs page dates, which follow main's commit dates and are refreshed on
-// schedule and at build time rather than per branch.
+// Not covered: `make generate` (proto + OpenAPI; the pre-push hook runs it)
+// and app translations (scripts/translate-locales.mjs needs ANTHROPIC_API_KEY).
+// Frozen until 1c, because their generators read the deleted crawlable corpus:
+// api/_country-corpus-slugs.generated.js (its one reader, api/story.js, goes in
+// 1c) and the resilience coverage counts in the public docs.
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,17 +26,10 @@ const NODE = process.execPath;
 const TSX = [NODE, '--import', 'tsx'];
 const MAX_PASSES = 3;
 
-// [name, command, write flag]. Every command also accepts --check. Order
-// follows the data flow: the product config feeds the facts, which feed AI
-// search and the crawlable pages.
+// [name, command, write flag]. Every command also accepts --check.
 export const STEPS = [
   ['browser news catalog', [...TSX, 'scripts/generate-browser-news-catalog.mjs']],
   ['entitlement crosswalk', [NODE, 'scripts/generate-entitlement-crosswalk.mjs']],
-  ['country corpus slugs', [...TSX, 'scripts/generate-country-corpus-slugs.mjs']],
-  ['llms.txt', [...TSX, 'scripts/build-llms-full.mjs']],
-  ['AI search', [...TSX, 'scripts/build-ai-search.mjs']],
-  ['welcome teasers', [NODE, 'scripts/build-welcome-teasers.mjs']],
-  ['resilience coverage', [...TSX, 'scripts/sync-resilience-coverage.mjs']],
   ['agent skills index', [NODE, 'scripts/build-agent-skills-index.mjs']],
   ['engineering index', [NODE, 'scripts/generate-engineering-index.mjs']],
   ['source attribution', [NODE, 'scripts/source-attribution.mjs'], '--write'],
@@ -48,7 +41,6 @@ export const STEPS = [
   ['legal digests', [NODE, 'scripts/legal-digests.mjs']],
   ['legal PDFs', [NODE, 'scripts/build-legal-pdfs.mjs']],
   ['story phase fading study', [NODE, 'scripts/study-story-phase-fading.mjs']],
-  ['desktop version', [NODE, 'scripts/sync-desktop-version.mjs']],
 ];
 
 function run([cmd, ...args], flag) {
@@ -59,7 +51,7 @@ function run([cmd, ...args], flag) {
 function main() {
   const checkOnly = process.argv.includes('--check');
   // The product config has no --check; it is cheap and deterministic, so the
-  // write mode always runs it (the pre-push pro-test gate checks it).
+  // write mode always runs it.
   if (!checkOnly) {
     const config = run([...TSX, 'scripts/generate-product-config.mjs']);
     if (!config.ok) {

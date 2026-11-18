@@ -22,7 +22,7 @@ import {
 // silently fall behind again.
 
 const root = resolve(import.meta.dirname, '..');
-const sidecarSource = readFileSync(resolve(root, 'src-tauri/sidecar/local-api-server.mjs'), 'utf8');
+const sidecarSource = readFileSync(resolve(root, 'docker/local-api/local-api-server.mjs'), 'utf8');
 const decl = readSidecarCloudPreferred(sidecarSource);
 const { routes, byPrefix } = scanRpcHandlers(root);
 const routeByPath = new Map(routes.map((r) => [r.route, r]));

@@ -8,8 +8,6 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { STATIC_ROUTE_MANIFEST } from '../scripts/build-sitemap.mjs';
-import { UMAMI_SCRIPT_TAG } from '../scripts/build-research-reports.mjs';
 import { TOOL_LIST_RESPONSE } from '../api/mcp/registry/index.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -66,7 +64,11 @@ describe('/agent page content', () => {
     assert.doesNotMatch(PAGE, /\u{1F916}/u);
     assert.doesNotMatch(PAGE, /utm_/);
     assert.doesNotMatch(PAGE, /href="[^"]*[?&]ref=/, 'same-site links carry no query tag');
-    assert.ok(PAGE.includes(UMAMI_SCRIPT_TAG), 'the shared first-party Umami tag');
+    assert.match(
+      PAGE,
+      /<script async defer src="https:\/\/abacus\.worldmonitor\.app\/script\.js" [^>]*nonce="wm-static-bootstrap"><\/script>/,
+      'the first-party Umami tag',
+    );
     const scripts = [...PAGE.matchAll(/<script\b[^>]*>/gi)].map((match) => match[0]);
     assert.equal(scripts.length, 2, 'only the page script and Umami');
     for (const tag of scripts) assert.match(tag, /nonce="wm-static-bootstrap"/);
@@ -89,8 +91,7 @@ describe('/agent page SEO registration', () => {
     }
   });
 
-  it('is in the sitemap manifest and the committed sitemap', () => {
-    assert.ok(STATIC_ROUTE_MANIFEST.some((route) => route.loc === URL_CANONICAL));
+  it('is in the committed sitemap', () => {
     assert.ok(read('public/sitemap-main.xml').includes(`<loc>${URL_CANONICAL}</loc>`));
   });
 

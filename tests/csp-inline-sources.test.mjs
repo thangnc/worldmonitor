@@ -39,10 +39,6 @@ const ROUTE_CSP_FILES = {
   'api/youtube/embed.js': ['/api/youtube/embed'],
 };
 
-// Vite source pages for /pro and /welcome; the build adds the script nonces,
-// so only handlers and javascript: URLs are checked in the source.
-const PRO_SOURCES = ['pro-test/index.html', 'pro-test/welcome.html'];
-
 const vercel = JSON.parse(readFileSync(new URL('vercel.json', ROOT), 'utf8'));
 const cspRules = vercel.headers
   .map((rule) => ({ source: rule.source, csp: rule.headers.find((h) => h.key === 'Content-Security-Policy')?.value }))
@@ -143,9 +139,6 @@ describe('served HTML runs under the site-wide CSP', () => {
         }
       }
       failures.push(...blockedMarkup(file, text));
-    }
-    for (const file of PRO_SOURCES) {
-      failures.push(...blockedMarkup(file, readFileSync(new URL(file, ROOT), 'utf8')));
     }
     assert.deepEqual(failures, [], `blocked by the site-wide CSP:\n  ${failures.join('\n  ')}`);
   });

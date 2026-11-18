@@ -74,12 +74,6 @@ export const HUMAN_NOT_FOUND_SECTIONS: readonly NotFoundSection[] = [
     description: 'Methods, data sources, the API and MCP.',
     aliases: ['docs', 'doc', 'documentation'],
   },
-  {
-    href: '/blog/',
-    label: 'Blog',
-    description: 'Analysis and product notes from the team.',
-    aliases: ['blog', 'blogs', 'posts'],
-  },
 ];
 
 /** Shorter segments match too many things by accident (`/'to` is 3). */
@@ -142,7 +136,6 @@ export const AGENT_NOT_FOUND_PASSTHROUGH_PREFIXES = [
   '/agent',
   '/api-reference',
   '/ask',
-  '/blog',
   '/changelog',
   '/chokepoints',
   '/compare',
@@ -168,10 +161,8 @@ export const AGENT_NOT_FOUND_PASSTHROUGH_PREFIXES = [
   '/monitor-the-situation',
   '/desktop-sign-in',
   '/oauth',
-  '/pricing',
   '/privacy',
   '/privacy-policy',
-  '/pro',
   '/reference',
   '/research',
   '/research-assets',

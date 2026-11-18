@@ -890,7 +890,7 @@ describe('zero-frame async-rejection patterns (timeout / DOMException / OOM / DO
   // silently disarm this entire block with nothing going red.
   it('keeps the licence true: `kind` is never set on a global Sentry scope', () => {
     const offenders = [];
-    for (const rel of ['../src', '../pro-test/src']) {
+    for (const rel of ['../src']) {
       for (const file of walkTsFiles(resolve(__dirname, rel))) {
         const text = readFileSync(file, 'utf-8');
         // A scope-level setter, or an init-time scope, anywhere near `kind`.
@@ -2669,7 +2669,7 @@ describe('ignoreErrors — Android WebView Java bridge (WORLDMONITOR-117, -YN)',
   // suppression is only safe while our own bundle cannot mint the sentence.
   it('keeps the licence true: no `Error invoking` call site in our own source', () => {
     const offenders = [];
-    for (const rel of ['../src', '../pro-test/src', '../api']) {
+    for (const rel of ['../src', '../api']) {
       for (const file of walkTsFiles(resolve(__dirname, rel))) {
         // sentry-init.ts and sentry-filter-policy.ts hold the suppressors
         // themselves; every other textual hit would be a real call site.

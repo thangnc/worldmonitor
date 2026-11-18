@@ -132,9 +132,6 @@
           "path": "scripts/check-analytics-collector.mjs"
         },
         {
-          "path": "scripts/seo-umami-collect.mjs"
-        },
-        {
           "path": "src/services/analytics.ts"
         }
       ]
@@ -909,9 +906,6 @@
           "path": "scripts/dispatch-stale-railway-reconcile.mjs"
         },
         {
-          "path": "scripts/freeze-github-stars.mjs"
-        },
-        {
           "path": "scripts/resolve-railway-reconcile-control.mjs"
         },
         {
@@ -1003,15 +997,10 @@
       "host": "api.indexnow.org",
       "provider": "api.indexnow.org",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/seo-indexnow-submit.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "api.mercadopublico.cl",
@@ -1889,15 +1878,10 @@
       "host": "aws.amazon.com",
       "provider": "aws.amazon.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/comparison-shortlist.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "ayibopost.com",
@@ -4899,12 +4883,6 @@
           "path": "api/health.js"
         },
         {
-          "path": "scripts/build-accuracy-page.mjs"
-        },
-        {
-          "path": "scripts/build-crawlable-corpus.mjs"
-        },
-        {
           "path": "scripts/build-plane-alert-watchlist.mjs"
         },
         {
@@ -6206,15 +6184,10 @@
       "host": "liveuamap.com",
       "provider": "liveuamap.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/comparison-shortlist.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "lnc-abc-news.tubi.video",
@@ -6424,15 +6397,10 @@
       "host": "me.liveuamap.com",
       "provider": "me.liveuamap.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/comparison-shortlist.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "meduza.io",
@@ -7159,15 +7127,10 @@
       "host": "oauth2.googleapis.com",
       "provider": "oauth2.googleapis.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/seo-gsc-collect.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "oc-media.org",
@@ -7215,15 +7178,10 @@
       "host": "offnadir-delta.com",
       "provider": "offnadir-delta.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/comparison-shortlist.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "ogcapi.bgs.ac.uk",
@@ -8589,21 +8547,6 @@
       "references": [
         {
           "path": "api/ask.ts"
-        },
-        {
-          "path": "scripts/build-accuracy-page.mjs"
-        },
-        {
-          "path": "scripts/build-crawlable-corpus.mjs"
-        },
-        {
-          "path": "scripts/build-use-cases.mjs"
-        },
-        {
-          "path": "scripts/comparison-shortlist.mjs"
-        },
-        {
-          "path": "scripts/crawlable-sources-page.mjs"
         }
       ]
     },
@@ -8726,15 +8669,10 @@
       "host": "searchconsole.googleapis.com",
       "provider": "searchconsole.googleapis.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/seo-gsc-collect.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "secure.toronto.ca",
@@ -9078,15 +9016,10 @@
       "host": "ssl.bing.com",
       "provider": "ssl.bing.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/seo-bing-collect.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "stat.gov.kg",
@@ -10841,9 +10774,6 @@
           "path": "scripts/mcp-proxy-live-smoke.mjs"
         },
         {
-          "path": "scripts/measure-mobile-mainthread.mjs"
-        },
-        {
           "path": "scripts/publish-mcp-registry.mjs"
         },
         {
@@ -10869,9 +10799,6 @@
         },
         {
           "path": "scripts/seed-wb-indicators.mjs"
-        },
-        {
-          "path": "scripts/seo-bing-collect.mjs"
         },
         {
           "path": "scripts/shared/notify-fields.cjs"
@@ -11250,15 +11177,10 @@
       "host": "www.applytosupply.digitalmarketplace.service.gov.uk",
       "provider": "www.applytosupply.digitalmarketplace.service.gov.uk",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/comparison-shortlist.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "www.armeps.am",
@@ -12318,15 +12240,10 @@
       "host": "www.factal.com",
       "provider": "www.factal.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/comparison-shortlist.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "www.fao.org",
@@ -12632,15 +12549,10 @@
       "host": "www.googleapis.com",
       "provider": "www.googleapis.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/seo-gsc-collect.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "www.gov.br",
@@ -13087,9 +12999,6 @@
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
       "status": "excluded",
       "references": [
-        {
-          "path": "scripts/comparison-shortlist.mjs"
-        },
         {
           "path": "server/worldmonitor/leads/v1/register-interest.ts"
         }
@@ -14706,15 +14615,10 @@
       "host": "www.vendr.com",
       "provider": "www.vendr.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/comparison-shortlist.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "www.vercel-status.com",
@@ -14939,16 +14843,7 @@
           "path": "api/story.js"
         },
         {
-          "path": "scripts/build-accuracy-page.mjs"
-        },
-        {
           "path": "scripts/build-agent-skills-index.mjs"
-        },
-        {
-          "path": "scripts/build-ai-search.mjs"
-        },
-        {
-          "path": "scripts/build-crawlable-corpus.mjs"
         },
         {
           "path": "scripts/build-open-data-chokepoints.mjs"
@@ -14957,16 +14852,7 @@
           "path": "scripts/build-openapi-json.mjs"
         },
         {
-          "path": "scripts/build-research-reports.mjs"
-        },
-        {
-          "path": "scripts/build-sitemap.mjs"
-        },
-        {
           "path": "scripts/build-un-m49-regions.mjs"
-        },
-        {
-          "path": "scripts/build-use-cases.mjs"
         },
         {
           "path": "scripts/capture-resilience-energy-v2-acceptance.mjs"
@@ -14975,16 +14861,7 @@
           "path": "scripts/check-live-video-sources.mjs"
         },
         {
-          "path": "scripts/comparison-shortlist.mjs"
-        },
-        {
           "path": "scripts/deploy-error-canary.mjs"
-        },
-        {
-          "path": "scripts/discover-content-corpus-pages.mjs"
-        },
-        {
-          "path": "scripts/freeze-crawlable-live-pulse.mjs"
         },
         {
           "path": "scripts/freeze-resilience-ranking.mjs"
@@ -15002,9 +14879,6 @@
           "path": "scripts/lib/internal-links.mjs"
         },
         {
-          "path": "scripts/live-pages/common.mjs"
-        },
-        {
           "path": "scripts/mcp-proxy-live-smoke.mjs"
         },
         {
@@ -15014,25 +14888,16 @@
           "path": "scripts/measure-dashboard-render-axis.mjs"
         },
         {
-          "path": "scripts/measure-desktop-mainthread.mjs"
-        },
-        {
           "path": "scripts/notification-relay.cjs"
         },
         {
           "path": "scripts/seed-no2-activity.mjs"
         },
         {
-          "path": "scripts/seo-indexnow-submit.mjs"
-        },
-        {
           "path": "scripts/syndication-candidates.mjs"
         },
         {
           "path": "scripts/verify-agent-readiness.mjs"
-        },
-        {
-          "path": "scripts/verify-sitemaps.mjs"
         },
         {
           "path": "server/_shared/deprecation-policy.ts"
@@ -15263,9 +15128,6 @@
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
       "status": "excluded",
       "references": [
-        {
-          "path": "scripts/comparison-shortlist.mjs"
-        },
         {
           "path": "scripts/cross-strait-activity/japan-x.mjs"
         },

@@ -52,7 +52,7 @@ test('desktop Ollama translation turns off reasoning and outlasts a silent model
   await mkdir(join(root, 'news/v1'), { recursive: true });
   await writeFile(join(root, 'news/v1/summarize-article.js'),
     `export { default } from ${JSON.stringify(new URL('../api/news/v1/[rpc].ts', import.meta.url).href)};`);
-  const { createLocalApiServer, __testing__ } = await import('../src-tauri/sidecar/local-api-server.mjs');
+  const { createLocalApiServer, __testing__ } = await import('../docker/local-api/local-api-server.mjs');
   __testing__.setUpstreamIdleTimeoutMs(100);
   const app = await createLocalApiServer({ port: 0, apiDir: root, dataDir: root,
     mode: 'tauri-sidecar', cloudFallback: false, logger: { log() {}, warn() {}, error() {} } });

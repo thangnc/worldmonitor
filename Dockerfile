@@ -31,15 +31,6 @@ RUN node scripts/generate-inventory-facts.mjs
 # Output is api/**/*.js alongside the source .ts files
 RUN node docker/build-handlers.mjs
 
-# public/pro/ is a build product, not committed bytes (#6898), so this image has
-# to build it. Skipping it does NOT 404: this image installs docker/nginx.conf,
-# whose `location /` ends in `try_files $uri $uri/ /dashboard.html`,
-# so /pro would quietly serve the dashboard SPA shell with a 200 — wrong content
-# under a real URL, which is worse than a missing page. (docker/Dockerfile is the
-# one with an explicit `location ^~ /pro` block, in nginx.conf.template.)
-# build:pro installs pro-test's own lockfile.
-RUN npm run build:pro
-
 # World Monitor Lite deployment profile (docs/engineering/architecture/lite.md). Off by default;
 # pass --build-arg VITE_LITE_PROFILE=true to open the image on /lite.
 ARG VITE_LITE_PROFILE=
@@ -48,11 +39,6 @@ ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}
 # Build the Vite frontend (outputs to dist/)
 # Skip blog build — blog-site has its own deps not installed here
 RUN npx tsc && npx vite build
-# Assert the /pro pages survived the public/ -> dist/ copy (#6898). build:pro
-# succeeding proves public/pro/ exists; it does NOT prove Vite copied it, and
-# docker/nginx.conf's SPA fallback would serve the dashboard shell at 200 for a
-# missing /pro rather than failing visibly.
-RUN test -s dist/pro/index.html && test -s dist/pro/welcome.html
 
 # ── Stage 2: Runtime dependencies ───────────────────────────────────────────
 FROM node:24-alpine@sha256:feb76650b7195319268c59cb2d419c732d6c499b13bf5296f16ab59eb1f0a4f3 AS runtime-deps
@@ -80,8 +66,8 @@ RUN apk add --no-cache nginx supervisor gettext && \
 WORKDIR /app
 
 # API server
-COPY --from=builder /app/src-tauri/sidecar/local-api-server.mjs ./local-api-server.mjs
-COPY --from=builder /app/src-tauri/sidecar/package.json ./package.json
+COPY --from=builder /app/docker/local-api/local-api-server.mjs ./local-api-server.mjs
+COPY --from=builder /app/docker/local-api/package.json ./package.json
 COPY --from=builder /app/shared/llm-health-providers.js ./shared/llm-health-providers.js
 COPY --from=builder /app/shared/desktop-key-access.js ./shared/desktop-key-access.js
 COPY --from=builder /app/shared/selfhost-relay-paths.js ./shared/selfhost-relay-paths.js

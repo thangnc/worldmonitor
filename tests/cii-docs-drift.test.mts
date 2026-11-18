@@ -507,23 +507,4 @@ describe('CII docs drift guards', () => {
       assert.ok(readFileSync(resolve(root, path), 'utf8').includes('docs/methodology/cii-change-brief.md'), `${path} change protocol must point at the brief`);
     }
   });
-
-  it('public CII surfaces point to the canonical live rankings page', () => {
-    const canonical = 'https://www.worldmonitor.app/country-instability-index/';
-    const surfaces = [
-      'README.md',
-      'public/ai-search.md',
-      'public/llms.txt',
-      'public/llms-full.txt',
-      'docs/country-instability-index.mdx',
-      'blog-site/src/content/blog/country-instability-index-methodology-explained.md',
-      'blog-site/src/data/glossary.ts',
-      'skills/check-country-risk/SKILL.md',
-    ];
-
-    for (const path of surfaces) {
-      const text = readFileSync(resolve(root, path), 'utf8');
-      assert.ok(text.includes(canonical), `${path} must link the canonical CII rankings page`);
-    }
-  });
 });

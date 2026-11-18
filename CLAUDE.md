@@ -6,7 +6,7 @@ Claude Code is the only supported coding agent for this repository. This file is
 
 | Path | What it does |
 |---|---|
-| `.claude/rules/` | Path-scoped rules. Each loads only when Claude works on matching files: edge API, seeders, proto, browser, tests, CI, Convex, desktop, docs. Keep them short and link to the canonical docs. |
+| `.claude/rules/` | Path-scoped rules. Each loads only when Claude works on matching files: edge API, seeders, proto, browser, tests, CI, Convex, docs. Keep them short and link to the canonical docs. |
 | `.claude/skills/` | Engineering skills: `verify-worldmonitor` (browser proof), `sentry-triage`, `learn` (`/learn`: record a lesson in the engineering knowledge base), and `ship` (user-invoked `/ship`: deliver a worktree's change as a PR on this fork). |
 | `.claude/agents/` | Subagents: `edge-contract-reviewer` (repo contract review of a diff). |
 | `.claude/hooks/` + `.claude/settings.json` | Block hand edits to `src/generated/`, `docs/api/`, the generated `docs/engineering/*/INDEX.md` files, and `package-lock.json`; Biome-lint each edited JS/TS file. |
@@ -60,7 +60,6 @@ Node 24 (`.nvmrc`).
 
 ```bash
 npm run dev                      # Vite dev server for the Lite UI at /lite; also serves the API routes it calls (vite.dev-api.ts)
-npm run desktop:dev              # Tauri desktop app with sidecar
 
 npm run typecheck                # browser code (tsc --noEmit)
 npm run typecheck:api            # api/ + server/ (tsconfig.api.json) plus Convex audits
@@ -71,10 +70,10 @@ npm run lint:api-contract        # hand-written api/ routes must be listed in ap
 npm run test:data                # tests/*.test.{mjs,mts}, cli/test (node:test, sharded runner)
 npm run test:dom                 # tests/dom (vitest, vitest.dom.config.mts)
 npm run test:convex              # convex/, server/__tests__, correlation engine (vitest)
-npm run test:sidecar             # api/ node suites + src-tauri sidecar
+npm run test:sidecar             # api/ node suites + the Docker Node API server (docker/local-api/)
 
 make generate                    # regenerate src/generated/ + docs/api/ from proto/
-npm run generate                 # regenerate committed derived files (product facts, llms, AI search, catalogs)
+npm run generate                 # regenerate committed derived files (catalogs, source attribution, legal digests, indexes)
 npm run seed:lite:watch          # keep the Lite seeders fresh in local Redis (seed:lite once, seed:lite:status read-only)
 npm run docs:check               # required after CI workflow changes
 ```
@@ -87,7 +86,7 @@ npx vitest run --config vitest.dom.config.mts tests/dom/<file>
 npx vitest run --config vitest.config.mts <path>
 ```
 
-Production build: `npm run build` (the Lite UI into `dist/`; `build:full` is an alias Vercel used). The pre-push hook (`.husky/pre-push`) runs tsc for src + API, edge-bundle checks, markdown/MDX lint, and the version sync check.
+Production build: `npm run build` (the Lite UI into `dist/`; `build:full` is an alias Vercel used). The pre-push hook (`.husky/pre-push`) runs the identity and secret-dump gates, then only the checks the branch's changes touch: tsc for src and API, the edge-bundle check, import boundaries, markdown/MDX lint, `docs:check`, and `make generate` drift.
 
 ## Include UI evidence in pull requests
 
@@ -104,9 +103,9 @@ Production build: `npm run build` (the Lite UI into `dist/`; `build:full` is an 
 | API and handlers | `api/`, `server/`; [endpoint guide](docs/adding-endpoints.mdx) | Focused handler check, `npm run typecheck:api`; `npm run test:sidecar` owns the `api/` node suites; `edge-contract-reviewer` subagent before the PR |
 | Data workers and cache | `scripts/`, `server/_shared/`; [health contracts](docs/health-endpoints.mdx) | Producer and reader checks with fixtures; separately record live freshness evidence when required |
 | Proto and generated clients | `proto/`, `src/generated/`; [code generation](CONTRIBUTING.md#working-with-sebuf-rpc-framework) | `make generate` requires buf + sebuf v0.11.1 plugins; verify generated diff |
-| Desktop and sidecar | `src-tauri/`; [architecture](ARCHITECTURE.md) | Focused Rust checks or `npm run test:sidecar` |
+| Docker Node API server | `docker/local-api/`, `docker/build-handlers.mjs` | `npm run test:sidecar` |
 | CI workflows | `.github/workflows/`; [CI/CD table](ARCHITECTURE.md#11-cicd) | Add or update each workflow's table entry. Run `npm run docs:check` and validate the changed workflow before pushing. The pre-push hook enforces the documentation check for workflow changes |
-| Committed derived files (product facts, llms, AI search, catalogs) | `scripts/generate-derived.mjs`; [derived files](CONTRIBUTING.md#derived-files) | `npm run generate`, then commit what it rewrote |
+| Committed derived files (catalogs, source attribution, legal digests, indexes) | `scripts/generate-derived.mjs`; [derived files](CONTRIBUTING.md#derived-files) | `npm run generate`, then commit what it rewrote |
 | Tests and documentation | `tests/`, `docs/`; [verification guide](CONTRIBUTING.md#verify-the-changed-path) | Relevant existing test or docs check, `git diff --check` |
 | Claude Code setup | `CLAUDE.md`, `.claude/` | Check that every path, symbol, and command it names exists; run the tests that read it (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/agent-page.test.mjs`, `tests/sentry-triage-skill.test.mjs`, `tests/engineering-docs.test.mjs`) and `npm run docs:check` |
 
@@ -123,20 +122,20 @@ Grep the named symbol. Do not scan these files top to bottom.
 | RPC access control | Split by design: `PREMIUM_RPC_PATHS` in `src/shared/premium-paths.ts`, `PUBLIC_NO_AUTH_RPC_PATHS` in `server/gateway.ts`, `validateApiKey` in `api/_api-key.js`, `isPublicSharedRpcRequest` in `src/shared/public-rpc-cache.ts` |
 | A shared term | `CONCEPTS.md`, one `###` heading per term; grep the term itself |
 
-Test path, command, and owning CI job. Read this instead of `.github/workflows/test.yml`.
+Test path, command, and owning CI job (`.github/workflows/ci.yml`).
 
 | Test path | Command | CI job |
 |---|---|---|
-| `tests/*.test.mjs`, `tests/*.test.mts`, `cli/test/`, `api/security/report.test.mjs` | `npm run test:data` | `unit-shards` |
-| `tests/dom/` | `npm run test:dom` | `dom-tests` |
-| `convex/__tests__/`, `server/__tests__/`, `src/services/correlation-engine/` | `npm run test:convex` | `convex-tests` |
-| `api/` node suites except `api/security/report.test.mjs`, and `src-tauri/` | `npm run test:sidecar` | `sidecar` |
+| `tests/*.test.mjs`, `tests/*.test.mts`, `cli/test/`, `api/security/report.test.mjs` | `npm run test:data` | `unit` (3 shards); suites that read built output run in `build` |
+| `tests/dom/` | `npm run test:dom` | `dom` |
+| `convex/__tests__/`, `server/__tests__/`, `src/services/correlation-engine/` | `npm run test:convex` | `server` |
+| `api/` node suites except `api/security/report.test.mjs`, and `docker/local-api/` | `npm run test:sidecar` | `server` |
 
 Find a suite by subject with `ls tests/ | grep <subject>` before searching the tree.
 
 ## Architecture at a glance
 
-**Runtime topology.** Lite SPA (`src/lite/`) → Vercel Edge Functions (`api/`, `middleware.ts`) → Upstash Redis, which Railway workers (`scripts/seed-*.mjs`, the long-running relay `scripts/ais-relay.cjs`) fill from roughly 850 upstream hosts. The Tauri desktop app (`src-tauri/`) wraps the same SPA and redirects fetches to a local Node.js sidecar. Convex (`convex/`) holds user-scoped state: auth, entitlements, API keys, alert rules, notification channels, preferences.
+**Runtime topology.** Lite SPA (`src/lite/`) → Vercel Edge Functions (`api/`, `middleware.ts`) → Upstash Redis, which Railway workers (`scripts/seed-*.mjs`, the long-running relay `scripts/ais-relay.cjs`) fill from roughly 850 upstream hosts. Convex (`convex/`) holds user-scoped state: auth, entitlements, API keys, alert rules, notification channels, preferences.
 
 **Request path is cache-first.** Most domain RPCs do not hit upstreams per request. Seeders write Redis keys through `atomicPublish()` / `writeSeedMeta` in `scripts/_seed-utils.mjs`, always alongside `seed-meta:<key>` (`fetchedAt`, `recordCount`). Edge handlers read via `cachedFetchJson()` (`server/_shared/redis.ts`), which coalesces concurrent misses. `api/health.js` grades staleness per key from that seed-meta. Some domains (scorecard, supply-chain vulnerability, physical divergence) are pure read models of a Railway-published cohort. A data change usually spans producer script → Redis key → handler → bootstrap/health registration → panel.
 
@@ -150,7 +149,7 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 **`shared/` vs `src/shared/`.** The top-level `shared/` holds logic that both the browser and server/MCP must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side.
 
-**Other surfaces.** `api/mcp.ts` (MCP server), `sdk/`, `cli/`, `pro-test/` (pro landing site, built into `public/pro`), `blog-site/` (built into `public/blog`), `docs/` (Mintlify public site; engineering records live in `docs/engineering/`, mapped by [its README](docs/engineering/README.md)), `skills/` (published product recipes, distinct from the `.claude/skills/` engineering skills). `claude-plugin/`, `gemini-extension.json`, and `public/agents.md` distribute the product to agent clients. They are not development tooling.
+**Other surfaces.** `api/mcp.ts` (MCP server), `sdk/`, `cli/`, `docs/` (Mintlify public site; engineering records live in `docs/engineering/`, mapped by [its README](docs/engineering/README.md)), `skills/` (published product recipes, distinct from the `.claude/skills/` engineering skills). `claude-plugin/`, `gemini-extension.json`, and `public/agents.md` distribute the product to agent clients. They are not development tooling.
 
 ## Critical boundaries
 

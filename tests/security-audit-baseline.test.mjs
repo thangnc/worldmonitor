@@ -330,8 +330,6 @@ describe('baseline entry validation', () => {
   it('does not suppress the backported braces and http-cache-semantics advisories', () => {
     for (const [lockfile, id] of [
       ['package-lock.json', 'GHSA-vfj7-8cjw-p6xm'],
-      ['pro-test/package-lock.json', 'GHSA-vfj7-8cjw-p6xm'],
-      ['blog-site/package-lock.json', 'GHSA-ch52-4w7c-c8xp'],
     ]) {
       assert.equal(baselineEntriesFor(lockfile).some((entry) => entry.id === id), false);
       const result = classifyAudit({
@@ -392,11 +390,9 @@ describe('baseline entry validation', () => {
 
   it('tracks a baseline entry for each audited lockfile', () => {
     assert.deepEqual(Object.keys(BASELINE_ADVISORIES_BY_LOCKFILE).sort(), [
-      'blog-site/package-lock.json',
       'consumer-prices-core/package-lock.json',
       'docker/runtime-package-lock.json',
       'package-lock.json',
-      'pro-test/package-lock.json',
       'scripts/package-lock.json',
     ]);
   });
@@ -427,7 +423,7 @@ describe('security audit baseline', () => {
       url: 'https://github.com/advisories/GHSA-395f-4hp3-45gv',
     });
 
-    assert.deepEqual(collectUnbaselinedFindings(report, 'pro-test/package-lock.json'), [
+    assert.deepEqual(collectUnbaselinedFindings(report, 'scripts/package-lock.json'), [
       {
         id: 'GHSA-395f-4hp3-45gv',
         name: 'shell-quote',
@@ -472,19 +468,16 @@ describe('security audit baseline', () => {
     // GHSA-5p4m-2wfm-xmqj: 3.x is fixed in 3.15.1, 4.x in 4.3.1. Both land
     // inside the existing semver ranges, so a lockfile refresh is the whole fix.
     const rootLock = readRepoJson('package-lock.json');
-    const blogLock = readRepoJson('blog-site/package-lock.json');
     const cpcLock = readRepoJson('consumer-prices-core/package-lock.json');
 
     for (const [label, entry] of [
       ['root @istanbuljs', rootLock.packages['node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml']],
-      ['blog-site gray-matter', blogLock.packages['node_modules/gray-matter/node_modules/js-yaml']],
     ]) {
       assert.ok(entry, `${label} js-yaml must be present`);
       assert.ok(atLeast(entry.version, '3.15.1'), `${label} js-yaml ${entry.version} is below the patched 3.15.1`);
     }
 
     for (const [label, entry] of [
-      ['blog-site', blogLock.packages['node_modules/js-yaml']],
       ['consumer-prices-core', cpcLock.packages['node_modules/js-yaml']],
     ]) {
       assert.ok(entry, `${label} js-yaml must be present`);
@@ -587,7 +580,7 @@ describe('npm audit failure reporting', () => {
     // The bug: `summary ?? detail ?? fallback` returns '' because ?? only
     // falls through on null/undefined, so the gate failed printing a blank line.
     assert.notEqual(OUTAGE_REPORT.error.summary ?? 'fallback', 'fallback');
-    const message = resolveAuditErrorMessage(OUTAGE_REPORT, 'blog-site');
+    const message = resolveAuditErrorMessage(OUTAGE_REPORT, 'scripts');
     assert.notEqual(message.trim(), '');
     assert.match(message, /advisories\/bulk/);
   });
@@ -595,14 +588,14 @@ describe('npm audit failure reporting', () => {
   it('prefers a populated summary over detail and message', () => {
     const message = resolveAuditErrorMessage(
       { message: 'ignored', error: { summary: 'real summary', detail: 'ignored' } },
-      'blog-site',
+      'scripts',
     );
     assert.equal(message, 'real summary');
   });
 
   it('falls back to a named error when npm supplies nothing usable', () => {
     for (const report of [{}, { error: {} }, { error: { summary: '   ', detail: '' } }]) {
-      assert.equal(resolveAuditErrorMessage(report, 'blog-site'), 'npm audit failed for blog-site');
+      assert.equal(resolveAuditErrorMessage(report, 'scripts'), 'npm audit failed for scripts');
     }
   });
 
@@ -636,7 +629,7 @@ describe('npm audit failure reporting', () => {
 
 
 describe('Dependabot image-size and fast-uri remediation', () => {
-  for (const lockPath of ['package-lock.json', 'pro-test/package-lock.json']) {
+  for (const lockPath of ['package-lock.json']) {
     it(`excludes vulnerable image-size copies from ${lockPath}`, () => {
       const entries = Object.entries(readRepoJson(lockPath).packages)
         .filter(([path]) => path.endsWith('/image-size'));

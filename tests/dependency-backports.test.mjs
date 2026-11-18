@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -12,10 +12,7 @@ const CachePolicy = require('../vendor/http-cache-semantics');
 describe('installed dependency backports', () => {
   for (const [lockfile, name, version, resolved] of [
     ['package-lock.json', 'braces', '3.0.4-worldmonitor.1', 'file:vendor/braces'],
-    ['pro-test/package-lock.json', 'braces', '3.0.4-worldmonitor.1', 'file:../vendor/braces'],
     ['package-lock.json', 'stream-json', '1.9.2-worldmonitor.1', 'file:vendor/stream-json'],
-    ['pro-test/package-lock.json', 'stream-json', '1.9.2-worldmonitor.1', 'file:../vendor/stream-json'],
-    ['blog-site/package-lock.json', 'http-cache-semantics', '4.2.1-worldmonitor.2', 'file:../vendor/http-cache-semantics'],
   ]) {
     it(`${lockfile} selects only the source backport for ${name}`, () => {
       const lock = JSON.parse(readFileSync(new URL(`../${lockfile}`, import.meta.url), 'utf8'));
@@ -48,12 +45,6 @@ describe('installed dependency backports', () => {
     assert.deepEqual(readFileSync(consumer.resolve('stream-json/Assembler')), readFileSync(new URL('../vendor/stream-json/Assembler.js', import.meta.url)));
     assert.equal(consumer('stream-json/package.json').private, true);
     assert.equal(consumer('stream-json/package.json').scripts, undefined);
-  });
-
-  it('installs the patched source for Astro', { skip: !existsSync(new URL('../blog-site/node_modules/astro/package.json', import.meta.url)) }, () => {
-    const consumer = createRequire(require.resolve('../blog-site/node_modules/astro/package.json'));
-    assert.deepEqual(readFileSync(consumer.resolve('http-cache-semantics')), readFileSync(new URL('../vendor/http-cache-semantics/index.js', import.meta.url)));
-    assert.equal(consumer('http-cache-semantics/package.json').private, true);
   });
 });
 

@@ -16,14 +16,9 @@ const packageJson = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8
 const packageScripts = packageJson.scripts ?? {};
 const read = (p: string) => readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 
-const deployGateWorkflow = read(resolve(workflowsDir, 'deploy-gate.yml'));
-const deployGateScript = read(resolve(workflowsDir, '../scripts/deploy-gate.sh'));
 const securityAuditWorkflow = read(resolve(workflowsDir, 'security-audit.yml'));
 const securityAuditScript = read(resolve(root, '.github/scripts/audit-production-dependencies.mjs'));
-const testWorkflow = read(resolve(workflowsDir, 'test.yml'));
-const desktopBuildWorkflow = read(resolve(workflowsDir, 'build-desktop.yml'));
-const desktopCanaryWorkflow = read(resolve(workflowsDir, 'test-linux-app.yml'));
-const lintCodeWorkflow = read(resolve(workflowsDir, 'lint-code.yml'));
+const ciWorkflow = read(resolve(workflowsDir, 'ci.yml'));
 const protoCheckWorkflow = read(resolve(workflowsDir, 'proto-check.yml'));
 
 describe('root dependency cache (#8710)', () => {
@@ -161,18 +156,10 @@ describe('root dependency cache (#8710)', () => {
     assert.equal(save.with.key, '${{ steps.npm-cache.outputs.cache-primary-key }}');
   });
 
-  // Jobs that install nothing beyond the action leave setup-node's cache off
-  // and use the action's miss-only fallback. Jobs with another npm install
-  // (blog-site, pro-test, including through build:pro) keep setup-node's
-  // cache for it and turn the action's off, so a miss restores it once.
-  // unit-shards and unit-built-output restore their nested installed trees
-  // instead (see the 'unit-shard nested dependency cache' and
-  // 'unit-built-output nested dependency cache' blocks), so they are in the
-  // first group.
+  // Every CI job installs through the action, leaves setup-node's cache off and
+  // uses the action's miss-only npm fallback.
   for (const [workflowText, jobIds, setupCache] of [
-    [testWorkflow, ['docs-stats', 'sidecar', 'convex-tests', 'dom-tests', 'resilience-validation-smoke', 'unit-shards', 'unit-built-output'], undefined],
-    [lintCodeWorkflow, ['biome'], undefined],
-    [read(resolve(workflowsDir, 'typecheck.yml')), ['typecheck'], 'npm'],
+    [ciWorkflow, ['checks', 'unit', 'build', 'dom', 'server', 'health-probe-cutovers'], undefined],
   ] as const) {
     for (const jobId of jobIds) {
       it(`${jobId} uses the shared action after Node 24 setup with npm fallback`, () => {
@@ -193,219 +180,6 @@ describe('root dependency cache (#8710)', () => {
   }
 });
 
-describe('unit-shard nested dependency cache', () => {
-  // Each shard installed blog-site/ and scripts/ from setup-node's npm
-  // download cache (4-9s to restore four lockfiles' downloads), then ran both
-  // installs (7-10s). The installed trees are restored instead, keyed on
-  // every file that decides their contents, and installed only on a miss.
-  const steps = YAML.parse(testWorkflow).jobs['unit-shards'].steps
-    .flatMap((step: { parallel?: unknown[] }) => step.parallel ?? [step]);
-  const restore = steps.find((step) => step.id === 'nested-deps');
-  const blogInstall = steps.find((step) => step.run === 'npm run ci:blog-site');
-  const scriptsInstall = steps.find((step) => step.run === 'npm ci --prefix scripts --ignore-scripts --no-audit --no-fund');
-  const save = steps.find((step) => step.uses?.startsWith('actions/cache/save@') && step.with?.key === '${{ steps.nested-deps.outputs.cache-primary-key }}');
-  const tests = steps.find((step) => step.run?.includes('npm run test:data'));
-  const miss = "steps.nested-deps.outputs.cache-hit != 'true'";
-
-  it('restores both installed trees before the tests', () => {
-    assert.ok(restore?.uses?.startsWith('actions/cache/restore@'));
-    assert.deepEqual(restore.with.path.trim().split('\n'), ['blog-site/node_modules', 'scripts/node_modules']);
-    assert.ok(steps.indexOf(restore) < steps.indexOf(tests));
-  });
-
-  it('keys the trees on every install input', () => {
-    const key = restore.with.key;
-    assert.match(key, /^nested-deps-v1-\$\{\{ runner\.os \}\}-\$\{\{ runner\.arch \}\}-node24-/);
-    for (const input of [
-      'blog-site/package.json',
-      'blog-site/package-lock.json',
-      'blog-site/.npmrc',
-      'scripts/package.json',
-      'scripts/package-lock.json',
-      'scripts/.npmrc',
-      '.npmrc',
-      'vendor/http-cache-semantics/**',
-    ]) {
-      assert.ok(key.includes(`'${input}'`), `nested-deps key must hash ${input}`);
-    }
-  });
-
-  it('installs and saves only on a miss, after the restore', () => {
-    for (const step of [blogInstall, scriptsInstall, save]) {
-      assert.ok(step, 'nested install and save steps must exist');
-      assert.equal(step.if, miss);
-      assert.ok(steps.indexOf(restore) < steps.indexOf(step));
-    }
-    assert.ok(steps.indexOf(blogInstall) < steps.indexOf(save));
-    assert.ok(steps.indexOf(scriptsInstall) < steps.indexOf(save));
-    assert.equal(save.with.path, restore.with.path);
-  });
-
-  // A restored tree skips both installs, so the tests must still notice a
-  // tree that lacks what they need, and a changed install command must
-  // change the key.
-  it('keeps the scripts/ presence guard on the test step', () => {
-    assert.equal(tests.env?.WM_EXPECT_SCRIPTS_DEPS, '1');
-  });
-
-  it('versions the key with the blog-site install command', () => {
-    const scripts = JSON.parse(read(resolve(root, 'package.json'))).scripts;
-    assert.equal(
-      scripts['ci:blog-site'],
-      'cross-env npm_config_allow_scripts= npm --prefix blog-site ci --prefer-offline',
-      'ci:blog-site changed: bump nested-deps-vN in the unit-shards cache key, then update this string',
-    );
-    assert.match(restore.with.key, /^nested-deps-v1-/);
-  });
-});
-
-describe('unit-built-output nested dependency cache', () => {
-  // setup-node restored the npm download cache for three lockfiles (6-9s,
-  // mostly the root's), then blog-site and pro-test installed from it (3s and
-  // 12s). The installed trees are restored instead and installed only on a
-  // miss, like the unit shards' nested-deps cache.
-  const steps = YAML.parse(testWorkflow).jobs['unit-built-output'].steps
-    .flatMap((step: { parallel?: unknown[] }) => step.parallel ?? [step]);
-  const restore = steps.find((step) => step.id === 'built-output-deps');
-  const blogInstall = steps.find((step) => step.run === 'npm run ci:blog-site');
-  const proInstall = steps.find((step) => step.run === 'npm --prefix pro-test ci --prefer-offline');
-  const save = steps.find((step) => step.uses?.startsWith('actions/cache/save@') && step.with?.key === '${{ steps.built-output-deps.outputs.cache-primary-key }}');
-  const blogBuild = steps.find((step) => step.run?.includes('npm --prefix blog-site run build'));
-  const proBuild = steps.find((step) => step.run === 'npm --prefix pro-test run build');
-  const miss = "steps.built-output-deps.outputs.cache-hit != 'true'";
-
-  it('restores both installed trees before the builds that read them', () => {
-    assert.ok(restore?.uses?.startsWith('actions/cache/restore@'));
-    assert.deepEqual(restore.with.path.trim().split('\n'), ['blog-site/node_modules', 'pro-test/node_modules']);
-    assert.ok(blogBuild && proBuild, 'the blog-site and /pro builds must exist');
-    assert.ok(steps.indexOf(save) < steps.indexOf(blogBuild));
-    assert.ok(steps.indexOf(save) < steps.indexOf(proBuild));
-  });
-
-  it('keys the trees on every install input', () => {
-    const key = restore.with.key;
-    assert.match(key, /^built-output-deps-v1-\$\{\{ runner\.os \}\}-\$\{\{ runner\.arch \}\}-node24-/);
-    for (const input of [
-      'blog-site/package.json',
-      'blog-site/package-lock.json',
-      'blog-site/.npmrc',
-      'pro-test/package.json',
-      'pro-test/package-lock.json',
-      'pro-test/.npmrc',
-      '.npmrc',
-      'vendor/**',
-    ]) {
-      assert.ok(key.includes(`'${input}'`), `built-output-deps key must hash ${input}`);
-    }
-  });
-
-  it('installs and saves only on a miss, after the restore and before the save', () => {
-    for (const step of [blogInstall, proInstall, save]) {
-      assert.ok(step, 'nested install and save steps must exist');
-      assert.equal(step.if, miss);
-      assert.ok(steps.indexOf(restore) < steps.indexOf(step));
-    }
-    assert.ok(steps.indexOf(blogInstall) < steps.indexOf(save));
-    assert.ok(steps.indexOf(proInstall) < steps.indexOf(save));
-    assert.equal(save.with.path, restore.with.path);
-    // A hit must skip every nested install, or the restore buys nothing.
-    assert.equal(steps.some((step) => /ci:blog-site|pro-test ci/.test(step.run ?? '') && step.if !== miss), false,
-      'no unconditional nested install may remain');
-  });
-
-  it('runs the same install and build build:pro runs, with install scripts off', () => {
-    const scripts = JSON.parse(read(resolve(root, 'package.json'))).scripts;
-    assert.equal(
-      scripts['build:pro'],
-      'cross-env npm_config_allow_scripts= npm --prefix pro-test ci --prefer-offline && npm --prefix pro-test run build',
-      'build:pro changed: mirror it in unit-built-output\'s /pro install and build steps, bump built-output-deps-vN, then update this string',
-    );
-    assert.equal(proInstall.env?.npm_config_allow_scripts, '');
-    assert.equal(
-      scripts['ci:blog-site'],
-      'cross-env npm_config_allow_scripts= npm --prefix blog-site ci --prefer-offline',
-      'ci:blog-site changed: bump built-output-deps-vN in the unit-built-output cache key, then update this string',
-    );
-  });
-});
-
-describe('shipped desktop Node coverage (#5909, #9906)', () => {
-  const steps = YAML.parse(testWorkflow).jobs.sidecar.steps;
-  const cache = steps.find((step) => step.name === 'Restore the shipped Node.js runtime');
-  const download = steps.find((step) => step.name === 'Download the shipped Node.js runtime');
-  const build = steps.find((step) => step.name === 'Build the sidecar handler bundles');
-  const shippedTest = steps.find((step) => step.name === 'Test sidecar with the shipped Node.js runtime');
-
-  it('tests the shared downloader output after the repository Node suite', () => {
-    assert.ok(cache && download && build && shippedTest);
-    const repoSuite = steps.findIndex((step) => step.run === 'npm run test:sidecar');
-    assert.ok(repoSuite >= 0);
-    assert.ok(steps.indexOf(cache) > repoSuite);
-    assert.ok(steps.indexOf(download) > steps.indexOf(cache));
-    assert.ok(steps.indexOf(shippedTest) > steps.indexOf(download));
-    assert.ok(steps.indexOf(shippedTest) > steps.indexOf(build));
-    assert.match(download.run, /bash scripts\/download-node\.sh --target x86_64-unknown-linux-gnu && exit 0/);
-    assert.equal(download.env?.NODE_VERSION, undefined, 'CI must use the same pin as the release downloader');
-    for (const step of [download, build, shippedTest]) assert.equal(step['continue-on-error'], undefined);
-    for (const step of [build, shippedTest]) assert.equal(step.if, undefined);
-  });
-
-  // A hit skips the downloader, so the key must change whenever the pinned
-  // version or the verification in the script does.
-  it('caches only the verified runtime, keyed on the downloader script', () => {
-    assert.match(cache.uses, /^actions\/cache@[a-f0-9]{40}$/);
-    assert.equal(cache.with.path, 'src-tauri/sidecar/node');
-    assert.equal(cache.with.key, "shipped-node-x86_64-unknown-linux-gnu-${{ hashFiles('scripts/download-node.sh') }}");
-    assert.equal(cache.with['restore-keys'], undefined);
-    assert.equal(download.if, `steps.${cache.id}.outputs.cache-hit != 'true'`);
-  });
-
-  for (const [failures, status] of [[2, 0], [3, 1]]) {
-    it(`retries the download: ${failures} failures exit ${status}`, () => {
-      const dir = mkdtempSync(resolve(tmpdir(), 'wm-shipped-node-download-'));
-      try {
-        mkdirSync(resolve(dir, 'scripts'));
-        mkdirSync(resolve(dir, 'tools'));
-        writeFileSync(resolve(dir, 'scripts/download-node.sh'),
-          `n=$(cat count 2>/dev/null || echo 0); n=$((n + 1)); echo $n > count\n[ "$n" -gt ${failures} ]\n`);
-        writeFileSync(resolve(dir, 'tools/sleep'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
-        const result = spawnSync('bash', ['-e', '-c', download.run], {
-          cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: `${resolve(dir, 'tools')}:${process.env.PATH}` },
-        });
-        assert.equal(result.status, status, result.stderr);
-        assert.equal(readFileSync(resolve(dir, 'count'), 'utf8').trim(), String(Math.min(failures + 1, 3)));
-      } finally {
-        rmSync(dir, { recursive: true, force: true });
-      }
-    });
-  }
-
-  for (const exitCode of [0, 37]) {
-    it(`uses the bundled binary and preserves suite exit ${exitCode}`, () => {
-      assert.ok(shippedTest);
-      const dir = mkdtempSync(resolve(tmpdir(), 'wm-shipped-node-'));
-      try {
-        const bundledDir = resolve(dir, 'src-tauri/sidecar/node');
-        const toolsDir = resolve(dir, 'tools');
-        mkdirSync(bundledDir, { recursive: true });
-        mkdirSync(toolsDir);
-        writeFileSync(resolve(bundledDir, 'node'), '#!/bin/sh\necho shipped-node "$@"\n', { mode: 0o755 });
-        writeFileSync(resolve(toolsDir, 'npm'), `#!/bin/sh\n[ "$*" = 'run test:sidecar' ] || exit 99\nnode\nexit ${exitCode}\n`, { mode: 0o755 });
-        const result = spawnSync('bash', ['-e', '-c', shippedTest.run], {
-          cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: `${toolsDir}:${process.env.PATH}` },
-        });
-        assert.equal(result.status, exitCode, result.stderr);
-        // The shipped-route check runs on the bundled binary, and only after the suite passed.
-        const lines = ['shipped-node --version', 'shipped-node'];
-        if (exitCode === 0) lines.push('shipped-node scripts/check-sidecar-shipped-routes.mjs');
-        assert.equal(result.stdout, `${lines.join('\n')}\n`);
-      } finally {
-        rmSync(dir, { recursive: true, force: true });
-      }
-    });
-  }
-});
-
 const workflowText = readdirSync(workflowsDir)
   .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
   .map((name) => read(resolve(workflowsDir, name)))
@@ -413,120 +187,36 @@ const workflowText = readdirSync(workflowsDir)
 
 const REQUIRED_PR_SCRIPTS = [
   'test:data',
+  'test:dom',
   'test:sidecar',
   'test:convex',
-  'test:resilience-validation-smoke',
 ] as const;
 
-const REQUIRED_TEST_JOBS = [
-  'unit',
-  'sidecar',
-  'convex-tests',
-  'resilience-validation-smoke',
-  'desktop-config',
-  'desktop-node-windows',
-  'desktop-rust',
-] as const;
 
-const TIMEOUT_CAPPED_TEST_JOBS = [
-  'consumer-prices',
-  'sidecar',
-  'convex-tests',
-  'resilience-validation-smoke',
-  'desktop-config',
-  'desktop-node-windows',
-  'desktop-rust',
-] as const;
 
-const REQUIRED_GATE_WORKFLOWS = [
-  'Test',
-  'Typecheck',
-  'Lint Code',
+// The workflows whose checks gate a pull request (ci.yml replaced the Test,
+// Typecheck and Lint Code workflows and their deploy gate).
+const PR_GATE_WORKFLOWS = [
+  'CI',
   'Security Audit',
   'Stacked Merge Guard',
   'Proto Generation Check',
 ] as const;
 
-const REQUIRED_NON_TEST_GATE_CHECKS = [
-  'typecheck',
-  'biome',
-  'public-docs',
-  'security-audit',
-  'stacked-merge-guard',
-  'proto-freshness',
+// The Lite gate's own jobs, then the gates of services outside the web app
+// (consumer-prices-core, Zapier, Umami, digest image) that 1c or Phase 2 decides.
+const CI_JOBS = [
+  'checks', 'unit', 'build', 'dom', 'server', 'health-probe-cutovers',
+  'consumer-prices', 'zapier', 'umami-postgres', 'digest-image',
 ] as const;
 
-// Jobs covered by an aggregate check rather than required under their own
-// names. Matrix jobs publish one check run per entry and have no single name
-// for the gate to match. A companion non-matrix job can share the same
-// aggregate so branch protection retains one stable public contract. Each
-// exemption is valid only while the required aggregate directly needs it.
-const GATE_CHECK_EXEMPTIONS: Record<string, { workflow: string; coveredBy: string }> = {
-  'audit-lockfile': { workflow: 'Security Audit', coveredBy: 'security-audit' },
-  'audit-rust': { workflow: 'Security Audit', coveredBy: 'security-audit' },
-  'unit-shards': { workflow: 'Test', coveredBy: 'unit' },
-  'unit-built-output': { workflow: 'Test', coveredBy: 'unit' },
-};
 
-const REQUIRED_RESILIENCE_VALIDATION_INPUTS = [
-  'Dockerfile.seed-bundle-resilience-validation',
-  'docs/methodology/country-resilience-index/validation/',
-  'scripts/benchmark-resilience-external.mjs',
-  'scripts/backtest-resilience-outcomes.mjs',
-  'scripts/validate-resilience-sensitivity.mjs',
-  'scripts/seed-bundle-resilience-validation.mjs',
-  'scripts/_bundle-runner.mjs',
-] as const;
 
-// Desktop drift gates (#5902): the literal awk patterns each change filter
-// must keep, so a filter refactor cannot silently un-gate a desktop-breaking
-// path class (the exact drift class #5902 exists to close).
-const REQUIRED_DESKTOP_CONFIG_INPUTS = [
-  'src-tauri/',
-  'package.json',
-  'scripts/repack-linux-appimage.sh',
-  'scripts/sync-desktop-version.mjs',
-  'scripts/check-desktop-build-env.mjs',
-  'scripts/check-rust-security-floors.mjs',
-  'scripts/download-node.sh',
-] as const;
 
-const REQUIRED_DESKTOP_RUST_INPUTS = [
-  'src-tauri/sidecar/',
-  'src-tauri/',
-] as const;
+
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function workflowRegexNeedle(path: string): string {
-  return path.replaceAll('/', '\\/').replaceAll('.', '\\.');
-}
-
-function shellAwkAssignmentBlock(variable: string): string {
-  const start = `${variable}=$(printf '%s\\n' "$FILES" | awk '`;
-  const startIndex = testWorkflow.indexOf(start);
-  assert.notEqual(startIndex, -1, `test.yml must define ${variable}`);
-  const end = "\n          ')";
-  const endIndex = testWorkflow.indexOf(end, startIndex);
-  assert.notEqual(endIndex, -1, `test.yml must terminate ${variable}`);
-  return testWorkflow.slice(startIndex, endIndex + end.length);
-}
-
-function evaluateAwkAssignmentBlock(block: string, files: string[]): number {
-  const program = block.slice(block.indexOf("awk '") + 5, block.lastIndexOf("'"));
-  const output = execFileSync('awk', [program], {
-    input: `${files.join('\n')}\n`,
-    encoding: 'utf8',
-  });
-  return Number(output.trim());
-}
-
-function testJobBlock(job: string): string {
-  const match = testWorkflow.match(new RegExp(`\\n  ${escapeRegExp(job)}:\\n[\\s\\S]*?(?=\\n  [\\w-]+:\\n|\\n$)`));
-  assert.ok(match, `test.yml must define ${job}`);
-  return match[0];
 }
 
 function workflowJobBlock(workflow: string, job: string): string {
@@ -586,120 +276,6 @@ function workflowStepBlocksByUses(workflow: string, action: string): string[] {
   }
   assert.ok(blocks.length > 0, `workflow must define ${action}`);
   return blocks;
-}
-
-function workflowRunScript(stepBlock: string): string {
-  const marker = '\n        run: |\n';
-  const startIndex = stepBlock.indexOf(marker);
-  assert.notEqual(startIndex, -1, 'workflow step must have a block run script');
-  return stepBlock
-    .slice(startIndex + marker.length)
-    .split('\n')
-    .map((line) => line.replace(/^ {10}/, ''))
-    .join('\n');
-}
-
-function runReleasePreflight(stepBlock: string, eventName: string, draft: string, value: string): void {
-  const script = workflowRunScript(stepBlock)
-    .replaceAll('${{ github.event_name }}', eventName)
-    .replaceAll('${{ github.event.inputs.draft }}', draft);
-  const names = [
-    'VITE_CLERK_PUBLISHABLE_KEY',
-    'VITE_WS_RELAY_URL',
-    'VITE_PMTILES_URL_PUBLIC',
-    'CONVEX_URL',
-  ];
-  const env = Object.fromEntries(names.map((name) => [name, value]));
-  execFileSync('bash', ['-e', '-o', 'pipefail', '-c', script], { env, encoding: 'utf8' });
-}
-
-function evaluateDesktopConfigFilter(filter: string, files: string[]): string {
-  const fileArgs = files.map((file) => JSON.stringify(file)).join(' ');
-  const script = `FILES=$(printf '%s\\n' ${fileArgs}); ${filter}; printf '%s' "$DESKTOP_CONFIG"`;
-  return execFileSync('bash', ['-euo', 'pipefail', '-c', script], { encoding: 'utf8' }).trim();
-}
-
-function workflowJobNames(workflow: string, label: string): string[] {
-  const jobs: string[] = [];
-  let inJobs = false;
-
-  for (const line of workflow.split('\n')) {
-    if (/^jobs:\s*$/.test(line)) {
-      inJobs = true;
-      continue;
-    }
-    if (inJobs && /^\S[^:]*:\s*$/.test(line)) {
-      break;
-    }
-    const match = inJobs ? line.match(/^ {2}([A-Za-z0-9_-]+):(?:\s|$)/) : null;
-    if (match?.[1]) {
-      jobs.push(match[1]);
-    }
-  }
-
-  assert.ok(jobs.length > 0, `${label} must define at least one job under jobs:`);
-  return jobs;
-}
-
-// Maps a workflow's display name (`name:` at column 0) to its source, so the
-// gate checks below key off the same names deploy-gate.yml's `workflow_run`
-// trigger uses rather than a hand-maintained name-to-filename table.
-//
-// Two workflows sharing a display name would make this map silently keep one
-// and drop the other, so the checks below could pass while the dropped
-// workflow's jobs gate nothing. `workflow_run` matches by name too, so the
-// ambiguity is real for the gate, not just for this test — fail on it here.
-function gatedWorkflowSources(): Map<string, string> {
-  const byName = new Map<string, string>();
-  const filesByName = new Map<string, string>();
-
-  for (const file of readdirSync(workflowsDir).filter((n) => n.endsWith('.yml') || n.endsWith('.yaml'))) {
-    const source = read(resolve(workflowsDir, file));
-    const name = source.match(/^name:\s*(.+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, '');
-    if (!name) continue;
-
-    assert.ok(
-      !filesByName.has(name),
-      `workflows must have unique names; ${filesByName.get(name)} and ${file} are both named "${name}", so workflow_run and the deploy gate cannot tell them apart`,
-    );
-    filesByName.set(name, file);
-    byName.set(name, source);
-  }
-
-  return byName;
-}
-
-// The check-run name GitHub publishes for a job: its `name:` override when it
-// has one, otherwise the job id. A `name:` containing a `${{ … }}` expression
-// (matrix fan-out) resolves per matrix entry, so no single literal name exists
-// for the gate to match.
-function effectiveCheckName(workflow: string, job: string): { name: string; templated: boolean } {
-  const nameOverride = workflowJobBlock(workflow, job).match(/^ {4}name:\s*(.+)$/m)?.[1];
-  if (!nameOverride) {
-    return { name: job, templated: false };
-  }
-
-  const value = nameOverride.trim().replace(/^['"]|['"]$/g, '');
-  return { name: value, templated: value.includes('${{') };
-}
-
-function parseJsonArrayLiteral(source: string, regex: RegExp, label: string): string[] {
-  const match = source.match(regex);
-  assert.ok(match?.[1], `deploy-gate.yml must define ${label}`);
-  const parsed = JSON.parse(match[1]);
-  assert.ok(Array.isArray(parsed), `${label} must be a JSON array`);
-  for (const value of parsed) {
-    assert.equal(typeof value, 'string', `${label} entries must be strings`);
-  }
-  return parsed;
-}
-
-function deployGateRequiredChecks(): string[] {
-  return parseJsonArrayLiteral(deployGateScript, /\n\s*required='(\[[^\n]+])'/, 'required checks');
-}
-
-function deployGateWorkflowRunNames(): string[] {
-  return parseJsonArrayLiteral(deployGateWorkflow, /workflows:\s*(\[[^\n]+])/, 'workflow_run workflows');
 }
 
 function collectPackageLockfiles(): string[] {
@@ -1102,19 +678,10 @@ describe('CI workflow coverage', () => {
       ['FILE', 'PACKAGE', 'WIRE_JSON'].sort(),
       'breaking.use must be exactly FILE, PACKAGE, WIRE_JSON (binary WIRE intentionally omitted)',
     );
-
-    assert.ok(
-      deployGateWorkflowRunNames().includes('Proto Generation Check'),
-      'Deploy Gate must re-evaluate when proto checks finish',
-    );
-    assert.ok(
-      deployGateRequiredChecks().includes('proto-freshness'),
-      'the required gate must include the proto freshness aggregate',
-    );
   });
 
   it('runs the public documentation boundary on docs-only pull requests', () => {
-    const publicDocsJob = workflowJobBlock(lintCodeWorkflow, 'public-docs');
+    const publicDocsJob = workflowJobBlock(ciWorkflow, 'checks');
 
     assert.match(publicDocsJob, /npm run lint:public-docs/);
     assert.doesNotMatch(publicDocsJob, /needs: changes/);
@@ -1131,15 +698,19 @@ describe('CI workflow coverage', () => {
     }
   });
 
-  it('keeps the main Test workflow jobs for defensibility smoke gates', () => {
-    for (const job of REQUIRED_TEST_JOBS) {
-      assert.match(testWorkflow, new RegExp(`\\n  ${escapeRegExp(job)}:\\n`), `test.yml must define ${job}`);
+  it('keeps every CI job, with no path filter that could skip it', () => {
+    const workflow = YAML.parse(ciWorkflow) as { on: Record<string, unknown>; jobs: Record<string, { if?: unknown }> };
+    assert.deepEqual(Object.keys(workflow.jobs).sort(), [...CI_JOBS].sort());
+    for (const trigger of Object.values(workflow.on)) {
+      assert.equal((trigger as { paths?: unknown } | null)?.paths, undefined, 'ci.yml must not path-filter its triggers');
+      assert.equal((trigger as { 'paths-ignore'?: unknown } | null)?.['paths-ignore'], undefined, 'ci.yml must not path-filter its triggers');
     }
+    for (const job of CI_JOBS) assert.equal(workflow.jobs[job].if, undefined, `${job} must run on every event`);
   });
 
-  it('keeps required smoke jobs capped with explicit timeouts', () => {
-    for (const job of TIMEOUT_CAPPED_TEST_JOBS) {
-      assert.match(testJobBlock(job), /\n {4}timeout-minutes: \d+\n/, `${job} must set timeout-minutes`);
+  it('caps every CI job with an explicit timeout', () => {
+    for (const job of CI_JOBS) {
+      assert.match(workflowJobBlock(ciWorkflow, job), /\n {4}timeout-minutes: \d+\n/, `${job} must set timeout-minutes`);
     }
   });
 
@@ -1148,7 +719,7 @@ describe('CI workflow coverage', () => {
   // 24-58s on the slowest unit shard in 9 of 12 runs (run 39922207309: 29s for
   // 1.5 MB at 51 kB/s).
   it('installs Redis in every unit shard from a package cache with dpkg, and fails without the binaries', () => {
-    const unitSteps = YAML.parse(testWorkflow).jobs['unit-shards'].steps
+    const unitSteps = YAML.parse(ciWorkflow).jobs.unit.steps
       .flatMap((step: { parallel?: unknown[] }) => step.parallel ?? [step]);
     const redis = unitSteps.find((step: { uses?: string }) => step.uses === './.github/actions/install-redis');
     assert.ok(redis, 'unit shards must install Redis through the cached action');
@@ -1177,769 +748,13 @@ describe('CI workflow coverage', () => {
     assert.equal(save.if, download.if);
   });
 
-  it('requires real Redis before the consumer-prices publisher regressions', () => {
-    const steps = YAML.parse(testWorkflow).jobs['consumer-prices'].steps;
-    const installIndex = steps.findIndex((step: { uses?: string }) => step.uses === './.github/actions/install-redis');
-    const testIndex = steps.findIndex((step: { run?: string }) => step.run === 'npm test --prefix consumer-prices-core');
-    assert.ok(installIndex >= 0 && installIndex < testIndex, 'consumer-prices must install Redis before its tests');
-    assert.equal(steps[installIndex].if, undefined, 'Redis must be installed on every consumer-prices run');
-    assert.equal(steps[installIndex]['continue-on-error'], undefined, 'Redis installation failure must fail CI');
-    assert.equal(steps[testIndex]['continue-on-error'], undefined, 'publisher regression failure must fail CI');
-  });
-
-  it('installs the locale font subset from a package cache', () => {
-    const action = YAML.parse(read(resolve(root, '.github/actions/install-browser-fonts/action.yml')));
-    const steps = action.runs.steps;
-    const download = steps.find((step: { name?: string }) => step.name === 'Download browser font packages on cache miss');
-    const packages = download.run.match(/packages=\(([^)]+)\)/)[1].trim().split(/\s+/);
-    assert.deepEqual(packages, ['fonts-wqy-zenhei', 'fonts-tlwg-loma-otf', 'fonts-lohit-deva']);
-    const keyStep = steps.find((step: { id?: string }) => step.id === 'font-key');
-    for (const pkg of packages) {
-      assert.ok(keyStep.run.includes(pkg), `the font cache key must change when ${pkg} leaves the list`);
-    }
-    assert.equal(download.if, "steps.font-debs.outputs.cache-hit != 'true'");
-    assert.equal(steps.find((step: { uses?: string }) => step.uses?.startsWith('actions/cache/save@')).if, download.if);
-    // `apt-get install <cached .deb paths>` downloads every package again when
-    // the mirror carries the same version, so a cache hit still waited on the
-    // mirror (3m04s at 41.5 kB/s in run 39839159870). dpkg reads the files.
-    const install = steps.find((step: { name?: string }) => step.name === 'Install browser font packages');
-    assert.match(install.run, /debs=\(~\/\.cache\/wm-browser-fonts\/\*\.deb\)/);
-    assert.match(install.run, /sudo dpkg -i "\$\{debs\[@\]\}"/);
-    assert.doesNotMatch(install.run, /apt-get install[^\n]*\.deb/, 'apt-get must not install the cached .deb paths');
-    // apt-get -f can repair a missing dependency by removing the font packages
-    // and still exit 0, so the fallback must prove they are installed.
-    assert.match(install.run, /dpkg-query -W[^\n]*\$\{Status\}/, 'the fallback must check every font package is installed');
-  });
-
-  it('keeps the deploy gate wired to every Test workflow check job', () => {
-    const workflowRunNames = deployGateWorkflowRunNames();
-    const requiredChecks = deployGateRequiredChecks();
-
-    for (const workflowName of REQUIRED_GATE_WORKFLOWS) {
-      assert.ok(
-        workflowRunNames.includes(workflowName),
-        `deploy-gate.yml must run after ${workflowName} completes`,
-      );
-    }
-    for (const job of workflowJobNames(testWorkflow, 'test.yml')) {
-      const coveredBy = GATE_CHECK_EXEMPTIONS[job]?.coveredBy ?? job;
-      assert.ok(
-        requiredChecks.includes(coveredBy),
-        `deploy-gate.yml must require every test.yml job; missing ${coveredBy}`,
-      );
-    }
-    for (const check of REQUIRED_NON_TEST_GATE_CHECKS) {
-      assert.ok(requiredChecks.includes(check), `deploy-gate.yml must require ${check}`);
-    }
-    assert.match(
-      deployGateScript,
-      /post_gate_status "success" "All required PR gates passed"/,
-      'deploy-gate.yml success status must describe the full gate set',
-    );
-    assert.doesNotMatch(
-      deployGateWorkflow,
-      /unit \+ typecheck/i,
-      'deploy-gate.yml must not regress to the old unit+typecheck-only gate',
-    );
-  });
-
-  // #5402: `sidecar` runs in CI but is not one of branch protection's four
-  // required contexts (biome, typecheck, unit, gate). It blocks merge anyway,
-  // because the required `gate` context aggregates it — but only because
-  // someone remembered to list it. Nothing forced that, and the same omission
-  // is invisible for every other job: a job absent from `required` is simply
-  // never inspected, so it reports red on the PR and the gate still goes green.
-  // The check below covers every workflow the gate aggregates, not just
-  // test.yml, so a new job cannot land in an advisory-only state.
-  it('requires every job of every workflow the deploy gate aggregates', () => {
-    const requiredChecks = deployGateRequiredChecks();
-    const sources = gatedWorkflowSources();
-    const advisoryOnly: string[] = [];
-
-    for (const workflowName of REQUIRED_GATE_WORKFLOWS) {
-      const source = sources.get(workflowName);
-      assert.ok(source, `a workflow named ${workflowName} must exist for the deploy gate to aggregate it`);
-
-      for (const job of workflowJobNames(source, workflowName)) {
-        const { name, templated } = effectiveCheckName(source, job);
-        const exemption = GATE_CHECK_EXEMPTIONS[job];
-
-        if (exemption && exemption.workflow === workflowName) {
-          assert.ok(
-            requiredChecks.includes(exemption.coveredBy),
-            `${workflowName}/${job} is exempt because ${exemption.coveredBy} blocks on its behalf, so ${exemption.coveredBy} must itself be a required gate check`,
-          );
-          const parsed = YAML.parse(source) as { jobs?: Record<string, { needs?: string | string[] }> };
-          const aggregateNeedsValue = parsed.jobs?.[exemption.coveredBy]?.needs ?? [];
-          const aggregateNeeds = Array.isArray(aggregateNeedsValue) ? aggregateNeedsValue : [aggregateNeedsValue];
-          assert.ok(
-            aggregateNeeds.includes(job),
-            `${workflowName}/${job} is exempt because ${exemption.coveredBy} blocks on its behalf, so that aggregate must directly need ${job}`,
-          );
-          continue;
-        }
-
-        assert.ok(
-          !templated,
-          `${workflowName}/${job} publishes a per-matrix check-run name (${name}) that the gate cannot match, and has no GATE_CHECK_EXEMPTIONS entry naming the aggregate that covers it`,
-        );
-
-        if (!requiredChecks.includes(name)) {
-          advisoryOnly.push(`${workflowName}/${name}`);
-        }
-      }
-    }
-
-    assert.deepEqual(
-      advisoryOnly,
-      [],
-      `deploy-gate.yml must require every job of every workflow it aggregates. These run in CI but a red result does not block merge (#5402): ${advisoryOnly.join(', ')}`,
-    );
-  });
-
-  // The mirror-image failure of the check above, and the more disruptive one:
-  // a `required` entry that no job publishes never resolves, so the gate holds
-  // at "Waiting for required PR gates" on every PR until someone edits the
-  // workflow. Renaming or deleting a gated job must fail here, not in the queue.
-  it('keeps the deploy gate required list free of checks no gated workflow publishes', () => {
-    const sources = gatedWorkflowSources();
-    const published = new Set<string>();
-
-    for (const workflowName of REQUIRED_GATE_WORKFLOWS) {
-      const source = sources.get(workflowName);
-      assert.ok(source, `a workflow named ${workflowName} must exist for the deploy gate to aggregate it`);
-
-      for (const job of workflowJobNames(source, workflowName)) {
-        const { name, templated } = effectiveCheckName(source, job);
-        if (!templated) {
-          published.add(name);
-        }
-      }
-    }
-
-    const phantom = deployGateRequiredChecks().filter((check) => !published.has(check));
-
-    assert.deepEqual(
-      phantom,
-      [],
-      `deploy-gate.yml requires checks no gated workflow publishes, so the gate can never leave "pending": ${phantom.join(', ')}`,
-    );
-  });
-
-  // #5822: the gate matches check runs by name alone, then keeps only the one
-  // that finished last. Two jobs publishing the same name — in different
-  // workflows or the same one — collapse to that single run and the others'
-  // conclusions are discarded, so a failure in any of them is invisible.
-  //
-  // For a `changes`-style filter job that is fail-open twice over: its
-  // dependents are `if: needs.changes.outputs.code == 'true'`, so when it fails
-  // they are *skipped* rather than failed, and the gate deliberately counts
-  // `skipped` as passing (docs-only PRs). A masked `changes` failure therefore
-  // takes an entire required suite green with it.
-  //
-  // Scan every workflow, not just the four the gate aggregates: the gate reads
-  // all check runs on the SHA regardless of which workflow published them, and
-  // it evaluates main pushes too, where a push- or schedule-triggered workflow
-  // lands its check runs on the very same commit.
-  it('keeps every gate-required check-run name published by exactly one job', () => {
-    const publishers = new Map<string, string[]>();
-
-    for (const file of readdirSync(workflowsDir).filter((n) => n.endsWith('.yml') || n.endsWith('.yaml'))) {
-      const source = read(resolve(workflowsDir, file));
-
-      for (const job of workflowJobNames(source, file)) {
-        const { name, templated } = effectiveCheckName(source, job);
-        if (templated) {
-          continue;
-        }
-        publishers.set(name, [...(publishers.get(name) ?? []), `${file}:${job}`]);
-      }
-    }
-
-    // Every gated job's effective name has to be in `required` (asserted
-    // above), so keying off `required` still covers all gated workflows
-    // while leaving harmless duplicates alone — two cron-only workflows may
-    // both call a job `monitor` without the gate ever reading either.
-    //
-    // Exactly one, not at-least-one: a zero-publisher name hangs the gate at
-    // "pending" forever, and checking both directions means an empty or
-    // mis-parsed scan above fails here instead of vacuously passing.
-    const misrouted = deployGateRequiredChecks()
-      .map((check) => ({ check, sites: publishers.get(check) ?? [] }))
-      .filter(({ sites }) => sites.length !== 1)
-      .map(({ check, sites }) => `${check} <- ${sites.length > 0 ? sites.join(', ') : 'no job publishes it'}`);
-
-    assert.deepEqual(
-      misrouted,
-      [],
-      `deploy-gate.yml keys on the check-run name only and keeps just the last-completed run, so a required name published by more than one job masks every other publisher's failure, and one published by none never leaves "pending" (#5822). Give each job a distinct name: ${misrouted.join('; ')}`,
-    );
-  });
-
-  it('batches blocked and stale-contract gate discovery during the scheduled self-healing sweep', () => {
-    const deployGateJob = deployGateScript;
-
-    assert.match(
-      deployGateWorkflow,
-      /^ {6}group: deploy-gate-\$\{\{ matrix\.sha \}\}$/m,
-      'all writer jobs use the same SHA-keyed group',
-    );
-    assert.match(
-      deployGateWorkflow,
-      /^run-name: Deploy Gate \$\{\{ github\.event\.workflow_run\.head_sha \|\| github\.event\.inputs\.sha \|\| github\.event_name \}\}$/m,
-    );
-    assert.match(deployGateJob, /graphql --paginate --slurp/);
-    assert.match(deployGateJob, /falling back to REST/);
-    assert.match(deployGateJob, /commits\/\$eval_sha\/check-runs\?per_page=100/);
-    assert.match(deployGateJob, /pullRequests\(first: 100, states: \[OPEN\], after: \$endCursor\)/);
-    assert.match(deployGateJob, /pageInfo \{ hasNextPage endCursor \}/);
-    assert.match(deployGateJob, /contexts\(first: 100, after: \$endCursor\)/);
-    assert.match(deployGateJob, /status \{ context\(name: "gate"\) \{ state description createdAt \} \}/);
-    assert.match(deployGateJob, /stale_terminal_shas=/);
-    assert.match(deployGateJob, /\$gate\.state == "SUCCESS"/);
-    for (const state of ['PENDING', 'FAILURE', 'ERROR']) {
-      assert.ok(deployGateJob.includes(`$gate.state == "${state}"`));
-    }
-    assert.match(deployGateJob, /endswith\(\$gate_stamp\) \| not/);
-    assert.match(deployGateJob, /awk '!seen\[\$0\]\+\+'/);
-    assert.match(deployGateJob, /context == null/);
-    assert.match(
-      deployGateJob,
-      /actions\/workflows\/deploy-gate\.yml\/runs\?event=workflow_run&status=failure&created=>=\$recent_run_cutoff_iso/,
-    );
-    assert.match(deployGateJob, /created_at \| fromdateiso8601/);
-    assert.match(deployGateJob, /display_title \| test\("\^Deploy Gate \[0-9a-f\]\{40\}\$"\)/);
-    assert.doesNotMatch(
-      deployGateJob,
-      /commits\/\$s\/statuses/,
-      'the sweep must not spend one paginated REST request per open PR',
-    );
-  });
-
-  it('coalesces completion events before any writer starts without evicting recovery runs (#8726)', () => {
-    const workflow = YAML.parse(deployGateWorkflow);
-    const admission = workflow.concurrency;
-    assert.ok(admission, 'completion bursts need workflow-level admission control');
-    assert.equal(admission.queue, 'single');
-    assert.equal(admission['cancel-in-progress'], false, 'never interrupt an active workflow');
-    assert.equal(admission.group, 'deploy-gate-events-${{ github.event_name == \'workflow_run\' && github.event.workflow_run.head_sha || github.run_id }}');
-
-    const group = (event: string, id: number, sha?: string) => admission.group.replace(
-      /\$\{\{(.*?)\}\}/g,
-      (_: string, expression: string) => String(runInNewContext(expression, {
-        github: { event_name: event, run_id: id, event: sha ? { workflow_run: { head_sha: sha } } : {} },
-      }, { timeout: 1000 })),
-    );
-    const sha = 'a'.repeat(40);
-    assert.equal(group('workflow_run', 1, sha), group('workflow_run', 2, sha));
-    assert.notEqual(group('workflow_run', 1, sha), group('workflow_run', 2, 'b'.repeat(40)));
-    assert.notEqual(group('workflow_run', 1, sha), `deploy-gate-${sha}`, 'admission must not acquire its own writer lock');
-    for (const event of ['schedule', 'workflow_dispatch']) {
-      assert.notEqual(group(event, 1), group(event, 2), `${event} runs must not replace each other`);
-      assert.notEqual(group(event, 1), group('workflow_run', 1, sha));
-    }
-  });
-
-  it('routes completion events through one writer job and retains recovery phases (#8726)', () => {
-    const { jobs } = YAML.parse(deployGateWorkflow);
-    const direct = jobs['evaluate-direct'];
-    assert.ok(direct, 'completion events must not run planner and aggregate jobs');
-    assert.equal(direct.needs, undefined);
-    assert.deepEqual(direct.strategy.matrix, { sha: ['${{ github.event.workflow_run.head_sha }}'] });
-    const evaluate = direct.steps.find((step: { run?: string }) => step.run === 'bash -e .github/scripts/deploy-gate.sh evaluate');
-    assert.equal(evaluate.env.SHA, '${{ matrix.sha }}');
-    assert.equal(evaluate.env.CHECK_ATTEMPTS, 2, 'retain the stale-read retry');
-    assert.equal(
-      evaluate.env.TRIGGER_RUN_ID,
-      '${{ github.event.workflow_run.id }}',
-      'a stale listing of the run that fired this event must not skip the last re-poll',
-    );
-    // base_drift unshallows on demand, so both evaluators check out one commit
-    // and only the script; a full-history checkout on every event cost a
-    // median 11s (p90 62s) of runner time for a graph few evaluations read.
-    for (const job of [direct, jobs.evaluate]) {
-      const checkout = job.steps.find((step: { uses?: string }) => step.uses?.startsWith('actions/checkout@'));
-      assert.equal(checkout.with['fetch-depth'], undefined);
-      assert.equal(checkout.with.filter, 'blob:none');
-      assert.equal(checkout.with['sparse-checkout'], '.github/scripts');
-    }
-    assert.match(deployGateScript, /--is-shallow-repository\)" = "true" \]; then\n\s+deepen=\(--unshallow\)/);
-
-    for (const event of ['workflow_run', 'schedule', 'workflow_dispatch']) {
-      const completion = event === 'workflow_run';
-      const needs = {
-        discover: { result: completion ? 'skipped' : 'success', outputs: { count: '0' } },
-        recover: { result: completion ? 'skipped' : 'success', outputs: { count: '1' } },
-      };
-      const admitted = Object.entries(jobs).filter(([, job]) => {
-        const expression = (job as { if: string }).if.replace(/^\$\{\{\s*|\s*\}\}$/g, '');
-        return runInNewContext(expression, { github: { event_name: event, repository: 'koala73/worldmonitor' }, needs, always: () => true });
-      }).map(([name]) => name);
-      assert.deepEqual(admitted, completion ? ['evaluate-direct'] : ['discover', 'recover', 'evaluate', 'gate'], event);
-    }
-  });
-
-  it('serializes every deploy-gate writer by SHA behind the sweep phase barriers', () => {
-    const workflow = YAML.parse(deployGateWorkflow) as {
-      concurrency?: unknown;
-      jobs?: Record<string, {
-        concurrency?: { group?: string; queue?: string; 'cancel-in-progress'?: boolean };
-        needs?: string | string[];
-        if?: string;
-        strategy?: { 'fail-fast'?: boolean };
-        steps?: Array<{ uses?: string; with?: Record<string, unknown>; if?: string; run?: string }>;
-      }>;
-    };
-    const jobs = workflow.jobs ?? {};
-
-    assert.match(
-      (workflow.concurrency as { group: string }).group,
-      /^deploy-gate-events-/,
-      'workflow admission must use a separate namespace from the SHA writer lock',
-    );
-    assert.deepEqual(jobs.recover?.needs, ['discover', 'invalidate']);
-    assert.equal(jobs.evaluate?.needs, 'recover');
-    assert.deepEqual(jobs.gate?.needs, ['discover', 'invalidate', 'recover', 'evaluate']);
-    assert.match(jobs.recover?.if ?? '', /always\(\).*needs\.discover\.result == 'success'/);
-    assert.match(jobs.evaluate?.if ?? '', /always\(\).*needs\.recover\.result == 'success'.*outputs\.count != '0'/);
-    assert.match(jobs.invalidate?.if ?? '', /needs\.discover\.result == 'success'.*outputs\.count != '0'/);
-    assert.equal(jobs.gate?.if, "${{ (always() && github.event_name != 'workflow_run') && (github.event_name != 'schedule' || github.repository == 'koala73/worldmonitor') }}");
-
-    for (const name of ['invalidate', 'evaluate', 'evaluate-direct']) {
-      assert.equal(jobs[name]?.concurrency?.group, 'deploy-gate-${{ matrix.sha }}', `${name} must own the SHA lock`);
-      assert.equal(jobs[name]?.concurrency?.queue, 'max', `${name} must not replace older pending writers`);
-      assert.equal(jobs[name]?.concurrency?.['cancel-in-progress'], false, `${name} must not interrupt an active writer`);
-      assert.equal(jobs[name]?.strategy?.['fail-fast'], false, `${name} must finish unrelated SHA work`);
-    }
-
-    for (const name of ['discover', 'invalidate', 'recover', 'evaluate', 'evaluate-direct']) {
-      const checkout = jobs[name]?.steps?.find((step) => step.uses?.startsWith('actions/checkout@'));
-      assert.equal(checkout?.with?.ref, '${{ github.workflow_sha }}', `${name} must execute trusted workflow code`);
-      assert.equal(checkout?.with?.['persist-credentials'], false);
-    }
-    const upload = jobs.invalidate?.steps?.find((step) => step.uses?.startsWith('actions/upload-artifact@'));
-    assert.equal(upload?.if, '${{ always() }}');
-    assert.equal(upload?.with?.name, 'deploy-gate-invalidate-${{ github.run_attempt }}-${{ matrix.sha }}');
-    assert.equal(upload?.with?.['if-no-files-found'], 'error');
-    const download = jobs.recover?.steps?.find((step) => step.uses?.startsWith('actions/download-artifact@'));
-    assert.equal(download?.with?.pattern, 'deploy-gate-invalidate-${{ github.run_attempt }}-*');
-    assert.notEqual(download?.with?.['merge-multiple'], true, 'per-SHA result files must not overwrite one another');
-  });
-
-  it('names exactly the triggering workflows as the ones whose runs skip the stale-read wait', () => {
-    // An evaluation skips its 60s re-poll while a gated run for the head is
-    // unfinished, because that run's completion event evaluates again. A name
-    // missing here only keeps a wait; an extra name could skip the wait on the
-    // head's last event, which is #5479.
-    const workflow = YAML.parse(deployGateWorkflow);
-    assert.deepEqual(workflow.env.GATED_WORKFLOWS.split(','), workflow.on.workflow_run.workflows);
-  });
-
-  it('treats sidecar changes as code for PR smoke gating', () => {
-    assert.ok(
-      testWorkflow.includes('^src-tauri\\/sidecar\\/'),
-      'test.yml must not classify src-tauri/sidecar changes as docs-only changes',
-    );
-  });
-
   it('shares tracked edge bundle discovery with pre-push', () => {
-    const edgeBundleStep = workflowStepBlock(testWorkflow, 'Edge function bundle check');
+    const edgeBundleStep = workflowStepBlock(ciWorkflow, 'Edge function bundle check');
     assert.match(
       edgeBundleStep,
       /^\s+run: node scripts\/check-edge-function-bundles\.mjs --caller=ci\s*$/m,
     );
     assert.doesNotMatch(edgeBundleStep, /find api\//);
-  });
-
-  it('routes Tauri config edits into the job that runs the one-binary gate (#5908)', () => {
-    // Executes the real awk from test.yml rather than string-matching it: a
-    // regex typo in the carve-out would silently exempt Tauri-config changes
-    // from CI while a source-text assertion stayed green — the same drift class
-    // #5908 was filed to fix. tests/desktop-one-binary-model.test.mjs runs in
-    // `unit`, which is gated on this `code` output.
-    const awkBlock = shellAwkAssignmentBlock('CODE');
-    const codeFilterSays = (path: string) => evaluateAwkAssignmentBlock(awkBlock, [path]) > 0;
-
-    for (const path of [
-      'src-tauri/tauri.conf.json',
-      'src-tauri/tauri.tech.conf.json',
-      'src-tauri/profiles/commodity.json',
-      'api/download.js',
-      'src/config/variant.ts',
-      'scripts/desktop-package.mjs',
-      'package.json',
-      '.github/workflows/build-desktop.yml',
-    ]) {
-      assert.ok(codeFilterSays(path), `${path} must set code=true so the one-binary gate runs`);
-    }
-
-    // The carve-out must stay a carve-out: Rust and capability edits are still
-    // covered by desktop-config/desktop-rust, not by the full unit suite.
-    for (const path of ['src-tauri/Cargo.toml', 'src-tauri/src/main.rs', 'README.md', 'docs/desktop-app.mdx']) {
-      assert.ok(!codeFilterSays(path), `${path} must not set code=true`);
-    }
-  });
-
-  it('routes generated OpenAPI artifacts into the owning unit job (#6558, #6650)', () => {
-    // Executes the real awk rather than matching its source. These artifacts
-    // live under `docs/`, which the blanket `/^docs\// { next }` rule excludes,
-    // so the carve-outs are the only thing keeping an OpenAPI-only PR from
-    // setting code=false and skipping the contract tests in `unit`.
-    const awkBlock = shellAwkAssignmentBlock('CODE');
-    const codeFilterSays = (path: string) => evaluateAwkAssignmentBlock(awkBlock, [path]) > 0;
-
-    assert.ok(
-      codeFilterSays('docs/api/worldmonitor.openapi.yaml'),
-      'a PR that only regenerates the unified OpenAPI bundle must still run the unit job',
-    );
-    for (const path of [
-      'docs/api/MarketService.openapi.json',
-      'docs/api/MarketService.openapi.yaml',
-    ]) {
-      assert.ok(
-        codeFilterSays(path),
-        `${path} must set code=true so the OpenAPI filter-parameter contract test runs`,
-      );
-    }
-    // Prose under docs/ stays excluded — the carve-out is for the machine
-    // artifact, not for the directory.
-    for (const path of ['docs/api-reference.mdx', 'docs/engineering/research/perf/openapi-bundle-capacity-2026-08-13.md']) {
-      assert.ok(!codeFilterSays(path), `${path} must not set code=true`);
-    }
-
-    const unit = testJobBlock('unit-built-output');
-    assert.match(
-      unit,
-      /^\s+run: node scripts\/openapi-capacity-report\.mjs --out "\$RUNNER_TEMP\/openapi-capacity\.json"\s*$/m,
-      'unit job must publish the OpenAPI capacity report',
-    );
-    // No `--budget`: the step must measure against the real 950,000 guard. The
-    // flag exists for local what-if analysis and to exercise the over-budget
-    // exit in tests, and passing it here would be the one-line way to make the
-    // reported headroom mean nothing.
-    assert.ok(
-      !/openapi-capacity-report\.mjs[^\n]*--budget/.test(unit),
-      'the CI step must not override the scanner budget',
-    );
-    assert.match(
-      unit,
-      /name: openapi-capacity-\$\{\{ github\.run_attempt \}\}/,
-      'the capacity artifact name must carry run_attempt — upload-artifact v6 rejects a duplicate name within a run, which collides on the re-run started to chase the failure',
-    );
-    assert.match(
-      unit,
-      /path: \$\{\{ runner\.temp \}\}\/openapi-capacity\.json/,
-      'the capacity artifact must be read from the same path the step wrote',
-    );
-    // `if: failure()` would publish nothing on a green run and `if: success()`
-    // nothing on a red one; the breakdown is worth reading in both cases, and
-    // an over-budget run is when it matters most. Narrowing this to either
-    // would stop publishing on exactly the runs someone goes looking for it.
-    const upload = unit.slice(unit.indexOf('- name: Upload OpenAPI capacity report'));
-    assert.match(
-      upload.slice(0, upload.indexOf('- name: ', 1)),
-      /if: \$\{\{ !cancelled\(\) \}\}/,
-      'the capacity artifact must be uploaded whether the step passed or failed',
-    );
-    // The report must run BEFORE the suite: an over-budget artifact fails
-    // test:data anyway, and failing at the front costs 30s instead of 10min.
-    assert.ok(
-      unit.indexOf('openapi-capacity-report.mjs') < unit.indexOf('npm run test:data'),
-      'the capacity report must run before the test suite',
-    );
-  });
-
-  it('keeps resilience validation bundle inputs in the CI change filter', () => {
-    assert.ok(
-      testWorkflow.includes('validation: ${{ steps.diff.outputs.validation }}'),
-      'test.yml must expose a validation change output',
-    );
-    for (const input of REQUIRED_RESILIENCE_VALIDATION_INPUTS) {
-      assert.ok(testWorkflow.includes(workflowRegexNeedle(input)), `test.yml must cover ${input}`);
-    }
-  });
-
-  it('runs resilience-validation-smoke only for validation changes that skip unit', () => {
-    const job = testJobBlock('resilience-validation-smoke');
-    assert.match(
-      job,
-      /\n {4}if: needs\.changes\.outputs\.validation == 'true' && needs\.changes\.outputs\.code != 'true'\n/,
-      'the smoke job is the validation-docs path; unit already runs the same files whenever code changed (#7772)',
-    );
-    assert.doesNotMatch(
-      job,
-      /outputs\.code == 'true'/,
-      'a second npm ci on every code PR re-runs tests already inside test:data',
-    );
-  });
-
-  it('lints markdown only in the pre-push hook, not in CI', () => {
-    // This private fork publishes no docs site, so markdown lint left CI to
-    // free a runner slot. The pre-push hook is now its only owner.
-    assert.equal(YAML.parse(lintCodeWorkflow).jobs.markdown, undefined, 'lint-code.yml must not define a markdown job');
-    assert.doesNotMatch(workflowText, /npm run lint:md(?=\s|$)/, 'no workflow step runs markdown lint');
-    assert.ok(
-      !existsSync(resolve(workflowsDir, 'lint.yml')),
-      'lint.yml was a path-filtered markdown lint workflow; it must not come back',
-    );
-    assert.ok(
-      !deployGateRequiredChecks().includes('markdown'),
-      'the deploy gate must not wait for a markdown check that no job publishes',
-    );
-    assert.match(read(resolve(root, '.husky/pre-push')), /\n\s*npm run lint:md \|\| exit 1\n/, 'the pre-push hook still lints markdown');
-  });
-
-  it('path-filters Test jobs on push to main instead of compiling everything', () => {
-    const changes = testWorkflow.slice(testWorkflow.indexOf('id: diff'));
-    const pushGate = changes.slice(0, changes.indexOf('CODE=$('));
-    assert.match(
-      pushGate,
-      /compare\/\$\{BEFORE\}\.\.\.\$\{\{ github\.sha \}\}/,
-      'push to main must classify files from the compare API',
-    );
-    assert.match(
-      pushGate,
-      /No usable parent SHA; running every Test job/,
-      'a zero parent SHA must fail open',
-    );
-    assert.match(
-      pushGate,
-      /Compare listing is truncated at 300 files; running every Test job/,
-      'a truncated compare must fail open',
-    );
-    assert.match(pushGate, /emit_all_true/);
-    assert.ok(
-      pushGate.indexOf('compare/${BEFORE}') < pushGate.lastIndexOf('emit_all_true'),
-      'the compare must run; fail-open is only the truncated/error path',
-    );
-  });
-
-  it('does not rebuild Umami images for an unrelated Test workflow edit', () => {
-    const umamiFilter = shellAwkAssignmentBlock('UMAMI');
-    assert.equal(
-      evaluateAwkAssignmentBlock(umamiFilter, ['.github/workflows/test.yml']),
-      0,
-      'editing test.yml must not set umami=true — unit pins the job shape',
-    );
-    assert.ok(
-      evaluateAwkAssignmentBlock(umamiFilter, ['Dockerfile.umami']) > 0,
-      'Dockerfile.umami must still set umami=true',
-    );
-    assert.ok(
-      evaluateAwkAssignmentBlock(umamiFilter, ['scripts/umami-retention.sql']) > 0,
-      'the retention SQL must still set umami=true',
-    );
-  });
-
-  it('routes the root Docker context policy into image build jobs', () => {
-    for (const variable of ['DIGEST', 'UMAMI']) {
-      const awkBlock = shellAwkAssignmentBlock(variable);
-      assert.ok(
-        evaluateAwkAssignmentBlock(awkBlock, ['.dockerignore']) > 0,
-        `.dockerignore must set ${variable.toLowerCase()}=true`,
-      );
-    }
-  });
-
-  it('keeps desktop drift-gate inputs in the CI change filter (#5902)', () => {
-    assert.ok(
-      testWorkflow.includes('desktop_config: ${{ steps.diff.outputs.desktop_config }}'),
-      'test.yml must expose a desktop_config change output',
-    );
-    assert.ok(
-      testWorkflow.includes('desktop_rust: ${{ steps.diff.outputs.desktop_rust }}'),
-      'test.yml must expose a desktop_rust change output',
-    );
-    const desktopConfigFilter = shellAwkAssignmentBlock('DESKTOP_CONFIG');
-    const desktopRustFilter = shellAwkAssignmentBlock('DESKTOP_RUST');
-    for (const input of REQUIRED_DESKTOP_CONFIG_INPUTS) {
-      assert.ok(
-        desktopConfigFilter.includes(workflowRegexNeedle(input)),
-        `test.yml desktop_config filter must cover ${input}`,
-      );
-    }
-    assert.ok(
-      desktopConfigFilter.includes('/^\\.github\\/workflows\\/.*\\.ya?ml$/'),
-      'test.yml desktop_config filter must cover every workflow file for dynamic Tauri inventory',
-    );
-    assert.equal(
-      evaluateDesktopConfigFilter(desktopConfigFilter, ['.github/workflows/nightly.yaml']),
-      '1',
-      'desktop_config must trigger for a newly added workflow file',
-    );
-    assert.equal(
-      evaluateDesktopConfigFilter(desktopConfigFilter, ['src/app.ts']),
-      '0',
-      'desktop_config must not trigger for an unrelated source file',
-    );
-    for (const input of REQUIRED_DESKTOP_RUST_INPUTS) {
-      assert.ok(
-        desktopRustFilter.includes(workflowRegexNeedle(input)),
-        `test.yml desktop_rust filter must cover ${input}`,
-      );
-    }
-    assert.equal(
-      evaluateAwkAssignmentBlock(desktopRustFilter, ['src-tauri/src/lib.rs']),
-      1,
-      'desktop-rust must compile when the Tauri crate changes',
-    );
-    assert.equal(
-      evaluateAwkAssignmentBlock(desktopRustFilter, ['src-tauri/sidecar/local-api-server.js']),
-      0,
-      'desktop-rust must skip sidecar-only changes (those ride the code filter)',
-    );
-    assert.equal(
-      evaluateAwkAssignmentBlock(desktopRustFilter, ['.github/workflows/test.yml']),
-      0,
-      'desktop-rust must not compile the Tauri crate for a Test workflow edit',
-    );
-    assert.match(
-      testJobBlock('desktop-config'),
-      /if: needs\.changes\.outputs\.desktop_config == 'true'/,
-      'desktop-config job must use the desktop_config change output',
-    );
-    // Cargo.lock is the only thing that decides which crate versions ship, and
-    // no other job inspects it (security-audit covers npm lockfiles only), so
-    // dropping this step would let a cargo update silently reintroduce a known
-    // advisory — CVE-2026-42184 / #5518 is the case that motivated it.
-    const floorStep = workflowStepBlock(testWorkflow, 'Rust dependency security floors (#5518)');
-    assert.match(
-      floorStep,
-      /^\s+run: node scripts\/check-rust-security-floors\.mjs\s*$/m,
-      'desktop-config job must run the Rust dependency security-floor check',
-    );
-    // A presence-only assertion would stay green with the step neutered, so
-    // pin that it still fails the job (same guard the AppImage step carries).
-    assert.doesNotMatch(floorStep, /^\s+continue-on-error:/m);
-    const releaseFloorStep = workflowStepBlock(desktopBuildWorkflow, 'Rust dependency security floors (#5518)');
-    assert.match(
-      releaseFloorStep,
-      /^\s+run: node scripts\/check-rust-security-floors\.mjs\s*$/m,
-      'release workflow must verify the security floors of the lockfile it ships',
-    );
-    assert.doesNotMatch(releaseFloorStep, /^\s+continue-on-error:/m);
-    assert.match(
-      testJobBlock('desktop-rust'),
-      /if: needs\.changes\.outputs\.desktop_rust == 'true'/,
-      'desktop-rust job must use the desktop_rust change output',
-    );
-    // The sidecar handler bundle build must live in the `unit` job: its
-    // esbuild input graph spans src/ and server/ via the @/ alias, and only
-    // the `code` filter tracks that whole surface (#5902). A refactor moving
-    // it back to a narrower path-gated job would silently re-open the
-    // "bundle-breaking change with green PR CI" gap.
-    assert.match(
-      testJobBlock('unit-built-output'),
-      /^\s+node scripts\/build-sidecar-handlers\.mjs\s*$/m,
-      'unit job must run the sidecar handler bundle build',
-    );
-    // Desktop build env parity (#5905) runs in BOTH legs deliberately:
-    // desktop-config fires on workflow edits (build-desktop.yml is excluded
-    // from the `code` filter), while unit fires when src/ gains a new
-    // import.meta.env.VITE_ read. Dropping either leg reopens half the gap.
-    assert.match(
-      testJobBlock('desktop-config'),
-      /^\s+run: node scripts\/check-desktop-build-env\.mjs\s*$/m,
-      'desktop-config job must run the desktop build env parity check',
-    );
-    assert.match(
-      testJobBlock('unit-built-output'),
-      /^\s+run: node scripts\/check-desktop-build-env\.mjs\s*$/m,
-      'unit job must run the desktop build env parity check',
-    );
-    const releasePreflight = workflowStepBlock(
-      workflowJobBlock(desktopBuildWorkflow, 'client-env'), 'Release client-env preflight (#5905)',
-    );
-    assert.match(releasePreflight, /\[ "\$\{\{ github\.event_name \}\}" = "push" \] \|\|/);
-    assert.match(releasePreflight, /\[ "\$\{\{ github\.event_name \}\}" = "workflow_dispatch" \]/);
-    assert.match(releasePreflight, /\[ "\$\{\{ github\.event\.inputs\.draft \}\}" != "true" \]/);
-    assert.doesNotMatch(releasePreflight, /VITE_VAPID_PUBLIC_KEY/);
-    const canaryPreflight = workflowStepBlock(desktopCanaryWorkflow, 'Client env preflight (#5905)');
-    assert.match(canaryPreflight, /requires non-empty client env/);
-    assert.match(canaryPreflight, /VITE_CLERK_PUBLISHABLE_KEY/);
-    assert.match(canaryPreflight, /VITE_CONVEX_URL/);
-    assert.doesNotMatch(canaryPreflight, /VITE_VAPID_PUBLIC_KEY/);
-    assert.throws(
-      () => runReleasePreflight(releasePreflight, 'push', '', ''),
-      (error) => error.status === 1,
-      'tag pushes must fail when client env secrets are empty',
-    );
-    assert.throws(
-      () => runReleasePreflight(releasePreflight, 'workflow_dispatch', 'false', ''),
-      (error) => error.status === 1,
-      'published manual dispatches must fail when client env secrets are empty',
-    );
-    assert.doesNotThrow(
-      () => runReleasePreflight(releasePreflight, 'workflow_dispatch', 'true', ''),
-      'draft manual dispatches may run with empty client env secrets',
-    );
-    assert.doesNotThrow(
-      () => runReleasePreflight(releasePreflight, 'push', '', 'configured'),
-      'populated tag releases must pass the client env preflight',
-    );
-    // #5908: one published desktop binary means exactly one local build script,
-    // so the env gate has one place to live. Asserting the absence of the
-    // per-variant scripts keeps this from silently covering less than it did —
-    // a reintroduced `desktop:build:tech` would otherwise never be gate-checked.
-    assert.match(
-      packageScripts['desktop:tauri:build'] ?? '',
-      /npm run desktop:check-env/,
-      'desktop:tauri:build must run the local desktop env gate',
-    );
-    assert.deepEqual(
-      Object.keys(packageScripts).filter((name) => /^desktop:(tauri:)?build:/.test(name)),
-      [],
-      'per-variant desktop build scripts were retired with the one-binary model (#5908)',
-    );
-    const releasePostProcess = workflowStepBlock(desktopBuildWorkflow, 'Strip GPU libraries from AppImage');
-    assert.match(
-      releasePostProcess,
-      /^\s+bash scripts\/repack-linux-appimage\.sh "\$APPIMAGE" "\$TOOL_ARCH"\s*$/m,
-      'release workflow must apply the shared AppImage post-processing',
-    );
-    assert.match(releasePostProcess, /^\s+if: contains\(matrix\.platform, 'ubuntu'\)\s*$/m);
-    assert.doesNotMatch(releasePostProcess, /^\s+continue-on-error:/m);
-    const canaryPostProcess = workflowStepBlock(
-      desktopCanaryWorkflow,
-      'Apply release AppImage post-processing',
-    );
-    assert.match(
-      canaryPostProcess,
-      /^\s+bash scripts\/repack-linux-appimage\.sh "\$\{IMAGES\[0]}" x86_64\s*$/m,
-      'desktop canary must smoke-test the release-processed AppImage',
-    );
-    assert.doesNotMatch(canaryPostProcess, /^\s+(?:if|continue-on-error):/m);
-    const desktopCanarySmoke = workflowStepBlock(desktopCanaryWorkflow, 'Smoke-test AppImage');
-    assert.doesNotMatch(desktopCanarySmoke, /^\s+continue-on-error:/m);
-    assert.match(
-      desktopCanarySmoke,
-      /if CODE=\$\(curl[\s\S]{0,200}\[\[ "\$CODE" =~ \^\[1-5]\[0-9]\[0-9]\$ \]\]; then/,
-      'desktop canary readiness must require curl success and a real HTTP status',
-    );
-    assert.match(
-      desktopCanarySmoke,
-      /if FINAL_CODE=\$\(curl[\s\S]{0,200}\[\[ "\$FINAL_CODE" =~ \^\[1-5]\[0-9]\[0-9]\$ \]\]; then/,
-      'desktop canary must re-probe sidecar liveness after the observation window',
-    );
-    assert.ok(
-      desktopCanarySmoke.indexOf('if kill -0 "$APP_PID"') >
-        desktopCanarySmoke.indexOf('if FINAL_CODE=$(curl'),
-      'desktop canary must check app liveness after the final sidecar probe',
-    );
-    assert.match(
-      desktopCanarySmoke,
-      /^\s+if grep -q "SIDECAR_FINAL_STATUS=alive" \/tmp\/display-server\.log 2>\/dev\/null; then\s*$/m,
-      'desktop canary must gate success on final sidecar liveness',
-    );
-  });
-
-  it('runs workflow coverage when the release workflow changes', () => {
-    const codeFilter = shellAwkAssignmentBlock('CODE');
-    assert.doesNotMatch(
-      codeFilter,
-      /build-desktop\.yml/,
-      'build-desktop.yml changes must run the unit workflow-coverage assertions',
-    );
   });
 
   it('runs scheduled and per-PR production dependency audits for every package lockfile', () => {
@@ -2024,31 +839,9 @@ describe('CI workflow coverage', () => {
     }
   });
 
-  it('includes Rust policy inputs and every local audit helper in the sparse checkout', () => {
-    const checkout = YAML.parse(securityAuditWorkflow).jobs['audit-rust'].steps[0];
-    assert.equal(checkout.with['sparse-checkout-cone-mode'], false);
-    assert.equal(checkout.with.filter, undefined);
-    const paths = new Set(checkout.with['sparse-checkout'].trim().split('\n'));
-    for (const path of ['src-tauri/Cargo.lock', '.github/rust-advisory-decisions.json']) {
-      assert.ok(paths.has(`/${path}`), `sparse checkout must include ${path}`);
-    }
-    const pending = ['.github/scripts/audit-rust-dependencies.mjs'];
-    const visited = new Set<string>();
-    while (pending.length) {
-      const path = pending.pop()!;
-      if (visited.has(path)) continue;
-      visited.add(path);
-      assert.ok(paths.has(`/${path}`), `sparse checkout must include local helper ${path}`);
-      const source = read(resolve(root, path));
-      for (const match of source.matchAll(/(?:import|export)[^;]*?from ['"](\.[^'"]+)['"]/g)) {
-        pending.push(resolve(root, dirname(path), match[1]).slice(root.length + 1));
-      }
-    }
-  });
-
   it('loads audit modules and reads PR base objects from the configured sparse checkouts', () => {
     const jobs = YAML.parse(securityAuditWorkflow).jobs;
-    const auditJobs = ['audit-lockfile', 'audit-rust'];
+    const auditJobs = ['audit-lockfile'];
     const patterns = auditJobs.map((name) => jobs[name].steps[0].with['sparse-checkout'] as string);
     const dir = mkdtempSync(resolve(tmpdir(), 'wm-sparse-audit-'));
     const env = { ...process.env };
@@ -2074,8 +867,7 @@ describe('CI workflow coverage', () => {
         for (const path of patterns[index].trim().split('\n')) {
           assert.deepEqual(readFileSync(resolve(dir, path.slice(1))), readFileSync(resolve(root, path.slice(1))));
         }
-        const module = name === 'audit-rust' ? 'audit-rust-dependencies.mjs' : 'audit-production-dependencies.mjs';
-        execFileSync(process.execPath, ['--input-type=module', '-e', `await import('./.github/scripts/${module}')`], { cwd: dir, env });
+        execFileSync(process.execPath, ['--input-type=module', '-e', "await import('./.github/scripts/audit-production-dependencies.mjs')"], { cwd: dir, env });
         if (name === 'audit-lockfile') {
           const baseLock = git(['show', 'HEAD:package-lock.json']);
           writeFileSync(resolve(dir, 'package-lock.json'), `${baseLock}\n`);
@@ -2227,16 +1019,14 @@ describe('CI workflow coverage', () => {
 // (see 'applies concurrency only after the deployment-status gate' above).
 // There an evicted run reads as neither pass nor fail and the detection net
 // loses a probe. A superseded PR run has no verdict anyone will read.
-// Branch protection and deploy-gate.sh both evaluate the head SHA only.
+// Branch protection evaluates the head SHA only.
 //
-// Cancellation is scoped to pull_request. A push to main feeds the deploy
-// gate, and the lint/audit crons are standalone detection nets, so both keep
-// a per-run group that nothing can evict.
+// Cancellation is scoped to pull_request. A push to main still owes a verdict,
+// and the audit cron is a standalone detection net, so both keep a per-run
+// group that nothing can evict.
 describe('gated workflows evict superseded PR runs (#8443)', () => {
   const prScopedCancellers = [
-    ['test.yml', 'test'],
-    ['typecheck.yml', 'typecheck'],
-    ['lint-code.yml', 'lint-code'],
+    ['ci.yml', 'ci'],
     ['security-audit.yml', 'security-audit'],
   ] as const;
 
@@ -2254,19 +1044,16 @@ describe('gated workflows evict superseded PR runs (#8443)', () => {
       assert.equal(
         workflow.concurrency['cancel-in-progress'],
         PR_ONLY_CANCEL_IN_PROGRESS,
-        `${file} must cancel only pull_request runs — a superseded main push still owes the deploy gate a verdict`,
+        `${file} must cancel only pull_request runs — a superseded main push still owes a verdict`,
       );
     });
   }
 
-  // The gate's own trigger list is the definition of "blocks a merge". A new
+  // PR_GATE_WORKFLOWS is the definition of "blocks a merge". A new
   // workflow added there without cancellation reintroduces the dead-SHA burn
   // silently, because nothing about a wasted runner is ever red.
   it('leaves no gate-triggering workflow without cancellation', () => {
-    const gateWorkflows = (YAML.parse(deployGateWorkflow) as {
-      on: { workflow_run: { workflows: string[] } };
-    }).on.workflow_run.workflows;
-    assert.ok(gateWorkflows.length > 0, 'deploy-gate.yml must trigger on the gated workflows');
+    const gateWorkflows: readonly string[] = PR_GATE_WORKFLOWS;
 
     const byName = new Map<string, string>();
     for (const entry of readdirSync(workflowsDir)) {
@@ -2283,7 +1070,7 @@ describe('gated workflows evict superseded PR runs (#8443)', () => {
     // actually enabled retires the whole run.
     const uncancelled = gateWorkflows.filter((name) => {
       const source = byName.get(name);
-      assert.ok(source, `deploy-gate.yml triggers on "${name}", which no workflow file defines`);
+      assert.ok(source, `PR gate workflow "${name}" is not defined by any workflow file`);
       const concurrency = workflowLevelConcurrency(source);
       if (!concurrency) return true;
       const { group, 'cancel-in-progress': cancel } = concurrency;
@@ -2294,7 +1081,7 @@ describe('gated workflows evict superseded PR runs (#8443)', () => {
     assert.deepEqual(
       uncancelled,
       [],
-      `every workflow feeding the deploy gate must evict superseded runs: ${uncancelled.join(', ')}`,
+      `every PR gate workflow must evict superseded runs: ${uncancelled.join(', ')}`,
     );
   });
 
@@ -2305,9 +1092,7 @@ describe('gated workflows evict superseded PR runs (#8443)', () => {
   // uses for this (#8444, stacked-merge-guard.yml). A string cancel other than
   // the #8443 PR-only form is also unconditional.
   it('requires a non-PR fallback when a gated workflow cancels unconditionally (#8445)', () => {
-    const gateWorkflows = (YAML.parse(deployGateWorkflow) as {
-      on: { workflow_run: { workflows: string[] } };
-    }).on.workflow_run.workflows;
+    const gateWorkflows: readonly string[] = PR_GATE_WORKFLOWS;
 
     const byName = new Map<string, string>();
     for (const entry of readdirSync(workflowsDir)) {
@@ -2319,7 +1104,7 @@ describe('gated workflows evict superseded PR runs (#8443)', () => {
 
     const collapsed = gateWorkflows.filter((name) => {
       const source = byName.get(name);
-      assert.ok(source, `deploy-gate.yml triggers on "${name}", which no workflow file defines`);
+      assert.ok(source, `PR gate workflow "${name}" is not defined by any workflow file`);
       return cancelsUnconditionallyWithoutNonPrFallback(source);
     });
     assert.deepEqual(
@@ -2544,7 +1329,7 @@ describe('docker-publish conditions', () => {
     assert.ok(push, 'docker-publish.yml must trigger on push');
     assert.deepEqual(push.branches, ['main']);
     assert.equal(push['paths-ignore'], undefined);
-    // Application changes are built before merge by Test's unit-built-output
+    // Application changes are built before merge by CI's build
     // job and reach the image through the daily cron; a push rebuild is only
     // for the files nothing else builds.
     assert.deepEqual(push.paths, ['docker/**', '.dockerignore', '.github/workflows/docker-publish.yml']);
@@ -2556,8 +1341,7 @@ describe('docker-publish conditions', () => {
       .filter((source) => source !== '.');
     assert.ok(copied.length > 0, 'the Dockerfile must still COPY its configs from docker/');
     for (const source of copied) assert.match(source, /^docker\//, `${source} is COPYed into the image but outside docker/**`);
-    const testWorkflow = read(resolve(workflowsDir, 'test.yml'));
-    assert.match(testWorkflow, /\n {2}unit-built-output:\n/, 'the pre-merge build that covers application changes');
+    assert.match(ciWorkflow, /\n {6}- run: npm run build\n/, 'the pre-merge build that covers application changes');
   });
 
   it('keeps everything that is not main out of the pending slot main rebuilds evict', () => {
@@ -2614,13 +1398,12 @@ describe('docker-publish conditions', () => {
     assert.ok(pathLoop, 'the smoke step must enumerate the paths it requests');
     // `/lite` proves nginx rewrote to the SPA entry (lite.html) rather than that a
     // file is non-empty -- the assertion docker/Dockerfile cannot make (`/` only
-    // redirects to it). `/pro` is a live route that 404s if the pro build did
-    // not survive the copy.
-    assert.deepEqual(pathLoop[1].trim().split(/\s+/), ['/lite', '/pro/']);
+    // redirects to it).
+    assert.deepEqual(pathLoop[1].trim().split(/\s+/), ['/lite']);
     assert.match(smoke, /expected 200/, 'a non-200 must fail the job, not just print');
     // The empty-body guard must be scoped to the loop's `$path`, not hardcoded
     // to `/` alone (#8503 review, CodeRabbit) -- otherwise a 200-with-empty
-    // response from `/pro/` would pass silently while `/` alone stayed
+    // response from a probed route would pass silently while `/` alone stayed
     // covered.
     assert.match(smoke, /returned 200 with an empty body/, 'a 200 with no body must also fail the job');
     const loopBody = smoke.slice(smoke.indexOf('for path in'));
@@ -2676,8 +1459,7 @@ for arg in "$@"; do
 done
 [ "$SCENARIO" = "down" ] && exit 7
 code=200; body="<html>ok</html>"
-[ "$SCENARIO" = "pro-404" ] && [ "$path" = "/pro/" ] && { code=404; body="not found"; }
-[ "$SCENARIO" = "pro-empty" ] && [ "$path" = "/pro/" ] && body=""
+[ "$SCENARIO" = "lite-404" ] && [ "$path" = "/lite" ] && { code=404; body="not found"; }
 [ "$SCENARIO" = "lite-empty" ] && [ "$path" = "/lite" ] && body=""
 if [ "$mode" = code ]; then printf '%s' "$code"; exit 0; fi
 if [ "$code" -ge 400 ]; then exit 22; fi
@@ -2693,8 +1475,7 @@ exit 0`);
       assert.equal(run('ok').status, 0, 'a healthy image must pass the gate');
       assert.match(readFileSync(callLog, 'utf8'), /docker rm -f/, 'the container must be removed whatever the outcome');
       for (const [scenario, why] of [
-        ['pro-404', '/pro/ answering 404 is the regression docker/Dockerfile cannot see'],
-        ['pro-empty', '/pro/ answering 200 with no body is not a working page'],
+        ['lite-404', '/lite answering 404 is the regression docker/Dockerfile cannot see'],
         ['lite-empty', '/lite answering 200 with no body is not a working page'],
         ['down', 'a server that never comes up must not pass'],
       ]) {
@@ -2851,27 +1632,5 @@ describe('scheduled workflows run only in the upstream repository', () => {
     for (const [event_name, repository, expected] of cases) {
       assert.equal(runInNewContext(FORK_GUARD, { github: { event_name, repository } }), expected, `${event_name} in ${repository}`);
     }
-  });
-});
-
-describe('Rust toolchain pin', () => {
-  it('every dtolnay/rust-toolchain step installs the same exact release', () => {
-    const workflowDir = resolve(root, '.github/workflows');
-    const pins: { file: string; toolchain: unknown }[] = [];
-    for (const file of readdirSync(workflowDir).filter((f) => /\.ya?ml$/.test(f))) {
-      const workflow = YAML.parse(read(resolve(workflowDir, file))) as { jobs?: Record<string, { steps?: { uses?: string; with?: Record<string, unknown> }[] }> };
-      for (const job of Object.values(workflow.jobs ?? {})) {
-        for (const step of job.steps ?? []) {
-          if (step.uses?.startsWith('dtolnay/rust-toolchain@')) pins.push({ file, toolchain: step.with?.toolchain });
-        }
-      }
-    }
-    for (const file of ['build-desktop.yml', 'test.yml', 'test-linux-app.yml']) {
-      assert.ok(pins.some((pin) => pin.file === file), `${file} must install Rust with dtolnay/rust-toolchain`);
-    }
-    for (const { file, toolchain } of pins) {
-      assert.match(String(toolchain), /^\d+\.\d+\.\d+$/, `${file} must pin an exact Rust release, not a channel like stable`);
-    }
-    assert.equal(new Set(pins.map((pin) => String(pin.toolchain))).size, 1, 'release and test builds must compile with one Rust release');
   });
 });

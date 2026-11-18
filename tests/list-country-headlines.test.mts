@@ -8,8 +8,6 @@ import { drainResponseHeaders } from '../server/_shared/response-headers';
 import { __resetKeyPrefixCacheForTests } from '../server/_shared/redis';
 import { createNewsServiceRoutes, type ListCountryHeadlinesResponse } from '../src/generated/server/worldmonitor/news/v1/service_server';
 import { validateGeneratedRequest } from '../server/request-validator';
-import { selectCountryHeadlines } from '../scripts/freeze-crawlable-live-pulse.mjs';
-import { briefGroundingGap } from '../scripts/crawlable-developments.mjs';
 
 const route = createNewsServiceRoutes(newsHandler, { validateRequest: validateGeneratedRequest })
   .find(entry => entry.path.endsWith('/list-country-headlines'))!;
@@ -124,8 +122,6 @@ describe('country headlines from existing curated RSS caches', () => {
     const { payload } = await request(['CM', 'NE', 'MU']);
     assert.deepEqual(Object.keys(payload.countries), ['CM', 'NE']);
     assert.equal(payload.countries.CM.items[0].source, source.name);
-    const rows = selectCountryHeadlines(payload.countries.CM.items, 'CM');
-    assert.equal(briefGroundingGap(rows), 'thin-grounding', 'retention cannot invent an independent publisher');
   });
 
   it('retains a dated Atom headline when the first five entries have no titles', async () => {
@@ -185,7 +181,7 @@ describe('country headlines from existing curated RSS caches', () => {
     assert.deepEqual(payload.countries.CM.items.map(row => row.link), ['https://www.theguardian.com/accepted']);
   });
 
-  it('carries a parsed regional article through the registered RPC into country grounding', async () => {
+  it('carries a parsed regional article through the registered RPC', async () => {
     const source = feed('Guardian Pacific');
     const publishedAt = new Date(Date.now() - 3600_000).toUTCString();
     const xml = `<rss><channel><item><title>Vanuatu ferry search continues</title><link>https://www.theguardian.com/world/vanuatu-search</link><pubDate>${publishedAt}</pubDate></item></channel></rss>`;
@@ -197,10 +193,9 @@ describe('country headlines from existing curated RSS caches', () => {
     assert.equal(payload.state, 'complete');
     assert.equal(payload.feedCached, payload.feedTotal);
     assert.deepEqual(Object.keys(payload.countries), ['VU']);
-    const rows = selectCountryHeadlines(payload.countries.VU.items, 'VU');
+    const rows = payload.countries.VU.items;
     assert.equal(rows[0].source, 'Guardian Pacific');
-    assert.equal(rows[0].publishedAt, new Date(publishedAt).toISOString());
-    assert.equal(briefGroundingGap(rows), 'thin-grounding');
+    assert.equal(rows[0].publishedAt, Date.parse(publishedAt));
     assert.ok(commands.some(command => command[1] === rssFeedCacheKey('full', source.url)));
   });
 
@@ -244,7 +239,6 @@ describe('country headlines from existing curated RSS caches', () => {
     const { payload } = await request();
     assert.equal(payload.countries.PW.items.length, 5);
     assert.deepEqual(payload.countries.PW.items.slice(0, 2).map(row => row.source), ['Guardian Pacific', 'Island Times (Palau)']);
-    assert.equal(briefGroundingGap(selectCountryHeadlines(payload.countries.PW.items, 'PW')), null);
   });
 
   it('retains trusted newsroom identity across aggregator feeds and ignores forged origins', async (t) => {
@@ -268,7 +262,6 @@ describe('country headlines from existing curated RSS caches', () => {
     }
     const { payload } = await request(['ML']);
     assert.deepEqual(payload.countries.ML.items.map(row => row.source), ['NPR News', 'PBS NewsHour']);
-    assert.equal(briefGroundingGap(selectCountryHeadlines(payload.countries.ML.items, 'ML')), null);
     put('Guardian Pacific', [article('Guardian Pacific', { originPublisher: 'Reuters', originPublisherTrusted: false })]);
     assert.equal((await request()).payload.countries.PW.items[0].source, 'Guardian Pacific');
   });

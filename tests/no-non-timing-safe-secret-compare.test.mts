@@ -38,8 +38,8 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const apiDir = join(__dirname, '..', 'api');
-// The desktop sidecar authenticates every local request against LOCAL_API_TOKEN.
-const sidecarDir = join(__dirname, '..', 'src-tauri', 'sidecar');
+// The local API sidecar authenticates every local request against LOCAL_API_TOKEN.
+const sidecarDir = join(__dirname, '..', 'docker', 'local-api');
 
 // Variable-name fragments we treat as secret-bearing. Matched
 // case-insensitively as a SUBSTRING of an identifier, so `secret` alone
@@ -320,14 +320,14 @@ describe('no non-timing-safe secret comparison in api/ (#3803)', () => {
     );
   });
 
-  it('no such comparison exists in the desktop sidecar sources either', async () => {
+  it('no such comparison exists in the local API sidecar sources either', async () => {
     const files = await walk(sidecarDir);
     assert.ok(files.some((file) => file.endsWith('local-api-server.mjs')), 'sidecar walk must include local-api-server.mjs');
     const pattern = buildSecretComparePattern();
     const violations: string[] = [];
     for (const file of files) {
       if (pattern.test(normaliseForScan(await readFile(file, 'utf8')))) {
-        violations.push(file.slice(file.indexOf('/src-tauri/') + 1));
+        violations.push(file.slice(file.indexOf('/docker/') + 1));
       }
     }
     assert.deepEqual(violations, [], `Non-timing-safe secret comparison detected in: ${violations.join(', ')}`);

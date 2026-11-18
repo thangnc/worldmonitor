@@ -11,7 +11,7 @@
 //   credibility   shared/news-credibility.js           computeCredibilityScore
 //   figures       shared/brief-llm-core.js             extractNumericFacts, validateNoHallucinatedFacts
 //   anchor script shared/brief-llm-core.js             the brief hallucination validators
-//   open web      scripts/crawlable-developments.mjs   briefGroundingPublisherCount, briefGroundingGap
+//   open web      shared/brief-grounding.js            briefGroundingPublisherCount, briefGroundingGap
 //   wording       src/locales/en.json                  components.corroboration.*
 
 import { readFileSync } from 'node:fs';
@@ -26,7 +26,7 @@ import {
   validateNoHallucinatedProperNouns,
   validateNoHallucinatedStatusQualifiers,
 } from '../../../shared/brief-llm-core.js';
-import { briefGroundingGap, briefGroundingPublisherCount } from '../../../scripts/crawlable-developments.mjs';
+import { briefGroundingGap, briefGroundingPublisherCount } from '../../../shared/brief-grounding.js';
 
 export { MIN_CORROBORATING_PUBLISHERS, TIER_MEANING, briefGroundingGap, briefGroundingPublisherCount };
 

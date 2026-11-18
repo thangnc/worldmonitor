@@ -32,8 +32,7 @@ description: "更改、验证并发布 WorldMonitor WebMCP 契约，同时避免
 | `src/config/panel-enablement.ts` | 面板启用策略，以及 `set_panel_enabled` 使用的设置持久化与应用路径。 |
 | `src/services/clerk.ts` | 实时访问上下文、无个人身份信息的快照，以及现有 Clerk 登录对话框。 |
 | `src/services/panel-layout-actions.ts`、`src/services/tab-store.ts` 和 `src/services/dashboard-tab-actions.ts` | 面板布局快照/折叠/移动/全屏策略，以及仪表板标签页 UI、持久化、名称与 ID 限制，和列出、选择、创建、重命名、删除操作。 |
-| `pro-test/welcome.html` | `launchWorldMonitor` 和 `getWorldMonitorMcpEndpoint` 的零导入首页注册。 |
-| `vercel.json`、`docker/nginx-security-headers.conf`、`docker/nginx-embed-security-headers.conf`、`vite.config.ts` 和 `pro-test/vite.config.ts` | Trial 注册、源隔离、同源许可、本地测试一致性和明确的 embed 拒绝。 |
+| `vercel.json`、`docker/nginx-security-headers.conf`、`docker/nginx-embed-security-headers.conf` 和 `vite.config.ts` | Trial 注册、源隔离、同源许可、本地测试一致性和明确的 embed 拒绝。 |
 | `tests/webmcp*.test.*` 和 `tests/deploy-config.test.mjs` | 确定性清单、schema、生命周期、UI、遥测、文档和部署边界契约。 |
 | `tests/fixtures/webmcp/evals.v1.json` 和 `scripts/evaluate-webmcp-evals.mjs` | 离线工具选择和多步流程评估契约。 |
 

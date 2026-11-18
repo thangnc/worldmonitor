@@ -151,12 +151,12 @@ describe('safe HTML lint guard', () => {
     assert.match(result.stderr, /--update-baseline has been removed/);
   });
 
-  it('is wired into npm lint and the pre-push guardrail', () => {
+  it('is wired into npm lint, which CI runs on every PR', () => {
     const pkg = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
-    const prePush = readFileSync(path.join(repoRoot, '.husky', 'pre-push'), 'utf8');
+    const ci = readFileSync(path.join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8');
 
     assert.match(pkg.scripts.lint, /npm run lint:safe-html/);
-    assert.match(prePush, /npm run lint:safe-html/);
+    assert.match(ci, /^\s*- run: npm run lint\s*$/m);
   });
 
   it('does not baseline legacy HTML sinks in the project', () => {

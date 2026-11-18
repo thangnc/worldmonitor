@@ -11,7 +11,7 @@ import { describe, it } from 'node:test';
 
 import { TIER_GATED_PATHS } from '../server/_shared/entitlement-check.ts';
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
-import { __testing__ } from '../src-tauri/sidecar/local-api-server.mjs';
+import { __testing__ } from '../docker/local-api/local-api-server.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const runtimeConfig = readFileSync(resolve(root, 'src/services/runtime-config.ts'), 'utf8');
