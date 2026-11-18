@@ -78,16 +78,6 @@ async function readCachedJsonInternal(
   raw = false,
   unwrapSeedEnvelope = true,
 ): Promise<CacheReadResult> {
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    try {
-      const { sidecarCacheGet } = await import('./sidecar-cache.js');
-      const value = sidecarCacheGet(key);
-      return value == null ? { status: 'miss' } : { status: 'hit', value };
-    } catch (error) {
-      return { status: 'error', error };
-    }
-  }
-
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return { status: 'miss' };
@@ -147,10 +137,6 @@ export function logCacheReadError(key: string, err: unknown): void {
  * the prefix system) must use this to read the same key they wrote.
  */
 export async function getRawJson(key: string): Promise<unknown | null> {
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    const { sidecarCacheGet } = await import('./sidecar-cache.js');
-    return sidecarCacheGet(key);
-  }
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) throw new Error('Redis credentials not configured');
@@ -173,10 +159,6 @@ export async function getRawJson(key: string): Promise<unknown | null> {
  * last-good fallbacks; this path uses the bounded pipeline deadline instead.
  */
 export async function getLargeRawJson(key: string, timeoutMs?: number): Promise<unknown | null> {
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    const { sidecarCacheGet } = await import('./sidecar-cache.js');
-    return sidecarCacheGet(key);
-  }
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return null;
@@ -208,11 +190,6 @@ export async function getLargeRawJson(key: string, timeoutMs?: number): Promise<
  * (seeders don't know about the Vercel env-prefix scheme).
  */
 export async function getCachedRawString(key: string): Promise<string | null> {
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    const { sidecarCacheGet } = await import('./sidecar-cache.js');
-    const v = sidecarCacheGet(key);
-    return typeof v === 'string' ? v : null;
-  }
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return null;
@@ -251,11 +228,6 @@ export async function getCachedEnvelopeJson(key: string, raw = false): Promise<u
 }
 
 export async function setCachedJson(key: string, value: unknown, ttlSeconds: number, raw = false): Promise<boolean> {
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    const { sidecarCacheSet } = await import('./sidecar-cache.js');
-    return sidecarCacheSet(key, value, ttlSeconds);
-  }
-
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return false;
@@ -308,11 +280,6 @@ export async function setCachedJsonIfAbsent(
   raw = false,
   onError?: (error: unknown) => void,
 ): Promise<boolean> {
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    const { sidecarCacheSetIfAbsent } = await import('./sidecar-cache.js');
-    return sidecarCacheSetIfAbsent(key, value, ttlSeconds);
-  }
-
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return false;
@@ -354,17 +321,6 @@ export async function readCachedJsonList(
   const boundedLimit = Number.isFinite(limit)
     ? Math.max(1, Math.floor(limit))
     : 1;
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    try {
-      const { sidecarCacheGet } = await import('./sidecar-cache.js');
-      const value = sidecarCacheGet(key);
-      if (!Array.isArray(value) || value.length === 0) return { status: 'miss' };
-      return { status: 'hit', value: value.slice(0, boundedLimit) };
-    } catch (error) {
-      return { status: 'error', error };
-    }
-  }
-
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return { status: 'miss' };
@@ -439,22 +395,6 @@ export async function prependCachedJsonList(
     encoded = serialized;
   } catch {
     return false;
-  }
-
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    try {
-      const { sidecarCacheGet, sidecarCacheSet } = await import('./sidecar-cache.js');
-      const existing = sidecarCacheGet(key);
-      const retained = Array.isArray(existing)
-        ? existing.filter((item) => JSON.stringify(item) !== encoded)
-        : [];
-      return sidecarCacheSet(key, [value, ...retained].slice(0, boundedLimit), boundedTtlSeconds);
-    } catch (err) {
-      // sentry-coverage-ok: this helper returns false to its caller, and a
-      // history write must never fail the current response it will inform.
-      console.warn('[redis] prependCachedJsonList failed:', errMsg(err));
-      return false;
-    }
   }
 
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -593,19 +533,6 @@ export async function getCachedJsonBatch(keys: string[], raw = false): Promise<M
   const result = new Map<string, unknown>();
   if (keys.length === 0) return result;
 
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    try {
-      const { sidecarCacheGet } = await import('./sidecar-cache.js');
-      for (const key of keys) {
-        const value = sidecarCacheGet(key);
-        if (value != null) result.set(key, value);
-      }
-    } catch (error) {
-      console.warn('[redis] getCachedJsonBatch failed:', errMsg(error));
-    }
-    return result;
-  }
-
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return result;
@@ -662,7 +589,6 @@ export async function getCachedJsonBatch(keys: string[], raw = false): Promise<M
  * keeps it stubbable alongside the command helpers in tests.
  */
 export function isRedisConfigured(): boolean {
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') return true;
   return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 }
 
@@ -702,7 +628,6 @@ export async function runRedisPipeline(
   raw = false,
   timeoutMs?: number,
 ): Promise<RedisCommandResult[]> {
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') return [];
   if (commands.length === 0) return [];
 
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -739,7 +664,6 @@ export async function runRedisTransaction(
   raw = false,
   timeoutMs?: number,
 ): Promise<RedisCommandResult[]> {
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') return [];
   if (commands.length === 0) return [];
 
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -776,7 +700,6 @@ export async function runRedisTransaction(
 }
 
 export async function compareAndDeleteRedisKey(key: string, expectedValue: string, raw = false): Promise<boolean> {
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') return false;
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token || !expectedValue) return false;

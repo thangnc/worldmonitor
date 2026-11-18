@@ -1,4 +1,3 @@
-import { isDesktopRuntime } from '../services/desktop-runtime';
 
 interface CircuitState {
   failures: number;
@@ -59,13 +58,6 @@ const PERSISTENT_STALE_CEILING_MS = 24 * 60 * 60 * 1000; // 24h — discard pers
 const DEFAULT_CACHE_KEY = '__default__';
 const DEFAULT_MAX_CACHE_ENTRIES = 256;
 const DEFAULT_RECOVERY_PROBE_TIMEOUT_MS = 30_000;
-
-function isDesktopOfflineMode(): boolean {
-  // The shared detector, not a raw window.__TAURI__ read: the raw read said
-  // "web" in every desktop configuration that has no bridge global at that
-  // moment, so the offline stale-cache path never engaged there (#5912).
-  return isDesktopRuntime() && typeof navigator !== 'undefined' && navigator.onLine === false;
-}
 
 export class CircuitBreaker<T> {
   private state: CircuitState = { failures: 0, cooldownUntil: 0 };
@@ -467,7 +459,8 @@ export class CircuitBreaker<T> {
       maxServeAgeMs?: number;
     } = {},
   ): Promise<R> {
-    const offline = isDesktopOfflineMode();
+    // The offline mode served the desktop app, which left in refactor Phase 1b.
+    const offline = false;
     const cacheKey = this.resolveCacheKey(options.cacheKey);
     const shouldCache = options.shouldCache ?? (() => true);
     const evictOnRefreshFailure = options.evictOnRefreshFailure ?? false;

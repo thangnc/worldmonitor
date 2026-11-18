@@ -126,7 +126,7 @@ describe('docker/Dockerfile — tsc inputs stay inside the build context', () =>
     .filter((f) => /\.(ts|tsx|mts)$/.test(f) && !f.endsWith('.d.ts'));
 
   it('the matcher reads .dockerignore the way Docker does (sanity)', () => {
-    assert.ok(files.length > 100, `expected the tsconfig include set to be large, got ${files.length}`);
+    assert.ok(files.length > 80, `expected the tsconfig include set to be large, got ${files.length}`);
     assert.equal(isExcluded(rules, 'tests/fixtures/qualified-country-signals.ts'), true);
     assert.equal(isExcluded(rules, 'e2e/runtime.spec.ts'), true);
     assert.equal(isExcluded(rules, 'src/e2e/country-qualified-signals-harness.ts'), false);

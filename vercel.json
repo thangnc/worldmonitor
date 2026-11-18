@@ -14,7 +14,6 @@
     { "source": "/stocks/", "destination": "/stocks", "permanent": true },
     { "source": "/stocks/:symbol/", "destination": "/stocks/:symbol", "permanent": true },
     { "source": "/verify/", "destination": "/verify", "permanent": true },
-    { "source": "/desktop-sign-in/", "destination": "/desktop-sign-in", "permanent": true },
     { "source": "/", "destination": "/lite", "permanent": false },
     { "source": "/dashboard", "destination": "/lite", "permanent": false },
     { "source": "/stocks", "destination": "/lite", "permanent": false },
@@ -78,21 +77,7 @@
       ]
     },
     {
-      "source": "/desktop-sign-in",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
-        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
-      ]
-    },
-    {
-      "source": "/desktop-sign-in.html",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
-        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
-      ]
-    },
-    {
-      "source": "/((?!api|assets|src|tmp|server|favico|map-styles|data|textures|sw\\.js|workbox-[a-f0-9]+\\.js|manifest\\.webmanifest|offline\\.html|robots\\.txt|\\.well-known|desktop-sign-in\\.html|desktop-sign-in).*)",
+      "source": "/((?!api|assets|src|tmp|server|favico|map-styles|data|textures|sw\\.js|workbox-[a-f0-9]+\\.js|manifest\\.webmanifest|offline\\.html|robots\\.txt|\\.well-known).*)",
       "headers": [
         { "key": "Cache-Control", "value": "private, no-cache, must-revalidate" }
       ]

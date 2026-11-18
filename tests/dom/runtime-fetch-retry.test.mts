@@ -1,11 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const proxy = vi.hoisted(() => vi.fn());
-vi.mock('@wm/client/services/tauri-bridge', () => ({ proxyLocalApiRequest: proxy }));
-
 const API = 'https://api.worldmonitor.app';
 const ORIGIN = 'https://worldmonitor.app';
-const PATH = '/api/version';
+const PATH = '/api/health';
 const originalFetch = window.fetch;
 const state = window as unknown as Record<string, unknown>;
 
@@ -21,14 +18,12 @@ function inputFor(form: Form, method: string): [RequestInfo | URL, RequestInit?]
 
 beforeEach(() => {
   vi.resetModules();
-  proxy.mockReset();
   vi.stubEnv('VITE_WS_API_URL', API);
   vi.stubGlobal('location', { hostname: 'worldmonitor.app', host: 'worldmonitor.app', protocol: 'https:', origin: ORIGIN, href: ORIGIN + '/' });
 });
 afterEach(() => {
   window.fetch = originalFetch;
   delete state.__wmWebRedirectPatched;
-  delete state.__wmFetchPatched;
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
   vi.useRealTimers();
@@ -114,57 +109,5 @@ describe('web generic fallback', () => {
     expect((await request).status).toBe(200);
     expect(native).toHaveBeenCalledTimes(2);
     expect(native.mock.calls.map(call => String(call[0]))).toEqual([API + PATH, API + PATH]);
-  });
-});
-
-describe('desktop generic recovery', () => {
-  for (const form of ['relative', 'url', 'request'] as const) {
-    for (const failure of [502, 'network'] as const) {
-      it(`does not replay POST ${form} after ${failure}`, async () => {
-        vi.stubGlobal('__TAURI_INTERNALS__', {});
-        const native = vi.fn(async () => new Response('cloud'));
-        window.fetch = native;
-        if (failure === 'network') proxy.mockRejectedValue(new Error('native failure'));
-        else proxy.mockResolvedValue(new Response('failure', { status: failure }));
-        (await import('@wm/client/services/runtime')).installRuntimeFetchPatch();
-        const request = window.fetch(...inputFor(form, 'POST'));
-        if (failure === 'network') await expect(request).rejects.toThrow('native failure');
-        else expect((await request).status).toBe(failure);
-        expect(proxy).toHaveBeenCalledTimes(1);
-        expect(native).not.toHaveBeenCalled();
-      });
-    }
-  }
-  it('preserves Request headers and signal on safe cloud fallback', async () => {
-    vi.stubGlobal('__TAURI_INTERNALS__', {});
-    const native = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('cloud'));
-    window.fetch = native;
-    proxy.mockResolvedValue(new Response('failure', { status: 502 }));
-    (await import('@wm/client/services/runtime')).installRuntimeFetchPatch();
-    const controller = new AbortController();
-    const request = new Request(ORIGIN + PATH, { headers: { 'X-Test': 'retained' }, signal: controller.signal });
-    expect((await window.fetch(request)).status).toBe(200);
-    const forwarded = native.mock.calls[0]?.[0];
-    expect(forwarded).toBeInstanceOf(Request);
-    if (!(forwarded instanceof Request)) throw new Error('Expected a Request');
-    expect(forwarded.headers.get('X-Test')).toBe('retained');
-    controller.abort();
-    expect(forwarded.signal.aborted).toBe(true);
-  });
-  it('does not retry or send to cloud when cancelled during startup backoff', async () => {
-    vi.useFakeTimers();
-    vi.stubGlobal('__TAURI_INTERNALS__', {});
-    const native = vi.fn(async () => new Response('cloud'));
-    window.fetch = native;
-    proxy.mockRejectedValue(new Error('native failure'));
-    (await import('@wm/client/services/runtime')).installRuntimeFetchPatch();
-    const controller = new AbortController();
-    const result = window.fetch(PATH, { signal: controller.signal }).catch(error => error);
-    await vi.advanceTimersByTimeAsync(1);
-    controller.abort();
-    await vi.runAllTimersAsync();
-    expect(await result).toBeInstanceOf(Error);
-    expect(proxy).toHaveBeenCalledTimes(1);
-    expect(native).not.toHaveBeenCalled();
   });
 });

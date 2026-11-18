@@ -88,8 +88,6 @@ internal/
 !api/internal/*.js
 !api/internal/*.mjs
 test-results/
-src-tauri/sidecar/node/*
-!src-tauri/sidecar/node/.gitkeep
 
 # AI planning session state
 .planning/
@@ -151,12 +149,6 @@ docs/brainstorms/
 docs/solutions/
 playground-pricing.html
 
-# Generated at build time by scripts/generate-third-party-notices.mjs (3MB+).
-# Ships inside the desktop bundle; never committed. The directory itself IS
-# committed (.gitkeep) because tauri-build resolves bundle.resources paths at
-# compile time — `cargo test` fails on a resource path that does not exist.
-src-tauri/notices/*
-!src-tauri/notices/.gitkeep
 
 
 # Turborepo local cache (refactor Phase 2)

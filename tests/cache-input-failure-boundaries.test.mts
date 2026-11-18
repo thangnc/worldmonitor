@@ -7,7 +7,6 @@ import { createIntelligenceServiceRoutes, type IntelligenceServiceHandler } from
 import { getFredSeries } from '../packages/server/worldmonitor/economic/v1/get-fred-series.ts';
 import { getGdeltTopicTimeline } from '../packages/server/worldmonitor/intelligence/v1/get-gdelt-topic-timeline.ts';
 import { getCountryEnergyProfile } from '../packages/server/worldmonitor/intelligence/v1/get-country-energy-profile.ts';
-import { sidecarCacheSet } from '../packages/server/_shared/sidecar-cache.ts';
 
 const originalEnv = { ...process.env };
 const originalFetch = globalThis.fetch;
@@ -183,21 +182,6 @@ it('reads a seeded energy spine and direct Ember fallback without a deployment p
   assert.equal(body.gasStorageFillPct, 80);
   assert.ok(keys.every(key => !key.startsWith('preview:')));
   assert.ok(!keys.some(key => key.startsWith('energy:jodi-oil:')), 'usable spine bypasses legacy reads');
-});
-
-it('preserves local sidecar FRED, GDELT, and energy reads', async () => {
-  process.env.LOCAL_API_MODE = 'tauri-sidecar';
-  delete process.env.UPSTASH_REDIS_REST_URL;
-  delete process.env.UPSTASH_REDIS_REST_TOKEN;
-  const keys = redisStub(() => assert.fail('sidecar must not use remote Redis'));
-  sidecarCacheSet('economic:fred:v1:ESTR:0', { series: { seriesId: 'ESTR', observations: [] } }, 60);
-  sidecarCacheSet('gdelt:intel:tone:cyber', { data: [{ date: '2026-09-13', value: 1 }], fetchedAt: '2026-09-13' }, 60);
-  sidecarCacheSet('energy:mix:v1:FR', { year: 2025, nuclearShare: 70 }, 60);
-  const ctx = { request: new Request('https://worldmonitor.app'), pathParams: {}, headers: {} };
-  assert.equal((await getFredSeries(ctx, { seriesId: 'estr', limit: 1 })).series?.seriesId, 'ESTR');
-  assert.equal((await getGdeltTopicTimeline(ctx, { topic: 'cyber' })).tone.length, 1);
-  assert.equal((await getCountryEnergyProfile(ctx, { countryCode: 'FR' })).nuclearShare, 70);
-  assert.deepEqual(keys, []);
 });
 
 it('reports missing Redis configuration as unavailable, not an observed empty seed', async () => {

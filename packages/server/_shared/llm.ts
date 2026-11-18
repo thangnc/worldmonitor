@@ -98,7 +98,7 @@ const OLLAMA_HOST_ALLOWLIST = new Set([
 
 function isLocalDeployment(): boolean {
   const mode = typeof process !== 'undefined' ? (process.env?.LOCAL_API_MODE || '') : '';
-  return mode.includes('sidecar') || mode.includes('docker');
+  return mode.includes('docker');
 }
 
 // OpenRouter provider routing now lives in scripts/_llm-model-timeouts.mjs, next to

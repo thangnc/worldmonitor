@@ -7,13 +7,12 @@ const BOT_UA =
 // Paths that bypass bot/script UA filtering below. Each must carry its own
 // auth (API key, shared secret, or intentionally-public semantics) because
 // this list disables the middleware's generic bot gate.
-// - /api/version, /api/health: intentionally public, monitoring-friendly.
+// - /api/health: intentionally public, monitoring-friendly.
 // - /api/seed-contract-probe: requires RELAY_SHARED_SECRET header; called by
 //   UptimeRobot + ops curl. Was blocked by the curl/bot UA regex before this
 //   exception landed (Vercel log 2026-04-15: "Middleware 403 Forbidden" on
 //   /api/seed-contract-probe).
 const PUBLIC_API_PATHS = new Set([
-  '/api/version',
   '/api/health',
   '/api/seed-contract-probe',
 ]);

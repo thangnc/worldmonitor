@@ -10,21 +10,11 @@ function makeRequest(origin) {
   return new Request('https://worldmonitor.app/api/test', { headers });
 }
 
-test('allows desktop Tauri origins', () => {
-  const origins = [
-    'https://tauri.localhost',
-    'https://abc123.tauri.localhost',
-    'tauri://localhost',
-    'asset://localhost',
-    'http://127.0.0.1:46123',
-  ];
-
-  for (const origin of origins) {
-    const req = makeRequest(origin);
-    assert.equal(isDisallowedOrigin(req), false, `origin should be allowed: ${origin}`);
-    const cors = getCorsHeaders(req);
-    assert.equal(cors['Access-Control-Allow-Origin'], origin);
-    assert.equal(cors['Access-Control-Allow-Credentials'], 'true');
+test('rejects the former desktop Tauri origins', () => {
+  // The desktop app left in refactor Phase 1b; its origins left the allowlist
+  // in the 2026-11 Lite-only cleanup.
+  for (const origin of ['https://tauri.localhost', 'https://abc123.tauri.localhost', 'tauri://localhost', 'asset://localhost']) {
+    assert.equal(isDisallowedOrigin(makeRequest(origin)), true, `origin should be rejected: ${origin}`);
   }
 });
 

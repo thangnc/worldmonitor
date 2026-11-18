@@ -1441,7 +1441,6 @@
       "packages/server/_shared/resilience-freshness.ts",
       "packages/server/_shared/resilience-stats.ts",
       "packages/server/_shared/seed-envelope.ts",
-      "packages/server/_shared/sidecar-cache.ts",
       "packages/server/_shared/usage.ts",
       "packages/server/worldmonitor/resilience/v1/_canada-national-overlay.ts",
       "packages/server/worldmonitor/resilience/v1/_dimension-freshness.ts",

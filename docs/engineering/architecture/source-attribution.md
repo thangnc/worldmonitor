@@ -70,7 +70,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | api.fiscaldata.treasury.gov (api.fiscaldata.treasury.gov) | structured — scripts/seed-national-debt.mjs, scripts/seed-supply-chain-trade.mjs |
 | api.gdeltproject.org (api.gdeltproject.org) | structured — scripts/seed-gdelt-intel.mjs, scripts/seed-unrest-events.mjs |
 | api.gdeltproject.org (storage.googleapis.com) | structured — scripts/_conflict-gdelt-bulk.mjs, scripts/_gdelt-bulk-materializer.mjs |
-| api.github.com (api.github.com) | structured — api/_github-release.js, scripts/resolve-railway-reconcile-control.mjs, scripts/seed-fuel-prices.mjs, scripts/seed-research.mjs |
+| api.github.com (api.github.com) | structured — scripts/resolve-railway-reconcile-control.mjs, scripts/seed-fuel-prices.mjs, scripts/seed-research.mjs |
 | api.groq.com (api.groq.com) | Excluded / candidate — No current fetch observed |
 | api.iea.org (api.iea.org) | structured — scripts/seed-iea-oil-stocks.mjs |
 | api.imf.org (api.imf.org) | structured — scripts/_seed-utils.mjs, scripts/backtest-capital-flow-episodes.mjs, scripts/seed-capital-flows.mjs, scripts/seed-gold-cb-reserves.mjs, +1 more |
@@ -447,8 +447,8 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | liveuamap.com (liveuamap.com) | Excluded / candidate — No current fetch observed |
 | lnc-abc-news.tubi.video (lnc-abc-news.tubi.video) | Excluded / candidate — No current fetch observed |
 | lobste.rs (lobste.rs) | feed — packages/shared/news-catalog.json |
-| Local development transport (localhost) | structured — packages/client/config/desktop-runtime.ts, packages/client/services/wm-session.ts, packages/server/worldmonitor/research/v1/list-tech-events.ts, scripts/ais-relay.cjs |
-| Local loopback transport (127.0.0.1) | structured — packages/client/services/runtime.ts |
+| Local development transport (localhost) | structured — packages/client/services/wm-session.ts, packages/server/worldmonitor/research/v1/list-tech-events.ts, scripts/ais-relay.cjs |
+| Local loopback transport (127.0.0.1) | Excluded / candidate — No current fetch observed |
 | lowyinstitute.org (lowyinstitute.org) | feed — packages/shared/news-catalog.json |
 | macleans.ca (macleans.ca) | feed — packages/shared/news-catalog.json |
 | Mada Masr (madamasr.com) | feed — packages/shared/news-catalog.json |
@@ -529,7 +529,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | openrouter.ai (openrouter.ai) | structured — scripts/eval-classify-labels.mjs, scripts/lib/brief-dedup-consts.mjs, scripts/lib/company-monitoring-classifier-client.mjs, scripts/regional-snapshot/weekly-brief.mjs |
 | OpenSanctions (api.opensanctions.org) | Excluded / candidate — No current fetch observed |
 | opensky-network.org (auth.opensky-network.org) | structured — scripts/seed-military-flights.mjs |
-| opensky-network.org (opensky-network.org) | structured — packages/server/worldmonitor/military/v1/list-military-flights.ts, scripts/ais-relay.cjs, scripts/seed-military-flights.mjs |
+| opensky-network.org (opensky-network.org) | structured — scripts/ais-relay.cjs, scripts/seed-military-flights.mjs |
 | openstreetmap.org (openstreetmap.org) | Excluded / candidate — No current fetch observed |
 | ott.tv5monde.com (ott.tv5monde.com) | feed — packages/client/config/live-video-sources.ts |
 | ottawacitizen.com (ottawacitizen.com) | feed — packages/shared/news-catalog.json |
@@ -793,7 +793,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | World Bank Open Data (api.worldbank.org) | structured — packages/server/worldmonitor/economic/v1/list-world-bank-indicators.ts, packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts, packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts, scripts/_defense-industrial-source.mjs, +13 more |
 | World Monitor hosted API (api.worldmonitor.app) | feed+structured — packages/client/services/runtime.ts, packages/shared/news-catalog.json, scripts/_widget-data-policy.cjs, scripts/ais-relay.cjs, +16 more |
 | World Monitor proxy (proxy.worldmonitor.app) | structured — packages/client/utils/proxy.ts, scripts/seed-security-advisories.mjs |
-| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/client/services/runtime.ts, +25 more |
+| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/server/_shared/brief-url.ts, +24 more |
 | World Monitor web app (www.worldmonitor.app) | structured — api/_cors.js, api/not-found.ts, packages/server/_shared/deprecation-policy.ts, packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts, +12 more |
 | WorldMonitor test origin (worldmonitor.invalid) | structured — api/_md-url-twin.ts, packages/client/shared/public-rpc-cache.ts |
 | worldmonitor.mintlify.dev (worldmonitor.mintlify.dev) | Excluded / candidate — No current fetch observed |

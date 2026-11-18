@@ -9,7 +9,6 @@ const scripts = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
 // leaves out. Anything else with a freshness check belongs in STEPS.
 const NOT_DERIVED = new Map([
   ['scripts/generate-derived.mjs', 'the runner itself'],
-  ['scripts/check-build-prereqs.mjs', 'validator'],
   ['scripts/generate-public-product-facts.mjs', 'frozen since refactor Phase 1a: reads removed dashboard config; Phase 1b removes it'],
   ['scripts/check-no-public-source-maps.mjs', 'deploy gate over build output'],
   ['scripts/docs-stats.mjs', 'validator'],
