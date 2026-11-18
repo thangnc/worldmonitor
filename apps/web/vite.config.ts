@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import { resolve } from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import preact from '@preact/preset-vite';
@@ -27,6 +27,31 @@ import { devApiPlugins } from './vite.dev-api';
  */
 const REPO_ROOT = resolve(__dirname, '../..');
 const STATIC_SCRIPT_NONCE = 'wm-static-bootstrap';
+
+/**
+ * Dev only: evaluate `preact/hooks` before the `preact/debug` import that
+ * @preact/preset-vite puts first in the entry.
+ *
+ * Before a component re-renders, the hooks module runs its pending effects.
+ * LiteMap's effects `render()` marker content into separate roots, and each
+ * finished diff clears preact/debug's "hooks allowed" flag. With debug loaded
+ * first, the hooks module wraps debug's render hook, so the effects run after
+ * debug set the flag, and the component's first hook throws "Hook can only be
+ * invoked from render methods". With hooks loaded first, debug wraps hooks and
+ * sets the flag after the effects ran. Production loads no preact/debug, and
+ * the hooks module itself restores its current component around each effect.
+ */
+const DEBUG_IMPORT = 'import "preact/debug";';
+function preactHooksBeforeDebug(): Plugin {
+  return {
+    name: 'lite:preact-hooks-before-debug',
+    apply: 'serve',
+    transform(code) {
+      if (!code.startsWith(DEBUG_IMPORT)) return;
+      return `import "preact/hooks";\n${code}`;
+    },
+  };
+}
 
 const LITE_OUTPUT = {
   entryFileNames: 'assets/lite/[name]-[hash].js',
@@ -61,7 +86,7 @@ export default defineConfig(({ mode }) => {
     // keeps its state) and the Preact devtools hook in dev; JSX goes through
     // Vite's Oxc transform. No React package is in the app, so react imports
     // stay unaliased and fail loudly instead of resolving to preact/compat.
-    plugins: [preact({ reactAliasesEnabled: false }), tailwindcss(), ...devApiPlugins()],
+    plugins: [preact({ reactAliasesEnabled: false }), preactHooksBeforeDebug(), tailwindcss(), ...devApiPlugins()],
     // The MapLibre worker (apps/web/src/lite/map/LiteMap.tsx) stays under assets/lite/ with the rest.
     worker: {
       format: 'es',
