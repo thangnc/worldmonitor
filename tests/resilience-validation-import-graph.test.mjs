@@ -4,14 +4,14 @@
 // These containers install (at most) the tsx loader — no scripts/package.json,
 // no root node_modules. Everything their entry script reaches — the bundle
 // runner, member scripts, scripts/ helpers, and (for resilience-validation)
-// the ../server/*.ts modules loaded through tsx — must resolve using node:
+// the ../packages/server/*.ts modules loaded through tsx — must resolve using node:
 // builtins and files the Dockerfile actually COPYs. ESM resolves a module's
 // full static import closure eagerly, so ONE bad edge anywhere in that
 // closure crashes the cron with ERR_MODULE_NOT_FOUND even if the importing
 // code path never runs.
 //
 // That is exactly how #5229 broke seed-bundle-resilience-validation:
-// server/_shared/usage.ts (deep in the closure via redis.ts) gained a static
+// packages/server/_shared/usage.ts (deep in the closure via redis.ts) gained a static
 // import of ./rate-limit, whose own static imports pull @upstash/ratelimit —
 // declared only in the ROOT package.json, absent from the container. The
 // seeder never calls the rate limiter; it crashed anyway, at resolution time.
@@ -41,7 +41,7 @@
 //    extraction, so commented-out imports and JSDoc `@typedef {import(...)}`
 //    text are not edges, while string/template contents are preserved.
 //  - Dynamic import() literals are followed only when they resolve into a
-//    container's dynamic-follow roots (server/ for resilience-validation —
+//    container's dynamic-follow roots (packages/server/ for resilience-validation —
 //    the members execute those unconditionally; loading the scorers IS their
 //    job). Unresolvable or computed dynamic imports are out of scope.
 //  - createRequire(...)('<spec>') chains are treated as require edges —
@@ -137,15 +137,15 @@ const CONTAINERS = [
     members: RESILIENCE_VALIDATION_BUNDLE_MEMBERS.map((member) => member.script),
     minMembers: 3,
     mustIncludeMember: 'validate-resilience-sensitivity.mjs',
-    dynamicRoots: ['server'],
+    dynamicRoots: ['packages/server'],
     expectsTsx: true,
     minVisited: 32,
     deepNodes: [
       'scripts/_bundle-runner.mjs',
       'scripts/_proxy-utils.cjs',
-      'server/_shared/redis.ts',
-      'server/_shared/usage.ts',
-      'server/_shared/client-ip.ts',
+      'packages/server/_shared/redis.ts',
+      'packages/server/_shared/usage.ts',
+      'packages/server/_shared/client-ip.ts',
     ],
   },
   {
@@ -274,7 +274,7 @@ describe('parseDockerfileContractSrc self-test (synthetic Dockerfiles)', () => {
     'WORKDIR /app',
     'RUN npm install --prefix /app --no-save @org/pkg@1.2.3 lodash@^4.17.0 semver@~7.5.0 leftpad@latest tsx@4.21.0',
     'COPY scripts/ ./scripts/',
-    'COPY shared/ ./shared/',
+    'COPY packages/shared/ ./packages/shared/',
     'COPY tsconfig.json ./',
     'ENV NODE_OPTIONS="--max-old-space-size=1024"',
     'CMD ["node", "scripts/my-entry.mjs"]',
@@ -291,7 +291,7 @@ describe('parseDockerfileContractSrc self-test (synthetic Dockerfiles)', () => {
 
   it('derives COPY roots, CMD entry, and tsx presence from an install line', () => {
     const { copyRoots, entryScript, hasTsx } = parseDockerfileContractSrc(SYNTH_TSX_INSTALL, 'synthetic');
-    assert.deepEqual(copyRoots, ['scripts', 'shared'], 'dir-level COPY roots only (file COPYs excluded)');
+    assert.deepEqual(copyRoots, ['scripts', 'packages/shared'], 'dir-level COPY roots only (file COPYs excluded)');
     assert.equal(entryScript, 'scripts/my-entry.mjs');
     assert.equal(hasTsx, true, 'tsx@ on the install line must mark the container tsx-shaped');
   });

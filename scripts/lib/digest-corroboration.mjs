@@ -2,7 +2,7 @@
  * Per-item corroboration for chat and email digests (#9213).
  *
  * list-feed-digest stores the verdict each variant served on the story's
- * track row (STORY_CORROBORATION_FIELD in server/_shared/label-history.ts).
+ * track row (STORY_CORROBORATION_FIELD in packages/server/_shared/label-history.ts).
  * The digest reads it from there rather than recomputing it; a story the
  * digest merged from several clusters combines their stored verdicts with
  * mergeCorroboration.

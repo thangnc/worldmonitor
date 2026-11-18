@@ -9,7 +9,7 @@ on:
 # output written by `make generate`.
 env:
   CODEGEN_INPUT_PATHS: >-
-    proto/
+    packages/contracts/proto/
     Makefile
     package.json
     package-lock.json
@@ -22,7 +22,6 @@ env:
     scripts/apply-openapi-filter-param-schemas.mjs
     scripts/generate-request-validation.mjs
     scripts/harden-generated-server-errors.mjs
-    scripts/generate-scorecard-edge-mirrors.mjs
     scripts/lib/main-module.mjs
     scripts/lib/openapi-codegen.mjs
     scripts/openapi-inject-async-jobs.mjs
@@ -50,79 +49,57 @@ env:
     scripts/shared/geography.js
     scripts/shared/giving-published-estimate-claims.json
     scripts/shared/iso2-to-region.json
-    server/_shared/api-key-rate-limit.ts
-    server/_shared/api-only-paths.ts
-    server/_shared/auth-session.ts
-    server/_shared/bounded-jmespath.ts
-    server/_shared/bounded-json.ts
-    server/_shared/cache-contract.ts
-    server/_shared/client-ip.ts
-    server/_shared/country-history-access.ts
-    server/_shared/deprecation-policy.ts
-    server/_shared/desktop-key-meter.ts
-    server/_shared/desktop-key-principal.ts
-    server/_shared/direct-llm-quota.ts
-    server/_shared/entitlement-check.ts
-    server/_shared/entitlement-coverage.ts
-    server/_shared/high-usage-alarm.ts
-    server/_shared/idempotency.ts
-    server/_shared/internal-auth.ts
-    server/_shared/mcp-internal-hmac.ts
-    server/_shared/pro-mcp-gate.ts
-    server/_shared/pro-mcp-token.ts
-    server/_shared/rate-limit.ts
-    server/_shared/redis.ts
-    server/_shared/response-headers.ts
-    server/_shared/response-projection.ts
-    server/_shared/seed-envelope.ts
-    server/_shared/server-sub-request-dispatch.ts
-    server/_shared/sub-request-admission.ts
-    server/_shared/usage-identity.ts
-    server/_shared/usage.ts
-    server/_shared/user-api-key.ts
-    server/auth-session.ts
-    server/cors.ts
-    server/error-mapper.ts
-    server/gateway.ts
-    server/request-validator.ts
-    server/router.ts
-    server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts
-    server/worldmonitor/consumer-prices/v1/_selection.ts
-    server/worldmonitor/supply-chain/v1/scenario-templates.ts
-    shared/aircraft-emergencies.ts
-    shared/attribution-rider.ts
-    shared/compare-and-delete-script.cjs
-    shared/china-corridor-control-towers.ts
-    shared/china-decision-signal-manifest.ts
-    shared/china-decision-signals.ts
-    shared/china-logistics-corridors.ts
-    shared/decision-signal-provenance-contract.ts
-    shared/decision-signal-provenance-families.ts
-    shared/decision-signal-provenance.ts
-    shared/desktop-key-access.js
-    shared/embed-access.ts
-    shared/embed-panels.ts
-    shared/event-triggers.json
-    shared/iso2-to-iso3.json
-    shared/openapi-filter-param-contracts.json
-    shared/source-provenance-declarations.ts
-    shared/source-provenance.ts
-    shared/telegram-channel-trust.ts
-    shared/x-account-source-tiers.json
-    shared/x-account-trust.ts
-    src/shared/premium-paths.ts
-    src/shared/pro-fresh-rpc.ts
-    src/shared/public-rpc-cache.ts
+    packages/server/_shared/api-key-rate-limit.ts
+    packages/server/_shared/bounded-jmespath.ts
+    packages/server/_shared/bounded-json.ts
+    packages/server/_shared/cache-contract.ts
+    packages/server/_shared/client-ip.ts
+    packages/server/_shared/country-history-access.ts
+    packages/server/_shared/deprecation-policy.ts
+    packages/server/_shared/direct-llm-quota.ts
+    packages/server/_shared/high-usage-alarm.ts
+    packages/server/_shared/idempotency.ts
+    packages/server/_shared/internal-auth.ts
+    packages/server/_shared/rate-limit.ts
+    packages/server/_shared/redis.ts
+    packages/server/_shared/response-headers.ts
+    packages/server/_shared/response-projection.ts
+    packages/server/_shared/seed-envelope.ts
+    packages/server/_shared/server-sub-request-dispatch.ts
+    packages/server/_shared/sub-request-admission.ts
+    packages/server/_shared/usage-identity.ts
+    packages/server/_shared/usage.ts
+    packages/server/cors.ts
+    packages/server/error-mapper.ts
+    packages/server/gateway.ts
+    packages/server/request-validator.ts
+    packages/server/router.ts
+    packages/server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts
+    packages/server/worldmonitor/consumer-prices/v1/_selection.ts
+    packages/server/worldmonitor/supply-chain/v1/scenario-templates.ts
+    packages/shared/aircraft-emergencies.ts
+    packages/shared/attribution-rider.ts
+    packages/shared/compare-and-delete-script.cjs
+    packages/shared/china-corridor-control-towers.ts
+    packages/shared/china-decision-signal-manifest.ts
+    packages/shared/china-decision-signals.ts
+    packages/shared/china-logistics-corridors.ts
+    packages/shared/decision-signal-provenance-contract.ts
+    packages/shared/decision-signal-provenance-families.ts
+    packages/shared/decision-signal-provenance.ts
+    packages/shared/event-triggers.json
+    packages/shared/iso2-to-iso3.json
+    packages/shared/openapi-filter-param-contracts.json
+    packages/shared/source-provenance-declarations.ts
+    packages/shared/source-provenance.ts
+    packages/shared/telegram-channel-trust.ts
+    packages/shared/x-account-source-tiers.json
+    packages/shared/x-account-trust.ts
+    packages/client/shared/premium-paths.ts
+    packages/client/shared/public-rpc-cache.ts
   GENERATED_PATHS: >-
-    src/generated/
-    docs/api/
-    server/worldmonitor/scorecard/v1/_input-registry.ts
-    server/worldmonitor/scorecard/v1/_methodology.ts
-    server/worldmonitor/scorecard/v1/_score-country.ts
-    server/worldmonitor/scorecard/v1/_snapshot.ts
-    server/worldmonitor/scorecard/v1/_source-adapters.ts
-    server/worldmonitor/scorecard/v1/_source-registry.ts
-    server/worldmonitor/scorecard/v1/_types.ts
+    packages/contracts/generated/
+    packages/contracts/openapi/
 
 permissions: {}
 
@@ -205,7 +182,7 @@ jobs:
             |
             {
               codegen: any($paths[]; . as $path | matches_registry($path; $consumed) or matches_registry($path; $generated)),
-              breaking: any($paths[]; test("^proto(?:/|$)"))
+              breaking: any($paths[]; test("^(?:packages/contracts/)?proto(?:/|$)"))
             } as $classification
             |
             $classification + {
@@ -274,8 +251,15 @@ jobs:
         env:
           GOPROXY: 'https://proxy.golang.org,direct'
 
+      # The buf module moved from proto/ to packages/contracts/proto/ (refactor
+      # PR 2.1). main's Makefile still runs `cd proto` until that layout reaches
+      # main, so call buf directly against whichever path origin/main holds;
+      # the PR's proto files are its input, as they were with `make breaking`.
       - name: Check for breaking proto changes
-        run: make breaking
+        run: |
+          against=packages/contracts/proto
+          git cat-file -e "origin/main:$against/buf.yaml" 2>/dev/null || against=proto
+          buf breaking packages/contracts/proto --against ".git#branch=origin/main,subdir=$against"
 
   fork-artifact-check:
     needs: changes

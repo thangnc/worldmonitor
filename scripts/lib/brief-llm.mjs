@@ -52,12 +52,12 @@ import {
   checkLeadGrounding,
   leadGroundsAgainstStory,
   validateNoHallucinatedStatusQualifiers,
-} from '../../shared/brief-llm-core.js';
+} from '../../packages/shared/brief-llm-core.js';
 
-// #4921: the grounding spine now lives in shared/brief-llm-core.js — re-export
+// #4921: the grounding spine now lives in packages/shared/brief-llm-core.js — re-export
 // for existing consumers of this module.
 export { checkLeadGrounding, leadGroundsAgainstStory };
-import { sanitizeForPrompt, sanitizeForPromptLine } from '../../server/_shared/llm-sanitize.js';
+import { sanitizeForPrompt, sanitizeForPromptLine } from '../../packages/server/_shared/llm-sanitize.js';
 // Single source of truth for the brief story cap. Both buildDigestPrompt
 // and hashDigestInput must slice to this value or the LLM prose drifts
 // from the rendered story cards (PR #3389 reviewer P1).
@@ -66,7 +66,7 @@ import { MAX_STORIES_PER_USER } from './brief-compose.mjs';
 /**
  * Sanitize the story fields that flow into buildWhyMattersUserPrompt and
  * buildStoryDescriptionPrompt. Mirrors
- * server/worldmonitor/intelligence/v1/brief-why-matters-prompt.ts
+ * packages/server/worldmonitor/intelligence/v1/brief-why-matters-prompt.ts
  * sanitizeStoryFields — the legacy Railway fallback path must apply the
  * same defense as the analyst endpoint, since this is exactly what runs
  * when the endpoint misses / returns null / throws.
@@ -78,7 +78,7 @@ import { MAX_STORIES_PER_USER } from './brief-compose.mjs';
  * whyMatters (already sanitised) was a latent bug, fixed here.
  *
  * Kept local (not promoted to brief-llm-core.js) because llm-sanitize.js
- * only lives in server/_shared and the edge endpoint already sanitizes
+ * only lives in packages/server/_shared and the edge endpoint already sanitizes
  * before its own buildWhyMattersUserPrompt call.
  *
  * @param {{ headline?: string; source?: string; threatLevel?: string; category?: string; country?: string; description?: string }} story
@@ -143,7 +143,7 @@ const BRIEF_LLM_MODEL_OVERRIDES = { openrouter: BRIEF_LLM_OPENROUTER_MODEL };
 // ── whyMatters (per story) ─────────────────────────────────────────────────
 // The pure helpers (`WHY_MATTERS_SYSTEM`, `buildWhyMattersUserPrompt` (aliased
 // to `buildWhyMattersPrompt` for backcompat), `parseWhyMatters`, `hashBriefStory`)
-// live in `shared/brief-llm-core.js` so the Vercel-edge endpoint
+// live in `packages/shared/brief-llm-core.js` so the Vercel-edge endpoint
 // (`api/internal/brief-why-matters.ts`) can import them without pulling in
 // `node:crypto`. See the `shared/` → `scripts/shared/` mirror convention.
 

@@ -1,8 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { adaptSnapshot } from '../server/worldmonitor/intelligence/v1/get-regional-snapshot';
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
+import { adaptSnapshot } from '../packages/server/worldmonitor/intelligence/v1/get-regional-snapshot';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 
 // ────────────────────────────────────────────────────────────────────────────
 // adaptSnapshot: snake_case -> camelCase adapter (the substantive logic)

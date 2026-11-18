@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
-import { newsHandler } from '../server/worldmonitor/news/v1/handler';
-import { INTEL_SOURCES, isServerFeedReachableForLanguage, VARIANT_FEEDS } from '../server/worldmonitor/news/v1/_feeds';
-import { rssFeedCacheKey } from '../server/worldmonitor/news/v1/_rss-cache';
-import { REVOKED_URLS_KEY } from '../server/_shared/digest-revocations';
-import { drainResponseHeaders } from '../server/_shared/response-headers';
-import { __resetKeyPrefixCacheForTests } from '../server/_shared/redis';
-import { MEDIA_PERSPECTIVE_CACHE_PREFIX } from '../server/worldmonitor/news/v1/list-media-perspective';
-import { unM49RegionCountries } from '../server/_shared/un-m49-regions';
-import { createNewsServiceRoutes, type ListMediaPerspectiveResponse } from '../src/generated/server/worldmonitor/news/v1/service_server';
-import { validateGeneratedRequest } from '../server/request-validator';
+import { newsHandler } from '../packages/server/worldmonitor/news/v1/handler';
+import { INTEL_SOURCES, isServerFeedReachableForLanguage, VARIANT_FEEDS } from '../packages/server/worldmonitor/news/v1/_feeds';
+import { rssFeedCacheKey } from '../packages/server/worldmonitor/news/v1/_rss-cache';
+import { REVOKED_URLS_KEY } from '../packages/server/_shared/digest-revocations';
+import { drainResponseHeaders } from '../packages/server/_shared/response-headers';
+import { __resetKeyPrefixCacheForTests } from '../packages/server/_shared/redis';
+import { MEDIA_PERSPECTIVE_CACHE_PREFIX } from '../packages/server/worldmonitor/news/v1/list-media-perspective';
+import { unM49RegionCountries } from '../packages/server/_shared/un-m49-regions';
+import { createNewsServiceRoutes, type ListMediaPerspectiveResponse } from '../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
+import { validateGeneratedRequest } from '../packages/server/request-validator';
 
 const route = createNewsServiceRoutes(newsHandler, { validateRequest: validateGeneratedRequest })
   .find(entry => entry.path.endsWith('/list-media-perspective'))!;

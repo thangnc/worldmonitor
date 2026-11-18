@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest.ts';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest.ts';
 import {
   ACCEPTANCE,
   assessCandidate,
@@ -115,7 +115,7 @@ describe('#7081 frozen evidence — provenance and integrity', () => {
 
 describe('#7081 finding 1 — the documented rule was unreachable', () => {
   const writerSrc = readFileSync(
-    resolve(__dirname, '..', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
+    resolve(__dirname, '..', 'packages', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
     'utf-8',
   );
 
@@ -264,7 +264,7 @@ describe('#7081 finding 3 — fading is not observable at this call site', () =>
 
   it('the handler passes a track whose lastSeen is the current cycle clock', () => {
     const src = readFileSync(
-      resolve(__dirname, '..', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
+      resolve(__dirname, '..', 'packages', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
       'utf-8',
     );
     const mergedStart = src.indexOf('const merged: StoryTrack = {');
@@ -312,7 +312,7 @@ describe('#7081 finding 3 — fading is not observable at this call site', () =>
     const seeder = readFileSync(
       resolve(__dirname, '..', 'scripts', 'seed-digest-notifications.mjs'), 'utf-8');
     assert.match(seeder, /deriveNotificationStoryPhase/,
-      'the notification seeder derives fading via shared/story-phase.js');
+      'the notification seeder derives fading via packages/shared/story-phase.js');
   });
 });
 
@@ -360,7 +360,7 @@ describe('#7081 no-go contract — the feed digest must not emit FADING', () => 
 
   it('the phase deriver carries no score input at all', () => {
     const src = readFileSync(
-      resolve(__dirname, '..', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
+      resolve(__dirname, '..', 'packages', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
       'utf-8',
     );
     const start = src.indexOf('function derivePhase(');
@@ -426,52 +426,16 @@ describe('#7081 consumers — FADING stays wire-compatible', () => {
   const read = (...p: string[]) => readFileSync(resolve(__dirname, '..', ...p), 'utf-8');
 
   it('the proto keeps the enum value and its number', () => {
-    const proto = read('proto', 'worldmonitor', 'news', 'v1', 'news_item.proto');
+    const proto = read('packages', 'contracts', 'proto', 'worldmonitor', 'news', 'v1', 'news_item.proto');
     assert.match(proto, /STORY_PHASE_FADING\s*=\s*4;/,
       'the wire value must not be removed or renumbered');
   });
 
   it('the generated client and server still carry the value', () => {
     for (const side of ['client', 'server']) {
-      const gen = read('src', 'generated', side, 'worldmonitor', 'news', 'v1',
+      const gen = read('packages', 'contracts', 'generated', side, 'worldmonitor', 'news', 'v1',
         side === 'client' ? 'service_client.ts' : 'service_server.ts');
       assert.match(gen, /"STORY_PHASE_FADING"/);
     }
-  });
-
-  it('the client still maps the value rather than falling through', () => {
-    const converter = read('src', 'services', 'news-digest-items.ts');
-    assert.match(converter, /STORY_PHASE_FADING:\s*'fading'/,
-      'an unmapped FADING would silently render as breaking');
-  });
-
-  it('the alert gate still suppresses a fading story', () => {
-    const alerts = read('src', 'services', 'breaking-news-alerts.ts');
-    assert.match(alerts, /phase === 'sustained' \|\| phase === 'fading'/,
-      'the banner gate must keep handling fading defensively');
-  });
-
-  it('MCP passes the phase through untouched', () => {
-    const rpc = read('api', 'mcp', 'registry', 'rpc-tools.ts');
-    assert.match(rpc, /storyPhase = item\.storyMeta\.phase/);
-    assert.match(rpc, /STORY_PHASE_FADING/, 'the MCP schema must keep advertising the enum value');
-  });
-
-  it('the MCP description states that the digest does not emit it', () => {
-    const rpc = read('api', 'mcp', 'registry', 'rpc-tools.ts');
-    assert.match(rpc, /STORY_PHASE_FADING is reserved and is not currently emitted/,
-      'agents must be told the value never arrives from this surface');
-  });
-
-  it('the news panel renders no fading badge, and the stylesheet agrees', () => {
-    // Documented gap rather than a silent one: FADING is unemitted here, so no
-    // badge is correct. This assertion fails loudly if a badge is added without
-    // the phase being reactivated, or vice versa.
-    const panel = read('src', 'components', 'NewsPanel.ts');
-    assert.ok(!panel.includes("phase === 'fading'"),
-      'a fading badge implies an emitted phase — reactivate the phase first');
-    const css = read('src', 'styles', 'main.css');
-    assert.ok(!css.includes('.phase-badge.fading'),
-      'no fading badge style while the phase is unemitted');
   });
 });

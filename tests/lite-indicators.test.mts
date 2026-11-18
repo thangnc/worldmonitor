@@ -2,23 +2,23 @@
 // rules (spec: docs/engineering/architecture/lite.md › Early indicators).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import type { NewsItem } from '../src/generated/client/worldmonitor/news/v1/service_client.ts';
+import type { NewsItem } from '../packages/contracts/generated/client/worldmonitor/news/v1/service_client.ts';
 import type {
   CryptoQuote,
   GetFearGreedIndexResponse,
   GetHyperliquidFlowResponse,
   ListStablecoinMarketsResponse,
-} from '../src/generated/client/worldmonitor/market/v1/service_client.ts';
-import { DRIVERS, LINK_WINDOW_HOURS, MAX_LINKED_STORIES, linkNews, matchReason, offsetLabel } from '../src/lite/data/news-link.ts';
-import { STALE_FACTOR, feedCounts, feedState, sortFeeds, type FeedState, type Indicator } from '../src/lite/data/indicators.ts';
-import { centreCard, chokepointPins, featureIso2, newSanctionCountries, pinIdForFeed, sanctionFills, shippingLanes, signalCard, signalPins } from '../src/lite/data/markets-map.ts';
-import { buildPriceBoard } from '../src/lite/data/prices.ts';
-import { CENTRAL_BANKS } from '../src/config/finance-geo.ts';
-import { STRATEGIC_WATERWAYS } from '../src/config/geo.ts';
-import { TRADE_ROUTES } from '../src/config/trade-routes.ts';
-import type { ChokepointInfo } from '../src/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
-import { STABLECOIN_DEPEG_PCT, financeFeeds } from '../src/lite/data/finance-indicators.ts';
-import type { InternetOutage, ListInternetOutagesResponse, ListServiceStatusesResponse, ServiceStatus } from '../src/generated/client/worldmonitor/infrastructure/v1/service_client.ts';
+} from '../packages/contracts/generated/client/worldmonitor/market/v1/service_client.ts';
+import { DRIVERS, LINK_WINDOW_HOURS, MAX_LINKED_STORIES, linkNews, matchReason, offsetLabel } from '../apps/web/src/lite/data/news-link.ts';
+import { STALE_FACTOR, feedCounts, feedState, sortFeeds, type FeedState, type Indicator } from '../apps/web/src/lite/data/indicators.ts';
+import { centreCard, chokepointPins, featureIso2, newSanctionCountries, pinIdForFeed, sanctionFills, shippingLanes, signalCard, signalPins } from '../apps/web/src/lite/data/markets-map.ts';
+import { buildPriceBoard } from '../apps/web/src/lite/data/prices.ts';
+import { CENTRAL_BANKS } from '../packages/client/config/finance-geo.ts';
+import { STRATEGIC_WATERWAYS } from '../packages/client/config/geo.ts';
+import { TRADE_ROUTES } from '../packages/client/config/trade-routes.ts';
+import type { ChokepointInfo } from '../packages/contracts/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
+import { STABLECOIN_DEPEG_PCT, financeFeeds } from '../apps/web/src/lite/data/finance-indicators.ts';
+import type { InternetOutage, ListInternetOutagesResponse, ListServiceStatusesResponse, ServiceStatus } from '../packages/contracts/generated/client/worldmonitor/infrastructure/v1/service_client.ts';
 import {
   KEV_NEW_DAYS,
   SPIKE_RATIO,
@@ -31,10 +31,10 @@ import {
   type ExploitedVulnerability,
   type RecentKev,
   type ThreatHistory,
-} from '../src/lite/data/tech-indicators.ts';
-import type { LiteItem } from '../src/lite/data/transforms.ts';
-import type { MilitaryFlight } from '../src/generated/client/worldmonitor/military/v1/service_client.ts';
-import type { ListUkmtoIncidentsResponse } from '../src/generated/client/worldmonitor/maritime/v1/service_client.ts';
+} from '../apps/web/src/lite/data/tech-indicators.ts';
+import type { LiteItem } from '../apps/web/src/lite/data/transforms.ts';
+import type { MilitaryFlight } from '../packages/contracts/generated/client/worldmonitor/military/v1/service_client.ts';
+import type { ListUkmtoIncidentsResponse } from '../packages/contracts/generated/client/worldmonitor/maritime/v1/service_client.ts';
 import {
   AIRCRAFT_MIN,
   AIRCRAFT_RADIUS_KM,
@@ -49,7 +49,7 @@ import {
   seaAreas,
   seaIncidentFeeds,
   type GpsHighCells,
-} from '../src/lite/data/geo-layers.ts';
+} from '../apps/web/src/lite/data/geo-layers.ts';
 import {
   MIN_REPORTS,
   conflictHistogram,
@@ -61,16 +61,16 @@ import {
   violenceIndicators,
   violenceSpike,
   type ConflictCounts,
-} from '../src/lite/data/conflict.ts';
+} from '../apps/web/src/lite/data/conflict.ts';
 import type {
   EconomicEvent,
   GetEconomicCalendarResponse,
   GetGovernmentYieldCurveResponse,
   UsTreasuryParYieldCurve,
-} from '../src/generated/client/worldmonitor/economic/v1/service_client.ts';
-import type { ListEtfFlowsResponse } from '../src/generated/client/worldmonitor/market/v1/service_client.ts';
-import type { GetShippingRatesResponse, ShippingIndex } from '../src/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
-import type { ListMaterialEventsResponse, MaterialEvent } from '../src/generated/client/worldmonitor/intelligence/v1/service_client.ts';
+} from '../packages/contracts/generated/client/worldmonitor/economic/v1/service_client.ts';
+import type { ListEtfFlowsResponse } from '../packages/contracts/generated/client/worldmonitor/market/v1/service_client.ts';
+import type { GetShippingRatesResponse, ShippingIndex } from '../packages/contracts/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
+import type { ListMaterialEventsResponse, MaterialEvent } from '../packages/contracts/generated/client/worldmonitor/intelligence/v1/service_client.ts';
 import {
   ETF_SAME_WAY,
   FILING_WINDOW_HOURS,
@@ -97,8 +97,8 @@ import {
   treasuryFeed,
   treasuryWindow,
   watchCompany,
-} from '../src/lite/data/finance-macro-indicators.ts';
-import type { ResourceState } from '../src/lite/data/store.ts';
+} from '../apps/web/src/lite/data/finance-macro-indicators.ts';
+import type { ResourceState } from '../apps/web/src/lite/data/store.ts';
 import {
   CHOKEPOINT_TRANSIT_SHARE,
   TAIWAN_RATIO,
@@ -111,10 +111,10 @@ import {
   taiwanStraitFeeds,
   taiwanStraitIndicators,
   type EmbassyAlerts,
-} from '../src/lite/data/geo-watch.ts';
-import type { GetChokepointStatusResponse } from '../src/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
-import type { SecurityAdvisoryItem } from '../src/generated/client/worldmonitor/intelligence/v1/service_client.ts';
-import type { CrossStraitActivitySnapshot } from '../src/types/cross-strait-activity.ts';
+} from '../apps/web/src/lite/data/geo-watch.ts';
+import type { GetChokepointStatusResponse } from '../packages/contracts/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
+import type { SecurityAdvisoryItem } from '../packages/contracts/generated/client/worldmonitor/intelligence/v1/service_client.ts';
+import type { CrossStraitActivitySnapshot } from '../packages/client/types/cross-strait-activity.ts';
 
 const H = 3_600_000;
 const AT = Date.UTC(2026, 10, 8, 12);

@@ -23,7 +23,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { __testing__ } from '../api/bootstrap.js';
-import { bootstrapTierKeyNames } from '../shared/bootstrap-tier-keys.js';
+import { bootstrapTierKeyNames } from '../packages/shared/bootstrap-tier-keys.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const healthSrc = readFileSync(join(root, 'api/health.js'), 'utf8');

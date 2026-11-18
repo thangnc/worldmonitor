@@ -1,14 +1,14 @@
 // Sprint 1 / U8 — static guard for Dockerfile.digest-notifications.
 //
 // Mirrors tests/dockerfile-relay-imports.test.mjs but extends coverage
-// to ALL cross-dir imports (scripts/, shared/, server/_shared/, api/),
+// to ALL cross-dir imports (scripts/, packages/shared/, packages/server/_shared/, api/),
 // since the digest cron's import graph spans all four. A missing
 // transitive import looks like a silent Railway cron crash —
 // ERR_MODULE_NOT_FOUND on the child process, sometimes hours before
 // anyone notices the digest stopped sending.
 //
 // The relay Dockerfile guard only catches missing scripts/ COPYs; this
-// guard also catches missing shared/, server/_shared/, and api/ COPYs.
+// guard also catches missing packages/shared/, packages/server/_shared/, and api/ COPYs.
 // Both directly and recursively (e.g., `COPY scripts/lib/ ./scripts/lib/`
 // covers the entire subdirectory).
 //
@@ -36,7 +36,7 @@ const root = resolve(__dirname, '..');
 // Scopes the guard checks. Imports OUTSIDE these prefixes are out of
 // scope (e.g., node_modules, node:built-ins, top-level package.json
 // references resolved by the runtime).
-const TRACKED_PREFIXES = ['scripts/', 'shared/', 'server/_shared/', 'api/'];
+const TRACKED_PREFIXES = ['scripts/', 'packages/shared/', 'packages/server/_shared/', 'api/'];
 
 /**
  * Read the COPY directives from the Dockerfile and split them into
@@ -76,7 +76,7 @@ function isCovered(coverage, relPath) {
 }
 
 // Extension candidates for this image: the digest cron's graph spans .ts
-// modules under server/_shared/, unlike the relay's .mjs/.cjs-only graph.
+// modules under packages/server/_shared/, unlike the relay's .mjs/.cjs-only graph.
 const DIGEST_RESOLVE_EXTS = ['.mjs', '.cjs', '.js', '.ts'];
 
 // relativeToRepoRoot backs the BFS containment check both this guard and
@@ -116,7 +116,7 @@ describe('relativeToRepoRoot', () => {
   });
 
   it('never returns a path containing a backslash, regardless of host path.sep', () => {
-    const target = resolve(root, 'server', '_shared', 'brief-render.js');
+    const target = resolve(root, 'packages', 'server', '_shared', 'brief-render.js');
     const result = relativeToRepoRoot(root, target);
     assert.ok(result, 'expected a non-null result for a file under root');
     assert.ok(!result.includes('\\'), `result should be forward-slash-only, got ${JSON.stringify(result)}`);

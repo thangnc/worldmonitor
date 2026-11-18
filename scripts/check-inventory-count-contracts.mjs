@@ -36,24 +36,6 @@ export const INVENTORY_CONTRACTS = Object.freeze([
   contract('source-attribution-totals', 'source-attribution manifest entries and explicit retirement records', ['retirement', 'parity'], 'replace', 'Aggregate source totals are derived; explicit retirement and exact identity parity protect deletion.', [
     surface('tests/source-attribution.test.mjs', ['stats.activeHosts', 'stats.providerCount', 'stats.observedHosts']),
   ]),
-  contract('panel-discoverability', 'PANEL_REGISTRY, panel commands, categories, scheduleRefresh and primeTask call sites', ['derived', 'parity'], 'replace', 'Structural set extraction and containment replace parser-size tripwires.', [
-    surface('tests/panel-config-guardrails.test.mjs', ['allRegistryPanelIds', 'panelCommandKeywordCounts', 'categoryMappedPanelIds', 'scheduled', 'primed']),
-    surface('tests/news-panel-key-reachability.test.mts', ['feedCategories', 'catalogPanelKeys', 'registrations']),
-  ]),
-  contract('mcp-output-schema-tools', 'TOOL_REGISTRY and the tools/list response', ['parity'], 'replace', 'Exact tool/schema set parity makes arbitrary tool floors redundant.', [
-    surface('tests/mcp-output-schema-coverage.test.mjs', ['registry', 'tools']),
-  ]),
-  contract('mcp-tool-annotations', 'TOOL_REGISTRY and the tools/list response', ['parity'], 'replace', 'Every discovered tool must have matching protocol annotations.', [
-    surface('tests/mcp-tool-annotations.test.mjs', ['registry', 'tools']),
-  ]),
-  contract('mcp-protocol-tools', 'the MCP tools/list response', ['parity'], 'replace', 'Protocol assertions cover the complete returned tool set.', [
-    surface('tests/mcp-protocol-conformance.test.mjs', ['step1bListBody.result.tools', 'step3Body.result.tools']),
-    surface('tests/mcp.test.mjs', ['body.result.tools', 'TOOL_REGISTRY']),
-    surface('tests/mcp-resources.test.mjs', ['uiUris', 'listedUiUris']),
-  ]),
-  contract('llms-mcp-tools', 'api/mcp/registry tool names and public discovery citations', ['named-member', 'parity'], 'replace', 'Registry-to-citation parity plus named critical tools replaces an arbitrary floor.', [
-    surface('tests/llms-txt-mcp-tools.test.mjs', ['registry']),
-  ]),
   contract('openapi-server-specs', 'generated per-service OpenAPI JSON/YAML files', ['parity'], 'replace', 'Exact JSON/YAML sibling and per-spec server coverage protects the full discovered universe.', [
     surface('tests/openapi-servers-contract.test.mjs', ['serviceJsonSpecs', 'serviceYamlSpecs']),
   ]),
@@ -74,41 +56,17 @@ export const INVENTORY_CONTRACTS = Object.freeze([
     surface('tests/completeness-measurement.test.mjs', ['extractServerFeeds']),
     surface('tests/publisher-families.test.mjs', ['FEED_LABELS', 'withHosts']),
   ]),
-  contract('regional-feed-promises', 'regional feed catalogs and default-enable policy', ['named-member', 'parity'], 'keep', 'Named regional members and their metadata express the coverage promise without a redundant numeric floor.', [
-    surface('tests/feed-catalog-drift.test.mts', ['CANADA_CATALOG', 'nordicBeyondSweden']),
-  ]),
   contract('feed-source-provenance', 'feed names and their provenance declarations', ['parity'], 'replace', 'Exact discovered feed-to-provenance parity replaces the name-count floor.', [
     surface('tests/source-provenance.test.mts', ['names', 'explicitUnknownDimensions']),
-  ]),
-  contract('locale-key-completeness', 'English locale keys and every translated locale key set', ['floor', 'parity'], 'keep', 'The English anti-collapse floor is a named completeness promise; locale key sets remain exact.', [
-    surface('tests/locale-completeness.test.mjs', ['enKeys', 'localeKeys']),
-  ]),
-  contract('food-stocks-locales', 'the authoritative locale file registry and food-stocks translations', ['parity'], 'replace', 'Exact per-locale translation coverage replaces a locale-count floor.', [
-    surface('tests/food-stocks-registration.test.mjs', ['locales']),
-  ]),
-  contract('market-tape-locales', 'the authoritative locale file registry and market-tape translations', ['parity'], 'replace', 'Exact per-locale translation coverage replaces a locale-count floor.', [
-    surface('tests/market-tape-claim.test.mts', ['localeFiles']),
   ]),
   contract('product-catalog-inventories', 'generated product IDs, tiers and bundle highlights', ['named-member', 'parity'], 'replace', 'Exact catalog-to-generated parity and named sellable products replace arbitrary floors.', [
     surface('tests/product-catalog-freshness.test.mjs', ['generatedProductIds', 'tiersJson', 'bundleHighlights']),
   ]),
-  contract('agent-skills-index', 'discovered agent skills and generated skill index', ['parity'], 'replace', 'Exact discovered-skill parity replaces tranche-specific size floors.', [
-    surface('tests/agent-skills-index.test.mjs', ['index.skills']),
-  ]),
-  contract('mcp-presets', 'the MCP preset registry', ['named-member', 'parity'], 'replace', 'Exact preset coverage and named required presets replace the preset floor.', [
-    surface('tests/mcp-presets.test.mjs', ['presets']),
-  ]),
-  contract('route-explorer-countries', 'the authoritative country registry used by route explorer pickers', ['parity'], 'replace', 'Exact authoritative country coverage replaces the country floor.', [
-    surface('tests/route-explorer-pickers.test.mts', ['getAllCountries']),
-  ]),
   contract('notification-country-registry', 'the shared country-name to ISO-2 registry', ['parity'], 'replace', 'Exact authoritative country coverage replaces the parser floor.', [
     surface('tests/notification-relay-country-scope-5359.test.mjs', ['names']),
   ]),
-  contract('iso2-country-registry', 'the closed ISO alpha-2 registry and its client mirror', ['exact', 'parity'], 'keep', 'ISO alpha-2 is a closed external standard and the client/server sets must remain identical.', [
-    surface('convex/__tests__/followed-countries-mutations.test.ts', ['_ISO2_REGISTRY_FOR_TESTS']),
-  ]),
   contract('public-fixed-algorithm-claims', 'versioned CII country membership and the closed CRI public rankable universe', ['exact', 'named-member'], 'keep', 'Fixed algorithm universes remain exact while platform inventories on the same surfaces use semantic or named-set wording.', [
-    surface('tests/cii-docs-drift.test.mts', ['llmsBrief', 'llmsFull', 'pressKit', 'communityGuide', 'publicHome', 'agentView.capabilities']),
+    surface('tests/cii-docs-drift.test.mts', ['pressKit', 'communityGuide']),
   ]),
 ]);
 

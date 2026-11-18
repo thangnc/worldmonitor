@@ -2,7 +2,7 @@ import { unwrapEnvelope } from './_seed-envelope.js';
 
 /**
  * Deployment key prefix — the api-layer mirror of
- * `server/_shared/redis.ts::getKeyPrefix` (the M-6 fix). Preview/development
+ * `packages/server/_shared/redis.ts::getKeyPrefix` (the M-6 fix). Preview/development
  * Vercel deployments share one Upstash instance with production, so every key
  * THIS deployment owns is namespaced `preview:<sha>:…` to keep its reads and
  * writes out of the production namespace. Production (and any runtime without
@@ -17,7 +17,7 @@ import { unwrapEnvelope } from './_seed-envelope.js';
  *     instead of a namespace no seeder populates. The same rule already
  *     applies to the server helpers (`getCachedJson(key, true)` for
  *     seeder-owned keys) and to deliberately cross-deployment user state
- *     (`entitlements:*`, see server/_shared/entitlement-check.ts P2-3).
+ *     (the former `entitlements:*` keys).
  * Production is unaffected either way: the prefix is '' there, so a wrong
  * classification can only fail visibly on a preview deployment.
  */
@@ -34,7 +34,7 @@ export function getKeyPrefix() {
  * (api/health.js sweep) and then pass `raw = true` so the pipeline helpers do
  * not prefix again.
  *
- * Computed per call, NOT memoized — mirrors server/_shared/pro-mcp-token.ts's
+ * Computed per call, NOT memoized — mirrors the server-side key-prefix helper's
  * envPrefix: tests may mutate VERCEL_ENV between calls, and the cost is one
  * trivial string read.
  */
@@ -240,7 +240,7 @@ export function readExistsFlags(results, keys) {
 
 /**
  * Prefix the key argument of one pipeline command, mirroring
- * `server/_shared/redis.ts::normalizePipelineCommand` so the two layers
+ * `packages/server/_shared/redis.ts::normalizePipelineCommand` so the two layers
  * behave identically: only the first string argument after the verb is a key,
  * and EVAL's KEYS are found via its key-count argument.
  */

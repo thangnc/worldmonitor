@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { resolveTechEventsPaging } from '../server/worldmonitor/research/v1/_tech-events-paging.ts';
+import { resolveTechEventsPaging } from '../packages/server/worldmonitor/research/v1/_tech-events-paging.ts';
 
 // list-tech-events documents limit "defaults to 50 when omitted" and days
 // "defaults to 90 when omitted", while explicit 0 is still a caller-provided

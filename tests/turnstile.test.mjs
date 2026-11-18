@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { UNKNOWN_CLIENT_IP } from '../server/_shared/rate-limit.ts';
-import { getClientIp, verifyTurnstile } from '../server/_shared/turnstile.ts';
+import { UNKNOWN_CLIENT_IP } from '../packages/server/_shared/rate-limit.ts';
+import { getClientIp, verifyTurnstile } from '../packages/server/_shared/turnstile.ts';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };

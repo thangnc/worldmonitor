@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { evidenceNumbersGrounded, isEvidenceLimitClaim } from '../shared/brief-claim-rules.js';
+import { evidenceNumbersGrounded, isEvidenceLimitClaim } from '../packages/shared/brief-claim-rules.js';
 
 const CII = {
   id: 'E1', kind: 'cii', value: '62.3 of 100 (Elevated)',

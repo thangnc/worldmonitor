@@ -11,13 +11,13 @@ import { readIdempotencyExemptPaths } from '../scripts/lib/openapi-codegen.mjs';
 
 // Guards the Idempotency-Key header parameter injected by
 // scripts/openapi-inject-idempotency.mjs onto every POST (mutation) operation.
-// The gateway (server/_shared/idempotency.ts) honors the header at runtime;
+// The gateway (packages/server/_shared/idempotency.ts) honors the header at runtime;
 // this test keeps the published contract in sync so agents (and the ora.ai /
 // orank scanner, which falls back to the spec for auth-gated routes) always
 // see the documented support. A fresh `make generate` must re-run the injector.
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 
 const serviceJson = readdirSync(apiDir)
   .filter((f) => /Service\.openapi\.json$/.test(f))

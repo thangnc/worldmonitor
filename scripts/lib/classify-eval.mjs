@@ -36,7 +36,7 @@ export function extractRelayOpenRouterModel(relaySrc) {
   return mustMatch(code, /\n\s*model: '([^']+)',/, "a quoted model on the relay's openrouter classify provider");
 }
 
-// server/worldmonitor/intelligence/v1/classify-event.ts — one title per completion.
+// packages/server/worldmonitor/intelligence/v1/classify-event.ts — one title per completion.
 export function extractRpcPrompt(rpcSrc) {
   return staticTemplate(mustMatch(rpcSrc, /const systemPrompt = `([\s\S]*?)`;/, 'classify-event systemPrompt'), 'classify-event systemPrompt');
 }

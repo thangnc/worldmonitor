@@ -15,7 +15,7 @@ import {
 
 // Guards the universal `?jmespath=` response-projection parameter injected by
 // scripts/openapi-inject-jmespath.mjs. The REST gateway
-// (server/gateway.ts + server/_shared/response-projection.ts) genuinely honors
+// (packages/server/gateway.ts + packages/server/_shared/response-projection.ts) genuinely honors
 // this parameter on every JSON GET response — parity with the MCP server's
 // `jmespath` tool argument. Advertising it on every GET operation also keeps
 // ora.ai / orank's `api-schema-analysis` at "fully documented" (a parameterless
@@ -23,14 +23,14 @@ import {
 // these assertions flag the drop.
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head']);
 const GET_METHOD = new Set(['get']);
 // No projection-disabled roster any more: EVERY GET advertises the parameter,
 // and the licence obligation on the four paths that used to refuse it is
 // discharged by the attribution rider the gateway merges into the projected
-// response (shared/attribution-rider.ts).
+// response (packages/shared/attribution-rider.ts).
 const serviceJsonSpecs = readdirSync(apiDir)
   .filter((f) => /Service\.openapi\.json$/.test(f))
   .sort();

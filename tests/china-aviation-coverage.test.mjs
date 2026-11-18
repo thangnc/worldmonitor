@@ -16,7 +16,7 @@ import { CHINA_COVERAGE_ENTRIES } from '../scripts/china-coverage-manifest.mjs';
 import { evaluateChinaCoverage } from '../scripts/china-coverage-health.mjs';
 
 const AGREED_HUBS = ['PEK', 'PVG', 'CAN', 'SZX', 'CTU', 'KMG', 'URC', 'HKG'];
-const airportConfig = readFileSync(fileURLToPath(new URL('../src/config/airports.ts', import.meta.url)), 'utf8');
+const airportConfig = readFileSync(fileURLToPath(new URL('../packages/server/_shared/airports.ts', import.meta.url)), 'utf8');
 
 function flight({ status = 'scheduled', delay = 0 } = {}) {
   return {

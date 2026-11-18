@@ -4,8 +4,8 @@ import {
   fetchWidestTechEvents,
   listTechEvents,
   TECH_EVENTS_UNAVAILABLE_ERROR,
-} from '../server/worldmonitor/research/v1/list-tech-events.ts';
-import { __resetKeyPrefixCacheForTests } from '../server/_shared/redis.ts';
+} from '../packages/server/worldmonitor/research/v1/list-tech-events.ts';
+import { __resetKeyPrefixCacheForTests } from '../packages/server/_shared/redis.ts';
 
 // #5427: the cold-start fallback writes to the SHARED, request-independent
 // `research:tech-events:v1` key (the same one the relay seeder fills with the

@@ -1,4 +1,4 @@
-// shared/story-identity.js — the single "same news story?" definition
+// packages/shared/story-identity.js — the single "same news story?" definition
 // (#4919). The labeled pair set below is the tuning ground truth for
 // STORY_SIMILARITY_THRESHOLD: if you change the vectorizer, weights, or
 // threshold, this suite tells you whether separation still holds.
@@ -20,7 +20,7 @@ import {
   activeFeatureHashSalt,
   deriveFeatureHashSalt,
   CANDIDATE_STOPWORDS,
-} from '../shared/story-identity.js';
+} from '../packages/shared/story-identity.js';
 
 afterEach(() => {
   setStoryVectorProvider(null);
@@ -290,7 +290,7 @@ describe('setStoryVectorProvider (semantic upgrade seam)', () => {
 // ── assignStoryIdentity (list-feed-digest integration surface) ─────────────
 
 import { createHash } from 'node:crypto';
-import { assignStoryIdentity, deduplicateHeadlines } from '../server/worldmonitor/news/v1/dedup.mjs';
+import { assignStoryIdentity, deduplicateHeadlines } from '../packages/server/worldmonitor/news/v1/dedup.mjs';
 
 const sha256Hex = async (text) => createHash('sha256').update(text).digest('hex');
 const normalizeTitle = (title) => title.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
@@ -474,7 +474,7 @@ import { fileURLToPath } from 'node:url';
 
 describe('list-feed-digest story-identity wiring (#4924 review)', () => {
   const digestSrc = readFileSync(
-    resolve(dirname(fileURLToPath(import.meta.url)), '../server/worldmonitor/news/v1/list-feed-digest.ts'),
+    resolve(dirname(fileURLToPath(import.meta.url)), '../packages/server/worldmonitor/news/v1/list-feed-digest.ts'),
     'utf-8',
   );
 
@@ -544,7 +544,7 @@ describe('hot-bucket mega-story pre-union (#4924 external review)', () => {
 
 // ── #4924 external-review round: cross-cycle continuity + TTL ordering ─────
 
-import { adoptExistingCanonical } from '../server/worldmonitor/news/v1/dedup.mjs';
+import { adoptExistingCanonical } from '../packages/server/worldmonitor/news/v1/dedup.mjs';
 
 const sha256HexNode = sha256Hex;
 const normalizeBasic = normalizeTitle;
@@ -809,7 +809,7 @@ describe('adopt-existing-track canonical (#4925 item 1)', () => {
 describe('story key TTL ordering (#4924 external review P2)', () => {
   it('EXPIRE for sources/peak keys is queued with the per-member creating writes, never before them', () => {
     const src = readFileSync(
-      resolve(dirname(fileURLToPath(import.meta.url)), '../server/worldmonitor/news/v1/list-feed-digest.ts'),
+      resolve(dirname(fileURLToPath(import.meta.url)), '../packages/server/worldmonitor/news/v1/list-feed-digest.ts'),
       'utf-8',
     );
     const onceBlock = src.slice(src.indexOf("['HINCRBY', trackKey"), src.indexOf("['ZADD', peakKey, 'GT'"));
@@ -881,7 +881,7 @@ it('loads the environment salt after import and freezes it on first use', async 
   const previous = process.env.STORY_FEATURE_HASH_SALT;
   delete process.env.STORY_FEATURE_HASH_SALT;
   try {
-    const fresh = await import(`../shared/story-identity.js?lazy-env=${Date.now()}`);
+    const fresh = await import(`../packages/shared/story-identity.js?lazy-env=${Date.now()}`);
     process.env.STORY_FEATURE_HASH_SALT = 'loaded-by-loadEnvFile';
     fresh.storyVector('A headline after environment loading');
     assert.equal(fresh.activeFeatureHashSalt(), fresh.deriveFeatureHashSalt('loaded-by-loadEnvFile'));

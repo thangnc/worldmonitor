@@ -1,12 +1,9 @@
 // Phase 6 — Web Push unit tests.
 //
-// Two targets:
-//   1. Pure helpers in src/config/push.ts — base64 ↔ Uint8Array round-trip
-//      and shape guards.
-//   2. The SW push handler at public/push-handler.js. We load the file
-//      into a minimal service-worker sandbox (fake `self` + `clients`)
-//      and fire synthetic push + notificationclick events to verify
-//      the handler's behaviour without a real browser.
+// Target: the SW push handler at public/push-handler.js. We load the file
+// into a minimal service-worker sandbox (fake `self` + `clients`) and fire
+// synthetic push + notificationclick events to verify the handler's
+// behaviour without a real browser.
 //
 // Intentionally NOT here: the client subscribe/unsubscribe flow. Those
 // require navigator.serviceWorker / Notification.permission / the
@@ -39,46 +36,6 @@ import {
 } from './fixtures/hostile-push-urls.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// ── Pure helpers ──────────────────────────────────────────────────────────
-
-describe('push config helpers', () => {
-  // Dynamic import so the module's top-level `import.meta.env` reference
-  // resolves in this Node test context.
-  it('urlBase64ToUint8Array round-trips via arrayBufferToBase64', async () => {
-    const { urlBase64ToUint8Array, arrayBufferToBase64 } = await import('../src/config/push.ts');
-    const original = 'BNIrVn4fQrNVN82cADphw320VdnaaAGwjnJNHZJAMyUepPJywn8LSJZTeNpWgqYOOstaJQUZ1WugocN-RKlPAQM';
-    const bytes = urlBase64ToUint8Array(original);
-    // VAPID public keys decode to 65 bytes (uncompressed P-256 point).
-    assert.equal(bytes.length, 65);
-    const roundtrip = arrayBufferToBase64(bytes.buffer);
-    assert.equal(roundtrip, original);
-  });
-
-  it('arrayBufferToBase64 handles null safely', async () => {
-    const { arrayBufferToBase64 } = await import('../src/config/push.ts');
-    assert.equal(arrayBufferToBase64(null), '');
-  });
-
-  it('VAPID_PUBLIC_KEY reads from VITE_VAPID_PUBLIC_KEY env, empty when unset', async () => {
-    // REGRESSION guard: previously the module shipped a committed
-    // DEFAULT_VAPID_PUBLIC_KEY fallback. That gave rotations two
-    // sources of truth (code + env) and let stale committed keys
-    // ship alongside fresh env vars. The fallback was removed —
-    // push is intentionally disabled on builds that lack the env.
-    const { VAPID_PUBLIC_KEY, isWebPushConfigured } = await import('../src/config/push.ts');
-    assert.equal(typeof VAPID_PUBLIC_KEY, 'string');
-    // In Node tests VITE_VAPID_PUBLIC_KEY is unset, so the module
-    // MUST return empty. If this assertion flips we know a
-    // committed default was reintroduced.
-    assert.equal(
-      VAPID_PUBLIC_KEY,
-      '',
-      'VAPID_PUBLIC_KEY must be empty when VITE env var is unset (no committed fallback)',
-    );
-    assert.equal(isWebPushConfigured(), false);
-  });
-});
 
 // ── Service worker handler ────────────────────────────────────────────────
 
@@ -352,27 +309,6 @@ describe('push-handler.js — off-origin click targets', () => {
   });
 });
 
-// REGRESSION: PR #3173 P1 (cross-account subscription leak).
-// setWebPushChannelForUser must dedupe by endpoint across all users,
-// not just by (userId, channelType). Otherwise a shared device
-// delivers user A's alerts to user B after an account switch.
-describe('setWebPushChannelForUser endpoint dedupe', () => {
-  it('source deletes any existing rows with the same endpoint before insert', async () => {
-    const { readFileSync } = await import('node:fs');
-    const { fileURLToPath } = await import('node:url');
-    const { dirname, resolve } = await import('node:path');
-    const __d = dirname(fileURLToPath(import.meta.url));
-    const src = readFileSync(
-      resolve(__d, '../convex/notificationChannels.ts'),
-      'utf-8',
-    );
-    // Lock both the scan-by-endpoint AND the delete-before-insert
-    // pattern. If either drifts, the review finding reappears.
-    assert.match(src, /row\.endpoint === args\.endpoint/, 'setWebPushChannelForUser must compare rows by endpoint');
-    assert.match(src, /await ctx\.db\.delete\(row\._id\)/, 'matching rows must be deleted before upsert');
-  });
-});
-
 // REGRESSION: the service worker must be origin-agnostic.
 //
 // The worker is served from www.worldmonitor.app and from five vertical
@@ -518,13 +454,13 @@ describe('push-handler.js — origin-agnostic click targets', () => {
 });
 
 // The worker hand-copies the Cloudflare apex-exemption list because a service
-// worker cannot import from a test module — making it a THIRD uncoordinated
-// copy (the zone rule, the published-corpus guard, and now this). If the zone
-// gains a sixth exempt path and only one copy learns about it, the worker
-// silently rewrites it and reproduces the #4938 POST-to-GET 405. This binds the
-// two in-repo copies so they cannot drift apart unnoticed.
+// worker cannot import a shared module. If the zone gains an exempt path and
+// only one copy learns about it, the worker silently rewrites it and reproduces
+// the #4938 POST-to-GET 405. The published-corpus guard that held a third copy
+// left with the public agent outputs (refactor 1c-3); this binds the two
+// in-repo copies so they cannot drift apart unnoticed.
 describe('push-handler.js — apex exemption list stays in sync', () => {
-  it('mirrors APEX_SERVED from the published-corpus guard', () => {
+  it('keeps the worker and relay apex exemption lists identical', () => {
     const read = (rel) => readFileSync(resolve(__dirname, rel), 'utf-8');
     const patternsIn = (src, constName) => {
       const block = src.match(new RegExp(`${constName}\\s*=\\s*\\[([\\s\\S]*?)\\];`));
@@ -532,23 +468,14 @@ describe('push-handler.js — apex exemption list stays in sync', () => {
       return (block[1].match(/\/\^[^\n,]*\//g) ?? []).map((p) => p.trim()).sort();
     };
 
-    const guard = patternsIn(read('./agent-corpus-canonical-host.test.mjs'), 'APEX_SERVED');
     const worker = patternsIn(read('../public/push-handler.js'), 'APEX_SERVED_PATHS');
-    // THREE copies exist, not two: the corpus guard, the worker, and the relay.
-    // Binding only two left the relay's free to drift, reproducing the #4938
-    // POST-to-GET 405 on the half that talks to push services.
     const relay = patternsIn(read('../scripts/notification-relay.cjs'), 'APEX_SERVED_PATHS');
 
-    assert.ok(guard.length >= 5, 'the corpus guard must still carry the exemption list');
-    assert.deepEqual(
-      worker,
-      guard,
-      'public/push-handler.js must exempt exactly the paths Cloudflare serves on the apex',
-    );
+    assert.ok(worker.length >= 5, 'the worker must still carry the exemption list');
     assert.deepEqual(
       relay,
-      guard,
-      'scripts/notification-relay.cjs must exempt exactly the same paths',
+      worker,
+      'scripts/notification-relay.cjs must exempt exactly the paths public/push-handler.js does',
     );
   });
 

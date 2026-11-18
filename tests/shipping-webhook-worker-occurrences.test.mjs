@@ -26,7 +26,7 @@ import {
 
 const require = createRequire(import.meta.url);
 const { marketEventId, rssEventId } = require('../scripts/lib/occurrence-events.cjs');
-const registry = JSON.parse(readFileSync(new URL('../shared/event-triggers.json', import.meta.url), 'utf8'));
+const registry = JSON.parse(readFileSync(new URL('../packages/shared/event-triggers.json', import.meta.url), 'utf8'));
 
 // The occurrence pipeline: the relay tees rss_alert / market_alert queue
 // messages onto wm:events:api:v1, the worker drains them, matches each against

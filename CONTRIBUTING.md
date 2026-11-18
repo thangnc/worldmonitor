@@ -39,37 +39,26 @@ World Monitor is a real-time OSINT dashboard built with **Vanilla TypeScript** (
 | **Convex** | Billing, entitlements, user state, forms, and intelligence history |
 | **Playwright** | End-to-end and visual regression testing |
 
-### Variant System
+### One app, no variants
 
-The codebase produces app variants from the same source, each targeting a different audience or use case:
-
-| Variant | Command | Focus |
-|---|---|---|
-| `full` | `npm run dev` | Geopolitics, military, conflicts, infrastructure |
-| `tech` | `npm run dev:tech` | Startups, AI/ML, cloud, cybersecurity |
-| `finance` | `npm run dev:finance` | Markets, trading, central banks, commodities |
-| `commodity` | `npm run dev:commodity` | Commodities, mining, energy markets |
-| `happy` | `npm run dev:happy` | Positive news and constructive signals |
-| `energy` | `npm run dev:energy` | Energy security, chokepoints, oil/gas |
-
-Variants share all code but differ in default panels, map layers, and RSS feeds. Variant configs live in `src/config/variants/`.
+The web app is the Lite UI (`apps/web/src/lite/`, served at `/lite`). Refactor Phase 1d removed the site variants (`VITE_VARIANT`) and the Lite profile flag (`VITE_LITE_PROFILE`), so there is one build and no flag to set. See the [Lite spec](docs/engineering/architecture/lite.md).
 
 ### Directory Structure
 
 | Directory | Purpose |
 |---|---|
-| `src/components/` | UI components |
-| `src/services/` | Data fetching modules — sebuf client wrappers, AI, signal analysis |
-| `src/config/` | Static data and variant configs (feeds, geo, military, pipelines, ports) |
-| `src/generated/` | Auto-generated sebuf client + server stubs (**do not edit by hand**) |
-| `src/types/` | TypeScript type definitions |
-| `src/locales/` | i18n JSON files |
-| `src/workers/` | Web Workers for analysis |
-| `server/` | Sebuf handler implementations |
+| `apps/web/` | The web app, workspace package `@wm/web`: `lite.html`, the Lite UI in `src/lite/` (screens, components, map, data adapters), `vite.config.ts` and the dev-server API routes in `vite.dev-api.ts`. It builds into the repository root's `dist/` |
+| `packages/client/services/` | Data fetching modules — sebuf client wrappers, AI, signal analysis |
+| `packages/client/config/` | Static data and route config (geo, military, ports, Lite routes) |
+| `packages/contracts/generated/` | Auto-generated sebuf client + server stubs, workspace package `@wm/contracts` (**do not edit by hand**) |
+| `packages/client/types/` | TypeScript type definitions |
+| `packages/client/locales/` | i18n JSON files |
+| `packages/server/` | Sebuf handler implementations |
 | `api/` | Vercel Edge Functions (sebuf gateway + legacy endpoints) |
-| `proto/` | Protobuf service and message definitions |
+| `packages/contracts/proto/` | Protobuf service and message definitions |
 | `data/` | Static JSON datasets |
-| `docs/` | Documentation + generated OpenAPI specs |
+| `packages/contracts/openapi/` | Generated OpenAPI specs (**do not edit by hand**) |
+| `docs/` | Engineering records |
 | `src-tauri/` | Tauri v2 Rust app + Node.js sidecar for desktop builds |
 | `e2e/` | Playwright end-to-end tests |
 | `scripts/` | Build and packaging scripts |
@@ -119,33 +108,40 @@ For interactive development, run the commands below. Install the full toolchain
 with `make install` when you need code generation or the broader build tools.
 
 ```bash
-# Start the development server (full variant, default)
+# Start the development server (the Lite UI at /lite, from apps/web)
 npm run dev
-
-# Start other variants
-npm run dev:tech
-npm run dev:finance
-npm run dev:commodity
-npm run dev:happy
-npm run dev:energy
 
 # Run type checking
 npm run typecheck
 
 # Run tests
 npm run test:data          # Data integrity tests
-npm run test:e2e:full      # Playwright end-to-end tests (full variant)
 
-# Production build (per variant)
-npm run build              # full
-npm run build:tech
-npm run build:finance
-npm run build:commodity
-npm run build:happy
-npm run build:energy
+# Production build (the Lite UI into dist/)
+npm run build
 ```
 
 The dev server runs at `http://localhost:3000` (override the port with `DEV_PORT` in `.env.local`). Run `make help` to see all available make targets.
+
+### Live data locally: three shells
+
+The Lite screens read Redis, so live data needs the two writers that production runs beside the API. Point `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.local` at your Redis, then run each in its own shell:
+
+```bash
+npm run dev                # 1. the app and its API handlers
+npm run seed:lite:watch    # 2. the Lite seeders, each on its own interval (scripts/run-lite-seeders.mjs)
+npm run relay:local        # 3. the AIS relay (scripts/ais-relay.cjs)
+```
+
+The relay keeps an AIS stream open (`AISSTREAM_API_KEY`) and publishes what no seeder writes, such as the chokepoint transit summaries and the vessel snapshot that the Finance map's chokepoint status reads. The API handlers reach it at `WS_RELAY_URL` (`http://localhost:3004`). `relay:local` reads `.env.local` and is for your machine only:
+
+- it listens on `127.0.0.1`;
+- it starts without auth when `RELAY_SHARED_SECRET` is unset, and logs a `[SECURITY]` warning saying so;
+- it may write to a plain-`http://` Redis REST proxy, such as `docker/redis-rest-proxy.mjs`.
+
+Never expose it on a network. To run it with auth, set `RELAY_SHARED_SECRET` in `.env.local`; the dev server's handlers send the same value.
+
+The Redis REST proxy (`docker/redis-rest-proxy.mjs`) runs only the `EVAL` scripts on its pinned allowlist, so a write whose script is not pinned fails while plain commands work. The relay's chokepoint transit summaries are not pinned yet (`Durable transit gate update failed`); Upstash runs any script, so they work there. The proxy bakes its code into its image, so after a change to the allowlist rebuild it with `docker compose up -d --build redis-rest`.
 
 ### Build Prerequisites
 
@@ -278,13 +274,9 @@ required gates. Run focused checks first and heavy checks sequentially. Keep use
 regression coverage. Remove a check only with evidence that its protection is
 obsolete, redundant, or ineffective.
 
-For PWA changes, build with `VITE_VARIANT=full npx vite build`, then run
-`node --import tsx --test tests/pwa-precache.test.mjs tests/pwa-recovery.test.mjs tests/deploy-config.test.mjs`.
-The generated worker precaches the dashboard entry's static JavaScript/CSS
-dependencies and the fixed offline/install assets, with a 32-file, 2 MiB budget
-checked against `dist/sw.js`. Other app chunks are cached when requested.
-Navigation still falls back to the self-contained offline page. Verify the built
-worker in a browser; the development server does not register it.
+Lite has no service worker. `public/sw.js` replaces the old dashboard's worker:
+it clears its caches, unregisters itself and reloads open tabs. After changing it,
+run `node --import tsx --test tests/pwa-recovery.test.mjs tests/deploy-config.test.mjs`.
 
 For Railway registry changes, use `npm run test:railway-registry` during the edit
 loop. It exercises the real CLI, runner, workflow and registry contracts without
@@ -299,7 +291,7 @@ local command and CI coverage. Extend that proof for a changed outcome instead o
 creating a second runner.
 
 `npm run dev` serves the app and executes registered versioned RPC handlers through
-`sebufApiPlugin` in `vite.config.ts`. This includes the prediction handler. It also
+`sebufApiPlugin` in `apps/web/vite.dev-api.ts`. This includes the prediction handler. It also
 has selected legacy dev middleware. Other legacy API routes depend on their proxy
 or middleware configuration and may return source text or an error.
 
@@ -379,7 +371,7 @@ checks. These tests do not execute CodeQL or prove SARIF upload access.
 ## Pull Request Process
 
 1. Keep one feature or fix per PR. Check for an existing PR before creating one. Push fixes to that PR's head, including its original fork remote when maintainer edits are enabled. Never open a replacement without explicit authorization.
-2. Follow [the completion workflow](#complete-one-change). Update docs when behavior or contracts change. Run the required checks for affected code and variants. In the description, state the user outcome, evidence, and unverified paths. Link the related issue.
+2. Follow [the completion workflow](#complete-one-change). Update docs when behavior or contracts change. Run the required checks for affected code. In the description, state the user outcome, evidence, and unverified paths. Link the related issue.
 3. Refresh the base and remote PR head before pushing. Confirm no unmerged paths, reconcile current `main`, and verify that local HEAD is the captured PR head or contains it. Rerun affected checks after conflict resolution. Never bypass the pre-push gate with `--no-verify`.
 4. Open the PR ready for review. Keep one owner responsible for relevant review and CI repairs on the same PR. Requesting reviewers, invoking review automation, merge, auto-merge, and deployment each require the applicable explicit authorization.
 5. Base recovery and follow-up PRs on `main`. A stacked PR whose parent merges and auto-deletes its branch can report `MERGED` while its commits never reach `main`.
@@ -458,12 +450,12 @@ This repository is developed with [Claude Code](https://claude.com/claude-code),
 
 ### File Organization
 
-- Static layer/geo data and variant configs go in `src/config/`
-- Sebuf handler implementations go in `server/worldmonitor/{domain}/v1/`
+- Static layer/geo data and route config go in `packages/client/config/`
+- Sebuf handler implementations go in `packages/server/worldmonitor/{domain}/v1/`
 - Edge function gateway and legacy endpoints go in `api/`
 - UI components (panels, map, modals) go in `src/components/`
-- Service modules (data fetching, client wrappers) go in `src/services/`
-- Proto definitions go in `proto/worldmonitor/{domain}/v1/`
+- Service modules (data fetching, client wrappers) go in `packages/client/services/`
+- Proto definitions go in `packages/contracts/proto/worldmonitor/{domain}/v1/`
 
 ## Working with Sebuf (RPC Framework)
 
@@ -471,20 +463,21 @@ Sebuf is the project's custom Proto-first HTTP RPC framework — a lightweight a
 
 ### How It Works
 
-1. **Proto definitions** in `proto/worldmonitor/{domain}/v1/` define services and messages
+1. **Proto definitions** in `packages/contracts/proto/worldmonitor/{domain}/v1/` define services and messages
 2. **Code generation** (`make generate`) produces:
-   - TypeScript clients in `src/generated/client/` (e.g., `MarketServiceClient`)
-   - Server route factories in `src/generated/server/` (e.g., `createMarketServiceRoutes`)
-3. **Handlers** in `server/worldmonitor/{domain}/v1/handler.ts` implement the service interface
+   - TypeScript clients in `packages/contracts/generated/client/` (e.g., `MarketServiceClient`)
+   - Server route factories in `packages/contracts/generated/server/` (e.g., `createMarketServiceRoutes`)
+   - Browser code imports them as `@wm/contracts/generated/...`; `api/`, `packages/server/` and `packages/shared/` use relative paths into `packages/contracts/generated/`
+3. **Handlers** in `packages/server/worldmonitor/{domain}/v1/handler.ts` implement the service interface
 4. **Gateway** in `api/[domain]/v1/[rpc].ts` registers all handlers and routes requests
-5. **Clients** in `src/services/{domain}/index.ts` wrap the generated client for app use
+5. **Clients** in `packages/client/services/{domain}/index.ts` wrap the generated client for app use
 
 ### Adding a New RPC Method
 
 1. Add the method to the `.proto` service definition
 2. Run `make generate` to regenerate client/server stubs
 3. Implement the handler method in the domain's `handler.ts`
-4. The client stub is auto-generated — use it from `src/services/{domain}/`
+4. The client stub is auto-generated — use it from `packages/client/services/{domain}/`
 
 Use `make lint` to lint proto files and `make breaking` to check for breaking changes against main.
 
@@ -507,13 +500,13 @@ The pinned sebuf version is set by `SEBUF_VERSION` in the `Makefile` (currently 
 
 ### Derived Files
 
-Product facts, `llms.txt`, the AI search briefing, source attribution, catalogs, locales and legal digests are committed outputs of generators in `scripts/`. Run `npm run generate` after changing anything they read; it runs each generator's `--check` and rewrites only what is stale, in dependency order. `npm run generate:check` reports without writing. The pre-push hook regenerates stale files and stops the push so you can commit them, and the always-on `docs-stats` CI job runs the check. Proto output is separate (`make generate`, below). App translations, internal links, the sitemap and docs page dates are not covered; see the header of `scripts/generate-derived.mjs`.
+Source attribution (the manifest and `docs/engineering/architecture/source-attribution.md`), catalogs, locales and the engineering indexes are committed outputs of generators in `scripts/`. Run `npm run generate` after changing anything they read; it runs each generator's `--check` and rewrites only what is stale, in dependency order. `npm run generate:check` reports without writing. The pre-push hook regenerates stale files and stops the push so you can commit them, and the always-on `docs-stats` CI job runs the check. Proto output is separate (`make generate`, below). App translations are not covered; see the header of `scripts/generate-derived.mjs`.
 
 ### Generated Artifacts in Pull Requests
 
-`make generate` writes generated files under `src/generated/` and `docs/api/`, plus the seven scorecard Edge mirrors named by `scripts/generate-scorecard-edge-mirrors.mjs`. These files remain committed to the repository, but they must never be edited by hand.
+`make generate` writes generated files under `packages/contracts/generated/` and `packages/contracts/openapi/`. These files remain committed to the repository, but they must never be edited by hand.
 
-For pull requests created from branches in this repository, a read-only job runs the pinned generator against the exact PR head. A fresh writer job applies only the validated generated-artifact patch; it does not execute repository-controlled code with a write token. When generated files drift, CI appends a `chore(proto): update generated artifacts` commit to the same branch. GitHub creates fresh PR runs for the automated update in an approval-required state; a maintainer must approve them in the merge box. `proto-generated-followup` remains pending until that new head produces no further drift. CI also regenerates against the synthetic merge result so concurrent proto changes on `main` cannot leave an internally consistent branch stale after merge. The required Deploy Gate includes all proto jobs and the aggregate `proto-freshness` result.
+For pull requests created from branches in this repository, a read-only job runs the pinned generator against the exact PR head. A fresh writer job applies only the validated generated-artifact patch; it does not execute repository-controlled code with a write token. When generated files drift, CI appends a `chore(proto): update generated artifacts` commit to the same branch. GitHub creates fresh PR runs for the automated update in an approval-required state; a maintainer must approve them in the merge box. `proto-generated-followup` remains pending until that new head produces no further drift. CI also regenerates against the synthetic merge result so concurrent proto changes on `main` cannot leave an internally consistent branch stale after merge. Proto Generation Check reports every proto job and the aggregate `proto-freshness` result on each pull request.
 
 For a fork pull request with codegen changes, keep the original fork branch when maintainer edits are enabled. The proto check stays red until the repository owner creates a trusted head:
 
@@ -535,21 +528,21 @@ For Dependabot pull requests from this repository, use the same owner-review and
 
 | File | Purpose |
 | --- | --- |
-| `docs/api/{Service}.openapi.yaml` / `.json` | Per-service specs — referenced individually by Mintlify in `docs/docs.json` |
-| `docs/api/worldmonitor.openapi.yaml` | **Unified bundle** spanning every service (sebuf ≥ v0.11.0) — use this for external consumers, API explorers, or anywhere you want a single spec covering all RPCs |
+| `packages/contracts/openapi/{Service}.openapi.yaml` / `.json` | Per-service specs |
+| `packages/contracts/openapi/worldmonitor.openapi.yaml` | **Unified bundle** spanning every service (sebuf ≥ v0.11.0) — use this for external consumers, API explorers, or anywhere you want a single spec covering all RPCs |
 
-The unified bundle is emitted by a third `protoc-gen-openapiv3` invocation in `proto/buf.gen.yaml` using `bundle=true`, `bundle_only=true`, and `strategy: all`. Regenerate alongside the per-service files; do not edit by hand.
+The unified bundle is emitted by a third `protoc-gen-openapiv3` invocation in `packages/contracts/proto/buf.gen.yaml` using `bundle=true`, `bundle_only=true`, and `strategy: all`. Regenerate alongside the per-service files; do not edit by hand.
 
 ## Adding Data Sources
 
 To add a new data layer to the map:
 
 1. **Define the data source** — identify the API or dataset you want to integrate
-2. **Add the proto service** (if the data needs a backend proxy) — define messages and RPC methods in `proto/worldmonitor/{domain}/v1/`
+2. **Add the proto service** (if the data needs a backend proxy) — define messages and RPC methods in `packages/contracts/proto/worldmonitor/{domain}/v1/`
 3. **Generate stubs** — run `make generate`
-4. **Implement the handler** in `server/worldmonitor/{domain}/v1/`
-5. **Register the handler** in `api/[domain]/v1/[rpc].ts` and `vite.config.ts` (for local dev)
-6. **Create the service module** in `src/services/{domain}/` wrapping the generated client
+4. **Implement the handler** in `packages/server/worldmonitor/{domain}/v1/`
+5. **Register the handler** in `api/[domain]/v1/[rpc].ts` and `apps/web/vite.dev-api.ts` (for local dev)
+6. **Create the service module** in `packages/client/services/{domain}/` wrapping the generated client
 7. **Add the layer config** and implement the map renderer following existing layer patterns
 8. **Add to layer toggles** — make it toggleable in the UI
 9. **Document the source** — add it to the [data sources docs](https://www.worldmonitor.app/docs/data-sources)
@@ -565,11 +558,11 @@ For endpoints that deal with non-JSON payloads (XML feeds, binary data, HTML emb
 
 ### Source attribution ledger
 
-Any new outbound host that appears in a URL literal under `scripts/`, `server/`, `api/`, or `src/` is discovered by `scripts/source-attribution.mjs` and needs a curated row in `shared/source-attribution-manifest.json`. This catches contributions that only add data — a feed URL, an MCP preset in `src/services/mcp-store.ts` — with no obvious link to the ledger:
+Any new outbound host that appears in a URL literal under `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, or `packages/client/` is discovered by `scripts/source-attribution.mjs` and needs a curated row in `packages/shared/source-attribution-manifest.json`. This catches contributions that only add data — a feed URL, an MCP preset in `src/services/mcp-store.ts` — with no obvious link to the ledger:
 
 ```bash
 npm run sources:check     # fails with "missing manifest entry for <host>"
-npm run sources:generate  # writes the row and regenerates docs/source-attribution.mdx
+npm run sources:generate  # writes the row and regenerates docs/engineering/architecture/source-attribution.md
 ```
 
 Give the host a display name only by adding it to `PROVIDER_OVERRIDES` in that script and bumping `PROVIDER_IDENTITY_REVIEW` to the recomputed digest; provider identities are hash-pinned so renaming one stays an explicit review event. Because the script lives inside the roots it scans, a URL you cite in one of its own strings counts as a discovered source — fine when that host is already registered (the licence links on existing rows), but citing an unregistered host invents a provider row for it.

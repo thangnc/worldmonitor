@@ -25,7 +25,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import {
   jevEndpoint, JEV_MODEL, THREAT_LEVELS, buildJevRequest, parseJevAnswers, hasNonLatinLetters,
-} from '../shared/jev-classify.js';
+} from '../packages/shared/jev-classify.js';
 import { isAcceptableDigest } from './shared/digest-acceptance.mjs';
 
 const args = Object.fromEntries(

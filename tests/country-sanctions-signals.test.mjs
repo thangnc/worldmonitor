@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { gzipSync, gunzipSync } from 'node:zlib';
-import { projectCountrySanctions, MAX_COUNTRY_SANCTIONS_BYTES } from '../shared/country-sanctions-signals.mjs';
+import { projectCountrySanctions, MAX_COUNTRY_SANCTIONS_BYTES } from '../packages/shared/country-sanctions-signals.mjs';
 import { mergeSanctionEntries, SEMA_SOURCE, SEMA_TIMEOUT_MS, SANCTIONS_SOURCE_VERSION, sanctionsListContentMeta } from '../scripts/_sema-sanctions.mjs';
 import { CSL_ROW_ID, CSL_SOURCES, CSL_TIMEOUT_MS } from '../scripts/_csl-sanctions.mjs';
 import { buildSanctionsChanges } from '../scripts/_sanctions-changes.mjs';

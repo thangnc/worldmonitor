@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -330,8 +329,6 @@ describe('baseline entry validation', () => {
   it('does not suppress the backported braces and http-cache-semantics advisories', () => {
     for (const [lockfile, id] of [
       ['package-lock.json', 'GHSA-vfj7-8cjw-p6xm'],
-      ['pro-test/package-lock.json', 'GHSA-vfj7-8cjw-p6xm'],
-      ['blog-site/package-lock.json', 'GHSA-ch52-4w7c-c8xp'],
     ]) {
       assert.equal(baselineEntriesFor(lockfile).some((entry) => entry.id === id), false);
       const result = classifyAudit({
@@ -392,11 +389,9 @@ describe('baseline entry validation', () => {
 
   it('tracks a baseline entry for each audited lockfile', () => {
     assert.deepEqual(Object.keys(BASELINE_ADVISORIES_BY_LOCKFILE).sort(), [
-      'blog-site/package-lock.json',
       'consumer-prices-core/package-lock.json',
       'docker/runtime-package-lock.json',
       'package-lock.json',
-      'pro-test/package-lock.json',
       'scripts/package-lock.json',
     ]);
   });
@@ -427,7 +422,7 @@ describe('security audit baseline', () => {
       url: 'https://github.com/advisories/GHSA-395f-4hp3-45gv',
     });
 
-    assert.deepEqual(collectUnbaselinedFindings(report, 'pro-test/package-lock.json'), [
+    assert.deepEqual(collectUnbaselinedFindings(report, 'scripts/package-lock.json'), [
       {
         id: 'GHSA-395f-4hp3-45gv',
         name: 'shell-quote',
@@ -472,19 +467,18 @@ describe('security audit baseline', () => {
     // GHSA-5p4m-2wfm-xmqj: 3.x is fixed in 3.15.1, 4.x in 4.3.1. Both land
     // inside the existing semver ranges, so a lockfile refresh is the whole fix.
     const rootLock = readRepoJson('package-lock.json');
-    const blogLock = readRepoJson('blog-site/package-lock.json');
     const cpcLock = readRepoJson('consumer-prices-core/package-lock.json');
 
-    for (const [label, entry] of [
-      ['root @istanbuljs', rootLock.packages['node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml']],
-      ['blog-site gray-matter', blogLock.packages['node_modules/gray-matter/node_modules/js-yaml']],
-    ]) {
-      assert.ok(entry, `${label} js-yaml must be present`);
-      assert.ok(atLeast(entry.version, '3.15.1'), `${label} js-yaml ${entry.version} is below the patched 3.15.1`);
+    // Every js-yaml copy in the root tree, whichever major it resolves to.
+    const rootEntries = Object.entries(rootLock.packages)
+      .filter(([path]) => /(^|\/)node_modules\/js-yaml$/.test(path));
+    assert.ok(rootEntries.length > 0, 'root js-yaml must be present');
+    for (const [path, entry] of rootEntries) {
+      const patched = entry.version.startsWith('3.') ? '3.15.1' : '4.3.1';
+      assert.ok(atLeast(entry.version, patched), `root ${path} ${entry.version} is below the patched ${patched}`);
     }
 
     for (const [label, entry] of [
-      ['blog-site', blogLock.packages['node_modules/js-yaml']],
       ['consumer-prices-core', cpcLock.packages['node_modules/js-yaml']],
     ]) {
       assert.ok(entry, `${label} js-yaml must be present`);
@@ -509,20 +503,23 @@ describe('security audit baseline', () => {
     assert.deepEqual(baselineEntriesFor('consumer-prices-core/package-lock.json'), []);
   });
 
-  it('keeps the root esbuild audit fix scoped away from Vite build tooling', () => {
+  it('keeps one audit-patched esbuild, which Vite accepts as its optional peer', () => {
     const packageJson = readRepoJson('package.json');
     const lockfile = readRepoJson('package-lock.json');
     const rootEsbuild = lockfile.packages['node_modules/esbuild'];
     const vite = lockfile.packages['node_modules/vite'];
-    const viteEsbuild = lockfile.packages['node_modules/vite/node_modules/esbuild'];
 
     assert.equal(packageJson.overrides?.esbuild, undefined);
-    assert.equal(packageJson.overrides?.convex?.esbuild, '0.28.1');
+    assert.equal(packageJson.devDependencies?.esbuild, '0.28.1');
     assert.equal(rootEsbuild?.version, '0.28.1');
-    assert.equal(vite?.dependencies?.esbuild, '^0.25.0');
-    assert.ok(viteEsbuild, 'Vite must keep its own esbuild when root uses the audit-patched version');
-    assert.match(viteEsbuild.version, /^0\.25\./);
-    assert.notEqual(viteEsbuild.version, rootEsbuild.version);
+    // Vite 8 bundles with Rolldown and minifies with Oxc. esbuild is only its
+    // optional peer, so the root's patched copy is the only one installed
+    // (Vite 6 nested its own esbuild 0.25 here).
+    assert.match(vite?.version, /^8\./);
+    assert.equal(vite?.dependencies?.esbuild, undefined);
+    assert.equal(vite?.peerDependenciesMeta?.esbuild?.optional, true);
+    assert.match(vite?.peerDependencies?.esbuild, /(?:^|\|\|\s*)\^0\.28\.0(?:\s|$)/);
+    assert.equal(lockfile.packages['node_modules/vite/node_modules/esbuild'], undefined);
   });
 
   it('flags a baseline entry that no longer matches any current advisory', (t) => {
@@ -587,7 +584,7 @@ describe('npm audit failure reporting', () => {
     // The bug: `summary ?? detail ?? fallback` returns '' because ?? only
     // falls through on null/undefined, so the gate failed printing a blank line.
     assert.notEqual(OUTAGE_REPORT.error.summary ?? 'fallback', 'fallback');
-    const message = resolveAuditErrorMessage(OUTAGE_REPORT, 'blog-site');
+    const message = resolveAuditErrorMessage(OUTAGE_REPORT, 'scripts');
     assert.notEqual(message.trim(), '');
     assert.match(message, /advisories\/bulk/);
   });
@@ -595,14 +592,14 @@ describe('npm audit failure reporting', () => {
   it('prefers a populated summary over detail and message', () => {
     const message = resolveAuditErrorMessage(
       { message: 'ignored', error: { summary: 'real summary', detail: 'ignored' } },
-      'blog-site',
+      'scripts',
     );
     assert.equal(message, 'real summary');
   });
 
   it('falls back to a named error when npm supplies nothing usable', () => {
     for (const report of [{}, { error: {} }, { error: { summary: '   ', detail: '' } }]) {
-      assert.equal(resolveAuditErrorMessage(report, 'blog-site'), 'npm audit failed for blog-site');
+      assert.equal(resolveAuditErrorMessage(report, 'scripts'), 'npm audit failed for scripts');
     }
   });
 
@@ -636,7 +633,7 @@ describe('npm audit failure reporting', () => {
 
 
 describe('Dependabot image-size and fast-uri remediation', () => {
-  for (const lockPath of ['package-lock.json', 'pro-test/package-lock.json']) {
+  for (const lockPath of ['package-lock.json']) {
     it(`excludes vulnerable image-size copies from ${lockPath}`, () => {
       const entries = Object.entries(readRepoJson(lockPath).packages)
         .filter(([path]) => path.endsWith('/image-size'));
@@ -659,23 +656,3 @@ describe('Dependabot image-size and fast-uri remediation', () => {
   });
 });
 
-
-it('Metro reads ordinary and zip-mounted image asset files', async (t) => {
-  const require = createRequire(new URL('../package.json', import.meta.url));
-  const { getAssetData, getAssetSize } = require('metro/private/Assets');
-  const directory = mkdtempSync(join(tmpdir(), 'metro-assets-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
-  const png = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489', 'hex');
-  assert.deepEqual(getAssetSize('png', png, 'pixel.png'), { width: 1, height: 1 });
-
-  for (const folder of ['ordinary', 'assets.zip']) {
-    const assetDirectory = join(directory, folder);
-    mkdirSync(assetDirectory);
-    const file = join(assetDirectory, 'pixel.png');
-    writeFileSync(file, png);
-    const asset = await getAssetData(file, 'pixel.png', [], null, '/assets');
-    assert.equal(asset.width, 1);
-    assert.equal(asset.height, 1);
-    assert.deepEqual(asset.files, [file]);
-  }
-});

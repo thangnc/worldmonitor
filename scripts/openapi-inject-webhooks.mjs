@@ -4,7 +4,7 @@
  *
  * The ShippingV2Service lets partners register a `callbackUrl` (RegisterWebhook)
  * that WorldMonitor POSTs signed events to. The delivery worker
- * (server/worldmonitor/shipping/v2/deliver-webhook.ts) signs every POST with a
+ * (packages/server/worldmonitor/shipping/v2/deliver-webhook.ts) signs every POST with a
  * versioned HMAC-SHA256 over the timestamp, delivery id, event and raw body.
  * The legacy body-only signature remains available during receiver migration.
  * The sebuf `protoc-gen-openapiv3` plugin only emits the
@@ -21,7 +21,7 @@
  * headers, the payload schema, and — crucially — the verification recipe, so a
  * consuming agent can confirm a delivery genuinely came from WorldMonitor.
  *
- * The event registry (shared/event-triggers.json) also defines
+ * The event registry (packages/shared/event-triggers.json) also defines
  * `country.risk_surge`. It shares every header and the signature with the
  * block below, and the `X-WM-Event` parameter names it; its payload schema is
  * published in the registry and at docs/api-shipping-v2#delivery-format, not
@@ -31,7 +31,7 @@
  * structure left that would pay for another 3 KB entry; the contract test
  * pins the registry events to the header description instead.
  *
- * Only the bundle (docs/api/worldmonitor.openapi.yaml) is touched: it is copied
+ * Only the bundle (packages/contracts/openapi/worldmonitor.openapi.yaml) is touched: it is copied
  * to public/openapi.yaml and deserialized to public/openapi.json (the artifact
  * orank fetches) at build time. The per-service ShippingV2Service spec is left
  * alone — top-level `webhooks` is a bundle-level, cross-cutting concern and the
@@ -50,19 +50,19 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const bundlePath = resolve(root, 'docs/api/worldmonitor.openapi.yaml');
+const bundlePath = resolve(root, 'packages/contracts/openapi/worldmonitor.openapi.yaml');
 
 const CHECK = process.argv.includes('--check');
 
 // The webhook event names — `X-WM-Event` header values, the keys of
-// shared/event-triggers.json (read here so a registry event cannot land
+// packages/shared/event-triggers.json (read here so a registry event cannot land
 // without the header naming it; the contract test pins the two together).
 // WEBHOOK_EVENT is the default `options.event` in deliver-webhook.ts and the
 // one `webhooks` entry; the others are named in the event header's description.
 export const WEBHOOK_EVENT = 'chokepoint.disruption';
 export const RISK_SURGE_WEBHOOK_EVENT = 'country.risk_surge';
 const registryEvents = Object.keys(
-  JSON.parse(readFileSync(resolve(root, 'shared/event-triggers.json'), 'utf8')).events,
+  JSON.parse(readFileSync(resolve(root, 'packages/shared/event-triggers.json'), 'utf8')).events,
 );
 export const WEBHOOK_EVENTS = Object.freeze([WEBHOOK_EVENT, ...registryEvents.filter((event) => event !== WEBHOOK_EVENT)]);
 const OTHER_EVENTS = WEBHOOK_EVENTS.filter((event) => event !== WEBHOOK_EVENT);

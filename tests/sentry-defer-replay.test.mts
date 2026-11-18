@@ -9,7 +9,7 @@ import {
   enqueueSentryCall,
   installPreInitErrorQueue,
   scheduleSentryInit,
-} from '../src/bootstrap/sentry-defer';
+} from '../packages/client/bootstrap/sentry-defer';
 
 function restoreGlobalProperty(name: 'window' | 'setTimeout', descriptor: PropertyDescriptor | undefined): void {
   if (descriptor) {

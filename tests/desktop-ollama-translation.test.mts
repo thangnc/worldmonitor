@@ -42,7 +42,7 @@ test('desktop Ollama translation uses native transport auth without a World Moni
   await mkdir(join(root, 'news/v1'), { recursive: true });
   await writeFile(join(root, 'news/v1/summarize-article.js'),
     `export { default } from ${JSON.stringify(new URL('../api/news/v1/[rpc].ts', import.meta.url).href)};`);
-  const { createLocalApiServer } = await import('../src-tauri/sidecar/local-api-server.mjs');
+  const { createLocalApiServer } = await import('../docker/local-api/local-api-server.mjs');
   const app = await createLocalApiServer({ port: 0, apiDir: root, dataDir: root,
     mode: 'tauri-sidecar', cloudFallback: false, logger: { log() {}, warn() {}, error() {} } });
   const { port } = await app.start();

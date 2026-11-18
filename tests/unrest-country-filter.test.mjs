@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createUnrestServiceRoutes } from '../src/generated/server/worldmonitor/unrest/v1/service_server.ts';
-import { unrestHandler } from '../server/worldmonitor/unrest/v1/handler.ts';
-import { mapErrorToResponse } from '../server/error-mapper.ts';
+import { createUnrestServiceRoutes } from '../packages/contracts/generated/server/worldmonitor/unrest/v1/service_server.ts';
+import { unrestHandler } from '../packages/server/worldmonitor/unrest/v1/handler.ts';
+import { mapErrorToResponse } from '../packages/server/error-mapper.ts';
 
 test('unrest country filtering uses country identity and retains date and sort behavior', async (t) => {
   const env = { ...process.env };

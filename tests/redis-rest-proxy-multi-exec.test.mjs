@@ -28,7 +28,7 @@ import crypto from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { readFileSync } from 'node:fs';
 
-import { STORY_ALIAS_PUBLISH_SCRIPT } from '../shared/story-alias-publish-script.mjs';
+import { STORY_ALIAS_PUBLISH_SCRIPT } from '../packages/shared/story-alias-publish-script.mjs';
 
 const source = readFileSync(new URL('../docker/redis-rest-proxy.mjs', import.meta.url), 'utf8')
   .replace(/^#!.*\n/, '')
@@ -237,7 +237,7 @@ describe('redis-rest-proxy POST /multi-exec', () => {
   it('returns the executed transaction as an ordered array when one command errors', async () => {
     // Upstash answers a transaction whose commands ran but one of which failed
     // with HTTP 200 and an ordered array carrying {error} for that entry —
-    // the shape /pipeline emits and the shape server/_shared/redis.ts scans
+    // the shape /pipeline emits and the shape packages/server/_shared/redis.ts scans
     // with `data.find((item) => item.error || item.result === 'ERR')`. Before
     // #8265 nothing was ever queued, so this path never ran; the first real
     // WRONGTYPE would otherwise have become an opaque, retryable 500.
@@ -340,7 +340,7 @@ describe('redis-rest-proxy POST /multi-exec', () => {
   it('leaves a server-side record for a 500 as well as for a refusal', async () => {
     // A blocked command logs itself in assertCommandAllowed; a 500 used to log
     // nothing at all, and the main caller keeps only the status
-    // (`[redis] runRedisTransaction HTTP 500` in server/_shared/redis.ts). A
+    // (`[redis] runRedisTransaction HTTP 500` in packages/server/_shared/redis.ts). A
     // re-run of #8265 would then leave `docker compose logs redis-rest` silent —
     // the blind spot that hid the HSETNX/HINCRBY gap (#6937).
     const app = await boot({ onExec: () => Promise.reject(new Error('Socket closed unexpectedly')) });

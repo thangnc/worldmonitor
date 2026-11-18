@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createMarketServiceRoutes } from '../src/generated/server/worldmonitor/market/v1/service_server.ts';
-import { marketHandler } from '../server/worldmonitor/market/v1/handler.ts';
-import { validateGeneratedRequest } from '../server/request-validator.ts';
-import { getPriceHistory } from '../server/worldmonitor/market/v1/get-price-history.ts';
-import { drainResponseHeaders } from '../server/_shared/response-headers.ts';
+import { createMarketServiceRoutes } from '../packages/contracts/generated/server/worldmonitor/market/v1/service_server.ts';
+import { marketHandler } from '../packages/server/worldmonitor/market/v1/handler.ts';
+import { validateGeneratedRequest } from '../packages/server/request-validator.ts';
+import { getPriceHistory } from '../packages/server/worldmonitor/market/v1/get-price-history.ts';
+import { drainResponseHeaders } from '../packages/server/_shared/response-headers.ts';
 import { readFileSync } from 'node:fs';
 
 const REDIS = 'https://redis.test';
@@ -202,7 +202,7 @@ describe('GetPriceHistory', () => {
 });
 
 describe('GetPriceHistory OpenAPI contract', () => {
-  const spec = JSON.parse(readFileSync(new URL('../docs/api/MarketService.openapi.json', import.meta.url), 'utf8'));
+  const spec = JSON.parse(readFileSync(new URL('../packages/contracts/openapi/MarketService.openapi.json', import.meta.url), 'utf8'));
   const operation = spec.paths['/api/market/v1/get-price-history'].get;
   const param = (name: string) => operation.parameters.find((p: { name: string }) => p.name === name);
 

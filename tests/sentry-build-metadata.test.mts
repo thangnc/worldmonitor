@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { getSentryBuildMetadata, isolateNonProductionSentryEvent } from '../shared/sentry-build-metadata';
+import { getSentryBuildMetadata, isolateNonProductionSentryEvent } from '../packages/shared/sentry-build-metadata';
 
 describe('Sentry build attribution', () => {
   it('keeps preview build tags without adding to production release ordering', () => {

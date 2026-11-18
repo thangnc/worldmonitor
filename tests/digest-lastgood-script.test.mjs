@@ -14,8 +14,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { lua, lauxlib, lualib, to_luastring, to_jsstring } from 'fengari';
 
-import { DIGEST_LASTGOOD_PUBLISH_SCRIPT } from '../shared/digest-lastgood-publish-script.mjs';
-import { ATTEMPT_META_TTL_S, LASTGOOD_MAX_AGE_MS, LASTGOOD_TTL_S } from '../server/worldmonitor/news/v1/_lastgood.ts';
+import { DIGEST_LASTGOOD_PUBLISH_SCRIPT } from '../packages/shared/digest-lastgood-publish-script.mjs';
+import { ATTEMPT_META_TTL_S, LASTGOOD_MAX_AGE_MS, LASTGOOD_TTL_S } from '../packages/server/worldmonitor/news/v1/_lastgood.ts';
 
 const NOW = Date.UTC(2026, 7, 22, 12, 0, 0);
 const GENERATED_AT = new Date(NOW).toISOString();
@@ -626,7 +626,7 @@ describe('durable last-good publish gate — executed, not described (#7084)', (
     // replacement with measureServableRichness, production decides it in this
     // Lua. Nothing compared them, so their edge-case handling could drift and
     // the desktop build would quietly apply a different rule.
-    const { __testing__ } = await import('../server/worldmonitor/news/v1/_lastgood-store.ts');
+    const { __testing__ } = await import('../packages/server/worldmonitor/news/v1/_lastgood-store.ts');
     const measure = __testing__.measureServableRichness;
     const cases = [
       { data: bodyOf(['https://a.test/1', 'https://a.test/2']), revoked: [] },

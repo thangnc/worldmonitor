@@ -437,15 +437,6 @@ describe('forecast-cohort CLI and docs (#7066)', () => {
     assert.throws(() => parseArgs(['freeze', '--id']), /needs a value/);
   });
 
-  it('documents the cohort rules in both languages', () => {
-    assert.equal(RESOLVER_CYCLE_MS, DAY_MS + HOUR_MS, 'the docs say 1 day and 1 hour');
-    for (const path of ['docs/panels/forecast.mdx', 'docs/zh/panels/forecast.mdx']) {
-      const text = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-      for (const term of ['scripts/forecast-cohort.mjs', 'hardSlaMs', 'slaDueAt', 'RESOLVER_CYCLE_MS', 'missing_from_ledger', 'awaiting_registration', 'data/forecast-cohorts/', '--carry-code-versions', 'manifestSha256', 'duplicate_window', 'base_rate_placeholder', '--origin legacy_detector']) {
-        assert.ok(text.includes(term), `${path} mentions ${term}`);
-      }
-    }
-  });
 });
 
 describe('forecast-cohort ledger read', () => {

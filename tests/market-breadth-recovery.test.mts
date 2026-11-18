@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { installRedis } from './helpers/fake-upstash-redis.mts';
-import { getMarketBreadthHistory } from '../server/worldmonitor/market/v1/get-market-breadth-history';
+import { getMarketBreadthHistory } from '../packages/server/worldmonitor/market/v1/get-market-breadth-history';
 import { readPublishedPctAbove200d } from '../scripts/_sp500-breadth.mjs';
 import { stripSeedEnvelope } from '../scripts/_seed-envelope-source.mjs';
 import { __testing__ } from '../api/health.js';

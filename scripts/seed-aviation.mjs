@@ -302,7 +302,7 @@ const AIRPORT_META = Object.fromEntries(AVIATIONSTACK_LIST.map(a => [a.iata, a])
 
 // iata → FAA-row meta (icao/name/city/country for alert envelopes). NOTAM-
 // reachable rows carry inline lat/lon so notification payloads never depend on
-// src/config/airports.ts, which does not exist in the scripts-rooted Railway
+// packages/server/_shared/airports.ts, which does not exist in the scripts-rooted Railway
 // container. tests/aviation-notify-location.test.mjs holds both registries in
 // parity and fails CI on drift.
 const FAA_META = Object.fromEntries(
@@ -845,7 +845,7 @@ const ICAO_NOTAM_URL = 'https://dataservices.icao.int/api/notams-realtime-list';
 const NOTAM_CLOSURE_QCODES = new Set(['FA', 'AH', 'AL', 'AW', 'AC', 'AM']);
 // Restrictions: NOTAM Q-codes RA (restricted area) and RO (overfly prohibited)
 // + restricted code45s and text patterns. Mirrors NOTAM_RESTRICTION_QCODES +
-// the restriction-text regex in server/worldmonitor/aviation/v1/_shared.ts:29,
+// the restriction-text regex in packages/server/worldmonitor/aviation/v1/_shared.ts:29,
 // :440-444 — keep in lockstep so seeded NOTAM data matches the live RPC's
 // classifier.
 const NOTAM_RESTRICTION_QCODES = new Set(['RA', 'RO']);
@@ -1078,7 +1078,7 @@ async function dispatchNotamNotifications(closedIcaos, reasons, sourceByIcao = {
 
 // ─── Page-load bootstrap aggregate ───────────────────────────────────────────
 // Mirror of the alerts-array assembly in
-// server/worldmonitor/aviation/v1/list-airport-delays.ts (FAA + intl + NOTAM
+// packages/server/worldmonitor/aviation/v1/list-airport-delays.ts (FAA + intl + NOTAM
 // merge + Normal-operations filler from AIRPORTS). Keep the two builders in
 // lockstep — when the RPC's NOTAM merge / filler shape / enum mapping changes,
 // update both. Enum-string forms here match SEVERITY_MAP/DELAY_TYPE_MAP/REGION_MAP
@@ -1190,7 +1190,7 @@ function mergeNotamWithExistingAlert(airport, notamReason, existing, severity = 
   };
 }
 
-// Parse src/config/airports.ts as text to recover the live RPC's MONITORED_AIRPORTS
+// Parse packages/server/_shared/airports.ts as text to recover the live RPC's MONITORED_AIRPORTS
 // registry without a TS build step. The RPC iterates this for "Normal operations"
 // filler; the seeder's local AIRPORTS list is a related-but-different set
 // (carries `sources` for which feed covers each airport, omits some RPC-only
@@ -1207,7 +1207,7 @@ function loadMonitoredAirportsFromConfigFile() {
   if (_monitoredAirportsCache !== null) return _monitoredAirportsCache;
   try {
     const here = dirname(fileURLToPath(import.meta.url));
-    const path = join(here, '..', 'src', 'config', 'airports.ts');
+    const path = join(here, '..', 'packages', 'server', '_shared', 'airports.ts');
     const src = readFileSync(path, 'utf8');
     const rows = [];
     // Match rows of shape: { iata: 'XXX', icao: 'YYYY', name: '...', city: '...',
@@ -1235,7 +1235,7 @@ function loadMonitoredAirportsFromConfigFile() {
     _monitoredAirportsCache = rows;
     return rows;
   } catch (err) {
-    console.warn(`[Bootstrap] failed to parse src/config/airports.ts: ${err?.message || err} — falling back to seeder AIRPORTS only`);
+    console.warn(`[Bootstrap] failed to parse packages/server/_shared/airports.ts: ${err?.message || err} — falling back to seeder AIRPORTS only`);
     _monitoredAirportsCache = [];
     return _monitoredAirportsCache;
   }
@@ -1548,7 +1548,7 @@ export async function intlIsFresh() {
 }
 
 // Billing-cycle AviationStack budget backstop. Mirrors
-// reserveAviationStackCalls() in server/worldmonitor/aviation/v1/_avstack-budget.ts
+// reserveAviationStackCalls() in packages/server/worldmonitor/aviation/v1/_avstack-budget.ts
 // — SAME Redis key + env names so the seeder and the request-time RPCs share
 // one counter and one hard ceiling. Keep the two in lockstep. 'seed' kind
 // reserves against the full AVIATIONSTACK_MONTHLY_BUDGET; request-time stops
@@ -1579,7 +1579,7 @@ function cycleResetDay() {
  * anniversary day (the 25th on this account), so a `<YYYY-MM>` key kept the cap
  * refusing calls into a fresh allowance and zeroing itself mid-cycle.
  *
- * The server-side reserver in server/worldmonitor/aviation/v1/_avstack-budget.ts
+ * The server-side reserver in packages/server/worldmonitor/aviation/v1/_avstack-budget.ts
  * builds the SAME key; if the two ever drift, the shared ceiling splits into two
  * independent counters and silently doubles AviationStack spend. Exported so
  * that agreement can be asserted by comparing the two functions' output rather

@@ -38,17 +38,21 @@ function stringValue(property) {
 
 // Returns the 1-based lines of captureSilentError calls (bare or as a member,
 // e.g. deps.captureSilentError) whose options tag severity 'warn' but do not
-// pass level 'warning'.
+// pass level 'warning'. `calls` counts every captureSilentError call with an
+// options object, so a scan that reaches nothing is distinguishable from a
+// clean one.
 function warnCapturesMissingLevel(fileName, src) {
   const sf = ts.createSourceFile(fileName, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const lines = [];
   let checked = 0;
+  let calls = 0;
   const visit = (node) => {
     if (ts.isCallExpression(node)) {
       const callee = node.expression;
       const name = ts.isPropertyAccessExpression(callee) ? callee.name.text : ts.isIdentifier(callee) ? callee.text : '';
       const opts = node.arguments[1];
       if (name === 'captureSilentError' && opts && ts.isObjectLiteralExpression(opts)) {
+        calls++;
         const tags = propertyNamed(opts, 'tags');
         if (tags && ts.isObjectLiteralExpression(tags.initializer)
           && stringValue(propertyNamed(tags.initializer, 'severity')) === 'warn') {
@@ -62,7 +66,7 @@ function warnCapturesMissingLevel(fileName, src) {
     ts.forEachChild(node, visit);
   };
   visit(sf);
-  return { lines, checked };
+  return { lines, checked, calls };
 }
 
 describe('warn-severity Sentry captures', () => {
@@ -76,20 +80,23 @@ describe('warn-severity Sentry captures', () => {
       "captureSilentError(err, { tags: { 'severity': 'warn' } });",
       "captureSilentError(err, { 'level': 'warning', tags: { severity: 'warn' } });",
     ].join('\n');
-    assert.deepEqual(warnCapturesMissingLevel('fixture.ts', src), { lines: [1, 2, 3, 6], checked: 6 });
+    assert.deepEqual(warnCapturesMissingLevel('fixture.ts', src), { lines: [1, 2, 3, 6], checked: 6, calls: 7 });
   });
 
   it('pass level: warning alongside the severity: warn tag', () => {
     const offenders = [];
-    let checked = 0;
-    for (const dir of ['api', 'server']) {
+    let calls = 0;
+    for (const dir of ['api', 'packages/server']) {
       for (const file of sourceFiles(join(ROOT, dir))) {
         const result = warnCapturesMissingLevel(file, readFileSync(file, 'utf8'));
-        checked += result.checked;
+        calls += result.calls;
         for (const line of result.lines) offenders.push(`${relative(ROOT, file)}:${line}`);
       }
     }
-    assert.ok(checked > 0, 'expected at least one severity: warn capture to check');
+    // The warn-tagged captures this was written for left with the brief and
+    // MCP routes (Lite refactor Phase 1c); the scan must still reach the
+    // remaining server captures so a future warn tag is checked.
+    assert.ok(calls > 0, 'expected the scan to reach captureSilentError calls in api/ and packages/server/');
     assert.deepEqual(offenders, []);
   });
 });

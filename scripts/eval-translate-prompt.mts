@@ -18,10 +18,10 @@
 // does), so an unpinned run measures the router, not the prompt.
 import { writeFileSync } from 'node:fs';
 
-import { buildArticlePrompts, neutralizeTranslateText } from '../server/worldmonitor/news/v1/_shared.ts';
-import { maxTranslateOutputChars } from '../server/worldmonitor/news/v1/summarize-article.ts';
-import { sanitizeForPromptLine } from '../server/_shared/llm-sanitize.js';
-import { stripThinkingTags } from '../server/_shared/llm.ts';
+import { buildArticlePrompts, neutralizeTranslateText } from '../packages/server/worldmonitor/news/v1/_shared.ts';
+import { maxTranslateOutputChars } from '../packages/server/worldmonitor/news/v1/summarize-article.ts';
+import { sanitizeForPromptLine } from '../packages/server/_shared/llm-sanitize.js';
+import { stripThinkingTags } from '../packages/server/_shared/llm.ts';
 import { DEEPSEEK_V4_FLASH_MODEL_PREFIX, OPENROUTER_PROVIDER_ROUTING } from './_llm-model-timeouts.mjs';
 
 const CANARY = 'PWNED-7731';

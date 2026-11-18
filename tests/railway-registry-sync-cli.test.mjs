@@ -28,7 +28,7 @@ function createFixture(t) {
         repo: 'koala73/worldmonitor',
         rootDirectory: entry?.deployMode === 'nixpacks-root-scripts' ? 'scripts' : '',
       },
-      build: { watchPatterns: entry?.watchPatterns ?? ['scripts/**', 'shared/**'], dockerfilePath: entry?.dockerfile },
+      build: { watchPatterns: entry?.watchPatterns ?? ['scripts/**', 'packages/shared/**'], dockerfilePath: entry?.dockerfile },
       deploy: { startCommand: entry?.startCommand, cronSchedule: entry?.cronSchedule },
       variables: Object.fromEntries((entry?.requiredEnv ?? []).flat().map((name) => [name, secret])),
     };

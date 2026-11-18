@@ -16,7 +16,7 @@ export function hardenServerErrors(source) {
 
 if (isMainModule(import.meta.url, process.argv[1])) {
   const check = process.argv.includes('--check');
-  const root = new URL('../src/generated/server/worldmonitor/', import.meta.url);
+  const root = new URL('../packages/contracts/generated/server/worldmonitor/', import.meta.url);
   const files = readdirSync(root, { recursive: true })
     .filter((file) => file.endsWith('/service_server.ts'));
   if (files.length === 0) throw new Error('No generated sebuf servers found');

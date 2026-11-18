@@ -15,6 +15,14 @@ ENV npm_config_install_links=true
 
 # Install root dependencies (layer-cached until package.json changes)
 COPY package.json package-lock.json ./
+# Workspace manifests: npm ci links each workspace (@wm/web, @wm/client,
+# @wm/contracts, @wm/server, @wm/shared) into node_modules, so its package.json must exist
+# before the install.
+COPY apps/web/package.json ./apps/web/
+COPY packages/client/package.json ./packages/client/
+COPY packages/contracts/package.json ./packages/contracts/
+COPY packages/server/package.json ./packages/server/
+COPY packages/shared/package.json ./packages/shared/
 COPY vendor/braces/ ./vendor/braces/
 COPY vendor/stream-json/ ./vendor/stream-json/
 COPY vendor/vercel-og/ ./vendor/vercel-og/
@@ -22,13 +30,6 @@ RUN npm ci --ignore-scripts
 
 # Copy full source
 COPY . .
-
-# The crawlable-corpus step runs the source-attribution drift gate against
-# scripts/, server/, api/, and src/. generate-inventory-facts and
-# build-handlers write untracked .js into those same roots, so the gate must
-# run on the pristine checkout first (#7435). tsc + vite stay later: they
-# need the generated inventory assets and compiled handlers.
-RUN npm run build:crawlable-corpus && npm run build:sitemap
 
 # Generated inventory modules are intentionally untracked. Recreate them in
 # the clean image context before handlers import or bundle them.
@@ -38,28 +39,12 @@ RUN node scripts/generate-inventory-facts.mjs
 # Output is api/**/*.js alongside the source .ts files
 RUN node docker/build-handlers.mjs
 
-# public/pro/ is a build product, not committed bytes (#6898), so this image has
-# to build it. Skipping it does NOT 404: this image installs docker/nginx.conf,
-# whose `location /` ends in `try_files $uri $uri/ /dashboard.html`,
-# so /pro would quietly serve the dashboard SPA shell with a 200 — wrong content
-# under a real URL, which is worse than a missing page. (docker/Dockerfile is the
-# one with an explicit `location ^~ /pro` block, in nginx.conf.template.)
-# build:pro installs pro-test's own lockfile.
-RUN npm run build:pro
-
-# World Monitor Lite deployment profile (docs/engineering/architecture/lite.md). Off by default;
-# pass --build-arg VITE_LITE_PROFILE=true to open the image on /lite.
-ARG VITE_LITE_PROFILE=
-ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}
-
-# Build the Vite frontend (outputs to dist/)
+# Build the Vite frontend (apps/web; outputs to the repository root's dist/)
 # Skip blog build — blog-site has its own deps not installed here
-RUN npx tsc && npx vite build && npx vite build --config vite.lite.config.ts
-# Assert the /pro pages survived the public/ -> dist/ copy (#6898). build:pro
-# succeeding proves public/pro/ exists; it does NOT prove Vite copied it, and
-# docker/nginx.conf's SPA fallback would serve the dashboard shell at 200 for a
-# missing /pro rather than failing visibly.
-RUN test -s dist/pro/index.html && test -s dist/pro/welcome.html
+# Vite 8 lists every config-graph feature its future native config loader
+# lacks; the dev API handlers make that list ~960 lines (apps/web/vite.config.ts).
+ENV VITE_CONFIG_NATIVE_IGNORE_WARNING=true
+RUN npx tsc && npx vite build --config apps/web/vite.config.ts
 
 # ── Stage 2: Runtime dependencies ───────────────────────────────────────────
 FROM node:24-alpine@sha256:feb76650b7195319268c59cb2d419c732d6c499b13bf5296f16ab59eb1f0a4f3 AS runtime-deps
@@ -87,11 +72,11 @@ RUN apk add --no-cache nginx supervisor gettext && \
 WORKDIR /app
 
 # API server
-COPY --from=builder /app/src-tauri/sidecar/local-api-server.mjs ./local-api-server.mjs
-COPY --from=builder /app/src-tauri/sidecar/package.json ./package.json
-COPY --from=builder /app/shared/llm-health-providers.js ./shared/llm-health-providers.js
-COPY --from=builder /app/shared/desktop-key-access.js ./shared/desktop-key-access.js
-COPY --from=builder /app/shared/selfhost-relay-paths.js ./shared/selfhost-relay-paths.js
+COPY --from=builder /app/docker/local-api/local-api-server.mjs ./local-api-server.mjs
+COPY --from=builder /app/docker/local-api/package.json ./package.json
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=builder /app/packages/shared/llm-health-providers.js ./packages/shared/llm-health-providers.js
+COPY --from=builder /app/packages/shared/selfhost-relay-paths.js ./packages/shared/selfhost-relay-paths.js
 ENV LOCAL_API_RESOURCE_DIR=/app
 
 # Minimal runtime node_modules — required by raw .js handlers that aren't

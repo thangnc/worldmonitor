@@ -26,7 +26,7 @@
 import assert from 'node:assert/strict';
 import { describe, it, before, beforeEach, after } from 'node:test';
 
-import { withPremiumIntent } from '../src/services/premium-intent.ts';
+import { withPremiumIntent } from '../packages/client/services/premium-intent.ts';
 
 // ---------------------------------------------------------------------------
 // Stub browser globals BEFORE the wm-session module is imported. The module
@@ -83,7 +83,7 @@ const stubSessionStorage: Storage = {
   setItem(key, value) { memoryStorage.set(key, String(value)); },
 };
 
-// localStorage stub — touched by src/config/variant.ts during module import.
+// localStorage stub, in case a module in the import graph touches it.
 const memoryLocalStorage = new Map<string, string>();
 const stubLocalStorage: Storage = {
   get length() { return memoryLocalStorage.size; },
@@ -102,9 +102,8 @@ const stubLocalStorage: Storage = {
 (globalThis as unknown as { localStorage: Storage }).localStorage = stubLocalStorage;
 (globalThis as unknown as { setInterval: typeof setInterval }).setInterval = stubSetInterval;
 (globalThis as unknown as { fetch: typeof fetch }).fetch = stubFetch;
-// `location` must include `hostname` because src/config/variant.ts (loaded
-// transitively via runtime.ts → wm-session.ts) reads `location.hostname` at
-// module-eval time and calls `.startsWith(...)` on it.
+// `location` carries the fields the runtime.ts → wm-session.ts import graph
+// may read.
 (globalThis as unknown as { location: Location }).location = {
   href: 'https://worldmonitor.app/',
   origin: 'https://worldmonitor.app',
@@ -117,11 +116,11 @@ const stubLocalStorage: Storage = {
 // Now import the module and install the interceptor exactly once.
 // ---------------------------------------------------------------------------
 
-let mod: typeof import('../src/services/wm-session.ts');
+let mod: typeof import('../packages/client/services/wm-session.ts');
 let wrappedFetch: typeof fetch;
 
 before(async () => {
-  mod = await import('../src/services/wm-session.ts');
+  mod = await import('../packages/client/services/wm-session.ts');
   mod.installWmSessionFetchInterceptor();
   // After install, globalThis.fetch is the wrapper.
   wrappedFetch = (globalThis as unknown as { fetch: typeof fetch }).fetch;

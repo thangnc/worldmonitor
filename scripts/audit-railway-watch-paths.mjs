@@ -239,7 +239,7 @@ export function managedRailwayServices(registry) {
 // they cannot MISS a transitive helper change — which is the failure this guard
 // exists to prevent (docs/engineering/solutions/integration-issues/
 // railway-seeder-watch-paths-can-skip-deployments.md).
-export const BROAD_WATCH_PATTERNS = Object.freeze(['scripts/**', 'shared/**']);
+export const BROAD_WATCH_PATTERNS = Object.freeze(['scripts/**', 'packages/shared/**']);
 
 const SEED_COMMAND_RE = /^node\s+(?:\.\/)?(?:scripts\/)?(?:seed-[^\s]+|fetch-gpsjam\.mjs|publish-bootstrap-tiers\.mjs)(?:\s|$)/;
 const SEED_DOCKERFILE_RE = /(?:^|\/)Dockerfile\.(?:seed-[^/\s]+|digest-notifications|publish-bootstrap-tiers)$/;

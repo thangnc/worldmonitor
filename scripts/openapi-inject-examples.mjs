@@ -9,12 +9,12 @@
  * workstream #4610.
  *
  * Artifacts:
- *   1. docs/api/<Service>.openapi.json - full examples, reserialized with the
+ *   1. packages/contracts/openapi/<Service>.openapi.json - full examples, reserialized with the
  *      same sorted, Go-escaped JSON strategy used by openapi-inject-security.
- *   2. docs/api/<Service>.openapi.yaml - surgical example insertions so the
+ *   2. packages/contracts/openapi/<Service>.openapi.yaml - surgical example insertions so the
  *      Mintlify per-service docs carry request/response examples without
  *      reformatting the whole generated YAML file.
- *   3. docs/api/worldmonitor.openapi.yaml - same surgical insertion for the
+ *   3. packages/contracts/openapi/worldmonitor.openapi.yaml - same surgical insertion for the
  *      unified bundle copied to /openapi.yaml at build time.
  */
 
@@ -22,10 +22,10 @@ import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sortRec, serialize, eq, normalizeKey } from './lib/openapi-codegen.mjs';
-import { EMERGENCY_CODES } from '../shared/aircraft-emergencies.ts';
+import { EMERGENCY_CODES } from '../packages/shared/aircraft-emergencies.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const bundlePath = resolve(apiDir, 'worldmonitor.openapi.yaml');
 const CHECK = process.argv.includes('--check');
 
@@ -76,7 +76,7 @@ const GIVING_PUBLISHED_ESTIMATE_CLAIMS = JSON.parse(
 // carries the canonical 'suez' id — use it as the drift-anchored source.
 const CHOKEPOINT_EXAMPLE_ID = (() => {
   try {
-    const contract = JSON.parse(readRepoText('shared/openapi-filter-param-contracts.json'));
+    const contract = JSON.parse(readRepoText('packages/shared/openapi-filter-param-contracts.json'));
     const ids = Array.isArray(contract.intelligenceChokepointIds) ? contract.intelligenceChokepointIds : [];
     return ids.includes('suez') ? 'suez' : (ids[0] ?? 'suez');
   } catch {
@@ -89,13 +89,13 @@ const CHOKEPOINT_EXAMPLE_ID = (() => {
 // extract its ids from source text. The `id: '...'` shape only appears on the
 // template literals (the interface uses `id: string;`, no quotes).
 const SCENARIO_EXAMPLE_ID = (() => {
-  const src = readRepoText('server/worldmonitor/supply-chain/v1/scenario-templates.ts');
+  const src = readRepoText('packages/server/worldmonitor/supply-chain/v1/scenario-templates.ts');
   const ids = [...src.matchAll(/\bid:\s*['"`]([a-z0-9-]+)['"`]/g)].map((m) => m[1]);
   return ids.includes('hormuz-tanker-blockade') ? 'hormuz-tanker-blockade' : (ids[0] ?? 'hormuz-tanker-blockade');
 })();
 
 const SCENARIO_RESULT_AFFECTED_CHOKEPOINT_IDS = (() => {
-  const src = readRepoText('server/worldmonitor/supply-chain/v1/scenario-templates.ts');
+  const src = readRepoText('packages/server/worldmonitor/supply-chain/v1/scenario-templates.ts');
   const idMatch = src.match(new RegExp(`\\bid:\\s*['"\`]${SCENARIO_EXAMPLE_ID}['"\`]`));
   const start = idMatch ? src.lastIndexOf('{', idMatch.index) : -1;
   const end = start >= 0 ? src.indexOf('\n  },', start) : -1;
@@ -129,7 +129,7 @@ const ICAO24_EXAMPLE = 'a835af';
 // GetTemporalBaseline enum example.
 const BASELINE_TYPE_EXAMPLE_ID = (() => {
   try {
-    const contract = JSON.parse(readRepoText('shared/openapi-filter-param-contracts.json'));
+    const contract = JSON.parse(readRepoText('packages/shared/openapi-filter-param-contracts.json'));
     const ids = Array.isArray(contract.infrastructureTemporalBaselineTypes) ? contract.infrastructureTemporalBaselineTypes : [];
     return ids.includes('military_flights') ? 'military_flights' : (ids[0] ?? 'military_flights');
   } catch {
@@ -138,13 +138,13 @@ const BASELINE_TYPE_EXAMPLE_ID = (() => {
 })();
 
 const CONSUMER_PRICE_BASKET_EXAMPLE_ID = (() => {
-  const src = readRepoText('server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts');
+  const src = readRepoText('packages/server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts');
   const match = src.match(/\bDEFAULT_BASKET\s*=\s*['"`]([^'"`]+)['"`]/);
   return match?.[1] ?? 'essentials-ae';
 })();
 
 const CONSUMER_PRICE_RANGE_EXAMPLE_ID = (() => {
-  const src = readRepoText('server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts');
+  const src = readRepoText('packages/server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts');
   const match = src.match(/VALID_RANGES\s*=\s*new Set\(\[([^\]]+)\]\)/);
   const ranges = match ? [...match[1].matchAll(/['"`]([^'"`]+)['"`]/g)].map((m) => m[1]) : [];
   return ranges.includes('7d') ? '7d' : (ranges[0] ?? '7d');
@@ -223,7 +223,7 @@ function isCuratedOmission(key, context = {}) {
 function overrideStringExample(key, context = {}) {
   const where = `${context.operationId ?? ''} ${context.path ?? ''}`.toLowerCase();
   if (key === 'jmespath') return 'keys(@)';
-  // Shipping v2 webhooks: eventType is a registry key (shared/event-triggers.json)
+  // Shipping v2 webhooks: eventType is a registry key (packages/shared/event-triggers.json)
   // and countries holds monitored ISO2 codes; the heuristic's "all" / "example"
   // are rejected by registerWebhook.
   if (where.includes('registerwebhook') || where.includes('listwebhooks') || where.includes('/api/v2/shipping/webhooks')) {
@@ -608,7 +608,7 @@ function resolveRef(schema, spec) {
 }
 
 // Honeypot fields are hidden anti-bot inputs: the handlers silently discard any
-// non-empty value (server/worldmonitor/leads/v1/{register-interest,submit-contact}.ts),
+// non-empty value (packages/server/worldmonitor/leads/v1/{register-interest,submit-contact}.ts),
 // so a populated example is a fake-success trap — a developer copying the sample
 // gets a 200 but nothing is registered/emailed, and the value contradicts the
 // field's own "real submissions leave it empty" description. They're detected by

@@ -19,7 +19,7 @@ import {
   extractAnchorTokens,
   validateNoHallucinatedFacts,
   validateNoHallucinatedProperNouns,
-} from '../shared/brief-llm-core.js';
+} from '../packages/shared/brief-llm-core.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const readSrc = (rel) => readFileSync(resolve(root, rel), 'utf-8');
@@ -179,7 +179,7 @@ describe('grounding spine port (#4921)', () => {
 
   it('brief-llm.mjs re-exports the core implementation (no drift possible)', async () => {
     const lib = await import('../scripts/lib/brief-llm.mjs');
-    const core = await import('../shared/brief-llm-core.js');
+    const core = await import('../packages/shared/brief-llm-core.js');
     assert.equal(lib.checkLeadGrounding, core.checkLeadGrounding, 'must be the SAME function object');
     assert.equal(lib.leadGroundsAgainstStory, core.leadGroundsAgainstStory);
   });
@@ -243,29 +243,20 @@ describe('brief-contract wiring (source-textual)', () => {
   });
 
   it('country-intel brief strips invented citations before shipping', () => {
-    const src = readSrc('server/worldmonitor/intelligence/v1/get-country-intel-brief.ts');
+    const src = readSrc('packages/server/worldmonitor/intelligence/v1/get-country-intel-brief.ts');
     assert.match(src, /verifyCitationIndexes\(briefText, entrySources\.length\)/);
     assert.match(src, /brief: citationCheck\.text/);
   });
 
   it('country-intel brief interpolates gazetteer names, not ISO-code fallbacks (#7738)', () => {
-    const src = readSrc('server/worldmonitor/intelligence/v1/get-country-intel-brief.ts');
+    const src = readSrc('packages/server/worldmonitor/intelligence/v1/get-country-intel-brief.ts');
     assert.match(src, /displayNameForIso2\(/);
     assert.match(src, /TIER1_COUNTRIES\[countryCode\]\s*\|\|\s*displayNameForIso2\(countryCode\)/);
   });
 
-  it('panel keeps cited story lines behind a disclosure and renders the freshness footer', () => {
-    const src = readSrc('src/components/InsightsPanel.ts');
-    assert.match(src, /renderBriefExtras/);
-    assert.match(src, /insights-brief-details/);
-    assert.match(src, /insights-brief-lines/);
-    assert.match(src, /formatIntelBrief\(brief, \{ sources \}\)/);
-    assert.match(src, /components\.insights\.briefFreshness/);
-  });
-
   it('core and mirrors are byte-identical (grounding spine included)', () => {
-    assert.equal(readSrc('shared/brief-llm-core.js'), readSrc('scripts/shared/brief-llm-core.js'));
-    assert.equal(readSrc('shared/brief-llm-core.d.ts'), readSrc('scripts/shared/brief-llm-core.d.ts'));
+    assert.equal(readSrc('packages/shared/brief-llm-core.js'), readSrc('scripts/shared/brief-llm-core.js'));
+    assert.equal(readSrc('packages/shared/brief-llm-core.d.ts'), readSrc('scripts/shared/brief-llm-core.d.ts'));
   });
 });
 

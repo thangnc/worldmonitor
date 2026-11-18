@@ -1,6 +1,6 @@
 // HMAC URL signer for scripts/ cron code.
 //
-// Port of the sign path in server/_shared/brief-url.ts. The edge
+// Port of the sign path in packages/server/_shared/brief-url.ts. The edge
 // route still owns verify (that code runs unchanged); the digest
 // cron only needs to mint magazine URLs to embed in notification
 // bodies.

@@ -1,12 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { hashString } from '../src/utils/hash.ts';
+import { hashString } from '../packages/client/utils/hash.ts';
 import {
   CACHE_VERSION,
   buildSummaryCacheKey,
   selectUniqueHeadlinePairs,
-} from '../src/utils/summary-cache-key.ts';
+} from '../packages/client/utils/summary-cache-key.ts';
 
 const HEADLINES = ['Inflation rises to 3.5%', 'Fed holds rates steady', 'Markets react'];
 
@@ -258,11 +258,11 @@ describe('GHSA-9gp4-366w-pcq3 — cache identity resists a chosen second preimag
   });
 
   it('the longest realistic key still satisfies the shared contract pattern', async () => {
-    // shared/openapi-filter-param-contracts.json caps the tail at 120 chars.
+    // packages/shared/openapi-filter-param-contracts.json caps the tail at 120 chars.
     // Truncating each of the five old segment hashes to 128 bits would have
     // overflowed it; one digest over the whole identity does not.
     const contracts = JSON.parse(
-      readFileSync(new URL('../shared/openapi-filter-param-contracts.json', import.meta.url), 'utf8'),
+      readFileSync(new URL('../packages/shared/openapi-filter-param-contracts.json', import.meta.url), 'utf8'),
     );
     const pattern = new RegExp(contracts.newsSummarizeArticleCacheKeyPattern);
     // No options suffix here on purpose. generateSummary appends one

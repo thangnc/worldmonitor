@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, beforeEach, describe, it } from 'node:test';
 
-import { listInternetOutages } from '../server/worldmonitor/infrastructure/v1/list-internet-outages';
+import { listInternetOutages } from '../packages/server/worldmonitor/infrastructure/v1/list-internet-outages';
 import { createRedisFetch } from './helpers/fake-upstash-redis.mts';
 
 const originalEnv = { ...process.env };

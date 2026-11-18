@@ -13,15 +13,15 @@ export const COVERAGE_DATASET_FILE = 'coverage.json';
 // tooltip wins when one exists; news panels without either fall back to their
 // feed list.
 export const PANEL_DESCRIPTIONS_PATH = 'scripts/data/coverage-panel-descriptions.json';
-const SERVER_FEEDS_PATH = 'server/worldmonitor/news/v1/_feeds.ts';
+const SERVER_FEEDS_PATH = 'packages/server/worldmonitor/news/v1/_feeds.ts';
 export const COVERAGE_INPUT_PATHS = Object.freeze([
   'scripts/build-coverage-catalog.mjs',
   PANEL_DESCRIPTIONS_PATH,
   'src/config/panels.ts',
-  'src/config/map-layer-definitions.ts',
-  'src/locales/en.json',
+  'packages/client/config/map-layer-definitions.ts',
+  'packages/client/locales/en.json',
   SERVER_FEEDS_PATH,
-  'shared/news-catalog.json',
+  'packages/shared/news-catalog.json',
   'api/mcp/registry',
 ]);
 
@@ -242,11 +242,11 @@ export function buildToolEntries({ tools, toolAccess }) {
 export async function loadCoverageCatalog({ importModule, readJson }) {
   const [panels, layers, mcp, serverFeeds] = await Promise.all([
     importModule('src/config/panels.ts'),
-    importModule('src/config/map-layer-definitions.ts'),
+    importModule('packages/client/config/map-layer-definitions.ts'),
     importModule('api/mcp/registry/index.ts'),
     importModule(SERVER_FEEDS_PATH),
   ]);
-  const locale = readJson('src/locales/en.json');
+  const locale = readJson('packages/client/locales/en.json');
   const writtenDescriptions = readJson(PANEL_DESCRIPTIONS_PATH);
   assertWrittenDescriptionsTargetPanels(writtenDescriptions, panels.ALL_PANELS);
   const catalog = {
@@ -405,7 +405,7 @@ ${renderLayerTable(catalog.layers, escapeHtml)}
       <h2 id="mcp-tools">MCP tools for AI agents</h2>
       <p>Agents reach the same data through the <a href="/docs/mcp">World Monitor MCP server</a>. Call <code>tools/list</code> for the live inventory and <code>describe_tool</code> for a tool's full definition.</p>
 ${renderToolTable(catalog.tools, escapeHtml)}
-      <p class="source">Generated from src/config/panels.ts, src/config/map-layer-definitions.ts, src/locales/en.json and api/mcp/registry at build time. Open the <a href="/dashboard">live dashboard</a> to use any of them.</p>`;
+      <p class="source">Generated from src/config/panels.ts, packages/client/config/map-layer-definitions.ts, packages/client/locales/en.json and api/mcp/registry at build time. Open the <a href="/dashboard">live dashboard</a> to use any of them.</p>`;
   return pageDocument({
     baseUrl,
     path: COVERAGE_PAGE_PATH,

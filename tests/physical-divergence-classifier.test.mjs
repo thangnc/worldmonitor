@@ -10,7 +10,7 @@ import {
   createPhysicalPremiumTransition,
   robustZScore,
 } from '../scripts/lib/physical-divergence.mjs';
-import { isPhysicalDivergencePrintStale } from '../shared/physical-divergence-staleness.js';
+import { isPhysicalDivergencePrintStale } from '../packages/shared/physical-divergence-staleness.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW_MS = Date.parse('2026-10-10T12:00:00.000Z');

@@ -2,7 +2,7 @@
 
 // Seeder-side llm_call telemetry shared helper (#4944 U5, refs #4948).
 //
-// Mirrors server/_shared/usage.ts LlmCallEvent field-for-field (and
+// Mirrors packages/server/_shared/usage.ts LlmCallEvent field-for-field (and
 // seed-forecasts.mjs's local emitter, #4895/post-#4901) so seeder events
 // unify with the Vercel-side stream in one wm_api_usage APL query. Gated on
 // USAGE_TELEMETRY=1 + AXIOM_API_TOKEN. Best-effort: one bounded POST per

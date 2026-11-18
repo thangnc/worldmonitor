@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import jmespath from 'jmespath';
 
-import { searchBoundedJmespath } from '../server/_shared/bounded-jmespath.ts';
+import { searchBoundedJmespath } from '../packages/server/_shared/bounded-jmespath.ts';
 
 const doubled = (count) => Array(count).fill('[@,@]').join('|');
 
@@ -124,7 +124,7 @@ describe('searchBoundedJmespath', () => {
   });
 
   it('returns HTTP 400 on the public gateway path and still serves a normal projection', async () => {
-    const { createDomainGateway } = await import('../server/gateway.ts');
+    const { createDomainGateway } = await import('../packages/server/gateway.ts');
     const path = '/api/resilience/v1/get-runtime-manifest';
     const handler = createDomainGateway([{
       method: 'GET', path, handler: async () => Response.json({ version: 1 }),

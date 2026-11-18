@@ -370,7 +370,7 @@ function productTradeWindow(byMonth, iso2, months) {
 }
 
 /**
- * Product trade for the shock model's two baselines (shared/hormuz-crisis.js):
+ * Product trade for the shock model's two baselines (packages/shared/hormuz-crisis.js):
  * the pre-crisis months, and current flows = the latest CURRENT_FLOWS_WINDOW
  * months ending at dataMonth, none before its earliest month.
  */

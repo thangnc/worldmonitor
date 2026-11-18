@@ -42,8 +42,6 @@
   <a href="https://www.worldmonitor.app/docs/zh/contributing"><strong>贡献指南</strong></a>
 </p>
 
-![World Monitor 仪表盘](docs/images/worldmonitor-7-mar-2026.jpg)
-
 ---
 
 ## 功能概览
@@ -87,16 +85,6 @@ npm run dev
 打开 [localhost:3000](http://localhost:3000)（可在 `.env.local` 中通过 `DEV_PORT` 覆盖端口）。应用无需环境变量即可运行。
 
 特定功能的数据源可能需要凭据。完整列表请参阅 `.env.example`。
-
-针对特定变体进行开发：
-
-```bash
-npm run dev:tech       # tech.worldmonitor.app
-npm run dev:finance    # finance.worldmonitor.app
-npm run dev:commodity  # commodity.worldmonitor.app
-npm run dev:happy      # happy.worldmonitor.app
-npm run dev:energy     # energy.worldmonitor.app
-```
 
 部署选项（Vercel、Docker、静态托管）请参阅**[自托管指南](https://www.worldmonitor.app/docs/zh/getting-started)**。
 
@@ -179,7 +167,7 @@ npm run build:full       # Production build
 | 商业使用 / SaaS | 是，在遵守 AGPL 义务的前提下采用 AGPL-3.0-only |
 | 私有源代码的专有使用或官方品牌权利 | 需要单独的商业许可或商标许可 |
 
-完整的代码许可证请参阅 [LICENSE](LICENSE)，通俗语言摘要请参阅 [docs/zh/license.mdx](docs/zh/license.mdx)。对于需要非 AGPL 条款的团队，可选择商业许可。
+完整的代码许可证请参阅 [LICENSE](LICENSE)。对于需要非 AGPL 条款的团队，可选择商业许可。
 
 版权所有 (C) 2024-2026 Elie Habib。保留所有权利。
 

@@ -2,7 +2,7 @@
 // `// @ts-expect-error`. Hand-written, same as
 // scripts/_simulation-queue-constants.d.mts.
 //
-// The module is dependency-free, which is why server/_shared/intel-history-
+// The module is dependency-free, which is why packages/server/_shared/intel-history-
 // client.ts can import `stripSourceSuffix` from it on the Vercel Edge runtime:
 // the outlet allow-list has to stay single-sourced with the seed writer's
 // normalization or query and stored vectors drift apart.

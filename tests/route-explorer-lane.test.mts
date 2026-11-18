@@ -15,12 +15,12 @@ import { readFileSync } from 'node:fs';
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { computeLane } from '../server/worldmonitor/supply-chain/v1/get-route-explorer-lane.ts';
-import type { GetRouteExplorerLaneRequest } from '../src/generated/server/worldmonitor/supply_chain/v1/service_server.ts';
-import { countryBox, inBox } from '../shared/country-bbox.ts';
-import { STRATEGIC_WATERWAYS } from '../shared/geo-data.ts';
-import { TRADE_ROUTES } from '../src/config/trade-routes.ts';
-import { CHOKEPOINT_REGISTRY } from '../server/_shared/chokepoint-registry.ts';
+import { computeLane } from '../packages/server/worldmonitor/supply-chain/v1/get-route-explorer-lane.ts';
+import type { GetRouteExplorerLaneRequest } from '../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server.ts';
+import { countryBox, inBox } from '../packages/shared/country-bbox.ts';
+import { STRATEGIC_WATERWAYS } from '../packages/shared/geo-data.ts';
+import { TRADE_ROUTES } from '../packages/client/config/trade-routes.ts';
+import { CHOKEPOINT_REGISTRY } from '../packages/server/_shared/chokepoint-registry.ts';
 
 const PAIRS: Array<[string, string, string]> = [
   ['CN', 'DE', 'high-volume baseline'],
@@ -213,7 +213,7 @@ describe('get-route-explorer-lane smoke matrix (30 queries)', () => {
       new Map(),
     );
     if (!res.noModeledLane && res.primaryRouteId) {
-      const { TRADE_ROUTES } = await import('../src/config/trade-routes.ts');
+      const { TRADE_ROUTES } = await import('../packages/client/config/trade-routes.ts');
       const route = TRADE_ROUTES.find((r: { id: string }) => r.id === res.primaryRouteId);
       assert.ok(route, `primaryRouteId ${res.primaryRouteId} not in TRADE_ROUTES`);
       assert.equal(
@@ -307,8 +307,8 @@ describe('get-route-explorer-lane smoke matrix (30 queries)', () => {
       new Map(),
     );
     if (res.noModeledLane || !res.primaryRouteId) return;
-    const { TRADE_ROUTES } = await import('../src/config/trade-routes.ts');
-    const { CHOKEPOINT_REGISTRY } = await import('../server/_shared/chokepoint-registry.ts');
+    const { TRADE_ROUTES } = await import('../packages/client/config/trade-routes.ts');
+    const { CHOKEPOINT_REGISTRY } = await import('../packages/server/_shared/chokepoint-registry.ts');
     const route = TRADE_ROUTES.find((r: { id: string }) => r.id === res.primaryRouteId);
     assert.ok(route, `primaryRouteId ${res.primaryRouteId} not in TRADE_ROUTES`);
     const routeChokepointIds = new Set(
@@ -355,8 +355,8 @@ describe('route waypoints and chokepoint registries agree', () => {
   // one source and not the other draws a lane through the canal with no
   // chokepoint on it (US→JP tanker via us-gulf-asia-panama, #7990).
   it('lists every waypoint route in that chokepoint registry entry, and back', async () => {
-    const { TRADE_ROUTES } = await import('../src/config/trade-routes.ts');
-    const { CHOKEPOINT_REGISTRY } = await import('../server/_shared/chokepoint-registry.ts');
+    const { TRADE_ROUTES } = await import('../packages/client/config/trade-routes.ts');
+    const { CHOKEPOINT_REGISTRY } = await import('../packages/server/_shared/chokepoint-registry.ts');
     const byWaypoint = new Map<string, { id: string; routeIds: string[] }>();
     for (const cp of CHOKEPOINT_REGISTRY) {
       byWaypoint.set(cp.id, cp);
@@ -382,8 +382,8 @@ describe('route waypoints and chokepoint registries agree', () => {
   });
 
   it('keeps the browser and seeder registry routeIds equal to the server registry', async () => {
-    const { CHOKEPOINT_REGISTRY: server } = await import('../server/_shared/chokepoint-registry.ts');
-    const { CHOKEPOINT_REGISTRY: browser } = await import('../src/config/chokepoint-registry.ts');
+    const { CHOKEPOINT_REGISTRY: server } = await import('../packages/server/_shared/chokepoint-registry.ts');
+    const { CHOKEPOINT_REGISTRY: browser } = await import('../packages/client/config/chokepoint-registry.ts');
     const expected = Object.fromEntries(server.map((cp) => [cp.id, [...cp.routeIds].sort()]));
     assert.deepEqual(Object.fromEntries(browser.map((cp) => [cp.id, [...cp.routeIds].sort()])), expected);
     const seederSource = readFileSync(new URL('../scripts/seed-hs2-chokepoint-exposure.mjs', import.meta.url), 'utf8');

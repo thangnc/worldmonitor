@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
-import { getSectorDependency } from '../server/worldmonitor/supply-chain/v1/get-sector-dependency.ts';
-import { drainResponseHeaders } from '../server/_shared/response-headers.ts';
+import { getSectorDependency } from '../packages/server/worldmonitor/supply-chain/v1/get-sector-dependency.ts';
+import { drainResponseHeaders } from '../packages/server/_shared/response-headers.ts';
 import { groupByProduct, toCanonicalProduct } from '../scripts/shared/comtrade.mjs';
 import { installRedis } from './helpers/fake-upstash-redis.mts';
 

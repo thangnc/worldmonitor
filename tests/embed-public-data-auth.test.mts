@@ -6,7 +6,7 @@ import bootstrapHandler, {
   isPublicWeatherBootstrapRequest,
 } from '../api/bootstrap.js';
 import { issueSessionToken } from '../api/_session.js';
-import { createDomainGateway, PUBLIC_NO_AUTH_RPC_PATHS } from '../server/gateway.ts';
+import { createDomainGateway, PUBLIC_NO_AUTH_RPC_PATHS } from '../packages/server/gateway.ts';
 
 // The four map RPCs entered PUBLIC_NO_AUTH_RPC_PATHS in #4290 for one reason:
 // the cross-site embed had no credential to present. It now polls the single
@@ -15,7 +15,7 @@ import { createDomainGateway, PUBLIC_NO_AUTH_RPC_PATHS } from '../server/gateway
 //
 // This spec is deliberately two-sided. Removing the exception is only correct
 // while a `wms_` session still reaches them, because that is what the public
-// dashboard presents (src/services/wm-session.ts attaches the token as both the
+// dashboard presents (packages/client/services/wm-session.ts attaches the token as both the
 // `wm-session` cookie and an `X-WorldMonitor-Key` header). A change that gated
 // these behind a real key would 401 every anonymous visitor.
 //

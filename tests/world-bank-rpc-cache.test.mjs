@@ -10,7 +10,7 @@ import {
   filterWorldBankRecords,
   worldBankRpcCacheCommands,
   worldBankRpcCacheKey,
-} from '../shared/world-bank-rpc-cache.js';
+} from '../packages/shared/world-bank-rpc-cache.js';
 
 const currentYear = 2026;
 const indicator = 'NY.GDP.MKTP.CD';
@@ -59,7 +59,7 @@ describe('World Bank RPC cache identity', () => {
 
   it('keeps the Railway mirror byte-identical', () => {
     const dir = dirname(fileURLToPath(import.meta.url));
-    const canonical = readFileSync(join(dir, '../shared/world-bank-rpc-cache.js'), 'utf8');
+    const canonical = readFileSync(join(dir, '../packages/shared/world-bank-rpc-cache.js'), 'utf8');
     const mirror = readFileSync(join(dir, '../scripts/shared/world-bank-rpc-cache.js'), 'utf8');
     assert.equal(mirror, canonical);
   });

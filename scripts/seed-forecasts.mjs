@@ -29,15 +29,15 @@ import { computeEmaWindows, computeRisk24h } from './_ema-threat-engine.mjs';
 import { CII_RISK_SCORE_CACHE_KEYS } from './_cii-risk-cache-keys.mjs';
 import { GPS_ZONE_MAX_UNCERTAIN_HEXES, GPS_ZONE_MIN_HEXES, GPS_ZONE_PERSISTENCE_PROBABILITY, MARITIME_REGIONS, hexesInMaritimeRegion } from './_gps-maritime-regions.mjs';
 // Queue / outcome / runId constants live in the shared shim so the
-// HTTP-trigger handler (server/_shared/simulation-queue.ts) and this
+// HTTP-trigger handler (packages/server/_shared/simulation-queue.ts) and this
 // seeder agree on the Redis schema. See #3734 + docs/plans/2026-05-18-
 // 003-feat-simulation-trigger-and-runid-filter-plan.md D4.
 //
-// IMPORT PATH NOTE: the shim lives in scripts/ — NOT server/_shared/ —
+// IMPORT PATH NOTE: the shim lives in scripts/ — NOT packages/server/_shared/ —
 // because the Railway services that run this seeder (seed-forecasts,
 // simulation-worker, deep-forecast-worker) use nixpacks with
 // root_dir=scripts and only package scripts/ contents into /app/.
-// Any `../server/_shared/...` import escapes /app/ at runtime and
+// Any `../packages/server/_shared/...` import escapes /app/ at runtime and
 // crashes with ERR_MODULE_NOT_FOUND. See #3811 incident logs.
 import {
   SIMULATION_TASK_KEY_PREFIX,
@@ -878,7 +878,7 @@ async function warmPingChokepoints() {
   if (!baseUrl) { console.log('  [Chokepoints] Warm-ping skipped (no WM_API_BASE_URL)'); return; }
   // get-chokepoint-status is medium-tier gated. The gateway trusts a relay
   // warm-ping ONLY when it carries WORLDMONITOR_RELAY_KEY in X-WorldMonitor-Key
-  // (server/gateway.ts isRelayWarmPingRequest); Origin alone is not enough, so
+  // (packages/server/gateway.ts isRelayWarmPingRequest); Origin alone is not enough, so
   // without the key this 401s every run. Mirrors seed-service-statuses.mjs.
   const relayKey = process.env.WORLDMONITOR_RELAY_KEY || '';
   const headers = { 'User-Agent': CHROME_UA, Origin: 'https://worldmonitor.app' };
@@ -15796,7 +15796,7 @@ function createForecastLlmHttpError(resp, usableBudgetMs = Infinity) {
 }
 
 // Seeder-side llm_call telemetry (#4895, post-#4901 review P1). Mirrors
-// server/_shared/usage.ts LlmCallEvent field-for-field and shares its gating
+// packages/server/_shared/usage.ts LlmCallEvent field-for-field and shares its gating
 // (USAGE_TELEMETRY=1 + AXIOM_API_TOKEN) so seeder events unify with the
 // Vercel-side stream in one APL query. Best-effort: one bounded POST per
 // logical call, never throws, never delays the seed meaningfully.
@@ -19534,7 +19534,7 @@ function buildSimulationLockKey(runId) { return `${SIMULATION_LOCK_KEY_PREFIX}:$
 // Backward-compatible signature: `pkgFingerprint = ''` lets the auto-trigger
 // at line 16096 keep calling with just `runId` and gets the legacy "skip
 // fingerprint verification" worker behavior. HTTP-trigger callers (via the
-// TS counterpart in server/_shared/simulation-queue.ts) always pass a real
+// TS counterpart in packages/server/_shared/simulation-queue.ts) always pass a real
 // fingerprint. See #3734 D5 / D7.
 //
 // On transport error this surfaces a `'redis_error'` reason (mirrors the TS

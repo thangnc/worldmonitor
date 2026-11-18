@@ -7,8 +7,8 @@ import {
   compileCompanyMonitoringGoldLabels,
   type CompanyMonitoringCurationManifest,
   type CompanyMonitoringGoldCurationManifest,
-} from '../shared/company-monitoring-curation.ts';
-import { canonicalJson } from '../shared/company-monitoring-evaluation.ts';
+} from '../packages/shared/company-monitoring-curation.ts';
+import { canonicalJson } from '../packages/shared/company-monitoring-evaluation.ts';
 
 type Command = 'audit-manifest' | 'audit-split' | 'compile-corpus' | 'compile-gold';
 

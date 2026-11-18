@@ -41,8 +41,9 @@ import {
   ARM_STAGING_KEY_TTL_IF_INACTIVE_SCRIPT,
   BACKFILL_META_IF_ACTIVE_SCRIPT,
 } from '../scripts/seed-military-bases.mjs';
-import { CABLE_HEALTH_REPAIR_SCRIPT } from '../shared/cable-health-repair-script.mjs';
-import { COMPARE_AND_DELETE_SCRIPT } from '../shared/compare-and-delete-script.cjs';
+import { CABLE_HEALTH_REPAIR_SCRIPT } from '../packages/shared/cable-health-repair-script.mjs';
+import { __testing__ as healthTesting } from '../api/health.js';
+import { COMPARE_AND_DELETE_SCRIPT } from '../packages/shared/compare-and-delete-script.cjs';
 import { recordHistoryCost } from '../scripts/lib/intel-history-cost.mjs';
 import { createTenderReceipt, writeTenderReceipt } from '../scripts/_global-tender-receipts.mjs';
 
@@ -118,7 +119,7 @@ it('accepts the emitted history-cost command and rejects a modified script', asy
 });
 
 it('accepts the exact compare-and-delete script emitted by the Redis client', () => {
-  const source = readFileSync(resolve(repoRoot, 'server/_shared/redis.ts'), 'utf8');
+  const source = readFileSync(resolve(repoRoot, 'packages/server/_shared/redis.ts'), 'utf8');
   assert.match(source, /from '\.\.\/\.\.\/shared\/compare-and-delete-script\.cjs'/);
   const start = source.indexOf('export async function compareAndDeleteRedisKey');
   assert.ok(start >= 0, 'compareAndDeleteRedisKey export not found');
@@ -160,7 +161,7 @@ function proxyFacingFiles() {
       // (p.ej. convex cli.bundle.cjs.map) y "descubre" tokens que no son
       // comandos Redis -- verde en CI (sin node_modules), rojo en local.
       '--exclude-dir=node_modules',
-      'server', 'scripts', 'shared', 'api'],
+      'packages/server', 'scripts', 'packages/shared', 'api'],
     { cwd: repoRoot, encoding: 'utf8' },
   );
   return out.trim().split('\n').filter(Boolean).filter((f) => !/__tests__|\.test\.|(^|\/)tests\//.test(f));
@@ -297,6 +298,23 @@ describe('redis-rest-proxy command gate', () => {
     assert.equal(accepts(gate, command), true);
     assert.deepEqual(Array.from(gate.commandForExecution(command)), command);
     assert.equal(accepts(gate, ['EVAL', `${SOURCE_RETRY_CLAIM_SCRIPT} `, '1', 'k']), false);
+  });
+
+  it('pins the health verdict lock release and snapshot write by exact bytes', () => {
+    // Unpinned, every /api/health request behind the proxy logs
+    // "verdict snapshot write failed" and re-sweeps every key.
+    const gate = buildGate();
+    const { HEALTH_VERDICT_RELEASE_LOCK_SCRIPT, HEALTH_VERDICT_WRITE_SNAPSHOT_SCRIPT } = healthTesting;
+    for (const [name, script, keys] of [
+      ['HEALTH_VERDICT_RELEASE_LOCK_SCRIPT', HEALTH_VERDICT_RELEASE_LOCK_SCRIPT, ['1', 'lock']],
+      ['HEALTH_VERDICT_WRITE_SNAPSHOT_SCRIPT', HEALTH_VERDICT_WRITE_SNAPSHOT_SCRIPT, ['5', 'lock', 'snap', 'compact', 'last', 'compact-last']],
+    ]) {
+      assert.equal(typeof script, 'string', `api/health.js exposes ${name} through __testing__`);
+      assert.equal(gate.ALLOWED_EVAL_SCRIPTS.has(script), true, `${name} must be pinned in the proxy`);
+      const command = ['EVAL', script, ...keys, 'token'];
+      assert.deepEqual(Array.from(gate.commandForExecution(command)), command);
+      assert.equal(accepts(gate, ['EVAL', `${script} `, ...keys, 'token']), false, `a modified ${name} must be rejected`);
+    }
   });
 
   it('admits only the exact cable snapshot repair script', () => {
@@ -481,24 +499,6 @@ describe('redis-rest-proxy command gate', () => {
     );
     assert.equal(accepts(gate, ['EVAL', `${legacy} `, '1', 'seed-lock:x', 'run']), false);
   });
-
-  it('pins the webhook owner-index remove-expired script by exact bytes', () => {
-    const gate = buildGate();
-    const ownerIndexSrc = readFileSync(
-      resolve(repoRoot, 'server/worldmonitor/shipping/v2/webhook-owner-index.ts'),
-      'utf8',
-    );
-    const match = ownerIndexSrc.match(/const REMOVE_EXPIRED_MEMBER = "([^"]+)";/);
-    assert.ok(match, 'webhook-owner-index.ts must define REMOVE_EXPIRED_MEMBER');
-    const script = match[1];
-    assert.equal(gate.ALLOWED_EVAL_SCRIPTS.has(script), true);
-    assert.equal(accepts(gate, ['EVAL', script, '2', 'owner', 'record']), true);
-    assert.equal(
-      accepts(gate, ['EVAL', `${script} `, '2', 'owner', 'record']),
-      false,
-      'a one-character script variant must stay blocked',
-    );
-  });
 });
 
 it('accepts the exact PizzINT archive script and rejects arbitrary edits', async () => {
@@ -516,9 +516,9 @@ it('accepts the exact PizzINT archive script and rejects arbitrary edits', async
 
 it('accepts the daily CII writer command and rejects modified scripts', () => {
   const output = execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '--eval', `
-    import { persistCiiDailyHistory } from './server/worldmonitor/intelligence/v1/get-risk-scores.ts';
-    import { CII_COUNTRY_CODES } from './shared/cii-weights.ts';
-    import { CII_FORMULA_VERSION } from './server/worldmonitor/intelligence/v1/_risk-config.ts';
+    import { persistCiiDailyHistory } from './packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+    import { CII_COUNTRY_CODES } from './packages/shared/cii-weights.ts';
+    import { CII_FORMULA_VERSION } from './packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
     process.env.UPSTASH_REDIS_REST_URL = 'https://redis.example.test';
     process.env.UPSTASH_REDIS_REST_TOKEN = 'fixture';
     delete process.env.LOCAL_API_MODE;

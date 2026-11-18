@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { INTEL_SOURCES, VARIANT_FEEDS } from '../server/worldmonitor/news/v1/_feeds.ts';
-import { NEWS_POOL_LAYOUT } from '../shared/news-pool-layout.generated.ts';
+import { INTEL_SOURCES, VARIANT_FEEDS } from '../packages/server/worldmonitor/news/v1/_feeds.ts';
+import { NEWS_POOL_LAYOUT } from '../packages/shared/news-pool-layout.generated.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -23,8 +23,7 @@ describe('commodities news agent parity (#5889)', () => {
     );
   });
 
-  it('gives MCP tools every category each digest edition emits', () => {
-    // nlp-tools.ts builds its category enum from this generated layout.
+  it('the generated news pool layout lists every category each digest edition emits', () => {
     for (const [edition, categories] of Object.entries(NEWS_POOL_LAYOUT.editions)) {
       const feedKeys = [
         ...Object.keys(VARIANT_FEEDS[edition] ?? {}),
@@ -32,26 +31,6 @@ describe('commodities news agent parity (#5889)', () => {
       ].sort();
       assert.deepEqual([...categories].sort(), feedKeys, `${edition} categories must match its digest (and no extras)`);
     }
-    const nlpSrc = readFileSync(join(ROOT, 'api/mcp/registry/nlp-tools.ts'), 'utf8');
-    assert.match(nlpSrc, /const ALL_DIGEST_CATEGORIES = \[\.\.\.new Set\(Object\.values\(NEWS_POOL_LAYOUT\.editions\)/);
   });
 
-  it('keeps the published MCP server card discoverable for category filtering', () => {
-    const card = JSON.parse(readFileSync(
-      join(ROOT, 'public/.well-known/mcp/server-card.json'),
-      'utf8',
-    ));
-    const tools = new Map((card.tools ?? []).map((tool) => [tool.name, tool.description]));
-    for (const name of ['extract_entities', 'get_news_clusters']) {
-      const description = tools.get(name) ?? '';
-      assert.match(description, /category/,
-        `${name} server-card description must advertise category filtering`);
-      assert.match(description, /commodities/,
-        `${name} server-card description must advertise commodities filtering`);
-      assert.match(description, /variant/,
-        `${name} server-card description must advertise variant selection`);
-      assert.match(description, /tech/,
-        `${name} server-card description must advertise Tech digest access`);
-    }
-  });
 });

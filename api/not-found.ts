@@ -19,7 +19,7 @@ export const config = { runtime: 'edge' };
 import { getCorsHeaders, getPublicCorsHeaders, isDisallowedOrigin } from './_cors.js';
 // @ts-expect-error — JS module, no declaration file
 import { checkRateLimit } from './_rate-limit.js';
-import { appendDeprecationPolicyLinkToRecord } from '../server/_shared/deprecation-policy';
+import { appendDeprecationPolicyLinkToRecord } from '../packages/server/_shared/deprecation-policy';
 import { buildMarkdownTwinResponse, isMarkdownTwinPath } from './_md-url-twin';
 
 // Legacy (non-gateway) API functions that get a `.md` twin. The twin fetches

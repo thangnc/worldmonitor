@@ -1,5 +1,5 @@
 // Defense-in-depth tests for the LLM-cache-application historical guard
-// in enrichWithAiCache (server/worldmonitor/news/v1/list-feed-digest.ts).
+// in enrichWithAiCache (packages/server/worldmonitor/news/v1/list-feed-digest.ts).
 //
 // The keyword classifier already downgrades CRITICAL/HIGH keyword matches
 // when the title carries a retrospective marker. But for titles that don't
@@ -15,7 +15,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { hasHistoricalMarker } from '../server/worldmonitor/news/v1/_classifier';
+import { hasHistoricalMarker } from '../packages/server/worldmonitor/news/v1/_classifier';
 
 // Pin "current year" to 2026 so year-based marker tests are deterministic.
 const NOW = Date.UTC(2026, 3, 15, 0, 0, 0);

@@ -308,7 +308,7 @@ describe('composeBriefFromDigestStories — followed-countries opt', () => {
 describe('envelope cache backfill (read-side defaults)', () => {
   // The envelope shape is intentionally NOT extended with a debug
   // field for U10 — the strict envelope validator
-  // (server/_shared/brief-render.js::assertBriefEnvelope) rejects extra
+  // (packages/server/_shared/brief-render.js::assertBriefEnvelope) rejects extra
   // keys on the data root and digest sub-tree. Adding
   // `followedCountriesUsed` would force a BRIEF_ENVELOPE_VERSION bump
   // and a renderer-side allow-list change, which is outside U10's scope

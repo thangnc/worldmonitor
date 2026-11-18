@@ -148,7 +148,7 @@ describe('SSE period-over-period change contract (#6066)', () => {
 
   it('keeps the derived direction correct against a negative prior level', () => {
     // The denominator is |prior| (matching the evaluator's own percentage_change
-    // convention in shared/china-activity-nowcast.ts), so a rise off a negative
+    // convention in packages/shared/china-activity-nowcast.ts), so a rise off a negative
     // prior stays a rise. Without the guard the sign inverts and a strengthening
     // week would be reported as weakening.
     const rising = parse({ currentContent: -50, lastContent: -100 });
@@ -529,11 +529,11 @@ describe('History accumulation (functional)', () => {
 // real seeder functions, run through the real publish-time history merge. Grow
 // the payload without growing the proto and this reds.
 
-const PROTO_PATH = 'proto/worldmonitor/supply_chain/v1/supply_chain_data.proto';
+const PROTO_PATH = 'packages/contracts/proto/worldmonitor/supply_chain/v1/supply_chain_data.proto';
 const SHIPPING_PROTO_PATHS = {
-  response: 'proto/worldmonitor/supply_chain/v1/get_shipping_rates.proto',
+  response: 'packages/contracts/proto/worldmonitor/supply_chain/v1/get_shipping_rates.proto',
 };
-const GENERATED_SERVER_PATH = 'src/generated/server/worldmonitor/supply_chain/v1/service_server.ts';
+const GENERATED_SERVER_PATH = 'packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server.ts';
 
 // Keys the seeder uses for its own bookkeeping and MUST delete before publish.
 // Anything listed here is asserted below to be (a) genuinely emitted by some
@@ -693,7 +693,7 @@ describe('ShippingIndex public contract gate (#6078)', () => {
     assert.match(genSrc, /periodChangeBasis\?: PeriodChangeBasis;/);
     assert.match(genSrc, /export type PeriodChangeBasis = [^;]*"publisher_reported"/);
     assert.match(genSrc, /export type PeriodChangeBasis = [^;]*"derived_from_prior_period_level"/);
-    const openapi = JSON.parse(readFileSync(resolve(root, 'docs/api/SupplyChainService.openapi.json'), 'utf-8'));
+    const openapi = JSON.parse(readFileSync(resolve(root, 'packages/contracts/openapi/SupplyChainService.openapi.json'), 'utf-8'));
     const schema = openapi.components?.schemas?.ShippingIndex?.properties?.periodChangeBasis;
     assert.deepEqual(
       schema?.enum?.filter((value) => value !== 'PERIOD_CHANGE_BASIS_UNSPECIFIED').sort(),
@@ -707,7 +707,7 @@ describe('ShippingIndex public contract gate (#6078)', () => {
     assert.ok(block, `export interface ShippingIndex not found in ${GENERATED_SERVER_PATH}`);
     const generated = [...block.matchAll(/^\s*(\w+)\??:/gm)].map(m => m[1]);
     assert.deepEqual(generated.sort(), [...declared].sort(),
-      'src/generated is stale — run `make generate` after editing the proto');
+      'packages/contracts/generated is stale — run `make generate` after editing the proto');
   });
 
   // The real assertion: what the seeder publishes, keyed against what the proto
@@ -879,7 +879,7 @@ describe('Seed script structure', () => {
 });
 
 describe('Handler cache-only (get-shipping-rates.ts)', () => {
-  const handlerSrc = readFileSync(resolve(root, 'server/worldmonitor/supply-chain/v1/get-shipping-rates.ts'), 'utf-8');
+  const handlerSrc = readFileSync(resolve(root, 'packages/server/worldmonitor/supply-chain/v1/get-shipping-rates.ts'), 'utf-8');
 
   it('does not import FRED constants or fetch functions', () => {
     assert.ok(!handlerSrc.includes('FRED_API_BASE'));
@@ -903,23 +903,6 @@ describe('Handler cache-only (get-shipping-rates.ts)', () => {
     assert.ok(handlerSrc.includes('supply_chain:shipping:v2'));
   });
 });
-
-describe('Panel section grouping (SupplyChainPanel.ts)', () => {
-  const panelSrc = readFileSync(resolve(root, 'src/components/SupplyChainPanel.ts'), 'utf-8');
-
-  it('groups indices by type', () => {
-    for (const id of ['SCFI', 'CCFI', 'BDI', 'BCI', 'BPI', 'BSI', 'BHSI']) {
-      assert.ok(panelSrc.includes(`'${id}'`), `Missing grouping for ${id}`);
-    }
-  });
-
-  it('renders section headers for each group', () => {
-    assert.ok(panelSrc.includes('containerRates'));
-    assert.ok(panelSrc.includes('bulkShipping'));
-    assert.ok(panelSrc.includes('economicIndicators'));
-  });
-});
-
 
 describe('SSE weekly history retention', () => {
   it('keeps 56 weekly points for SCFI and CCFI while other series stay at 24', () => {

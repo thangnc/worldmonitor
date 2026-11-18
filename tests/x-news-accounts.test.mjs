@@ -302,7 +302,7 @@ describe('exact X List membership gate', () => {
     assert.deepEqual(relay.requiredEnv, ['X_BEARER_TOKEN', 'X_CURATED_LIST_ID']);
 
     const envExample = readFileSync(join(__dirname, '../.env.example'), 'utf8');
-    const healthDocs = readFileSync(join(__dirname, '../docs/health-endpoints.mdx'), 'utf8');
+    const healthDocs = readFileSync(join(__dirname, '../docs/engineering/architecture/health-endpoints.md'), 'utf8');
     assert.match(envExample, /^X_BEARER_TOKEN=$/m);
     assert.match(envExample, /^X_CURATED_LIST_ID=$/m);
     assert.match(healthDocs, /fixed 15-minute UTC slot/);

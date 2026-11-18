@@ -16,8 +16,8 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel: string) => readFileSync(join(root, rel), 'utf8');
 
-const proto = read('proto/worldmonitor/wildfire/v1/fire_detection.proto');
-const generated = read('src/generated/server/worldmonitor/wildfire/v1/service_server.ts');
+const proto = read('packages/contracts/proto/worldmonitor/wildfire/v1/fire_detection.proto');
+const generated = read('packages/contracts/generated/server/worldmonitor/wildfire/v1/service_server.ts');
 const cwfis = read('scripts/wildfire/cwfis-wfs.mjs');
 const bc = read('scripts/wildfire/bc-fire-points.mjs');
 
@@ -88,7 +88,7 @@ test('every declared agency field is actually populated by a seeder', () => {
 });
 
 test('the OpenAPI artifact carries the agency fields', () => {
-  const spec = read('docs/api/WildfireService.openapi.json');
+  const spec = read('packages/contracts/openapi/WildfireService.openapi.json');
   for (const { proto: field } of AGENCY_FIELDS) {
     assert.ok(
       spec.includes(`"${field}"`) || spec.includes(`"${camel(field)}"`),

@@ -9,8 +9,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
-import { geoToCountry } from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
-import { TIER1_COUNTRIES } from '../server/worldmonitor/intelligence/v1/_shared.ts';
+import { geoToCountry } from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+import { TIER1_COUNTRIES } from '../packages/server/worldmonitor/intelligence/v1/_shared.ts';
 import { geoToCountry as seedGeoToCountry } from '../scripts/seed-military-cii.mjs';
 import {
   CII_BORDER_COUNTRIES,

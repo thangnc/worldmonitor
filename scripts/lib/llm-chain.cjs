@@ -25,7 +25,7 @@ function stripReasoningPreamble(text) {
 // Direct Anthropic Messages API. Opt-in only: reached when a caller's
 // allowedProviders names it (a customer AI routing policy,
 // scripts/lib/ai-routing-policy.cjs), never by the default chain. Mirrors the
-// edge adapter (server/_shared/llm-anthropic.ts): current models reject
+// edge adapter (packages/server/_shared/llm-anthropic.ts): current models reject
 // `temperature`, thinking tokens count against max_tokens (so the visible
 // budget gets headroom), and the refusal fallback stays on Anthropic models.
 const ANTHROPIC_DEFAULT_MODEL = 'claude-opus-5-5';

@@ -7,13 +7,13 @@ import {
   weightedBlend,
   type ResilienceDimensionId,
   type ResilienceDimensionScore,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import {
   RESILIENCE_INDICATOR_IDS,
   createIndicatorTraceCollector,
   materializeIndicatorTrace,
-} from '../server/worldmonitor/resilience/v1/_indicator-trace.ts';
-import { INDICATOR_REGISTRY } from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_indicator-trace.ts';
+import { INDICATOR_REGISTRY } from '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
 
 function emptyScore(score = 0): ResilienceDimensionScore {
   return {

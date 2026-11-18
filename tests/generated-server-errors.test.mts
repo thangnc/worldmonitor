@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readdirSync } from 'node:fs';
 import { test } from 'node:test';
 
-const serverRoot = new URL('../src/generated/server/worldmonitor/', import.meta.url);
+const serverRoot = new URL('../packages/contracts/generated/server/worldmonitor/', import.meta.url);
 const serverFiles = readdirSync(serverRoot, { recursive: true })
   .filter((file) => file.endsWith('/service_server.ts'));
 const privateDetail = 'private-password at /srv/private/worker.ts:42';
@@ -41,7 +41,7 @@ test('every generated RPC hides unexpected exception details', async (t) => {
 });
 
 test('generated routes preserve custom errors and request validation', async () => {
-  const { createNewsServiceRoutes, ValidationError } = await import('../src/generated/server/worldmonitor/news/v1/service_server.ts');
+  const { createNewsServiceRoutes, ValidationError } = await import('../packages/contracts/generated/server/worldmonitor/news/v1/service_server.ts');
   const error = new Error(privateDetail);
   const handler = new Proxy({}, { get: () => async () => { throw error; } });
   const request = requestFor(createNewsServiceRoutes(handler)[0]!);

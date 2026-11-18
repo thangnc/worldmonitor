@@ -479,7 +479,7 @@ describe('main() publication gate', () => {
   });
 
   it('keeps retained bytes, reader dates and health freshness through failure, then recovers', async () => {
-    const { buildResponseFromSpine } = await import('../server/worldmonitor/intelligence/v1/get-country-energy-profile.ts');
+    const { buildResponseFromSpine } = await import('../packages/server/worldmonitor/intelligence/v1/get-country-energy-profile.ts');
     process.env.ENTSO_E_TOKEN = 'entso-token';
     assert.equal(await main(), true);
     const snapshot = new Map(cache);
@@ -889,7 +889,5 @@ describe('electricity daily schedule margin', () => {
     assert.equal(classify(cfg.maxStaleMin + 1).status, 'STALE_SEED');
     assert.equal(classify(3614).status, 'STALE_SEED', 'observed outage stays visible');
     assert.ok(ELECTRICITY_TTL_SECONDS > cfg.maxStaleMin * 60);
-    const mcp = readFileSync(new URL('../api/mcp/registry/cache-tools.ts', import.meta.url), 'utf8');
-    assert.match(mcp, new RegExp(`seed-meta:energy:electricity-prices'[^\\n]+maxStaleMin: ${cfg.maxStaleMin}`));
   });
 });

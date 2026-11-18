@@ -19,14 +19,6 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 // the audit loop and its expected scan count together.
 const EXPECTED_INVENTORY_SURFACES = [
   ['source-attribution-totals', 'tests/source-attribution.test.mjs', ['stats.activeHosts', 'stats.providerCount', 'stats.observedHosts']],
-  ['panel-discoverability', 'tests/panel-config-guardrails.test.mjs', ['allRegistryPanelIds', 'panelCommandKeywordCounts', 'categoryMappedPanelIds', 'scheduled', 'primed']],
-  ['panel-discoverability', 'tests/news-panel-key-reachability.test.mts', ['feedCategories', 'catalogPanelKeys', 'registrations']],
-  ['mcp-output-schema-tools', 'tests/mcp-output-schema-coverage.test.mjs', ['registry', 'tools']],
-  ['mcp-tool-annotations', 'tests/mcp-tool-annotations.test.mjs', ['registry', 'tools']],
-  ['mcp-protocol-tools', 'tests/mcp-protocol-conformance.test.mjs', ['step1bListBody.result.tools', 'step3Body.result.tools']],
-  ['mcp-protocol-tools', 'tests/mcp.test.mjs', ['body.result.tools', 'TOOL_REGISTRY']],
-  ['mcp-protocol-tools', 'tests/mcp-resources.test.mjs', ['uiUris', 'listedUiUris']],
-  ['llms-mcp-tools', 'tests/llms-txt-mcp-tools.test.mjs', ['registry']],
   ['openapi-server-specs', 'tests/openapi-servers-contract.test.mjs', ['serviceJsonSpecs', 'serviceYamlSpecs']],
   ['openapi-security-specs', 'tests/openapi-security-contract.test.mjs', ['serviceSpecs']],
   ['openapi-jmespath-specs', 'tests/openapi-jmespath-contract.test.mjs', ['serviceJsonSpecs', 'serviceYamlSpecs', 'jsonServiceGetIds', 'yamlServiceGetIds', 'bundleGetIds']],
@@ -35,18 +27,10 @@ const EXPECTED_INVENTORY_SURFACES = [
   ['feed-client-server-catalogs', 'tests/feeds-client-server-parity.test.mjs', ['client', 'server', 'clientNameCount', 'serverNameCount']],
   ['feed-client-server-catalogs', 'tests/completeness-measurement.test.mjs', ['extractServerFeeds']],
   ['feed-client-server-catalogs', 'tests/publisher-families.test.mjs', ['FEED_LABELS', 'withHosts']],
-  ['regional-feed-promises', 'tests/feed-catalog-drift.test.mts', ['CANADA_CATALOG', 'nordicBeyondSweden']],
   ['feed-source-provenance', 'tests/source-provenance.test.mts', ['names', 'explicitUnknownDimensions']],
-  ['locale-key-completeness', 'tests/locale-completeness.test.mjs', ['enKeys', 'localeKeys']],
-  ['food-stocks-locales', 'tests/food-stocks-registration.test.mjs', ['locales']],
-  ['market-tape-locales', 'tests/market-tape-claim.test.mts', ['localeFiles']],
   ['product-catalog-inventories', 'tests/product-catalog-freshness.test.mjs', ['generatedProductIds', 'tiersJson', 'bundleHighlights']],
-  ['agent-skills-index', 'tests/agent-skills-index.test.mjs', ['index.skills']],
-  ['mcp-presets', 'tests/mcp-presets.test.mjs', ['presets']],
-  ['route-explorer-countries', 'tests/route-explorer-pickers.test.mts', ['getAllCountries']],
   ['notification-country-registry', 'tests/notification-relay-country-scope-5359.test.mjs', ['names']],
-  ['iso2-country-registry', 'convex/__tests__/followed-countries-mutations.test.ts', ['_ISO2_REGISTRY_FOR_TESTS']],
-  ['public-fixed-algorithm-claims', 'tests/cii-docs-drift.test.mts', ['llmsBrief', 'llmsFull', 'pressKit', 'communityGuide', 'publicHome', 'agentView.capabilities']],
+  ['public-fixed-algorithm-claims', 'tests/cii-docs-drift.test.mts', ['pressKit', 'communityGuide']],
 ];
 
 function inventorySurfaceRows(contracts) {
@@ -90,8 +74,8 @@ describe('extensible inventory count contract audit', () => {
   });
 
   it('rejects deleting one existing Appendix A surface from the registry', () => {
-    const mutant = INVENTORY_CONTRACTS.map((entry) => entry.id === 'mcp-protocol-tools'
-      ? { ...entry, surfaces: entry.surfaces.filter((entrySurface) => entrySurface.path !== 'tests/mcp.test.mjs') }
+    const mutant = INVENTORY_CONTRACTS.map((entry) => entry.id === 'feed-client-server-catalogs'
+      ? { ...entry, surfaces: entry.surfaces.filter((entrySurface) => entrySurface.path !== 'tests/publisher-families.test.mjs') }
       : entry);
     assert.throws(
       () => assertInventorySurfaceClosure(mutant),

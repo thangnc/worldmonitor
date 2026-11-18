@@ -20,9 +20,9 @@ import {
   listStablecoinMarkets,
   UNRESOLVED_REASONS,
   DATA_STATUSES,
-} from '../server/worldmonitor/market/v1/list-stablecoin-markets.ts';
-import { __clearLocalUnavailableBackoffForTests } from '../server/_shared/redis.ts';
-import { sha256Hex } from '../server/_shared/hash.ts';
+} from '../packages/server/worldmonitor/market/v1/list-stablecoin-markets.ts';
+import { __clearLocalUnavailableBackoffForTests } from '../packages/server/_shared/redis.ts';
+import { sha256Hex } from '../packages/server/_shared/hash.ts';
 
 const REDIS_URL = 'https://redis.example.test';
 const SEED_KEY = 'market:stablecoins:v1';
@@ -435,7 +435,7 @@ test('an ID the CoinPaprika fallback cannot map is unknown, not absent', async (
   const paprikaCalls: string[] = [];
   installHarness({
     // A snapshot WITHOUT tether, so both requested IDs are genuine gaps — the
-    // mixed-gap set is the whole point. tether is in shared/stablecoins.json's
+    // mixed-gap set is the whole point. tether is in packages/shared/stablecoins.json's
     // CoinPaprika mapping table; frax is not.
     seed: { ...SEED_SNAPSHOT, stablecoins: [seedCoin('dai')] },
     // CoinGecko is down, so the ladder falls through to CoinPaprika, which can
@@ -824,7 +824,7 @@ test('the handler emits every published value, and nothing outside them', async 
 test('the proto publishes exactly the vocabulary the handler emits', async () => {
   const { readFileSync } = await import('node:fs');
   const proto = readFileSync(
-    new URL('../proto/worldmonitor/market/v1/list_stablecoin_markets.proto', import.meta.url),
+    new URL('../packages/contracts/proto/worldmonitor/market/v1/list_stablecoin_markets.proto', import.meta.url),
     'utf8',
   );
 

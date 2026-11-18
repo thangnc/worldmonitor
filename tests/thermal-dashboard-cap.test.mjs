@@ -1,17 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import {
   THERMAL_DASHBOARD_CLUSTER_LIMIT,
   compactThermalDashboardPayload,
 } from '../scripts/_thermal-dashboard.mjs';
 import { __testing__ as healthTesting } from '../api/health.js';
-import { BOOTSTRAP_CACHE_KEYS } from '../shared/bootstrap-tier-keys.js';
-
-const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
+import { BOOTSTRAP_CACHE_KEYS } from '../packages/shared/bootstrap-tier-keys.js';
 
 function makeWatch(clusterCount) {
   return {
@@ -52,22 +47,6 @@ test('tolerates malformed payloads rather than publishing garbage', () => {
   for (const bad of [null, undefined, 'nope', 42, {}, { clusters: 'not-an-array' }]) {
     assert.equal(compactThermalDashboardPayload(bad), bad);
   }
-});
-
-// The drift guard. The seeder publishes THERMAL_DASHBOARD_CLUSTER_LIMIT clusters;
-// the client slices to its own maxItems default. If someone raises the client
-// default above the cap, the dashboard silently renders fewer clusters than it
-// asked for — a truncation with no error anywhere. Pin the relationship.
-test('client render limit stays within the published cap', () => {
-  const src = readFileSync(join(root, 'src', 'services', 'thermal-escalation.ts'), 'utf-8');
-  const m = src.match(/fetchThermalEscalations\(maxItems\s*=\s*(\d+)\)/);
-  assert.ok(m, 'could not find the client maxItems default — update this guard if the signature changed');
-
-  const clientDefault = Number(m[1]);
-  assert.ok(
-    clientDefault <= THERMAL_DASHBOARD_CLUSTER_LIMIT,
-    `client renders ${clientDefault} clusters but the seeder only publishes ${THERMAL_DASHBOARD_CLUSTER_LIMIT} — raise THERMAL_DASHBOARD_CLUSTER_LIMIT or the dashboard silently truncates`,
-  );
 });
 
 test('health monitors the compact key the bootstrap tier actually serves', () => {

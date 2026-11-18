@@ -30,11 +30,10 @@ import {
 } from './source-catalog-identity.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const MANIFEST_PATH = 'shared/source-attribution-manifest.json';
-const DOCS_PATH = 'docs/source-attribution.mdx';
-// MDX comments, not HTML ones: Mintlify parses docs/source-attribution.mdx as MDX v3,
-// which rejects `<!--` ("Unexpected character `!` before name") and fails the
-// whole deployment. The markers are interpolated into RegExp below, and `{`,
+const MANIFEST_PATH = 'packages/shared/source-attribution-manifest.json';
+const DOCS_PATH = 'docs/engineering/architecture/source-attribution.md';
+// MDX-style comment markers, kept from when this page was published by
+// Mintlify (MDX v3 rejects `<!--`); they are harmless in plain Markdown. The markers are interpolated into RegExp below, and `{`,
 // `*`, `}` are metacharacters, so every interpolation must go through
 // escapeRegExp — writing them raw silently stops the generator finding its own
 // block.
@@ -48,7 +47,7 @@ const REFERENCE_DISPLAY_LIMIT = 4;
 const MANIFEST_KIND_RE = /^(?:structured|feed|operational-status)(?:\+(?:structured|feed|operational-status))*$/;
 const LOGICAL_KIND_RE = /^(?:candidate|structured|feed|operational-status)(?:\+(?:structured|feed|operational-status))*$/;
 
-const SOURCE_ROOTS = ['scripts', 'server', 'api', 'src'];
+const SOURCE_ROOTS = ['scripts', 'packages/server', 'api', 'apps/web/src', 'packages/client'];
 const STRUCTURED_CATALOG_FILES = new Set(['scripts/shared/regional-energy-feeds.json']);
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.js', '.mjs', '.ts', '.tsx']);
 const FEED_FILES = new Set([
@@ -56,10 +55,10 @@ const FEED_FILES = new Set([
   // The live video catalog lists the broadcaster HLS streams Live News plays.
   // They are observed for completeness, but their playback transport is
   // excluded from the data provider count below.
-  'src/config/live-video-sources.ts',
+  'packages/client/config/live-video-sources.ts',
 ]);
-const PRESENTATION_ONLY_FILES = new Set(['src/config/live-video-sources.ts']);
-const STATUS_FILE = 'server/worldmonitor/infrastructure/v1/list-service-statuses.ts';
+const PRESENTATION_ONLY_FILES = new Set(['packages/client/config/live-video-sources.ts']);
+const STATUS_FILE = 'packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts';
 
 // URL literals are intentionally parsed before classification.  This catches
 // both quoted URLs and template literals such as the CFTC dataset endpoint.
@@ -1132,11 +1131,11 @@ const LOGICAL_ENTRIES = [
 // drop them. The file is pinned but the line deliberately is not: a line pin
 // hard-fails the whole scan the moment an unrelated edit shifts it.
 const DYNAMIC_HOSTS = [
-  { host: 'webcams.windy.com', kind: 'structured', path: 'shared/pinned-webcams.ts' },
+  { host: 'webcams.windy.com', kind: 'structured', path: 'packages/shared/pinned-webcams.ts' },
   { host: 'www.swfinstitute.org', kind: 'structured', path: 'scripts/seed-sovereign-wealth.mjs' },
   { host: 'www.ifswf.org', kind: 'structured', path: 'scripts/seed-sovereign-wealth.mjs' },
   { host: 'www.visionofhumanity.org', kind: 'structured', path: 'scripts/seed-resilience-static.mjs' },
-  { host: 'earth-search.aws.element84.com', kind: 'structured', path: 'server/worldmonitor/imagery/v1/search-imagery.ts' },
+  { host: 'earth-search.aws.element84.com', kind: 'structured', path: 'packages/server/worldmonitor/imagery/v1/search-imagery.ts' },
 ];
 
 const EXCLUDED_HOSTS = new Set([
@@ -1158,7 +1157,7 @@ const EXCLUDED_HOSTS = new Set([
   't.me',
   'reddit.com',
   'openrouter.ai',
-  // AI model provider (server/_shared/llm-anthropic.ts), not an ingested dataset.
+  // AI model provider (packages/server/_shared/llm-anthropic.ts), not an ingested dataset.
   'api.anthropic.com',
   'api.typesafe.ai',
   'tts.baidu.com',
@@ -1176,11 +1175,6 @@ const EXCLUDED_HOSTS = new Set([
   // None of them is an ingested upstream dataset, so they belong with the
   // other webmaster-console hosts above rather than in the provider count.
   'oauth2.googleapis.com',
-  // MCP OAuth clients' published Client ID Metadata Documents
-  // (api/oauth/_client-metadata.js). Fetched to authorize a connection, never
-  // ingested as data.
-  'claude.ai',
-  'chatgpt.com',
   'searchconsole.googleapis.com',
   'www.googleapis.com',
   'yandex.com',
@@ -1303,7 +1297,7 @@ function isGeneratedSourcePath(rootDir, relativePath) {
   // docker/build-handlers.mjs emits a .js sibling next to each api/**/*.ts
   // handler. The TypeScript source is the authority; the bundle just repeats
   // its URLs (and any inlined deps). Restrict the sibling skip to api/:
-  // authored JS under scripts/, server/, or src/ stays in the inventory even
+  // authored JS under scripts/, packages/server/, or apps/web/src/ stays in the inventory even
   // when a same-stem .ts/.tsx sibling exists.
   if (extname(base) !== '.js') return false;
   if (!relativePath.startsWith('api/')) return false;
@@ -1330,7 +1324,7 @@ function walkSourceFiles(rootDir) {
     }
   };
   for (const root of SOURCE_ROOTS) visit(root);
-  // The feed catalog is data under shared/, outside the code roots.
+  // The feed catalog is data under packages/shared/, outside the code roots.
   for (const path of FEED_DECLARATION_FILES) {
     if (!files.includes(path) && existsSync(join(rootDir, path))) files.push(path);
   }
@@ -2002,7 +1996,7 @@ export function renderAttributionSection(inventory, manifest) {
     '## Observed Source Inventory',
     '',
     BEGIN_MARKER,
-    `This generated inventory covers **${stats.activeHosts} active source hosts** representing **${stats.providerCount} active providers** (**${stats.structuredHosts} structured/API**, **${stats.feedHosts} feed**, and **${stats.operationalStatusHosts} operational-status** hosts). It is derived from source declarations in \`scripts/\`, \`server/\`, \`api/\`, and \`src/\`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.`,
+    `This generated inventory covers **${stats.activeHosts} active source hosts** representing **${stats.providerCount} active providers** (**${stats.structuredHosts} structured/API**, **${stats.feedHosts} feed**, and **${stats.operationalStatusHosts} operational-status** hosts). It is derived from source declarations in \`scripts/\`, \`packages/server/\`, \`api/\`, \`apps/web/src/\`, and \`packages/client/\`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.`,
     '',
     '| Provider | Observed surface |',
     '| --- | --- |',

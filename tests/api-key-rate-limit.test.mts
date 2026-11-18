@@ -16,7 +16,7 @@ import {
   rateLimitHeaders,
   checkBurst,
   ENTERPRISE_API_RATE_LIMIT,
-} from '../server/_shared/api-key-rate-limit.ts';
+} from '../packages/server/_shared/api-key-rate-limit.ts';
 
 // A mock pipeline that simulates an INCR/DECR counter, recording every command.
 function makePipeline(initial = 0) {

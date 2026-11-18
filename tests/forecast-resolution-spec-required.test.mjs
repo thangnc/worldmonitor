@@ -8,7 +8,7 @@ import { describe, it } from 'node:test';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
 describe('ResolutionSpec required fields in the public contract (#8950)', () => {
-  const schemas = JSON.parse(read('docs/api/ForecastService.openapi.json')).components.schemas;
+  const schemas = JSON.parse(read('packages/contracts/openapi/ForecastService.openapi.json')).components.schemas;
 
   it('requires kind and deadline on ResolutionSpec', () => {
     assert.deepEqual([...(schemas.ResolutionSpec.required ?? [])].sort(), ['deadline', 'kind']);
@@ -20,7 +20,7 @@ describe('ResolutionSpec required fields in the public contract (#8950)', () => 
   });
 
   it('carries the requirement into the unified bundle', () => {
-    const bundle = read('docs/api/worldmonitor.openapi.yaml');
+    const bundle = read('packages/contracts/openapi/worldmonitor.openapi.yaml');
     const block = bundle.match(/\n {8}worldmonitor_forecast_v1_ResolutionSpec:\n([\s\S]*?)\n {8}\S/)?.[1];
     assert.ok(block, 'the bundle declares ResolutionSpec');
     assert.match(block, /\n {12}required:\n {16}- kind\n {16}- deadline\n/);

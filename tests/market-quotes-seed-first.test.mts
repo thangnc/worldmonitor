@@ -13,11 +13,11 @@ import { afterEach, describe, it } from 'node:test';
 import type {
   ListMarketQuotesResponse,
   ServerContext,
-} from '../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import {
   __clearLocalUnavailableBackoffForTests,
   __resetKeyPrefixCacheForTests,
-} from '../server/_shared/redis';
+} from '../packages/server/_shared/redis';
 import {
   __resetUpstreamDeadlineForTests,
   __setUpstreamDeadlineForTests,
@@ -30,7 +30,7 @@ import {
   gapFetchCallTimeoutMs,
   listMarketQuotes,
   normalizeRequestedSymbols,
-} from '../server/worldmonitor/market/v1/list-market-quotes';
+} from '../packages/server/worldmonitor/market/v1/list-market-quotes';
 
 const BOOTSTRAP_KEY = 'market:stocks-bootstrap:v1';
 const CTX = { request: new Request('https://worldmonitor.app/api/market/v1/list-market-quotes') } as ServerContext;

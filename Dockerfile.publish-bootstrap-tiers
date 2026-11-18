@@ -13,7 +13,7 @@ COPY scripts/package.json scripts/package-lock.json ./scripts/
 RUN npm ci --prefix scripts --omit=dev --ignore-scripts
 
 COPY scripts/ ./scripts/
-COPY shared/ ./shared/
+COPY packages/shared/ ./packages/shared/
 
 USER node
 

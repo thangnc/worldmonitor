@@ -3,7 +3,7 @@
  * returned together with the defaults.
  *
  * This walks the real chain end to end — the shipped default universe from
- * `shared/stocks.json`, the watchlist merge the dashboard performs, and the
+ * `packages/shared/stocks.json`, the watchlist merge the dashboard performs, and the
  * handler that answers the resulting request — because the bug needed BOTH
  * halves to be wrong at once and either fix alone still loses the symbol:
  *
@@ -24,21 +24,21 @@ import { fileURLToPath } from 'node:url';
 import type {
   ListMarketQuotesResponse,
   ServerContext,
-} from '../src/generated/server/worldmonitor/market/v1/service_server';
+} from '../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
 import {
   __clearLocalUnavailableBackoffForTests,
   __resetKeyPrefixCacheForTests,
-} from '../server/_shared/redis';
-import { listMarketQuotes } from '../server/worldmonitor/market/v1/list-market-quotes';
+} from '../packages/server/_shared/redis';
+import { listMarketQuotes } from '../packages/server/worldmonitor/market/v1/list-market-quotes';
 import {
   MARKET_WATCHLIST_MAX_ENTRIES,
   mergeWatchlistSymbols,
   normalizeWatchlistEntries,
   type MarketSymbolMeta,
-} from '../src/services/market-watchlist.ts';
+} from '../packages/client/services/market-watchlist.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const STOCK_CONFIG = JSON.parse(readFileSync(resolve(root, 'shared/stocks.json'), 'utf8')) as {
+const STOCK_CONFIG = JSON.parse(readFileSync(resolve(root, 'packages/shared/stocks.json'), 'utf8')) as {
   symbols: MarketSymbolMeta[];
   defaultSymbols: string[];
 };

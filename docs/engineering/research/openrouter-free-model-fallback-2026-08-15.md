@@ -46,7 +46,7 @@ free model was usable as a production backup:
 Nemotron 3 Super answered 7 of 8 real completions in 0.6 to 2.4 seconds with
 clean prose and JSON. We accept the NVIDIA logging notice and trial terms for a
 best-effort outage leg, with one limit: the reasoning profile in
-`server/_shared/llm.ts`, which carries text that users type (chat analyst,
+`packages/server/_shared/llm.ts`, which carries text that users type (chat analyst,
 situation deductions), skips this model. The daily
 `openrouter-free-models-live.yml` probe fails when either free model is delisted,
 is within 14 days of its expiration date, or loses its last usable endpoint.

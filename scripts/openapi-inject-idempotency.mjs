@@ -3,7 +3,7 @@
  * Advertise Idempotency-Key support on every POST (mutation) operation in the
  * generated OpenAPI specs.
  *
- * The gateway (server/_shared/idempotency.ts, wired into server/gateway.ts)
+ * The gateway (packages/server/_shared/idempotency.ts, wired into packages/server/gateway.ts)
  * honors an `Idempotency-Key` request header on POST endpoints so agents can
  * safely retry on network failure without duplicating a side effect. The sebuf
  * `protoc-gen-openapiv3` plugin has no annotation for describing a header
@@ -24,9 +24,9 @@ import { fileURLToPath } from 'node:url';
 import { eq, serialize, readIdempotencyExemptPaths } from './lib/openapi-codegen.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const CHECK = process.argv.includes('--check');
-// Read from the runtime's own Set (server/_shared/idempotency.ts) rather than restating
+// Read from the runtime's own Set (packages/server/_shared/idempotency.ts) rather than restating
 // it here: the gateway skips the idempotency machinery for these paths, and the spec must
 // describe that same behaviour. A second literal would let the docs and the runtime drift
 // silently in either direction.
@@ -96,8 +96,8 @@ const JSON_RESPONSES = {
 
 // Replay markers echoed on the 2xx (success) response of an idempotent POST.
 // The gateway sets `Idempotent-Replayed: false` + echoes the key on the first
-// request (server/gateway.ts) and `Idempotent-Replayed: true` on a replay
-// (server/_shared/idempotency.ts); both are CORS-exposed (server/cors.ts). This
+// request (packages/server/gateway.ts) and `Idempotent-Replayed: true` on a replay
+// (packages/server/_shared/idempotency.ts); both are CORS-exposed (packages/server/cors.ts). This
 // is the only observable signal for "was this a replay?", so document it on the
 // success response the same way the injector documents headers on 409/422.
 const SUCCESS_HEADERS = {

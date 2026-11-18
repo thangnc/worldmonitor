@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   hasFiniteRequestBounds,
   normalizeBounds,
-} from '../server/worldmonitor/military/v1/_bounds.ts';
+} from '../packages/server/worldmonitor/military/v1/_bounds.ts';
 
 type Req = Parameters<typeof normalizeBounds>[0];
 const req = (over: Partial<Req> = {}): Req => ({

@@ -10,7 +10,7 @@ import {
   publishBootstrapTier,
   publishTierToKv,
 } from '../scripts/publish-bootstrap-tiers.mjs';
-import { BOOTSTRAP_TIER_ENVELOPE_SCHEMA_VERSION } from '../shared/bootstrap-tier-envelope.js';
+import { BOOTSTRAP_TIER_ENVELOPE_SCHEMA_VERSION } from '../packages/shared/bootstrap-tier-envelope.js';
 
 const TEST_ENV = {
   UPSTASH_REDIS_REST_URL: 'https://redis.example.test',

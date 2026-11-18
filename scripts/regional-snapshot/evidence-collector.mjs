@@ -15,18 +15,18 @@ const MAX_EVIDENCE_PER_SNAPSHOT = 30;
 /**
  * @param {string} regionId
  * @param {Record<string, any>} sources
- * @returns {import('../../shared/regions.types.js').EvidenceItem[]}
+ * @returns {import('../../packages/shared/regions.types.js').EvidenceItem[]}
  */
 export function collectEvidence(regionId, sources) {
   const region = REGIONS.find((r) => r.id === regionId);
   if (!region) return [];
 
-  /** @type {import('../../shared/regions.types.js').EvidenceItem[]} */
+  /** @type {import('../../packages/shared/regions.types.js').EvidenceItem[]} */
   const out = [];
 
   // Cross-source signals. Match against both fine-grained theater IDs and
   // the broad display labels the seed emits ("Middle East", "Sub-Saharan
-  // Africa") — see isSignalInRegion in shared/geography.js.
+  // Africa") — see isSignalInRegion in packages/shared/geography.js.
   const xss = sources['intelligence:cross-source-signals:v1']?.signals;
   if (Array.isArray(xss)) {
     for (const s of xss) {

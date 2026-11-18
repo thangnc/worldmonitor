@@ -29,13 +29,13 @@ import {
   generateStoryDescription,
   hashBriefStory,
 } from '../scripts/lib/brief-llm.mjs';
-import { assertBriefEnvelope } from '../server/_shared/brief-render.js';
+import { assertBriefEnvelope } from '../packages/server/_shared/brief-render.js';
 import { composeBriefFromDigestStories, digestStoryToSynthesisShape } from '../scripts/lib/brief-compose.mjs';
 import {
   WHY_MATTERS_V1_MIN_CHARS,
   WHY_MATTERS_V2_MAX_CHARS,
   briefDateLine,
-} from '../shared/brief-llm-core.js';
+} from '../packages/shared/brief-llm-core.js';
 
 const MAX_TOKEN_CLIP =
   'Marine Le Pen\u2019s conviction on appeal leaves her legally eligible for the 2027 presidential election, creating a high-stakes';
@@ -365,7 +365,7 @@ describe('generateWhyMatters', () => {
     // Regression guard: the Railway fallback path must apply sanitizeForPrompt
     // before buildWhyMattersPrompt. Without it, hostile headlines / sources
     // reach the LLM verbatim. Assertions here match what sanitizeForPrompt
-    // actually strips (see server/_shared/llm-sanitize.js INJECTION_PATTERNS):
+    // actually strips (see packages/server/_shared/llm-sanitize.js INJECTION_PATTERNS):
     //   - explicit instruction-override phrases ("ignore previous instructions")
     //   - role-prefixed override lines (`### Assistant:` at line start)
     //   - model delimiter tokens (`<|im_start|>`)
@@ -2007,15 +2007,6 @@ describe('generateStoryDescription — sanitisation + prefix bump (U5)', () => {
 
 describe('generateWhyMatters — v11 endpoint-cache cross-read (#4914)', () => {
   const V11_PROSE = 'Closure of the Strait of Hormuz would freeze a fifth of seaborne crude and force allied navies to respond.';
-
-  it('pins the endpoint cache to v11 and its shadow cohort to v7', async () => {
-    const { readFile } = await import('node:fs/promises');
-    const src = await readFile(new URL('../api/internal/brief-why-matters.ts', import.meta.url), 'utf8');
-    assert.match(src, /const cacheKey = `brief:llm:whymatters:v11:\$\{hash\}`;/);
-    assert.match(src, /const shadowKey = `brief:llm:whymatters:shadow:v7:\$\{hash\}`;/);
-    assert.doesNotMatch(src, /const cacheKey = `brief:llm:whymatters:v9:/);
-    assert.doesNotMatch(src, /const shadowKey = `brief:llm:whymatters:shadow:v6:/);
-  });
 
   async function seedV10(cache, s, envelopeOverrides = {}) {
     const hash = await hashBriefStory(s);

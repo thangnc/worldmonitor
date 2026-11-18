@@ -4,7 +4,7 @@ import {
   bindLayerSearch,
   LAYER_REGISTRY,
   LAYER_SYNONYMS,
-} from '@/config/map-layer-definitions';
+} from '@wm/client/config/map-layer-definitions';
 
 describe('Canada Roads layer discovery', () => {
   beforeEach(() => {

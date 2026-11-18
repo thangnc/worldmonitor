@@ -108,8 +108,8 @@ describe('SWF classification manifest — shipped YAML', () => {
     const surfaces = [
       ['scripts/shared/swf-classification-manifest.yaml', new URL('../scripts/shared/swf-classification-manifest.yaml', import.meta.url)],
       ['scripts/seed-sovereign-wealth.mjs', new URL('../scripts/seed-sovereign-wealth.mjs', import.meta.url)],
-      ['server/worldmonitor/resilience/v1/_indicator-registry.ts', new URL('../server/worldmonitor/resilience/v1/_indicator-registry.ts', import.meta.url)],
-      ['server/worldmonitor/resilience/v1/_dimension-scorers.ts', new URL('../server/worldmonitor/resilience/v1/_dimension-scorers.ts', import.meta.url)],
+      ['packages/server/worldmonitor/resilience/v1/_indicator-registry.ts', new URL('../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts', import.meta.url)],
+      ['packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts', new URL('../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts', import.meta.url)],
       ['scripts/compare-resilience-current-vs-proposed.mjs', new URL('../scripts/compare-resilience-current-vs-proposed.mjs', import.meta.url)],
     ];
 

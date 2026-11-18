@@ -20,8 +20,8 @@ const provenanceContract = readDecisionSignalProvenanceContract();
 const provenanceDimensions = [...provenanceContract.dimensions].sort();
 
 const specs = [
-  ['SupplyChainService JSON', JSON.parse(readFileSync(resolve(root, 'docs/api/SupplyChainService.openapi.json'), 'utf8'))],
-  ['SupplyChainService YAML', loadYaml(readFileSync(resolve(root, 'docs/api/SupplyChainService.openapi.yaml'), 'utf8'))],
+  ['SupplyChainService JSON', JSON.parse(readFileSync(resolve(root, 'packages/contracts/openapi/SupplyChainService.openapi.json'), 'utf8'))],
+  ['SupplyChainService YAML', loadYaml(readFileSync(resolve(root, 'packages/contracts/openapi/SupplyChainService.openapi.yaml'), 'utf8'))],
   ['unified YAML', loadUnifiedOpenApiSpec()],
 ];
 

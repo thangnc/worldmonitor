@@ -2,50 +2,19 @@
  * Curated provenance facts surface uniformly (#6419 step 1).
  *
  * Every `stateAffiliated` value and every `knownBiases` label in the registry
- * must reach the agent summary, the state object, and the primary-source HTML
- * for every source, with no exemption by tier, type, or risk class. The old
+ * must reach the agent summary and the state object for every source, with no exemption by tier, type, or risk class. The old
  * badge path returned null for reviewed `low`, which hid labels on exactly the
  * sources that carried them most often.
  */
-import { describe, it, before } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, rmSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { bundleFeedsModule } from './_lib/bundle-feeds-module.mts';
-import * as provenance from '../shared/source-provenance.ts';
-import { CONFIGURED_SOURCE_PROVENANCE_DECLARATIONS } from '../shared/source-provenance-declarations.ts';
-import { getSourceTier } from '../server/_shared/source-tiers.ts';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const repoRoot = join(__dirname, '..');
-const tempDir = join(repoRoot, 'tmp-source-provenance-uniformity-test');
+import * as provenance from '../packages/shared/source-provenance.ts';
+import { CONFIGURED_SOURCE_PROVENANCE_DECLARATIONS } from '../packages/shared/source-provenance-declarations.ts';
+import { getSourceTier } from '../packages/server/_shared/source-tiers.ts';
 
 // Namespace access keeps each case red on its own when an export is missing.
 const api = provenance as unknown as Record<string, any>;
 const { SOURCE_PROPAGANDA_RISK, SOURCE_TYPES, getSourceProvenanceState } = provenance;
-
-let renderer: {
-  renderPrimarySourceProvenance: (name: string) => { riskBadge: string; tierBadge: string; facts?: string };
-};
-
-before(async () => {
-  renderer = await bundleFeedsModule<typeof renderer>({
-    repoRoot,
-    tempDir,
-    outfileName: 'uniformity-renderer-bundle.mjs',
-    entryPoint: join(repoRoot, 'src/components/news/source-provenance.ts'),
-  });
-});
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 function registryNames(): string[] {
   return [...new Set([
@@ -65,7 +34,7 @@ function curatedFacts(name: string): string[] {
 }
 
 describe('provenance facts reach every surface for every source (#6419)', () => {
-  it('surfaces every stateAffiliated and knownBiases label in summary, state, and primary HTML', () => {
+  it('surfaces every stateAffiliated and knownBiases label in summary and state', () => {
     const offenders: string[] = [];
     let labelled = 0;
     let labelledLow = 0;
@@ -75,9 +44,6 @@ describe('provenance facts reach every surface for every source (#6419)', () => 
       const facts = curatedFacts(name);
       if (facts.length === 0) continue;
       const state = getSourceProvenanceState(name) as unknown as { knownBiases?: string[]; summary?: string; risk: string; type: string };
-      const rendered = renderer.renderPrimarySourceProvenance(name);
-      // Visible text only: a fact that survives only in a tooltip is not surfaced.
-      const html = `${rendered.riskBadge}${rendered.facts ?? ''}`.replace(/\s+title="[^"]*"/g, '');
       const where = `${name} (tier ${getSourceTier(name)}, type ${state.type}, risk ${state.risk})`;
       if (profile?.knownBiases?.length) {
         labelled += 1;
@@ -85,7 +51,6 @@ describe('provenance facts reach every surface for every source (#6419)', () => 
       }
       for (const fact of facts) {
         if (!state.summary?.includes(fact)) offenders.push(`${where}: summary lacks "${fact}"`);
-        if (!html.includes(escapeHtml(fact))) offenders.push(`${where}: primary HTML lacks "${fact}"`);
       }
       for (const label of profile?.knownBiases ?? []) {
         if (!state.knownBiases?.includes(label)) offenders.push(`${where}: state.knownBiases lacks "${label}"`);
@@ -190,15 +155,4 @@ describe('state affiliation survives a note (#6419)', () => {
     assert.match(badge!.title, /USA/);
     assert.match(badge!.title, /US government-funded/);
   });
-});
-
-describe('MCP news app renders the shared summary (#6419)', () => {
-  it('news-intelligence-app no longer derives provenance labels', () => {
-    const source = readFileSync(join(repoRoot, 'api/mcp/ui/news-intelligence-app.ts'), 'utf8');
-    assert.doesNotMatch(source, /riskReviewed/);
-  });
-});
-
-process.on('exit', () => {
-  try { rmSync(tempDir, { recursive: true, force: true }); } catch { /* ignore */ }
 });

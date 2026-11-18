@@ -6,8 +6,8 @@ import {
   buildStockNewsSearchQuery,
   resetStockNewsSearchStateForTests,
   searchRecentStockHeadlines,
-} from '../server/worldmonitor/market/v1/stock-news-search.ts';
-import { fetchCompanyNewsMentions } from '../server/worldmonitor/intelligence/v1/_company-shared.ts';
+} from '../packages/server/worldmonitor/market/v1/stock-news-search.ts';
+import { fetchCompanyNewsMentions } from '../packages/server/worldmonitor/intelligence/v1/_company-shared.ts';
 
 const originalFetch = globalThis.fetch;
 

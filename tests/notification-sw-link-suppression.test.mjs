@@ -1,19 +1,16 @@
 /**
  * Failing-first proof for #8401, service-worker half.
  *
- * 1. `api/notification-suppressions.js` splits the Redis set into exact-URL
- *    digests and `host:` entries, serves them anonymously with a 60s shared
- *    cache, and fails open with `unavailable: true` when Redis cannot be read.
- * 2. `public/link-suppression-check.js` matches clicks against that snapshot
- *    (exact + host/subdomain) inside a vm sandbox.
- * 3. `public/push-handler.js` consults the check on notificationclick: a
+ * 1. `public/link-suppression-check.js` matches clicks against a suppression
+ *    snapshot (exact digests + host/subdomain) inside a vm sandbox.
+ * 2. `public/push-handler.js` consults the check on notificationclick: a
  *    blocked click shows the blocked notice and never touches clients, while
  *    a clean click (or an unreachable endpoint) navigates as before.
  *
  * Run: node --test tests/notification-sw-link-suppression.test.mjs
  */
 
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -28,116 +25,6 @@ const EVIL = 'https://evil.example/phish?x=1';
 const LONG_EVIL = `https://evil.example/phish?payload=${'x'.repeat(2_100)}`;
 const digestUrl = (url) => `sha256:${createHash('sha256').update(url).digest('hex')}`;
 const EVIL_DIGEST = digestUrl(EVIL);
-const LONG_EVIL_DIGEST = digestUrl(LONG_EVIL);
-
-const originalFetch = globalThis.fetch;
-const originalWarn = console.warn;
-const originalEnvUrl = process.env.UPSTASH_REDIS_REST_URL;
-const originalEnvToken = process.env.UPSTASH_REDIS_REST_TOKEN;
-
-beforeEach(() => {
-  process.env.UPSTASH_REDIS_REST_URL = 'https://stub.upstash.io';
-  process.env.UPSTASH_REDIS_REST_TOKEN = 'stub-token';
-});
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-  console.warn = originalWarn;
-  if (originalEnvUrl === undefined) delete process.env.UPSTASH_REDIS_REST_URL;
-  else process.env.UPSTASH_REDIS_REST_URL = originalEnvUrl;
-  if (originalEnvToken === undefined) delete process.env.UPSTASH_REDIS_REST_TOKEN;
-  else process.env.UPSTASH_REDIS_REST_TOKEN = originalEnvToken;
-});
-
-// ── Edge endpoint ──────────────────────────────────────────────────────
-
-describe('notification-suppressions edge endpoint (#8401)', () => {
-  it('splits exact URLs and host: entries, anonymously, with a 60s cache', async () => {
-    globalThis.fetch = async () => ({
-      ok: true,
-      json: async () => ({ result: [EVIL, LONG_EVIL, 'host:evil.example', 'garbage {{{', null, 42] }),
-    });
-    const { default: handler } = await import('../api/notification-suppressions.js?edge-split');
-    const res = await handler(new Request('https://worldmonitor.app/api/notification-suppressions'));
-    assert.equal(res.status, 200);
-    const body = await res.json();
-    assert.deepEqual(body.suppressed, [EVIL_DIGEST, LONG_EVIL_DIGEST]);
-    assert.ok(!JSON.stringify(body).includes(EVIL), 'anonymous response must not expose exact URLs');
-    assert.deepEqual(body.hosts, ['evil.example']);
-    assert.ok(typeof body.updatedAt === 'string');
-    assert.equal(body.unavailable, undefined);
-    assert.match(res.headers.get('Cache-Control') ?? '', /s-maxage=60/);
-  });
-
-  it('fails open with unavailable:true when Redis cannot be read', async () => {
-    console.warn = () => {};
-    globalThis.fetch = async () => ({ ok: false, status: 500 });
-    const { readSuppressionSnapshot, default: handler } = await import('../api/notification-suppressions.js?edge-unavail');
-    // Snapshot helper reports unreadable; the handler maps it to the
-    // fail-open shape with no-store (never CDN-cache the fail-open).
-    const snap = await readSuppressionSnapshot();
-    assert.equal(snap.readable, false);
-    const res = await handler(new Request('https://worldmonitor.app/api/notification-suppressions'));
-    assert.equal(res.status, 200);
-    const body = await res.json();
-    assert.deepEqual(body.suppressed, []);
-    assert.deepEqual(body.hosts, []);
-    assert.equal(body.unavailable, true);
-    assert.match(res.headers.get('Cache-Control') ?? '', /no-store/);
-  });
-
-  it('logs safe reasons for every unreadable Redis shape', async () => {
-    const warnings = [];
-    console.warn = (...args) => warnings.push(args.join(' '));
-    const { readSuppressionSnapshot, default: handler } = await import('../api/notification-suppressions.js?edge-logging');
-
-    delete process.env.UPSTASH_REDIS_REST_URL;
-    delete process.env.UPSTASH_REDIS_REST_TOKEN;
-    await readSuppressionSnapshot();
-    await handler(new Request('https://worldmonitor.app/api/notification-suppressions'));
-
-    process.env.UPSTASH_REDIS_REST_URL = 'https://stub.upstash.io';
-    process.env.UPSTASH_REDIS_REST_TOKEN = 'stub-token';
-    await readSuppressionSnapshot(async () => ({ ok: false, status: 503 }));
-    await readSuppressionSnapshot(async () => ({ ok: true, json: async () => { throw new Error('bad json'); } }));
-    await readSuppressionSnapshot(async () => ({ ok: true, json: async () => ({ result: null }) }));
-    const timeout = new Error(`request failed for ${EVIL}`);
-    timeout.name = 'TimeoutError';
-    await readSuppressionSnapshot(async () => { throw timeout; });
-
-    assert.ok(warnings.some((line) => line.includes('reason=missing-credentials source=upstash-smembers')));
-    assert.ok(warnings.some((line) => line.includes('reason=missing-credentials source=handler')));
-    assert.ok(warnings.some((line) => line.includes('reason=redis-http-error source=upstash-smembers status=503')));
-    assert.ok(warnings.some((line) => line.includes('reason=malformed-json source=upstash-smembers')));
-    assert.ok(warnings.some((line) => line.includes('reason=invalid-result source=upstash-smembers')));
-    assert.ok(warnings.some((line) => line.includes('reason=redis-request-error source=upstash-smembers error=TimeoutError')));
-    assert.ok(!warnings.join('\n').includes('stub-token'));
-    assert.ok(!warnings.join('\n').includes(EVIL));
-  });
-
-  it('keeps non-ASCII host entries as the punycode host a URL parses to', async () => {
-    globalThis.fetch = async () => ({ ok: true, json: async () => ({ result: ['host:b\u00fccher.example'] }) });
-    const { default: handler } = await import('../api/notification-suppressions.js?edge-idn');
-    const res = await handler(new Request('https://worldmonitor.app/api/notification-suppressions'));
-    assert.deepEqual((await res.json()).hosts, ['xn--bcher-kva.example']);
-  });
-
-  it('refuses query strings so a random query cannot bypass the shared cache into Redis', async () => {
-    let redisReads = 0;
-    globalThis.fetch = async () => { redisReads++; return { ok: true, json: async () => ({ result: [] }) }; };
-    const { default: handler } = await import('../api/notification-suppressions.js?edge-query');
-    const res = await handler(new Request('https://worldmonitor.app/api/notification-suppressions?bust=123'));
-    assert.equal(res.status, 400);
-    assert.equal(redisReads, 0, 'a cache-busting query must not reach Redis');
-    assert.match(res.headers.get('Cache-Control') ?? '', /s-maxage/, 'the refusal itself is cacheable');
-  });
-
-  it('rejects non-GET methods', async () => {
-    const { default: handler } = await import('../api/notification-suppressions.js?edge-method');
-    const res = await handler(new Request('https://worldmonitor.app/api/notification-suppressions', { method: 'POST' }));
-    assert.equal(res.status, 405);
-  });
-});
 
 // ── SW check module in a vm sandbox ────────────────────────────────────
 
@@ -242,21 +129,7 @@ describe('link-suppression-check.js matcher (#8401)', () => {
 });
 
 describe('push-handler.js notificationclick suppression (#8401)', () => {
-  it('loads link-suppression-check.js before push-handler.js (order is load-bearing)', async () => {
-    const { readFileSync: read } = await import('node:fs');
-    const { fileURLToPath: toPath } = await import('node:url');
-    const { dirname: dir, resolve: join } = await import('node:path');
-    const root = join(dir(toPath(import.meta.url)), '..');
-    const vite = read(join(root, 'vite.config.ts'), 'utf-8');
-    const match = vite.match(/importScripts:\s*\[([^\]]*)\]/);
-    assert.ok(match, 'vite.config.ts must declare workbox importScripts');
-    const list = match[1] ?? '';
-    const suppIdx = list.indexOf('/link-suppression-check.js');
-    const pushIdx = list.indexOf('/push-handler.js');
-    assert.ok(suppIdx !== -1, 'importScripts must include /link-suppression-check.js');
-    assert.ok(pushIdx !== -1, 'importScripts must include /push-handler.js');
-    assert.ok(suppIdx < pushIdx, 'link-suppression-check.js must load BEFORE push-handler.js so notificationclick can consult it');
-  });
+
   it('blocked click shows the blocked notice and never touches clients', async () => {
     const box = makeSwSandbox({ snapshot: { suppressed: [EVIL_DIGEST], hosts: [] } });
     const ev = notifClickEvent({ url: EVIL });

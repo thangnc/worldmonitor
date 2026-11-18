@@ -166,23 +166,23 @@ async function run() {
     getResilienceDomainWeight,
     RESILIENCE_DOMAIN_ORDER,
     createMemoizedSeedReader,
-  } = await import('../server/worldmonitor/resilience/v1/_dimension-scorers.ts');
+  } = await import('../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts');
 
   const {
     listScorableCountries,
     PENALTY_ALPHA,
     penalizedPillarScore,
-  } = await import('../server/worldmonitor/resilience/v1/_shared.ts');
+  } = await import('../packages/server/worldmonitor/resilience/v1/_shared.ts');
 
   const {
     PILLAR_DOMAINS,
     PILLAR_WEIGHTS,
     PILLAR_ORDER,
-  } = await import('../server/worldmonitor/resilience/v1/_pillar-membership.ts');
+  } = await import('../packages/server/worldmonitor/resilience/v1/_pillar-membership.ts');
 
   const {
     INDICATOR_REGISTRY,
-  } = await import('../server/worldmonitor/resilience/v1/_indicator-registry.ts');
+  } = await import('../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts');
 
   const domainWeights = {};
   for (const domainId of RESILIENCE_DOMAIN_ORDER) {

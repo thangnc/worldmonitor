@@ -1,8 +1,8 @@
 // The YouTube channels the live video catalog lists, for the audit's channel resolution and the refresh cron.
-// A slot opts into refresh by listing a channel entry (youtube.com/channel/UC...); see src/config/live-video-sources.ts.
+// A slot opts into refresh by listing a channel entry (youtube.com/channel/UC...); see packages/client/config/live-video-sources.ts.
 // Runs under tsx: parseSourceEntry lives in TypeScript.
 
-import { parseSourceEntry } from '../../src/services/live-video/model.ts';
+import { parseSourceEntry } from '../../packages/client/services/live-video/model.ts';
 
 /** One channel page per channel per run: this caps what a catalog edit can add to the proxy bill. */
 export const MAX_REFRESH_CHANNELS = 60;

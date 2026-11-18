@@ -1,0 +1,45 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "envMode": "loose",
+  "globalDependencies": [".nvmrc", "tsconfig.base.json"],
+  "tasks": {
+    "//#typecheck": {
+      "inputs": ["$TURBO_DEFAULT$", "!docs/engineering/**", "!tests/**"],
+      "outputs": []
+    },
+    "//#typecheck:api": {
+      "inputs": ["$TURBO_DEFAULT$", "!docs/engineering/**", "!tests/**"],
+      "outputs": []
+    },
+    "//#typecheck:contract-tests": {
+      "inputs": ["$TURBO_DEFAULT$", "!docs/engineering/**"],
+      "outputs": []
+    },
+    "//#typecheck:dom-tests": {
+      "inputs": ["$TURBO_DEFAULT$", "!docs/engineering/**"],
+      "outputs": []
+    },
+    "@wm/web#build": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/.env*",
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/package-lock.json",
+        "$TURBO_ROOT$/tsconfig.json",
+        "$TURBO_ROOT$/public/**",
+        "$TURBO_ROOT$/packages/**",
+        "!$TURBO_ROOT$/packages/**/node_modules/**",
+        "!$TURBO_ROOT$/**/.turbo/**",
+        "$TURBO_ROOT$/api/_*.js",
+        "$TURBO_ROOT$/scripts/_*.mjs",
+        "$TURBO_ROOT$/scripts/shared/**",
+        "$TURBO_ROOT$/scripts/lib/**",
+        "$TURBO_ROOT$/scripts/check-vite-env-secrets.mjs",
+        "$TURBO_ROOT$/scripts/check-no-public-source-maps.mjs"
+      ],
+      "env": ["VITE_*", "VERCEL_GIT_COMMIT_SHA"],
+      "outputs": ["$TURBO_ROOT$/dist/**"]
+    }
+  }
+}

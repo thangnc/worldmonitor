@@ -1,10 +1,10 @@
-// Lite overlay scroll areas (src/lite/components/scroll.tsx). The library must
+// Lite overlay scroll areas (apps/web/src/lite/components/scroll.tsx). The library must
 // wrap a Preact-owned viewport and leave Preact's children in place, so re-renders
 // still patch them. Without ResizeObserver the area keeps native scrolling.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { h, render } from 'preact';
 import { act } from 'preact/test-utils';
-import { OverlayScroll } from '../../src/lite/components/scroll';
+import { OverlayScroll } from '../../apps/web/src/lite/components/scroll';
 
 function mount(items: string[]): HTMLElement {
   const root = document.createElement('div');

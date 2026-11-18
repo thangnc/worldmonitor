@@ -8,8 +8,7 @@ import { listTrackedApiSourceFiles } from '../scripts/check-edge-function-bundle
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 const apiDir = join(root, 'api');
-const apiOauthDir = join(apiDir, 'oauth');
-const sharedDir = join(root, 'shared');
+const sharedDir = join(root, 'packages', 'shared');
 const scriptsSharedDir = join(root, 'scripts', 'shared');
 
 const trackedApiSources = listTrackedApiSourceFiles(root);
@@ -33,20 +32,20 @@ describe('tracked api/ discovery', () => {
 // Legacy JS entrypoints at api/ and api/oauth/ have stricter isolation rules.
 const allEdgeFunctions = trackedApiSources
   .filter((file) => file.endsWith('.js'))
-  .filter((file) => ['api', 'api/oauth'].includes(dirname(file)))
+  .filter((file) => dirname(file) === 'api')
   .map((file) => ({ name: file.slice('api/'.length), path: join(root, file) }));
 
 // All tracked .js and .ts files under api/ are used for node: built-in checks.
 // Note: .ts edge functions are intentionally excluded from the
 // module-isolation describe below because Vercel bundles them at build time, so
-// imports from '../server/' are valid. The node: built-in check still applies
+// imports from '../packages/server/' are valid. The node: built-in check still applies
 // regardless of depth, since Vercel Edge Runtime rejects node: imports at runtime.
 const allApiFiles = trackedApiSources.map((file) => ({
   name: file.slice('api/'.length),
   path: join(root, file),
 }));
 
-describe('scripts/shared/ stays in sync with shared/', () => {
+describe('scripts/shared/ stays in sync with packages/shared/', () => {
   // Historical scope: .json (data) + .cjs (helpers).
   // Explicit additions (must be mirrored): edge-safe modules the cron consumes
   // (e.g. brief-llm-core.js + its .d.ts). Other .js files in shared/ are
@@ -78,21 +77,23 @@ describe('scripts/shared/ stays in sync with shared/', () => {
     'market-alert-core.js',
     'news-clustering-core.js',
   ]);
-  // The attribution manifest is canonical at shared/ and is consumed by
+  // The attribution manifest is canonical at packages/shared/ and is consumed by
   // repository-rooted build tooling. It is not a scripts-runtime input, so a
   // second committed copy would recreate the shared-file merge hotspot.
-  const canonicalOnlyFiles = new Set(['source-attribution-manifest.json']);
+  // package.json is the @wm/shared workspace manifest; scripts/shared/ keeps its
+  // own one-line module-type marker instead.
+  const canonicalOnlyFiles = new Set(['source-attribution-manifest.json', 'package.json']);
   const sharedFiles = readdirSync(sharedDir).filter(
     (f) => !canonicalOnlyFiles.has(f)
       && (f.endsWith('.json') || f.endsWith('.cjs') || explicitMirroredFiles.has(f)),
   );
   for (const file of sharedFiles) {
-    it(`scripts/shared/${file} matches shared/${file}`, () => {
+    it(`scripts/shared/${file} matches packages/shared/${file}`, () => {
       const srcPath = join(scriptsSharedDir, file);
-      assert.ok(existsSync(srcPath), `scripts/shared/${file} is missing — run: cp shared/${file} scripts/shared/`);
+      assert.ok(existsSync(srcPath), `scripts/shared/${file} is missing — run: cp packages/shared/${file} scripts/shared/`);
       const original = readFileSync(join(sharedDir, file), 'utf8');
       const copy = readFileSync(srcPath, 'utf8');
-      assert.strictEqual(copy, original, `scripts/shared/${file} is out of sync with shared/${file} — run: cp shared/${file} scripts/shared/`);
+      assert.strictEqual(copy, original, `scripts/shared/${file} is out of sync with packages/shared/${file} — run: cp packages/shared/${file} scripts/shared/`);
     });
   }
 });
@@ -113,7 +114,7 @@ describe('Edge Function shared helpers resolve', () => {
     assert.deepStrictEqual(
       domains,
       shared,
-      'api/_rss-allowed-domains.js is out of sync with shared/rss-allowed-domains.json — ' +
+      'api/_rss-allowed-domains.js is out of sync with packages/shared/rss-allowed-domains.json — ' +
         'update the literal array in api/_rss-allowed-domains.js to match',
     );
   });
@@ -134,17 +135,21 @@ describe('Edge Function no node: built-ins', () => {
 
 // Vercel's Node runtime compiles each file on its own and loads the result as
 // native ESM ("type": "module"), so a relative import must name the file it
-// resolves to. An extensionless `../server/_shared/x` bundles fine on Edge and
+// resolves to. An extensionless `../packages/server/_shared/x` bundles fine on Edge and
 // runs fine under tsx, then fails at module load in production with
 // ERR_MODULE_NOT_FOUND on every request. That is what reverted #7578 (GHSA-887j).
 // Walk each Node-runtime route's whole local import graph and require it.
 describe('Node-runtime routes load as native ESM', () => {
   const nodeRuntimeRoutes = trackedApiSources
-    .filter((file) => ['api', 'api/oauth'].includes(dirname(file)))
+    .filter((file) => dirname(file) === 'api')
     .filter((file) => !/export\s+const\s+config\s*=\s*\{[^}]*\bruntime\s*:\s*['"]edge['"]/.test(readFileSync(join(root, file), 'utf-8')));
 
-  it('finds the Node-runtime routes, so the guard cannot pass vacuously', () => {
-    assert.ok(nodeRuntimeRoutes.includes('api/mcp-proxy.ts'), `found: ${nodeRuntimeRoutes.join(', ')}`);
+  it('scans the route files, and knows which ones run on Node', () => {
+    // api/story.js was the last Node-runtime route; it left with the public
+    // story pages in refactor 1c-3. A new one is walked by the loop below and
+    // must be listed here, so the guard cannot quietly scan nothing.
+    assert.ok(trackedApiSources.some((file) => dirname(file) === 'api'), 'the route scan found no api/ entries');
+    assert.deepEqual(nodeRuntimeRoutes, []);
   });
 
   for (const route of nodeRuntimeRoutes) {
@@ -190,229 +195,24 @@ describe('Legacy JS entries import only _-prefixed relative modules', () => {
 
 // The legacy api/*.js allowlist that previously lived here was replaced by
 // api/api-route-exceptions.json + scripts/enforce-sebuf-api-contract.mjs (see
-// docs/adding-endpoints.mdx). The new check covers nested paths and .ts files,
+// docs/engineering/architecture/adding-endpoints.md). The new check covers nested paths and .ts files,
 // which this block missed.
-
-describe('reverse-geocode Redis write', () => {
-  const geocodePath = join(apiDir, 'reverse-geocode.js');
-
-  it('uses ctx.waitUntil for Redis write (non-blocking, survives isolate teardown)', () => {
-    const src = readFileSync(geocodePath, 'utf-8');
-    assert.ok(
-      src.includes('ctx.waitUntil('),
-      'reverse-geocode.js: Redis cache write must use ctx.waitUntil() so the response is not blocked by the write',
-    );
-    assert.ok(
-      !src.includes('await fetch(redisUrl'),
-      'reverse-geocode.js: Redis write must not be awaited before returning the response',
-    );
-  });
-
-  it('bounds the Redis write with AbortSignal.timeout', () => {
-    const src = readFileSync(geocodePath, 'utf-8');
-    assert.ok(
-      src.includes('AbortSignal.timeout'),
-      'reverse-geocode.js: Redis write must have AbortSignal.timeout to bound slow writes',
-    );
-  });
-});
-
-describe('oauth/authorize.js consent page safety', () => {
-  const authorizePath = join(apiOauthDir, 'authorize.js');
-
-  it('uses _js POST body field (not X-Requested-With header) for XHR detection — avoids CORS preflight', () => {
-    const src = readFileSync(authorizePath, 'utf-8');
-    assert.ok(
-      !src.includes("'X-Requested-With'"),
-      'authorize.js: must not send X-Requested-With header in fetch — it triggers CORS preflight which fails in WebView. Use _js POST body field instead.',
-    );
-    assert.ok(
-      src.includes("params.get('_js') === '1'"),
-      "authorize.js: must detect JS path via params.get('_js') === '1' from POST body.",
-    );
-  });
-
-  it('allows null origin for WebView compatibility', () => {
-    const src = readFileSync(authorizePath, 'utf-8');
-    assert.ok(
-      src.includes("origin !== 'null'"),
-      "authorize.js: origin check must allow the string 'null' (WebView opaque origin). Without this, Connectors UI gets 403.",
-    );
-  });
-
-  it('consent form includes _js hidden field set by inline script before FormData', () => {
-    const src = readFileSync(authorizePath, 'utf-8');
-    assert.ok(
-      src.includes('name="_js"'),
-      'authorize.js: consent form must include <input name="_js"> for JS-path detection.',
-    );
-    assert.ok(
-      src.includes("jf.value='1'"),
-      "authorize.js: inline script must set jf.value='1' before building FormData.",
-    );
-  });
-
-  it('OPTIONS response includes Access-Control-Allow-Headers', () => {
-    const src = readFileSync(authorizePath, 'utf-8');
-    assert.ok(
-      src.includes('Access-Control-Allow-Headers'),
-      'authorize.js: OPTIONS response must include Access-Control-Allow-Headers.',
-    );
-  });
-});
-
-describe('api/slack/oauth/start.ts safety', () => {
-  const startPath = join(root, 'api', 'slack', 'oauth', 'start.ts');
-
-  it('uses crypto.getRandomValues for CSRF state (not Math.random)', () => {
-    const src = readFileSync(startPath, 'utf-8');
-    assert.ok(
-      src.includes('crypto.getRandomValues'),
-      'start.ts: CSRF state must use crypto.getRandomValues — Math.random is predictable and exploitable',
-    );
-    assert.ok(
-      !src.includes('Math.random'),
-      'start.ts: must not use Math.random for state generation',
-    );
-  });
-
-  it('stores state in Upstash with EX TTL via pipeline (atomic)', () => {
-    const src = readFileSync(startPath, 'utf-8');
-    assert.ok(
-      src.includes("'EX'") || src.includes('"EX"'),
-      "start.ts: Upstash state entry must include 'EX' TTL to auto-expire unused tokens",
-    );
-    assert.ok(
-      src.includes('/pipeline'),
-      'start.ts: must use Upstash pipeline endpoint for atomic state storage',
-    );
-  });
-
-  it('uses AbortSignal.timeout on Upstash pipeline fetch', () => {
-    const src = readFileSync(startPath, 'utf-8');
-    assert.ok(
-      src.includes('AbortSignal.timeout'),
-      'start.ts: Upstash pipeline fetch must have AbortSignal.timeout to prevent hanging edge isolates',
-    );
-  });
-
-  it('validates bearer token before generating state', () => {
-    const src = readFileSync(startPath, 'utf-8');
-    // validateBearerToken must appear before getRandomValues
-    const validateIdx = src.indexOf('validateBearerToken');
-    const randomIdx = src.indexOf('getRandomValues');
-    assert.ok(validateIdx !== -1, 'start.ts: must call validateBearerToken');
-    assert.ok(randomIdx !== -1, 'start.ts: must call getRandomValues');
-    assert.ok(
-      validateIdx < randomIdx,
-      'start.ts: validateBearerToken must come before getRandomValues — generate state only for authenticated users',
-    );
-  });
-});
-
-describe('api/slack/oauth/callback.ts safety', () => {
-  const callbackPath = join(root, 'api', 'slack', 'oauth', 'callback.ts');
-
-  it('posts the success message only to the opener origin stored with the state', () => {
-    const src = readFileSync(callbackPath, 'utf-8');
-    assert.ok(
-      src.includes('postMessage(${msg},${safeJsonInScript(openerOrigin)})'),
-      'callback.ts: the connected message carries channel and workspace names, so it must target the ' +
-      "opener origin recorded by start (server/_shared/channel-oauth-state.ts), not '*'.",
-    );
-    assert.ok(
-      src.includes("callbackMatchesBrowser('slack', req, oauthState)"),
-      'callback.ts: must refuse a callback from a browser that did not call start',
-    );
-  });
-
-  it('HTML-escapes the error param before embedding in response body (no XSS)', () => {
-    const src = readFileSync(callbackPath, 'utf-8');
-    assert.ok(
-      src.includes('escapeHtml(error)'),
-      'callback.ts: error param from Slack redirect must be HTML-escaped before embedding in response body — raw interpolation is a reflected XSS vector',
-    );
-  });
-
-  it('atomically consumes CSRF state from Upstash (prevents concurrent replay)', () => {
-    const src = readFileSync(callbackPath, 'utf-8');
-    assert.ok(
-      src.includes('upstashGetDel'),
-      'callback.ts: must use a single atomic upstashGetDel operation to validate and consume state',
-    );
-    assert.ok(
-      src.includes('/getdel/'),
-      'callback.ts: state consumption must use Upstash GETDEL, not separate GET and DEL requests',
-    );
-    assert.ok(
-      !src.includes('/get/') && !src.includes('/del/'),
-      'callback.ts: split GET/DEL state consumption permits concurrent replay',
-    );
-  });
-
-  it('uses AbortSignal.timeout on all Upstash fetches', () => {
-    const src = readFileSync(callbackPath, 'utf-8');
-    // Both upstashGet and upstashDel must have timeouts — count occurrences
-    const timeoutCount = (src.match(/AbortSignal\.timeout/g) ?? []).length;
-    assert.ok(
-      timeoutCount >= 2,
-      `callback.ts: all Upstash fetches must have AbortSignal.timeout — found ${timeoutCount}, expected at least 2 (upstashGet + upstashDel)`,
-    );
-  });
-
-  it('does not redirect main window to Slack (dead-end fallback removed)', () => {
-    const src = readFileSync(callbackPath, 'utf-8');
-    assert.ok(
-      !src.includes('window.location.href'),
-      'callback.ts: must not redirect main window to Slack — without window.opener the user lands on a dead-end page. Show an allow-popups error instead.',
-    );
-  });
-});
-
-describe('vercel.json CSP: Slack OAuth callback has unsafe-inline override', () => {
-  const vercelJson = JSON.parse(readFileSync(join(root, 'vercel.json'), 'utf-8'));
-
-  it('vercel.json has a CSP override for /api/slack/oauth/callback allowing unsafe-inline scripts', () => {
-    const rule = vercelJson.headers?.find((r) => r.source === '/api/slack/oauth/callback');
-    assert.ok(rule, 'vercel.json: missing header rule for /api/slack/oauth/callback — the callback page serves inline JS (postMessage + window.close) which is blocked by the global CSP');
-    const csp = rule.headers?.find((h) => h.key === 'Content-Security-Policy');
-    assert.ok(csp, 'vercel.json: /api/slack/oauth/callback rule must include a Content-Security-Policy header');
-    assert.ok(
-      csp.value.includes("'unsafe-inline'"),
-      "vercel.json: /api/slack/oauth/callback CSP must include 'unsafe-inline' in script-src — the callback page uses an inline <script> to call postMessage and window.close()",
-    );
-  });
-
-  it('/api/slack/oauth/callback CSP override appears after the global CSP rule (must override it)', () => {
-    const headers = vercelJson.headers ?? [];
-    const globalIdx = headers.findIndex((rule) => rule.headers?.some(
-      (header) => header.key === 'X-Frame-Options' && header.value === 'SAMEORIGIN',
-    ));
-    const callbackIdx = headers.findIndex((r) => r.source === '/api/slack/oauth/callback');
-    assert.ok(globalIdx !== -1, 'vercel.json: global CSP rule not found');
-    assert.ok(callbackIdx !== -1, 'vercel.json: callback CSP override not found');
-    assert.ok(
-      callbackIdx > globalIdx,
-      'vercel.json: /api/slack/oauth/callback CSP override must appear AFTER the global rule — Vercel applies rules in order and the last match wins',
-    );
-  });
-});
 
 describe('Edge Function module isolation', () => {
   for (const { name, path } of allEdgeFunctions) {
-    it(`${name} does not import from ../server/ (Edge Functions cannot resolve cross-directory TS)`, () => {
+    it(`${name} does not import from ../packages/ (Edge Functions cannot resolve cross-directory TS)`, () => {
       const src = readFileSync(path, 'utf-8');
       assert.ok(
-        !src.includes("from '../server/"),
-        `${name}: imports from ../server/ — Vercel Edge Functions cannot resolve cross-directory TS imports. Inline the code or move to a same-directory .js helper.`,
+        !src.includes("from '../packages/"),
+        `${name}: imports from ../packages/ (packages/server, packages/shared, packages/contracts) — Vercel Edge Functions cannot resolve cross-directory TS imports. Inline the code or move to a same-directory .js helper.`,
       );
     });
 
-    it(`${name} does not import from ../src/ (Edge Functions cannot resolve TS aliases)`, () => {
+    it(`${name} does not import from ../apps/ (Edge Functions cannot resolve cross-directory TS)`, () => {
       const src = readFileSync(path, 'utf-8');
       assert.ok(
-        !src.includes("from '../src/"),
-        `${name}: imports from ../src/ — Vercel Edge Functions cannot resolve @/ aliases or cross-directory TS. Inline the code instead.`,
+        !src.includes("from '../apps/"),
+        `${name}: imports from ../apps/ (the web app, apps/web) — Vercel Edge Functions cannot resolve cross-directory TS. Inline the code instead.`,
       );
     });
   }

@@ -10,12 +10,10 @@ body:
   - type: dropdown
     id: variant
     attributes:
-      label: Variant
-      description: Which variant are you using?
+      label: Surface
+      description: Where did you see the bug?
       options:
-        - worldmonitor.app (Full / Geopolitical)
-        - tech.worldmonitor.app (Tech / Startup)
-        - finance.worldmonitor.app (Finance)
+        - Lite UI (web, /lite)
         - Desktop app (Windows)
         - Desktop app (macOS)
         - Desktop app (Linux)

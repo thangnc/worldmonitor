@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 
 const EXPECT_BUILT_OUTPUT = 'WM_EXPECT_BUILT_OUTPUT';
-const DEFAULT_REBUILD_HINT = 'Run VITE_VARIANT=full vite build first';
+const DEFAULT_REBUILD_HINT = 'Run npm run build first';
 
 function expectsBuiltOutput() {
   return process.env[EXPECT_BUILT_OUTPUT] === '1';

@@ -1,9 +1,9 @@
 /**
  * Feed parity test — browser view vs server view (PR #3715 review follow-up).
  *
- * Every feed is declared once in shared/news-catalog.json; the browser catalog
+ * Every feed is declared once in packages/shared/news-catalog.json; the browser catalog
  * (src/config/feeds.ts) and the server digest catalog
- * (server/worldmonitor/news/v1/_feeds.ts) are views over it. The views can
+ * (packages/server/worldmonitor/news/v1/_feeds.ts) are views over it. The views can
  * still disagree through a feed's `browser` overrides and through placements
  * that exist on one side only. These checks keep each such difference
  * deliberate: a feed NAME placed on both sides must agree on Google News vs
@@ -24,9 +24,9 @@ import {
   buildBrowserIntelSources,
   buildServerIntelSources,
   buildServerVariantFeeds,
-} from '../shared/news-catalog.ts';
+} from '../packages/shared/news-catalog.ts';
 
-// Both sides are views over shared/news-catalog.json. The browser view keeps a
+// Both sides are views over packages/shared/news-catalog.json. The browser view keeps a
 // feed's `browser` overrides, so these checks now guard the overrides: a
 // reviewed exception below is the only way the two views may disagree.
 

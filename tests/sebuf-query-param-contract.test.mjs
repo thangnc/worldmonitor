@@ -9,7 +9,7 @@ import { collectQueryParamContractViolations } from '../scripts/lib/sebuf-query-
 import { createTempDir } from './helpers/temp-dir.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 
 const OPENAPI_NOOP_PARAMS = [
   ['AviationService.openapi.json', '/api/aviation/v1/list-airport-delays', ['page_size', 'cursor', 'region', 'min_severity']],
@@ -37,13 +37,13 @@ const OPENAPI_NOOP_PARAMS = [
 
 function fixture() {
   const root = createTempDir('wm-sebuf-query-');
-  mkdirSync(join(root, 'proto/worldmonitor/demo/v1'), { recursive: true });
-  mkdirSync(join(root, 'server/worldmonitor/demo/v1'), { recursive: true });
+  mkdirSync(join(root, 'packages/contracts/proto/worldmonitor/demo/v1'), { recursive: true });
+  mkdirSync(join(root, 'packages/server/worldmonitor/demo/v1'), { recursive: true });
   return root;
 }
 
 function writeProto(root, fieldSource) {
-  writeFileSync(join(root, 'proto/worldmonitor/demo/v1/list_things.proto'), [
+  writeFileSync(join(root, 'packages/contracts/proto/worldmonitor/demo/v1/list_things.proto'), [
     'syntax = "proto3";',
     '',
     'package worldmonitor.demo.v1;',
@@ -57,7 +57,7 @@ function writeProto(root, fieldSource) {
 }
 
 function writeHandler(root, body) {
-  writeFileSync(join(root, 'server/worldmonitor/demo/v1/list-things.ts'), body);
+  writeFileSync(join(root, 'packages/server/worldmonitor/demo/v1/list-things.ts'), body);
 }
 
 describe('sebuf query-param implementation contract', () => {

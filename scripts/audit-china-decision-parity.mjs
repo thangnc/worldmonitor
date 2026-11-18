@@ -40,13 +40,12 @@ const ACCESS_TIERS = Object.freeze([
 ]);
 
 const REQUIRED_REGISTRATIONS = Object.freeze([
-  ['shared/china-decision-signals.ts', ...CHINA_DECISION_PARITY_MANIFEST.map(({ groupId }) => `'${groupId}'`)],
-  ['shared/decision-signal-provenance-families.ts', ...CHINA_DECISION_PARITY_MANIFEST.map(({ provenanceFamily }) => `${provenanceFamily}: Object.freeze({`)],
-  ['proto/worldmonitor/intelligence/v1/get_china_decision_signals.proto', 'message GetChinaDecisionSignalsResponse'],
-  ['proto/worldmonitor/intelligence/v1/service.proto', 'GetChinaDecisionSignals'],
-  ['api/mcp/registry/rpc-tools.ts', 'get_china_decision_signals', ROUTE, CANONICAL_KEY],
-  ['server/gateway.ts', `'${ROUTE}': 'fast'`, `'${ROUTE}',`],
-  ['shared/bootstrap-tier-keys.js', `chinaDecisionSignals: '${CANONICAL_KEY}'`],
+  ['packages/shared/china-decision-signals.ts', ...CHINA_DECISION_PARITY_MANIFEST.map(({ groupId }) => `'${groupId}'`)],
+  ['packages/shared/decision-signal-provenance-families.ts', ...CHINA_DECISION_PARITY_MANIFEST.map(({ provenanceFamily }) => `${provenanceFamily}: Object.freeze({`)],
+  ['packages/contracts/proto/worldmonitor/intelligence/v1/get_china_decision_signals.proto', 'message GetChinaDecisionSignalsResponse'],
+  ['packages/contracts/proto/worldmonitor/intelligence/v1/service.proto', 'GetChinaDecisionSignals'],
+  ['packages/server/gateway.ts', `'${ROUTE}': 'fast'`, `'${ROUTE}',`],
+  ['packages/shared/bootstrap-tier-keys.js', `chinaDecisionSignals: '${CANONICAL_KEY}'`],
   ['api/_bootstrap-tier-keys.js', `chinaDecisionSignals: '${CANONICAL_KEY}'`],
   ['api/bootstrap.js', 'chinaDecisionSignals: {', "s-maxage=900"],
   ['api/health.js', 'chinaDecisionSignals: BOOTSTRAP_CACHE_KEYS.chinaDecisionSignals', `key: '${META_KEY}'`],
@@ -55,7 +54,6 @@ const REQUIRED_REGISTRATIONS = Object.freeze([
   ['scripts/seed-china-decision-signals.mjs', ROUTE, `CHINA_DECISION_SIGNALS_KEY = '${CANONICAL_KEY}'`],
   ['scripts/china-decision-alerts.mjs', 'buildChinaDecisionAlertEvents', 'dedupe_key', 'pending'],
   ['scripts/seed-china-decision-signals.mjs', 'CHINA_DECISION_SIGNAL_ALERT_OUTBOX_KEY', 'afterPublish'],
-  ['docs/china-decision-signals.mdx', ...ACCESS_TIERS.map(([, tier]) => tier)],
 ]);
 
 // Presence checks above prove a token was not deleted or renamed. They cannot
@@ -132,7 +130,7 @@ export const CHINA_DECISION_STRUCTURAL_CHECKS = Object.freeze([
   }),
   Object.freeze({
     id: 'gateway-cache-tier',
-    file: 'server/gateway.ts',
+    file: 'packages/server/gateway.ts',
     intent: `RPC_CACHE_TIER serves ${ROUTE} at the '${ROUTE_CACHE_TIER}' tier`,
     verify(source) {
       const body = extractDelimitedBlock(source, 'const RPC_CACHE_TIER');
@@ -147,7 +145,7 @@ export const CHINA_DECISION_STRUCTURAL_CHECKS = Object.freeze([
   }),
   Object.freeze({
     id: 'gateway-public-no-auth',
-    file: 'server/gateway.ts',
+    file: 'packages/server/gateway.ts',
     intent: `PUBLIC_NO_AUTH_RPC_PATHS keeps ${ROUTE} reachable anonymously`,
     verify(source) {
       const body = extractDelimitedBlock(source, 'export const PUBLIC_NO_AUTH_RPC_PATHS', '[', ']');
@@ -160,7 +158,7 @@ export const CHINA_DECISION_STRUCTURAL_CHECKS = Object.freeze([
   }),
   Object.freeze({
     id: 'access-tier-composition',
-    file: 'shared/china-decision-signals.ts',
+    file: 'packages/shared/china-decision-signals.ts',
     intent: 'composeChinaDecisionSignals stamps all three access tiers',
     verify(source) {
       const composed = extractDelimitedBlock(source, 'export function composeChinaDecisionSignals');
@@ -187,7 +185,7 @@ export const CHINA_DECISION_STRUCTURAL_CHECKS = Object.freeze([
   }),
   Object.freeze({
     id: 'access-tier-validator',
-    file: 'shared/china-decision-signals.ts',
+    file: 'packages/shared/china-decision-signals.ts',
     intent: 'isChinaDecisionSignalSnapshot rejects every wrong access tier',
     verify(source) {
       const body = extractDelimitedBlock(source, 'export function isChinaDecisionSignalSnapshot');

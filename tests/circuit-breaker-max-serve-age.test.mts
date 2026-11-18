@@ -13,7 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
-const CIRCUIT_BREAKER_URL = pathToFileURL(resolve(root, 'src/utils/circuit-breaker.ts')).href;
+const CIRCUIT_BREAKER_URL = pathToFileURL(resolve(root, 'packages/client/utils/circuit-breaker.ts')).href;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const failing = async (): Promise<string> => { throw new Error('offline'); };

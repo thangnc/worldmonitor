@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * Generate volatile public inventory facts from authoritative registries.
+ * Generate volatile inventory facts from authoritative registries.
  *
  * These outputs are intentionally gitignored. Install and build commands must
- * generate them before API, Railway, or static-product consumers run.
+ * generate them before API or Railway consumers (the relay's product-catalog
+ * seed reads scripts/shared/inventory-facts.generated.json) run.
  */
 
 import { mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -17,8 +18,6 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const read = (path) => readFileSync(join(ROOT, path), 'utf8');
-const readJson = (path) => JSON.parse(read(path));
 const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
 
 /**
@@ -43,7 +42,6 @@ export function loadStatsForInventoryFacts({
 
 export function buildInventoryFacts(stats = loadStatsForInventoryFacts()) {
   const capabilities = {
-    mcpTools: stats.mcpToolCount,
     locales: stats.locales,
     variants: stats.variantCount,
     mapLayers: stats.layerDefinitions,
@@ -55,9 +53,12 @@ export function buildInventoryFacts(stats = loadStatsForInventoryFacts()) {
     localeCodes: stats.localeCodes,
   };
 
+  // The old dashboard's panels and freshness tracker were removed in refactor
+  // Phase 1; the Lite UI has neither, so those two counts may be zero.
+  const MAY_BE_ZERO = new Set(['panelImplementations', 'freshnessTrackedSourceGroups']);
   for (const [name, value] of Object.entries(capabilities)) {
     if (name === 'localeCodes') continue;
-    if (!Number.isInteger(value) || value <= 0) {
+    if (!Number.isInteger(value) || value < 0 || (value === 0 && !MAY_BE_ZERO.has(name))) {
       throw new Error(`inventory capability ${name} must be a positive integer`);
     }
   }
@@ -78,21 +79,13 @@ export function buildInventoryFacts(stats = loadStatsForInventoryFacts()) {
 }
 
 function expectedInventoryOutputs({ loadStats = loadStatsForInventoryFacts } = {}) {
-  const productFacts = readJson('shared/product-facts.generated.json');
-  if ('capabilities' in productFacts) {
-    throw new Error('shared/product-facts.generated.json must not contain extensible inventory counts');
-  }
-
   const stats = loadStats();
   const inventoryFacts = buildInventoryFacts(stats);
-  const publicFacts = { ...productFacts, capabilities: inventoryFacts.capabilities };
   const edgeModule = `// AUTO-GENERATED build artifact from authoritative registries.\n// Do not edit manually. Run: npm run inventory:facts\n// @ts-check\n\nexport const PUBLIC_INVENTORY_FACTS = ${JSON.stringify(inventoryFacts, null, 2)};\n`;
 
   return new Map([
-    ['public/product-facts.json', json(publicFacts)],
     ['scripts/shared/inventory-facts.generated.json', json(inventoryFacts)],
     ['api/_inventory-facts.generated.js', edgeModule],
-    ['docs/generated/stats.json', json(stats)],
   ]);
 }
 

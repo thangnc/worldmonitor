@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { getInsiderTransactions } from '../server/worldmonitor/market/v1/get-insider-transactions.ts';
+import { getInsiderTransactions } from '../packages/server/worldmonitor/market/v1/get-insider-transactions.ts';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };
@@ -229,7 +229,7 @@ describe('getInsiderTransactions handler', () => {
 
 describe('MarketServiceClient getInsiderTransactions', () => {
   it('serializes the query parameters using generated names', async () => {
-    const { MarketServiceClient } = await import('../src/generated/client/worldmonitor/market/v1/service_client.ts');
+    const { MarketServiceClient } = await import('../packages/contracts/generated/client/worldmonitor/market/v1/service_client.ts');
     let requestedUrl = '';
     globalThis.fetch = (async (input: RequestInfo | URL) => {
       requestedUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;

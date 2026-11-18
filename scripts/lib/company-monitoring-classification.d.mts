@@ -1,7 +1,7 @@
 import type {
   NormalizedCompanyCandidate,
   NormalizedCompanyEvidence,
-} from "../../shared/company-monitoring-evidence";
+} from "../../packages/shared/company-monitoring-evidence";
 
 export const COMPANY_MONITORING_CLASSIFICATION_SCHEMA_VERSION: string;
 export const COMPANY_MONITORING_ADMISSION_POLICY_VERSION: string;

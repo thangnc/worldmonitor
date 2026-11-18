@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { bootstrapTierKeyNames } from '../shared/bootstrap-tier-keys.js';
+import { bootstrapTierKeyNames } from '../packages/shared/bootstrap-tier-keys.js';
 
 const ENERGY_KEYS = ['pipelinesGas', 'pipelinesOil', 'storageFacilities'] as const;
 

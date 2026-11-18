@@ -1,5 +1,5 @@
 // Pure-function tests for the historical-retrospective downgrade in
-// classifyByKeyword (server/worldmonitor/news/v1/_classifier.ts).
+// classifyByKeyword (packages/server/worldmonitor/news/v1/_classifier.ts).
 //
 // The classifier was shipping anniversary / "this day in history" pieces as
 // CRITICAL because their headlines contain trigger words like "meltdown" or
@@ -23,7 +23,7 @@ import assert from 'node:assert/strict';
 import {
   classifyByKeyword,
   hasHistoricalMarker,
-} from '../server/worldmonitor/news/v1/_classifier';
+} from '../packages/server/worldmonitor/news/v1/_classifier';
 
 // All marker checks that depend on year-vs-now use NOW pinned to mid-April
 // 2026 so tests don't depend on wall-clock time. The "current year" derived

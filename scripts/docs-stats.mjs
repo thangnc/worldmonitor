@@ -1,20 +1,22 @@
 #!/usr/bin/env node
 /**
- * docs-stats — derived inventory metrics plus fixed documentation contracts.
+ * docs-stats — derived inventory metrics plus the documentation contracts that
+ * still have a subject after the public docs site left (refactor 1c-3).
  *
- * --check mode recomputes every stat and asserts that each registered doc
- * contract still matches repository truth. Inventory artifacts are written
- * atomically by scripts/generate-inventory-facts.mjs.
+ * --check asserts that:
+ *   - every CI workflow is listed in ARCHITECTURE.md's CI/CD table;
+ *   - CLAUDE.md and CONTRIBUTING.md name the pinned sebuf version;
+ *   - every /api/health summary example under docs/engineering/ matches the
+ *     probed-key registry in api/health.js.
  *
- * Volatile capability counts are build artifacts for runtime/product display,
- * not hand-edited acceptance criteria. CLAIMS below retains only fixed
- * compatibility contracts that are behaviorally exact.
+ * computeStats() also feeds scripts/generate-inventory-facts.mjs, which writes
+ * the inventory artifacts atomically.
  *
  * Stats are parsed from source text without executing TypeScript, loading its
  * import graph, or requiring installed packages. This keeps the generator
  * usable in dependency-free CI and container build stages.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { basename, dirname, join } from 'node:path';
 import { buildSourceAttributionStats } from './source-attribution.mjs';
@@ -27,12 +29,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 let rootOverride = null;
 const rootOf = () => rootOverride ?? ROOT;
 const read = (p) => readFileSync(join(rootOf(), p), 'utf8');
-const dirsIn = (p) =>
-  readdirSync(join(rootOf(), p), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
 const filesIn = (p) =>
   readdirSync(join(rootOf(), p), { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name);
-const entriesIn = (p) => readdirSync(join(rootOf(), p), { withFileTypes: true }).map((e) => e.name);
-const parseJson = (p) => JSON.parse(read(p));
 
 function sorted(items) {
   return [...items].sort();
@@ -53,21 +51,6 @@ function describeSetDelta(found, expected) {
     missing.length ? `missing: ${missing.join(', ')}` : '',
     extra.length ? `extra: ${extra.join(', ')}` : '',
   ].filter(Boolean).join('; ');
-}
-
-function extractSingleQuotedValue(text, name) {
-  const match = text.match(new RegExp(`export\\s+const\\s+${name}\\s*=\\s*'([^']+)'`));
-  if (!match) throw new Error(`docs-stats: could not find ${name}`);
-  return match[1];
-}
-
-function findTopLevelObjectBlocks(source) {
-  const starts = [...source.matchAll(/^ {2}\{$/gm)].map((m) => m.index);
-  return starts.map((start) => {
-    const close = source.slice(start).search(/^ {2}\},?$/m);
-    if (close === -1) return source.slice(start);
-    return source.slice(start, start + close);
-  });
 }
 
 function stripCommentsAndTemplates(source) {
@@ -264,99 +247,6 @@ function parseLayerRegistry(source) {
   };
 }
 
-function parseMcpAppsInventory({
-  uiRegistrySource = read('api/mcp/ui/registry.ts'),
-  shellSource = read('api/mcp/ui/shell.ts'),
-  rpcToolsSource = read('api/mcp/registry/rpc-tools.ts'),
-  cacheToolsSource = read('api/mcp/registry/cache-tools.ts'),
-} = {}) {
-  const uiConstToUri = new Map(
-    [...uiRegistrySource.matchAll(/^export\s+const\s+(\w+_UI_URI)\s*=\s*'([^']+)';/gm)]
-      .map((m) => [m[1], m[2]]),
-  );
-  if (uiConstToUri.size === 0) {
-    throw new Error('docs-stats: could not parse MCP Apps ui:// URI constants');
-  }
-
-  const registryBlockMatch = uiRegistrySource.match(/export const UI_RESOURCE_REGISTRY:[\s\S]*?=\s*\[([\s\S]*?)\n\];/);
-  if (!registryBlockMatch) {
-    throw new Error('docs-stats: could not parse UI_RESOURCE_REGISTRY');
-  }
-  const registryBody = [registryBlockMatch[1], ...[...uiRegistrySource.matchAll(/UI_RESOURCE_LIST_RESPONSE\.push\(\{([\s\S]*?)\}\);/g)].map(match => match[1])].join('\n');
-  const loaderSource = read('api/mcp/ui/news-dashboard-app.ts');
-  for (const [, name, uri] of loaderSource.matchAll(/^export\s+const\s+(\w+_UI_URI)\s*=\s*'([^']+)';/gm)) {
-    if (new RegExp(`\\b${name}\\b`).test(registryBody)) uiConstToUri.set(name, uri);
-  }
-  const registryEntries = [...registryBody.matchAll(
-    /uri:\s*(\w+_UI_URI),\s*\n\s*name:\s*'((?:\\'|[^'])*)',\s*\n\s*description:\s*\n\s*'((?:\\'|[^'])*)',/g,
-  )].map((m) => ({
-    uriConst: m[1],
-    uri: uiConstToUri.get(m[1]) ?? m[1],
-    name: m[2].replace(/\\'/g, "'"),
-    description: m[3].replace(/\\'/g, "'"),
-  }));
-  const registryConsts = registryEntries.map((entry) => entry.uriConst);
-  const uiConsts = [...uiConstToUri.keys()];
-  if (!sameStringSet(registryConsts, uiConsts)) {
-    throw new Error(
-      `docs-stats: UI_RESOURCE_REGISTRY entries do not match ui:// constants (${describeSetDelta(registryConsts, uiConsts)})`,
-    );
-  }
-
-  const toolLinks = [];
-  const compiledToolSources = [];
-  if (uiConstToUri.has('NEWS_DASHBOARD_UI_URI')) compiledToolSources.push(read('api/mcp/registry/news-dashboard.ts'));
-  if (uiConstToUri.has('COUNTRY_VIEW_UI_URI')) compiledToolSources.push(read('api/mcp/registry/country-view.ts'));
-  for (const source of [rpcToolsSource, cacheToolsSource, ...compiledToolSources]) {
-    for (const block of (compiledToolSources.includes(source) ? source.split(/(?=^ {2}name:)/m) : findTopLevelObjectBlocks(source))) {
-      const name = block.match(/^\s+name:\s*'([^']+)'/m)?.[1];
-      const uriConst = block.match(/^\s+_uiResourceUri:\s*(\w+_UI_URI),/m)?.[1];
-      if (name && uriConst) {
-        const uri = uiConstToUri.get(uriConst);
-        if (!uri) throw new Error(`docs-stats: tool ${name} links unknown MCP App URI constant ${uriConst}`);
-        toolLinks.push({ tool: name, uriConst, uri });
-      }
-    }
-  }
-  for (const [label, values] of [
-    ['tool', toolLinks.map((entry) => entry.tool)],
-    ['ui resource', toolLinks.map((entry) => entry.uri)],
-  ]) {
-    const duplicates = values.filter((value, index) => values.indexOf(value) !== index);
-    if (duplicates.length) {
-      throw new Error(`docs-stats: duplicate MCP Apps ${label} links: ${sorted([...new Set(duplicates)]).join(', ')}`);
-    }
-  }
-
-  const toolByUri = new Map(toolLinks.map((entry) => [entry.uri, entry.tool]));
-  const apps = registryEntries.map((entry) => ({
-    ...entry,
-    tool: toolByUri.get(entry.uri) ?? null,
-  }));
-  const unlinked = apps.filter((entry) => !entry.tool).map((entry) => entry.uri);
-  if (unlinked.length) {
-    throw new Error(`docs-stats: MCP Apps resources missing linked tools: ${unlinked.join(', ')}`);
-  }
-
-  return {
-    specVersion: extractSingleQuotedValue(shellSource, 'UI_PROTOCOL_VERSION'),
-    mimeType: extractSingleQuotedValue(shellSource, 'UI_RESOURCE_MIME_TYPE'),
-    apps,
-    uiResources: apps.map((entry) => entry.uri),
-    linkedTools: apps.map((entry) => entry.tool),
-    toolLinks: apps.map((entry) => ({ tool: entry.tool, uri: entry.uri })),
-  };
-}
-
-// ---- /api/bootstrap cache contract (api/bootstrap.js) ----
-//
-// Four doc surfaces publish the concrete Cache-Control / CDN-Cache-Control
-// values `/api/bootstrap` emits per auth kind. During #5386/#5791 all four were
-// wrong at once, in two different ways, while every test stayed green:
-// api/bootstrap-auth.test.mjs pins the handler exhaustively and nothing pinned
-// the prose. A silently wrong published header is worse than an undocumented
-// one, because integrators act on it — so parse what the handler emits here.
-
 // Brace-balanced rather than a `\{([\s\S]*?)\n\};` match. The non-greedy form
 // silently runs PAST its own object whenever the declaration is not in the
 // expected multi-line shape — `= {};` on one line captured everything up to
@@ -377,192 +267,6 @@ function parseObjectBlockBody(source, declaration, label) {
   return body;
 }
 
-function parseCacheHeaderMap(source, name) {
-  const body = parseObjectBlockBody(source, `const ${name}`, `${name} in api/bootstrap.js`);
-  const map = Object.fromEntries(
-    [...body.matchAll(/^ {2}(\w+):\s*'([^']+)',$/gm)].map((m) => [m[1], m[2]]),
-  );
-  for (const tier of ['fast', 'slow']) {
-    if (!map[tier]) throw new Error(`docs-stats: ${name} in api/bootstrap.js is missing the ${tier} tier`);
-  }
-  return map;
-}
-
-// The docs quote ONE directive out of a full header value (`max-age=60`, not
-// the whole `max-age=60, stale-while-revalidate=120, ...` string), so compare
-// directive-for-directive instead of substring-matching the header.
-function cacheDirective(headerValue, name, label) {
-  const found = headerValue.split(',').map((part) => part.trim()).find((part) => part.startsWith(`${name}=`));
-  if (!found) throw new Error(`docs-stats: ${label} has no ${name} directive (${headerValue})`);
-  return found;
-}
-
-function parseBootstrapCacheContract(source = read('api/bootstrap.js')) {
-  const tierCache = parseCacheHeaderMap(source, 'TIER_CACHE');
-  const tierCdnCache = parseCacheHeaderMap(source, 'TIER_CDN_CACHE');
-
-  const profilesBody = parseObjectBlockBody(
-    source, 'const ON_DEMAND_CACHE_PROFILES', 'ON_DEMAND_CACHE_PROFILES in api/bootstrap.js',
-  );
-  const onDemandProfiles = {};
-  for (const [, key, body] of profilesBody.matchAll(/^ {2}(\w+):\s*\{([\s\S]*?)^ {2}\},$/gm)) {
-    const browser = body.match(/browser:\s*'([^']+)'/)?.[1];
-    const cdn = body.match(/cdn:\s*'([^']+)'/)?.[1];
-    if (!browser || !cdn) {
-      throw new Error(`docs-stats: ON_DEMAND_CACHE_PROFILES.${key} must declare both browser and cdn`);
-    }
-    onDemandProfiles[key] = { browser, cdn };
-  }
-  // The entry pattern above is layout-sensitive (two-space key, `},` on its own
-  // line). A miss returns {} rather than throwing, which would silently disable
-  // the per-key doc check below while the pages still publish those headers —
-  // green while dead. Cross-check against a layout-independent count so a
-  // reformat (profile collapsed to one line, block re-indented) throws instead.
-  // A genuinely empty block counts 0 against 0 and stays legal.
-  const declaredProfiles = (profilesBody.match(/\bcdn:/g) || []).length;
-  if (Object.keys(onDemandProfiles).length !== declaredProfiles) {
-    throw new Error(
-      `docs-stats: parsed ${Object.keys(onDemandProfiles).length} ON_DEMAND_CACHE_PROFILES entries but found `
-      + `${declaredProfiles} cdn declarations in api/bootstrap.js — the profile block layout changed`,
-    );
-  }
-
-  const successBlock = source.match(/function successCacheHeaders\([\s\S]*?\n\}/)?.[0];
-  if (!successBlock) throw new Error('docs-stats: could not parse successCacheHeaders in api/bootstrap.js');
-
-  // `const tier = requestedTier ?? (authKind === 'public-on-demand' ? 'slow' : null)`
-  // — the tier a marked single-key on-demand URL inherits when it declares no
-  // profile of its own. Read inside successCacheHeaders, where the default now
-  // lives, for the same reason as the fallbacks below: bounded to the emitter so
-  // a removed default throws instead of matching something unrelated.
-  const onDemandDefaultTier = successBlock.match(
-    /const tier = requestedTier \?\? \(authKind === 'public-on-demand' \? '(\w+)' : null\);/,
-  )?.[1];
-  if (!onDemandDefaultTier || !tierCache[onDemandDefaultTier]) {
-    throw new Error('docs-stats: could not parse the public-on-demand default cache tier in api/bootstrap.js');
-  }
-
-  // The tier-less fallbacks — what `?keys=weatherAlerts&public=1` gets, since a
-  // marked single-key URL carries no `tier` param and weatherAlerts declares no
-  // on-demand profile.
-  //
-  // Searched inside successCacheHeaders, not the whole file: these `[\s\S]*?`
-  // patterns will happily run past a deleted fallback and match some unrelated
-  // `|| '...'` elsewhere in the module, reporting a confident wrong value.
-  // Bounding them to the emitter means a removed fallback throws.
-  const defaultCacheControl = successBlock.match(/const cacheControl = [\s\S]*?\|\|\s*'([^']+)';/)?.[1];
-  const defaultCdnTier = successBlock.match(/'CDN-Cache-Control':[\s\S]*?\|\|\s*TIER_CDN_CACHE\.(\w+),/)?.[1];
-  if (!defaultCacheControl || !defaultCdnTier || !tierCdnCache[defaultCdnTier]) {
-    throw new Error('docs-stats: could not parse the tier-less public cache fallbacks in api/bootstrap.js');
-  }
-
-  // Pin the WIRING, not just the constants. Parsing the on-demand default proves
-  // the value is COMPUTED, never that it reaches the emitter; same for the
-  // profile lookup, without which the per-key overrides are dead.
-  //
-  // The default used to be computed at the call site and passed in, so this
-  // checked that the caller passed the computed value rather than the raw
-  // `tier`. #6763 moved it inside successCacheHeaders — there is now one
-  // resolution path and no call-site variant that can silently drop
-  // inheritance — so what is pinned here is that the handler still routes its
-  // success response through that emitter at all.
-  //
-  // A source gate cannot prove runtime behavior (api/bootstrap-auth.test.mjs
-  // does that); this narrows the gap between "the constant says X" and "the
-  // handler emits X" to a rename, which throws rather than passing quietly.
-  if (!/successCacheHeaders\(\s*tier,\s*auth\.kind,\s*cors,\s*onDemandKey,?\s*\)/.test(source)) {
-    throw new Error(
-      'docs-stats: api/bootstrap.js no longer calls successCacheHeaders(tier, auth.kind, cors, onDemandKey) '
-      + '— the documented per-auth-kind cache contract may no longer be what it emits',
-    );
-  }
-  if (!/ON_DEMAND_CACHE_PROFILES\[onDemandKey\]/.test(successBlock)) {
-    throw new Error('docs-stats: successCacheHeaders no longer looks up ON_DEMAND_CACHE_PROFILES[onDemandKey]');
-  }
-
-  // The non-cacheable branches. These objects contain no nested braces, so the
-  // first `};` closes each one.
-  //
-  // Counting BRANCHES, not distinct values: deduping to a set meant deleting
-  // one of the two no-store returns (making the anonymous weather URL
-  // cacheable — the whole of #5386) left `['no-store']` and passed. And the
-  // pages promise these shapes emit "no CDN cache headers", which nothing
-  // checked, so adding CDN-Cache-Control to a no-store branch passed too.
-  const returnBodies = [...successBlock.matchAll(/return \{([\s\S]*?)\};/g)].map((m) => m[1]);
-  const nonCacheableReturns = returnBodies.filter((body) => /'Cache-Control':\s*'/.test(body));
-  if (nonCacheableReturns.length !== 2) {
-    throw new Error(
-      `docs-stats: successCacheHeaders has ${nonCacheableReturns.length} literal Cache-Control branches, expected 2 `
-      + '(non-public, and public-but-not-shared-cacheable) — a changed branch set needs a doc review',
-    );
-  }
-  const withCdnHeader = nonCacheableReturns.filter((body) => body.includes('CDN-Cache-Control'));
-  if (withCdnHeader.length) {
-    throw new Error(
-      'docs-stats: a non-cacheable successCacheHeaders branch now sets CDN-Cache-Control, but the docs promise '
-      + 'these shapes emit no CDN cache headers',
-    );
-  }
-  const nonCacheableValues = [...new Set(
-    nonCacheableReturns.map((body) => body.match(/'Cache-Control':\s*'([^']+)'/)[1]),
-  )];
-  if (nonCacheableValues.length !== 1) {
-    throw new Error(
-      `docs-stats: successCacheHeaders emits ${nonCacheableValues.length} distinct non-cacheable Cache-Control values `
-      + `(${nonCacheableValues.join(', ')}); expected one`,
-    );
-  }
-
-  return {
-    tierCache,
-    tierCdnCache,
-    onDemandProfiles,
-    onDemandDefaultTier,
-    defaultCacheControl,
-    defaultCdnTier,
-    nonCacheable: nonCacheableValues[0],
-  };
-}
-
-// Tier membership for the bootstrap keys the API docs name by hand. Text-parsed
-// like everything else here rather than imported, so the gate keeps running on
-// bare Node with no import graph to resolve.
-function parseBootstrapKeyTiers(source = read('shared/bootstrap-tier-keys.js')) {
-  const tiers = {};
-  for (const [tier, constName] of [
-    ['fast', 'FAST_KEY_NAMES'],
-    ['slow', 'SLOW_KEY_NAMES'],
-    ['on-demand', 'ON_DEMAND_KEY_NAMES'],
-  ]) {
-    const block = source.match(new RegExp(`const ${constName} = new Set\\(\\[([\\s\\S]*?)\\n\\]\\);`));
-    if (!block) throw new Error(`docs-stats: could not parse ${constName} in shared/bootstrap-tier-keys.js`);
-    // Drop `//` comments before scanning for quoted names. The quote matcher
-    // cannot tell a key from prose, so one apostrophe in a rationale comment
-    // ("the tab's list") opens a phantom string that swallows everything up to
-    // the next apostrophe and registers it as a duplicate key — reported as
-    // `key ", " is registered in both on-demand and on-demand tiers`, which
-    // names neither the real cause nor the offending line. These Sets hold bare
-    // string literals only, so there is no `//` inside a key to protect.
-    const entries = block[1].replace(/\/\/[^\n]*/g, '');
-    for (const m of entries.matchAll(/'([^']+)'/g)) {
-      // Last-write-wins would make this parser disagree with the runtime in the
-      // one case that matters: tierForKey() tests fast FIRST, so a key in both
-      // FAST and ON_DEMAND resolves to fast at runtime and would resolve to
-      // on-demand here. Duplicate membership is a registry bug either way.
-      if (tiers[m[1]]) {
-        throw new Error(
-          `docs-stats: bootstrap key "${m[1]}" is registered in both ${tiers[m[1]]} and ${tier} tiers`,
-        );
-      }
-      tiers[m[1]] = tier;
-    }
-  }
-  if (Object.keys(tiers).length === 0) {
-    throw new Error('docs-stats: shared/bootstrap-tier-keys.js yielded no key tier assignments');
-  }
-  return tiers;
-}
-
 // ---- /api/health probed-key registry (api/health.js) ----
 //
 // Four published example responses quote `summary.total`, which is the single
@@ -575,7 +279,7 @@ function parseBootstrapKeyTiers(source = read('shared/bootstrap-tier-keys.js')) 
 // Text-parsed rather than imported, like every other stat here: the docs-stats
 // CI job runs on bare Node with no `npm install`, and the runtime registry size
 // additionally depends on process.env.IRAN_EVENTS_ENABLED — an env-dependent
-// number must not land in the build-owned docs/generated/stats.json.
+// number must not land in a build-owned artifact.
 //
 // The two object literals are NOT the whole registry: health.js mutates them
 // after declaration. Hardcoding that arithmetic is the same trap the docs fell
@@ -822,104 +526,6 @@ function parseHealthProbedKeys(rawSource = read('api/health.js')) {
   };
 }
 
-function parseJsonLdBlocks(html) {
-  return [...html.matchAll(/<script\s+type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/g)]
-    .map((m) => JSON.parse(m[1]));
-}
-
-function validateIndexLanguageMetadata(_stats, html = read('index.html')) {
-  const failures = [];
-
-  const alternateLinks = [...html.matchAll(/<link\s+rel="alternate"\s+hreflang="([^"]+)"\s+href="([^"]+)"\s*\/>/g)]
-    .map((m) => ({ code: m[1], href: m[2] }));
-  const canonicalHref = html.match(/<link\s+rel="canonical"\s+href="([^"]+)"\s*\/>/)?.[1] ?? null;
-  if (!canonicalHref) {
-    failures.push('index.html: canonical link not found');
-  }
-
-  const defaultLink = alternateLinks.find((l) => l.code === 'x-default');
-  if (!defaultLink) {
-    failures.push('index.html: x-default hreflang link not found');
-  } else {
-    let parsed;
-    try {
-      parsed = new URL(defaultLink.href);
-    } catch {
-      failures.push('index.html: x-default hreflang href is not a valid URL');
-    }
-    if (parsed?.searchParams.has('lang')) {
-      failures.push('index.html: x-default hreflang href must not set ?lang');
-    }
-  }
-
-  const hreflangCodes = alternateLinks.map((link) => link.code);
-  const expectedDiscoveryCodes = ['x-default', 'en'];
-  if (!sameStringSet(hreflangCodes, expectedDiscoveryCodes)) {
-    failures.push(`index.html: hreflang set must contain only x-default and en (${describeSetDelta(hreflangCodes, expectedDiscoveryCodes)})`);
-  }
-
-  for (const link of alternateLinks) {
-    let parsed;
-    try {
-      parsed = new URL(link.href);
-    } catch {
-      failures.push(`index.html: ${link.code} hreflang href must be an absolute URL`);
-    }
-    if (parsed?.searchParams.has('lang')) {
-      failures.push(`index.html: query-string locale URLs must not be advertised (${link.code})`);
-    }
-    if (canonicalHref && link.href !== canonicalHref) {
-      failures.push(`index.html: ${link.code} hreflang href must equal the canonical URL`);
-    }
-  }
-
-  let jsonLd;
-  try {
-    jsonLd = parseJsonLdBlocks(html);
-  } catch (error) {
-    failures.push(`index.html: JSON-LD could not be parsed (${error.message})`);
-    return failures;
-  }
-
-  const webSite = jsonLd.find((o) => o?.['@type'] === 'WebSite');
-  if (!webSite) {
-    failures.push('index.html: WebSite JSON-LD block not found');
-  } else {
-    const inLanguage = Array.isArray(webSite.inLanguage) ? webSite.inLanguage : [webSite.inLanguage].filter(Boolean);
-    if (!sameStringSet(inLanguage, ['en'])) {
-      failures.push(`index.html: WebSite inLanguage must describe the raw English document (${describeSetDelta(inLanguage, ['en'])})`);
-    }
-  }
-
-  // The "<N> language support with RTL" featureList count is validated by the
-  // index.html claims() entry (single source of truth), so it is not re-checked
-  // here to avoid a duplicate assertion of the same string against the same value.
-
-  return failures;
-}
-
-// Cross-check the runtime i18next allow-list (SUPPORTED_LANGUAGES in
-// src/services/i18n.ts) against the filesystem locale set. index.html now
-// accepts `?lang=<code>` as user-facing application state; if a code is present
-// on disk but missing from SUPPORTED_LANGUAGES, shared links silently fall back
-// to English even though the translation exists.
-function parseSupportedLanguages(i18nSource) {
-  const block = i18nSource.match(/const\s+SUPPORTED_LANGUAGES\s*=\s*\[([\s\S]*?)\]\s*as const/);
-  if (!block) return null;
-  return (block[1].match(/'([^']+)'/g) || []).map((s) => s.slice(1, -1));
-}
-
-function validateSupportedLanguagesRegistry(stats, i18nSource = read('src/services/i18n.ts')) {
-  const supported = parseSupportedLanguages(i18nSource);
-  if (!supported) {
-    return ['src/services/i18n.ts: could not parse SUPPORTED_LANGUAGES array'];
-  }
-  if (!sameStringSet(supported, stats.localeCodes)) {
-    return [`src/services/i18n.ts: SUPPORTED_LANGUAGES does not match src/locales (${describeSetDelta(supported, stats.localeCodes)})`];
-  }
-  return [];
-}
-
 function makefileVar(text, name) {
   const match = text.match(new RegExp(`^${name}\\s*:=\\s*(\\S+)`, 'm'));
   if (!match) throw new Error(`docs-stats: could not find ${name} in Makefile`);
@@ -995,26 +601,11 @@ function dirHasFiles(rel) {
 
 function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
   const makefile = read('Makefile');
-  const serverCard = parseJson('public/.well-known/mcp/server-card.json');
-  const mcpApps = parseMcpAppsInventory();
 
-  // ---- Map layers (src/config/map-layer-definitions.ts) ----
-  const mld = read('src/config/map-layer-definitions.ts');
-  const { keys: layerKeys, lockedKeys: lockedLayerKeys } = parseLayerRegistry(mld);
+  // ---- Map layers (packages/client/config/map-layer-definitions.ts) ----
+  const mld = read('packages/client/config/map-layer-definitions.ts');
+  const { keys: layerKeys } = parseLayerRegistry(mld);
   const layerDefinitions = layerKeys.length;
-
-  // Web-locked premium layers: literal 'locked' in the def() call. Desktop-only
-  // locks use the `_desktop ? 'locked' : undefined` ternary and stay free on web,
-  // so they are excluded — plan copy describes the web product.
-  //
-  // Deliberately NOT derived here: a "free layer count". `layerDefinitions -
-  // lockedLayerKeys.length` overstates it, because a registry entry can also be
-  // unreachable for everyone (`isSunsetLayer` drops iranAttacks unless
-  // VITE_ENABLE_IRAN_ATTACKS=true; App.ts hides cyberThreats unless
-  // VITE_ENABLE_CYBER_LAYER=true) and VARIANT_LAYER_ORDER means no single site
-  // shows the whole registry. Plan copy therefore names the Pro-only layer
-  // instead of quoting a free total — see validatePlanLayerEntitlementCopy.
-  const lockedLayerDefinitions = lockedLayerKeys.length;
 
   const variantBlock = mld.slice(mld.indexOf('VARIANT_LAYER_ORDER'), mld.indexOf('export function getLayersForVariant'));
   const variantLayers = {};
@@ -1023,39 +614,19 @@ function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
   }
   const variantCount = Object.keys(variantLayers).length;
 
-  // ---- Root app directories used by CLAUDE.md and CONTRIBUTING.md ----
-  const componentTopLevelTsFiles = filesIn('src/components').filter((f) => f.endsWith('.ts')).length;
-  const serviceTopLevelEntries = entriesIn('src/services').length;
-  const apiEndpointEntries = readdirSync(join(rootOf(), 'api'), { withFileTypes: true }).filter((e) => {
-    const f = e.name;
-    if (f.startsWith('_') || f.startsWith('.')) return false;
-    if (/\.test\./.test(f) || /\.d\.ts$/.test(f) || /\.json$/.test(f)) return false;
-    if (e.isDirectory()) return dirHasFiles(`api/${f}`);
-    return e.isFile();
-  }).length;
-
-  // ---- Panel subclasses across src/components (ARCHITECTURE.md system diagram) ----
+  // ---- Panel subclasses across src/components ----
+  // The old dashboard's src/components/ is gone (refactor Phase 1), so this
+  // count is 0 unless the directory comes back.
   const panelClasses = walk('src/components')
     .filter((f) => f.endsWith('.ts') && !f.endsWith('.d.ts'))
     .reduce((n, f) => n + (read(f).match(/class\s+\w+\s+extends\s+Panel\b/g) || []).length, 0);
 
-  // ---- Protos & services (proto/**) ----
-  const protoFiles = walk('proto').filter((f) => f.endsWith('.proto'));
-  const protoServices = protoFiles
-    .map((f) => (read(f).match(/^service\s+\w+/gm) || []).length)
-    .reduce((a, b) => a + b, 0);
-  const protoDomainFolders = dirsIn('proto/worldmonitor').length;
-
-  // ---- Generated OpenAPI service specs (docs/api/*Service.openapi.yaml) ----
-  const openapiServiceSpecs = filesIn('docs/api').filter((f) => /Service\.openapi\.yaml$/.test(f)).length;
-
-  // ---- Server domain handlers (server/worldmonitor/*/) ----
-  const serverDomains = dirsIn('server/worldmonitor').length;
-
-  // ---- User-facing locales (src/locales/*.json, excluding shell fragments) ----
-  const localeCodes = filesIn('src/locales')
-    .filter((f) => f.endsWith('.json') && !f.endsWith('.shell.json'))
-    .map((f) => f.replace(/\.json$/, ''))
+  // ---- User-facing locales (packages/client/locales/*.json, excluding shell fragments) ----
+  // The Lite UI ships English only, as the en.shell.json fragment; a locale
+  // with only a shell fragment still counts as a supported interface language.
+  const localeCodes = [...new Set(filesIn('packages/client/locales')
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => f.replace(/(?:\.shell)?\.json$/, '')))]
     .sort();
   const locales = localeCodes.length;
 
@@ -1063,131 +634,43 @@ function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
   const workflows = filesIn('.github/workflows').filter((f) => f.endsWith('.yml') || f.endsWith('.yaml')).sort();
 
   // ---- Freshness-tracked sources (src/services/data-freshness.ts) ----
-  const dfs = read('src/services/data-freshness.ts');
+  // The dashboard's freshness tracker left with the dashboard (refactor Phase 1).
+  let dfs = '';
+  try {
+    dfs = read('src/services/data-freshness.ts');
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
   const dfsStart = dfs.indexOf('const SOURCE_METADATA');
   const dfsClass = dfs.indexOf('class ', dfsStart);
   const metaBlock = dfs.slice(dfsStart, dfsClass >= 0 ? dfsClass : dfs.length);
   const freshnessSources = (metaBlock.match(/^\s+\w+:\s*\{\s*name:/gm) || []).length;
-  const freshnessRequiredForRisk = (metaBlock.match(/requiredForRisk:\s*true/g) || []).length;
 
-  // ---- Feed definitions (shared/news-catalog.json) ----
+  // ---- Feed definitions (packages/shared/news-catalog.json) ----
   // One record per feed; a feed placed in several categories counts once.
-  const feedDefinitions = JSON.parse(read('shared/news-catalog.json')).feeds.length;
+  const feedDefinitions = JSON.parse(read('packages/shared/news-catalog.json')).feeds.length;
 
   // ---- Source attribution inventory (scripts/server/api/src URL contracts) ----
   // Keep this separate from the feed-label count: one provider can expose
   // several feed URLs, while a structured endpoint may never appear in the
-  // curated-feed registry. The attribution checker owns manifest coverage;
-  // docs-stats pins the public count surfaces to the same live number.
+  // curated-feed registry. The attribution checker owns manifest coverage.
   const sourceAttribution = suppliedAttribution ?? buildSourceAttributionStats({ rootDir: rootOf() });
-
-  // ---- Operational source counts used by data-source and methodology docs ----
-  const airportCount = (read('src/config/airports.ts').match(/\biata:\s*'/g) || []).length;
-
-  const financeGeo = read('src/config/finance-geo.ts');
-  const stockExchangeStart = financeGeo.indexOf('export const STOCK_EXCHANGES');
-  const stockExchangeEnd = financeGeo.indexOf('export const FINANCIAL_CENTERS');
-  if (stockExchangeStart === -1 || stockExchangeEnd === -1 || stockExchangeEnd <= stockExchangeStart) {
-    throw new Error('docs-stats: could not isolate STOCK_EXCHANGES block in src/config/finance-geo.ts');
-  }
-  const stockExchangeBlock = financeGeo.slice(stockExchangeStart, stockExchangeEnd);
-  const stockExchangeCount = (stockExchangeBlock.match(/\bid:\s*'/g) || []).length;
-  const centralBankStart = financeGeo.indexOf('export const CENTRAL_BANKS');
-  const centralBankEnd = financeGeo.indexOf('export const COMMODITY_HUBS');
-  if (centralBankStart === -1 || centralBankEnd === -1 || centralBankEnd <= centralBankStart) {
-    throw new Error('docs-stats: could not isolate CENTRAL_BANKS block in src/config/finance-geo.ts');
-  }
-  const centralBankBlock = financeGeo.slice(centralBankStart, centralBankEnd);
-  const centralBankInstitutionCount = (centralBankBlock.match(/\bid:\s*'/g) || []).length;
-
-  const telegram = JSON.parse(read('data/telegram-channels.json'));
-  const telegramFullEnabled = Array.isArray(telegram?.channels?.full)
-    ? telegram.channels.full.filter((c) => c?.enabled !== false)
-    : [];
-  const telegramFullTierCounts = telegramFullEnabled.reduce((acc, c) => {
-    const tier = String(c?.tier ?? 'unknown');
-    acc[tier] = (acc[tier] || 0) + 1;
-    return acc;
-  }, {});
-
-  // LEADER_NAMES moved to shared/keyword-spike-core.js (issue #5697) so the
-  // server-side get_keyword_spikes MCP tool shares the tracked list.
-  const leaderBlock = read('shared/keyword-spike-core.js').match(
-    /const\s+LEADER_NAMES\s*(?::[^=]*)?\s*=\s*\[([\s\S]*?)\];/,
-  );
-  if (!leaderBlock) {
-    throw new Error('docs-stats: could not find LEADER_NAMES array in shared/keyword-spike-core.js');
-  }
-  const leaderNames = (leaderBlock[1].match(/'[^']+'/g) || []).length;
-
-  // ---- CII Tier-1 countries (src/config/countries.ts) ----
-  const countriesSource = read('src/config/countries.ts');
-  const tier1Match = countriesSource.match(/export const TIER1_COUNTRIES[^=]*=\s*\{([\s\S]*?)\n\};/);
-  if (!tier1Match) {
-    throw new Error('docs-stats: could not find TIER1_COUNTRIES in src/config/countries.ts');
-  }
-  const tier1Countries = (tier1Match[1].match(/^\s+[A-Z]{2}:/gm) || []).length;
-
-  // ---- CRI rankable universe (scripts/shared/sovereign-status.json) ----
-  const sovereignStatus = parseJson('scripts/shared/sovereign-status.json');
-  if (!Array.isArray(sovereignStatus?.entries) || sovereignStatus.entries.length === 0) {
-    throw new Error('docs-stats: could not read entries from scripts/shared/sovereign-status.json');
-  }
-  const rankableUniverseCountries = sovereignStatus.entries.length;
-
-  // Table moved to the shared client/server core in #5696. Fail closed like
-  // LEADER_NAMES above: the previous `: 0` fallback silently zeroed the
-  // published claim when the file moved, turning a stale doc number into an
-  // unnoticed "code says 0".
-  const populationBlock = read('shared/analysis-population-exposure.ts').match(
-    /const PRIORITY_COUNTRIES:[\s\S]*?=\s*\{([\s\S]*?)\n\};/,
-  );
-  if (!populationBlock) {
-    throw new Error('docs-stats: could not find PRIORITY_COUNTRIES in shared/analysis-population-exposure.ts');
-  }
-  const populationPriorityCountries = (populationBlock[1].match(/^\s+[A-Z]{3}:\s*\{/gm) || []).length;
 
   return {
     _generated: 'scripts/generate-inventory-facts.mjs — build artifact; do not commit',
     layerDefinitions,
-    lockedLayerDefinitions,
-    lockedLayerKeys,
-    tier1Countries,
-    rankableUniverseCountries,
     variantLayers,
     variantCount,
-    componentTopLevelTsFiles,
-    serviceTopLevelEntries,
-    apiEndpointEntries,
     panelClasses,
-    protoFiles: protoFiles.length,
-    protoServices,
-    protoDomainFolders,
-    openapiServiceSpecs,
-    serverDomains,
     localeCodes,
     locales,
     workflows,
     workflowCount: workflows.length,
     freshnessSources,
-    freshnessRequiredForRisk,
     feedDefinitions,
     sourceAttribution,
     sourceAttributionHosts: sourceAttribution.activeHosts,
-    airportCount,
-    stockExchangeCount,
-    centralBankInstitutionCount,
-    telegramFullEnabledChannels: telegramFullEnabled.length,
-    telegramFullTierCounts,
-    leaderNames,
-    populationPriorityCountries,
     sebufVersion: makefileVar(makefile, 'SEBUF_VERSION'),
-    mcpToolCount: Array.isArray(serverCard.tools) ? serverCard.tools.length : 0,
-    mcpApps,
-    mcpAppCount: mcpApps.apps.length,
-    mcpAppUiResources: mcpApps.uiResources,
-    mcpAppLinkedTools: mcpApps.linkedTools,
-    bootstrapCache: parseBootstrapCacheContract(),
     // Counts only — see parseHealthProbedKeys on why the key names stay out.
     healthProbedKeys: (({ bootstrap, standalone, total }) => ({ bootstrap, standalone, total }))(
       parseHealthProbedKeys(),
@@ -1196,17 +679,8 @@ function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
 }
 
 /**
- * Registered exact document claims.
- *
- * Extensible inventories deliberately do not appear here. Their composition
- * changes independently in parallel work, so hand-maintained prose totals
- * create conflict-prone, self-updating release chores. Inventory publication
- * is instead protected by the authoritative registry, generated artifacts,
- * and set/parity validators at their owning boundaries.
- *
- * Keep only facts that are not extensible inventory cardinalities. `value`
- * returns the expected value; `min:true` treats a published number as a real
- * product floor. The regex must capture group 1.
+ * Registered exact document claims. `value` returns the expected value; the
+ * regex must capture group 1.
  */
 function claims(s) {
   return [
@@ -1217,426 +691,6 @@ function claims(s) {
   ];
 }
 
-const ENGLISH_VOLATILE_INVENTORY_CLAIM_RE = /\b\d[\d,]*(?:\s*[–-]\s*\d[\d,]*)?(?:\+)?\s+(?:(?:MCP|OpenAPI|Vercel|Telegram|YouTube|OSINT|AI|other|live|curated|interactive|interchangeable|documented|registered|observed|monitored|supported|news|data source|data|intelligence|separate|local|edge|typed|specialized|dashboard|military|strategic|operational|associated|government|advisory|installable|public|proto-backed|positive-news|mapped|tracked)\s+)*(?:tools|feeds|sources|providers|services|streams|connectors|credentials|API handlers|API endpoints|endpoints|operations|functions|domains|specs|layers|map layers|panels|variants|languages|locales|airports|bases|theaters|ports|pipelines|waterways|chokepoints|cables|satellites|clusters|routes|data ?centers|datacenters|entities|webcams|cameras|news channels|channels|agent skills|agent recipes|skills|recipes)\b/i;
-const ENGLISH_WORD_VOLATILE_INVENTORY_CLAIM_RE = /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:(?:MCP|OpenAPI|Vercel|Telegram|YouTube|OSINT|AI|other|live|curated|interchangeable|documented|registered|observed|monitored|supported|news|data|intelligence|separate|local|typed|specialized|dashboard|military|strategic|operational|associated|government|advisory|installable|public|proto-backed|positive-news|mapped|tracked)\s+)*(?:tools|feeds|sources|providers|services|streams|connectors|API handlers|API endpoints|endpoints|operations|functions|domains|specs|layers|map layers|panels|variants|languages|locales|airports|bases|theaters|ports|pipelines|waterways|chokepoints|cables|satellites|clusters|routes|webcams|cameras|news channels|channels|agent skills|agent recipes|skills|recipes)\b/i;
-const ENGLISH_INTERCHANGEABLE_SURFACES_RE = /\b(?:\d[\d,]*|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+interchangeable\s+surfaces\b/i;
-const HYPHENATED_VOLATILE_INVENTORY_CLAIM_RE = /(?:^|\s)\d[\d,]*(?:\+)?-(?:tool|feed|source|provider|service|stream|connector|endpoint|operation|function|domain|spec|layer|panel|variant|language|locale|airport|base|theater|port|pipeline|waterway|chokepoint|cable|satellite|cluster|route|webcam|camera|channel|skill|recipe)s?\b/i;
-const LABEL_FIRST_VOLATILE_INVENTORY_CLAIM_RE = /\b(?:tools|feeds|sources|providers|services|streams|connectors|API handlers|API endpoints|endpoints|operations|functions|domains|specs|map layers|panels|languages|locales|airports|webcams|cameras|news channels|channels|agent skills|agent recipes|skills|recipes)\s*:\s*\d[\d,]*(?:\+)?\b/i;
-const MARKDOWN_TABLE_VOLATILE_INVENTORY_CLAIM_RE = /\|\s*(?:(?:live|video|news|data|map|military|AI|strategic|undersea|intelligence|Telegram|prediction)\s+)*(?:tools|feeds|sources|providers|services|streams|connectors|API handlers|API endpoints|endpoints|operations|functions|domains|specs|layers|panels|variants|languages|locales|airports|bases|theaters|ports|pipelines|waterways|chokepoints|satellites|clusters|routes|datacenters|cameras|webcams|channels|events)(?:\s+(?:supported|monitored|mapped|tracked|available))?\s*\|\s*\d[\d,]*(?:\+)?(?=\s*(?:\([^|\n]*\)\s*)?\|)/i;
-const CHINESE_VOLATILE_INVENTORY_CLAIM_RE = /(?:^|[^A-Za-z0-9])\d[\d,]*\s*(?:(?:\+|多|以上)\s*)?(?:个|项)?\s*(?:(?:实时|精选|已注册|已观察|监控|受监控|独立|上游|生成的|可安装|公开|智能体|Vercel|Edge|边缘|数据|新闻|API|OSINT|军事|战略|作战)\s*)*(?:数据源|信息源|新闻源|服务(?:领域)?|工具|技能|配方|提供商|处理器|操作|地图图层|数据图层|图层|面板|语言|区域设置|机场|基地(?:数据库)?|战区|戰區|港口|管道|水道|咽喉要道|海底电缆|卫星|衛星|集群|路线|路線|数据中心|实体|边缘函数|函数|频道|頻道)(?=$|[\s，。、；：）)】<])/i;
-const JAPANESE_VOLATILE_INVENTORY_CLAIM_RE = /(?:^|[^A-Za-z0-9])\d[\d,]*\s*(?:\+|以上)?\s*(?:個|個の|つの|件の|項目の|の)?\s*(?:(?:MCP|OpenAPI|Vercel|Telegram|YouTube|OSINT|AI|ライブ|登録済み|監視対象|専門|ダッシュボード)\s*)*(?:ツール|フィード|データソース|情報源|プロバイダー|サービス|ストリーム|コネクター|APIハンドラー|APIエンドポイント|エンドポイント|オペレーション|関数|ドメイン|仕様|マップレイヤー|パネル|バリアント|言語|ロケール|空港|データセンター|ウェブカメラ|チャンネル|エージェントスキル|Edge Functions|ダッシュボード)(?=$|[\s、。；：）)】<をがはにでへとも]|から|まで|より)/i;
-const POSTFIX_VOLATILE_INVENTORY_CLAIM_RE = /(?:Vercel\s+)?Edge Functions\s*[（(]\s*\d[\d,]*\s*(?:\+|以上)\s*[）)]/i;
-export const VOLATILE_INVENTORY_CLAIM_RE = new RegExp(
-  `(?:${ENGLISH_VOLATILE_INVENTORY_CLAIM_RE.source}|${ENGLISH_WORD_VOLATILE_INVENTORY_CLAIM_RE.source}|${ENGLISH_INTERCHANGEABLE_SURFACES_RE.source}|${HYPHENATED_VOLATILE_INVENTORY_CLAIM_RE.source}|${LABEL_FIRST_VOLATILE_INVENTORY_CLAIM_RE.source}|${MARKDOWN_TABLE_VOLATILE_INVENTORY_CLAIM_RE.source}|${CHINESE_VOLATILE_INVENTORY_CLAIM_RE.source}|${JAPANESE_VOLATILE_INVENTORY_CLAIM_RE.source}|${POSTFIX_VOLATILE_INVENTORY_CLAIM_RE.source})`,
-  'i',
-);
-
-export const ACQUISITION_CLAIM_ROOTS = [
-  'index.html',
-  'README.md',
-  'README.zh-CN.md',
-  'README.ja-JP.md',
-  'server.json',
-  'cli',
-  'docs',
-  'public',
-  'public/.well-known/ai-catalog.json',
-  'public/.well-known/agent-skills',
-  'public/api/llms.txt',
-  'pro-test/src/locales',
-  'pro-test/index.html',
-  'pro-test/welcome.html',
-  'blog-site/src/content/blog',
-  'scripts/build-agent-skills-index.mjs',
-];
-const ACQUISITION_CLAIM_EXCLUDES = [
-  // docs/engineering/ holds engineering records kept off the public site.
-  // Plans, dated research and evidence, lessons, process templates and the
-  // archive record what was true when written, so their figures are not
-  // policed as current claims. Architecture notes and runbooks stay scanned.
-  'docs/api/',
-  'docs/changelog.mdx',
-  'docs/zh/changelog.mdx',
-  'docs/engineering/archive/',
-  'docs/engineering/plans/',
-  'docs/engineering/process/',
-  'docs/engineering/research/',
-  'docs/engineering/solutions/',
-  'docs/engineering/architecture/desktop-parity-matrix.md',
-  'docs/engineering/runbooks/railway-seed-consolidation-runbook.md',
-  'docs/generated/',
-  'docs/brainstorms/',
-  'docs/ideation/',
-  'docs/internal/',
-  'docs/plans/',
-  'docs/research/',
-  'docs/source-attribution.mdx',
-  'public/blog/',
-  'public/pro/',
-  'public/openapi',
-];
-const ACQUISITION_CLAIM_EXTENSIONS = /\.(?:astro|html|json|md|mdx|mjs|txt)$/;
-
-function isCurrentAcquisitionClaimSurface(path) {
-  return (
-    ['index.html', 'README.md', 'README.zh-CN.md', 'README.ja-JP.md', 'server.json', 'cli/README.md',
-      'pro-test/index.html', 'pro-test/welcome.html', 'scripts/build-agent-skills-index.mjs'].includes(path)
-    || /^docs\/.+\.(?:md|mdx)$/.test(path)
-    || /^public\/[^/]+\.(?:md|txt|json)$/.test(path)
-    || /^public\/(?:[^/]+\/)*llms\.txt$/.test(path)
-    || path === 'public/.well-known/ai-catalog.json'
-    || /^public\/\.well-known\/agent-skills\/[^/]+\/SKILL\.md$/.test(path)
-    || /^pro-test\/src\/locales\/[^/]+\.json$/.test(path)
-    || /^blog-site\/src\/content\/blog\/[^/]+\.md$/.test(path)
-  );
-}
-
-export function collectCurrentAcquisitionClaimFiles() {
-  const files = new Set();
-  const visit = (path) => {
-    if (ACQUISITION_CLAIM_EXCLUDES.some((prefix) => path.startsWith(prefix))) return;
-    const absolute = join(rootOf(), path);
-    let stat;
-    try {
-      stat = statSync(absolute);
-    } catch {
-      if (ACQUISITION_CLAIM_ROOTS.includes(path)) {
-        throw new Error(`docs-stats: required acquisition claim root is missing: ${path}`);
-      }
-      return;
-    }
-    if (stat.isDirectory()) {
-      for (const entry of readdirSync(absolute)) visit(`${path}/${entry}`);
-      return;
-    }
-    if (ACQUISITION_CLAIM_EXTENSIONS.test(path) && isCurrentAcquisitionClaimSurface(path)) {
-      files.add(path);
-    }
-  };
-  for (const path of ACQUISITION_CLAIM_ROOTS) visit(path);
-  return [...files].sort();
-}
-
-export function retainedExactContractCoverageFailures(contracts, observedContracts) {
-  return contracts
-    .filter((contract) => !observedContracts.has(contract))
-    .map((contract) => `${contract.path}: retained exact count contract is missing or changed: ${contract.text}`);
-}
-
-export const AI_SEARCH_COVERAGE_HEADING = '## Data Coverage';
-export const AI_SEARCH_COVERAGE_OPEN = '<!-- generated:ai-search-coverage -->';
-export const AI_SEARCH_COVERAGE_CLOSE = '<!-- /generated:ai-search-coverage -->';
-
-/**
- * Line span of the generated coverage block in public/ai-search.md.
- *
- * The scanner's rule is that *hand-authored* acquisition copy may not publish
- * extensible inventory totals, because hand-maintained totals rot. This block
- * is written by scripts/build-ai-search.mjs from the same registries that
- * produce /sources/, and tests/ai-search-product-facts.test.mjs fails when the
- * committed block drifts from the generator — so its figures are
- * registry-derived by construction. #6736 removed the numerals instead, which
- * made the one file written for AI citation uncitable (#6038). Every other
- * line of the file, including the surrounding prose, stays in the scan.
- *
- * The span is delimited by explicit sentinels rather than inferred from the
- * next `## ` heading: an editorial change with no relation to this gate —
- * demoting `## Source Examples` to `###`, renaming it, moving it — would
- * silently extend an inferred span over hand-authored prose and hand it a pass
- * from a merge-blocking check. A self-describing span cannot drift that way,
- * and an unbalanced or missing pair fails closed by scanning the whole file.
- */
-function generatedCoverageLines(path, source) {
-  if (path !== 'public/ai-search.md') return null;
-  const lines = source.split('\n');
-  const start = lines.indexOf(AI_SEARCH_COVERAGE_OPEN);
-  const end = lines.indexOf(AI_SEARCH_COVERAGE_CLOSE);
-  if (start === -1 || end === -1 || end < start) return null;
-  // Only one pair may exist; a second open would mean two exempt regions.
-  if (lines.indexOf(AI_SEARCH_COVERAGE_OPEN, start + 1) !== -1) return null;
-  return { start, end };
-}
-
-export function validateVolatileInventoryClaims() {
-  const retainedExactContracts = [
-    { path: 'docs/signal-intelligence.mdx', text: /(?:3\+ source types|6\+ sources\/hour)/ },
-    { path: 'docs/ai-intelligence.mdx', text: /8\+ feeds in 2 hours/ },
-    { path: 'docs/data-sources.mdx', text: /Natural disasters from 3 sources/ },
-    { path: 'docs/zh/data-sources.mdx', text: /来自 3 个数据源的自然灾害/ },
-    { path: 'docs/data-sources.mdx', text: /25 feed categories would have generated 25,000 edge invocations/ },
-    { path: 'docs/engineering/architecture/tradingview-screener-integration.md', text: /41\/41 operations/ },
-    { path: 'docs/api-versioning.mdx', text: /version 1 operation/ },
-    { path: 'docs/architecture.mdx', text: /protoc-gen-openapiv3.*OpenAPI 3\.1\.0 specs/ },
-    { path: 'docs/engineering/product/PRESS_KIT.md', text: /72 indicators, 21 active dimensions, 6 domains/ },
-    { path: 'docs/documentation.mdx', text: /72 indicators across 21 active dimensions and 6 domains/ },
-    { path: 'docs/features.mdx', text: /72 indicators across 21 active dimensions and 6 domains/ },
-    { path: 'docs/overview.mdx', text: /72 indicators across 21 active dimensions and 6 domains/ },
-    { path: 'public/llms-full.txt', text: /72 indicators across 21 active dimensions, 6 domains/ },
-    { path: 'public/llms.txt', text: /live in 190\+ countries/ },
-    { path: 'public/llms.txt', text: /structural resilience ranked for/ },
-    { path: 'index.html', text: /live in 190\+ countries/ },
-    { path: 'docs/about.mdx', text: /live in 190\+ countries/ },
-    { path: 'blog-site/src/content/blog/country-instability-index-methodology-explained.md', text: /72 indicators, 21 active dimensions, and 6 domains/ },
-    { path: 'blog-site/src/content/blog/country-resilience-index-methodology-explained.md', text: /72 indicators across 21 active dimensions and 6 domains/ },
-    { path: 'blog-site/src/content/blog/country-resilience-index-methodology-explained.md', text: /six domains/i },
-    { path: 'blog-site/src/content/blog/country-risk-monitoring-workflow-for-analysts.md', text: /72 indicators, 21 active dimensions, and 6 domains/ },
-    // Fixed resilience schema. tests/resilience-doc-parity.test.mts derives
-    // these values from the scorer registry and validates this exact page.
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /\d+ of 196 countries ranked, using 72 indicators across 21 dimensions and 6 domains/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /pillars\[\].*six domains/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /72 indicators across 21 active dimensions and 6 domains.*3 pillars.*2 structurally-retired dimensions/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /196-country public rankable universe.*72 indicators across 21 active dimensions and 6 domains.*2 structurally-retired dimensions/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /organized into 6 domains/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /6 domains are regrouped into 3 pillars/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /average of 5 domains and 13 dimensions/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /5-domain \/ 13-dimension structure.*6 new recovery dimensions/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /six-domain weighted aggregate.*rollback path/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /five-domain flat structure.*six-domain structure.*six new dimensions.*three-pillar outer layer/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /Re-anchored release-gate bands.*6-domain formula's/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /The 6-domain formula lives alongside the pillar combine/ },
-    { path: 'docs/methodology/country-resilience-index.mdx', text: /current registry contains 72 indicators across 21 active dimensions and 6 domains.*2 structurally-retired dimensions/ },
-    // Fixed scoring limits, not extensible source inventories.
-    { path: 'docs/methodology/news-digest-and-briefing.mdx', text: /Corroboration score is capped at five sources/ },
-    { path: 'docs/methodology/news-credibility.mdx', text: /at five sources, with `20` points per source before the `0.20` weight/ },
-    { path: 'docs/methodology/news-digest-and-briefing.mdx', text: /per entity-level source, capped at five sources/ },
-    { path: 'docs/methodology/news-digest-and-briefing.mdx', text: /`critical-developing`.*\+5 sources/ },
-    { path: 'docs/methodology/news-digest-and-briefing.mdx', text: /`high-event`.*\+5 sources/ },
-    { path: 'docs/methodology/news-digest-and-briefing.mdx', text: /`sanctions-regulatory`.*\+5 sources/ },
-    { path: 'docs/methodology/news-digest-and-briefing.mdx', text: /`med`.*\+5 sources/ },
-    { path: 'docs/mcp-tools-reference.mdx', text: /current four feeds, 5 is a compatibility safety threshold/ },
-    { path: 'docs/mcp-tools-reference.mdx', text: /across seven domains/ },
-    { path: 'docs/mcp-tools-reference.mdx', text: /between two airports/ },
-    { path: 'docs/webcam-layer.mdx', text: /up to 4 webcams simultaneously/ },
-    { path: 'docs/webcam-layer.mdx', text: /more than 4 webcams are pinned/ },
-    { path: 'docs/webcam-layer.mdx', text: /Maximum 4 webcams can be active/ },
-    { path: 'docs/algorithms.mdx', text: /38\+ (?:associated )?military bases/ },
-    { path: 'docs/algorithms.mdx', text: /five operational theaters/ },
-    // Fixed scoring universe: tests/chokepoint-scenario-doc-parity.test.mjs
-    // derives the exact registry membership and validates this methodology.
-    { path: 'docs/methodology/chokepoints.mdx', text: /13 monitored waterways/ },
-    { path: 'blog-site/src/content/blog/alerts-notification-channels-worldmonitor.md', text: /seven channels/i },
-    { path: 'blog-site/src/content/blog/aviation-intelligence-airports-airspace-flight-prices.md', text: /between any two airports/ },
-    { path: 'blog-site/src/content/blog/build-supply-chain-early-warning-system-api.md', text: /Three signals, three endpoints/ },
-    { path: 'blog-site/src/content/blog/free-geopolitical-data-apis-2026.md', text: /ingest ten feeds/ },
-    { path: 'blog-site/src/content/blog/supply-chain-early-warning-dashboard-worldmonitor-api.md', text: /five panels/ },
-    { path: 'pro-test/src/locales/ja.json', text: /25ダッシュボード/ },
-    { path: 'pro-test/src/locales/ja.json', text: /紛争は1つのマップレイヤー/ },
-  ];
-  const failures = [];
-  const observedRetainedContracts = new Set();
-  const visit = (path) => {
-    const source = read(path);
-    // Generated llms-full corpus republishes methodology already scanned at
-    // its source paths (#7463). Keep the hand-authored brief in this scan.
-    const generatedCorpusAt = path === 'public/llms-full.txt'
-      ? source.indexOf('\n## Generated corpus\n')
-      : -1;
-    const scannable = generatedCorpusAt === -1 ? source : source.slice(0, generatedCorpusAt);
-    const generatedCoverage = generatedCoverageLines(path, scannable);
-    for (const [index, line] of scannable.split('\n').entries()) {
-      if (generatedCoverage && index >= generatedCoverage.start && index < generatedCoverage.end) continue;
-      if (/\btool errors\b/i.test(line)) continue;
-      if (/\bTier \d+(?:[–-]\d+)? sources\b/i.test(line)) continue;
-      const retained = retainedExactContracts.filter((entry) => entry.path === path && entry.text.test(line));
-      if (retained.length > 0) {
-        for (const contract of retained) observedRetainedContracts.add(contract);
-        continue;
-      }
-      if (!VOLATILE_INVENTORY_CLAIM_RE.test(line)) continue;
-      failures.push(`${path}:${index + 1}: hand-authored acquisition copy must use registry-derived or semantic inventory wording: ${line.trim()}`);
-    }
-  };
-  for (const path of collectCurrentAcquisitionClaimFiles()) visit(path);
-  failures.push(...retainedExactContractCoverageFailures(retainedExactContracts, observedRetainedContracts));
-  return failures;
-}
-
-function findDocsJsonPages(node, out = []) {
-  if (typeof node === 'string') {
-    out.push(node);
-    return out;
-  }
-  if (Array.isArray(node)) {
-    for (const item of node) findDocsJsonPages(item, out);
-    return out;
-  }
-  if (!node || typeof node !== 'object') return out;
-  for (const value of Object.values(node)) findDocsJsonPages(value, out);
-  return out;
-}
-
-function validateMcpAppsDocs(stats) {
-  const failures = [];
-  const docsPage = read('docs/mcp-apps.mdx');
-  const overview = read('docs/mcp-overview.mdx');
-  const publicMcp = read('public/mcp-server.md');
-  const docsJson = parseJson('docs/docs.json');
-  const serverCard = parseJson('public/.well-known/mcp/server-card.json');
-
-  if (!findDocsJsonPages(docsJson).includes('mcp-apps')) {
-    failures.push('docs/docs.json: MCP Apps page `mcp-apps` is not in navigation');
-  }
-
-  const cardApps = serverCard.metadata?.mcpApps;
-  if (!cardApps || cardApps.supported !== true) {
-    failures.push('public/.well-known/mcp/server-card.json: metadata.mcpApps.supported must be true');
-  } else {
-    if (cardApps.extension !== 'io.modelcontextprotocol/ui') {
-      failures.push(`public/.well-known/mcp/server-card.json: metadata.mcpApps.extension is ${cardApps.extension}`);
-    }
-    if (cardApps.specVersion !== stats.mcpApps.specVersion) {
-      failures.push(
-        `public/.well-known/mcp/server-card.json: metadata.mcpApps.specVersion is ${cardApps.specVersion}, code says ${stats.mcpApps.specVersion}`,
-      );
-    }
-    if (cardApps.uiResourceMimeType !== stats.mcpApps.mimeType) {
-      failures.push(
-        `public/.well-known/mcp/server-card.json: metadata.mcpApps.uiResourceMimeType is ${cardApps.uiResourceMimeType}, code says ${stats.mcpApps.mimeType}`,
-      );
-    }
-    if (!sameStringSet(cardApps.uiResources ?? [], stats.mcpAppUiResources)) {
-      failures.push(
-        `public/.well-known/mcp/server-card.json: metadata.mcpApps.uiResources drift (${describeSetDelta(cardApps.uiResources ?? [], stats.mcpAppUiResources)})`,
-      );
-    }
-  }
-
-  for (const { tool, uri } of stats.mcpApps.toolLinks) {
-    for (const [file, text] of [
-      ['docs/mcp-apps.mdx', docsPage],
-      ['docs/mcp-overview.mdx', overview],
-      ['public/mcp-server.md', publicMcp],
-    ]) {
-      if (!text.includes(uri)) failures.push(`${file}: missing MCP Apps ui resource ${uri}`);
-      if (!text.includes(tool)) failures.push(`${file}: missing MCP Apps linked tool ${tool}`);
-    }
-  }
-
-  for (const app of stats.mcpApps.apps) {
-    if (!docsPage.includes(app.name)) failures.push(`docs/mcp-apps.mdx: missing MCP Apps display name ${app.name}`);
-  }
-
-  if (!docsPage.includes(stats.mcpApps.specVersion)) {
-    failures.push(`docs/mcp-apps.mdx: missing MCP Apps spec version ${stats.mcpApps.specVersion}`);
-  }
-  if (!docsPage.includes(stats.mcpApps.mimeType)) {
-    failures.push(`docs/mcp-apps.mdx: missing MCP Apps mime type ${stats.mcpApps.mimeType}`);
-  }
-
-  return failures;
-}
-
-const BOOTSTRAP_CACHE_DOC_FILES = [
-  'docs/api-platform.mdx',
-  'docs/usage-rate-limits.mdx',
-  'docs/zh/api-platform.mdx',
-  'docs/zh/usage-rate-limits.mdx',
-];
-
-// Every published cache claim lives in ONE markdown bullet per page, so the
-// patterns below run against that single line, located by this anchor.
-//
-// Two separate properties keep this from degrading into "the value appears
-// somewhere on the page", which is how #5791 stayed green:
-//
-//   1. Each pattern CAPTURES the value at its documented position, with `[^`]*`
-//      gaps that cannot jump a backtick — so no claim can be satisfied by its
-//      neighbour's token. `s-maxage=600` is simultaneously the fast tier's CDN
-//      value and part of the weatherAlerts header, so a substring search stays
-//      green with the two transposed; a positional capture does not.
-//   2. Line scoping pins WHICH bullet was read. Combined with the
-//      exactly-one-anchor rule below, a stale duplicate of the prose elsewhere
-//      on the page can neither satisfy the gate nor hide behind the live copy.
-//
-// Anchored on the ASCII URL literals instead of the surrounding prose, so one
-// set of patterns reads the English pages and their zh mirrors alike.
-//
-// The anchor is the tier PAIR, not `?tier=fast&public=1` alone: api-platform.mdx
-// also name-drops the fast URL in an earlier bullet, and anchoring on that would
-// scope every pattern to a line carrying none of the values.
-const BOOTSTRAP_CACHE_ANCHOR = '`?tier=fast&public=1` / `?tier=slow&public=1`';
-
-const BOOTSTRAP_CACHE_CHECKS = [
-  {
-    re: /`\?tier=fast&public=1` \/ `\?tier=slow&public=1`[^`]*`(max-age=[^`]+)` \/ `(max-age=[^`]+)`[^`]*CDN[^`]*`(s-maxage=[^`]+)` \/ `(s-maxage=[^`]+)`/,
-    what: 'the ?tier=fast|slow&public=1 browser/CDN values',
-    slots: [
-      ['tierFastBrowser', '?tier=fast&public=1 browser Cache-Control'],
-      ['tierSlowBrowser', '?tier=slow&public=1 browser Cache-Control'],
-      ['tierFastCdn', '?tier=fast&public=1 CDN-Cache-Control'],
-      ['tierSlowCdn', '?tier=slow&public=1 CDN-Cache-Control'],
-    ],
-  },
-  {
-    re: /`\?keys=<onDemandName>&public=1`[^`]*\b(fast|slow)\b[^`]*`(max-age=[^`]+)`[^`]*CDN[^`]*`(s-maxage=[^`]+)`/,
-    what: 'the inherited on-demand single-key profile',
-    slots: [
-      ['onDemandDefaultTier', 'tier inherited by ?keys=<onDemandName>&public=1'],
-      ['onDemandBrowser', '?keys=<onDemandName>&public=1 browser Cache-Control'],
-      ['onDemandCdn', '?keys=<onDemandName>&public=1 CDN-Cache-Control'],
-    ],
-  },
-  {
-    re: /`\?keys=weatherAlerts&public=1`[^`]*`Cache-Control: ([^`]+)`[^`]*\b(fast|slow)\b[^`]*CDN/,
-    what: 'the ?keys=weatherAlerts&public=1 values',
-    slots: [
-      ['defaultCacheControl', '?keys=weatherAlerts&public=1 Cache-Control'],
-      ['defaultCdnTier', '?keys=weatherAlerts&public=1 CDN tier'],
-    ],
-  },
-  {
-    // The anonymous UNMARKED weather URL, which is the enumeration's last item
-    // on every page — `?keys=weatherAlerts` closed by a backtick, so it never
-    // matches the `&public=1` variant above.
-    re: /`\?keys=weatherAlerts`[^`]*`Cache-Control: ([^`]+)`/,
-    what: 'the non-shared-cacheable value',
-    slots: [['nonCacheable', 'Cache-Control for every non-shared-cacheable shape']],
-  },
-];
-
-function expectedBootstrapCacheDocValues(cache) {
-  const browser = (tier) => cacheDirective(cache.tierCache[tier], 'max-age', `TIER_CACHE.${tier}`);
-  const cdn = (tier) => cacheDirective(cache.tierCdnCache[tier], 's-maxage', `TIER_CDN_CACHE.${tier}`);
-  return {
-    tierFastBrowser: browser('fast'),
-    tierSlowBrowser: browser('slow'),
-    tierFastCdn: cdn('fast'),
-    tierSlowCdn: cdn('slow'),
-    onDemandDefaultTier: cache.onDemandDefaultTier,
-    onDemandBrowser: browser(cache.onDemandDefaultTier),
-    onDemandCdn: cdn(cache.onDemandDefaultTier),
-    defaultCacheControl: cache.defaultCacheControl,
-    defaultCdnTier: cache.defaultCdnTier,
-    nonCacheable: cache.nonCacheable,
-  };
-}
-
-// Which pages are in scope is DISCOVERED, not listed. #5791's first failure was
-// a sibling page nobody remembered to update — usage-rate-limits.mdx carries a
-// near-verbatim copy of the api-platform.mdx prose with no cross-reference — so
-// a hardcoded list of four would reproduce that miss for the fifth page. Any
-// page that quotes the anchor is publishing this contract and gets checked;
-// BOOTSTRAP_CACHE_DOC_FILES stays as the floor so a known surface that loses
-// its bullet still fails instead of quietly dropping out of scope.
-// `pages` is injectable so the selection and floor-check are testable without
-// writing fixture files into docs/. Default reads only what walk() just listed,
-// so a page cannot vanish between listing and read.
-function bootstrapCacheDocSources(pages = null) {
-  const candidates = pages ?? Object.fromEntries(
-    walk('docs').filter((f) => f.endsWith('.mdx')).map((file) => [file, read(file)]),
-  );
-  const docs = {};
-  const failures = [];
-  for (const [file, text] of Object.entries(candidates)) {
-    if (text.includes(BOOTSTRAP_CACHE_ANCHOR)) docs[file] = text;
-  }
-  for (const file of BOOTSTRAP_CACHE_DOC_FILES) {
-    if (docs[file]) continue;
-    failures.push(`${file}: known /api/bootstrap cache surface no longer publishes the contract (missing ${BOOTSTRAP_CACHE_ANCHOR})`);
-  }
-  return { docs, failures };
-}
-
 // ---- /api/health summary example bodies (#6300) ----
 //
 // `"onDemandWarn"` is the anchor: it is unique to this endpoint's summary
@@ -1644,21 +698,17 @@ function bootstrapCacheDocSources(pages = null) {
 // surrounding prose, which names the same field in backticks.
 const HEALTH_SUMMARY_ANCHOR = '"onDemandWarn"';
 
-// The floor, for the same reason BOOTSTRAP_CACHE_DOC_FILES has one: scope is
-// DISCOVERED so a sibling page nobody remembered gets checked too, but a known
-// surface that loses its example must fail rather than drop quietly out of
-// scope. Two of these four are zh mirrors — the pages #6300 shows are exactly
-// the ones a hand-maintained list forgets.
+// The floor: scope is DISCOVERED so a sibling page nobody remembered gets
+// checked too, but a known surface that loses its example must fail rather than
+// drop quietly out of scope. The public docs site (and its zh mirrors) left in
+// refactor 1c-3; the endpoint guide moved to docs/engineering/.
 const HEALTH_SUMMARY_DOC_FILES = [
-  'docs/health-endpoints.mdx',
-  'docs/api-platform.mdx',
-  'docs/zh/health-endpoints.mdx',
-  'docs/zh/api-platform.mdx',
+  'docs/engineering/architecture/health-endpoints.md',
 ];
 
 function healthSummaryDocSources(pages = null) {
   const candidates = pages ?? Object.fromEntries(
-    walk('docs').filter((f) => f.endsWith('.mdx')).map((file) => [file, read(file)]),
+    walk('docs/engineering').filter((f) => f.endsWith('.md')).map((file) => [file, read(file)]),
   );
   const docs = {};
   const failures = [];
@@ -1758,266 +808,10 @@ function validateHealthSummaryDocs(stats, docs = null) {
   return failures;
 }
 
-// keyTiers is read here rather than carried in stats.json: it is validator
-// input, like the i18n source above, and dumping all ~113 registry entries into
-// the generated snapshot would bury the claims it actually publishes.
-function validateBootstrapCacheDocs(stats, docs = null, keyTiers = parseBootstrapKeyTiers()) {
-  const failures = [];
-  if (docs === null) {
-    const discovered = bootstrapCacheDocSources();
-    failures.push(...discovered.failures);
-    docs = discovered.docs;
-  }
-  const cache = stats.bootstrapCache;
-  const expected = expectedBootstrapCacheDocValues(cache);
-
-  for (const [file, text] of Object.entries(docs)) {
-    // Page-wide: a hand-written "The <tier> tier includes `<key>`" sentence must
-    // name the tier the key is actually registered under. `chinaDecisionSignals`
-    // sat documented as slow-tier while it is an on-demand key, so `?tier=slow`
-    // never returned it.
-    for (const [, tier, key] of text.matchAll(/The (fast|slow|on-demand) tier includes `(\w+)`/g)) {
-      const actual = keyTiers[key];
-      if (!actual) {
-        failures.push(`${file}: \`${key}\` is documented as a ${tier}-tier bootstrap key but is not a registered bootstrap cache key`);
-      } else if (actual !== tier) {
-        failures.push(`${file}: \`${key}\` is documented as ${tier}-tier, shared/bootstrap-tier-keys.js registers it as ${actual}`);
-      }
-    }
-
-    // Exactly one bullet, so "which line did we check" is never a guess: two
-    // anchors would let a stale copy of the prose satisfy the gate from the
-    // wrong line, which is how usage-rate-limits.mdx drifted in the first place.
-    const anchored = text.split('\n').filter((l) => l.includes(BOOTSTRAP_CACHE_ANCHOR));
-    if (anchored.length !== 1) {
-      failures.push(
-        `${file}: expected exactly one /api/bootstrap cache bullet quoting ${BOOTSTRAP_CACHE_ANCHOR}, found ${anchored.length}`,
-      );
-      continue;
-    }
-    const [line] = anchored;
-
-    for (const { re, what, slots } of BOOTSTRAP_CACHE_CHECKS) {
-      const m = line.match(re);
-      if (!m) {
-        failures.push(`${file}: /api/bootstrap cache bullet does not state ${what} (pattern ${re})`);
-        continue;
-      }
-      slots.forEach(([slot, label], i) => {
-        if (m[i + 1] !== expected[slot]) {
-          failures.push(`${file}: ${label} documented as \`${m[i + 1]}\`, api/bootstrap.js emits \`${expected[slot]}\``);
-        }
-      });
-    }
-
-    // Each on-demand key that declares its OWN profile publishes headers the
-    // inherited-tier sentence above does not describe, so the bullet must name
-    // it with its real values — otherwise "unless the key declares its own" is
-    // an escape hatch no reader can resolve and no gate can check.
-    //
-    // Checked in BOTH directions against the set the bullet actually publishes.
-    // Iterating only the code's profiles left the reverse case open: drop
-    // ON_DEMAND_CACHE_PROFILES to `{}` and every page still naming a key as
-    // having its own headers passes, now describing a profile that is gone.
-    const documented = new Map(
-      [...line.matchAll(/`(\w+)`[^`]*`(max-age=[^`]+)`[^`]*CDN[^`]*`(s-maxage=[^`]+)`/g)]
-        .map(([, key, browser, cdn]) => [key, { browser, cdn }]),
-    );
-    for (const key of documented.keys()) {
-      if (!cache.onDemandProfiles[key]) {
-        failures.push(`${file}: the cache bullet publishes an own cache profile for \`${key}\`, but api/bootstrap.js declares none`);
-      }
-    }
-    for (const [key, profile] of Object.entries(cache.onDemandProfiles)) {
-      const published = documented.get(key);
-      if (!published) {
-        failures.push(`${file}: on-demand key \`${key}\` declares its own cache profile in api/bootstrap.js but the cache bullet does not publish it`);
-        continue;
-      }
-      const wanted = [
-        [published.browser, cacheDirective(profile.browser, 'max-age', `${key} browser profile`), 'browser Cache-Control'],
-        [published.cdn, cacheDirective(profile.cdn, 's-maxage', `${key} cdn profile`), 'CDN-Cache-Control'],
-      ];
-      for (const [found, value, label] of wanted) {
-        if (found !== value) {
-          failures.push(`${file}: \`${key}\` ${label} documented as \`${found}\`, api/bootstrap.js emits \`${value}\``);
-        }
-      }
-    }
-  }
-
-  return failures;
-}
-
-/**
- * Plan copy names the Pro-only map layer rather than quoting a free-layer count
- * (#5387). That phrasing is only true while `resilienceScore` is the ONLY
- * web-locked entry in LAYER_REGISTRY: lock a second layer and every surface
- * below silently starts over-promising again, exactly the way "all 56 map
- * layers" did. A count pin cannot catch that — the total does not move when a
- * layer flips to `premium: 'locked'` — so assert the identity of the locked set
- * and re-point the author at the copy that names it.
- */
-export const PLAN_LAYER_COPY_SURFACES = [
-  'public/pricing.md',
-  'docs/pricing.mdx',
-  'docs/accounts.mdx',
-  'docs/zh/pricing.mdx',
-  'docs/zh/accounts.mdx',
-  'pro-test/src/locales/en.json',
-  'pro-test/welcome.html',
-  // The category explainer names the free-tier layer boundary too ("Every
-  // layer except the Resilience layer is available on the free plan"), so it
-  // has to be re-pointed alongside the pricing surfaces when the lock set moves.
-  'blog-site/src/content/blog/what-is-worldmonitor-real-time-global-intelligence.md',
-];
-
-/** The single web-locked layer the copy above is written around. */
-export const PLAN_LAYER_PRO_ONLY_KEY = 'resilienceScore';
-const PLAN_LAYER_PRO_ONLY_LABEL = 'Resilience';
-
-export function validatePlanLayerEntitlementCopy(stats, readFile = read) {
-  const failures = [];
-  const locked = stats.lockedLayerKeys ?? [];
-
-  if (locked.join(',') !== PLAN_LAYER_PRO_ONLY_KEY) {
-    failures.push(
-      `src/config/map-layer-definitions.ts: plan copy names ${PLAN_LAYER_PRO_ONLY_LABEL} as the only Pro-only map layer, but LAYER_REGISTRY web-locks [${locked.join(', ')}] — update the free-tier copy in ${PLAN_LAYER_COPY_SURFACES.join(', ')} before changing the lock set`,
-    );
-    return failures;
-  }
-
-  for (const file of PLAN_LAYER_COPY_SURFACES) {
-    let text;
-    try {
-      text = readFile(file);
-    } catch {
-      failures.push(`${file}: file not found`);
-      continue;
-    }
-    if (!text.includes(PLAN_LAYER_PRO_ONLY_LABEL)) {
-      failures.push(`${file}: free-tier copy must name the Pro-only "${PLAN_LAYER_PRO_ONLY_LABEL}" map layer (#5387)`);
-    }
-  }
-  return failures;
-}
-
-/**
- * The category explainer's answer-first shape (#6217).
- *
- * The explainer is the site's primary "what is this product" page and is
- * written to be quoted verbatim by answer engines, so its shape is a contract:
- * a self-contained definition before any narrative, the variant count matching
- * the generated registry, the methodology/pricing links a citation needs, and
- * none of the stale claims the rewrite retired.
- *
- * This lives here rather than in tests/blog-seo-contract.test.mjs because that
- * file only runs in the `unit` job, which is gated on `changes.code == 'true'`
- * and whose filter drops every `.md` path — so the contract guarding a markdown
- * page did not run on the markdown-only PRs most likely to break it. The
- * docs-stats job is always-on for exactly this reason.
- *
- * Purely numeric facts belong in claims() above, not here; this covers only
- * what a "doc says N, code says N" pin cannot express.
- */
-export const CATEGORY_EXPLAINER_PATH =
-  'blog-site/src/content/blog/what-is-worldmonitor-real-time-global-intelligence.md';
-
-const CATEGORY_EXPLAINER_OPENING =
-  /^World Monitor is a \*\*free, open-source, real-time global intelligence dashboard\*\*/;
-// Wide enough that ordinary copy edits pass; narrow enough that the definition
-// cannot decay into a one-liner or swell back into the old narrative lede.
-const CATEGORY_EXPLAINER_OPENING_WORDS = { min: 35, max: 80 };
-const CATEGORY_EXPLAINER_REQUIRED_LINKS = [
-  'https://www.worldmonitor.app/docs/data-sources',
-  'https://www.worldmonitor.app/pricing.md',
-  '/blog/glossary/',
-];
-// The paid tiers must stay named. The page previously claimed there was no
-// tier above free at all, so silence here is the regression, not just an
-// omission — an answer engine quoting it would tell readers Pro does not exist.
-const CATEGORY_EXPLAINER_REQUIRED_COPY = [
-  [/paid Pro, API, and Enterprise plans/i, 'the paid Pro/API/Enterprise tiers'],
-];
-// Claims the rewrite retired because the code had moved on. A revert or a
-// copy-paste from an older post silently reintroduces them.
-const CATEGORY_EXPLAINER_RETIRED_COPY = [
-  [/Five Dashboards/, 'the retired five-variant count'],
-  [/no "enterprise tier"/, 'the retired "no enterprise tier" claim'],
-  [/React \+ TypeScript/, 'the retired React frontend stack (the web app uses Preact)'],
-  [/baseline risk \(40%\)[\s\S]*?unrest indicators \(20%\)/, 'the retired CII weight breakdown'],
-];
-
-export function validateCategoryExplainerCopy(stats, readFile = read) {
-  const file = CATEGORY_EXPLAINER_PATH;
-  let text;
-  try {
-    text = readFile(file);
-  } catch {
-    return [`${file}: file not found`];
-  }
-
-  const frontmatter = text.match(/^---\n[\s\S]*?\n---\n/);
-  if (!frontmatter) return [`${file}: missing frontmatter`];
-  const body = text.slice(frontmatter[0].length);
-  const failures = [];
-
-  // Locate the opening by its first H2 rather than a line count, and fail
-  // loudly when there is none — an indexOf(-1) slice would silently treat the
-  // whole page as the "opening" and the word-count check would read as noise.
-  const firstHeading = body.indexOf('\n## ');
-  if (firstHeading === -1) {
-    failures.push(`${file}: no H2 section, so the answer-first opening cannot be located`);
-  } else {
-    const opening = body.slice(0, firstHeading).trim();
-    if (!CATEGORY_EXPLAINER_OPENING.test(opening)) {
-      failures.push(`${file}: must open with the self-contained "World Monitor is a **free, open-source, real-time global intelligence dashboard**" definition`);
-    }
-    const words = opening.split(/\s+/).filter(Boolean).length;
-    const { min, max } = CATEGORY_EXPLAINER_OPENING_WORDS;
-    if (words < min || words > max) {
-      failures.push(`${file}: answer-first opening is ${words} words, expected ${min}-${max}`);
-    }
-  }
-
-  for (const link of CATEGORY_EXPLAINER_REQUIRED_LINKS) {
-    if (!body.includes(link)) failures.push(`${file}: citation surface must link ${link}`);
-  }
-  for (const [pattern, what] of CATEGORY_EXPLAINER_REQUIRED_COPY) {
-    if (!pattern.test(body)) failures.push(`${file}: must still name ${what}`);
-  }
-  for (const [pattern, what] of CATEGORY_EXPLAINER_RETIRED_COPY) {
-    if (pattern.test(body)) failures.push(`${file}: reintroduces ${what}`);
-  }
-  const variantLine = body.match(/^- Dashboard variants \(registry keys\):\s*(.+)$/m)?.[1];
-  if (!variantLine) {
-    failures.push(`${file}: missing the enumerated dashboard-variant list`);
-  } else {
-    const documentedVariants = [...variantLine.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
-    const expectedVariants = Object.keys(stats.variantLayers).sort();
-    if (!sameStringSet(documentedVariants, expectedVariants)) {
-      failures.push(
-        `${file}: dashboard variants drift (${describeSetDelta(documentedVariants, expectedVariants)})`,
-      );
-    }
-  }
-  return failures;
-}
-
-// The --check validator set. Exported and iterated rather than called as four
-// separate lines in main() so the wiring is data a test can assert: every
-// validator here is unit-tested against its own fixtures, but nothing caught a
-// validator being dropped from the CLI — the whole suite stayed green while
-// `--check` silently stopped running that gate.
+// The --check validator set. Exported and iterated so the wiring is data a
+// test can assert.
 const DOC_VALIDATORS = [
-  validateIndexLanguageMetadata,
-  validateSupportedLanguagesRegistry,
-  validateMcpAppsDocs,
-  validateBootstrapCacheDocs,
   validateHealthSummaryDocs,
-  validatePlanLayerEntitlementCopy,
-  validateCategoryExplainerCopy,
-  validateVolatileInventoryClaims,
 ];
 
 function main() {
@@ -2055,16 +849,8 @@ function main() {
       failures.push(`${c.file}: claim pattern ${c.re} not found (expected ${c.value})`);
       continue;
     }
-    if (c.min && typeof c.value !== 'number') {
-      failures.push(`${c.file}: min claims must use numeric expected values — pattern ${c.re}`);
-      continue;
-    }
-    const found = typeof c.value === 'number' ? Number(m[1]) : m[1];
-    const ok = c.min ? found <= c.value : found === c.value;
-    if (!ok) {
-      failures.push(
-        `${c.file}: doc says ${found}, code says ${c.value}${c.min ? ' (floor)' : ''} — pattern ${c.re}`,
-      );
+    if (m[1] !== c.value) {
+      failures.push(`${c.file}: doc says ${m[1]}, code says ${c.value} — pattern ${c.re}`);
     }
   }
 
@@ -2074,31 +860,18 @@ function main() {
     console.error('\nFix the documented contract or its authoritative registry.');
     process.exit(1);
   }
-  console.log(`docs-stats --check OK — ${claims(stats).length} doc claims match code.`);
+  console.log(`docs-stats --check OK — ${stats.workflowCount} workflows, ${claims(stats).length} doc claims and the /api/health examples match code.`);
 }
 
 export {
   computeStats,
-  validateIndexLanguageMetadata,
-  validateSupportedLanguagesRegistry,
-  parseSupportedLanguages,
-  parseJsonLdBlocks,
-  sameStringSet,
-  describeSetDelta,
-  parseMcpAppsInventory,
   parseLayerRegistry,
-  validateMcpAppsDocs,
-  parseBootstrapCacheContract,
-  parseBootstrapKeyTiers,
   parseHealthProbedKeys,
   parseProbedRegistries,
   validateHealthSummaryDocs,
   healthSummaryDocSources,
   HEALTH_SUMMARY_DOC_FILES,
   HEALTH_SUMMARY_ANCHOR,
-  validateBootstrapCacheDocs,
-  bootstrapCacheDocSources,
-  BOOTSTRAP_CACHE_DOC_FILES,
   DOC_VALIDATORS,
 };
 

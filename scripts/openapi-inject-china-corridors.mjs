@@ -21,7 +21,7 @@ import {
 } from './lib/openapi-codegen.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const CHECK = process.argv.includes('--check');
 const RPC_PATH = '/api/supply-chain/v1/get-china-corridor-control-towers';
 const UPSTREAM_DESCRIPTION =
@@ -561,7 +561,7 @@ function responseExample() {
       },
     },
   ];
-  // The production parser (shared/china-corridor-control-towers.ts) accepts a
+  // The production parser (packages/shared/china-corridor-control-towers.ts) accepts a
   // payload only with every reviewed corridor and every signal family on each,
   // so the example keeps all four. Two corridors carry the full observed port
   // condition (signal plus provenance); the other two take the all-unavailable

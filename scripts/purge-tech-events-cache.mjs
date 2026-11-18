@@ -28,7 +28,7 @@
  * needless re-seed of a correct value.
  *
  * This targets the unprefixed production key. Preview deployments read a
- * `preview:<sha>:`-prefixed key (server/_shared/redis.ts getKeyPrefix), which
+ * `preview:<sha>:`-prefixed key (packages/server/_shared/redis.ts getKeyPrefix), which
  * is per-deployment and expires on its own; it is not worth purging.
  *
  * USAGE

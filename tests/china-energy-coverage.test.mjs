@@ -17,7 +17,7 @@ import {
   getObservedJodiOilMeasurements,
   hasJodiGasMeasurements,
   hasJodiOilMeasurements,
-} from '../server/worldmonitor/intelligence/v1/get-country-energy-profile.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/get-country-energy-profile.ts';
 
 const oilModule = await import('../scripts/seed-jodi-oil.mjs');
 const gasModule = await import('../scripts/seed-jodi-gas.mjs');

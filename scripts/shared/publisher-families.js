@@ -40,11 +40,11 @@
  * INLINE ON PURPOSE — do not move this table back into a .json.
  * This module is reached by four runtimes: the Railway seeder (nixpacks,
  * rootDirectory=scripts), the Vercel handler bundle via
- * server/worldmonitor/news/v1/list-feed-digest.ts, the Vite browser bundle,
+ * packages/server/worldmonitor/news/v1/list-feed-digest.ts, the Vite browser bundle,
  * and plain `node --test`. The two JSON-import forms are mutually
  * incompatible across them — `with { type: 'json' }` breaks the Vercel
  * bundle, and a bare JSON import throws ERR_IMPORT_ATTRIBUTE_MISSING under
- * Node 22+. shared/ticker-extract.js:20-30 records that burn, and
+ * Node 22+. packages/shared/ticker-extract.js:20-30 records that burn, and
  * tests/no-json-import-attributes-on-edge-path.test.mjs now enforces it.
  * A literal is the one form that works everywhere.
  */
@@ -329,7 +329,7 @@ export function publisherFamilyForDomain(hostname) {
  *
  * One constant for every gate that asks the question — the brief-lead gate in
  * scripts/_clustering.mjs and the entity-corroboration buckets in both
- * scripts/_clustering.mjs and server/worldmonitor/news/v1/list-feed-digest.ts.
+ * scripts/_clustering.mjs and packages/server/worldmonitor/news/v1/list-feed-digest.ts.
  * They were three separate literal `2`s and could drift apart silently.
  *
  * The value is 2, re-measured for #6428 rather than inherited: two genuinely

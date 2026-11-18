@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 import { __testing__ } from '../api/health.js';
 
-const sources = JSON.parse(readFileSync(new URL('../shared/food-price-sources.json', import.meta.url), 'utf8'));
+const sources = JSON.parse(readFileSync(new URL('../packages/shared/food-price-sources.json', import.meta.url), 'utf8'));
 const healthName = id => `foodPrices${id[0].toUpperCase()}${id.slice(1)}`;
 
 test('food-price health probes the cache GetFoodPrices reads, with metadata only for freshness', () => {

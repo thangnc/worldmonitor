@@ -64,15 +64,14 @@ describe('gpsjam.org restore — source wiring guards', () => {
     assert.match(src, /process\.exit\(0\)/);
   });
 
-  test('web UI reads the gpsjam.org metric (pct), not npAvg', () => {
-    assert.match(read('src/services/gps-interference.ts'), /pct: number;[\s\S]*affectedAircraft: number;[\s\S]*totalAircraft: number;/);
-    assert.doesNotMatch(read('src/services/gps-interference.ts'), /npAvg/);
-    assert.match(read('src/components/MapPopup.ts'), /Number\(data\.pct\)\.toFixed\(1\)/);
+  test('client service reads the gpsjam.org metric (pct), not npAvg', () => {
+    assert.match(read('packages/client/services/gps-interference.ts'), /pct: number;[\s\S]*affectedAircraft: number;[\s\S]*totalAircraft: number;/);
+    assert.doesNotMatch(read('packages/client/services/gps-interference.ts'), /npAvg/);
   });
 
   test('public proto API contract is unchanged (still reads npAvg / np_avg)', () => {
-    assert.match(read('server/worldmonitor/intelligence/v1/list-gps-interference.ts'), /npAvg: toNumber\(hex\.npAvg\)/);
-    assert.match(read('proto/worldmonitor/intelligence/v1/gps_jamming.proto'), /double np_avg = 5/);
+    assert.match(read('packages/server/worldmonitor/intelligence/v1/list-gps-interference.ts'), /npAvg: toNumber\(hex\.npAvg\)/);
+    assert.match(read('packages/contracts/proto/worldmonitor/intelligence/v1/gps_jamming.proto'), /double np_avg = 5/);
   });
 });
 

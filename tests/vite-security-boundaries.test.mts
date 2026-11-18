@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, it } from 'node:test';
 import { createServer, type ViteDevServer } from 'vite';
-import { CACHE_VERSION } from '../src/utils/summary-cache-key.ts';
+import { CACHE_VERSION } from '../packages/client/utils/summary-cache-key.ts';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };
@@ -9,8 +9,7 @@ let server: ViteDevServer;
 let base: string;
 const policyUsers: string[] = [];
 const cacheReads: string[] = [];
-const feedRequests: string[] = [];
-let redirectTarget = '';
+const outboundRequests: string[] = [];
 
 before(async () => {
   process.env.UPSTASH_REDIS_REST_URL = 'https://redis.vite.test';
@@ -21,14 +20,8 @@ before(async () => {
   globalThis.fetch = (async (input, init) => {
     const url = String(input instanceof Request ? input.url : input);
     const target = new URL(url);
-    if (target.hostname === 'feeds.bbci.co.uk') {
-      feedRequests.push(url);
-      assert.equal(init?.redirect, 'manual');
-      return url.endsWith('/next') ? new Response('<rss/>')
-        : new Response(null, { status: 302, headers: { location: redirectTarget } });
-    }
     if (target.hostname !== '127.0.0.1' && !['redis.vite.test', 'convex.vite.test'].includes(target.hostname)) {
-      feedRequests.push(url);
+      outboundRequests.push(url);
       throw new Error('Unexpected outbound request');
     }
     if (target.hostname === 'redis.vite.test') {
@@ -42,6 +35,9 @@ before(async () => {
     return originalFetch(input, init);
   }) as typeof fetch;
   server = await createServer({
+    // The app's config (refactor PR 2.5 moved it to apps/web), so the dev API
+    // plugins under test are the ones `npm run dev` loads.
+    configFile: 'apps/web/vite.config.ts',
     mode: 'test', logLevel: 'error',
     server: { host: '127.0.0.1', port: 0, hmr: false },
     optimizeDeps: { noDiscovery: true, include: [] },
@@ -72,37 +68,5 @@ it('Vite does not trust inbound gateway-only identity stamps', async () => {
   assert.equal(response.status, 200, await response.clone().text());
   assert.ok(cacheReads.includes(key), cacheReads.join('\n'));
   assert.deepEqual(policyUsers, []);
-});
-
-it('Vite validates RSS redirect destinations before sending requests', async () => {
-  for (const target of ['http://127.0.0.1/private', 'https://attacker.example/story', 'http://feeds.bbci.co.uk/next']) {
-    redirectTarget = target;
-    feedRequests.length = 0;
-    const response = await originalFetch(`${base}/api/rss-proxy?url=${encodeURIComponent('https://feeds.bbci.co.uk/start')}`);
-    assert.equal(response.status, 403);
-    assert.deepEqual(feedRequests, ['https://feeds.bbci.co.uk/start']);
-  }
-  redirectTarget = '/next';
-  const response = await originalFetch(`${base}/api/rss-proxy?url=${encodeURIComponent('https://feeds.bbci.co.uk/start')}`);
-  assert.equal(response.status, 200);
-  // Match api/rss-proxy.js: feed bytes are data, never a same-origin document.
-  assert.equal(response.headers.get('content-type'), 'text/plain; charset=utf-8');
-  assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
-  assert.equal(response.headers.get('content-security-policy'), "sandbox; default-src 'none'");
-  assert.equal(await response.text(), '<rss/>');
-  feedRequests.length = 0;
-  const plaintext = await originalFetch(`${base}/api/rss-proxy?url=${encodeURIComponent('http://feeds.bbci.co.uk/start')}`);
-  assert.equal(plaintext.status, 403);
-  assert.deepEqual(feedRequests, []);
-});
-
-it('Vite applies response sandbox isolation to widget documents', async () => {
-  for (const path of ['/wm-widget-sandbox.html', '/%77m-widget-sandbox.html', '/wm-widget%2dsandbox.html',
-    '//wm-widget-sandbox.html', '/wm-widget-sandbox.html/.']) {
-    const response = await originalFetch(`${base}${path}`);
-    assert.equal(response.status, 200);
-    assert.match(response.headers.get('content-security-policy') ?? '', /sandbox allow-scripts;/, path);
-    assert.match(response.headers.get('content-security-policy') ?? '', /default-src 'none';/, path);
-    await response.body?.cancel();
-  }
+  assert.deepEqual(outboundRequests, []);
 });

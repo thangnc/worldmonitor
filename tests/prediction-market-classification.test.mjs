@@ -39,7 +39,7 @@ import { filterAndScore } from '../scripts/_prediction-scoring.mjs';
 import * as predictionScoring from '../scripts/_prediction-scoring.mjs';
 import * as countryIndex from '../scripts/_prediction-country-index.mjs';
 import predictionTags from '../scripts/data/prediction-tags.json' with { type: 'json' };
-import filterParamContracts from '../shared/openapi-filter-param-contracts.json' with { type: 'json' };
+import filterParamContracts from '../packages/shared/openapi-filter-param-contracts.json' with { type: 'json' };
 import fixture from './fixtures/prediction-markets-raw-candidates.json' with { type: 'json' };
 
 const RAW = fixture.markets;
@@ -811,7 +811,7 @@ describe('classification tag data', () => {
   });
 
   it('stays consistent with the RPC category contracts that select these pools', () => {
-    // server/.../list-prediction-markets.ts maps a requested category to a pool
+    // packages/server/.../list-prediction-markets.ts maps a requested category to a pool
     // using these contracts. A category the RPC calls "tech" must not be
     // classified into a different pool by the producer, or the RPC serves the
     // wrong bucket for it.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Freeze a resilience ranking with its country score details and identities.
-// Writes to docs/snapshots/resilience-ranking-<YYYY-MM-DD>.json.
+// Writes to docs/engineering/methodology/country-resilience-index/snapshots/resilience-ranking-<YYYY-MM-DD>.json.
 //
 // Usage:
 //   API_BASE=https://api.worldmonitor.app node scripts/freeze-resilience-ranking.mjs
@@ -31,11 +31,15 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const LEGACY_COUNTRY_SNAPSHOT_PATH = path.join(
   REPO_ROOT,
   'docs',
+  'engineering',
+  'methodology',
+  'country-resilience-index',
   'snapshots',
   'resilience-ranking-2026-05-28.json',
 );
 const RESILIENCE_SCORER_PATH = path.join(
   REPO_ROOT,
+  'packages',
   'server',
   'worldmonitor',
   'resilience',
@@ -188,7 +192,7 @@ async function loadResilienceMethodologyMetadata() {
 let resilienceCacheKeysPromise;
 function loadResilienceCacheKeys() {
   resilienceCacheKeysPromise ||= fs.readFile(
-    path.join(REPO_ROOT, 'server', 'worldmonitor', 'resilience', 'v1', '_shared.ts'),
+    path.join(REPO_ROOT, 'packages', 'server', 'worldmonitor', 'resilience', 'v1', '_shared.ts'),
     'utf8',
   ).then((sourceText) => {
     function exportedString(name) {
@@ -238,7 +242,7 @@ export function buildSnapshotMethodology(methodologyConfig, methodologyMetadata)
 }
 
 async function loadCountryNameMap() {
-  const raw = await fs.readFile(path.join(REPO_ROOT, 'shared', 'country-names.json'), 'utf8');
+  const raw = await fs.readFile(path.join(REPO_ROOT, 'packages', 'shared', 'country-names.json'), 'utf8');
   const forward = JSON.parse(raw);
   // forward: { "albania": "AL", ... }. Build reverse: { "AL": "Albania" }.
   // When multiple names map to the same ISO-2 (e.g. "bahamas" + "bahamas the"),
@@ -728,7 +732,7 @@ function resolveRankingSnapshotOutputPath(capturedAt, outputBasename = OUTPUT_BA
       `RESILIENCE_RANKING_OUTPUT_BASENAME date ${match[1]} must match capturedAt ${capturedAt}`,
     );
   }
-  return path.join(REPO_ROOT, 'docs', 'snapshots', basename);
+  return path.join(REPO_ROOT, 'docs', 'engineering', 'methodology', 'country-resilience-index', 'snapshots', basename);
 }
 
 async function main() {

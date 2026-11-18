@@ -1,6 +1,6 @@
 // #8398: a feed item whose link leaves its own publisher's domain must not
 // produce a notification carrying that link. The gate is the shared
-// publisher-link predicate (shared/publisher-link-gate.js); this test pins
+// publisher-link predicate (packages/shared/publisher-link-gate.js); this test pins
 // the predicate's contract. Ingest/emission wiring is pinned by the
 // per-surface suites (ingest + relay + watchlist).
 import { describe, it } from 'node:test';
@@ -11,7 +11,7 @@ import {
   linkHostname,
   isPublisherLink,
   feedPublisherHost,
-} from '../shared/publisher-link-gate.js';
+} from '../packages/shared/publisher-link-gate.js';
 
 describe('publisher-link-gate (#8398)', () => {
   it('accepts the publisher apex, www., and its subdomains', () => {

@@ -4,7 +4,7 @@
  *
  * Every file under api/ must be one of:
  *   1. A sebuf gateway — api/<kebab-domain>/v<N>/[rpc].ts paired with a
- *      generated service_server under src/generated/server/worldmonitor/<snake_domain>/v<N>/.
+ *      generated service_server under packages/contracts/generated/server/worldmonitor/<snake_domain>/v<N>/.
  *   2. A listed entry in api/api-route-exceptions.json with category, reason,
  *      owner, and (for temporary categories) a removal_issue.
  *
@@ -26,7 +26,7 @@ import { collectQueryParamContractViolations } from './lib/sebuf-query-param-con
 
 const ROOT = process.cwd();
 const API_DIR = join(ROOT, 'api');
-const GEN_SERVER_DIR = join(ROOT, 'src/generated/server/worldmonitor');
+const GEN_SERVER_DIR = join(ROOT, 'packages/contracts/generated/server/worldmonitor');
 const MANIFEST_PATH = join(API_DIR, 'api-route-exceptions.json');
 
 // Contract-first services that may exist before their runtime is allowed to route.
@@ -120,7 +120,7 @@ const candidateFiles = filterIgnored(allApiFiles);
 if (!existsSync(MANIFEST_PATH)) {
   console.error(`✖ ${relative(ROOT, MANIFEST_PATH)} is missing.`);
   console.error(
-    '  Remedy: restore api-route-exceptions.json (see docs/adding-endpoints.mdx). It is the single source of truth for non-proto endpoints.',
+    '  Remedy: restore api-route-exceptions.json (see docs/engineering/architecture/adding-endpoints.md). It is the single source of truth for non-proto endpoints.',
   );
   process.exit(1);
 }
@@ -227,7 +227,7 @@ for (const [idx, entry] of manifest.exceptions.entries()) {
 //   2. api/v<N>/<kebab-domain>/[rpc].ts (version-first, for partner-URL
 //      preservation where the external contract already uses that layout —
 //      e.g. /api/v2/shipping/*).
-// Both map to src/generated/server/worldmonitor/<snake_domain>/v<N>/.
+// Both map to packages/contracts/generated/server/worldmonitor/<snake_domain>/v<N>/.
 const GATEWAY_RE = /^api\/(?:([a-z][a-z0-9-]*)\/v(\d+)|v(\d+)\/([a-z][a-z0-9-]*))\/\[rpc\]\.(ts|tsx|js|mjs|cjs)$/;
 
 function kebabToSnake(s) {
@@ -260,7 +260,7 @@ for (const absolute of candidateFiles) {
       violation(
         rel,
         `sebuf gateway for /${domain}/v${version} has no matching generated service`,
-        `Expected ${relative(ROOT, expectedServer)}. Either regenerate (cd proto && buf generate), restore the proto under proto/worldmonitor/${snakeDomain}/v${version}/service.proto, or delete this orphaned gateway.`,
+        `Expected ${relative(ROOT, expectedServer)}. Either regenerate (make generate), restore the proto under packages/contracts/proto/worldmonitor/${snakeDomain}/v${version}/service.proto, or delete this orphaned gateway.`,
       );
     }
     continue;
@@ -274,7 +274,7 @@ for (const absolute of candidateFiles) {
   violation(
     rel,
     'file under api/ is neither a sebuf gateway nor a listed exception',
-    'New JSON data APIs must be sebuf RPCs (proto → buf generate → handler). See docs/adding-endpoints.mdx. If this endpoint genuinely cannot be proto (external protocol, binary response, upstream proxy, ops plumbing), add an entry to api/api-route-exceptions.json — expect reviewer pushback.',
+    'New JSON data APIs must be sebuf RPCs (proto → buf generate → handler). See docs/engineering/architecture/adding-endpoints.md. If this endpoint genuinely cannot be proto (external protocol, binary response, upstream proxy, ops plumbing), add an entry to api/api-route-exceptions.json — expect reviewer pushback.',
   );
 }
 
@@ -322,7 +322,9 @@ for (const deferredViolation of collectDeferredServiceViolations({
 
 // --- Proto query-param implementation guard ---
 
-const queryParamContract = collectQueryParamContractViolations(ROOT);
+const queryParamContract = collectQueryParamContractViolations(ROOT, {
+  skipServices: new Set(DEFERRED_GENERATED_SERVICES.keys()),
+});
 for (const v of queryParamContract.violations) {
   violation(v.file, v.message, v.remedy);
 }

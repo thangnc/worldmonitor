@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, before, describe, it } from 'node:test';
 
-import { createDomainGateway } from '../server/gateway.ts';
-import { __resetRateLimitForTest } from '../server/_shared/rate-limit';
+import { createDomainGateway } from '../packages/server/gateway.ts';
+import { __resetRateLimitForTest } from '../packages/server/_shared/rate-limit';
 import { issueSessionToken } from '../api/_session.js';
 
 const originalKeys = process.env.WORLDMONITOR_VALID_KEYS;
@@ -191,7 +191,7 @@ describe('gateway CDN origin policy', () => {
   // Vercel's filesystem router serves these through api/**/[rpc].ts and echoes the
   // matched segment back as ?rpc=<lastPathSegment>. Production therefore sees a query
   // the hand-built URLs in these tests never had — which silently 401'd every public
-  // RPC (#5285). server/_shared/mcp-internal-hmac.ts strips the same echo for signing.
+  // RPC (#5285). packages/server/_shared/sub-request-admission.ts strips the same echo before hashing.
   for (const [path, rpc] of [
     ['/api/news/v1/list-feed-digest?variant=full&lang=en&public=1', 'list-feed-digest'],
     ['/api/displacement/v1/get-displacement-summary?flow_limit=50&public=1', 'get-displacement-summary'],
@@ -300,7 +300,7 @@ describe('gateway CDN origin policy', () => {
     assert.equal(withKey.headers.get('CDN-Cache-Control'), null, 'premium endpoints must NOT have CDN caching');
   });
 
-  it('fails closed before unknown wm_ validation when the pre-auth limiter is unavailable', async () => {
+  it('rejects an unknown wm_ key as invalid with no Redis lookup', async () => {
     const handler = createHandler();
     const res = await handler(new Request('https://worldmonitor.app/api/market/v1/list-gulf-quotes', {
       headers: {
@@ -310,14 +310,15 @@ describe('gateway CDN origin policy', () => {
     }));
     const body = await res.json();
 
-    assert.equal(res.status, 503);
-    assert.equal(res.headers.get('X-RateLimit-Mode'), 'degraded');
+    // The wm_ user-key table is gone: the key is checked only against the
+    // operator keys, locally, so no limiter or Redis outage can change this.
+    assert.equal(res.status, 401);
     assertNoSharedCacheHeaders(res);
-    assert.equal(body.error, 'Rate-limit service temporarily unavailable');
+    assert.equal(body.error, 'Invalid API key');
     assert.doesNotMatch(JSON.stringify(body), /gateway validation|Convex|keyHash/i);
   });
 
-  it('fails closed before unknown wm_ validation on premium RPCs when the limiter is unavailable', async () => {
+  it('rejects an unknown wm_ key on premium RPCs as invalid with no Redis lookup', async () => {
     const handler = createHandler();
     const res = await handler(new Request('https://worldmonitor.app/api/market/v1/analyze-stock?symbol=AAPL', {
       headers: {
@@ -327,10 +328,11 @@ describe('gateway CDN origin policy', () => {
     }));
     const body = await res.json();
 
-    assert.equal(res.status, 503);
-    assert.equal(res.headers.get('X-RateLimit-Mode'), 'degraded');
+    // The wm_ user-key table is gone: the key is checked only against the
+    // operator keys, locally, so no limiter or Redis outage can change this.
+    assert.equal(res.status, 401);
     assertNoSharedCacheHeaders(res);
-    assert.equal(body.error, 'Rate-limit service temporarily unavailable');
+    assert.equal(body.error, 'Invalid API key');
     assert.doesNotMatch(JSON.stringify(body), /gateway validation|Convex|keyHash/i);
   });
 });

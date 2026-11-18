@@ -1,31 +1,4 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ES2020", "ES2022.Error", "DOM", "DOM.Iterable"],
-    "types": ["vite/client", "webmcp-types"],
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "jsx": "react-jsx",
-    "jsxImportSource": "preact",
-    "noEmit": true,
-    "incremental": true,
-    "tsBuildInfoFile": "node_modules/.cache/tsconfig.tsbuildinfo",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  },
-  "include": ["src", "shared/indexable-landing-locales.ts", "shared/pwa-precache.ts"],
-  "exclude": ["src/workers/ml.worker.ts"]
+  "//": "The browser program lives in apps/web/tsconfig.json (refactor PR 2.5); `npm run typecheck` runs it from here, and tsconfig.dom-tests.json and tsconfig.contract-tests.json extend this file.",
+  "extends": "./apps/web/tsconfig.json"
 }

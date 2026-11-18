@@ -20,14 +20,14 @@
  * egress address with no caller headers, so every per-IP limiter behind it
  * charges one shared bucket instead of the caller. API twins therefore never
  * take that hop: the domain gateway dispatches the sibling in-process (see
- * server/gateway.ts), and the HTTP hop is kept for site pages, which must not
+ * packages/server/gateway.ts), and the HTTP hop is kept for site pages, which must not
  * resolve to an API function (isPageTwinSibling).
  */
 
 // @ts-expect-error — JS module, no declaration file
 import { getPublicCorsHeaders } from './_cors.js';
-import { appendDeprecationPolicyLinkToRecord, DEPRECATION_POLICY_LINK } from '../server/_shared/deprecation-policy';
-import { declaredHtmlCanonical, pageCanonicalUrl } from '../shared/page-canonical.js';
+import { appendDeprecationPolicyLinkToRecord, DEPRECATION_POLICY_LINK } from '../packages/server/_shared/deprecation-policy';
+import { declaredHtmlCanonical, pageCanonicalUrl } from '../packages/shared/page-canonical.js';
 
 export const MD_TWIN_LOOP_HEADER = 'x-wm-md-twin';
 const MAX_TWIN_CHARS = 512_000;

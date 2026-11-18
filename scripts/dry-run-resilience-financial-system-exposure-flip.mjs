@@ -19,7 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { CHROME_UA, loadEnvFile } from './_seed-utils.mjs';
-import { unwrapEnvelope } from '../server/_shared/seed-envelope.ts';
+import { unwrapEnvelope } from '../packages/server/_shared/seed-envelope.ts';
 import {
   computeHeadlineEligible,
   computeLowConfidence,
@@ -31,13 +31,13 @@ import {
   RESILIENCE_INTERVAL_KEY_PREFIX,
   RESILIENCE_RANKING_CACHE_KEY,
   RESILIENCE_SCORE_CACHE_PREFIX,
-} from '../server/worldmonitor/resilience/v1/_shared.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
 import {
   RESILIENCE_IMF_LABOR_KEY,
   readCountryPopulationMillionsForGate,
   scoreAllDimensions,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
-import { buildPillarList } from '../server/worldmonitor/resilience/v1/_pillar-membership.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import { buildPillarList } from '../packages/server/worldmonitor/resilience/v1/_pillar-membership.ts';
 import { RESILIENCE_COHORTS } from '../tests/helpers/resilience-cohorts.mts';
 
 loadEnvFile(import.meta.url);

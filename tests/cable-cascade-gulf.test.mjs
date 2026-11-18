@@ -8,9 +8,9 @@ import {
   calculateMultiCascade,
   CABLE_ESTIMATE_NOTE,
   getCablesThroughChokepoint,
-} from '../shared/analysis-infrastructure-cascade.ts';
-import { MCP_CASCADE_WATERWAYS } from '../shared/analysis-mcp-adapters.ts';
-import { UNDERSEA_CABLES } from '../src/config/geo-map.ts';
+} from '../packages/shared/analysis-infrastructure-cascade.ts';
+import { MCP_CASCADE_WATERWAYS } from '../packages/shared/analysis-mcp-adapters.ts';
+import { UNDERSEA_CABLES } from '../packages/client/config/geo-map.ts';
 
 const graph = buildDependencyGraph({ cables: UNDERSEA_CABLES, waterways: MCP_CASCADE_WATERWAYS });
 const HORMUZ = 'chokepoint:hormuz_strait';

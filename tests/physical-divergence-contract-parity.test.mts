@@ -2,19 +2,19 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 
-import { normalizePhysicalDivergenceSnapshot } from '../server/_shared/physical-divergence-snapshot.ts';
+import { normalizePhysicalDivergenceSnapshot } from '../packages/server/_shared/physical-divergence-snapshot.ts';
 import {
   PHYSICAL_DIVERGENCE_CONTRACT,
   buildPhysicalStressComposite,
   isPhysicalDivergenceStoredCompositeReason,
   isPhysicalDivergenceStoredReadingReason,
   physicalDivergenceStateForFreshnessReason,
-} from '../shared/physical-divergence-contract.js';
+} from '../packages/shared/physical-divergence-contract.js';
 import { buildProducerBackedPhysicalComparisonFixture } from './helpers/mcp-producer-fixtures.mjs';
 
 const STATES = ['ok', 'insufficient_history', 'stale_input', 'missing_input'] as const;
 const proto = readFileSync(
-  new URL('../proto/worldmonitor/market/v1/get_physical_divergence_index.proto', import.meta.url),
+  new URL('../packages/contracts/proto/worldmonitor/market/v1/get_physical_divergence_index.proto', import.meta.url),
   'utf8',
 );
 

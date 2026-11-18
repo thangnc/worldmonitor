@@ -13,8 +13,9 @@ if [ "$VERCEL_GIT_COMMIT_REF" = "main" ] && [ -n "$VERCEL_GIT_PREVIOUS_SHA" ]; t
   fi
   git cat-file -e "$VERCEL_GIT_PREVIOUS_SHA" 2>/dev/null && {
     WEB_CHANGES=$(git diff --name-only "$VERCEL_GIT_PREVIOUS_SHA" HEAD -- \
-      'src/' 'api/' 'server/' 'shared/' 'public/' 'blog-site/' 'pro-test/' 'proto/' 'convex/' \
-      'CHANGELOG.md' 'docs/docs.json' 'docs/snapshots/' \
+      'api/' 'public/' 'blog-site/' 'pro-test/' 'convex/' \
+      'apps/' 'packages/' 'turbo.json' 'tsconfig.base.json' \
+      'CHANGELOG.md' \
       'scripts/shared/prediction-country-language.json' \
       'scripts/build-crawlable-corpus.mjs' 'scripts/unranked-country-inventory.mjs' 'scripts/build-use-cases.mjs' 'scripts/data/use-case-workflows.mjs' 'scripts/build-accuracy-page.mjs' 'scripts/build-situation-page.mjs' 'scripts/situation-page/' 'scripts/slugify.mjs' 'scripts/build-research-reports.mjs' 'scripts/build-comparison-pages.mjs' 'scripts/comparison-page-narratives.mjs' 'scripts/comparison-shortlist.mjs' \
       'scripts/build-sitemap.mjs' 'scripts/discover-content-corpus-pages.mjs' \
@@ -23,8 +24,8 @@ if [ "$VERCEL_GIT_COMMIT_REF" = "main" ] && [ -n "$VERCEL_GIT_PREVIOUS_SHA" ]; t
       'scripts/source-origin.mjs' 'scripts/source-origin.d.mts' \
       'scripts/generate-inventory-facts.mjs' \
       'scripts/docs-stats.mjs' 'scripts/source-attribution.mjs' 'scripts/vercel-ignore.sh' \
-      'package.json' 'package-lock.json' 'vite.config.ts' 'tsconfig.json' \
-      'tsconfig.api.json' 'vercel.json' 'middleware.ts' 'index.html' 'lite.html' 'vite.lite.config.ts' | head -1)
+      'package.json' 'package-lock.json' 'tsconfig.json' \
+      'tsconfig.api.json' 'vercel.json' 'middleware.ts' | head -1)
     [ -z "$WEB_CHANGES" ] && echo "Skipping: no web-relevant changes on main" && exit 0
   }
   exit 1
@@ -75,18 +76,16 @@ fi
 
 # Build if any of these web-relevant paths changed
 git diff --name-only "$COMPARE_SHA" HEAD -- \
-  'src/' \
+  'apps/' \
+  'packages/' \
+  'turbo.json' \
+  'tsconfig.base.json' \
   'api/' \
-  'server/' \
-  'shared/' \
   'public/' \
   'blog-site/' \
   'pro-test/' \
-  'proto/' \
   'convex/' \
   'CHANGELOG.md' \
-  'docs/docs.json' \
-  'docs/snapshots/' \
   'scripts/shared/prediction-country-language.json' \
   'scripts/build-crawlable-corpus.mjs' \
   'scripts/unranked-country-inventory.mjs' \
@@ -114,14 +113,10 @@ git diff --name-only "$COMPARE_SHA" HEAD -- \
   'scripts/vercel-ignore.sh' \
   'package.json' \
   'package-lock.json' \
-  'vite.config.ts' \
   'tsconfig.json' \
   'tsconfig.api.json' \
   'vercel.json' \
   'middleware.ts' \
-  'index.html' \
-  'lite.html' \
-  'vite.lite.config.ts' \
   | grep -q . && exit 1
 
 # Nothing web-relevant changed, skip the build

@@ -35,7 +35,7 @@ describe('standalone Railway cron service', () => {
 
   it('ships the runtime directories the bundle imports from', () => {
     assert.match(dockerfileSrc, /COPY\s+scripts\/\s+\.\/scripts\//);
-    assert.match(dockerfileSrc, /COPY\s+shared\/\s+\.\/shared\//);
+    assert.match(dockerfileSrc, /COPY\s+packages\/shared\/\s+\.\/packages\/shared\//);
   });
 
   it('declares the 12-hour recovery cadence and its required credentials', () => {

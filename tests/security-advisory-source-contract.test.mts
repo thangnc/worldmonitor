@@ -133,63 +133,9 @@ describe('security advisory source contract', () => {
     }
   });
 
-  it('panel country filters are derived from active travel-advisory feed countries', () => {
-    const expectedCountries = travelAdvisorySourceCountries(extractAdvisoryFeeds());
-    const panel = readRepoFile('src/components/SecurityAdvisoriesPanel.ts');
-
-    const typeMatch = panel.match(/type AdvisoryFilter = ([^;]+);/);
-    assert.ok(typeMatch, 'SecurityAdvisoriesPanel must keep AdvisoryFilter inspectable.');
-    const typedFilters = [...typeMatch[1]!.matchAll(/'([^']+)'/g)].map((match) => match[1]);
-    const typedCountryFilters = typedFilters.filter((filter) => /^[A-Z]{2}$/.test(filter!)).sort();
-
-    const renderedCountryFilters = [...panel.matchAll(/data-filter="([A-Z]{2})"/g)]
-      .map((match) => match[1]!)
-      .sort();
-
-    assert.deepEqual(typedCountryFilters, expectedCountries);
-    assert.deepEqual(renderedCountryFilters, expectedCountries);
-  });
-
-  it('public advisory docs disclose only active travel-advisory feed countries', () => {
-    const feeds = extractAdvisoryFeeds();
-    const sourceCountries = travelAdvisorySourceCountries(feeds);
-    const dataSourcesSection = markdownSection(
-      readRepoFile('docs/data-sources.mdx'),
-      '### Security Advisory Aggregation',
-      '### Prediction Markets as Leading Indicators',
-    );
-    const pressKitAdvisoryLine = matchingLine(
-      readRepoFile('docs/engineering/product/PRESS_KIT.md'),
-      /^- \*\*Government travel advisories\*\*:/,
-      'PRESS_KIT.md government travel advisories bullet',
-    );
-    const docs = [
-      ['docs/data-sources.mdx Security Advisory Aggregation section', dataSourcesSection],
-      ['docs/engineering/product/PRESS_KIT.md government travel advisories bullet', pressKitAdvisoryLine],
-    ] as const;
-
-    for (const [path, text] of docs) {
-      assertDoesNotClaimInactiveSources(path, text, sourceCountries);
-    }
-
-    assert.match(
-      dataSourcesSection,
-      /fetches the complete advisory feed registry hourly/,
-      'docs/data-sources.mdx must describe the authoritative ADVISORY_FEEDS registry.',
-    );
-
-    for (const country of sourceCountries) {
-      const patterns = DISCLOSURE_PATTERNS_BY_COUNTRY[country] ?? [];
-      assert.ok(
-        patterns.some((pattern) => pattern.test(dataSourcesSection)),
-        `docs/data-sources.mdx must disclose active advisory source country ${country}.`,
-      );
-    }
-  });
-
   it('localized panel source copy does not advertise inactive feed countries', () => {
     const sourceCountries = travelAdvisorySourceCountries(extractAdvisoryFeeds());
-    const localeDir = resolve(root, 'src/locales');
+    const localeDir = resolve(root, 'packages/client/locales');
 
     for (const file of readdirSync(localeDir).filter((name) => name.endsWith('.json'))) {
       const locale = JSON.parse(readFileSync(resolve(localeDir, file), 'utf8'));

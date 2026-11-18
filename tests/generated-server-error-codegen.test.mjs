@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { hardenServerErrors } from '../scripts/harden-generated-server-errors.mjs';
 
 test('server error hardening survives regeneration and repeated runs', () => {
-  const generated = readFileSync(new URL('../src/generated/server/worldmonitor/news/v1/service_server.ts', import.meta.url), 'utf8');
+  const generated = readFileSync(new URL('../packages/contracts/generated/server/worldmonitor/news/v1/service_server.ts', import.meta.url), 'utf8');
   const original = generated.replaceAll(
     'const message = "Internal server error";',
     'const message = err instanceof Error ? err.message : String(err);',

@@ -6,7 +6,7 @@ import { createRedisFetch } from './helpers/fake-upstash-redis.mts';
 import rpc from '../api/infrastructure/v1/[rpc].ts';
 import bootstrap from '../api/bootstrap.js';
 import { issueSessionToken } from '../api/_session.js';
-import { BOOTSTRAP_CACHE_KEYS } from '../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS } from '../packages/shared/bootstrap-tier-keys.js';
 import { assembleBootstrapTierPayload } from '../scripts/publish-bootstrap-tiers.mjs';
 import { sanitizeBootstrapValue as edgeSanitize } from '../api/_bootstrap-public-payload.js';
 import { sanitizeBootstrapValue as workerSanitize } from '../scripts/_bootstrap-public-payload.mjs';
@@ -234,9 +234,9 @@ test('RPC still requires a session and does not expose arbitrary Redis keys', as
 
 
 test('published RPC query schema documents the multi-key selector', () => {
-  const spec = JSON.parse(readFileSync(new URL('../docs/api/InfrastructureService.openapi.json', import.meta.url), 'utf8'));
+  const spec = JSON.parse(readFileSync(new URL('../packages/contracts/openapi/InfrastructureService.openapi.json', import.meta.url), 'utf8'));
   const parameters = spec.paths['/api/infrastructure/v1/get-bootstrap-data'].get.parameters;
-  const yaml = loadYaml(readFileSync(new URL('../docs/api/InfrastructureService.openapi.yaml', import.meta.url), 'utf8')) as typeof spec;
+  const yaml = loadYaml(readFileSync(new URL('../packages/contracts/openapi/InfrastructureService.openapi.yaml', import.meta.url), 'utf8')) as typeof spec;
   const yamlKeys = yaml.paths['/api/infrastructure/v1/get-bootstrap-data'].get.parameters.find((parameter: { name: string }) => parameter.name === 'keys');
   assert.deepEqual(yamlKeys.schema, { type: 'array', maxItems: 100, items: { type: 'string', minLength: 1 } });
   const keys = parameters.find((parameter: { name: string }) => parameter.name === 'keys');

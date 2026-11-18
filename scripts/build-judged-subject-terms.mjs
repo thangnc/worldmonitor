@@ -4,8 +4,8 @@
 // judge only items that match the forecast's subject, so this table decides
 // what evidence exists for a question.
 //
-// Countries come from every ISO code in shared/country-names.json, with names,
-// aliases, demonyms and exclusions from shared/country-mention.js plus the
+// Countries come from every ISO code in packages/shared/country-names.json, with names,
+// aliases, demonyms and exclusions from packages/shared/country-mention.js plus the
 // capitals and keywords in scripts/data/country-codes.json (the CII names the
 // forecast emitter uses). Non-country regions come from REGIONS below. The
 // build fails when any region label the emitter can produce
@@ -14,11 +14,11 @@
 // Usage: node scripts/build-judged-subject-terms.mjs [--check]
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { countryMentionTerms } from '../shared/country-mention.js';
+import { countryMentionTerms } from '../packages/shared/country-mention.js';
 import { normalizeSubjectText as normalize } from './_forecast-subject.mjs';
 
 const OUTPUT = fileURLToPath(new URL('./shared/judged-subject-terms.json', import.meta.url));
-const COUNTRY_NAMES = JSON.parse(readFileSync(new URL('../shared/country-names.json', import.meta.url), 'utf8'));
+const COUNTRY_NAMES = JSON.parse(readFileSync(new URL('../packages/shared/country-names.json', import.meta.url), 'utf8'));
 const COUNTRY_CODES = JSON.parse(readFileSync(new URL('./data/country-codes.json', import.meta.url), 'utf8'));
 
 // Names that are also common words, people, US states or neighbours' names.
@@ -102,7 +102,7 @@ const REGIONS = {
   'taiwan strait': { terms: ['taiwan strait'], countries: ['TW'] },
   'western pacific': { terms: ['western pacific', 'taiwan strait', 'south china sea', 'east china sea', 'philippine sea', 'guam', 'okinawa'], countries: ['TW'] },
   'yemen/red sea': { terms: ['red sea', 'houthi', 'houthis', 'bab el mandeb', 'gulf of aden'], countries: ['YE'] },
-  // Chokepoints (server/_shared/chokepoint-registry.ts display names).
+  // Chokepoints (packages/server/_shared/chokepoint-registry.ts display names).
   'bab el-mandeb': { terms: ['bab el mandeb', 'red sea', 'houthi', 'houthis', 'gulf of aden'], countries: [] },
   'bosporus strait': { terms: ['bosporus', 'bosphorus'], countries: [] },
   'cape of good hope': { terms: ['cape of good hope'], countries: [] },
@@ -114,7 +114,7 @@ const REGIONS = {
   'strait of malacca': { terms: ['malacca'], countries: [] },
   'suez canal': { terms: ['suez'], countries: [] },
 };
-const CHOKEPOINT_REGISTRY = readFileSync(new URL('../server/_shared/chokepoint-registry.ts', import.meta.url), 'utf8');
+const CHOKEPOINT_REGISTRY = readFileSync(new URL('../packages/server/_shared/chokepoint-registry.ts', import.meta.url), 'utf8');
 export const CHOKEPOINT_LABELS = [...CHOKEPOINT_REGISTRY.matchAll(/displayName: '([^']+)'/g)].map((match) => match[1]);
 
 const sorted = (values) => [...new Set(values.filter(Boolean))].sort();

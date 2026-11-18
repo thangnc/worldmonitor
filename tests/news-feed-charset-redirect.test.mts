@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { __testing__, decodeFeedBody } from '../server/worldmonitor/news/v1/list-feed-digest';
+import { __testing__, decodeFeedBody } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
 
 // Folha de S.Paulo's feed (feeds.folha.uol.com.br) is ISO-8859-1 with no
 // charset on its Content-Type, and every item link goes through its

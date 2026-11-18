@@ -1,9 +1,9 @@
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { getCachedJsonBatch } from '../server/_shared/redis';
-import { sidecarCacheSet } from '../server/_shared/sidecar-cache';
-import { getFredSeriesBatch } from '../server/worldmonitor/economic/v1/get-fred-series-batch';
+import { getCachedJsonBatch } from '../packages/server/_shared/redis';
+import { sidecarCacheSet } from '../packages/server/_shared/sidecar-cache';
+import { getFredSeriesBatch } from '../packages/server/worldmonitor/economic/v1/get-fred-series-batch';
 import { runFredRatesSeed } from '../scripts/seed-fred-rates.mjs';
 
 const ORIGINAL_ENV = {

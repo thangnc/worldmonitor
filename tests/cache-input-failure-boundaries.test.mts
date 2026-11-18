@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, it } from 'node:test';
 import { issueSessionToken } from '../api/_session.js';
-import { createDomainGateway, serverOptions } from '../server/gateway.ts';
-import { createEconomicServiceRoutes, type EconomicServiceHandler } from '../src/generated/server/worldmonitor/economic/v1/service_server.ts';
-import { createIntelligenceServiceRoutes, type IntelligenceServiceHandler } from '../src/generated/server/worldmonitor/intelligence/v1/service_server.ts';
-import { getFredSeries } from '../server/worldmonitor/economic/v1/get-fred-series.ts';
-import { getGdeltTopicTimeline } from '../server/worldmonitor/intelligence/v1/get-gdelt-topic-timeline.ts';
-import { getCountryEnergyProfile } from '../server/worldmonitor/intelligence/v1/get-country-energy-profile.ts';
-import { sidecarCacheSet } from '../server/_shared/sidecar-cache.ts';
+import { createDomainGateway, serverOptions } from '../packages/server/gateway.ts';
+import { createEconomicServiceRoutes, type EconomicServiceHandler } from '../packages/contracts/generated/server/worldmonitor/economic/v1/service_server.ts';
+import { createIntelligenceServiceRoutes, type IntelligenceServiceHandler } from '../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server.ts';
+import { getFredSeries } from '../packages/server/worldmonitor/economic/v1/get-fred-series.ts';
+import { getGdeltTopicTimeline } from '../packages/server/worldmonitor/intelligence/v1/get-gdelt-topic-timeline.ts';
+import { getCountryEnergyProfile } from '../packages/server/worldmonitor/intelligence/v1/get-country-energy-profile.ts';
+import { sidecarCacheSet } from '../packages/server/_shared/sidecar-cache.ts';
 
 const originalEnv = { ...process.env };
 const originalFetch = globalThis.fetch;

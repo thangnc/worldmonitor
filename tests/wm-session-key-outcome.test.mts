@@ -26,8 +26,8 @@ g.setInterval = () => 1;
 g.fetch = (input: RequestInfo | URL, init?: RequestInit) => currentFetchHandler(input, init);
 g.location = { href: 'https://worldmonitor.app/', origin: 'https://worldmonitor.app', hostname: 'worldmonitor.app', protocol: 'https:', host: 'worldmonitor.app' };
 
-let mod: typeof import('../src/services/wm-session.ts');
-before(async () => { mod = await import('../src/services/wm-session.ts'); });
+let mod: typeof import('../packages/client/services/wm-session.ts');
+before(async () => { mod = await import('../packages/client/services/wm-session.ts'); });
 beforeEach(() => { memoryStorage.clear(); mod.__resetWmSessionForTests(); });
 
 const bodies: unknown[] = [];

@@ -1459,7 +1459,7 @@ describe('Sprint 1 U3 — stable clusterId wiring through compose path', () => {
     // the v4 contract enforcer; running it on a real composed envelope
     // proves U3 wiring lands clusterId where U1's read-side validator
     // expects it.
-    const { assertBriefEnvelope } = await import('../server/_shared/brief-render.js');
+    const { assertBriefEnvelope } = await import('../packages/server/_shared/brief-render.js');
     const repAlpha = materializeCluster([
       { hash: 'alpha-1', currentScore: 100, mentionCount: 5 },
       { hash: 'alpha-2', currentScore: 80, mentionCount: 2 },
@@ -1635,7 +1635,7 @@ describe('Sprint 1 U7 — digest projection invariant: digest.cards ⊆ brief.ca
    *
    *   1. mergedHashes[0]   — canonical materializeCluster path
    *   2. hash              — back-compat for non-clustered producers
-   *   3. `url:${sourceUrl}`— last-ditch fallback (matches shared/brief-filter.js;
+   *   3. `url:${sourceUrl}`— last-ditch fallback (matches packages/shared/brief-filter.js;
    *                          covers paths that omit hash entirely, e.g. news:
    *                          insights ingestion)
    *
@@ -1916,7 +1916,7 @@ describe('Sprint 1 U7 — digest projection invariant: digest.cards ⊆ brief.ca
 
   // Codex PR #3614 P2 — level-3 fallback `url:${sourceUrl}` parity.
   // Pre-fix the test helper threw on this case ("test should never reach
-  // this"), leaving the level-3 branch in shared/brief-filter.js
+  // this"), leaving the level-3 branch in packages/shared/brief-filter.js
   // structurally untested. Now both helper and live filter agree.
   it('level-3 fallback: digest story with only sourceUrl returns url:<sourceUrl> (Codex PR #3614 P2)', () => {
     const cid = projectDigestEmitClusterId({
@@ -1954,7 +1954,7 @@ describe('Sprint 1 U7 — digest projection invariant: digest.cards ⊆ brief.ca
   // ── Integration: real chain end-to-end through assertBriefEnvelope ──
 
   it('integration: real chain (materializeCluster → compose → assertBriefEnvelope) preserves the invariant', async () => {
-    const { assertBriefEnvelope } = await import('../server/_shared/brief-render.js');
+    const { assertBriefEnvelope } = await import('../packages/server/_shared/brief-render.js');
     const repAlpha = materializeCluster([
       { hash: 'alpha-1', currentScore: 100, mentionCount: 5 },
       { hash: 'alpha-2', currentScore: 80, mentionCount: 2 },
@@ -2105,7 +2105,7 @@ describe('deriveThreadsFromOrderedStories', () => {
   });
 
   it('integration: derived threads pass the renderer envelope contract', async () => {
-    const { assertBriefEnvelope } = await import('../server/_shared/brief-render.js');
+    const { assertBriefEnvelope } = await import('../packages/server/_shared/brief-render.js');
     const envelope = composeBriefFromDigestStories(
       rule(),
       [

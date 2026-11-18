@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 function optionalPositiveInteger(name: string): number | undefined {
@@ -31,11 +30,6 @@ const prepushMaxWorkers = optionalPositiveInteger('VITEST_MAX_THREADS');
  * file fast enough that the extra CI job stays under a few seconds.
  */
 export default defineConfig({
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
-  },
   test: {
     environment: 'happy-dom',
     // Async console RPCs can outlive worker teardown. Keep logs on stdout/stderr.

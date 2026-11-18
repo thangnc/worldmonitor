@@ -22,7 +22,7 @@ const {
 } = require('../scripts/lib/news-digest-warm.cjs');
 
 const cells = JSON.parse(readFileSync(join(root, 'scripts/shared/news-digest-warm-cells.json'), 'utf8'));
-const catalog = JSON.parse(readFileSync(join(root, 'shared/news-catalog.json'), 'utf8'));
+const catalog = JSON.parse(readFileSync(join(root, 'packages/shared/news-catalog.json'), 'utf8'));
 const editions = JSON.parse(readFileSync(join(root, 'scripts/shared/news-digest-editions.json'), 'utf8'));
 
 const coverage = (overrides = {}) => ({
@@ -58,7 +58,7 @@ describe('warm cells', () => {
   });
 
   it('waits longer than the digest cache TTL plus a request, so every request rebuilds its cell', () => {
-    const digest = readFileSync(join(root, 'server/worldmonitor/news/v1/list-feed-digest.ts'), 'utf8');
+    const digest = readFileSync(join(root, 'packages/server/worldmonitor/news/v1/list-feed-digest.ts'), 'utf8');
     const match = digest.match(/cachedFetchJsonWithMeta<ListFeedDigestResponse>\(\s*digestCacheKey,\s*(\d+),/);
     assert.ok(match, 'digest cache TTL not found');
     assert.ok(DIGEST_WARM_INTERVAL_MS > Number(match[1]) * 1000 + DIGEST_WARM_REQUEST_TIMEOUT_MS);

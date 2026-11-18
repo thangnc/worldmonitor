@@ -18,7 +18,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildTickerDictionary } from '../shared/ticker-extract.js';
+import { buildTickerDictionary } from '../packages/shared/ticker-extract.js';
 import {
   buildWatchlistStoryEvents,
   resolveWatchlistScoreMin,
@@ -218,8 +218,8 @@ describe('seed-digest-notifications.mjs — enqueue wiring (source-grep contract
     );
     assert.match(
       digestSrc,
-      /require\('\.\.\/shared\/stocks\.json'\)/,
-      'cron must load shared/stocks.json via the createRequire JSON pattern (diplomacy-keywords precedent)',
+      /require\('\.\.\/packages\/shared\/stocks\.json'\)/,
+      'cron must load packages/shared/stocks.json via the createRequire JSON pattern (diplomacy-keywords precedent)',
     );
   });
 

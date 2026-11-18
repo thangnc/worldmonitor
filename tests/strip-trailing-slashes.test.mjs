@@ -1,9 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { isKnownPublicPagePath, suggestNotFoundSection } from '../src/config/agent-not-found.ts';
-import { getRootlessDocsDestination } from '../src/config/docs-root-redirects.ts';
-import { isPublicSharedRpcRequest } from '../src/shared/public-rpc-cache.ts';
-import { stripTrailingSlashes } from '../shared/strip-trailing-slashes.js';
+import { isKnownPublicPagePath, suggestNotFoundSection } from '../packages/server/_shared/agent-not-found.ts';
+import { isPublicSharedRpcRequest } from '../packages/client/shared/public-rpc-cache.ts';
+import { stripTrailingSlashes } from '../packages/shared/strip-trailing-slashes.js';
 
 const SLASH_RUN = 14_000;
 
@@ -22,14 +21,13 @@ describe('request path trailing slashes', () => {
     assert.equal(stripTrailingSlashes(path), path);
     assert.equal(isKnownPublicPagePath(path), false);
     assert.equal(suggestNotFoundSection(path), null);
-    assert.equal(getRootlessDocsDestination(path), null);
     assert.equal(isPublicSharedRpcRequest(`https://worldmonitor.app${path}?public=1`), false);
     const elapsed = performance.now() - started;
     assert.ok(elapsed < 50, `slash-run normalization took ${elapsed.toFixed(1)}ms`);
   });
 
   it('still treats a trailing slash on a known path as that path', () => {
-    assert.equal(isKnownPublicPagePath('/docs/'), true);
+    assert.equal(isKnownPublicPagePath('/dashboard/'), true);
     assert.equal(
       isPublicSharedRpcRequest('https://worldmonitor.app/api/forecast/v1/get-forecasts/?public=1'),
       true,

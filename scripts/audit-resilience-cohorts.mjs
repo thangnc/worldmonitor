@@ -2,7 +2,7 @@
 // Release-gate audit harness for the resilience scorer. Emits a Markdown
 // report that surfaces cohort-level ranking sanity issues BEFORE they reach
 // publication. Designed as a release gate, not a commit gate — see
-// docs/methodology/cohort-sanity-release-gate.md for the interpretation
+// docs/engineering/methodology/cohort-sanity-release-gate.md for the interpretation
 // contract and the explicit anti-pattern note on rank-targeted acceptance
 // criteria.
 //
@@ -32,12 +32,12 @@
 //   WORLDMONITOR_API_KEY=wm_xxx API_BASE=https://api.worldmonitor.app \
 //     node scripts/audit-resilience-cohorts.mjs
 //   WORLDMONITOR_API_KEY=wm_xxx API_BASE=... \
-//     BASELINE=docs/snapshots/resilience-ranking-live-pre-cohort-audit-2026-04-24.json \
+//     BASELINE=docs/engineering/methodology/country-resilience-index/snapshots/resilience-ranking-live-pre-cohort-audit-2026-04-24.json \
 //     OUT=/tmp/audit.md node scripts/audit-resilience-cohorts.mjs
 //   FIXTURE=tests/fixtures/resilience-audit-fixture.json node scripts/audit-resilience-cohorts.mjs
 //
 // Auth: the resilience ranking + score endpoints are in PREMIUM_RPC_PATHS
-// (see src/shared/premium-paths.ts). A valid WORLDMONITOR_API_KEY is
+// (see packages/client/shared/premium-paths.ts). A valid WORLDMONITOR_API_KEY is
 // required whether running from a trusted browser origin or not — the
 // premium gate forces the key.
 //
@@ -142,19 +142,19 @@ function commitSha() {
 }
 
 async function loadCountryNameMap() {
-  const filePath = path.join(REPO_ROOT, 'shared', 'country-names.json');
+  const filePath = path.join(REPO_ROOT, 'packages', 'shared', 'country-names.json');
   let raw;
   try {
     raw = await fs.readFile(filePath, 'utf8');
   } catch (err) {
-    console.error(`[audit] shared/country-names.json read failed (${err.code || err.name}): ${err.message}. Falling back to ISO-2 codes in the report (country names will appear as CC).`);
+    console.error(`[audit] packages/shared/country-names.json read failed (${err.code || err.name}): ${err.message}. Falling back to ISO-2 codes in the report (country names will appear as CC).`);
     return {};
   }
   let forward;
   try {
     forward = JSON.parse(raw);
   } catch (err) {
-    console.error(`[audit] shared/country-names.json parse failed: ${err.message}. Falling back to ISO-2 codes.`);
+    console.error(`[audit] packages/shared/country-names.json parse failed: ${err.message}. Falling back to ISO-2 codes.`);
     return {};
   }
   const reverse = {};
@@ -519,7 +519,7 @@ function buildReport({ ranking, scoreMap, nameMap, movers, capturedAt, sha, fail
     md += `|Σ contributions − overallScore| > ${CONTRIBUTION_SUM_TOLERANCE}. This almost certainly means \`RESILIENCE_PILLAR_COMBINE_ENABLED\` `;
     md += `is active (penalizedPillarScore), and the **contribution decomposition tables below are NOT valid**. `;
     md += `Treat them as "legacy-formula reference only." `;
-    md += `See \`docs/methodology/cohort-sanity-release-gate.md#formula-mode\`.\n\n`;
+    md += `See \`docs/engineering/methodology/cohort-sanity-release-gate.md#formula-mode\`.\n\n`;
   }
 
   // In FIXTURE mode `API_BASE` is empty → `RANKING_URL` would render as
@@ -599,7 +599,7 @@ function buildReport({ ranking, scoreMap, nameMap, movers, capturedAt, sha, fail
     md += section(`Top-${MOVERS_N} movers vs baseline`, mvBody);
   }
 
-  md += `\n---\n\n*This audit is a release-gate diagnostic, not a merge-blocker. Rank-targeted acceptance criteria are an explicit anti-pattern — see \`docs/methodology/cohort-sanity-release-gate.md\`.*\n`;
+  md += `\n---\n\n*This audit is a release-gate diagnostic, not a merge-blocker. Rank-targeted acceptance criteria are an explicit anti-pattern — see \`docs/engineering/methodology/cohort-sanity-release-gate.md\`.*\n`;
   return { md, failureList, missingCohortMembers, formulaMode };
 }
 

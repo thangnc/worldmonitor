@@ -5,9 +5,9 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
 
-import { assessCorroboration, evidenceFromCluster } from '../server/_shared/corroboration';
-import { STORY_CORROBORATION_FIELD, storyLabel } from '../server/_shared/label-history.ts';
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest';
+import { assessCorroboration, evidenceFromCluster } from '../packages/server/_shared/corroboration';
+import { STORY_CORROBORATION_FIELD, storyLabel } from '../packages/server/_shared/label-history.ts';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
 
 const require = createRequire(import.meta.url);
 const { parseCorroboration } = require('../scripts/lib/corroboration-text.cjs');

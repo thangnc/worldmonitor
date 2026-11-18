@@ -3,7 +3,7 @@ import test, {type TestContext} from 'node:test';
 import {createRedisFetch} from './helpers/fake-upstash-redis.mts';
 import rpc from '../api/infrastructure/v1/[rpc].ts';
 import {issueSessionToken} from '../api/_session.js';
-import {getTemporalBaseline} from '../server/worldmonitor/infrastructure/v1/get-temporal-baseline.ts';
+import {getTemporalBaseline} from '../packages/server/worldmonitor/infrastructure/v1/get-temporal-baseline.ts';
 import { validationFailure } from './helpers/validation-failure.mts';
 const PATH='https://api.worldmonitor.app/api/infrastructure/v1/get-temporal-baseline';
 async function setup(t: TestContext) {

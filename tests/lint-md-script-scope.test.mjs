@@ -15,7 +15,6 @@ describe('markdown lint script scope', () => {
   it('excludes non-product markdown trees from lint target', () => {
     assert.match(lintMdScript, /markdownlint-cli2/);
     assert.match(lintMdScript, /'!\.claude\/\*\*'/);
-    assert.match(lintMdScript, /'!skills\/\*\*'/);
     assert.match(lintMdScript, /'!docs\/internal\/\*\*'/);
     assert.match(lintMdScript, /'!docs\/engineering\/archive\/\*\*'/);
   });

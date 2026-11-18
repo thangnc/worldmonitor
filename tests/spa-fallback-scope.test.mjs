@@ -1,20 +1,21 @@
-// #6575 — unknown paths must return a real 404, not the dashboard SPA.
-// Diligence and security tooling reads a 200 + dashboard document as "the
-// page exists". The negative-lookahead catch-all rewrite is gone; the SPA
-// document is served only by the enumerated client-side History routes.
+// #6575 — unknown paths must return a real 404, not the SPA document.
+// Diligence and security tooling reads a 200 + app document as "the page
+// exists", so the SPA document is served only by enumerated History routes.
+// The Lite UI (lite.html) is the only SPA; the old dashboard routes redirect
+// to it.
 //
 // #6640 coordination: /security (and /trust) intentionally have NO rule here.
-// When the trust page ships it adds its own file/rewrite without having to
-// undo a hardcoded exclusion — until then both 404 like any unknown path.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
 
 const vercel = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
 
-const DASHBOARD_HTML_DESTINATION = '/dashboard.html';
+const LITE_HTML_DESTINATION = '/lite.html';
+const LITE_ROUTES = ['/lite', '/lite/finance', '/lite/geopolitics', '/lite/sources', '/lite/tech'];
+const OLD_DASHBOARD_ROUTES = ['/dashboard', '/stocks', '/stocks/:symbol', '/story'];
 
-// The vercel.json `source` subset used by dashboard-serving rules.
+// The vercel.json `source` subset used by SPA-serving rules.
 function sourceToRegExp(source) {
   let out = '';
   for (let i = 0; i < source.length; i++) {
@@ -37,56 +38,45 @@ function sourceToRegExp(source) {
   return new RegExp(`^${out}$`);
 }
 
-const dashboardRewrites = () => vercel.rewrites.filter((r) => r.destination === DASHBOARD_HTML_DESTINATION);
-const dashboardShadow = (path) => dashboardRewrites().find((r) => sourceToRegExp(r.source).test(path));
+const liteRewrites = () => vercel.rewrites.filter((r) => r.destination === LITE_HTML_DESTINATION);
+const liteShadow = (path) => liteRewrites().find((r) => sourceToRegExp(r.source).test(path));
 
 describe('SPA fallback scope (#6575)', () => {
-  it('serves the dashboard document only from the enumerated client History routes', () => {
-    assert.deepEqual(
-      dashboardRewrites().map((r) => r.source).sort(),
-      ['/dashboard', '/stocks', '/stocks/:symbol', '/story'],
-      'inventory: /dashboard itself plus the client History routes',
-    );
-    const story = vercel.rewrites.find((r) => r.source === '/story');
-    assert.equal(story?.destination, DASHBOARD_HTML_DESTINATION);
+  it('serves the Lite document only from the enumerated client History routes', () => {
+    assert.deepEqual(liteRewrites().map((r) => r.source).sort(), LITE_ROUTES);
+  });
+
+  it('serves no document for the removed dashboard pages', () => {
+    for (const rewrite of vercel.rewrites) {
+      assert.doesNotMatch(rewrite.destination, /^\/dashboard[a-z-]*\.html$/, rewrite.source);
+    }
   });
 
   it('unknown paths match no rewrite and fall through to a filesystem 404', () => {
-    for (const path of ['/this-is-not-a-page', '/security', '/trust', '/wp-admin/setup-config.php']) {
-      assert.equal(dashboardShadow(path), undefined, `${path} must not serve the dashboard`);
+    for (const path of ['/this-is-not-a-page', '/security', '/trust', '/wp-admin/setup-config.php', '/lite/unknown']) {
+      assert.equal(liteShadow(path), undefined, `${path} must not serve the Lite document`);
       const any = vercel.rewrites.find((r) => sourceToRegExp(r.source).test(path));
       assert.equal(any, undefined, `${path} must not match any rewrite at all`);
     }
   });
 
-  it('real client-side deep links keep reaching the SPA document', () => {
-    assert.equal(dashboardShadow('/dashboard')?.destination, DASHBOARD_HTML_DESTINATION);
-    assert.equal(dashboardShadow('/stocks')?.destination, DASHBOARD_HTML_DESTINATION);
-    assert.equal(dashboardShadow('/stocks/AAPL')?.destination, DASHBOARD_HTML_DESTINATION);
-    assert.equal(dashboardShadow('/story')?.destination, DASHBOARD_HTML_DESTINATION);
-    assert.equal(dashboardShadow('/stocks/foo/bar'), undefined, 'nested /stocks paths must 404, not soft-404 the SPA');
+  it('redirects the old dashboard History routes to /lite', () => {
+    for (const source of OLD_DASHBOARD_ROUTES) {
+      const redirect = vercel.redirects.find((r) => r.source === source && !r.has);
+      assert.equal(redirect?.destination, '/lite', `${source} must redirect to /lite`);
+    }
   });
 
-  it('canonicalizes trailing-slash History URLs instead of 404ing them', () => {
-    const dest = (source) => vercel.redirects.find((r) => r.source === source)?.destination;
-    assert.equal(dest('/dashboard/'), '/dashboard');
-    assert.equal(dest('/story/'), '/story');
-    assert.equal(dest('/stocks/'), '/stocks');
-    assert.equal(dest('/stocks/:symbol/'), '/stocks/:symbol');
-  });
-
-  // /verify/ returned 404 in production while /verify served 200: a rewrite
-  // source matches its exact spelling only, and there is no verify/ directory
-  // to fall back to. Every slashless page served by a `.html` rewrite needs a
-  // permanent redirect from its trailing-slash spelling to the canonical one.
-  // Directory pages (`/pro` -> `/pro/index.html`) are excluded because the
-  // filesystem already serves their slash spelling.
+  // A rewrite source matches its exact spelling only, so every slashless page
+  // served by a `.html` rewrite needs a permanent redirect from its
+  // trailing-slash spelling. Directory pages (`/pro` -> `/pro/index.html`) are
+  // excluded because the filesystem already serves their slash spelling.
   it('redirects the trailing-slash spelling of every slashless HTML page rewrite', () => {
     const pageSources = [...new Set(vercel.rewrites
       .filter((r) => r.destination.endsWith('.html') && !r.destination.endsWith('/index.html'))
       .filter((r) => !r.source.endsWith('/') && !r.source.includes('('))
       .map((r) => r.source))];
-    assert.ok(pageSources.includes('/verify'), 'inventory must include /verify');
+    assert.ok(pageSources.includes('/lite'), 'inventory must include /lite');
     for (const source of pageSources) {
       const redirect = vercel.redirects.find((r) => r.source === `${source}/` && !r.has);
       assert.equal(redirect?.destination, source, `${source}/ must redirect to ${source}`);
@@ -95,9 +85,7 @@ describe('SPA fallback scope (#6575)', () => {
   });
 
   it('never reintroduces a negative-lookahead SPA catch-all', () => {
-    const catchAll = vercel.rewrites.find((r) =>
-      r.destination === DASHBOARD_HTML_DESTINATION && r.source.includes('(?!')
-    );
+    const catchAll = vercel.rewrites.find((r) => r.destination === LITE_HTML_DESTINATION && r.source.includes('(?!'));
     assert.equal(catchAll, undefined, 'the exclusion-list catch-all is the soft-404 root cause (#6575)');
   });
 });

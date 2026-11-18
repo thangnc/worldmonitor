@@ -42,8 +42,6 @@
   <a href="https://www.worldmonitor.app/docs/contributing"><strong>Участие</strong></a>
 </p>
 
-![World Monitor Dashboard](docs/images/worldmonitor-7-mar-2026.jpg)
-
 ---
 
 ## Что делает
@@ -88,16 +86,6 @@ npm run dev
 Откройте [localhost:3000](http://localhost:3000) (порт можно задать через `DEV_PORT` в `.env.local`). Приложение запускается без обязательных переменных окружения.
 
 Для источников данных отдельных функций могут понадобиться учётные данные — полный список в `.env.example`.
-
-Разработка конкретного варианта:
-
-```bash
-npm run dev:tech       # tech.worldmonitor.app
-npm run dev:finance    # finance.worldmonitor.app
-npm run dev:commodity  # commodity.worldmonitor.app
-npm run dev:happy      # happy.worldmonitor.app
-npm run dev:energy     # energy.worldmonitor.app
-```
 
 См. **[руководство по самостоятельному хостингу](https://www.worldmonitor.app/docs/getting-started)** (Vercel, Docker, статическая выкладка).
 
@@ -181,7 +169,7 @@ npm run build:full       # продакшен-сборка
 | Коммерческое использование / SaaS | Да, по AGPL-3.0-only при соблюдении обязательств AGPL |
 | Проприетарное использование с закрытым исходным кодом или права на официальный брендинг | Нужно отдельное коммерческое разрешение или разрешение на товарный знак |
 
-Полный текст: [LICENSE](LICENSE). Кратко: [docs/license.mdx](docs/license.mdx). Коммерческое лицензирование доступно как альтернатива для условий вне AGPL.
+Полный текст: [LICENSE](LICENSE). Коммерческое лицензирование доступно как альтернатива для условий вне AGPL.
 
 Copyright (C) 2024-2026 Elie Habib. All rights reserved.
 

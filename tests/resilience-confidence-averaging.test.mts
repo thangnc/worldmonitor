@@ -4,11 +4,11 @@ import { describe, it } from 'node:test';
 import {
   computeLowConfidence,
   computeOverallCoverage,
-} from '../server/worldmonitor/resilience/v1/_shared';
+} from '../packages/server/worldmonitor/resilience/v1/_shared';
 import type {
   GetResilienceScoreResponse,
   ResilienceDimension,
-} from '../src/generated/server/worldmonitor/resilience/v1/service_server';
+} from '../packages/contracts/generated/server/worldmonitor/resilience/v1/service_server';
 
 // PR 3 §3.5 follow-up (reviewer P1): the retired dimension (fuelStockDays,
 // post-retirement) returns coverage=0 structurally and contributes zero

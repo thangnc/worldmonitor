@@ -4,9 +4,8 @@ import { describe, it } from 'node:test';
 
 import { isUtcIsoInstant, validateHealthProbeCutovers } from '../scripts/check-health-probe-cutovers.mts';
 
-const TEST_WORKFLOW_URL = new URL('../.github/workflows/test.yml', import.meta.url);
-const PRE_PUSH_HOOK_URL = new URL('../.husky/pre-push', import.meta.url);
 const PR_TEMPLATE_URL = new URL('../.github/pull_request_template.md', import.meta.url);
+const CI_WORKFLOW_URL = new URL('../.github/workflows/ci.yml', import.meta.url);
 
 describe('health-probe cutover enforcement', () => {
   const baseSeedMeta = {
@@ -161,15 +160,21 @@ describe('health-probe cutover enforcement', () => {
     }
   });
 
-  it('runs in the pull-request workflow and the pre-push hook, and the PR template names both proofs', () => {
-    const workflow = readFileSync(TEST_WORKFLOW_URL, 'utf8');
-    const hook = readFileSync(PRE_PUSH_HOOK_URL, 'utf8');
+  it('the PR template names both proofs', () => {
     const template = readFileSync(PR_TEMPLATE_URL, 'utf8');
 
-    assert.match(workflow, /node --import tsx scripts\/check-health-probe-cutovers\.mts/);
-    assert.match(hook, /changed '[^']*scripts\/check-health-probe-cutovers\\\.mts/);
     assert.match(template, /Railway-side pre-seed/i);
     assert.match(template, /durable activation marker/i);
     assert.doesNotMatch(template, /expiresAt/);
+  });
+
+  it('CI runs the gate against the merge base with full history', () => {
+    const ci = readFileSync(CI_WORKFLOW_URL, 'utf8');
+    const job = ci.match(/\n {2}health-probe-cutovers:\n[\s\S]*?(?=\n {2}[a-z-]+:\n|$)/)?.[0] ?? '';
+    assert.ok(job, 'ci.yml must have a health-probe-cutovers job');
+    assert.match(job, /fetch-depth: 0/);
+    assert.match(job, /base="\$\(git rev-parse HEAD\^1\)"/, 'a PR compares against the merge commit first parent');
+    assert.match(job, /node --import tsx scripts\/check-health-probe-cutovers\.mts "\$base"/);
+    assert.doesNotMatch(job, /pull_request\.base\.sha/);
   });
 });

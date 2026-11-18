@@ -43,10 +43,10 @@ import {
   readingAt,
   selectCountrySeries,
   shiftPeriod,
-} from '../server/worldmonitor/economic/v1/world-cpi-monthly';
+} from '../packages/server/worldmonitor/economic/v1/world-cpi-monthly';
 
 const ISO3_TO_ISO2 = new Map(
-  Object.entries(JSON.parse(readFileSync(new URL('../shared/iso3-to-iso2.json', import.meta.url), 'utf8'))),
+  Object.entries(JSON.parse(readFileSync(new URL('../packages/shared/iso3-to-iso2.json', import.meta.url), 'utf8'))),
 );
 
 function points(entries) {

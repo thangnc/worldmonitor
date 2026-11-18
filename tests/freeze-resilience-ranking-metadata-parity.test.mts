@@ -8,11 +8,11 @@ import {
   RESILIENCE_DIMENSION_ORDER,
   RESILIENCE_DOMAIN_ORDER,
   RESILIENCE_RETIRED_DIMENSIONS,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import { computeResilienceMethodologyMetadataFromSource } from '../scripts/freeze-resilience-ranking.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const SCORER_PATH = resolve(here, '../server/worldmonitor/resilience/v1/_dimension-scorers.ts');
+const SCORER_PATH = resolve(here, '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts');
 const sourceText = readFileSync(SCORER_PATH, 'utf8');
 
 describe('freeze-resilience-ranking methodology parser parity', () => {

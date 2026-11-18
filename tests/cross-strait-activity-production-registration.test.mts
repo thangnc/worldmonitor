@@ -3,16 +3,16 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../packages/shared/bootstrap-tier-keys.js';
 import { CROSS_STRAIT_BLOCKED_SOURCE_REASONS as PRODUCER_BLOCKED_REASONS } from '../scripts/cross-strait-activity/adapters.mjs';
-import { CROSS_STRAIT_BLOCKED_SOURCE_REASONS as CLIENT_BLOCKED_REASONS } from '../src/types/cross-strait-activity';
+import { CROSS_STRAIT_BLOCKED_SOURCE_REASONS as CLIENT_BLOCKED_REASONS } from '../packages/client/types/cross-strait-activity';
 
 const root = resolve(import.meta.dirname, '..');
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8');
 
 describe('cross-Strait activity production registration (#5575)', () => {
   it('registers both publishers as direct government sources rather than independent observers', () => {
-    const registry = read('shared/source-provenance.ts');
+    const registry = read('packages/shared/source-provenance.ts');
     assert.match(registry, /'Taiwan Ministry of National Defense': 'gov'/);
     assert.match(registry, /'Japan Joint Staff': 'gov'/);
     assert.match(registry, /'Taiwan Ministry of National Defense': \{[\s\S]*?risk: 'high'/);
@@ -87,16 +87,8 @@ describe('cross-Strait activity production registration (#5575)', () => {
     );
   });
 
-  it('hydrates the existing Force Posture panel without touching flight identity rules', () => {
-    const panel = read('src/components/MilitaryCorrelationPanel.ts');
-    const renderer = read('src/components/cross-strait-activity-summary.ts');
+  it('does not touch flight identity rules', () => {
     const flightSeeder = read('scripts/seed-military-flights.mjs');
-    assert.match(panel, /getHydratedData\('crossStraitActivity'\)/);
-    assert.match(panel, /tryBuildCrossStraitActivityPanelModel/);
-    assert.match(panel, /if \(this\.officialActivity\) this\.requestRender\(\)/);
-    assert.match(panel, /View Taiwan Strait/);
-    assert.match(renderer, /Publisher claim/);
-    assert.match(renderer, /not aircraft or ship transponder tracks/);
     assert.doesNotMatch(flightSeeder, /cross-strait-activity|Taiwan Ministry of National Defense|Japan Joint Staff/);
   });
 });

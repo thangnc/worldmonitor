@@ -23,8 +23,8 @@ import {
   padCik,
   parseItemCodes,
   sanitizeTicker,
-} from '../server/_shared/sec-edgar';
-import { safeHttpUrl } from '../server/worldmonitor/intelligence/v1/_company-shared';
+} from '../packages/server/_shared/sec-edgar';
+import { safeHttpUrl } from '../packages/server/worldmonitor/intelligence/v1/_company-shared';
 import {
   MATERIAL_ITEM_CODES,
   build8kStreamSnapshot,
@@ -35,10 +35,10 @@ import {
   validate8kStream,
 } from '../scripts/seed-sec-8k-stream.mjs';
 import { MIN_CIK_ENTRIES, slimCikMap, validateCikMap } from '../scripts/seed-sec-cik-map.mjs';
-import { getCompanyEnrichment } from '../server/worldmonitor/intelligence/v1/get-company-enrichment';
-import { listCompanySignals } from '../server/worldmonitor/intelligence/v1/list-company-signals';
-import { searchSecFilings } from '../server/worldmonitor/intelligence/v1/search-sec-filings';
-import { ValidationError } from '../src/generated/server/worldmonitor/intelligence/v1/service_server';
+import { getCompanyEnrichment } from '../packages/server/worldmonitor/intelligence/v1/get-company-enrichment';
+import { listCompanySignals } from '../packages/server/worldmonitor/intelligence/v1/list-company-signals';
+import { searchSecFilings } from '../packages/server/worldmonitor/intelligence/v1/search-sec-filings';
+import { ValidationError } from '../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server';
 
 const ctx = { request: new Request('http://localhost/'), pathParams: {}, headers: {} } as never;
 

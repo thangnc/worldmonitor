@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it, afterEach, beforeEach } from 'node:test';
 
-import { getShippingRates } from '../server/worldmonitor/supply-chain/v1/get-shipping-rates';
+import { getShippingRates } from '../packages/server/worldmonitor/supply-chain/v1/get-shipping-rates';
 
 // The seeder writes the four decision-grade period-change fields as explicit
 // JSON `null` when the exchange published no comparable prior (#6066), while

@@ -106,7 +106,6 @@ const CLIENT_ENV_ALLOWLIST = new Set([
   'VITE_ENABLE_IRAN_ATTACKS',
   'VITE_FOLLOW_COUNTRIES_ENABLED',
   'VITE_HORMUZ_CRISIS_START_DATE',
-  'VITE_LITE_PROFILE',
   'VITE_MAP_INTERACTION_MODE',
   'VITE_OPENSKY_RELAY_URL',
   'VITE_PMTILES_URL',
@@ -119,7 +118,6 @@ const CLIENT_ENV_ALLOWLIST = new Set([
   'VITE_TAURI_REMOTE_API_BASE_URL',
   'VITE_TELEGRAM_BOT_USERNAME',
   'VITE_VAPID_PUBLIC_KEY',
-  'VITE_VARIANT',
   'VITE_WS_API_URL',
   'VITE_WS_RELAY_URL',
 ]);
@@ -208,7 +206,7 @@ describe('browser bundle secret guard (#3704)', () => {
   });
 
   it('runtime env readers do not make the full Vite env object reachable', async () => {
-    for (const relPath of ['src/services/runtime.ts', 'src/services/runtime-config.ts']) {
+    for (const relPath of ['packages/client/services/runtime.ts', 'packages/client/services/runtime-config.ts']) {
       const source = await readRepoFile(relPath);
       assert.doesNotMatch(
         source,
@@ -229,7 +227,10 @@ describe('browser bundle secret guard (#3704)', () => {
   });
 
   it('client source uses only reviewed VITE_* browser env names', async () => {
-    const sourceFiles = await listFiles(resolve(repoRoot, 'src'), CLIENT_SOURCE_EXTENSIONS);
+    const sourceFiles = [
+      ...await listFiles(resolve(repoRoot, 'apps/web/src'), CLIENT_SOURCE_EXTENSIONS),
+      ...await listFiles(resolve(repoRoot, 'packages/client'), CLIENT_SOURCE_EXTENSIONS),
+    ];
     const seen = new Map<string, string[]>();
 
     for (const file of sourceFiles) {
@@ -256,7 +257,7 @@ describe('browser bundle secret guard (#3704)', () => {
   });
 
   it('runtime-config.ts does not list a platform-only secret as a required feature secret', async () => {
-    const source = await readRepoFile('src/services/runtime-config.ts');
+    const source = await readRepoFile('packages/client/services/runtime-config.ts');
     // `requiredSecrets: [...]` literals are what seedSecretsFromEnvironment iterates.
     // Any platform-only key appearing inside one of those arrays would be
     // attempted at runtime, so flag it.
@@ -279,7 +280,7 @@ describe('browser bundle secret guard (#3704)', () => {
   });
 
   it('vite.config.ts does not inline platform-only secrets via define', async () => {
-    const source = await readRepoFile('vite.config.ts');
+    const source = await readRepoFile('apps/web/vite.config.ts');
     // `define:` injects literal values into the client bundle regardless
     // of `envPrefix`. We only need to inspect the block when it exists —
     // a future refactor that removes the block entirely is strictly
@@ -326,7 +327,7 @@ describe('browser bundle secret guard (#3704)', () => {
   });
 
   it('vite.config.ts does not set a custom envPrefix that would expose unprefixed secrets', async () => {
-    const source = await readRepoFile('vite.config.ts');
+    const source = await readRepoFile('apps/web/vite.config.ts');
     // Vite's default is `envPrefix: 'VITE_'`. If a future contributor
     // sets `envPrefix: ''`, includes a non-VITE_ prefix in an array form
     // (`envPrefix: ['VITE_', '']`), or replaces the default with a

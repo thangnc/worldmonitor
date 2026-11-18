@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const proxy = vi.hoisted(() => vi.fn());
-vi.mock('@/services/tauri-bridge', () => ({ proxyLocalApiRequest: proxy }));
-vi.mock('@/services/clerk', () => ({ getClerkToken: async () => null }));
+vi.mock('@wm/client/services/tauri-bridge', () => ({ proxyLocalApiRequest: proxy }));
 
 const API = 'https://api.worldmonitor.app';
 const ORIGIN = 'https://worldmonitor.app';
@@ -42,7 +41,7 @@ async function web(failure: number | 'network', abort?: AbortController) {
     return new Response('failure', { status: failure });
   });
   window.fetch = fetch;
-  (await import('@/services/runtime')).installWebApiRedirect();
+  (await import('@wm/client/services/runtime')).installWebApiRedirect();
   return fetch;
 }
 
@@ -127,7 +126,7 @@ describe('desktop generic recovery', () => {
         window.fetch = native;
         if (failure === 'network') proxy.mockRejectedValue(new Error('native failure'));
         else proxy.mockResolvedValue(new Response('failure', { status: failure }));
-        (await import('@/services/runtime')).installRuntimeFetchPatch();
+        (await import('@wm/client/services/runtime')).installRuntimeFetchPatch();
         const request = window.fetch(...inputFor(form, 'POST'));
         if (failure === 'network') await expect(request).rejects.toThrow('native failure');
         else expect((await request).status).toBe(failure);
@@ -141,7 +140,7 @@ describe('desktop generic recovery', () => {
     const native = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('cloud'));
     window.fetch = native;
     proxy.mockResolvedValue(new Response('failure', { status: 502 }));
-    (await import('@/services/runtime')).installRuntimeFetchPatch();
+    (await import('@wm/client/services/runtime')).installRuntimeFetchPatch();
     const controller = new AbortController();
     const request = new Request(ORIGIN + PATH, { headers: { 'X-Test': 'retained' }, signal: controller.signal });
     expect((await window.fetch(request)).status).toBe(200);
@@ -158,7 +157,7 @@ describe('desktop generic recovery', () => {
     const native = vi.fn(async () => new Response('cloud'));
     window.fetch = native;
     proxy.mockRejectedValue(new Error('native failure'));
-    (await import('@/services/runtime')).installRuntimeFetchPatch();
+    (await import('@wm/client/services/runtime')).installRuntimeFetchPatch();
     const controller = new AbortController();
     const result = window.fetch(PATH, { signal: controller.signal }).catch(error => error);
     await vi.advanceTimersByTimeAsync(1);

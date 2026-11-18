@@ -2,9 +2,9 @@
 /**
  * Sentry-coverage lint guard.
  *
- * Flags catch blocks in api/, convex/ and server/ that swallow the error —
+ * Flags catch blocks in api/, convex/ and packages/server/ that swallow the error —
  * the pattern that hid the canary OCC bug (Sentry issue WORLDMONITOR-PA)
- * for hours and made the post-mortem impossible. `server/` counts because
+ * for hours and made the post-mortem impossible. `packages/server/` counts because
  * its code is bundled INTO the edge functions at deploy time, so a swallow
  * there is invisible in exactly the same way.
  *
@@ -41,7 +41,7 @@ import { resolve } from 'node:path';
 const args = process.argv.slice(2);
 const SCAN_ALL = args.includes('--all');
 
-const TARGET_DIRS = ['api', 'convex', 'server'];
+const TARGET_DIRS = ['api', 'convex', 'packages/server'];
 
 // A catch block is "OK" if it contains at least one of these markers.
 // `throw` covers re-throws (auto-Sentry catches the propagated throw).

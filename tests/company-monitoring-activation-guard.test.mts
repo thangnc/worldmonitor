@@ -4,10 +4,9 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
-import { COMPANY_MONITORING_RPC_SCOPES } from '../shared/company-monitoring-contract.ts';
-import { PUBLIC_NO_AUTH_RPC_PATHS } from '../server/gateway.ts';
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
-import { TIER_GATED_PATHS } from '../server/_shared/entitlement-check.ts';
+import { COMPANY_MONITORING_RPC_SCOPES } from '../packages/shared/company-monitoring-contract.ts';
+import { PUBLIC_NO_AUTH_RPC_PATHS } from '../packages/server/gateway.ts';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 
 // ---------------------------------------------------------------------------
 // Why this test exists
@@ -68,15 +67,15 @@ describe('Company Monitoring activation guard', () => {
       return;
     }
     const unregistered = RPC_PATHS.filter(
-      (path) => !PREMIUM_RPC_PATHS.has(path) && !TIER_GATED_PATHS.has(path),
+      (path) => !PREMIUM_RPC_PATHS.has(path),
     );
     assert.deepEqual(
       unregistered,
       [],
       'Company Monitoring is now routed, so every RPC must be registered in PREMIUM_RPC_PATHS '
-        + '(browser Bearer attachment) or TIER_GATED_PATHS (server-side entitlement). '
+        + '(operator key only). '
         + 'Registering also changes cache-tier resolution — re-check the no-store intent in '
-        + 'server/gateway.ts RPC_CACHE_TIER when you do.',
+        + 'packages/server/gateway.ts RPC_CACHE_TIER when you do.',
     );
   });
 });

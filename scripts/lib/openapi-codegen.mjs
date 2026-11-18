@@ -434,27 +434,71 @@ function quotedLiterals(block) {
 }
 
 export function readPublicNoAuthPaths() {
-  const src = readFileSync(resolve(root, 'server/gateway.ts'), 'utf8');
+  const src = readFileSync(resolve(root, 'packages/server/gateway.ts'), 'utf8');
   const block = src.match(/PUBLIC_NO_AUTH_RPC_PATHS\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/);
-  if (!block) throw new Error('could not locate PUBLIC_NO_AUTH_RPC_PATHS in server/gateway.ts');
+  if (!block) throw new Error('could not locate PUBLIC_NO_AUTH_RPC_PATHS in packages/server/gateway.ts');
   const paths = quotedLiterals(block[1]);
   if (paths.length === 0) throw new Error('PUBLIC_NO_AUTH_RPC_PATHS parsed as empty — refusing to run');
   return new Set(paths);
 }
 
+// FROZEN published auth contract. The runtime tier table (ENDPOINT_ENTITLEMENTS
+// in packages/server/_shared/entitlement-check.ts) and the billing-verification states
+// were deleted with Clerk and Convex: the gateway now serves every
+// PREMIUM_RPC_PATHS route to an operator key only. These literals keep the
+// committed packages/contracts/openapi output byte-identical until the OpenAPI auth contract is
+// rewritten for the operator-key-only model (a follow-up that regenerates
+// packages/contracts/openapi). Do not add entries here.
+const FROZEN_ENDPOINT_ENTITLEMENTS = [
+  ['/api/forecast/v1/trigger-simulation', 1],
+  ['/api/intelligence/v1/classify-event', 1],
+  ['/api/intelligence/v1/deduct-situation', 1],
+  ['/api/intelligence/v1/get-country-intel-brief', 1],
+  ['/api/intelligence/v1/search-intel-history', 1],
+  ['/api/intelligence/v1/get-intel-timeline', 1],
+  ['/api/intelligence/v1/get-similar-events', 1],
+  ['/api/market/v1/analyze-stock', 1],
+  ['/api/market/v1/get-stock-analysis-history', 1],
+  ['/api/market/v1/get-insider-transactions', 1],
+  ['/api/market/v1/backtest-stock', 1],
+  ['/api/market/v1/list-stored-stock-backtests', 1],
+  ['/api/economic/v1/list-global-tenders', 1],
+  ['/api/scenario/v1/run-scenario', 1],
+  ['/api/scenario/v1/get-scenario-status', 1],
+  ['/api/supply-chain/v1/get-country-chokepoint-index', 1],
+  ['/api/supply-chain/v1/get-bypass-options', 1],
+  ['/api/supply-chain/v1/get-country-cost-shock', 1],
+  ['/api/supply-chain/v1/get-route-explorer-lane', 1],
+  ['/api/supply-chain/v1/get-route-impact', 1],
+  ['/api/supply-chain/v1/get-country-products', 1],
+  ['/api/supply-chain/v1/get-multi-sector-cost-shock', 1],
+  ['/api/supply-chain/v1/get-sector-dependency', 1],
+  ['/api/trade/v1/list-comtrade-flows', 1],
+  ['/api/trade/v1/get-tariff-trends', 1],
+  ['/api/trade/v1/get-bilateral-tariff', 1],
+  ['/api/trade/v1/get-us-import-duty', 1],
+  ['/api/resilience/v1/get-food-stocks', 1],
+  ['/api/resilience/v1/get-demographics-capability', 1],
+  ['/api/resilience/v1/get-resilience-indicators', 1],
+  ['/api/market/v1/get-physical-premiums', 1],
+  ['/api/market/v1/get-physical-divergence-index', 1],
+  ['/api/supply-chain/v1/get-mineral-production', 1],
+  ['/api/military/v1/get-defense-industrial-base', 1],
+  ['/api/supply-chain/v1/get-country-vulnerabilities', 1],
+  ['/api/supply-chain/v1/get-chokepoint-dependencies', 1],
+  ['/api/supply-chain/v1/list-vulnerability-rankings', 1],
+  ['/api/news/v1/list-media-perspective', 1],
+  ['/api/news/v1/list-news-pool', 1],
+];
+
 export function readEndpointEntitlements() {
-  const src = readFileSync(resolve(root, 'server/_shared/entitlement-check.ts'), 'utf8');
-  const block = src.match(/ENDPOINT_ENTITLEMENTS\s*:\s*Record<string,\s*number>\s*=\s*\{([\s\S]*?)\};/);
-  if (!block) throw new Error('could not locate ENDPOINT_ENTITLEMENTS in server/_shared/entitlement-check.ts');
-  const entries = [...block[1].matchAll(/'([^']+)'\s*:\s*(\d+)/g)].map((m) => [m[1], Number(m[2])]);
-  if (entries.length === 0) throw new Error('ENDPOINT_ENTITLEMENTS parsed as empty — refusing to run');
-  return new Map(entries);
+  return new Map(FROZEN_ENDPOINT_ENTITLEMENTS);
 }
 
 export function readPremiumRpcPaths() {
-  const src = readFileSync(resolve(root, 'src/shared/premium-paths.ts'), 'utf8');
+  const src = readFileSync(resolve(root, 'packages/client/shared/premium-paths.ts'), 'utf8');
   const block = src.match(/PREMIUM_RPC_PATHS\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/);
-  if (!block) throw new Error('could not locate PREMIUM_RPC_PATHS in src/shared/premium-paths.ts');
+  if (!block) throw new Error('could not locate PREMIUM_RPC_PATHS in packages/client/shared/premium-paths.ts');
   return quotedLiterals(block[1]);
 }
 
@@ -467,29 +511,20 @@ export function readPremiumRpcPaths() {
 // The status union is parsed from the exported BillingVerificationStatus type
 // so the published enum can never drift from runtime (fail-closed like the
 // parsers above).
+// Frozen with FROZEN_ENDPOINT_ENTITLEMENTS above: the BillingVerificationStatus
+// union the deleted entitlement-check.ts exported.
 export function readBillingVerificationStatuses() {
-  const src = readFileSync(resolve(root, 'server/_shared/entitlement-check.ts'), 'utf8');
-  const block = src.match(/export type BillingVerificationStatus\s*=([\s\S]*?);/);
-  if (!block) throw new Error('could not locate BillingVerificationStatus in server/_shared/entitlement-check.ts');
-  const statuses = [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
-  if (statuses.length === 0) throw new Error('BillingVerificationStatus parsed as empty — refusing to run');
-  return statuses;
+  return ['subscription_lapsed', 'renewal_verification_pending', 'renewal_verification_failed'];
 }
 
 // The provider-confirmed lapse is the one union member answered with a 403
-// instead of the retryable 503 (entitlement-check.ts getBillingVerificationDenial).
+// instead of the retryable 503 (frozen contract; see FROZEN_ENDPOINT_ENTITLEMENTS).
 export const LAPSED_BILLING_STATUS = 'subscription_lapsed';
 
-// Transient backend-unreachable denials reuse the same wire shape but their
-// code is not part of the persisted status union — assert it still exists in
-// the gateway sources so a rename cannot silently orphan the published enum.
+// Frozen: the transient backend-unreachable code the deleted entitlement
+// gates emitted.
 export function readEntitlementUnavailableCode() {
-  for (const file of ['server/_shared/entitlement-check.ts', 'server/gateway.ts']) {
-    const src = readFileSync(resolve(root, file), 'utf8');
-    const match = src.match(/code:\s*'(entitlement_verification_unavailable)'/);
-    if (match) return match[1];
-  }
-  throw new Error('could not locate the entitlement_verification_unavailable code in gateway sources — refusing to run');
+  return 'entitlement_verification_unavailable';
 }
 
 // Retryable-503 code enum, derived: every union status except the hard-403
@@ -513,10 +548,10 @@ export function readRetryableBillingCodes() {
  * on a parse miss — an empty Set means "no route is exempt", which is a valid state.
  */
 export function readIdempotencyExemptPaths() {
-  const src = readFileSync(resolve(root, 'server/_shared/idempotency.ts'), 'utf8');
+  const src = readFileSync(resolve(root, 'packages/server/_shared/idempotency.ts'), 'utf8');
   const block = src.match(/IDEMPOTENCY_EXEMPT_RPC_PATHS\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/);
   if (!block) {
-    throw new Error('could not locate IDEMPOTENCY_EXEMPT_RPC_PATHS in server/_shared/idempotency.ts');
+    throw new Error('could not locate IDEMPOTENCY_EXEMPT_RPC_PATHS in packages/server/_shared/idempotency.ts');
   }
   return new Set(quotedLiterals(block[1]));
 }
@@ -807,9 +842,9 @@ export function parseChinaDecisionSignalManifest(source) {
 }
 
 export function readDecisionSignalProvenanceContract() {
-  const src = readFileSync(resolve(root, 'shared/decision-signal-provenance-contract.ts'), 'utf8');
+  const src = readFileSync(resolve(root, 'packages/shared/decision-signal-provenance-contract.ts'), 'utf8');
   const familySrc = readFileSync(
-    resolve(root, 'shared/decision-signal-provenance-families.ts'),
+    resolve(root, 'packages/shared/decision-signal-provenance-families.ts'),
     'utf8',
   );
   const version = src.match(
@@ -886,15 +921,15 @@ export function readDecisionSignalProvenanceContract() {
 
 export function readChinaCorridorWireContract() {
   const corridor = readFileSync(
-    resolve(root, 'shared/china-corridor-control-towers.ts'),
+    resolve(root, 'packages/shared/china-corridor-control-towers.ts'),
     'utf8',
   );
   const logistics = readFileSync(
-    resolve(root, 'shared/china-logistics-corridors.ts'),
+    resolve(root, 'packages/shared/china-logistics-corridors.ts'),
     'utf8',
   );
   const provenance = readFileSync(
-    resolve(root, 'shared/decision-signal-provenance-contract.ts'),
+    resolve(root, 'packages/shared/decision-signal-provenance-contract.ts'),
     'utf8',
   );
   const contract = {
@@ -927,11 +962,11 @@ export function readChinaCorridorWireContract() {
 
 export function readChinaDecisionSignalWireContract() {
   const src = readFileSync(
-    resolve(root, 'shared/china-decision-signals.ts'),
+    resolve(root, 'packages/shared/china-decision-signals.ts'),
     'utf8',
   );
   const manifestSrc = readFileSync(
-    resolve(root, 'shared/china-decision-signal-manifest.ts'),
+    resolve(root, 'packages/shared/china-decision-signal-manifest.ts'),
     'utf8',
   );
   const {
@@ -1007,7 +1042,7 @@ export const PUBLIC_FORBIDDEN_GATES = new Map([
     },
   }],
   ['/api/leads/v1/register-interest', {
-    // The handler (server/worldmonitor/leads/v1/register-interest.ts) fails
+    // The handler (packages/server/worldmonitor/leads/v1/register-interest.ts) fails
     // closed with two distinct 403s: browser callers that fail the Cloudflare
     // Turnstile check get 403 Bot verification failed; desktop-source callers
     // whose shared-secret HMAC bypass is missing/invalid get 403 Desktop
@@ -1029,7 +1064,7 @@ export const PUBLIC_FORBIDDEN_GATES = new Map([
 // ── Operator review key (#9192) ──────────────────────────────────────────────
 // Routes the gateway lets through without an API key (they are in
 // PUBLIC_NO_AUTH_RPC_PATHS) whose handler then requires X-Trust-Review-Key to
-// match TRUST_REVIEW_SECRET (isTrustReviewer, server/_shared/error-reports.ts)
+// match TRUST_REVIEW_SECRET (isTrustReviewer, packages/server/_shared/error-reports.ts)
 // and answers 401 `{ message: 'Unauthorized' }` without it. A WorldMonitor API
 // key alone authorizes neither, so the spec declares the review key instead of
 // `security: []`.

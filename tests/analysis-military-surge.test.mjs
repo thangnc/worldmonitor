@@ -17,8 +17,8 @@ import {
   isTransportFlight,
   recalcPostureWithVessels,
   surgeAlertToSignal,
-} from '../shared/analysis-military-surge.ts';
-import { MILITARY_BASES_EXPANDED } from '../shared/military-bases-data.ts';
+} from '../packages/shared/analysis-military-surge.ts';
+import { MILITARY_BASES_EXPANDED } from '../packages/shared/military-bases-data.ts';
 
 const HOUR_MS = 60 * 60 * 1000;
 

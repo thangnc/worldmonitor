@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Deploy gate: fail a build whose output would publish source maps.
 //
-// Production maps go to Sentry only (shared/source-map-policy.ts). The Vite
+// Production maps go to Sentry only (packages/shared/source-map-policy.ts). The Vite
 // configs and the wm-strip-private-source-maps plugin enforce that; this gate
 // re-checks the final tree after every build step (blog, /pro, dashboard,
 // embed plugin) so a new bundler, plugin, or copied public/ file cannot
@@ -13,7 +13,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { shouldEmitPublicSourceMaps } from '../shared/source-map-policy.ts';
+import { shouldEmitPublicSourceMaps } from '../packages/shared/source-map-policy.ts';
 
 const SOURCE_MAP_FILE = /\.map(\.br|\.gz)?$/i;
 // HTML too: an inline <script> or <style> can carry an inline data: map.
@@ -52,7 +52,7 @@ async function main() {
   const show = (list) => list.slice(0, 20).map((p) => `  - ${p}`).join('\n') + (list.length > 20 ? `\n  … and ${list.length - 20} more` : '');
   if (mapFiles.length) console.error(`[source-maps] ${mapFiles.length} source map file(s) would be published:\n${show(mapFiles)}`);
   if (referencingFiles.length) console.error(`[source-maps] ${referencingFiles.length} file(s) reference a source map:\n${show(referencingFiles)}`);
-  console.error('[source-maps] Production maps must go to Sentry only. Build them hidden and delete them after upload; see shared/source-map-policy.ts.');
+  console.error('[source-maps] Production maps must go to Sentry only. Build them hidden and delete them after upload; see packages/shared/source-map-policy.ts.');
   process.exit(1);
 }
 

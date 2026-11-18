@@ -6,7 +6,6 @@ import { pipeline } from 'node:stream/promises';
 import { it } from 'node:test';
 
 const require = createRequire(import.meta.url);
-const jayson = require('jayson');
 const StreamValues = require('stream-json/streamers/StreamValues');
 const katex = require('katex');
 const { load } = require('js-yaml');
@@ -21,20 +20,6 @@ const inputs = [
 ];
 
 for (const input of inputs) {
-  it(`jayson preserves JSON.parse semantics for ${input}`, async () => {
-    const value = await new Promise((resolve, reject) => {
-      jayson.Utils.parseStream(Readable.from([...input]), {}, (error, value) => {
-        if (error) reject(error);
-        else resolve(value);
-      });
-    });
-    assert.deepEqual(value, JSON.parse(input));
-    const object = value.user ?? value;
-    assert.equal(Object.getPrototypeOf(object), Object.prototype);
-    assert.equal(Object.hasOwn(object, '__proto__'), true);
-    assert.equal(object.isAdmin, undefined);
-  });
-
   it(`stream-json preserves own keys with a reviver for ${input}`, async () => {
     const values = [];
     await pipeline(
@@ -85,24 +70,11 @@ function pnpmLockVersions(path, name) {
 
 const patchedLocks = [
   ['sharp', '0.35.5', npmLockVersions, '../package-lock.json'],
-  ['sharp', '0.35.5', npmLockVersions, '../blog-site/package-lock.json'],
   ['sharp', '0.35.5', npmLockVersions, '../workers/railway-reconcile-control/package-lock.json'],
-  ['shell-quote', '1.11.0', npmLockVersions, '../package-lock.json'],
-  ['shell-quote', '1.11.0', npmLockVersions, '../pro-test/package-lock.json'],
   ['shell-quote', '1.11.0', pnpmLockVersions, '../docker/umami/runtime/pnpm-lock.yaml'],
   ['markdown-it', '14.3.3', npmLockVersions, '../package-lock.json'],
   ['@vitest/mocker', '4.1.12', npmLockVersions, '../package-lock.json'],
   ['@vitest/mocker', '4.1.12', npmLockVersions, '../consumer-prices-core/package-lock.json'],
-  ['simple-git', '4.0.1', npmLockVersions, '../integrations/zapier/package-lock.json'],
-  ['@simple-git/argv-parser', '2.0.1', npmLockVersions, '../integrations/zapier/package-lock.json'],
-  ['adm-zip', '0.6.1', npmLockVersions, '../integrations/zapier/package-lock.json'],
-  ['tar', '7.5.18', npmLockVersions, '../integrations/zapier/package-lock.json'],
-  ['tmp', '0.2.6', npmLockVersions, '../integrations/zapier/package-lock.json'],
-  ['sigstore', '4.1.1', npmLockVersions, '../integrations/zapier/package-lock.json'],
-  ['@sigstore/core', '3.2.1', npmLockVersions, '../integrations/zapier/package-lock.json'],
-  ['yeoman-environment', '6.0.1', npmLockVersions, '../integrations/zapier/package-lock.json'],
-  ['serialize-javascript', '7.0.5', npmLockVersions, '../integrations/zapier/package-lock.json'],
-  ['postcss-selector-parser', '7.1.6', npmLockVersions, '../integrations/zapier/package-lock.json'],
   ['fast-uri', '3.1.9', npmLockVersions, '../package-lock.json'],
   ['fast-uri', '3.1.9', pnpmLockVersions, '../docker/umami/runtime/pnpm-lock.yaml'],
   ['undici', '7.30.1', npmLockVersions, '../workers/api-cors-preflight/package-lock.json'],
@@ -122,9 +94,9 @@ for (const [name, patched, versionsOf, path] of patchedLocks) {
 // (glob 7, minimatch 3 and 5), so the check is "no version inside the
 // vulnerable range" rather than "every version >= patched".
 const vulnerableRanges = [
-  ['glob', '>=9.0.0 <=14.0.1', 'GHSA-3g3m-2fjr-6pw4', ['../package-lock.json', '../pro-test/package-lock.json', '../integrations/zapier/package-lock.json']],
-  ['minimatch', '>=7.0.0 <11.0.1', 'GHSA-g3hv-75wg-m249', ['../package-lock.json', '../pro-test/package-lock.json', '../integrations/zapier/package-lock.json']],
-  ['uuid', '<11.1.1 || >=12.0.0 <12.0.1 || >=13.0.0 <13.0.1', 'GHSA-w5hq-g745-h8pq', ['../package-lock.json', '../scripts/package-lock.json', '../pro-test/package-lock.json']],
+  ['glob', '>=9.0.0 <=14.0.1', 'GHSA-3g3m-2fjr-6pw4', ['../package-lock.json']],
+  ['minimatch', '>=7.0.0 <11.0.1', 'GHSA-g3hv-75wg-m249', ['../package-lock.json']],
+  ['uuid', '<11.1.1 || >=12.0.0 <12.0.1 || >=13.0.0 <13.0.1', 'GHSA-w5hq-g745-h8pq', ['../package-lock.json', '../scripts/package-lock.json']],
 ];
 
 for (const [name, range, advisory, paths] of vulnerableRanges) {
@@ -154,17 +126,4 @@ for (const [name, patched] of [['mysql2', '3.24.4'], ['deepmerge-ts', '8.0.2'], 
 it('docker/umami/runtime/pnpm-lock.yaml no longer carries @hono/node-server (GHSA-rmxm-3fg6-px4f)', () => {
   // @prisma/dev 0.24.17 dropped the local HTTP server dependency entirely.
   assert.deepEqual(pnpmLockVersions(umamiLock, '@hono/node-server'), []);
-});
-
-it('sdk/rust/Cargo.lock selects rustls-webpki >= 0.103.16 (RUSTSEC-2026-0382)', () => {
-  const lock = readFileSync(new URL('../sdk/rust/Cargo.lock', import.meta.url), 'utf8');
-  const versions = [...lock.matchAll(/name = "rustls-webpki"\nversion = "([^"]+)"/g)].map((m) => m[1]);
-  assert.ok(versions.length > 0);
-  for (const version of versions) assert.ok(semver.gte(version, '0.103.16'), `rustls-webpki@${version}`);
-});
-
-it('shell-quote rejects a line terminator after a comment token', () => {
-  const { quote } = require('shell-quote');
-  assert.throws(() => quote(['echo', 'ok', { comment: 'x' }, 'a\nid;#']), TypeError);
-  assert.equal(quote(['echo', 'a b']), "echo 'a b'");
 });

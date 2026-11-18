@@ -245,7 +245,7 @@ export default async function handler(req, ctx) {
     (submittedLegacyKey(body.widgetKey) && !(await isValidWidgetKey(widgetKey))) ||
     (submittedLegacyKey(body.proKey) && !(await isValidProKey(proKey)))
   ) {
-    // The browser matches this exact body (src/services/wm-session.ts,
+    // The browser matches this exact body (packages/client/services/wm-session.ts,
     // KEY_REJECTED_ERROR) to decide a legacy key is revoked and clear it.
     return respond({ error: 'Invalid session key' }, 401, cors, 'auth_401');
   }

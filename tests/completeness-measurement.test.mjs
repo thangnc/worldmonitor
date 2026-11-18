@@ -221,7 +221,7 @@ describe('server catalog extraction (#4920a)', () => {
 
 describe('coverage-ledger and provenance wiring (source-textual)', () => {
   it('digest counts every drop gate and publishes the ledger', () => {
-    const src = readSrc('server/worldmonitor/news/v1/list-feed-digest.ts');
+    const src = readSrc('packages/server/worldmonitor/news/v1/list-feed-digest.ts');
     assert.match(src, /droppedFeedCap = Math\.max\(0, matches\.length - ITEMS_PER_FEED\)/);
     // #7084: counted off the post-revocation `servable` list, not the raw one —
     // a revoked item must not occupy a cap slot NOR be counted as having
@@ -231,14 +231,10 @@ describe('coverage-ledger and provenance wiring (source-textual)', () => {
     assert.match(src, /news:coverage-ledger:v1/);
   });
 
-  it('insights payload carries provenance and the panel renders it', () => {
+  it('insights payload carries provenance', () => {
     const seedSrc = readSrc('scripts/seed-insights.mjs');
     assert.match(seedSrc, /storiesConsidered: normalizedItems\.length/);
     assert.match(seedSrc, /selectTopStories\(clusters, 8, selectionStats\)/);
-    const panelSrc = readSrc('src/components/InsightsPanel.ts');
-    assert.match(panelSrc, /components\.insights\.compiledFrom/);
-    const en = JSON.parse(readSrc('src/locales/en.json'));
-    assert.match(en.components.insights.compiledFrom, /\{\{stories\}\}.*\{\{sources\}\}/);
   });
 
   it('both completeness keys are registered in health surfaces', () => {
@@ -271,11 +267,11 @@ import { publishFeedHealth } from '../scripts/validate-rss-feeds.mjs';
 import { getOptionalUpstashCreds } from '../scripts/_upstash-rest.mjs';
 
 describe('validator reads the URLs the views serve (#4927 review)', () => {
-  // The validator reads shared/news-catalog.json without executing app code.
+  // The validator reads packages/shared/news-catalog.json without executing app code.
   // Its extraction must equal what the server digest and the browser fetch,
   // or the health report validates URLs nobody requests (or skips ones they do).
   it('extractServerFeeds equals the server view', async () => {
-    const { buildServerVariantFeeds, buildServerIntelSources } = await import('../shared/news-catalog.ts');
+    const { buildServerVariantFeeds, buildServerIntelSources } = await import('../packages/shared/news-catalog.ts');
     const served = new Set([
       ...Object.values(buildServerVariantFeeds()).flatMap((byCategory) => Object.values(byCategory).flat()),
       ...buildServerIntelSources(),
@@ -287,7 +283,7 @@ describe('validator reads the URLs the views serve (#4927 review)', () => {
   });
 
   it('extractFeeds equals the browser view', async () => {
-    const { NEWS_CATALOG, buildBrowserCategoryFeeds, buildBrowserIntelSources } = await import('../shared/news-catalog.ts');
+    const { NEWS_CATALOG, buildBrowserCategoryFeeds, buildBrowserIntelSources } = await import('../packages/shared/news-catalog.ts');
     const urls = new Set();
     const add = (url) => (typeof url === 'string' ? urls.add(url) : Object.values(url).forEach((href) => urls.add(href)));
     for (const edition of Object.keys(NEWS_CATALOG.layout.browser)) {
@@ -450,7 +446,7 @@ describe('locale integrity for provenance keys (#4927 review)', () => {
   it('every parity-tested locale carries compiledFrom with double-brace tokens', () => {
     const fs = readdirSyncLocales();
     for (const file of fs) {
-      const d = JSON.parse(readSrc(`src/locales/${file}`));
+      const d = JSON.parse(readSrc(`packages/client/locales/${file}`));
       const val = d?.components?.insights?.compiledFrom;
       assert.ok(typeof val === 'string' && val.length > 0, `${file} missing compiledFrom`);
       assert.ok(val.includes('{{stories}}') && val.includes('{{sources}}'),
@@ -461,7 +457,7 @@ describe('locale integrity for provenance keys (#4927 review)', () => {
 
 import { readdirSync } from 'node:fs';
 function readdirSyncLocales() {
-  return readdirSync(resolve(root, 'src/locales'))
+  return readdirSync(resolve(root, 'packages/client/locales'))
     .filter((f) => f.endsWith('.json') && f !== 'en.shell.json');
 }
 

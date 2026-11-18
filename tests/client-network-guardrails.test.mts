@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const srcRoot = join(repoRoot, 'src');
+const browserRoots = [join(repoRoot, 'apps/web/src'), join(repoRoot, 'packages/client')];
 const githubApiUrlPattern = /https?:\/\/api\.github\.com\b/;
 
 async function* walk(dir: string): AsyncGenerator<string> {
@@ -22,7 +22,7 @@ async function* walk(dir: string): AsyncGenerator<string> {
 
 test('browser client does not call unauthenticated GitHub REST endpoints directly', async () => {
   const offenders: string[] = [];
-  for await (const file of walk(srcRoot)) {
+  for (const root of browserRoots) for await (const file of walk(root)) {
     const source = await readFile(file, 'utf8');
     // Scope this to browser source. Server/API code may call GitHub with a
     // token or cache; anonymous browser loads must not hit GitHub REST.

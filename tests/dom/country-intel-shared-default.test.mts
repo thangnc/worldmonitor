@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getCountryIntelBrief } from '../../server/worldmonitor/intelligence/v1/get-country-intel-brief';
+import { getCountryIntelBrief } from '../../packages/server/worldmonitor/intelligence/v1/get-country-intel-brief';
 
 const harness = vi.hoisted(() => ({
   entries: new Map<string, unknown>(),
@@ -9,7 +9,7 @@ const harness = vi.hoisted(() => ({
   llm: vi.fn(),
 }));
 
-vi.mock('../../server/_shared/redis', () => ({
+vi.mock('../../packages/server/_shared/redis', () => ({
   getCachedJson: async (key: string) => structuredClone(harness.entries.get(key) ?? null),
   setCachedJsonIfAbsent: async (key: string, value: unknown) => {
     if (!harness.writeAvailable || harness.entries.has(key)) return false;
@@ -26,10 +26,10 @@ vi.mock('../../server/_shared/redis', () => ({
     return value;
   },
 }));
-vi.mock('../../server/_shared/premium-check', () => ({ isCallerPremium: async () => harness.premium }));
-vi.mock('../../server/_shared/llm', () => ({ callLlm: (...args: unknown[]) => harness.llm(...args) }));
-vi.mock('../../server/worldmonitor/intelligence/v1/_country-brief-evidence', () => ({ buildCountryBriefEvidence: async () => [], readCountryAirportNotams: async () => [] }));
-vi.mock('../../server/worldmonitor/intelligence/v1/_country-brief-context', async importOriginal => ({
+vi.mock('../../packages/server/_shared/premium-check', () => ({ isCallerPremium: async () => harness.premium }));
+vi.mock('../../packages/server/_shared/llm', () => ({ callLlm: (...args: unknown[]) => harness.llm(...args) }));
+vi.mock('../../packages/server/worldmonitor/intelligence/v1/_country-brief-evidence', () => ({ buildCountryBriefEvidence: async () => [], readCountryAirportNotams: async () => [] }));
+vi.mock('../../packages/server/worldmonitor/intelligence/v1/_country-brief-context', async importOriginal => ({
   ...await importOriginal<object>(),
   fetchSharedCountryContext: (...args: unknown[]) => harness.context(...args),
 }));

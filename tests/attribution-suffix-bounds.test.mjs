@@ -1,8 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { stripAttributionSuffix } from '../shared/story-identity.js';
-import { classifyEphemeralLiveCoverage } from '../shared/ephemeral-live-classifier.js';
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest.ts';
+import { stripAttributionSuffix } from '../packages/shared/story-identity.js';
+import { classifyEphemeralLiveCoverage } from '../packages/shared/ephemeral-live-classifier.js';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest.ts';
 
 const { normalizeTitle } = __testing__;
 const FAST_MS = 50;

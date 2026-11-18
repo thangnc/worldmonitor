@@ -9,7 +9,7 @@ import {
   EDUCATION_PRIORITY_UTC_HOUR,
   orderMacroSections,
 } from '../scripts/_macro-bundle-order.mjs';
-import { PHYSICAL_DIVERGENCE_PAPER_MAX_AGE_MS } from '../shared/physical-divergence-staleness.js';
+import { PHYSICAL_DIVERGENCE_PAPER_MAX_AGE_MS } from '../packages/shared/physical-divergence-staleness.js';
 
 const root = resolve(import.meta.dirname, '..');
 const read = (path) => readFileSync(resolve(root, path), 'utf8');

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveBootstrapRegistry } from '../shared/bootstrap-tier-keys.js';
+import { resolveBootstrapRegistry } from '../packages/shared/bootstrap-tier-keys.js';
 
 const require = createRequire(import.meta.url);
 const {
@@ -17,10 +17,10 @@ const walk = dir => readdirSync(dir).flatMap(name => {
   const path = join(dir, name);
   return statSync(path).isDirectory() ? walk(path) : [path];
 });
-const generatedGetRoutes = walk(join(root, 'src/generated/server'))
+const generatedGetRoutes = walk(join(root, 'packages/contracts/generated/server'))
   .flatMap(file => [...readFileSync(file, 'utf8').matchAll(/method: "GET",\s*path: "(\/api\/[^"]+)"/g)])
   .map(match => match[1]);
-const premiumPaths = new Set([...read('src/shared/premium-paths.ts').matchAll(/'(\/api\/[^']+)'/g)].map(m => m[1]));
+const premiumPaths = new Set([...read('packages/client/shared/premium-paths.ts').matchAll(/'(\/api\/[^']+)'/g)].map(m => m[1]));
 
 describe('widget data request boundary', () => {
   it('preserves repeated scorecard bloc members advertised to the agent', () => {

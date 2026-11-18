@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { INDICATOR_REGISTRY } from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
+import { INDICATOR_REGISTRY } from '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
 import {
   decideIndicatorRawRedistribution,
   getIndicatorSourcePolicy,
   getObservedSourceDisplayMetadata,
   INDICATOR_SOURCE_POLICIES,
-} from '../server/worldmonitor/resilience/v1/_indicator-source-policy.ts';
-import { wgiObservationSource } from '../shared/wgi-source-provenance.js';
+} from '../packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts';
+import { wgiObservationSource } from '../packages/shared/wgi-source-provenance.js';
 
 const worldBank = (indicatorId: string) => ({
   providerName: 'World Bank Open Data',

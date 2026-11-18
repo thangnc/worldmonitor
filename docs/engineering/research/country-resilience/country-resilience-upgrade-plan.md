@@ -103,7 +103,7 @@ citation-grade index and a live operational monitor as one object"*.)
   of the scorer code + retrieval date + URL + SHA of every third-party file
   used.
 - Reproducibility script under
-  `docs/methodology/country-resilience-index/reference-edition/2026/recompute.mts`
+  `docs/engineering/methodology/country-resilience-index/reference-edition/2026/recompute.mts`
   that regenerates the sampled published score-cache values from the manifest.
 - Published as signed JSON + CSV + methodology PDF.
 - **This is what external citations point at.**
@@ -232,11 +232,11 @@ intervals, change attribution, external expert review).
 - **13 dimensions across 5 weighted domains**, final aggregation is a
   domain-weighted average. Domain weights today: economic 0.22, infrastructure
   0.20, energy 0.15, social-governance 0.25, health-food 0.18.
-  Source: `server/worldmonitor/resilience/v1/_dimension-scorers.ts`,
-  `server/worldmonitor/resilience/v1/_shared.ts:~200`.
+  Source: `packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts`,
+  `packages/server/worldmonitor/resilience/v1/_shared.ts:~200`.
 - **RPC handlers:** `GetResilienceScore(countryCode)` and
   `GetResilienceRanking()` under
-  `server/worldmonitor/resilience/v1/{get-resilience-score.ts, get-resilience-ranking.ts, handler.ts}`.
+  `packages/server/worldmonitor/resilience/v1/{get-resilience-score.ts, get-resilience-ranking.ts, handler.ts}`.
 - **Cache keys** (all in `_shared.ts`): `resilience:score:v7:<cc>` (6h),
   `resilience:ranking:v8` (6h, written only when all countries scored),
   `resilience:history:v4:<cc>` (daily sorted set, 30-day retention),
@@ -254,7 +254,7 @@ intervals, change attribution, external expert review).
   `scripts/validate-resilience-sensitivity.mjs`. Phase 2's benchmark suite
   extends these, it does not replace them.
 - **Statistical utilities** (reusable, pure functions) in
-  `server/_shared/resilience-stats.ts`: `minMaxNormalize`, `cronbachAlpha`,
+  `packages/server/_shared/resilience-stats.ts`: `minMaxNormalize`, `cronbachAlpha`,
   `detectTrend`, `detectChangepoints` (CUSUM), `exponentialSmoothing`,
   `nrcForecast`.
 - **Confidence surfaces today** (schema): `coverage`, `observedWeight`,
@@ -288,13 +288,13 @@ intervals, change attribution, external expert review).
 
 - **New RPCs:** define message in `proto/worldmonitor/<domain>/`, add RPC with
   `(sebuf.http.config)` annotation, `make generate`, create handler in
-  `server/worldmonitor/<domain>/`, wire in domain's `handler.ts`, use
+  `packages/server/worldmonitor/<domain>/`, wire in domain's `handler.ts`, use
   `cachedFetchJson()` with request-varying params in the cache key.
 - **4-file bootstrap wiring** for any new globally-bootstrapped RPC:
-  `server/_shared/cache-keys.ts`, `api/bootstrap.js`, `api/health.js`
-  (`SEED_META` registry, not `SEED_DOMAINS`), `server/_shared/gateway.ts`.
+  `packages/server/_shared/cache-keys.ts`, `api/bootstrap.js`, `api/health.js`
+  (`SEED_META` registry, not `SEED_DOMAINS`), `packages/server/_shared/gateway.ts`.
 - **Edge functions** (`api/*.js`) are self-contained JS only; cannot import
-  from `src/` or `server/`. Enforced by `tests/edge-functions.test.mjs` +
+  from `src/` or `packages/server/`. Enforced by `tests/edge-functions.test.mjs` +
   pre-push esbuild check.
 - **World coverage is non-negotiable**, no country subsets, no
   `MAJOR_REPORTERS`-style allowlists (repo memory: "world_coverage_never_subset").
@@ -508,7 +508,7 @@ values in this repo.
   a review flag because it can mean the index adds little new information.
 - Wrong-sign or below-minimum correlation fails the generation run. Meaningful
   divergences are investigated and annotated in
-  `docs/methodology/country-resilience-index/benchmark-outliers.md`.
+  `docs/engineering/methodology/country-resilience-index/benchmark-outliers.md`.
 - The outlier commentary is **part of the product**: analysts trust indices
   that explain their disagreements, not ones that hide them.
 - The benchmark **does not** publish a single pass/fail number. Each of the
@@ -553,7 +553,7 @@ top-50 country by more than 5 rank positions.
 
 All three scripts run as Railway cron jobs (weekly, bundled if service count
 is a concern, memory: `railway_seed_bundle_pattern`) and publish results to
-`docs/methodology/country-resilience-index/validation/*.json`, committed and
+`docs/engineering/methodology/country-resilience-index/validation/*.json`, committed and
 version-controlled so history is auditable.
 
 ### Explanatory product (Phase 3)
@@ -629,9 +629,9 @@ methodology page and reproduce any country score from the Redis cache keys.
   doc linter (checks every dimension in registry has a subsection in the
   mdx), `data_version` round-trip, imputation-class plumbing.
 - **T1.9** Bootstrap + health wiring: if T1.2 introduces new cache keys,
-  update `server/_shared/cache-keys.ts`, `api/bootstrap.js`, `api/health.js`
+  update `packages/server/_shared/cache-keys.ts`, `api/bootstrap.js`, `api/health.js`
   `SEED_META` (memory: `health_js_registry_names`), and
-  `server/_shared/gateway.ts` per the 4-file checklist.
+  `packages/server/_shared/gateway.ts` per the 4-file checklist.
   T1.9 shipped in PR #2965 as a cache-key / health-registry sync test
   + Phase 1 scorecard close-out. No cache-key bumps were needed in
   Phase 1 because every schema addition was additive with default
@@ -681,7 +681,7 @@ sensitivity suite, new indicators live.
   retired from public artifacts.
   Output: Spearman + Pearson, outlier list, stored as
   `resilience:benchmark:external:v1` and committed JSON under
-  `docs/methodology/country-resilience-index/validation/`.
+  `docs/engineering/methodology/country-resilience-index/validation/`.
 - **T2.5** Outcome backtest script
   `scripts/backtest-resilience-outcomes.mjs`. Define event set,
   hold-out 2024-2025, compute AUC, target 0.75 with a 0.03 gate width.
@@ -799,7 +799,7 @@ tools.
   cycle.
 - **T3.11** First cut of the **2026 Reference Edition** shipped as a signed
   JSON + CSV + PDF bundle under
-  `docs/methodology/country-resilience-index/reference-edition/2026/` with a
+  `docs/engineering/methodology/country-resilience-index/reference-edition/2026/` with a
   reproducibility script and country-sliced snapshot manifest.
 
 **Phase 3 acceptance:**
@@ -1075,7 +1075,7 @@ gap: *"the licensing section is too loose"*.)
 2. **Attribution templates** for every comparator-touching artifact
    (benchmark JSON, outlier commentary, methodology page). Enforced by a
    linter that checks for attribution headers on any file under
-   `docs/methodology/country-resilience-index/validation/`.
+   `docs/engineering/methodology/country-resilience-index/validation/`.
 3. **License headers** on every file in that directory declaring the
    upstream comparator license.
 4. **FSI carve-out**: public artifacts redact FSI values. Internal
@@ -1143,9 +1143,9 @@ are complete.
 
 - `docs/methodology/country-resilience-index.mdx`, the canonical methodology
   page, promoted from current draft in Phase 1.
-- `docs/methodology/country-resilience-index/benchmark-outliers.md`, outlier
+- `docs/engineering/methodology/country-resilience-index/benchmark-outliers.md`, outlier
   commentary, updated per cross-index run.
-- `docs/methodology/country-resilience-index/validation/`, JSON artifacts
+- `docs/engineering/methodology/country-resilience-index/validation/`, JSON artifacts
   from weekly Railway cron, committed so the history is auditable.
 - `docs/api/ResilienceService.openapi.yaml`, schema v2.0, with v1.0 fields
   marked deprecated during the transition window.
@@ -1164,14 +1164,14 @@ are complete.
 
 ### Internal references
 
-- `server/worldmonitor/resilience/v1/_dimension-scorers.ts`, 13 dimension
+- `packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts`, 13 dimension
   scorers, ~1073 lines.
-- `server/worldmonitor/resilience/v1/_shared.ts`, aggregation, confidence,
+- `packages/server/worldmonitor/resilience/v1/_shared.ts`, aggregation, confidence,
   cache keys (~line 200 onwards).
-- `server/worldmonitor/resilience/v1/get-resilience-score.ts`
-- `server/worldmonitor/resilience/v1/get-resilience-ranking.ts`
-- `server/worldmonitor/resilience/v1/handler.ts`
-- `server/_shared/resilience-stats.ts`, statistical utilities (Cronbach,
+- `packages/server/worldmonitor/resilience/v1/get-resilience-score.ts`
+- `packages/server/worldmonitor/resilience/v1/get-resilience-ranking.ts`
+- `packages/server/worldmonitor/resilience/v1/handler.ts`
+- `packages/server/_shared/resilience-stats.ts`, statistical utilities (Cronbach,
   CUSUM, forecast).
 - `scripts/seed-resilience-static.mjs`, 11 slots, ~920 lines.
 - `scripts/_resilience-intervals.mjs`, shared interval helpers.
@@ -1181,7 +1181,7 @@ are complete.
 - `src/components/ResilienceWidget.ts` + `src/components/resilience-widget-utils.ts`
 - `docs/api/ResilienceService.openapi.yaml`
 - `docs/methodology/resilience-index.md`, current draft (to be promoted).
-- `docs/country-instability-index.mdx`, CII reference template.
+- `docs/engineering/methodology/country-instability-index.md`, CII reference template.
 - `docs/plans/2026-03-29-feat-country-resilience-score-plan.md`, v1 plan.
 - `docs/plans/2026-04-07-002-fix-resilience-v3-phase1-coverage-correctness-plan.md`
 - `docs/plans/2026-04-09-001-fix-resilience-overall-score-formula-plan.md`

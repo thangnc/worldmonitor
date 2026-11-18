@@ -61,7 +61,7 @@ import {
 } from './_llm-model-timeouts.mjs';
 // Import from the scripts mirror (`scripts/shared/`) — NOT the repo-root
 // `shared/`. Railway services with nixpacks `rootDirectory=scripts` only
-// package files under scripts/; a `../shared/` import resolves to
+// package files under scripts/; a `../packages/shared/` import resolves to
 // `/shared/...` at runtime which is absent in the container and crashes
 // the seeder on startup. The local pattern is the `./shared/geo-extract.mjs`
 // line above. PR #3836 review caught this. See skill
@@ -429,7 +429,7 @@ async function readExistingInsights() {
   return data.result ? unwrapEnvelope(JSON.parse(data.result)).data : null;
 }
 
-// Provider config — mirrors server/_shared/llm.ts getProviderCredentials()
+// Provider config — mirrors packages/server/_shared/llm.ts getProviderCredentials()
 // Order: Ollama → paid OpenRouter → two fixed free OpenRouter models.
 // Each free model stays a separate application-validated attempt.
 const LLM_PROVIDERS = [
@@ -667,7 +667,7 @@ async function callLLM(headline, options = {}) {
         }
         if (!accepted) {
           if (!faulted) console.warn(`  ${provider.name}: output rejected by caller gates`);
-          // `validate_reject` is the shared vocabulary from server/_shared/usage.ts,
+          // `validate_reject` is the shared vocabulary from packages/server/_shared/usage.ts,
           // so these unify with the Vercel-side llm_call stream in one query.
           record(false, { ...usage, model: json.model || model, reason: 'validate_reject' });
           if (faulted) { if (!firstFaulted) firstFaulted = candidate; }

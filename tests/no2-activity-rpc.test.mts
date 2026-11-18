@@ -13,7 +13,7 @@ import {
   NO2_ACTIVITY_MAX_STALE_MINUTES,
   NO2_ACTIVITY_REASON,
   getNo2Activity,
-} from '../server/worldmonitor/economic/v1/get-no2-activity.ts';
+} from '../packages/server/worldmonitor/economic/v1/get-no2-activity.ts';
 import { no2ActivityDataset } from './helpers/no2-activity-fixture.mjs';
 
 const originalFetch = globalThis.fetch;

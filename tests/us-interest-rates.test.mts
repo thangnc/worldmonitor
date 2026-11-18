@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { getUsInterestRates } from '../server/worldmonitor/economic/v1/get-us-interest-rates.ts';
-import { createEconomicServiceRoutes } from '../src/generated/server/worldmonitor/economic/v1/service_server.ts';
+import { getUsInterestRates } from '../packages/server/worldmonitor/economic/v1/get-us-interest-rates.ts';
+import { createEconomicServiceRoutes } from '../packages/contracts/generated/server/worldmonitor/economic/v1/service_server.ts';
 import {
   RATE_SERIES as SERVER_SERIES,
   RATES_CANONICAL_KEY,
@@ -11,7 +11,7 @@ import {
   mergeRateHistories,
   normalizeRatePoints,
   rateSeriesDecadeKey,
-} from '../server/worldmonitor/economic/v1/us-interest-rates.ts';
+} from '../packages/server/worldmonitor/economic/v1/us-interest-rates.ts';
 import {
   RATE_SERIES as SEEDED_SERIES,
   RATES_CANONICAL_KEY as SEEDED_KEY,

@@ -95,7 +95,7 @@ describe('Makefile generate target — plugin path resolution', () => {
     // `make install-plugins`. Guarding only one plugin would let buf
     // fall through to a stale copy of the OTHERS on the normal PATH
     // and recreate the mixed-version bug this PR is meant to prevent.
-    // The list here must stay in sync with proto/buf.gen.yaml.
+    // The list here must stay in sync with packages/contracts/proto/buf.gen.yaml.
     const required = ['protoc-gen-ts-client', 'protoc-gen-ts-server', 'protoc-gen-openapiv3'];
     for (const bin of required) {
       // The guard iterates a shell `for` loop, so the literal plugin
@@ -121,12 +121,12 @@ describe('Makefile generate target — plugin path resolution', () => {
   });
 
   test('plugin guard list covers every plugin declared in buf.gen.yaml', () => {
-    // Cross-reference proto/buf.gen.yaml plugin entries against the
+    // Cross-reference packages/contracts/proto/buf.gen.yaml plugin entries against the
     // Makefile's guard list. If buf.gen.yaml ever adds a new `local:`
     // plugin (e.g. a future protoc-gen-*), the guard must grow too —
     // otherwise the new binary can silently fall through to a stale
     // PATH copy.
-    const BUF_GEN = readFileSync(resolve(__dirname, '../proto/buf.gen.yaml'), 'utf-8');
+    const BUF_GEN = readFileSync(resolve(__dirname, '../packages/contracts/proto/buf.gen.yaml'), 'utf-8');
     const declared = new Set();
     for (const m of BUF_GEN.matchAll(/^\s*-\s*local:\s*(\S+)\s*$/gm)) {
       declared.add(m[1]);
@@ -194,18 +194,26 @@ describe('Makefile generate target — plugin path resolution', () => {
     // so the prepend only fires as a fallback when buf has no other
     // candidate.
     const HOOK = readFileSync(resolve(__dirname, '../.husky/pre-push'), 'utf-8');
-    // Locate the proto-freshness block by its echo line.
-    const start = HOOK.indexOf('Running proto freshness check');
-    assert.ok(start >= 0, 'pre-push hook must contain the proto-freshness block');
+    // Locate the proto-freshness block by its changed-path gate.
+    const start = HOOK.search(/changed '\^\(packages\/contracts\/proto\/\|Makefile\$\)'/);
+    assert.ok(start >= 0, 'pre-push hook must contain the proto-freshness block (gated on packages/contracts/proto/ or Makefile changes)');
     const block = HOOK.slice(start, start + 2000);
-    // The prepend MUST be gated on `! command -v buf` so it only fires
-    // when buf has no other candidate. Any `export PATH="$HOME/go/bin:$PATH"`
-    // inside this block must appear inside an `if ! command -v buf ...`
-    // arm — never directly under the block or under a bare `if command -v buf`.
+    // The block must use the caller's buf: it checks `command -v buf` and only
+    // then runs `make generate`, which itself resolves buf via `command -v buf`.
     assert.match(
       block,
-      /if\s+!\s+command\s+-v\s+buf[^\n]*\n[^\n]*export PATH="\$HOME\/go\/bin:\$PATH"/,
-      'pre-push hook must gate the $HOME/go/bin prepend on `! command -v buf` so it only fires as a fallback — ' +
+      /command\s+-v\s+buf[\s\S]*make generate/,
+      'pre-push proto block must check `command -v buf` before running `make generate`',
+    );
+    // Any `export PATH="$HOME/go/bin:$PATH"` anywhere in the hook must sit
+    // inside an `if ! command -v buf ...` arm, so it only fires as a fallback;
+    // otherwise a stale ~/go/bin/buf would shadow the caller's preferred buf.
+    const prependRe = /export PATH="\$HOME\/go\/bin:\$PATH"/g;
+    const gatedRe = /if\s+!\s+command\s+-v\s+buf[^\n]*\n[^\n]*export PATH="\$HOME\/go\/bin:\$PATH"/g;
+    assert.equal(
+      (HOOK.match(prependRe) ?? []).length,
+      (HOOK.match(gatedRe) ?? []).length,
+      'pre-push hook must gate every $HOME/go/bin prepend on `! command -v buf` so it only fires as a fallback — ' +
       'otherwise a stale ~/go/bin/buf would shadow the caller\'s preferred buf binary',
     );
     // Explicit regression guard for the PRIOR buggy pattern that this
@@ -214,7 +222,7 @@ describe('Makefile generate target — plugin path resolution', () => {
     // which ALWAYS prepended whenever buf was reachable anywhere —
     // exactly the stale-buf-wins failure mode.
     assert.ok(
-      !/if\s+command\s+-v\s+buf[^\n]*\|\|\s*\[\s*-x\s+"\$HOME\/go\/bin\/buf"\s*\][^\n]*;\s*then\s*\n\s*export PATH="\$HOME\/go\/bin:\$PATH"/.test(block),
+      !/if\s+command\s+-v\s+buf[^\n]*\|\|\s*\[\s*-x\s+"\$HOME\/go\/bin\/buf"\s*\][^\n]*;\s*then\s*\n\s*export PATH="\$HOME\/go\/bin:\$PATH"/.test(HOOK),
       'pre-push hook must not use the old `buf-on-PATH-OR-at-~/go/bin -> prepend` pattern — it shadowed Homebrew buf with stale go-install buf',
     );
   });

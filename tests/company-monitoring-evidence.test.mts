@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 import {
   COMPANY_MONITORING_EVIDENCE_POLICY,
   normalizeCompanyEvidence,
-} from "../shared/company-monitoring-evidence";
+} from "../packages/shared/company-monitoring-evidence";
 
 type Json = Record<string, any>;
 

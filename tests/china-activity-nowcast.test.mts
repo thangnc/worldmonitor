@@ -13,7 +13,7 @@ import {
   parseChinaActivityNowcastWirePayload,
   type ChinaActivityOfficialObservation,
   type ChinaActivityProxyObservation,
-} from '../shared/china-activity-nowcast';
+} from '../packages/shared/china-activity-nowcast';
 
 const EVALUATED_AT = '2026-07-25T12:00:00.000Z';
 

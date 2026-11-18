@@ -266,8 +266,8 @@ describe('defense-patents deployment wiring', () => {
   it('keeps the empty abstract compatibility contract explicit in generated API docs', () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const root = join(here, '..');
-    const proto = readFileSync(join(root, 'proto/worldmonitor/military/v1/list_defense_patents.proto'), 'utf8');
-    const openapi = JSON.parse(readFileSync(join(root, 'docs/api/MilitaryService.openapi.json'), 'utf8'));
+    const proto = readFileSync(join(root, 'packages/contracts/proto/worldmonitor/military/v1/list_defense_patents.proto'), 'utf8');
+    const openapi = JSON.parse(readFileSync(join(root, 'packages/contracts/openapi/MilitaryService.openapi.json'), 'utf8'));
     const abstractSchema = openapi.components.schemas.DefensePatentFiling.properties.abstract;
     const responseExample = openapi.paths['/api/military/v1/list-defense-patents']
       .get.responses['200'].content['application/json'].example;
@@ -279,7 +279,7 @@ describe('defense-patents deployment wiring', () => {
 
   it('does not attribute any app locale to the retired PatentsView source', () => {
     const here = dirname(fileURLToPath(import.meta.url));
-    const localeDir = join(here, '..', 'src', 'locales');
+    const localeDir = join(here, '..', 'packages', 'client', 'locales');
     const localeFiles = readdirSync(localeDir).filter((file) => file.endsWith('.json'));
 
     for (const file of localeFiles) {

@@ -37,7 +37,7 @@ const COMPUTE_BUDGET_MS = 45_000;
 
 /**
  * Inline copy of SCENARIO_TEMPLATES (no TypeScript import).
- * Keep in sync with server/worldmonitor/supply-chain/v1/scenario-templates.ts.
+ * Keep in sync with packages/server/worldmonitor/supply-chain/v1/scenario-templates.ts.
  * Worker only needs: id, affectedChokepointIds, disruptionPct, durationDays, affectedHs2, costShockMultiplier.
  *
  * @type {Array<{ id: string; affectedChokepointIds: string[]; disruptionPct: number; durationDays: number; affectedHs2: string[] | null; costShockMultiplier: number }>}

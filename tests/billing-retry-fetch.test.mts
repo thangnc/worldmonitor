@@ -1,5 +1,5 @@
 /**
- * Unit tests for `withBillingVerificationRetry` in src/services/billing-retry.ts.
+ * Unit tests for `withBillingVerificationRetry` in packages/client/services/billing-retry.ts.
  *
  * WORLDMONITOR-Z4: the gateway 503s a caller whose Convex entitlement lookup is
  * unavailable, and getEntitlements() negative-caches that failure per user — so
@@ -23,7 +23,7 @@ import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { withBillingVerificationRetry } from '@/services/billing-retry';
+import { withBillingVerificationRetry } from '@wm/client/services/billing-retry';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -274,7 +274,7 @@ describe('withBillingVerificationRetry', () => {
 // a "does the file mention withBillingVerificationRetry" check would not.
 // ---------------------------------------------------------------------------
 describe('runtime fetch-patch wiring', () => {
-  const runtimeSrc = readFileSync(join(REPO_ROOT, 'src/services/runtime.ts'), 'utf8');
+  const runtimeSrc = readFileSync(join(REPO_ROOT, 'packages/client/services/runtime.ts'), 'utf8');
 
   it('every window.fetch assignment in runtime.ts goes through the retry wrapper', () => {
     const allAssignments = runtimeSrc.match(/window\.fetch\s*=/g) ?? [];
@@ -301,23 +301,5 @@ describe('runtime fetch-patch wiring', () => {
     const webBody = runtimeSrc.slice(web);
     assert.match(desktopBody, /withBillingVerificationRetry\(/, 'desktop patch unwrapped');
     assert.match(webBody, /withBillingVerificationRetry\(/, 'web patch unwrapped');
-  });
-
-  it('premiumFetch no longer retries — exactly one layer may own the bound', () => {
-    // Two layers would double the bound to two attempts and ~10s of inline
-    // waiting, because premiumFetch dispatches through globalThis.fetch, which
-    // IS the wrapped patch in a browser.
-    //
-    // Assert on the IMPORT, not on a mention: premium-fetch.ts documents in
-    // prose where the retry went, and a naive text match flags that comment.
-    // The import is the real coupling — retrying there requires one.
-    const premiumSrc = readFileSync(join(REPO_ROOT, 'src/services/premium-fetch.ts'), 'utf8');
-    const imports = premiumSrc.match(/^\s*import\s[\s\S]*?from\s+'[^']+';/gm) ?? [];
-    const billingImport = imports.find((i) => i.includes('billing-retry'));
-    assert.equal(
-      billingImport,
-      undefined,
-      'premiumFetch must not re-introduce a second retry layer',
-    );
   });
 });

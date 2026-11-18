@@ -11,7 +11,7 @@ import {
   mentionsCountry,
   mentionsLocalizedCountry,
   normalizeMentionText,
-} from '../shared/country-mention.js';
+} from '../packages/shared/country-mention.js';
 
 const mentions = (code, text) => mentionsCountry(text, countryMentionTerms(code));
 

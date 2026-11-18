@@ -26,7 +26,7 @@ import { getCorsHeaders, isHostedAppOrigin } from './_cors.js';
 import { jsonResponse } from './_json-response.js';
 // @ts-expect-error — JS module, no declaration file
 import { issueSessionToken } from './_session.js';
-import { timingSafeEqual } from '../server/_shared/internal-auth';
+import { timingSafeEqual } from '../packages/server/_shared/internal-auth';
 
 type ProbeShape = 'envelope' | 'bare';
 
@@ -205,13 +205,12 @@ export async function checkProbe(spec: ProbeSpec): Promise<ProbeResult> {
 interface BoundaryCheck {
   endpoint: string;
   /** Optional: require a specific `X-*-Source` header value to prove the
-   *  intended code-path served the response (e.g. `'cache'` for product-catalog
-   *  so we know the enveloped-read path actually ran, not fallback). */
+   *  intended code-path served the response (e.g. `'cache'`, so we know the
+   *  enveloped-read path actually ran, not a fallback). */
   requireSourceHeader?: { name: string; value: string };
 }
 
 const BOUNDARY_CHECKS: BoundaryCheck[] = [
-  { endpoint: '/api/product-catalog', requireSourceHeader: { name: 'x-product-catalog-source', value: 'cache' } },
   { endpoint: '/api/bootstrap' },
 ];
 

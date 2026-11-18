@@ -109,7 +109,7 @@ const DEFAULT_PROVIDERS = [
 
 /**
  * Canonical empty narrative. Matches RegionalNarrative shape.
- * @returns {import('../../shared/regions.types.js').RegionalNarrative}
+ * @returns {import('../../packages/shared/regions.types.js').RegionalNarrative}
  */
 export function emptyNarrative() {
   return {
@@ -128,8 +128,8 @@ export function emptyNarrative() {
  * whitelist for parseNarrativeJson — otherwise the parser could accept
  * citations to IDs the model never saw (P2 review finding on #2960).
  *
- * @param {import('../../shared/regions.types.js').EvidenceItem[]} evidence
- * @returns {import('../../shared/regions.types.js').EvidenceItem[]}
+ * @param {import('../../packages/shared/regions.types.js').EvidenceItem[]} evidence
+ * @returns {import('../../packages/shared/regions.types.js').EvidenceItem[]}
  */
 export function selectPromptEvidence(evidence) {
   if (!Array.isArray(evidence)) return [];
@@ -144,8 +144,8 @@ export function selectPromptEvidence(evidence) {
  * flows into both the prompt and the parser's evidence whitelist.
  *
  * @param {{id: string, label: string, forecastLabel: string}} region
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} snapshot
- * @param {import('../../shared/regions.types.js').EvidenceItem[]} evidence
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} snapshot
+ * @param {import('../../packages/shared/regions.types.js').EvidenceItem[]} evidence
  * @returns {{ systemPrompt: string, userPrompt: string }}
  */
 export function buildNarrativePrompt(region, snapshot, evidence) {
@@ -242,7 +242,7 @@ export function buildNarrativePrompt(region, snapshot, evidence) {
  *
  * @param {unknown} raw
  * @param {Set<string>} validEvidenceIds
- * @returns {import('../../shared/regions.types.js').NarrativeSection}
+ * @returns {import('../../packages/shared/regions.types.js').NarrativeSection}
  */
 function coerceSection(raw, validEvidenceIds) {
   if (!raw || typeof raw !== 'object') return { text: '', evidence_ids: [] };
@@ -263,7 +263,7 @@ function coerceSection(raw, validEvidenceIds) {
  *
  * @param {string} text
  * @param {string[]} validEvidenceIds
- * @returns {{ narrative: import('../../shared/regions.types.js').RegionalNarrative, valid: boolean }}
+ * @returns {{ narrative: import('../../packages/shared/regions.types.js').RegionalNarrative, valid: boolean }}
  */
 export function parseNarrativeJson(text, validEvidenceIds) {
   const validSet = new Set(validEvidenceIds);
@@ -459,11 +459,11 @@ export async function callLlmDefault({ systemPrompt, userPrompt }, opts = {}) {
  * provider instead of short-circuiting the whole chain.
  *
  * @param {{ id: string, label: string, forecastLabel: string }} region
- * @param {import('../../shared/regions.types.js').RegionalSnapshot} snapshot
- * @param {import('../../shared/regions.types.js').EvidenceItem[]} evidence
+ * @param {import('../../packages/shared/regions.types.js').RegionalSnapshot} snapshot
+ * @param {import('../../packages/shared/regions.types.js').EvidenceItem[]} evidence
  * @param {{ callLlm?: (prompt: { systemPrompt: string, userPrompt: string }, opts?: { validate?: (text: string) => boolean }) => Promise<{ text: string, provider: string, model: string } | null> }} [opts]
  * @returns {Promise<{
- *   narrative: import('../../shared/regions.types.js').RegionalNarrative,
+ *   narrative: import('../../packages/shared/regions.types.js').RegionalNarrative,
  *   provider: string,
  *   model: string,
  * }>}

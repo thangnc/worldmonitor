@@ -8,7 +8,7 @@
  *
  * Symptom: Route Explorer renders "No modeled lane for this pair." for these
  * countries → DE because `computeLane` returns `noModeledLane: true` whenever
- * `sharedRoutes.length === 0` (server/.../get-route-explorer-lane.ts:233-234).
+ * `sharedRoutes.length === 0` (packages/server/.../get-route-explorer-lane.ts:233-234).
  *
  * Lock-down: every major Asian export-hub country with sea access must (a) share
  * at least one route with DE in the cluster JSON, AND (b) resolve to the
@@ -26,7 +26,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import COUNTRY_PORT_CLUSTERS from '../scripts/shared/country-port-clusters.json' with { type: 'json' };
-import { computeLane } from '../server/worldmonitor/supply-chain/v1/get-route-explorer-lane.ts';
+import { computeLane } from '../packages/server/worldmonitor/supply-chain/v1/get-route-explorer-lane.ts';
 
 const ASIAN_PORT_COUNTRIES = ['CN', 'HK', 'TW', 'JP', 'KR', 'SG', 'MY', 'ID', 'TH', 'VN', 'PH', 'IN'] as const;
 

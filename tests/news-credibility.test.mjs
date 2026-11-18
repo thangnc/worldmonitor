@@ -20,9 +20,9 @@ import {
   CREDIBILITY_TIER_SCORES,
   CREDIBILITY_WEIGHTS,
   computeCredibilityScore,
-} from '../shared/news-credibility.js';
-import { getSourcePropagandaRisk } from '../shared/source-provenance.ts';
-import { getSourceTier } from '../server/_shared/source-tiers.ts';
+} from '../packages/shared/news-credibility.js';
+import { getSourcePropagandaRisk } from '../packages/shared/source-provenance.ts';
+import { getSourceTier } from '../packages/server/_shared/source-tiers.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const readSrc = (rel) => readFileSync(resolve(root, rel), 'utf8');
@@ -157,8 +157,8 @@ describe('state-media vs wire — newsworthiness is not credibility', () => {
 });
 
 describe('digest wiring (source-textual)', () => {
-  const digestSrc = readSrc('server/worldmonitor/news/v1/list-feed-digest.ts');
-  const protoSrc = readSrc('proto/worldmonitor/news/v1/news_item.proto');
+  const digestSrc = readSrc('packages/server/worldmonitor/news/v1/list-feed-digest.ts');
+  const protoSrc = readSrc('packages/contracts/proto/worldmonitor/news/v1/news_item.proto');
 
   it('proto NewsItem has a credibility_score field distinct from importance_score', () => {
     assert.match(protoSrc, /int32 importance_score = 9;/);
@@ -183,31 +183,8 @@ describe('digest wiring (source-textual)', () => {
   });
 });
 
-describe('UI, API, and methodology surfaces', () => {
-  const panelSrc = readSrc('src/components/NewsPanel.ts');
-  const credDoc = readSrc('docs/methodology/news-credibility.mdx');
-  const digestDoc = readSrc('docs/methodology/news-digest-and-briefing.mdx');
-  const openApiYaml = readSrc('docs/api/NewsService.openapi.yaml');
-  const mcpCacheSrc = readSrc('api/mcp/registry/cache-tools.ts');
-  const mcpNlpSrc = readSrc('api/mcp/registry/nlp-tools.ts');
-
-  it('NewsPanel renders CRED badges and still sorts by importanceScore', () => {
-    assert.match(panelSrc, /renderCredibilityBadge\(item\.source, item\)/);
-    assert.match(panelSrc, /renderCredibilityBadge\(cluster\.primarySource/);
-    assert.match(panelSrc, /a\.importanceScore \?\? 0/);
-    assert.doesNotMatch(panelSrc, /sort\(\s*\(a, b\).*credibilityScore/s);
-  });
-
-  it('methodology page documents weights, high-risk cap, and distinctness', () => {
-    assert.match(credDoc, /Propaganda risk \| `0\.50`/);
-    assert.match(credDoc, /Source tier \| `0\.30`/);
-    assert.match(credDoc, /Independent corroboration \| `0\.20`/);
-    assert.match(credDoc, /capped at `40`/);
-    assert.match(credDoc, /substituted for newsworthiness/);
-    assert.match(digestDoc, /## Credibility Score/);
-    assert.match(digestDoc, /Propaganda risk \| `0\.50`/);
-    assert.match(digestDoc, /capped at `40`/);
-  });
+describe('API surface', () => {
+  const openApiYaml = readSrc('packages/contracts/openapi/NewsService.openapi.yaml');
 
   it('OpenAPI NewsItem.credibilityScore is distinct from importanceScore', () => {
     assert.match(openApiYaml, /credibilityScore:\n\s+type: integer/s);
@@ -216,13 +193,5 @@ describe('UI, API, and methodology surfaces', () => {
     assert.match(openApiYaml, /source tier × 30%/);
     assert.match(openApiYaml, /propaganda risk × 50%/);
     assert.match(openApiYaml, /independent\n\s+corroboration × 20%/s);
-  });
-
-  it('MCP get_news_intelligence and get_news_clusters expose credibilityScore', () => {
-    assert.match(mcpCacheSrc, /credibilityScore: \{ type: 'number'/);
-    assert.match(mcpNlpSrc, /credibilityScore: \{\n\s+type: 'number'/s);
-    assert.match(mcpNlpSrc, /const digestCredibilityScore = cluster\.credibilityScore/);
-    assert.match(mcpNlpSrc, /credibilityScore: Number\.isFinite\(digestCredibilityScore\)/);
-    assert.match(mcpNlpSrc, /: computeCredibilityScore\(\{/);
   });
 });

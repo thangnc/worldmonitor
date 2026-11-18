@@ -124,14 +124,14 @@ test('the RPC serves a seeded RU row and answers unavailable without a Yahoo req
     if (url.includes('/get/market%3Astock-index%3Av1%3ARU')) return new Response(JSON.stringify({ result: seeded }), { status: 200 });
     throw new Error(`unexpected request: ${url}`);
   };
-  const { getCountryStockIndex } = await import('../server/worldmonitor/market/v1/get-country-stock-index.ts');
+  const { getCountryStockIndex } = await import('../packages/server/worldmonitor/market/v1/get-country-stock-index.ts');
   const served = await getCountryStockIndex({}, { countryCode: 'RU' });
   assert.equal(served.available, true);
   assert.equal(served.symbol, 'IMOEX');
   assert.equal(served.currency, 'RUB');
 
   // A fresh module instance so the in-memory cache does not mask the miss.
-  const { getCountryStockIndex: freshHandler } = await import(`../server/worldmonitor/market/v1/get-country-stock-index.ts?miss=${Date.now()}`);
+  const { getCountryStockIndex: freshHandler } = await import(`../packages/server/worldmonitor/market/v1/get-country-stock-index.ts?miss=${Date.now()}`);
   seeded = null;
   requested.length = 0;
   const missed = await freshHandler({}, { countryCode: 'RU' });
@@ -173,7 +173,7 @@ test('the warmed non-Yahoo fallback expires after its one-hour TTL', async (t) =
   Date.now = () => clock;
   let seeded = JSON.stringify(buildMoexCountryStockIndexSnapshot(history([['2026-10-28', 2522.93]]), quote(), RU, FIXED_AT));
   globalThis.fetch = async () => Response.json({ result: seeded });
-  const { getCountryStockIndex } = await import(`../server/worldmonitor/market/v1/get-country-stock-index.ts?ttl=${clock}`);
+  const { getCountryStockIndex } = await import(`../packages/server/worldmonitor/market/v1/get-country-stock-index.ts?ttl=${clock}`);
   assert.equal((await getCountryStockIndex({}, { countryCode: 'RU' })).available, true);
   seeded = null;
   clock += 60 * 60 * 1000 - 1;

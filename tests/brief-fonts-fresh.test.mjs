@@ -9,16 +9,16 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { briefFontInputs } from '../scripts/brief-fonts/inputs.mjs';
-import { BRIEF_FONTS } from '../server/_shared/brief-fonts.generated.js';
-import { briefFontPlatform } from '../server/_shared/brief-font-platform.js';
-import { renderBriefMagazine } from '../server/_shared/brief-render.js';
-import { BRIEF_ENVELOPE_VERSION } from '../shared/brief-envelope.js';
+import { BRIEF_FONTS } from '../packages/server/_shared/brief-fonts.generated.js';
+import { briefFontPlatform } from '../packages/server/_shared/brief-font-platform.js';
+import { renderBriefMagazine } from '../packages/server/_shared/brief-render.js';
+import { BRIEF_ENVELOPE_VERSION } from '../packages/shared/brief-envelope.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const fontDir = path.join(root, 'public/assets/brief-fonts');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'scripts/brief-fonts/manifest.json'), 'utf8'));
 const current = briefFontInputs(root);
-const RERUN = 'Run `npm run brief-fonts:subset` and commit public/assets/brief-fonts, server/_shared/brief-fonts.generated.js and scripts/brief-fonts/manifest.json.';
+const RERUN = 'Run `npm run brief-fonts:subset` and commit public/assets/brief-fonts, packages/server/_shared/brief-fonts.generated.js and scripts/brief-fonts/manifest.json.';
 const PLATFORMS = ['apple-woff2', 'apple-woff', 'hinted', 'plain'];
 
 function parseRanges(list) {

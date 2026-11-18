@@ -5,9 +5,9 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
-import { createDomainGateway } from '../server/gateway.ts';
-import { getEnergyPrices } from '../server/worldmonitor/economic/v1/get-energy-prices.ts';
-import type { RouteDescriptor } from '../server/router.ts';
+import { createDomainGateway } from '../packages/server/gateway.ts';
+import { getEnergyPrices } from '../packages/server/worldmonitor/economic/v1/get-energy-prices.ts';
+import type { RouteDescriptor } from '../packages/server/router.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
@@ -196,39 +196,31 @@ describe('gateway RPC no-store contract', () => {
 });
 
 const PROTECTED_HIGH_TIER_EMPTY_HANDLERS = [
-  'server/worldmonitor/economic/v1/get-energy-prices.ts',
-  'server/worldmonitor/economic/v1/get-energy-capacity.ts',
-  'server/worldmonitor/economic/v1/get-crude-inventories.ts',
-  'server/worldmonitor/economic/v1/get-nat-gas-storage.ts',
-  'server/worldmonitor/economic/v1/list-fuel-prices.ts',
-  'server/worldmonitor/economic/v1/list-bigmac-prices.ts',
-  'server/worldmonitor/economic/v1/get-fao-food-price-index.ts',
-  'server/worldmonitor/economic/v1/get-bis-policy-rates.ts',
-  'server/worldmonitor/economic/v1/get-bis-exchange-rates.ts',
-  'server/worldmonitor/economic/v1/get-bis-credit.ts',
-  'server/worldmonitor/climate/v1/get-co2-monitoring.ts',
-  'server/worldmonitor/climate/v1/get-ocean-ice-data.ts',
-  'server/worldmonitor/climate/v1/list-climate-anomalies.ts',
-  'server/worldmonitor/climate/v1/list-climate-disasters.ts',
-  'server/worldmonitor/conflict/v1/list-ucdp-events.ts',
-  'server/worldmonitor/cyber/v1/list-cyber-threats.ts',
-  'server/worldmonitor/forecast/v1/get-forecasts.ts',
-  'server/worldmonitor/forecast/v1/get-forecast-scorecard.ts',
-  'server/worldmonitor/market/v1/list-defi-tokens.ts',
-  'server/worldmonitor/market/v1/list-ai-tokens.ts',
-  'server/worldmonitor/market/v1/list-other-tokens.ts',
-  'server/worldmonitor/research/v1/list-arxiv-papers.ts',
-  'server/worldmonitor/research/v1/list-hackernews-items.ts',
-  'server/worldmonitor/research/v1/list-trending-repos.ts',
-  'server/worldmonitor/military/v1/get-theater-posture.ts',
-  'server/worldmonitor/military/v1/list-defense-patents.ts',
+  'packages/server/worldmonitor/economic/v1/get-energy-prices.ts',
+  'packages/server/worldmonitor/economic/v1/get-energy-capacity.ts',
+  'packages/server/worldmonitor/economic/v1/get-crude-inventories.ts',
+  'packages/server/worldmonitor/economic/v1/get-nat-gas-storage.ts',
+  'packages/server/worldmonitor/economic/v1/list-fuel-prices.ts',
+  'packages/server/worldmonitor/economic/v1/list-bigmac-prices.ts',
+  'packages/server/worldmonitor/economic/v1/get-fao-food-price-index.ts',
+  'packages/server/worldmonitor/economic/v1/get-bis-policy-rates.ts',
+  'packages/server/worldmonitor/economic/v1/get-bis-exchange-rates.ts',
+  'packages/server/worldmonitor/economic/v1/get-bis-credit.ts',
+  'packages/server/worldmonitor/conflict/v1/list-ucdp-events.ts',
+  'packages/server/worldmonitor/cyber/v1/list-cyber-threats.ts',
+  'packages/server/worldmonitor/market/v1/list-defi-tokens.ts',
+  'packages/server/worldmonitor/market/v1/list-ai-tokens.ts',
+  'packages/server/worldmonitor/market/v1/list-other-tokens.ts',
+  'packages/server/worldmonitor/research/v1/list-arxiv-papers.ts',
+  'packages/server/worldmonitor/research/v1/list-hackernews-items.ts',
+  'packages/server/worldmonitor/research/v1/list-trending-repos.ts',
+  'packages/server/worldmonitor/military/v1/get-theater-posture.ts',
+  'packages/server/worldmonitor/military/v1/list-defense-patents.ts',
 ] as const;
 
-const HEALTHY_EMPTY_ALLOWLIST = new Set([
-  "server/worldmonitor/forecast/v1/get-forecasts.ts::{ forecasts: [], generatedAt: data.generatedAt || 0, degraded: false, stale: false, error: '' }",
-  "server/worldmonitor/forecast/v1/get-forecast-scorecard.ts::{ schemaVersion: 1, generatedAt: 0, rollingWindowDays: 180, methodology: '', totals: { entries: 0, resolved: 0, pending: 0, pendingJudge: 0, scored: 0, void: 0, voidRate: 0, publicationCoverage: 0, }, byDomain: [], byGenerationOrigin: [], calibration: [], publishedByDomain: [], receipts: [], familyOutcomes: [], degraded: false, stale: false, error: '', ...overrides, ...scorecardUnderAudit(forecastAccuracyAudit(seed, { stale: seedStale })), }",
-  "server/worldmonitor/climate/v1/list-climate-disasters.ts::{ disasters: [], pagination: { nextCursor: '', totalCount: allDisasters.length }, }",
-]);
+// Healthy-empty returns allowed to stay cacheable, keyed `path::snippet`. The
+// forecast and climate entries left with their gateways (Lite phase 1c).
+const HEALTHY_EMPTY_ALLOWLIST = new Set<string>();
 
 function propName(name: ts.PropertyName): string | null {
   if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text;
@@ -298,8 +290,8 @@ describe('high-tier bare-empty source guard', () => {
 });
 
 it('keeps generated RPC availability errors out of HTTP caches', async () => {
-  const { createSeismologyServiceRoutes, ApiError } = await import('../src/generated/server/worldmonitor/seismology/v1/service_server.ts');
-  const { serverOptions } = await import('../server/gateway.ts');
+  const { createSeismologyServiceRoutes, ApiError } = await import('../packages/contracts/generated/server/worldmonitor/seismology/v1/service_server.ts');
+  const { serverOptions } = await import('../packages/server/gateway.ts');
   const gateway = createDomainGateway(createSeismologyServiceRoutes({
     listEarthquakes: async () => { throw new ApiError(503, 'Seed unavailable', ''); },
   }, serverOptions));

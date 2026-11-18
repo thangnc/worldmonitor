@@ -4,9 +4,9 @@ import assert from 'node:assert/strict';
 import {
   buildDefenseIndustrialResponse,
   toDefenseIndustrialMetric,
-} from '../shared/defense-industrial-response.ts';
-import { validateGeneratedRequest } from '../server/request-validator.ts';
-import { isPublicSharedRpcRequest } from '../src/shared/public-rpc-cache.ts';
+} from '../packages/shared/defense-industrial-response.ts';
+import { validateGeneratedRequest } from '../packages/server/request-validator.ts';
+import { isPublicSharedRpcRequest } from '../packages/client/shared/public-rpc-cache.ts';
 
 describe('get-defense-industrial-base response mapping', () => {
   it('keeps World-Bank-only data available without claiming supplier data', () => {

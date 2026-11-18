@@ -58,7 +58,7 @@ const NOW = Date.parse('2026-07-26T13:30:00Z');
 // The seeder DERIVES its crisis coverage from this registry instead of duplicating
 // the codes, so these tests read the same file rather than restating them: a
 // hand-written expectation here would reintroduce the exact drift being fixed.
-const CRISIS_REGISTRY_PATH = new URL('../shared/crawlable-crises.json', import.meta.url);
+const CRISIS_REGISTRY_PATH = new URL('../packages/shared/crawlable-crises.json', import.meta.url);
 const CRISIS_REGISTRY_COUNTRIES = [...new Set(
   JSON.parse(readFileSync(CRISIS_REGISTRY_PATH, 'utf8'))
     .flatMap((crisis) => crisis.coverage.map((entry) => entry.code.toUpperCase())),

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { markLcpDebug } from '../src/utils/lcp-debug';
+import { markLcpDebug } from '../packages/client/utils/lcp-debug';
 
 type MarkRecord = { name: string };
 

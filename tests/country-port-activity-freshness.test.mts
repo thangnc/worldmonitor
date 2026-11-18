@@ -4,14 +4,14 @@ import { after, before, describe, it } from 'node:test';
 import type {
   GetCountryPortActivityRequest,
   ServerContext,
-} from '../src/generated/server/worldmonitor/intelligence/v1/service_server.ts';
+} from '../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server.ts';
 import {
   getCountryPortActivity,
   isCurrentPortActivityPayload,
   isServablePortActivityPayload,
   PORTWATCH_PORT_ACTIVITY_MAX_CACHE_AGE_MS,
   PORTWATCH_PORT_ACTIVITY_MAX_SERVE_AGE_MS,
-} from '../server/worldmonitor/intelligence/v1/get-country-port-activity.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/get-country-port-activity.ts';
 import { PORTWATCH_MAX_CACHE_AGE_MS } from '../scripts/_portwatch-content-freshness.mjs';
 
 const DAY = 86_400_000;

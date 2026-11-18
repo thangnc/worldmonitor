@@ -4,7 +4,7 @@
  * generated OpenAPI specs.
  *
  * RunScenario enqueues a background job and returns immediately; the runtime
- * (server/worldmonitor/scenario/v1/run-scenario.ts via the
+ * (packages/server/worldmonitor/scenario/v1/run-scenario.ts via the
  * setSuccessStatusOverride gateway side-channel) answers a successful enqueue
  * with 202 Accepted plus a Location header pointing at the GetScenarioStatus
  * poll endpoint — restoring the legacy pre-sebuf contract. The sebuf
@@ -30,7 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { eq, serialize } from './lib/openapi-codegen.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const CHECK = process.argv.includes('--check');
 
 // Async-enqueue operations. `locationExample` must mirror the curated

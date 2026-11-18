@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { lookupSanctionEntity } from '../server/worldmonitor/sanctions/v1/lookup-entity.ts';
+import { lookupSanctionEntity } from '../packages/server/worldmonitor/sanctions/v1/lookup-entity.ts';
 
 const index = [
   { id: 'SDN:1', name: 'Test Person', et: 'individual', cc: ['RU'], pr: ['SDN'], al: ['Unrelated Alias'], sl: ['SDN', 'SEMA'] },

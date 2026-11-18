@@ -91,11 +91,9 @@ function captures(source) {
   return calls;
 }
 
-const allowedFingerprintHelpers = new Set([
-  'mcpErrorFingerprint',
-  'passkeyOfferFingerprint',
-  'rssProxyErrorFingerprint',
-]);
+// Domain fingerprint helpers a capture may call instead of an inline array.
+// None remain in api/ since the MCP, passkey, and RSS-proxy routes were removed.
+const allowedFingerprintHelpers = new Set([]);
 
 function fingerprintViolation(call) {
   const match = call.match(/\bfingerprint\s*:\s*/);
@@ -130,29 +128,8 @@ test('every API capture has an explicit stable fingerprint', async () => {
     .map(({ path, call }) => ({ path, violation: fingerprintViolation(call) }))
     .filter(({ violation }) => violation);
   assert.deepEqual(invalid, [], `invalid fingerprints:\n${invalid.map(({ path, violation }) => `${path}: ${violation}`).join('\n')}`);
-  const userPrefs = await readFile(join(apiRoot, 'user-prefs.ts'), 'utf8');
-  assert.match(userPrefs, /fingerprint:\s*\['api\/user-prefs', opts\.method, errorShape\]/);
-  const notificationChannels = await readFile(join(apiRoot, 'notification-channels.ts'), 'utf8');
-  const notificationCaptures = captures(notificationChannels);
-  for (const method of ['GET', 'POST']) {
-    const stable = new RegExp(`fingerprint:\\s*\\['api/notification-channels', '${method}', err instanceof Error \\? err\\.name : 'Error'\\]`);
-    assert.equal(
-      notificationCaptures.filter((call) => stable.test(call)).length,
-      1,
-      `notification ${method} catch must capture with its explicit stable fingerprint`,
-    );
-  }
   const sentryEdge = await readFile(join(apiRoot, '_sentry-edge.js'), 'utf8');
   assert.match(sentryEdge, /captureSilentError\(err, \{ extra: context, ctx: vctx, fingerprint \}\)/);
-  assert.match(
-    calls.find(({ path }) => path === 'api/rss-proxy.js')?.call ?? '',
-    /fingerprint\s*:\s*rssProxyErrorFingerprint\(/,
-    'existing RSS fingerprint helper must remain in use',
-  );
-  for (const path of ['api/mcp/auth.ts', 'api/mcp/dispatch.ts']) {
-    const source = await readFile(join(root, path), 'utf8');
-    assert.match(source, /fingerprint\s*:\s*mcpErrorFingerprint\(/, `${path} must retain its MCP fingerprint helper`);
-  }
 });
 
 test('fingerprint guard rejects malformed and high-cardinality policies', () => {
@@ -166,9 +143,9 @@ test('fingerprint guard rejects malformed and high-cardinality policies', () => 
     fingerprintViolation("captureSilentError(err, { fingerprint: ['api/x', sentryStep, err.name] })"),
     null,
   );
-  assert.equal(
+  assert.match(
     fingerprintViolation("captureSilentError(err, { fingerprint: mcpErrorFingerprint('tool-execution', tool.name, err) })"),
-    null,
+    /approved domain helper/,
   );
   for (const value of ['q', 'query', 'issueSlot', 'label', 'page', 'targetHost', 'meta.targetPath', 'email']) {
     assert.match(
@@ -187,14 +164,14 @@ test('fingerprint guard follows renamed capture bindings', () => {
 });
 
 test('fingerprint guard catches a mutated production call', async () => {
-  const source = await readFile(join(apiRoot, '_relay.js'), 'utf8');
+  const source = await readFile(join(apiRoot, '_rate-limit.js'), 'utf8');
   assert.ok(
-    source.includes("fingerprint: ['api/_relay', 'relay-fetch'"),
+    source.includes("fingerprint: ['rate-limit', 'redis-error'"),
     'mutation target moved: repoint this test at a current production fingerprint',
   );
   const mutated = source.replace(
-    /fingerprint:\s*\['api\/_relay', 'relay-fetch', error instanceof Error \? error\.name : 'Error'\]/,
-    "fingerprint: ['api/_relay', request.url, 'Error']",
+    /fingerprint:\s*\['rate-limit', 'redis-error', rateLimitFingerprintStage\(stage\)\]/,
+    "fingerprint: ['rate-limit', request.url, 'Error']",
   );
   assert.notEqual(mutated, source, 'mutation must target an existing production fingerprint');
   const [call] = captures(mutated).filter((value) => value.includes('fingerprint:'));

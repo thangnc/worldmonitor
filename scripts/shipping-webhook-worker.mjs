@@ -9,7 +9,7 @@
  *   cronSchedule: <none> (always-on long-running process)
  *
  * Every tick reads the event feeds and, for each subscriber record, evaluates
- * the event it registered for (shared/event-triggers.json, mirrored at
+ * the event it registered for (packages/shared/event-triggers.json, mirrored at
  * scripts/shared/event-triggers.json):
  *   - `chokepoint.disruption` (threshold): compares each subscribed
  *     chokepoint's disruptionScore with the record's alertThreshold (and its
@@ -77,7 +77,7 @@ const {
 
 // Railway runs this file with rootDirectory=scripts, so the registry is read
 // from the scripts/shared mirror (tests/scripts-shared-mirror.test.mjs pins it
-// to shared/event-triggers.json).
+// to packages/shared/event-triggers.json).
 export const EVENT_REGISTRY = JSON.parse(
   readFileSync(new URL('./shared/event-triggers.json', import.meta.url), 'utf8'),
 );
@@ -234,7 +234,7 @@ export function reasonFor(chokepoint) {
 
 /**
  * The most each score input adds to disruptionScore: warningComponent and
- * aisComponent in server/worldmonitor/supply-chain/v1/_scoring.mjs, and the
+ * aisComponent in packages/server/worldmonitor/supply-chain/v1/_scoring.mjs, and the
  * transit anomaly bonus in get-chokepoint-status.ts. Pinned by a test.
  */
 export const SCORE_SOURCE_MAX_POINTS = Object.freeze({ navigationalWarnings: 15, ais: 15, transit: 10 });

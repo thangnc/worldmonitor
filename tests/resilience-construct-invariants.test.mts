@@ -4,7 +4,7 @@
 // pins direction) with precise ANCHOR-VALUE checks. These tests fail when
 // the scoring FORMULA breaks, not when a country's RANK changes. They are
 // deliberately country-identity-free so the audit gate (see
-// `docs/methodology/cohort-sanity-release-gate.md`) does not collapse into
+// `docs/engineering/methodology/cohort-sanity-release-gate.md`) does not collapse into
 // an outcome-seeking "ENTITY A must > ENTITY B" assertion — that is the
 // anti-pattern the cohort-sanity skill explicitly warns against.
 //
@@ -33,7 +33,7 @@ import {
   isExcludedFromConfidenceMean,
   RESILIENCE_FLAG_DARK_WHEN_ZERO_COVERAGE,
   type ResilienceSeedReader,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 const TEST_ISO2 = 'XX';
 

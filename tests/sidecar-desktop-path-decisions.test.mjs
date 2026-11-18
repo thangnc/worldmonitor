@@ -4,22 +4,23 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { DEFERRED_GENERATED_SERVICES } from '../scripts/lib/sebuf-deferred-services.mjs';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 
 /**
- * #5907: every sebuf route family under server/worldmonitor/ needs an explicit
- * desktop-path decision. A v1 family is bundled into the Tauri sidecar by
- * scripts/build-sidecar-handlers.mjs (api/{domain}/v1/[rpc].ts). A versioned
- * family (api/v{N}/{domain}/[rpc].ts) is invisible to that glob, so it must be
- * declared cloud-only in the build script AND routed to the cloud on purpose by
- * the sidecar — otherwise it only reaches the cloud through the 404 "handler
- * missing" fallback, which is an accident, and a dead end when cloudFallback
- * is off.
+ * #5907: every sebuf route family under packages/server/worldmonitor/ needs an explicit
+ * local-api path decision. A v1 family is served from api/{domain}/v1/[rpc].ts.
+ * A versioned family (api/v{N}/{domain}/[rpc].ts) must be routed to the cloud
+ * on purpose by the local-api server — otherwise it only reaches the cloud
+ * through the 404 "handler missing" fallback, which is an accident, and a dead
+ * end when cloudFallback is off. A family whose gateway was retired on purpose
+ * (a DEFERRED_GENERATED_SERVICES entry: server helpers kept, no api/ entry) is
+ * deliberately unreachable and needs no decision.
  */
 
-const buildScript = readFileSync(resolve(root, 'scripts/build-sidecar-handlers.mjs'), 'utf-8');
-const sidecar = readFileSync(resolve(root, 'src-tauri/sidecar/local-api-server.mjs'), 'utf-8');
+const sidecar = readFileSync(resolve(root, 'docker/local-api/local-api-server.mjs'), 'utf-8');
 
 function listFromSource(source, name) {
   const match = source.match(new RegExp(`const ${name} = (?:new Set\\()?\\[([\\s\\S]*?)\\]`));
@@ -27,12 +28,11 @@ function listFromSource(source, name) {
   return [...match[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
 }
 
-const declaredCloudOnly = listFromSource(buildScript, 'CLOUD_ONLY_ROUTE_FAMILIES');
 const sidecarCloudOnlyPrefixes = listFromSource(sidecar, 'cloudOnlyRouteFamilyPrefixes');
 
-/** Every {domain, version} pair under server/worldmonitor/, with its api entry. */
+/** Every {domain, version} pair under packages/server/worldmonitor/, with its api entry. */
 function serverFamilies() {
-  const serverRoot = resolve(root, 'server/worldmonitor');
+  const serverRoot = resolve(root, 'packages/server/worldmonitor');
   const families = [];
   for (const domain of readdirSync(serverRoot).sort()) {
     const domainDir = join(serverRoot, domain);
@@ -48,57 +48,54 @@ function serverFamilies() {
         bundled: version === 'v1' && existsSync(resolve(root, bundledEntry)),
         versioned: existsSync(resolve(root, versionedEntry)),
         urlPrefix: version === 'v1' ? `/api/${domain}/v1/` : `/api/${version}/${domain}/`,
+        deferred: DEFERRED_GENERATED_SERVICES.has(`${domain.replaceAll('-', '_')}/${version}`),
       });
     }
   }
   return families;
 }
 
-describe('desktop path decision per server/worldmonitor route family (#5907)', () => {
+describe('local-api path decision per packages/server/worldmonitor route family (#5907)', () => {
   const families = serverFamilies();
 
   it('finds the families the repo is known to have', () => {
-    assert.ok(families.length >= 36, `expected the sebuf domains, saw ${families.length}`);
-    assert.ok(families.some((f) => f.key === 'v2/shipping'), 'the shipping v2 family is the case this test exists for');
+    // The 13 RPC gateways the Lite UI calls. Retired families (deferred
+    // services) add to the directory count until Phase 2 removes their helpers.
+    const served = families.filter((f) => f.bundled || f.versioned);
+    assert.ok(served.length >= 13, `expected the kept sebuf domains, saw ${served.length}`);
   });
 
-  it('every family has exactly one api entry the sidecar build can reason about', () => {
-    for (const f of families) {
+  it('a retired family has no api entry left behind', () => {
+    for (const f of families.filter((x) => x.deferred)) {
+      assert.ok(!f.bundled && !f.versioned, `${f.key}: is a deferred service but still has an api entry`);
+    }
+  });
+
+  it('every family has exactly one api entry the local-api server can reason about', () => {
+    for (const f of families.filter((x) => !x.deferred)) {
       assert.ok(
         f.bundled || f.versioned,
-        `${f.key}: no api/${f.domain}/v1/[rpc].ts and no api/${f.version}/${f.domain}/[rpc].ts — the desktop cannot see this family at all`,
+        `${f.key}: no api/${f.domain}/v1/[rpc].ts and no api/${f.version}/${f.domain}/[rpc].ts — the local-api server cannot see this family at all`,
       );
       assert.ok(!(f.bundled && f.versioned), `${f.key}: bundled and versioned entries both exist`);
     }
   });
 
-  it('every versioned family is declared cloud-only in the build script and routed to the cloud by the sidecar', () => {
+  it('every versioned family is routed to the cloud by the local-api server', () => {
     for (const f of families.filter((x) => x.versioned)) {
       assert.ok(
-        declaredCloudOnly.includes(f.key),
-        `${f.key}: api/${f.key}/[rpc].ts is outside the v1 build glob; add it to CLOUD_ONLY_ROUTE_FAMILIES (or bundle it)`,
-      );
-      assert.ok(
         sidecarCloudOnlyPrefixes.includes(f.urlPrefix),
-        `${f.key}: declared cloud-only but the sidecar has no '${f.urlPrefix}' in cloudOnlyRouteFamilyPrefixes — it would reach the cloud only via the 404 fallback`,
+        `${f.key}: the local-api server has no '${f.urlPrefix}' in cloudOnlyRouteFamilyPrefixes — it would reach the cloud only via the 404 fallback`,
       );
     }
   });
 
-  it('the build-script declaration and the sidecar prefix list are the same set, with no stale entries', () => {
-    const fromBuild = declaredCloudOnly.map((key) => {
-      const [version, domain] = key.split('/');
-      return `/api/${version}/${domain}/`;
-    }).sort();
-    assert.deepEqual(fromBuild, [...sidecarCloudOnlyPrefixes].sort());
-    for (const key of declaredCloudOnly) {
-      assert.ok(existsSync(resolve(root, 'api', key, '[rpc].ts')), `${key} is declared cloud-only but api/${key}/[rpc].ts no longer exists`);
-    }
-  });
-
-  it('bundled v1 families are not also declared cloud-only', () => {
-    for (const f of families.filter((x) => x.bundled)) {
-      assert.ok(!declaredCloudOnly.includes(f.key), `${f.key} is bundled and declared cloud-only`);
+  it('the cloud-only prefix list has no stale entries', () => {
+    for (const prefix of sidecarCloudOnlyPrefixes) {
+      const match = prefix.match(/^\/api\/(v\d+)\/([^/]+)\/$/);
+      assert.ok(match, `${prefix} is not an /api/v{N}/{domain}/ family prefix`);
+      const key = `${match[1]}/${match[2]}`;
+      assert.ok(existsSync(resolve(root, 'api', key, '[rpc].ts')), `${prefix} is declared cloud-only but api/${key}/[rpc].ts no longer exists`);
     }
   });
 
@@ -106,11 +103,6 @@ describe('desktop path decision per server/worldmonitor route family (#5907)', (
     const fn = sidecar.slice(sidecar.indexOf('function isCloudPreferred(pathname)'));
     const body = fn.slice(0, fn.indexOf('\n}') + 2);
     assert.match(body, /cloudOnlyRouteFamilyPrefixes\.some\(p => pathname\.startsWith\(p\)\)/);
-  });
-
-  it('the build script refuses an undeclared versioned family instead of silently skipping it', () => {
-    assert.match(buildScript, /undeclaredFamilies\.length > 0[\s\S]*?process\.exit\(1\)/);
-    assert.match(buildScript, /const VERSION_DIR = \/\^v\\d\+\$\//);
   });
 });
 
@@ -121,7 +113,7 @@ describe('desktop path decision per server/worldmonitor route family (#5907)', (
  * desktop key is denied (REST v2 is cloud-only AND API-only).
  */
 describe('self-host relay path decision', async () => {
-  const { SELFHOST_RELAY_PATHS } = await import('../shared/selfhost-relay-paths.js');
+  const { SELFHOST_RELAY_PATHS } = await import('../packages/shared/selfhost-relay-paths.js');
   const dispatchBody = sidecar.slice(sidecar.indexOf('async function dispatch('));
 
   it('relays no path of a cloud-only route family', () => {

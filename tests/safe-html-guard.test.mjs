@@ -13,8 +13,8 @@ const legacyAuditMarker = 'wm-safe-html:' + ' audited';
 
 function makeFixture(source) {
   const root = path.join(tmpdir(), `wm-safe-html-${Date.now()}-${Math.random().toString(16).slice(2)}`);
-  mkdirSync(path.join(root, 'src'), { recursive: true });
-  writeFileSync(path.join(root, 'src', 'fixture.ts'), source);
+  mkdirSync(path.join(root, 'apps', 'web', 'src'), { recursive: true });
+  writeFileSync(path.join(root, 'apps', 'web', 'src', 'fixture.ts'), source);
   return root;
 }
 
@@ -130,7 +130,7 @@ describe('safe HTML lint guard', () => {
     const root = makeFixture('const ok = true;\n');
     writeFileSync(path.join(root, 'baseline.json'), JSON.stringify({
       entries: [{
-        file: 'src/fixture.ts',
+        file: 'apps/web/src/fixture.ts',
         line: 1,
         kind: 'direct-html-assignment',
         fingerprint: 'legacy',
@@ -151,12 +151,12 @@ describe('safe HTML lint guard', () => {
     assert.match(result.stderr, /--update-baseline has been removed/);
   });
 
-  it('is wired into npm lint and the pre-push guardrail', () => {
+  it('is wired into npm lint, which CI runs on every PR', () => {
     const pkg = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
-    const prePush = readFileSync(path.join(repoRoot, '.husky', 'pre-push'), 'utf8');
+    const ci = readFileSync(path.join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8');
 
     assert.match(pkg.scripts.lint, /npm run lint:safe-html/);
-    assert.match(prePush, /npm run lint:safe-html/);
+    assert.match(ci, /^\s*- run: npm run lint\s*$/m);
   });
 
   it('does not baseline legacy HTML sinks in the project', () => {

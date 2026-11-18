@@ -11,24 +11,24 @@ import {
   RESILIENCE_STATCAN_WDS_KEY,
   STATCAN_SCORE_PROVIDER,
   STATCAN_WDS_SOURCE_URL,
-} from '../server/worldmonitor/resilience/v1/_canada-national-overlay.ts';
-import { classifyDimensionFreshness } from '../server/worldmonitor/resilience/v1/_dimension-freshness.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_canada-national-overlay.ts';
+import { classifyDimensionFreshness } from '../packages/server/worldmonitor/resilience/v1/_dimension-freshness.ts';
 import {
   buildStandaloneMetaKeyToIndicators,
   readStandaloneSourceFailureDimensions,
-} from '../server/worldmonitor/resilience/v1/_source-failure.ts';
-import { INDICATOR_REGISTRY } from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_source-failure.ts';
+import { INDICATOR_REGISTRY } from '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
 import {
   scoreAllDimensions,
   scoreCurrencyExternal,
   scoreMacroFiscal,
   type ResilienceSeedReader,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
-import { createIndicatorTraceCollector } from '../server/worldmonitor/resilience/v1/_indicator-trace.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import { createIndicatorTraceCollector } from '../packages/server/worldmonitor/resilience/v1/_indicator-trace.ts';
 import { fixtureReader } from './helpers/resilience-fixtures.mts';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const scorerSrc = readFileSync(resolve(here, '../server/worldmonitor/resilience/v1/_dimension-scorers.ts'), 'utf8');
+const scorerSrc = readFileSync(resolve(here, '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts'), 'utf8');
 
 const LAGGED_IMF_INFLATION = 12.5;
 const STATCAN_INFLATION = 2.8;

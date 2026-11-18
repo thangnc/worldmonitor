@@ -1,4 +1,4 @@
-// Pure-function tests for shared/url-classifier.js (U6).
+// Pure-function tests for packages/shared/url-classifier.js (U6).
 //
 // The classifier identifies static institutional landing pages on
 // .gov/.mil/.int domains so the brief-filter denylist (U7) can drop them
@@ -7,7 +7,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { isInstitutionalStaticPage } from '../shared/url-classifier.js';
+import { isInstitutionalStaticPage } from '../packages/shared/url-classifier.js';
 
 describe('isInstitutionalStaticPage — known contamination cases (true)', () => {
   it('Pentagon About/Section-508 (the original brief contamination)', () => {

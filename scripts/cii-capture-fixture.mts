@@ -7,7 +7,7 @@
 // (scripts/lib/cii-fixtures.mts), proves the trim leaves every term
 // unchanged, and records the current formula's output. When the stored table
 // was computed from the inputs read here, the fixture also proves the seam
-// reproduces production; see docs/methodology/cii-change-brief.md.
+// reproduces production; see docs/engineering/methodology/cii-change-brief.md.
 //
 //   WM_SEED_ENV_FILE=/path/to/.env.local node --import tsx scripts/cii-capture-fixture.mts [--iran-events-enabled=false]
 import { writeFileSync } from 'node:fs';
@@ -16,9 +16,9 @@ import { parseArgs } from 'node:util';
 
 import { getRedisCredentials, loadEnvFile } from './_seed-utils.mjs';
 import { CII_FIXTURE_DIR, buildCiiFixture, ciiFiresInput, scoreCiiFixture } from './lib/cii-fixtures.mts';
-import { CROSS_BORDER_SOURCES } from '../server/worldmonitor/displacement/v1/cross-border-data.ts';
-import { unwrapEnvelope } from '../server/_shared/seed-envelope.ts';
-import { CII_FORMULA_VERSION } from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
+import { CROSS_BORDER_SOURCES } from '../packages/server/worldmonitor/displacement/v1/cross-border-data.ts';
+import { unwrapEnvelope } from '../packages/server/_shared/seed-envelope.ts';
+import { CII_FORMULA_VERSION } from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
 
 const { values } = parseArgs({
   options: {

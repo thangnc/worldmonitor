@@ -7,7 +7,7 @@ import ts from 'typescript';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
-const srcRoot = join(root, 'src');
+const browserRoots = [join(root, 'apps', 'web', 'src'), join(root, 'packages', 'client')];
 
 /**
  * #5912: two desktop-runtime detectors used to coexist. `isDesktopRuntime()`
@@ -22,26 +22,18 @@ const srcRoot = join(root, 'src');
  * Only two modules may touch the globals by name: the detector itself, and
  * the bridge, which needs the `invoke` function rather than a boolean.
  */
-const DETECTOR = 'src/config/desktop-runtime.ts';
-const SERVICE_REEXPORT = 'src/services/desktop-runtime.ts';
+const DETECTOR = 'packages/client/config/desktop-runtime.ts';
+const SERVICE_REEXPORT = 'packages/client/services/desktop-runtime.ts';
 
 const ALLOWED_RAW_GLOBAL_READERS = new Set([
   DETECTOR,
-  'src/services/tauri-bridge.ts',
+  'packages/client/services/tauri-bridge.ts',
 ]);
 
 const CONVERGED_CALL_SITES = [
-  'src/config/variant.ts',
-  'src/config/basemap.ts',
-  'src/main.ts',
-  'src/services/push-notifications.ts',
-  'src/utils/circuit-breaker.ts',
-  'src/bootstrap/sentry-init.ts',
+  'packages/client/utils/circuit-breaker.ts',
+  'packages/client/bootstrap/sentry-init.ts',
 ];
-
-// Config sits below services (scripts/lint-boundaries.mjs), so these two take
-// the detector from its config home rather than the services re-export.
-const CONFIG_CALL_SITES = ['src/config/variant.ts', 'src/config/basemap.ts'];
 
 /**
  * Every code token that names a bridge global: identifiers (`window.__TAURI__`,
@@ -89,7 +81,7 @@ function read(rel) {
 describe('desktop runtime detection has one owner (#5912)', () => {
   it('no client module outside the detector and the bridge reads the Tauri globals by name', () => {
     const offenders = [];
-    for (const file of walk(srcRoot)) {
+    for (const file of browserRoots.flatMap((dir) => [...walk(dir)])) {
       const rel = relative(root, file).replace(/\\/g, '/');
       if (ALLOWED_RAW_GLOBAL_READERS.has(rel)) continue;
       offenders.push(...rawGlobalReads(readFileSync(file, 'utf-8'), rel));
@@ -101,12 +93,12 @@ describe('desktop runtime detection has one owner (#5912)', () => {
     );
   });
 
-  it('the six formerly split-brained call sites import the shared detector', () => {
+  it('the formerly split-brained call sites that remain import the shared detector', () => {
     for (const rel of CONVERGED_CALL_SITES) {
       const code = read(rel);
       assert.match(
         code,
-        /import \{[^}]*\bisDesktopRuntime\b[^}]*\} from '@\/(?:config|services)\/desktop-runtime';/,
+        /import \{[^}]*\bisDesktopRuntime\b[^}]*\} from '(?:@wm\/client\/|\.\.\/)(?:config|services)\/desktop-runtime';/,
         `${rel} must import isDesktopRuntime from the dependency-free detector, not re-derive it`,
       );
       assert.match(code, /\bisDesktopRuntime\(\)/, `${rel} must actually call isDesktopRuntime()`);
@@ -136,7 +128,7 @@ describe('desktop runtime detection has one owner (#5912)', () => {
       assert.notDeepEqual(rawGlobalReads(sample), [], sample);
     }
     for (const sample of [
-      "import { isDesktopRuntime } from '@/config/desktop-runtime';",
+      "import { isDesktopRuntime } from '@wm/client/config/desktop-runtime';",
       '// a comment about window.__TAURI__ is prose, not a read',
       "/* '__TAURI_INTERNALS__' in window */ const k = isDesktopRuntime();",
     ]) {
@@ -146,18 +138,6 @@ describe('desktop runtime detection has one owner (#5912)', () => {
 });
 
 describe('the detector lives in a layer config may import (#5912)', () => {
-  it('config modules take the detector from @/config/desktop-runtime', () => {
-    for (const rel of CONFIG_CALL_SITES) {
-      const code = read(rel);
-      assert.match(code, /from '@\/config\/desktop-runtime';/, `${rel} must import the config-layer detector`);
-      assert.doesNotMatch(
-        code,
-        /from '@\/services\//,
-        `${rel} is config; importing services reverses the layer direction`,
-      );
-    }
-  });
-
   it('the services module is a pure re-export of every public detector symbol', () => {
     const detector = ts.createSourceFile(DETECTOR, read(DETECTOR), ts.ScriptTarget.Latest, false, ts.ScriptKind.TS);
     const service = ts.createSourceFile(SERVICE_REEXPORT, read(SERVICE_REEXPORT), ts.ScriptTarget.Latest, false, ts.ScriptKind.TS);
@@ -181,8 +161,8 @@ describe('the detector lives in a layer config may import (#5912)', () => {
         ts.isExportDeclaration(statement)
           && statement.moduleSpecifier
           && ts.isStringLiteral(statement.moduleSpecifier)
-          && statement.moduleSpecifier.text === '@/config/desktop-runtime',
-        `${SERVICE_REEXPORT} may only re-export from @/config/desktop-runtime; found: ${statement.getText(service)}`,
+          && statement.moduleSpecifier.text === '../config/desktop-runtime',
+        `${SERVICE_REEXPORT} may only re-export from ../config/desktop-runtime; found: ${statement.getText(service)}`,
       );
       assert.ok(statement.exportClause && ts.isNamedExports(statement.exportClause), 'use named re-exports');
       for (const element of statement.exportClause.elements) reexported.add(element.name.text);

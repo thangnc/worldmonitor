@@ -31,9 +31,9 @@ function schemaEndingWith(spec, suffix) {
 
 describe('public API provider redistribution contract', () => {
   for (const [label, spec] of [
-    ['AviationService JSON', () => readJson('docs/api/AviationService.openapi.json')],
-    ['AviationService YAML', () => readYaml('docs/api/AviationService.openapi.yaml')],
-    ['worldmonitor bundle', () => readYaml('docs/api/worldmonitor.openapi.yaml')],
+    ['AviationService JSON', () => readJson('packages/contracts/openapi/AviationService.openapi.json')],
+    ['AviationService YAML', () => readYaml('packages/contracts/openapi/AviationService.openapi.yaml')],
+    ['worldmonitor bundle', () => readYaml('packages/contracts/openapi/worldmonitor.openapi.yaml')],
   ]) {
     it(`${label} does not advertise OpenSky as a response provider`, () => {
       assert.deepEqual(schemasContaining(spec(), 'POSITION_SOURCE_OPENSKY'), []);
@@ -41,9 +41,9 @@ describe('public API provider redistribution contract', () => {
   }
 
   for (const [label, spec] of [
-    ['MilitaryService JSON', () => readJson('docs/api/MilitaryService.openapi.json')],
-    ['MilitaryService YAML', () => readYaml('docs/api/MilitaryService.openapi.yaml')],
-    ['worldmonitor bundle', () => readYaml('docs/api/worldmonitor.openapi.yaml')],
+    ['MilitaryService JSON', () => readJson('packages/contracts/openapi/MilitaryService.openapi.json')],
+    ['MilitaryService YAML', () => readYaml('packages/contracts/openapi/MilitaryService.openapi.yaml')],
+    ['worldmonitor bundle', () => readYaml('packages/contracts/openapi/worldmonitor.openapi.yaml')],
   ]) {
     it(`${label} documents only redistributable military observation examples`, () => {
       const militaryFlight = schemaEndingWith(spec(), 'MilitaryFlight');
@@ -54,7 +54,7 @@ describe('public API provider redistribution contract', () => {
   }
 
   it('keeps the OpenSky enum in the internal product proto', () => {
-    const proto = readFileSync(new URL('proto/worldmonitor/aviation/v1/position_sample.proto', ROOT), 'utf8');
+    const proto = readFileSync(new URL('packages/contracts/proto/worldmonitor/aviation/v1/position_sample.proto', ROOT), 'utf8');
     assert.match(proto, /POSITION_SOURCE_OPENSKY/);
   });
 });

@@ -31,31 +31,22 @@ const GATES = [
   {
     file: 'scripts/enforce-safe-html.mjs',
     setup(root) {
-      mkdirSync(join(root, 'src'), { recursive: true });
+      mkdirSync(join(root, 'apps/web/src'), { recursive: true });
       writeFileSync(
-        join(root, 'src/fixture.ts'),
+        join(root, 'apps/web/src/fixture.ts'),
         'const element = document.createElement("div");\nelement.innerHTML = userHtml;\n',
       );
     },
     expected: /Direct innerHTML\/outerHTML assignment is blocked/,
   },
   {
-    file: 'scripts/enforce-panel-content-writes.mjs',
-    setup(root) {
-      mkdirSync(join(root, 'src/components'), { recursive: true });
-      writeFileSync(
-        join(root, 'src/components/FailingPanel.ts'),
-        'class FailingPanel extends Panel { render() { this.content.appendChild(document.createElement("div")); } }\n',
-      );
-    },
-    expected: /Panel content-write guard failed/,
-  },
-  {
     file: 'scripts/enforce-safe-local-storage.mjs',
     setup(root) {
-      mkdirSync(join(root, 'src/services'), { recursive: true });
+      // The guard scans both browser roots and fails on a missing one.
+      mkdirSync(join(root, 'apps/web/src'), { recursive: true });
+      mkdirSync(join(root, 'packages/client/services'), { recursive: true });
       writeFileSync(
-        join(root, 'src/services/failing-store.ts'),
+        join(root, 'packages/client/services/failing-store.ts'),
         "export const stored = localStorage.getItem('wm-key');\n",
       );
     },
@@ -63,19 +54,6 @@ const GATES = [
     // fixture tree is one file, so the population floor also trips — matching
     // the headline alone would pass even if the deref patterns had gone stale.
     expected: /These dereference localStorage directly/,
-  },
-  {
-    file: 'scripts/enforce-overlay-reload-policy.mjs',
-    setup(root) {
-      mkdirSync(join(root, 'src/components'), { recursive: true });
-      writeFileSync(
-        join(root, 'src/components/UndeclaredModal.ts'),
-        "const overlay = document.createElement('div');\noverlay.setAttribute('role', 'dialog');\n",
-      );
-    },
-    // The violation line rather than the headline, for the same reason as
-    // above: the one-file fixture also trips the site-count floor.
-    expected: /Overlays without a reload contract/,
   },
   {
     file: 'scripts/check-local-secret-dumps.mjs',

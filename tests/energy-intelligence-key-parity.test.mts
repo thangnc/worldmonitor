@@ -8,9 +8,9 @@ import assert from 'node:assert/strict';
 //
 // scripts/seed-energy-intelligence.mjs writes to
 //   `energy:intelligence:feed:v1`
-// server/_shared/cache-keys.ts declared
+// packages/server/_shared/cache-keys.ts declared
 //   `energy:intelligence:v1:feed`  (drifted)
-// server/worldmonitor/intelligence/v1/chat-analyst-context.ts imports
+// packages/server/worldmonitor/intelligence/v1/chat-analyst-context.ts imports
 // ENERGY_INTELLIGENCE_KEY from cache-keys.ts and calls getCachedJson on
 // it. With the drift, the OilPrice + OPEC RSS feed was being seeded
 // weekly but never reached the chat analyst — silently invisible for
@@ -19,7 +19,7 @@ import assert from 'node:assert/strict';
 // Locking this here means a future rename on either side breaks CI in
 // the same PR, not in production.
 
-import { ENERGY_INTELLIGENCE_KEY as CACHE_KEY } from '../server/_shared/cache-keys';
+import { ENERGY_INTELLIGENCE_KEY as CACHE_KEY } from '../packages/server/_shared/cache-keys';
 // @ts-expect-error -- seeder is plain .mjs, no .d.ts; type doesn't matter
 // because the test only compares the string value at runtime.
 import { ENERGY_INTELLIGENCE_KEY as SEEDER_KEY } from '../scripts/seed-energy-intelligence.mjs';

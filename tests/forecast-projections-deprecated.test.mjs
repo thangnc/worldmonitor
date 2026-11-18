@@ -11,12 +11,12 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 
 describe('forecast projections deprecated in the public contract (#8967)', () => {
   it('Forecast field 17 is deprecated, not reused', () => {
-    const proto = read('proto/worldmonitor/forecast/v1/forecast.proto');
+    const proto = read('packages/contracts/proto/worldmonitor/forecast/v1/forecast.proto');
     assert.match(proto, /^\s*Projections projections = 17 \[deprecated = true\];$/m);
   });
 
   it('the OpenAPI Forecast schema marks projections deprecated', () => {
-    const spec = JSON.parse(read('docs/api/ForecastService.openapi.json'));
+    const spec = JSON.parse(read('packages/contracts/openapi/ForecastService.openapi.json'));
     const projections = spec.components.schemas.Forecast?.properties?.projections;
     assert.ok(projections, 'Forecast.projections present for v1 compatibility');
     assert.equal(projections.deprecated, true);
@@ -24,8 +24,8 @@ describe('forecast projections deprecated in the public contract (#8967)', () =>
 
   it('the generated Forecast types mark projections deprecated', () => {
     for (const path of [
-      'src/generated/server/worldmonitor/forecast/v1/service_server.ts',
-      'src/generated/client/worldmonitor/forecast/v1/service_client.ts',
+      'packages/contracts/generated/server/worldmonitor/forecast/v1/service_server.ts',
+      'packages/contracts/generated/client/worldmonitor/forecast/v1/service_client.ts',
     ]) {
       assert.match(read(path), /\/\*\* @deprecated \*\/\n\s*projections\?: Projections;/, path);
     }

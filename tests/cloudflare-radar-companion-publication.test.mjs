@@ -279,8 +279,8 @@ async function readThroughRpcs(store) {
   };
   try {
     const [ddosModule, trafficModule] = await Promise.all([
-      import('../server/worldmonitor/infrastructure/v1/list-ddos-attacks.ts'),
-      import('../server/worldmonitor/infrastructure/v1/list-traffic-anomalies.ts'),
+      import('../packages/server/worldmonitor/infrastructure/v1/list-ddos-attacks.ts'),
+      import('../packages/server/worldmonitor/infrastructure/v1/list-traffic-anomalies.ts'),
     ]);
     return {
       ddos: await ddosModule.listInternetDdosAttacks({}, {}),

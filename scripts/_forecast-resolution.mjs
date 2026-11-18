@@ -605,7 +605,7 @@ function deriveHardMetrics(pred, family, inputs, options = {}) {
 }
 
 // 50 is the feed's red boundary (scoreToStatus in
-// server/worldmonitor/supply-chain/v1/_scoring.mjs) and the score at which
+// packages/server/worldmonitor/supply-chain/v1/_scoring.mjs) and the score at which
 // detectSupplyChainScenarios emits a supply-chain forecast. A state-derived
 // freight forecast attaches the same contract at any score. A war-zone route
 // whose standing threat base is already red cannot fall through 50, so it

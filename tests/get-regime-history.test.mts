@@ -1,8 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { adaptTransition } from '../server/worldmonitor/intelligence/v1/get-regime-history';
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
+import { adaptTransition } from '../packages/server/worldmonitor/intelligence/v1/get-regime-history';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 
 describe('adaptTransition', () => {
   it('maps all fields from persisted shape to proto shape', () => {

@@ -3,9 +3,9 @@
 // api/news/v1/[rpc].ts and api/intelligence/v1/[rpc].ts.
 export const config = { runtime: 'edge', regions: ['iad1', 'lhr1', 'fra1', 'sfo1'] };
 
-import { createDomainGateway, serverOptions } from '../../../server/gateway';
-import { createMarketServiceRoutes } from '../../../src/generated/server/worldmonitor/market/v1/service_server';
-import { marketHandler } from '../../../server/worldmonitor/market/v1/handler';
+import { createDomainGateway, serverOptions } from '../../../packages/server/gateway';
+import { createMarketServiceRoutes } from '../../../packages/contracts/generated/server/worldmonitor/market/v1/service_server';
+import { marketHandler } from '../../../packages/server/worldmonitor/market/v1/handler';
 
 export default createDomainGateway(
   createMarketServiceRoutes(marketHandler, serverOptions),

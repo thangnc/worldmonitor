@@ -26,7 +26,7 @@ resolution_type: code_fix
 
 ## Problem
 
-`scripts/source-attribution.mjs` generates the public upstream-provider ledger: `shared/source-attribution-manifest.json` (license posture and required credit per host) and the table published at `docs/source-attribution.mdx`. Its `--check` mode is a required CI gate.
+`scripts/source-attribution.mjs` generates the public upstream-provider ledger: `shared/source-attribution-manifest.json` (license posture and required credit per host) and the table published at `docs/engineering/architecture/source-attribution.md`. Its `--check` mode is a required CI gate.
 
 On clean `main`, `--check` passed while `--write` rewrote ~5800 lines. The committed artifacts had drifted from the source tree and nothing detected it.
 

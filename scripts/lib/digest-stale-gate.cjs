@@ -23,7 +23,7 @@ function isStaleDigestReplay(digest) {
 // #8398: the relay needs the publisher FAMILY of a digest item to gate its
 // link, but the digest response carries only the feed label
 // (`item.source`). The curated label->family map is ESM-only
-// (shared/publisher-families.js), unreachable from this CJS module — so the
+// (packages/shared/publisher-families.js), unreachable from this CJS module — so the
 // gate resolves the label itself through publisher-link-relay-gate.cjs,
 // which mirrors that table (sync-guarded by test). When no resolver is
 // provided the gate fails closed (blank link).

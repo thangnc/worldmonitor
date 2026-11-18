@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { applySnapshotFreshness, filterAndPaginateTenders } from '../server/worldmonitor/economic/v1/list-global-tenders';
+import { applySnapshotFreshness, filterAndPaginateTenders } from '../packages/server/worldmonitor/economic/v1/list-global-tenders';
 
 const tender = (id: string, overrides: Record<string, unknown> = {}) => ({
   id,

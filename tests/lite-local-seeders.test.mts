@@ -17,7 +17,7 @@ const read = (path: string) => readFileSync(path, 'utf8');
 
 type Section = (typeof LITE_SEED_SECTIONS)[number];
 
-function liteSources(dir = join(root, 'src/lite')): string[] {
+function liteSources(dir = join(root, 'apps/web/src/lite')): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) return liteSources(path);
@@ -51,8 +51,10 @@ function bundleSections(): Map<string, { bundle: string; block: string }[]> {
 /** `api/health.js` SEED_META staleness limits, by seed-meta key. */
 function healthMaxStaleMin(): Map<string, number> {
   const limits = new Map<string, number>();
-  for (const m of read(join(root, 'api/health.js')).matchAll(/key:\s*'seed-meta:([^']+)',\s*maxStaleMin:\s*([0-9_]+)/g)) {
-    if (!limits.has(m[1]!)) limits.set(m[1]!, Number(m[2]!.replaceAll('_', '')));
+  // A limit is a number literal or a product of them (`60 * 24 * 400`).
+  for (const m of read(join(root, 'api/health.js')).matchAll(/key:\s*'seed-meta:([^']+)',\s*maxStaleMin:\s*([0-9_]+(?:\s*\*\s*[0-9_]+)*)/g)) {
+    const minutes = m[2]!.split('*').reduce((product, factor) => product * Number(factor.trim().replaceAll('_', '')), 1);
+    if (!limits.has(m[1]!)) limits.set(m[1]!, minutes);
   }
   return limits;
 }

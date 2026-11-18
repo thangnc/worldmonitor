@@ -4,9 +4,9 @@
  * specs.
  *
  * The sebuf `protoc-gen-openapiv3` plugin emits per-service specs
- * (docs/api/<Service>.openapi.{json,yaml}) with NO top-level `servers` field:
- * only the BUNDLE (docs/api/worldmonitor.openapi.yaml) gets one, via the
- * `bundle_server` option in proto/buf.gen.yaml. Without a per-service `servers`
+ * (packages/contracts/openapi/<Service>.openapi.{json,yaml}) with NO top-level `servers` field:
+ * only the BUNDLE (packages/contracts/openapi/worldmonitor.openapi.yaml) gets one, via the
+ * `bundle_server` option in packages/contracts/proto/buf.gen.yaml. Without a per-service `servers`
  * entry the Mintlify docs site falls back to the placeholder base URL
  * `https://api.example.com`, so every rendered curl snippet points at a
  * non-existent host. This post-generation step stamps the real base URL onto
@@ -18,11 +18,11 @@
  * regenerate followed by this step) yields byte-identical output.
  *
  * Two artifact families:
- *   1. docs/api/<Service>.openapi.json — insert a top-level `servers` key and
+ *   1. packages/contracts/openapi/<Service>.openapi.json — insert a top-level `servers` key and
  *      re-serialize byte-faithfully to the generator's format (recursively
  *      sorted keys, Go-style <>&/U+2028/U+2029 escaping, no trailing newline)
  *      so the diff is additions-only.
- *   2. docs/api/<Service>.openapi.yaml — formatting-preserving surgical
+ *   2. packages/contracts/openapi/<Service>.openapi.yaml — formatting-preserving surgical
  *      insertion of a top-level `servers:` block (4-space list item) before the
  *      top-level `paths:` line, mirroring how openapi-inject-security.mjs
  *      inserts its root `security:` block.
@@ -41,11 +41,11 @@ import { fileURLToPath } from 'node:url';
 import { serialize, eq } from './lib/openapi-codegen.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 
 const CHECK = process.argv.includes('--check');
 
-// The production base URL — identical to `bundle_server` in proto/buf.gen.yaml,
+// The production base URL — identical to `bundle_server` in packages/contracts/proto/buf.gen.yaml,
 // which stamps the same value onto the bundle. Keep the two in sync.
 const SERVER_URL = 'https://api.worldmonitor.app';
 const SERVERS = [{ url: SERVER_URL }];

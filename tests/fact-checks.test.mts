@@ -17,9 +17,9 @@ import {
   isStrongFactCheckMatch,
   selectFactChecks,
   type FactCheckApiClaim,
-} from '../server/_shared/fact-checks.ts';
-import { searchFactChecks } from '../server/worldmonitor/news/v1/search-fact-checks.ts';
-import { factCheckCacheKey, factCheckQuery } from '../server/_shared/fact-check-search.ts';
+} from '../packages/server/_shared/fact-checks.ts';
+import { searchFactChecks } from '../packages/server/worldmonitor/news/v1/search-fact-checks.ts';
+import { factCheckCacheKey, factCheckQuery } from '../packages/server/_shared/fact-check-search.ts';
 
 const CLAIM = 'Russia agreed to supply diesel fuel to the United States';
 
@@ -41,7 +41,7 @@ function apiClaim(text: string, reviews: ReturnType<typeof review>[]): FactCheck
 
 describe('IFCN allowlist', () => {
   it('is the IFCN verified-signatories list, normalized, with its source recorded', () => {
-    const file = JSON.parse(readFileSync(new URL('../shared/fact-checkers.json', import.meta.url), 'utf8'));
+    const file = JSON.parse(readFileSync(new URL('../packages/shared/fact-checkers.json', import.meta.url), 'utf8'));
     assert.match(file.source, /github\.com\/IFCN\/verified-signatories/);
     assert.match(file.sourceCommit, /^[0-9a-f]{40}$/);
     assert.ok(file.domains.length >= 100, 'the full signatory list, not a hand-picked subset');
@@ -204,7 +204,7 @@ describe('uniform application (#9094)', () => {
   });
 
   it('has no per-person, per-party, per-topic or per-country rule in the matching code', () => {
-    const source = readFileSync(new URL('../server/_shared/fact-checks.ts', import.meta.url), 'utf8')
+    const source = readFileSync(new URL('../packages/server/_shared/fact-checks.ts', import.meta.url), 'utf8')
       .replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
     for (const subject of SUBJECTS) {
       assert.doesNotMatch(source, new RegExp(`\\b${subject}\\b`, 'i'), `fact-checks.ts names ${subject}`);
@@ -288,7 +288,7 @@ describe('SearchFactChecks handler', () => {
   });
 
   it('documents the real caveat and a real state in the OpenAPI 200 example', () => {
-    const spec = JSON.parse(readFileSync(new URL('../docs/api/NewsService.openapi.json', import.meta.url), 'utf8'));
+    const spec = JSON.parse(readFileSync(new URL('../packages/contracts/openapi/NewsService.openapi.json', import.meta.url), 'utf8'));
     const example = spec.paths['/api/news/v1/search-fact-checks'].get.responses['200'].content['application/json'].example;
     assert.equal(example.caveat, FACT_CHECK_CAVEAT);
     assert.ok(['ok', 'unavailable', 'not-configured'].includes(example.state));

@@ -23,10 +23,10 @@ import {
   normalizeNewsActivity,
   pruneHistory,
   rawToScore,
-} from '../shared/analysis-hotspot-escalation.ts';
-import { CONFLICT_ZONES, INTEL_HOTSPOTS, STRATEGIC_WATERWAYS } from '../shared/geo-data.ts';
-import { getHotspotCountryScore } from '../shared/hotspot-country-map.ts';
-import * as clientGeo from '../src/config/geo.ts';
+} from '../packages/shared/analysis-hotspot-escalation.ts';
+import { CONFLICT_ZONES, INTEL_HOTSPOTS, STRATEGIC_WATERWAYS } from '../packages/shared/geo-data.ts';
+import { getHotspotCountryScore } from '../packages/shared/hotspot-country-map.ts';
+import * as clientGeo from '../packages/client/config/geo.ts';
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -431,7 +431,7 @@ describe('shared curated geo datasets', () => {
     }
   });
 
-  it('src/config/geo.ts re-exports the shared datasets by identity', () => {
+  it('packages/client/config/geo.ts re-exports the shared datasets by identity', () => {
     assert.equal(clientGeo.INTEL_HOTSPOTS, INTEL_HOTSPOTS);
     assert.equal(clientGeo.CONFLICT_ZONES, CONFLICT_ZONES);
     assert.equal(clientGeo.STRATEGIC_WATERWAYS, STRATEGIC_WATERWAYS);

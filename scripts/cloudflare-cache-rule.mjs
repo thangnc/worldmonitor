@@ -69,7 +69,7 @@
  *
  * The homepage has one more representation that no Accept value selects:
  * middleware.ts rewrites `GET /` to /home.md for the User-Agents listed in
- * shared/agent-request-policy.json (`Vary: User-Agent`, `no-store`). The
+ * packages/shared/agent-request-policy.json (`Vary: User-Agent`, `no-store`). The
  * no-store keeps that markdown out of the edge; the problem is the other
  * direction. Cloudflare answers from the stored browser HTML before the
  * middleware runs and ignores Vary: User-Agent, so on a warm edge server a
@@ -97,8 +97,8 @@
  *
  * `--check` and `--apply` need `CLOUDFLARE_API_TOKEN` carrying **Zone > Cache
  * Rules > Edit on worldmonitor.app**. That is NOT the `CLOUDFLARE_API_TOKEN`
- * .github/workflows/deploy-worker.yml uses: that secret is scoped to Workers
- * Scripts:Edit + Workers Routes:Edit (see its header comment) and will fail here.
+ * the Worker deploy (the deploy-worker workflow, removed 2026-11-19) used: that
+ * secret was scoped to Workers Scripts:Edit + Workers Routes:Edit and fails here.
  * Wiring this into CI means provisioning a separate, cache-rules-scoped token.
  * Locally, `CLOUDFLARE_ALL_ACCESS_TOKEN` is accepted as a fallback because that
  * is what .env.local carries — note it is account-wide, so a mistake here runs
@@ -113,7 +113,6 @@
 
 import { pathToFileURL } from 'node:url';
 
-import { CONTENT_CORPUS_PREFIXES } from './discover-content-corpus-pages.mjs';
 import agentRequestPolicy from './shared/agent-request-policy.json' with { type: 'json' };
 
 const CLOUDFLARE_API = 'https://api.cloudflare.com/client/v4';
@@ -124,36 +123,37 @@ const ZONE_NAME = 'worldmonitor.app';
 export const CORPUS_HOST = 'www.worldmonitor.app';
 
 /**
- * The document families the rule claims by prefix. The corpus families are the
- * build-time static HTML from scripts/build-crawlable-corpus.mjs; `blog` is the
- * Astro output copied to public/blog; `docs` is the Mintlify proxy behind the
- * `/docs/:match*` rewrite. Each has a vercel.json header rule carrying the same
+ * The crawlable-corpus families vercel.json still routes and headers. Frozen
+ * copy of the list scripts/discover-content-corpus-pages.mjs exported before the
+ * corpus generator was removed; tests/cloudflare-cache-rule.test.mjs fails when
+ * it disagrees with the vercel.json header rules.
+ */
+export const CONTENT_CORPUS_PREFIXES = Object.freeze(['country-instability-index', 'countries', 'chokepoints', 'compare', 'crises', 'tools', 'research', 'reference', 'changelog', 'sources', 'use-cases', 'accuracy', 'monitor-the-situation']);
+
+/**
+ * The document families the rule claims by prefix: the corpus families above
+ * and `docs`, the Mintlify proxy behind the `/docs/:match*` rewrite. (The blog
+ * left with blog-site/.) Each has a vercel.json header rule carrying the same
  * CDN-Cache-Control, and tests/cloudflare-cache-rule.test.mjs fails when the two
  * lists disagree.
  */
-export const EDGE_CACHED_FAMILIES = Object.freeze([...CONTENT_CORPUS_PREFIXES, 'blog', 'docs']);
+export const EDGE_CACHED_FAMILIES = Object.freeze([...CONTENT_CORPUS_PREFIXES, 'docs']);
 
 /**
  * Paths under a family that must stay outside this rule.
  *
- * blog: the hashed bundles, OG images and post images already belong to the
- *   zone's older "Blog" rule (month-long override TTL). Claiming them here would
- *   make this rule the last writer of `edge_ttl` for those URLs and replace that
- *   month with "respect origin" — which, for Vercel's static default of
- *   `max-age=0, must-revalidate`, means an origin round-trip on every request.
  * docs: `/docs/mcp` is the docs MCP server (api/docs-mcp.ts — no-store JSON-RPC
  *   over GET and POST), and `/docs/_*` is Mintlify's own asset and API space
  *   (`/docs/_next/…`, `/docs/_mintlify/…`). Neither is a document.
  */
 export const FAMILY_EXCLUSIONS = Object.freeze({
-  blog: Object.freeze({ prefixes: Object.freeze(['_astro/', 'og/', 'images/']), exact: Object.freeze([]) }),
   docs: Object.freeze({ prefixes: Object.freeze(['_', 'mcp/']), exact: Object.freeze(['mcp']) }),
 });
 
 /**
  * Families whose bare path has no vercel.json header rule to mirror. `/docs` is a
  * 307 to `/docs/documentation` and nothing more; the corpus bare forms are 308s
- * too, but they carry a header rule, and `/blog` is the blog index itself.
+ * too, but they carry a header rule.
  */
 const FAMILIES_WITHOUT_BARE_RULE = new Set(['docs']);
 
@@ -227,7 +227,7 @@ export const SINGLE_REPRESENTATION_EXTENSIONS = Object.freeze(['md', 'txt', 'xml
 /**
  * Slashless and trailing-slash URLs for the prerendered locale homepages.
  * Keep in lockstep with `nonDefaultLandingLocales()` in
- * shared/indexable-landing-locales.ts — the cache-rule test compares both.
+ * packages/shared/indexable-landing-locales.ts — the cache-rule test compares both.
  */
 export const INDEXABLE_LANDING_ENTRY_PATHS = Object.freeze([
   '/es', '/es/',

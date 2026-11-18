@@ -63,7 +63,7 @@ const { createPollGenerationGuard } = require('./lib/poll-generation-guard.cjs')
 const { createXPollCycle, xPollSlot } = require('./lib/x-poll-cycle.cjs');
 const { createGuardedLookup, SSRF_BLOCKED_ERROR_CODE } = require('./lib/notification-webhook-ssrf.cjs');
 // API fan-out of rss_alert / market_alert queue messages to the Shipping v2
-// webhook worker (news.breaking, market.move in shared/event-triggers.json).
+// webhook worker (news.breaking, market.move in packages/shared/event-triggers.json).
 const {
   API_FANOUT_EVENT_TYPES,
   API_FANOUT_LIST_CAP,
@@ -126,13 +126,13 @@ const { PREVIOUS_SESSION_CHART_QUERY, awaitsSessionOpen, previousSessionClose } 
 // ESM module loaded via require(esm) (Node >= 22.12; relay image is node:24).
 // Same implementation the RPC handler scores with — see the module header for
 // why it lives in shared/ rather than beside the other scoring helpers.
-const { detectTrafficAnomaly, summarizePortwatchHistory } = require('../shared/chokepoint-traffic-anomaly.js');
-const { CHOKEPOINT_THREAT_LEVELS } = require('../shared/chokepoint-threat-levels.js');
-const { classifyVesselType } = require('../shared/ais-vessel-type.js');
-const { readTransitWindow } = require('../shared/chokepoint-transit-window.js');
-const { createDurableTransitTracker } = require('../shared/chokepoint-transit-store.js');
-const { CHOKEPOINT_TRANSIT_GATES } = require('../shared/chokepoint-transit-gates.js');
-const { CORRIDOR_RISK_NAME_MAP, deriveCorridorRiskLevel } = require('../shared/corridor-risk.js');
+const { detectTrafficAnomaly, summarizePortwatchHistory } = require('../packages/shared/chokepoint-traffic-anomaly.js');
+const { CHOKEPOINT_THREAT_LEVELS } = require('../packages/shared/chokepoint-threat-levels.js');
+const { classifyVesselType } = require('../packages/shared/ais-vessel-type.js');
+const { readTransitWindow } = require('../packages/shared/chokepoint-transit-window.js');
+const { createDurableTransitTracker } = require('../packages/shared/chokepoint-transit-store.js');
+const { CHOKEPOINT_TRANSIT_GATES } = require('../packages/shared/chokepoint-transit-gates.js');
+const { CORRIDOR_RISK_NAME_MAP, deriveCorridorRiskLevel } = require('../packages/shared/corridor-risk.js');
 // AIS upstream reconnect policy: failure classification (transport | auth |
 // rate-limit), the throttle ceiling escalation, and the silence verdict. Pure and
 // environment-free so tests/ais-watchdog.test.mjs exercises the whole policy
@@ -141,7 +141,7 @@ const {
   aisSilenceVerdict,
   classifyAisFailure,
   createAisReconnectPolicy,
-} = require('../shared/ais-watchdog.js');
+} = require('../packages/shared/ais-watchdog.js');
 const chinaCountryStockIndexHelpersPromise = import('./_country-stock-index.mjs');
 // Terminal handler attached AT DECLARATION. This promise is created at module
 // load but not awaited until seedWeatherAlerts() runs, so without a .catch()
@@ -158,7 +158,7 @@ const parseProxyUrl = parseProxyConfig;
 const httpsKeepAliveAgent = new https.Agent({ keepAlive: true, maxSockets: 6, timeout: 60_000 });
 
 function requireShared(name) {
-  const candidates = [path.join(__dirname, '..', 'shared', name), path.join(__dirname, 'shared', name)];
+  const candidates = [path.join(__dirname, '..', 'packages', 'shared', name), path.join(__dirname, 'shared', name)];
   for (const p of candidates) { try { return require(p); } catch {} }
   throw new Error(`Cannot find shared/${name}`);
 }
@@ -843,7 +843,7 @@ function upstashPublishXIfLockOwner({ lockKey, owner, snapshotKey, snapshot, pol
 // ─────────────────────────────────────────────────────────────
 // Seed envelope — canonical { _seed, data } shape. Mirrored from
 // scripts/_seed-envelope-source.mjs (ESM; can't be require()'d from CJS).
-// Source of truth lives there + api/_seed-envelope.js + server/_shared/seed-envelope.ts.
+// Source of truth lives there + api/_seed-envelope.js + packages/server/_shared/seed-envelope.ts.
 // Parity enforced by scripts/verify-seed-envelope-parity.mjs.
 // ─────────────────────────────────────────────────────────────
 function buildEnvelope({ fetchedAt, recordCount, sourceVersion, schemaVersion, state, failedDatasets, errorReason, groupId, data }) {
@@ -873,7 +873,7 @@ function envelopeWrite(key, data, ttlSeconds, meta) {
   return upstashSet(key, envelope, ttlSeconds);
 }
 
-// Envelope-aware read. Mirrors server/_shared/redis.ts::getCachedJson semantics:
+// Envelope-aware read. Mirrors packages/server/_shared/redis.ts::getCachedJson semantics:
 // returns the bare payload for contract-mode canonical keys ({_seed, data}) and
 // passes legacy shapes through unchanged. MUST be used for any seeded canonical
 // key — reading raw via upstashGet() on an enveloped key iterates {_seed, data}
@@ -998,7 +998,7 @@ let upstreamLastPositionMono = 0;
 let upstreamSocketOpenedMono = 0;
 // The delay the reconnect policy computed for the failure that just occurred.
 // `scheduleUpstreamReconnect` consumes it, so the ladder ceiling and the throttle
-// escalation are decided once inside shared/ais-watchdog.js rather than re-derived
+// escalation are decided once inside packages/shared/ais-watchdog.js rather than re-derived
 // from counters here (the two drifting apart is how a stalled feed goes unnoticed).
 let upstreamPendingReconnectDelayMs = null;
 let relayShuttingDown = false;
@@ -4792,7 +4792,7 @@ const CLASSIFY_SEED_INTERVAL_MS = 15 * 60 * 1000;
 const CLASSIFY_CACHE_TTL = 86400;
 const CLASSIFY_SKIP_TTL = 1800;
 const CLASSIFY_BATCH_SIZE = 50;
-// Every edition the news digest serves, generated from shared/news-catalog.json
+// Every edition the news digest serves, generated from packages/shared/news-catalog.json
 // (scripts/generate-browser-news-catalog.mjs), so a new edition is classified
 // without a relay edit.
 const CLASSIFY_VARIANTS = requireShared('news-digest-editions.json');
@@ -4884,7 +4884,7 @@ function relayNormalizeScoringText(text) {
 }
 
 // Word-start containment in normalized text. Mirrors
-// shared/brief-filter.js:containsKeywordToken — prevents 'pact' inside
+// packages/shared/brief-filter.js:containsKeywordToken — prevents 'pact' inside
 // 'impact' (false positive) while still matching 'iran' inside
 // 'iranian' (demonym preserved). PR #3909 review (P2). Keeps the
 // relay aligned with digest under tests/importance-score-parity.test.mjs.
@@ -5133,8 +5133,8 @@ function threatSummaryCountries(text) {
 
 
 // v5 (2026-04-28): bumped from v4 in lockstep with
-// server/worldmonitor/intelligence/v1/_shared.ts and
-// server/worldmonitor/news/v1/list-feed-digest.ts to evict cache entries
+// packages/server/worldmonitor/intelligence/v1/_shared.ts and
+// packages/server/worldmonitor/news/v1/list-feed-digest.ts to evict cache entries
 // that landed under the pre-publisher-prefix-fix classifier (PR #3480).
 // Brand-prefixed retrospective titles ("CBS News Radio flashback: ...")
 // had been promoted to severity=critical via the `invasion` keyword;
@@ -5150,7 +5150,7 @@ function classifyCacheKey(title) {
 }
 
 // LLM provider fallback chain — mirrors seed-insights.mjs LLM_PROVIDERS
-// Order mirrors server/_shared/llm.ts: paid OpenRouter, then two fixed free
+// Order mirrors packages/server/_shared/llm.ts: paid OpenRouter, then two fixed free
 // OpenRouter variants.
 const CLASSIFY_LLM_PROVIDERS = [
   {
@@ -5441,7 +5441,7 @@ async function seedClassifyForVariant(variant, seenTitles) {
         // Explicit tier-4 keys only — unlisted names (including platform source
         // "telegram") are NOT in this set even though getSourceTier() defaults
         // them to 4. Any future Telegram alert path must use the public display
-        // label from shared/telegram-channel-trust.ts (#6600). #6654 should do
+        // label from packages/shared/telegram-channel-trust.ts (#6600). #6654 should do
         // the same for X account labels rather than a generic "x" platform key.
         if (shouldDropRelaySourceForTier(RELAY_GATES_READY, meta.source, RELAY_TIER4_SOURCES)) continue;
         if (RELAY_GATES_READY) {
@@ -6554,7 +6554,7 @@ function startTheaterPostureSeedLoop() {
 // The relay authenticates as a trusted internal caller via X-WorldMonitor-Key =
 // WORLDMONITOR_RELAY_KEY. The gateway validates this (timing-safe) against its
 // OWN WORLDMONITOR_RELAY_KEY for the warm-ping path allowlist only
-// (server/gateway.ts isRelayWarmPingRequest / RELAY_WARM_PING_PATHS). It is a
+// (packages/server/gateway.ts isRelayWarmPingRequest / RELAY_WARM_PING_PATHS). It is a
 // DEDICATED relay↔gateway secret — it does NOT need to be a
 // WORLDMONITOR_VALID_KEYS enterprise key, and shouldn't be (least privilege: it
 // unlocks only a cache-warm on these free endpoints, nothing else).
@@ -13016,7 +13016,7 @@ async function handleRelayRequest(req, res) {
     } else {
       // Live-tanker path: bbox-filtered + tanker-included responses skip the
       // pre-gzipped cache (bbox space would explode the cache key set).
-      // Handler-side 60s cache (server/worldmonitor/maritime/v1/get-vessel-snapshot.ts)
+      // Handler-side 60s cache (packages/server/worldmonitor/maritime/v1/get-vessel-snapshot.ts)
       // and the gateway 'live' tier absorb identical-bbox requests.
       const payload = {
         ...lastSnapshot,

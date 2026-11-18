@@ -8,7 +8,7 @@ import {
   type ResolvedLiveVideos,
   sourceListsChannel,
   withResolvedEntries,
-} from '../src/services/live-video/model.ts';
+} from '../packages/client/services/live-video/model.ts';
 
 const NOW = Date.UTC(2026, 8, 24, 12);
 const HOUR = 60 * 60_000;

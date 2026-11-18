@@ -25,9 +25,9 @@ const COUNTRY_HISTORY_PATH = '/api/intelligence/v1/get-country-history';
 
 it('country history publishes anonymous, API-key and bearer alternatives with 401 only for supplied credentials', () => {
   const specs = [
-    JSON.parse(readFileSync(resolve(root, 'docs/api/IntelligenceService.openapi.json'), 'utf8')),
-    loadYaml(readFileSync(resolve(root, 'docs/api/IntelligenceService.openapi.yaml'), 'utf8')),
-    loadYaml(readFileSync(resolve(root, 'docs/api/worldmonitor.openapi.yaml'), 'utf8')),
+    JSON.parse(readFileSync(resolve(root, 'packages/contracts/openapi/IntelligenceService.openapi.json'), 'utf8')),
+    loadYaml(readFileSync(resolve(root, 'packages/contracts/openapi/IntelligenceService.openapi.yaml'), 'utf8')),
+    loadYaml(readFileSync(resolve(root, 'packages/contracts/openapi/worldmonitor.openapi.yaml'), 'utf8')),
   ];
   for (const spec of specs) {
     const op = spec.paths[COUNTRY_HISTORY_PATH].get;
@@ -35,8 +35,8 @@ it('country history publishes anonymous, API-key and bearer alternatives with 40
     assert.match(op.responses['401'].description, /Invalid supplied credentials/);
   }
 });
-const apiDir = resolve(root, 'docs/api');
-const protoWorldmonitorDir = resolve(root, 'proto/worldmonitor');
+const apiDir = resolve(root, 'packages/contracts/openapi');
+const protoWorldmonitorDir = resolve(root, 'packages/contracts/proto/worldmonitor');
 
 // Source-of-truth sets/maps are imported from scripts/lib/openapi-codegen.mjs —
 // the SAME module the injector uses — so the contract test can't drift from the
@@ -462,7 +462,7 @@ describe('OpenAPI security contract', () => {
   it('reads every public route from the gateway Set, comments included', () => {
     // An apostrophe in a comment inside the Set once paired with the next quote,
     // so later routes parsed as comment text and lost their `security: []`.
-    const gateway = readFileSync(resolve(root, 'server/gateway.ts'), 'utf8');
+    const gateway = readFileSync(resolve(root, 'packages/server/gateway.ts'), 'utf8');
     const block = gateway.match(/PUBLIC_NO_AUTH_RPC_PATHS\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/)[1];
     const declared = [...block.matchAll(/^\s*'(\/api\/[^']+)',?\s*$/gm)].map((m) => m[1]);
     assert.ok(declared.length > 0);
@@ -514,7 +514,7 @@ describe('OpenAPI security contract', () => {
     assert.deepEqual([...documented].sort(), [...TRUST_REVIEW_KEY_PATHS].sort());
     // A handler that gates on isTrustReviewer without the proto comment would
     // slip past the check above; one review-key path per call site.
-    const handlerDir = resolve(root, 'server/worldmonitor');
+    const handlerDir = resolve(root, 'packages/server/worldmonitor');
     const callSites = readdirSync(handlerDir, { recursive: true })
       .filter((file) => file.endsWith('.ts'))
       .flatMap((file) => [...readFileSync(resolve(handlerDir, file), 'utf8').matchAll(/\bisTrustReviewer\(/g)]);

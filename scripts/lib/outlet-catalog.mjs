@@ -1,6 +1,6 @@
 /**
  * Every outlet WorldMonitor names, keyed by source name: both RSS catalogs
- * (src/config/feeds.ts and server/worldmonitor/news/v1/_feeds.ts), Telegram
+ * (src/config/feeds.ts and packages/server/worldmonitor/news/v1/_feeds.ts), Telegram
  * channels, X accounts, and every name in the tier and provenance tables
  * (aggregated publishers such as Reuters or AFP that no feed is named after). The outlet profile gate and the candidate builder
  * share this so they cannot disagree about the population.
@@ -24,11 +24,11 @@ function feedUrls(url) {
 export async function loadOutletCatalog(repoRoot) {
   const importTs = (relativePath) => import(pathToFileURL(join(repoRoot, relativePath)).href);
   const [server, telegram, x, tiers, provenance] = await Promise.all([
-    importTs('server/worldmonitor/news/v1/_feeds.ts'),
-    importTs('shared/telegram-channel-trust.ts'),
-    importTs('shared/x-account-trust.ts'),
-    importTs('server/_shared/source-tiers.ts'),
-    importTs('shared/source-provenance.ts'),
+    importTs('packages/server/worldmonitor/news/v1/_feeds.ts'),
+    importTs('packages/shared/telegram-channel-trust.ts'),
+    importTs('packages/shared/x-account-trust.ts'),
+    importTs('packages/server/_shared/source-tiers.ts'),
+    importTs('packages/shared/source-provenance.ts'),
   ]);
   const { feeds: client, cleanup } = await bundleFeedsModule(repoRoot);
 
@@ -82,7 +82,7 @@ const OWNERSHIP_CLASSES = new Set(['state', 'public-service', 'private', 'nonpro
 const PROFILE_KEYS = new Set(['country', 'audience', 'language', 'ownershipClass', 'note']);
 
 /**
- * Closed-world check of shared/outlet-profile.json against the catalog.
+ * Closed-world check of packages/shared/outlet-profile.json against the catalog.
  * Returns problems; an empty list is clean.
  *
  * @param {{

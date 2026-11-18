@@ -11,7 +11,7 @@ const root = resolve(__dirname, '..');
 // Extract server-side classification data from _shared.ts source
 // ---------------------------------------------------------------------------
 const sharedSrc = readFileSync(
-  join(root, 'server/worldmonitor/military/v1/_shared.ts'),
+  join(root, 'packages/server/worldmonitor/military/v1/_shared.ts'),
   'utf-8',
 );
 
@@ -47,7 +47,7 @@ function isMilitaryCallsign(callsign) {
 // ---------------------------------------------------------------------------
 // Extract client-side hex ranges from military.ts
 // ---------------------------------------------------------------------------
-const clientSrc = readFileSync(join(root, 'src/config/military.ts'), 'utf-8');
+const clientSrc = readFileSync(join(root, 'packages/client/config/military.ts'), 'utf-8');
 const seederSrc = readFileSync(join(root, 'scripts/seed-military-flights.mjs'), 'utf-8');
 
 function extractHexRanges(src) {

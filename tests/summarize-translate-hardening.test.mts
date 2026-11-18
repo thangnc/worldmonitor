@@ -12,15 +12,15 @@ import {
   TRANSLATE_TARGET_LANGUAGES,
   __setTranslateBudgetLimiterForTests,
   summarizeArticle,
-} from '../server/worldmonitor/news/v1/summarize-article.ts';
+} from '../packages/server/worldmonitor/news/v1/summarize-article.ts';
 import {
   TRANSLATE_LANGUAGE_NAMES,
   TRANSLATE_TEXT_CLOSE,
   TRANSLATE_TEXT_OPEN,
   buildArticlePrompts,
   translateReminder,
-} from '../server/worldmonitor/news/v1/_shared.ts';
-import { drainUnservedLlmResponse } from '../server/_shared/response-headers.ts';
+} from '../packages/server/worldmonitor/news/v1/_shared.ts';
+import { drainUnservedLlmResponse } from '../packages/server/_shared/response-headers.ts';
 
 const ENV_KEYS = [
   'OPENROUTER_API_KEY', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN', 'OLLAMA_API_URL',

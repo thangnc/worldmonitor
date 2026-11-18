@@ -26,12 +26,11 @@ import { RESILIENCE_COHORTS } from './helpers/resilience-cohorts.mts';
 import { MATCHED_PAIRS } from './helpers/resilience-matched-pairs.mts';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const validationDir = resolve(here, '../docs/methodology/country-resilience-index/validation');
+const validationDir = resolve(here, '../docs/engineering/methodology/country-resilience-index/validation');
 const benchmarkPath = resolve(validationDir, 'benchmark-results.json');
 const backtestPath = resolve(validationDir, 'backtest-results.json');
-const snapshotDir = resolve(here, '../docs/snapshots');
-const runbookPath = resolve(here, '../docs/methodology/energy-v2-flag-flip-runbook.md');
-const methodologyPath = resolve(here, '../docs/methodology/country-resilience-index.mdx');
+const snapshotDir = resolve(here, '../docs/engineering/methodology/country-resilience-index/snapshots');
+const runbookPath = resolve(here, '../docs/engineering/methodology/energy-v2-flag-flip-runbook.md');
 const freezeScriptPath = resolve(here, '../scripts/freeze-resilience-ranking.mjs');
 const compareScriptPath = resolve(here, '../scripts/compare-resilience-current-vs-proposed.mjs');
 const energyV2CaptureScriptPath = resolve(here, '../scripts/capture-resilience-energy-v2-acceptance.mjs');
@@ -155,12 +154,12 @@ function assertEnergyV2AcceptanceArtifact(artifact: Record<string, unknown>, fil
   const baseline = asRecord(artifact.baseline, `${filename}.baseline`);
   assert.match(
     assertString(baseline.rankingSnapshot, `${filename}.baseline.rankingSnapshot`),
-    /docs\/snapshots\/resilience-ranking-live-(?:pre-pr1-flip|pre-repair)-\d{4}-\d{2}-\d{2}\.json$/,
+    /docs\/engineering\/methodology\/country-resilience-index\/snapshots\/resilience-ranking-live-(?:pre-pr1-flip|pre-repair)-\d{4}-\d{2}-\d{2}\.json$/,
   );
   const postFlip = asRecord(artifact.postFlip, `${filename}.postFlip`);
   assert.match(
     assertString(postFlip.rankingSnapshot, `${filename}.postFlip.rankingSnapshot`),
-    /docs\/snapshots\/resilience-ranking-live-post-pr1-\d{4}-\d{2}-\d{2}\.json$/,
+    /docs\/engineering\/methodology\/country-resilience-index\/snapshots\/resilience-ranking-live-post-pr1-\d{4}-\d{2}-\d{2}\.json$/,
   );
 
   const acceptanceGates = asRecord(artifact.acceptanceGates, `${filename}.acceptanceGates`);
@@ -315,7 +314,6 @@ describe('resilience validation artifacts', () => {
     const postFlipRankingFiles = listSnapshotFiles(POST_FLIP_RANKING_RE);
     const energyV2AcceptanceFiles = listSnapshotFiles(ENERGY_V2_ACCEPTANCE_RE);
     const runbook = readTextFile(runbookPath);
-    const methodology = readTextFile(methodologyPath);
     const freezeScript = readTextFile(freezeScriptPath);
     const compareScript = readTextFile(compareScriptPath);
     const energyV2CaptureScript = readTextFile(energyV2CaptureScriptPath);
@@ -330,13 +328,6 @@ describe('resilience validation artifacts', () => {
       /lowCarbonGeneration[\s\S]*fossilElectricityShare[\s\S]*powerLosses[\s\S]*OK/,
       'runbook must name the three energy-v2 health checks and their expected OK status.',
     );
-    if (postFlipRankingFiles.length === 0 || energyV2AcceptanceFiles.length === 0) {
-      assert.match(
-        methodology,
-        /post-flip ranking and acceptance artifacts still need a credentialed operator capture/,
-        'methodology doc must not imply the post-flip closeout artifacts are already committed while either required artifact is absent.',
-      );
-    }
     assert.match(
       freezeScript,
       /post-flip ranking snapshots must verify score anchors through get-resilience-score/,
@@ -750,10 +741,10 @@ describe('resilience validation artifacts', () => {
         },
       },
       baseline: {
-        rankingSnapshot: 'docs/snapshots/resilience-ranking-live-pre-pr1-flip-2026-05-27.json',
+        rankingSnapshot: 'docs/engineering/methodology/country-resilience-index/snapshots/resilience-ranking-live-pre-pr1-flip-2026-05-27.json',
       },
       postFlip: {
-        rankingSnapshot: 'docs/snapshots/resilience-ranking-live-post-pr1-2026-06-03.json',
+        rankingSnapshot: 'docs/engineering/methodology/country-resilience-index/snapshots/resilience-ranking-live-post-pr1-2026-06-03.json',
       },
       acceptanceGates: {
         verdict: 'PASS',

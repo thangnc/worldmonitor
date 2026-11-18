@@ -32,28 +32,28 @@ process.env.LOCAL_API_MODE = 'tauri-sidecar';
 delete process.env.UPSTASH_REDIS_REST_URL;
 delete process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const { sidecarCacheSet } = await import('../server/_shared/sidecar-cache.ts');
+const { sidecarCacheSet } = await import('../packages/server/_shared/sidecar-cache.ts');
 const { getChokepointStatus } = await import(
-  '../server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts'
+  '../packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts'
 );
 // Safe to import: seed-chokepoint-flows.mjs guards its runSeed call behind
 // `isMain`, so nothing executes and no Redis credentials are read on import.
 const { resolveFlowSource } = await import('../scripts/seed-chokepoint-flows.mjs');
 
 const proto = readFileSync(
-  resolve(root, 'proto/worldmonitor/supply_chain/v1/supply_chain_data.proto'),
+  resolve(root, 'packages/contracts/proto/worldmonitor/supply_chain/v1/supply_chain_data.proto'),
   'utf-8',
 );
 const generatedTs = readFileSync(
-  resolve(root, 'src/generated/server/worldmonitor/supply_chain/v1/service_server.ts'),
+  resolve(root, 'packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server.ts'),
   'utf-8',
 );
 const generatedTsClient = readFileSync(
-  resolve(root, 'src/generated/client/worldmonitor/supply_chain/v1/service_client.ts'),
+  resolve(root, 'packages/contracts/generated/client/worldmonitor/supply_chain/v1/service_client.ts'),
   'utf-8',
 );
 const openapi = JSON.parse(
-  readFileSync(resolve(root, 'docs/api/SupplyChainService.openapi.json'), 'utf-8'),
+  readFileSync(resolve(root, 'packages/contracts/openapi/SupplyChainService.openapi.json'), 'utf-8'),
 ) as {
   components: {
     schemas: Record<string, { properties: Record<string, { type?: string; enum?: string[] }> }>;

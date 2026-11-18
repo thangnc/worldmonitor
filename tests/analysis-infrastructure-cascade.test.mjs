@@ -10,7 +10,7 @@ import {
   getGraphStats,
   getPipelineById,
   getPortById,
-} from '../shared/analysis-infrastructure-cascade.ts';
+} from '../packages/shared/analysis-infrastructure-cascade.ts';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -238,9 +238,9 @@ describe('infrastructure cascade core — lookups', () => {
 
 describe('infrastructure cascade core — server importability', () => {
   const SERVER_IMPORTABLE = [
-    'shared/analysis-infrastructure-cascade.ts',
-    'shared/pipelines-data.ts',
-    'shared/ports-data.ts',
+    'packages/shared/analysis-infrastructure-cascade.ts',
+    'packages/shared/pipelines-data.ts',
+    'packages/shared/ports-data.ts',
   ];
 
   for (const relPath of SERVER_IMPORTABLE) {

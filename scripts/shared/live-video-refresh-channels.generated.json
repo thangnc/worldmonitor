@@ -1,5 +1,5 @@
 {
-  "generatedFrom": "src/config/live-video-sources.ts",
+  "generatedFrom": "packages/client/config/live-video-sources.ts",
   "channels": [
     {
       "channelId": "UCIALMKvObZNtJ6AmdCLP7Lg",

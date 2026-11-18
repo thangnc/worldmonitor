@@ -35,6 +35,9 @@ combination, mobile GPU, map viewport or desktop/Tauri device.
 
 ## Reproduce
 
+Refactor Phase 1d removed this harness and its test with the dashboard map it
+measured; the commands below record how the numbers were taken.
+
 Run each command sequentially. JSON on stdout is the report; build diagnostics
 use stderr. Builds go to `tmp/trade-animation-production` and preview shuts down
 after each command. The screenshot goes to `tmp/trade-animation-profile.png`.

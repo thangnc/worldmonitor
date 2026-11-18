@@ -22,9 +22,9 @@ import {
   isLayerExecutable,
   isSunsetLayer,
   sanitizeLayersForVariant,
-} from '../src/config/map-layer-definitions';
+} from '../packages/client/config/map-layer-definitions';
 import { buildForecastInputFetchKeys } from '../scripts/seed-forecasts.mjs';
-import { resolveBootstrapRegistry } from '../shared/bootstrap-tier-keys.js';
+import { resolveBootstrapRegistry } from '../packages/shared/bootstrap-tier-keys.js';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p: string) => readFileSync(resolve(repoRoot, p), 'utf8');
@@ -48,23 +48,10 @@ describe('iran-events sunset — frontend map layer (default OFF)', () => {
     assert.equal(isLayerExecutable('iranAttacks', 'deck'), false);
   });
 
-  // #6046 — SVG/mobile Map.ts hardcodes its own layer lists and used to surface
-  // a dead raw-key 'iranAttacks' toggle. Guard both the export and the filter
-  // so the SVG picker cannot drift from getLayersForVariant / DeckGL again.
-  it('exports isSunsetLayer and SVG Map.createLayerToggles filters with it', () => {
+  it('exports isSunsetLayer', () => {
     assert.equal(typeof isSunsetLayer, 'function');
     assert.equal(isSunsetLayer('iranAttacks'), true);
     assert.equal(isSunsetLayer('conflicts'), false);
-
-    const mapSrc = read('src/components/Map.ts');
-    assert.match(mapSrc, /isSunsetLayer/, 'Map.ts must import isSunsetLayer');
-    // The static lists still mention the key (for re-enable), but the picker
-    // must filter before building buttons.
-    assert.match(
-      mapSrc,
-      /\.filter\(\s*(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*!isSunsetLayer\(/,
-      'createLayerToggles must filter sunset layers before rendering buttons',
-    );
   });
 });
 
@@ -91,7 +78,7 @@ describe('iran-events sunset — backend gates (source guards)', () => {
   });
 
   it('get-risk-scores.ts gates the iran-events fetch (no CII/risk contribution)', () => {
-    assert.match(read('server/worldmonitor/intelligence/v1/get-risk-scores.ts'), /IRAN_EVENTS_ENABLED \? \{ key: 'conflict:iran-events:v1', raw: true \} : null/);
+    assert.match(read('packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts'), /IRAN_EVENTS_ENABLED \? \{ key: 'conflict:iran-events:v1', raw: true \} : null/);
   });
 
   it('seed-forecasts.mjs feeds empty iranEvents when disabled', () => {
@@ -111,19 +98,15 @@ describe('iran-events sunset — backend gates (source guards)', () => {
     assert.match(relay, /function noteMiddleEastStrikeItem\(item\) \{\s*if \(!MIDDLE_EAST_STRIKES_ENABLED/);
   });
 
-  // ce-code-review #4982 follow-ups — parallel API/MCP surfaces that also read
+  // ce-code-review #4982 follow-ups — parallel API surfaces that also read
   // the shared cache key must be gated, not just api/bootstrap.js.
 
   it('get-bootstrap-data RPC drops iranEvents from the shared bootstrap registry', () => {
-    assert.match(read('server/worldmonitor/infrastructure/v1/get-bootstrap-data.ts'), /if \(!IRAN_EVENTS_ENABLED\) delete registry\.iranEvents/);
+    assert.match(read('packages/server/worldmonitor/infrastructure/v1/get-bootstrap-data.ts'), /if \(!IRAN_EVENTS_ENABLED\) delete registry\.iranEvents/);
   });
 
   it('list-iran-events RPC serves empty immediately when disabled (not the 14d-TTL snapshot)', () => {
-    assert.match(read('server/worldmonitor/conflict/v1/list-iran-events.ts'), /if \(!IRAN_EVENTS_ENABLED\) return \{ events: \[\], scrapedAt: '0' \}/);
-  });
-
-  it('MCP get_conflict_events drops the iran-events cache key when disabled', () => {
-    assert.match(read('api/mcp/registry/cache-tools.ts'), /\.\.\.\(IRAN_EVENTS_ENABLED \? \['conflict:iran-events:v1'\] : \[\]\)/);
+    assert.match(read('packages/server/worldmonitor/conflict/v1/list-iran-events.ts'), /if \(!IRAN_EVENTS_ENABLED\) return \{ events: \[\], scrapedAt: '0' \}/);
   });
 
   it('seed-forecasts.mjs skips fetching the iran key into the pipeline batch when disabled', () => {

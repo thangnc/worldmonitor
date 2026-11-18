@@ -3,11 +3,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const OPENAPI_DIR = join(ROOT, 'docs/api');
+const OPENAPI_DIR = join(ROOT, 'packages/contracts/openapi');
 const JSON_SPEC_SUFFIX = '.openapi.json';
 const YAML_SPEC_SUFFIX = '.openapi.yaml';
-const ISO2_TO_ISO3 = JSON.parse(readFileSync(join(ROOT, 'shared/iso2-to-iso3.json'), 'utf8'));
-const FILTER_PARAM_CONTRACTS = JSON.parse(readFileSync(join(ROOT, 'shared/openapi-filter-param-contracts.json'), 'utf8'));
+const ISO2_TO_ISO3 = JSON.parse(readFileSync(join(ROOT, 'packages/shared/iso2-to-iso3.json'), 'utf8'));
+const FILTER_PARAM_CONTRACTS = JSON.parse(readFileSync(join(ROOT, 'packages/shared/openapi-filter-param-contracts.json'), 'utf8'));
 
 const PREDICTION_MARKET_CATEGORIES = [
   ...FILTER_PARAM_CONTRACTS.predictionMarketTechCategories,

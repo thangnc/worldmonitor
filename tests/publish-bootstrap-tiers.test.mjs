@@ -10,12 +10,12 @@ import {
   publishBootstrapTier,
   runPublisherLoop,
 } from '../scripts/publish-bootstrap-tiers.mjs';
-import { BOOTSTRAP_CACHE_KEYS } from '../shared/bootstrap-tier-keys.js';
-import { BOOTSTRAP_TIER_ENVELOPE_SCHEMA_VERSION } from '../shared/bootstrap-tier-envelope.js';
+import { BOOTSTRAP_CACHE_KEYS } from '../packages/shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_TIER_ENVELOPE_SCHEMA_VERSION } from '../packages/shared/bootstrap-tier-envelope.js';
 import {
   CANADA_ALERTS_LEGACY_KEY,
   CANADA_ALERTS_SIBLING_KEY,
-} from '../shared/canada-alerts-cutover.js';
+} from '../packages/shared/canada-alerts-cutover.js';
 import { NATURAL_EVENTS_CONE_MAX_POINTS } from '../scripts/_natural-events-dashboard.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -424,24 +424,24 @@ describe('runPublisherLoop', () => {
 describe('publisher deployment boundaries', () => {
   it('imports the canonical shared registry without crossing into api, src, or server', async () => {
     const source = await readFile(new URL('../scripts/publish-bootstrap-tiers.mjs', import.meta.url), 'utf8');
-    assert.match(source, /from '\.\.\/shared\/bootstrap-tier-keys\.js'/);
-    assert.match(source, /from '\.\.\/shared\/canada-alerts-cutover\.js'/);
-    assert.match(source, /from '\.\.\/shared\/bootstrap-tier-envelope\.js'/);
-    assert.doesNotMatch(source, /from ['"]\.\.\/(?:api|src|server|workers)\//);
+    assert.match(source, /from '\.\.\/packages\/shared\/bootstrap-tier-keys\.js'/);
+    assert.match(source, /from '\.\.\/packages\/shared\/canada-alerts-cutover\.js'/);
+    assert.match(source, /from '\.\.\/packages\/shared\/bootstrap-tier-envelope\.js'/);
+    assert.doesNotMatch(source, /from ['"]\.\.\/(?:api|src|server|packages\/server|workers)\//);
   });
 
   it('publisher and Worker share one envelope schema version', async () => {
-    const shared = await import('../shared/bootstrap-tier-envelope.js');
+    const shared = await import('../packages/shared/bootstrap-tier-envelope.js');
     const shadow = await readFile(new URL('../workers/api-cors-preflight/src/kv-shadow.js', import.meta.url), 'utf8');
     const publisher = await readFile(new URL('../scripts/publish-bootstrap-tiers.mjs', import.meta.url), 'utf8');
     assert.equal(shared.BOOTSTRAP_TIER_ENVELOPE_SCHEMA_VERSION, 2);
-    assert.match(publisher, /from '\.\.\/shared\/bootstrap-tier-envelope\.js'/);
-    assert.match(shadow, /from '\.\.\/\.\.\/\.\.\/shared\/bootstrap-tier-envelope\.js'/);
+    assert.match(publisher, /from '\.\.\/packages\/shared\/bootstrap-tier-envelope\.js'/);
+    assert.match(shadow, /from '\.\.\/\.\.\/\.\.\/packages\/shared\/bootstrap-tier-envelope\.js'/);
   });
 
   it('keeps canadaAlerts cutover helpers in lockstep with origin', async () => {
     const origin = await import('../api/_canada-alerts-cutover.js');
-    const publisher = await import('../shared/canada-alerts-cutover.js');
+    const publisher = await import('../packages/shared/canada-alerts-cutover.js');
     const primary = 'alerts:canada:v1';
     assert.deepEqual(
       [...publisher.CANADA_ALERTS_CUTOVER_FALLBACK_KEYS],

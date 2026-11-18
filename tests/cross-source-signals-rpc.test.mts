@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 
-import { createIntelligenceServiceRoutes } from '../src/generated/server/worldmonitor/intelligence/v1/service_server.ts';
-import { serverOptions } from '../server/gateway.ts';
-import { intelligenceHandler } from '../server/worldmonitor/intelligence/v1/handler.ts';
+import { createIntelligenceServiceRoutes } from '../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server.ts';
+import { serverOptions } from '../packages/server/gateway.ts';
+import { intelligenceHandler } from '../packages/server/worldmonitor/intelligence/v1/handler.ts';
 
 const ENV_KEYS = ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'] as const;
 const originalEnv = new Map<string, string | undefined>();

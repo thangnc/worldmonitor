@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { validateDecisionSignalProvenance } from '../shared/decision-signal-provenance';
+import { validateDecisionSignalProvenance } from '../packages/shared/decision-signal-provenance';
 import {
   parseChinaCorridorWirePayload,
   validateChinaCorridorProvenanceForSurface,
-} from '../shared/china-corridor-control-towers.ts';
+} from '../packages/shared/china-corridor-control-towers.ts';
 import {
   composeChinaCorridorControlTowers,
   type ChinaCorridorSourceBundle,
   type CorridorSourceSignal,
-} from '../server/worldmonitor/supply-chain/v1/china-corridor-control-towers';
+} from '../packages/server/worldmonitor/supply-chain/v1/china-corridor-control-towers';
 
 const ASSESSED_AT = '2026-07-25T12:00:00Z';
 

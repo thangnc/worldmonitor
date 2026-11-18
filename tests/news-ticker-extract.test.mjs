@@ -9,12 +9,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildTickerDictionary, extractTickers } from '../shared/ticker-extract.js';
+import { buildTickerDictionary, extractTickers } from '../packages/shared/ticker-extract.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const readSrc = (rel) => readFileSync(resolve(root, rel), 'utf-8');
 
-const stocks = JSON.parse(readSrc('shared/stocks.json'));
+const stocks = JSON.parse(readSrc('packages/shared/stocks.json'));
 const DICT = buildTickerDictionary(stocks.symbols);
 
 describe('extractTickers — cashtags', () => {
@@ -136,7 +136,7 @@ describe('buildTickerDictionary', () => {
 });
 
 describe('ingest wiring (source-textual + parse behavior)', () => {
-  const src = readSrc('server/worldmonitor/news/v1/list-feed-digest.ts');
+  const src = readSrc('packages/server/worldmonitor/news/v1/list-feed-digest.ts');
 
   it('list-feed-digest imports the shared extractor and stocks.json dictionary', () => {
     assert.match(src, /from '\.\.\/\.\.\/\.\.\/\.\.\/shared\/ticker-extract\.js'/);
@@ -153,7 +153,7 @@ describe('ingest wiring (source-textual + parse behavior)', () => {
   });
 
   it('parseRssXml stamps tickers on parsed items end-to-end', async () => {
-    const { __testing__ } = await import('../server/worldmonitor/news/v1/list-feed-digest.ts');
+    const { __testing__ } = await import('../packages/server/worldmonitor/news/v1/list-feed-digest.ts');
     const xml = `<?xml version="1.0"?><rss version="2.0"><channel><item>
       <title>Microsoft beats estimates as $TSLA slides</title>
       <link>https://example.com/a</link>

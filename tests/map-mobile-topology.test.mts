@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
-import { MAP_URLS, worldTopologyUrl } from '../src/config/geo-map.ts';
+import { MAP_URLS, worldTopologyUrl } from '../packages/client/config/geo-map.ts';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const readTopo = (name: string) =>

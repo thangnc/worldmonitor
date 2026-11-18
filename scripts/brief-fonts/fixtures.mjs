@@ -1,8 +1,8 @@
 // Sample briefs that exercise every part of the magazine layout: cover, digest pages, light and
 // dark story pages, every threat level, the public share view and the share button. The `intl`
 // brief carries the scripts and symbols news copy can contain, so every subset file is used.
-import { renderBriefMagazine } from '../../server/_shared/brief-render.js';
-import { BRIEF_ENVELOPE_VERSION } from '../../shared/brief-envelope.js';
+import { renderBriefMagazine } from '../../packages/server/_shared/brief-render.js';
+import { BRIEF_ENVELOPE_VERSION } from '../../packages/shared/brief-envelope.js';
 
 const PROBE = '† ‡ non‑breaking ‐ hyphen ‒ figure ― bar 10\u2009000 thin, 5\u202F% narrow, zero\u200Bwidth, fig\u2007ure, soft\u00ADhyphen, word\u2060joiner, 5′ 6″, 1⁄2, ‹a› «b», • ‰ ℓ № € ₹ ₿ ₺ ₴ ₦ ₩ ₪ ₫ ¤ ¢ £ ¥ § ¶ © ® ™ ° ± × ÷ µ ‐‑‒–—―';
 const longText = (sentence, count) => Array.from({ length: count }, () => sentence).join(' ');

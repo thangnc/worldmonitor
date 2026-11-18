@@ -159,14 +159,10 @@ const RELAY_INVENTORY_BUILD_INPUTS = Object.freeze([
   'scripts/docs-stats.mjs',
   'scripts/generate-inventory-facts.mjs',
   'scripts/source-attribution.mjs',
-  'shared/source-attribution-manifest.json',
-  'public/.well-known/mcp/server-card.json',
-  'src/components/**/*.ts',
-  'shared/news-catalog.json',
-  'src/config/map-layer-definitions.ts',
-  'src/config/variants/*.ts',
-  'src/locales/*.json',
-  'src/services/data-freshness.ts',
+  'packages/shared/source-attribution-manifest.json',
+  'packages/shared/news-catalog.json',
+  'packages/client/config/map-layer-definitions.ts',
+  'packages/client/locales/*.json',
 ]);
 const RELAY_GENERATED_RUNTIME_OUTPUT = 'scripts/shared/inventory-facts.generated.json';
 
@@ -334,7 +330,7 @@ function literalBasesFor(file) {
     dir,
     resolve(dir, 'data'),
     resolve(dir, 'shared'),
-    resolve(dir, '..', 'shared'),
+    resolve(dir, '..', 'packages', 'shared'),
     resolve(dir, '..', 'data'),
   ];
 }
@@ -349,7 +345,7 @@ function literalBasesFor(file) {
  *   scripts/_energy-disruption-registry.mjs:37  readFileSync(resolve(__dirname, 'data', 'x.json'))
  *   scripts/shared/rankable-universe.mjs:47     const P = resolve(here, 'x.json'); readFileSync(P)
  *   scripts/shared/swf-manifest-loader.mjs:27   the same, for a .yaml manifest
- *   scripts/ais-relay.cjs:56                    require(path.join(__dirname, '..', 'shared', name))
+ *   scripts/ais-relay.cjs:56                    require(path.join(__dirname, '..', 'packages', 'shared', name))
  *
  * Matching the LITERAL rather than the call is what makes this robust: a new
  * seeder inventing a fourth way to build a path is still covered, because the
@@ -363,7 +359,7 @@ function extractLiteralPathDependencies(files, repoRootDir) {
     for (const match of source.matchAll(LITERAL_PATH_RE)) {
       // EVERY base that resolves, never the first one. shared/ is mirrored at
       // the repository root AND under scripts/ — `stocks.json` exists in both —
-      // and scripts/ais-relay.cjs:56 resolves `../shared` FIRST while this list
+      // and scripts/ais-relay.cjs:56 resolves `../packages/shared` FIRST while this list
       // reaches scripts/shared first. Stopping at one match picked the copy the
       // service does not load, which watches a file that never changes while the
       // one it reads goes unwatched. Claiming both costs a build; guessing
@@ -404,18 +400,18 @@ function extractDeclaredRuntimeDependencies(files, repoRootDir) {
  * Hardcoding `hasTsx: false` and scripts-only dynamic roots was wrong for
  * exactly one service, and wrong in the direction that strands it.
  * Dockerfile.seed-bundle-resilience-validation installs tsx and COPYs
- * `server/`, and scripts/validate-resilience-sensitivity.mjs:169-185
- * dynamic-imports four `../server/worldmonitor/resilience/v1/*.ts` modules. A
+ * `packages/server/`, and scripts/validate-resilience-sensitivity.mjs:169-185
+ * dynamic-imports four `../packages/server/worldmonitor/resilience/v1/*.ts` modules. A
  * scripts-only, tsx-less walk cannot follow one of those edges, so the derived
- * closure contained ZERO server/ paths — and this service was previously
+ * closure contained ZERO packages/server/ paths — and this service was previously
  * unmanaged, i.e. protected by the broad fallback. Narrowing it would have
- * removed that floor and stopped server/ changes from ever rebuilding the
+ * removed that floor and stopped packages/server/ changes from ever rebuilding the
  * image, under a green "complete closure" check.
  *
  * Derived from the image rather than assumed, and read with the same
  * tests/_lib parser the sibling container guards use, so all of them read a
  * Dockerfile identically. tests/resilience-validation-import-graph.test.mjs
- * independently pins this same container as tsx + server/.
+ * independently pins this same container as tsx + packages/server/.
  */
 function dockerfileContainerContract(dockerfileName, repoRootDir) {
   const source = readFileSync(resolve(repoRootDir, dockerfileName), 'utf8');
@@ -513,7 +509,7 @@ function resolveRuntimeSurface(entry, repoRootDir) {
 function extractSharedConfigDependencies(files, deployMode) {
   const prefix = deployMode === 'nixpacks-root-scripts'
     ? 'scripts/shared'
-    : 'shared';
+    : 'packages/shared';
   const dependencies = new Set();
   for (const file of files) {
     if (!/\.[cm]?[jt]s$/u.test(file)) continue;
@@ -579,7 +575,7 @@ describe('Railway operational-config audit', () => {
     const config = {
       services: {
         'svc-example': service({
-          watchPatterns: ['scripts/**', 'shared/**'],
+          watchPatterns: ['scripts/**', 'packages/shared/**'],
           cronSchedule: '0 * * * *',
         }),
       },
@@ -591,7 +587,7 @@ describe('Railway operational-config audit', () => {
         serviceId: 'svc-example',
         missingService: false,
         watchPatterns: {
-          actual: ['scripts/**', 'shared/**'],
+          actual: ['scripts/**', 'packages/shared/**'],
           expected: managedRegistry[0].watchPatterns,
         },
         cronSchedule: {
@@ -726,7 +722,7 @@ describe('Railway operational-config audit', () => {
     const broad = {
       services: {
         'svc-example': service({
-          watchPatterns: ['scripts/**', 'shared/**'],
+          watchPatterns: ['scripts/**', 'packages/shared/**'],
           cronSchedule: '0 * * * *',
         }),
       },
@@ -1289,12 +1285,12 @@ describe('unmanaged live seeders', () => {
       unmanagedSeeder: true,
       watchPatterns: {
         actual: ['scripts/seed-forecasts.mjs'],
-        expected: ['scripts/**', 'shared/**'],
+        expected: ['scripts/**', 'packages/shared/**'],
       },
       cronSchedule: null,
     }]);
     assert.deepEqual(buildRailwayServiceConfigPatch(drift), {
-      services: { 'svc-forecasts': { build: { watchPatterns: ['scripts/**', 'shared/**'] } } },
+      services: { 'svc-forecasts': { build: { watchPatterns: ['scripts/**', 'packages/shared/**'] } } },
     });
   });
 
@@ -1314,7 +1310,7 @@ describe('unmanaged live seeders', () => {
     const broad = {
       services: {
         'svc-example': managedService(),
-        'svc-forecasts': unmanagedSeeder({ watchPatterns: ['scripts/**', 'shared/**'] }),
+        'svc-forecasts': unmanagedSeeder({ watchPatterns: ['scripts/**', 'packages/shared/**'] }),
       },
     };
     assert.deepEqual(auditRailwayServiceConfig(broad, ids, registry), []);
@@ -1334,7 +1330,7 @@ describe('unmanaged live seeders', () => {
     assert.deepEqual(drift[0].watchPatterns.expected, [
       'Dockerfile.seed-forecasts',
       'scripts/**',
-      'shared/**',
+      'packages/shared/**',
     ]);
   });
 
@@ -1397,7 +1393,7 @@ describe('closure detection layers', () => {
   describe('the container model derived from a Dockerfile', () => {
     it('detects the tsx loader and the dynamic roots the image copies in', () => {
       // scripts/validate-resilience-sensitivity.mjs dynamic-imports
-      // ../server/worldmonitor/resilience/v1/*.ts. Without tsx and a server/
+      // ../packages/server/worldmonitor/resilience/v1/*.ts. Without tsx and a packages/server/
       // dynamic root the walk cannot follow those edges, and the derived
       // closure silently loses the entire server graph.
       const contract = dockerfileContainerContract(
@@ -1406,8 +1402,8 @@ describe('closure detection layers', () => {
       );
       assert.equal(contract.hasTsx, true, 'this image installs tsx and sets NODE_OPTIONS');
       assert.ok(
-        contract.dynamicRoots.some((dir) => dir.endsWith('/server')),
-        'server/ is COPYd into this image, so dynamic imports can land there',
+        contract.dynamicRoots.some((dir) => dir.endsWith('/packages/server')),
+        'packages/server/ is COPYd into this image, so dynamic imports can land there',
       );
     });
 
@@ -1498,6 +1494,7 @@ describe('closure detection layers', () => {
           '.dockerignore',
           'Dockerfile.seed-bundle-resilience-validation',
           'tsconfig.api.json',
+          'tsconfig.base.json',
           'tsconfig.json',
         ],
       );
@@ -1507,18 +1504,18 @@ describe('closure detection layers', () => {
   describe('the runtime surface', () => {
     it('reaches the server TypeScript graph of the tsx container', () => {
       // The exact regression #6204's second review found: a scripts-only,
-      // tsx-less walk returned ZERO server/ paths for this service, and it had
+      // tsx-less walk returned ZERO packages/server/ paths for this service, and it had
       // just lost the broad fallback that was covering for that.
       const entry = registry.find((e) => e.service === 'seed-bundle-resilience-validation');
       const { runtimeFiles } = resolveRuntimeSurface(entry, repoRoot);
       for (const pinned of [
-        'server/worldmonitor/resilience/v1/_dimension-scorers.ts',
-        'server/worldmonitor/resilience/v1/_shared.ts',
-        'server/worldmonitor/resilience/v1/_pillar-membership.ts',
-        'server/worldmonitor/resilience/v1/_indicator-registry.ts',
+        'packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts',
+        'packages/server/worldmonitor/resilience/v1/_shared.ts',
+        'packages/server/worldmonitor/resilience/v1/_pillar-membership.ts',
+        'packages/server/worldmonitor/resilience/v1/_indicator-registry.ts',
         // Reached only THROUGH the server graph — proof the walk followed the
         // edge rather than merely listing the four dynamic-import targets.
-        'server/_shared/redis.ts',
+        'packages/server/_shared/redis.ts',
       ]) {
         assert.ok(runtimeFiles.has(pinned), `runtime surface must reach ${pinned}`);
         assert.ok(
@@ -1540,11 +1537,11 @@ describe('closure detection layers', () => {
 
     it('claims both copies of a file that shared/ mirrors', () => {
       // shared/ exists at the repository root and under scripts/. ais-relay.cjs
-      // resolves `../shared` FIRST, so stopping at the first resolving base
+      // resolves `../packages/shared` FIRST, so stopping at the first resolving base
       // watched the copy the service does not load.
       const entry = registry.find((e) => e.service === 'ais-relay');
       const watched = new Set(entry.watchPatterns);
-      assert.ok(watched.has('shared/stocks.json'), 'the copy requireShared actually loads');
+      assert.ok(watched.has('packages/shared/stocks.json'), 'the copy requireShared actually loads');
       assert.ok(watched.has('scripts/shared/stocks.json'), 'and the mirrored sibling');
     });
 
@@ -1596,7 +1593,7 @@ describe('critical ingestion Railway registry contract', () => {
     const entry = registry.find((candidate) => candidate.service === 'seed-trade-flows');
     assert.ok(entry, 'daily Comtrade flows must be registry-managed');
     const serviceId = 'svc-comtrade-flows';
-    const live = service({ watchPatterns: ['scripts/**', 'shared/**'], cronSchedule: '0 5 * * *' });
+    const live = service({ watchPatterns: ['scripts/**', 'packages/shared/**'], cronSchedule: '0 5 * * *' });
     live.deploy.startCommand = 'node seed-trade-flows.mjs';
     live.variables = {
       UPSTASH_REDIS_REST_URL: 'https://redis.example',
@@ -1621,7 +1618,7 @@ describe('critical ingestion Railway registry contract', () => {
     assert.ok(entry, 'radiation cron must be registry-managed');
     assert.equal(entry.cronSchedule, '*/15 * * * *');
     const serviceId = 'svc-radiation';
-    const live = service({ watchPatterns: ['scripts/**', 'shared/**'], cronSchedule: '*/15 * * * *' });
+    const live = service({ watchPatterns: ['scripts/**', 'packages/shared/**'], cronSchedule: '*/15 * * * *' });
     live.deploy.startCommand = 'node seed-radiation-watch.mjs';
     live.variables = {
       UPSTASH_REDIS_REST_URL: 'https://redis.example',
@@ -1750,7 +1747,7 @@ describe('critical ingestion Railway registry contract', () => {
         `${serviceName} watchPatterns must not contain duplicates`,
       );
       assert.ok(!entry.watchPatterns.includes('scripts/**'), `${serviceName} must not watch every seeder`);
-      assert.ok(!entry.watchPatterns.includes('shared/**'), `${serviceName} must not watch all shared data`);
+      assert.ok(!entry.watchPatterns.includes('packages/shared/**'), `${serviceName} must not watch all shared data`);
       const buildInputs = buildInputsFor(entry, repoRoot);
       for (const watchedPath of entry.watchPatterns) {
         if (watchedPath.includes('*')) {

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, test } from 'node:test';
 import { fetchHackerNews, HN_TTL } from '../scripts/seed-research.mjs';
-import { listHackernewsItems } from '../server/worldmonitor/research/v1/list-hackernews-items';
-import contracts from '../shared/openapi-filter-param-contracts.json' with { type: 'json' };
+import { listHackernewsItems } from '../packages/server/worldmonitor/research/v1/list-hackernews-items';
+import contracts from '../packages/shared/openapi-filter-param-contracts.json' with { type: 'json' };
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };

@@ -18,7 +18,7 @@ import {
 // exemptions preserve truthful 202-only and body-agnostic 2XX contracts.
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head']);
 
 // Operations that legitimately have no exact 200, keyed by operation kind,
@@ -43,7 +43,7 @@ function schemaIsTyped(schema, spec, seenRefs = new Set()) {
     const ref = String(schema.$ref);
     const local = /^#\/components\/schemas\/(.+)$/u.exec(ref);
     // Only local component pointers are resolvable here; every $ref in
-    // docs/api today is one, so an unrecognised shape is a red flag.
+    // packages/contracts/openapi today is one, so an unrecognised shape is a red flag.
     if (!local) return false;
     const name = local[1];
     if (seenRefs.has(name)) return false;

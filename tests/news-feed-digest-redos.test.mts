@@ -8,8 +8,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { __testing__, fetchAndParseRss } from '../server/worldmonitor/news/v1/list-feed-digest';
-import { __resetKeyPrefixCacheForTests } from '../server/_shared/redis';
+import { __testing__, fetchAndParseRss } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
+import { __resetKeyPrefixCacheForTests } from '../packages/server/_shared/redis';
 import { createRedisFetch } from './helpers/fake-upstash-redis.mts';
 
 const {

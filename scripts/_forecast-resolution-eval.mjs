@@ -752,7 +752,7 @@ function loadCountryAliases() {
     byToken.get(a).add(b);
   };
   try {
-    const raw = JSON.parse(readFileSync(new URL('../shared/country-names.json', import.meta.url), 'utf8'));
+    const raw = JSON.parse(readFileSync(new URL('../packages/shared/country-names.json', import.meta.url), 'utf8'));
     for (const [name, code] of Object.entries(raw || {})) {
       const normalizedCode = normalizeComparable(code);
       if (!normalizedCode) continue;

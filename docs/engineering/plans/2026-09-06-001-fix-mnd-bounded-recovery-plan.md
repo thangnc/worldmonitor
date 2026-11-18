@@ -118,7 +118,7 @@ No external library or provider choice is needed. Existing code and observed fai
 
 **Goal:** Satisfy R4-R7 across source metadata, publication, and the real bundle gate.
 **Dependencies:** U1.
-**Files:** `scripts/_bundle-runner.mjs`; `scripts/seed-bundle-derived-signals.mjs`; `tests/bundle-runner.test.mjs`; `tests/cross-strait-activity-shipping.test.mts`; `docs/health-endpoints.mdx`; `docker/redis-rest-proxy.mjs`; `tests/redis-rest-proxy-command-parity.test.mjs`.
+**Files:** `scripts/_bundle-runner.mjs`; `scripts/seed-bundle-derived-signals.mjs`; `tests/bundle-runner.test.mjs`; `tests/cross-strait-activity-shipping.test.mts`; `docs/engineering/architecture/health-endpoints.md`; `docker/redis-rest-proxy.mjs`; `tests/redis-rest-proxy-command-parity.test.mjs`.
 **Approach:** Add opt-in source recovery to the existing freshness gate. Keep publication freshness and retry eligibility separate. Claim an early attempt on the existing completion marker before starting the child. Register only Cross-Strait and document the bounded allowance.
 **Patterns to follow:** Source-attempt metadata validation and duplicate/out-of-order protections; existing bundle freshness fixtures and publication-hook tests.
 **Execution note:** First prove that a failed source plus a successful retained publication currently delays admission beyond 30 minutes. Exercise the actual source-health writer and reader chain with in-memory Redis transport, not copied scheduling logic.

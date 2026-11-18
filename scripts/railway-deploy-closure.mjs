@@ -18,7 +18,7 @@
 // service's build context. A `nixpacks-root-scripts` service is built with the
 // context rooted at scripts/, so scripts/ IS the container — the same
 // containment tests/nixpacks-seeder-import-graph.test.mjs enforces on imports —
-// and a commit touching only repository-root `shared/` cannot change that image
+// and a commit touching only repository-root `packages/shared/` cannot change that image
 // however the watch patterns read. A matcher that ignores the build context
 // reports those 57 as false rejections.
 //

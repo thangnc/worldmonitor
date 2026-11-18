@@ -26,16 +26,16 @@ import {
   type ClaimEvidence,
   type Corroboration,
   type Publisher,
-} from '../server/_shared/corroboration.ts';
-import { SOURCE_TIERS, TIER_MEANING, declaredSourceTier, getSourceTier } from '../server/_shared/source-tiers.ts';
-import { clusterNewsCore } from '../shared/news-clustering-core.js';
-import { THREAT_CATEGORIES, THREAT_LEVELS } from '../shared/jev-classify.js';
+} from '../packages/server/_shared/corroboration.ts';
+import { SOURCE_TIERS, TIER_MEANING, declaredSourceTier, getSourceTier } from '../packages/server/_shared/source-tiers.ts';
+import { clusterNewsCore } from '../packages/shared/news-clustering-core.js';
+import { THREAT_CATEGORIES, THREAT_LEVELS } from '../packages/shared/jev-classify.js';
 import {
   PUBLISHER_FAMILIES,
   countPublisherFamilies,
   publisherFamilyFor,
   publisherNameForFamily,
-} from '../shared/publisher-families.js';
+} from '../packages/shared/publisher-families.js';
 
 const UNDECLARED = 'Synthetic Unmapped Outlet 6419';
 const STORY = 'Missile attack kills troops in border strike officials say';

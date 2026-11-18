@@ -13,7 +13,7 @@ import { discoverProtoServiceNames, loadUnifiedOpenApiSpec } from './_lib/openap
 // the injection step, these assertions fail and flag the drop.
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 
 const EXPECTED_URL = 'https://api.worldmonitor.app';
 

@@ -7,7 +7,7 @@ const { EventEmitter } = require('node:events');
 const https = require('node:https');
 // Node 24 loads the shared TypeScript module directly (type stripping), so the
 // emergency codes have one source of truth across TS, ESM and CommonJS.
-const { EMERGENCY_CODES } = require('../shared/aircraft-emergencies.ts');
+const { EMERGENCY_CODES } = require('../packages/shared/aircraft-emergencies.ts');
 
 const googleStatuses = (process.env.RELAY_TEST_GOOGLE_STATUS_SEQUENCE || '429')
   .split(',')

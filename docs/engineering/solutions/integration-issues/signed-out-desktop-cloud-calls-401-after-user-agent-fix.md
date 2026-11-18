@@ -26,7 +26,7 @@ resolution_type: code_fix
 
 ## Problem
 
-On a signed-out or free desktop, the sidecar sent its cloud requests (`proxyToCloud` in `src-tauri/sidecar/local-api-server.mjs`) without any credential. The gateway has rejected keyless calls since #3541, so every seed-only panel came back empty (issue #7548).
+On a signed-out or free desktop, the sidecar sent its cloud requests (`proxyToCloud` in `docker/local-api/local-api-server.mjs`) without any credential. The gateway has rejected keyless calls since #3541, so every seed-only panel came back empty (issue #7548).
 
 ## Symptoms
 

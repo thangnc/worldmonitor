@@ -7,7 +7,7 @@ import {
   MARKET_WATCHLIST_STORAGE_KEY,
   resetMarketWatchlistPreferences,
   setMarketWatchlistPreferences,
-} from '../src/services/market-watchlist.ts';
+} from '../packages/client/services/market-watchlist.ts';
 
 const originalStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');

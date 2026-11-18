@@ -10,7 +10,7 @@ import {
   RESILIENCE_HISTORY_KEY_PREFIX,
   RESILIENCE_INTERVAL_KEY_PREFIX,
   RESILIENCE_INTERVAL_METHODOLOGY,
-} from '../server/worldmonitor/resilience/v1/_shared.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
 import {
   RESILIENCE_INTERVAL_KEY_PREFIX as SCRIPT_INTERVAL_KEY_PREFIX,
   RESILIENCE_INTERVAL_METHODOLOGY as SCRIPT_INTERVAL_METHODOLOGY,
@@ -31,7 +31,7 @@ function cacheVersion(label: string, value: string, pattern: RegExp): number {
 // Phase 1 T1.9 cache-key / health-registry sync guard.
 //
 // If a future PR bumps any of the resilience cache key constants in
-// server/worldmonitor/resilience/v1/_shared.ts (e.g. resilience:score:v7
+// packages/server/worldmonitor/resilience/v1/_shared.ts (e.g. resilience:score:v7
 // becomes v8), the api/health.js SEED_META / KEY_TO_DOMAIN registry MUST
 // be updated in the same PR or health probes will silently watch the
 // wrong key and stop paging on real staleness.
@@ -196,7 +196,7 @@ describe('resilience cache-key health-registry sync (T1.9)', () => {
       // The country brief's evidence pack reads the score key but must not
       // import resilience/v1/_shared.ts: that pulls the scoring engine into
       // the intelligence edge bundle.
-      'server/worldmonitor/intelligence/v1/_country-brief-evidence.ts',
+      'packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts',
     ] as const;
     const RANKING_MIRROR_FILES = [
       'scripts/seed-resilience-scores.mjs',
@@ -458,7 +458,7 @@ describe('resilience cache-key health-registry sync (T1.9)', () => {
 
 // Greptile PR #3972 review P2 — methodology constant parity across the
 // server/script boundary. RESILIENCE_INTERVAL_METHODOLOGY is duplicated in
-// server/worldmonitor/resilience/v1/_shared.ts (where it gates ranking-cache
+// packages/server/worldmonitor/resilience/v1/_shared.ts (where it gates ranking-cache
 // invalidation via stampRankingCacheTag/rankingCacheTagMatches) and in
 // scripts/_resilience-intervals.mjs (where it only labels the interval
 // payload's informational `methodology` field). The server never reads the

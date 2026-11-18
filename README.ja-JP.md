@@ -42,8 +42,6 @@
   <a href="https://www.worldmonitor.app/docs/contributing"><strong>コントリビューション</strong></a>
 </p>
 
-![World Monitor Dashboard](docs/images/worldmonitor-7-mar-2026.jpg)
-
 ---
 
 ## 主な機能
@@ -87,16 +85,6 @@ npm run dev
 [localhost:3000](http://localhost:3000) を開きます (ポートは `.env.local` の `DEV_PORT` で変更可能)。このアプリは環境変数なしで動作します。
 
 一部の機能固有のデータソースには認証情報が必要な場合があります。全一覧は `.env.example` を参照してください。
-
-バリアント別の開発:
-
-```bash
-npm run dev:tech       # tech.worldmonitor.app
-npm run dev:finance    # finance.worldmonitor.app
-npm run dev:commodity  # commodity.worldmonitor.app
-npm run dev:happy      # happy.worldmonitor.app
-npm run dev:energy     # energy.worldmonitor.app
-```
 
 デプロイ方法 (Vercel、Docker、静的ホスティング) については **[セルフホスティングガイド](https://www.worldmonitor.app/docs/getting-started)** を参照してください。
 
@@ -179,7 +167,7 @@ npm run build:full       # プロダクションビルド
 | 商用利用 / SaaS | 可 (AGPL の義務を遵守する場合、AGPL-3.0-only のもと) |
 | ソース非公開のプロプライエタリ利用、または公式ブランディングの利用 | 別途、商用ライセンスまたは商標の許諾が必要 |
 
-コードライセンスの全文は [LICENSE](LICENSE)、平易な言葉での要約は [docs/license.mdx](docs/license.mdx) を参照してください。AGPL 以外の条件が必要なチーム向けに、商用ライセンスも別途提供しています。
+コードライセンスの全文は [LICENSE](LICENSE) を参照してください。AGPL 以外の条件が必要なチーム向けに、商用ライセンスも別途提供しています。
 
 Copyright (C) 2024-2026 Elie Habib. All rights reserved.
 

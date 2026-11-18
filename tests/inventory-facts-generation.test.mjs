@@ -34,12 +34,12 @@ function makeInventoryFixture({ malformed = false } = {}) {
     mkdirSync(dirname(join(fixtureRoot, path)), { recursive: true });
     cpSync(join(ROOT, path), join(fixtureRoot, path), { recursive: true, verbatimSymlinks: true });
   }
-  const manifest = readJson('shared/source-attribution-manifest.json');
+  const manifest = readJson('packages/shared/source-attribution-manifest.json');
   const entry = manifest.entries.find((row) => row.observed && row.kind === 'structured');
   assert.ok(entry, 'fixture needs an observed structured source');
   entry.references = [{ path: 'scripts/stale-source.mjs' }];
   if (malformed) entry.kind = 'not-a-source-kind';
-  writeFileSync(join(fixtureRoot, 'shared/source-attribution-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  writeFileSync(join(fixtureRoot, 'packages/shared/source-attribution-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   return fixtureRoot;
 }
 
@@ -56,15 +56,14 @@ describe('inventory facts generation contract', () => {
   it('fails closed when any published inventory extractor collapses to zero', () => {
     const stats = computeStats();
     const capabilityStatKeys = [
-      'mcpToolCount',
       'locales',
       'variantCount',
       'layerDefinitions',
-      'panelClasses',
       'feedDefinitions',
-      'freshnessSources',
       'sourceAttributionHosts',
     ];
+    // panelClasses and freshnessSources described the old dashboard, which
+    // refactor Phase 1 removed; zero is their true value now.
     for (const key of capabilityStatKeys) {
       assert.throws(
         () => buildInventoryFacts({ ...stats, [key]: 0 }),
@@ -163,18 +162,15 @@ describe('inventory facts generation contract', () => {
       const result = runInventoryFixture(fixtureRoot);
       assert.equal(result.status, 0, result.stderr);
       const outputs = [
-        'public/product-facts.json',
         'scripts/shared/inventory-facts.generated.json',
         'api/_inventory-facts.generated.js',
-        'docs/generated/stats.json',
       ];
       const original = outputs.map((path) => readFileSync(join(fixtureRoot, path), 'utf8'));
-      const publicFacts = JSON.parse(original[0]);
-      const relayFacts = JSON.parse(original[1]);
-      const stats = JSON.parse(original[3]);
-      assert.deepEqual(publicFacts.capabilities, relayFacts.capabilities);
-      assert.equal(publicFacts.capabilities.sourceAttributionHosts, stats.sourceAttributionHosts);
-      assert.equal(stats.sourceAttributionHosts, buildSourceAttributionStats({ rootDir: fixtureRoot, validate: false }).activeHosts);
+      const relayFacts = JSON.parse(original[0]);
+      assert.equal(
+        relayFacts.capabilities.sourceAttributionHosts,
+        buildSourceAttributionStats({ rootDir: fixtureRoot, validate: false }).activeHosts,
+      );
       const edge = runInventoryFixture(fixtureRoot, '--input-type=module', ['-e',
         "import { PUBLIC_INVENTORY_FACTS } from './api/_inventory-facts.generated.js'; console.log(JSON.stringify(PUBLIC_INVENTORY_FACTS));",
       ]);
@@ -190,10 +186,10 @@ describe('inventory facts generation contract', () => {
       assert.notEqual(strictCli.status, 0, 'bootstrap must not weaken the strict attribution gate');
       assert.match(strictCli.stderr + strictCli.stdout, /stale manifest entry/);
 
-      writeFileSync(join(fixtureRoot, 'src/config/finance-geo.ts'), 'export const UNRELATED = [];\n');
+      writeFileSync(join(fixtureRoot, 'packages/client/config/map-layer-definitions.ts'), 'export const UNRELATED = [];\n');
       const brokenInventory = runInventoryFixture(fixtureRoot);
       assert.notEqual(brokenInventory.status, 0);
-      assert.match(brokenInventory.stderr, /could not isolate STOCK_EXCHANGES/);
+      assert.match(brokenInventory.stderr, /could not find the complete LAYER_REGISTRY block/);
       assert.deepEqual(outputs.map((path) => readFileSync(join(fixtureRoot, path), 'utf8')), original);
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
@@ -204,10 +200,10 @@ describe('inventory facts generation contract', () => {
     assert.throws(
       () => loadStatsForInventoryFacts({
         compute: () => {
-          throw new Error('docs-stats: could not isolate STOCK_EXCHANGES block');
+          throw new Error('docs-stats: could not find the complete LAYER_REGISTRY block');
         },
       }),
-      /STOCK_EXCHANGES/,
+      /LAYER_REGISTRY/,
     );
   });
 
@@ -222,10 +218,8 @@ describe('inventory facts generation contract', () => {
       assert.notEqual(result.status, 0);
       assert.match(result.stderr, /invalid manifest kind/);
       for (const path of [
-        'public/product-facts.json',
         'scripts/shared/inventory-facts.generated.json',
         'api/_inventory-facts.generated.js',
-        'docs/generated/stats.json',
       ]) {
         assert.equal(existsSync(join(fixtureRoot, path)), false, `malformed ledger published ${path}`);
       }

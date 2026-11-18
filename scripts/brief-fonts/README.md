@@ -1,6 +1,6 @@
 # Brief magazine fonts
 
-The brief magazine (`/api/brief/...`, rendered by `server/_shared/brief-render.js`) uses Playfair
+The brief magazine (`/api/brief/...`, rendered by `packages/server/_shared/brief-render.js`) uses Playfair
 Display, Source Serif 4 and IBM Plex Mono. They used to come from Google Fonts. They are now
 served from `public/assets/brief-fonts/` as slimmed copies of the files Google serves, produced by
 hand with the script here. The build does no font processing.
@@ -14,7 +14,7 @@ npx playwright install chromium # once
 npm run brief-fonts:subset
 ```
 
-Commit what it rewrites: `public/assets/brief-fonts/`, `server/_shared/brief-fonts.generated.js`
+Commit what it rewrites: `public/assets/brief-fonts/`, `packages/server/_shared/brief-fonts.generated.js`
 and `scripts/brief-fonts/manifest.json`. A failed run writes nothing.
 
 `node scripts/brief-fonts/run.mjs --skip-google-parity` skips the comparison with Google's files
@@ -63,6 +63,6 @@ file has, except those another file of the same face draws first.
      names are unchanged;
    - refuses to write anything if a glyph outline, point flag, hinting instruction, advance or
      HarfBuzz shaping result differs from Google's file.
-3. The route picks the class from the User-Agent (`server/_shared/brief-font-platform.js`) and
+3. The route picks the class from the User-Agent (`packages/server/_shared/brief-font-platform.js`) and
    sends `Vary: User-Agent`. The page inlines that class's `@font-face` rules and preloads the
    latin files of the faces on the cover.

@@ -47,12 +47,11 @@ cmd_launch() {
   fi
 
   mkdir -p "$EVIDENCE_ROOT"
-  local variant="${WM_VERIFY_VARIANT:-full}"
-  echo "VITE_E2E=1 VITE_VARIANT=$variant port=$port" >"$EVIDENCE_ROOT/launch-env.txt"
-  echo "[wm-verify] starting VITE_VARIANT=$variant dev server on 127.0.0.1:$port"
+  echo "VITE_E2E=1 port=$port" >"$EVIDENCE_ROOT/launch-env.txt"
+  echo "[wm-verify] starting the dev server on 127.0.0.1:$port"
   (
     cd "$REPO_ROOT"
-    VITE_E2E=1 VITE_VARIANT="$variant" npm run dev -- --host 127.0.0.1 --port "$port" \
+    VITE_E2E=1 npm run dev -- --host 127.0.0.1 --port "$port" \
       >"$LOG_FILE" 2>&1 &
     echo $! >"$EVIDENCE_ROOT/.pid"
   )
@@ -61,10 +60,9 @@ cmd_launch() {
   rm -f "$EVIDENCE_ROOT/.pid"
 
   local waited=0
-  # /tests/map-harness.html is the same readiness probe playwright.config.ts uses:
-  # it forces Vite to transform a real module graph, so a 200 means "can serve the
+  # /lite.html makes Vite transform the Lite entry, so a 200 means "can serve the
   # app", not just "socket is open".
-  until curl -sf -o /dev/null "http://127.0.0.1:$port/tests/map-harness.html"; do
+  until curl -sf -o /dev/null "http://127.0.0.1:$port/lite.html"; do
     if ! kill -0 "$pid" 2>/dev/null; then
       echo "[wm-verify] dev server died during startup. Last log lines:" >&2
       tail -30 "$LOG_FILE" >&2
@@ -85,13 +83,12 @@ cmd_launch() {
       pid: Number(process.argv[2]),
       port: Number(process.argv[3]),
       baseUrl: 'http://127.0.0.1:' + process.argv[3],
-      variant: process.argv[4],
       startedAt: new Date().toISOString(),
-      log: process.argv[5],
+      log: process.argv[4],
     }, null, 2) + '\n');
-  " "$INSTANCE_FILE" "$pid" "$port" "$variant" "$LOG_FILE"
+  " "$INSTANCE_FILE" "$pid" "$port" "$LOG_FILE"
 
-  echo "[wm-verify] ready in ${waited}s — http://127.0.0.1:$port/dashboard (pid $pid)"
+  echo "[wm-verify] ready in ${waited}s — http://127.0.0.1:$port/lite (pid $pid)"
   cat "$INSTANCE_FILE"
 }
 
@@ -135,13 +132,13 @@ cmd_doctor() {
   fi
 
   local code
-  code="$(curl -s -o /dev/null -w '%{http_code}' "$base/dashboard" || echo 000)"
-  if [ "$code" = "200" ]; then echo "doctor: $base/dashboard -> 200"; else echo "doctor: FAIL — $base/dashboard -> $code"; ok=1; fi
+  code="$(curl -s -o /dev/null -w '%{http_code}' "$base/lite" || echo 000)"
+  if [ "$code" = "200" ]; then echo "doctor: $base/lite -> 200"; else echo "doctor: FAIL — $base/lite -> $code"; ok=1; fi
 
-  if curl -sf "$base/dashboard" | grep -q "skeleton-shell"; then
-    echo "doctor: dashboard shell markup served"
+  if curl -sf "$base/lite" | grep -q 'id="lite-root"'; then
+    echo "doctor: Lite app shell served"
   else
-    echo "doctor: FAIL — dashboard HTML is not the app shell"; ok=1
+    echo "doctor: FAIL — /lite HTML is not the Lite app shell"; ok=1
   fi
 
   # Every drive waits on the data-wm-* readiness markers, and only VITE_E2E=1

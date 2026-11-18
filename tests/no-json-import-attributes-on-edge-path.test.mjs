@@ -1,7 +1,7 @@
 /**
  * `with { type: 'json' }` must not appear in the Vercel handler bundle graph.
  *
- * shared/ticker-extract.js:20-30 records the burn: the two JSON-import forms
+ * packages/shared/ticker-extract.js:20-30 records the burn: the two JSON-import forms
  * are mutually incompatible across the runtimes shared/ modules reach —
  * `with { type: 'json' }` breaks the Vercel bundle, and a bare JSON import
  * throws ERR_IMPORT_ATTRIBUTE_MISSING under Node 22+. The safe shapes are a
@@ -10,7 +10,7 @@
  *
  * That knowledge was a comment, and a comment does not fail CI. #6428 added a
  * shared module using the attribute form and wired it into
- * server/worldmonitor/news/v1/list-feed-digest.ts — a change that typechecks,
+ * packages/server/worldmonitor/news/v1/list-feed-digest.ts — a change that typechecks,
  * passes every local esbuild and vite build, and would only break at deploy.
  * This test walks the real import graph from each api/ entrypoint so the next
  * one fails here instead.
@@ -87,22 +87,12 @@ describe('Vercel handler bundle graph rejects JSON import attributes', () => {
     // If the resolver silently returned null for every specifier, the closures
     // below would be single-file and the assertion after them vacuous.
     const digestConsumers = entries.filter((entry) =>
-      [...importClosure(entry)].some((f) => f.endsWith('shared/publisher-families.js')),
+      [...importClosure(entry)].some((f) => f.endsWith('packages/shared/publisher-families.js')),
     );
     assert.ok(
       digestConsumers.length > 0,
-      'no api/ entrypoint reaches shared/publisher-families.js — the import walker is broken, ' +
+      'no api/ entrypoint reaches packages/shared/publisher-families.js — the import walker is broken, ' +
         'or the module was disconnected from the handler graph',
-    );
-  });
-
-  it('reaches the source-origin classifier from the MCP handler', () => {
-    const originConsumers = entries.filter((entry) =>
-      [...importClosure(entry)].some((f) => f.endsWith('scripts/source-origin.mjs')),
-    );
-    assert.ok(
-      originConsumers.some((entry) => entry.endsWith('api/mcp.ts')),
-      'api/mcp.ts must bundle the same source-origin classifier used by the public catalog',
     );
   });
 
@@ -126,7 +116,7 @@ describe('Vercel handler bundle graph rejects JSON import attributes', () => {
       [...offenders].sort(),
       [],
       'These modules are bundled into a Vercel handler and use the JSON import-attribute form, ' +
-        'which breaks that bundler (shared/ticker-extract.js:20-30). Inline the data as a literal, ' +
+        'which breaks that bundler (packages/shared/ticker-extract.js:20-30). Inline the data as a literal, ' +
         'or bare-import the JSON from the consuming .ts and pass it in:\n  ' +
         [...offenders].join('\n  '),
     );

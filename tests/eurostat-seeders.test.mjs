@@ -15,7 +15,7 @@ import { strict as assert } from 'node:assert';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../shared/bootstrap-tier-keys.js';
+import { BOOTSTRAP_CACHE_KEYS, BOOTSTRAP_TIERS } from '../packages/shared/bootstrap-tier-keys.js';
 
 import {
   parseEurostatSeries,
@@ -190,16 +190,6 @@ describe('Registry wiring (issue #3028)', () => {
     assert.match(src, /eurostatHousePrices:\s*\{[^}]*seed-meta:economic:eurostat-house-prices/);
     assert.match(src, /eurostatGovDebtQ:\s*\{[^}]*seed-meta:economic:eurostat-gov-debt-q/);
     assert.match(src, /eurostatIndProd:\s*\{[^}]*seed-meta:economic:eurostat-industrial-production/);
-  });
-
-  it('MCP tool registry exposes the three new EU overlay tools', async () => {
-    const src = await readFile(resolve(ROOT, 'api/mcp/registry/cache-tools.ts'), 'utf8');
-    assert.match(src, /name: 'get_eu_housing_cycle'/);
-    assert.match(src, /name: 'get_eu_quarterly_gov_debt'/);
-    assert.match(src, /name: 'get_eu_industrial_production'/);
-    assert.match(src, /'economic:eurostat:house-prices:v1'/);
-    assert.match(src, /'economic:eurostat:gov-debt-q:v1'/);
-    assert.match(src, /'economic:eurostat:industrial-production:v1'/);
   });
 
   it('macro bundle runner includes the three new scripts with distinct seed-meta keys', async () => {

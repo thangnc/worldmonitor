@@ -6,12 +6,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, it } from 'node:test';
-import { VARIANT_FEEDS } from '../server/worldmonitor/news/v1/_feeds';
-import { __testing__ as digest } from '../server/worldmonitor/news/v1/list-feed-digest';
-import { __testing__ as claimPool, searchClaimPool } from '../server/worldmonitor/news/v1/search-claim-headlines';
-import { rssFeedCacheKey } from '../server/worldmonitor/news/v1/_rss-cache';
-import { REVOKED_URLS_KEY } from '../server/_shared/digest-revocations';
-import { __resetKeyPrefixCacheForTests } from '../server/_shared/redis';
+import { VARIANT_FEEDS } from '../packages/server/worldmonitor/news/v1/_feeds';
+import { __testing__ as digest } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
+import { __testing__ as claimPool, searchClaimPool } from '../packages/server/worldmonitor/news/v1/search-claim-headlines';
+import { rssFeedCacheKey } from '../packages/server/worldmonitor/news/v1/_rss-cache';
+import { REVOKED_URLS_KEY } from '../packages/server/_shared/digest-revocations';
+import { __resetKeyPrefixCacheForTests } from '../packages/server/_shared/redis';
 
 const gn = (q: string) => `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
 const NATIVE_URL = 'https://www.aljazeera.com/xml/rss/all.xml';
@@ -132,7 +132,7 @@ describe('Al Jazeera claim-pool depth feed', () => {
   });
 
   it('starts depth warming before the batches and awaits it only after them', () => {
-    const src = readFileSync(new URL('../server/worldmonitor/news/v1/list-feed-digest.ts', import.meta.url), 'utf8');
+    const src = readFileSync(new URL('../packages/server/worldmonitor/news/v1/list-feed-digest.ts', import.meta.url), 'utf8');
     const start = src.indexOf('const depthWarming = warmDepthFeeds(allEntries, variant, deadlineController.signal);');
     const batches = src.indexOf('const attempts = await runFeedAttemptBatches(');
     const settle = src.indexOf('await depthWarming;');

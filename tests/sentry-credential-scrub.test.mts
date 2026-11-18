@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { scrubSentryCredentials } from '../shared/sensitive-url-params.ts';
+import { scrubSentryCredentials } from '../packages/shared/sensitive-url-params.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel: string) => readFileSync(resolve(root, rel), 'utf8');
@@ -78,7 +78,7 @@ describe('scrubSentryCredentials', () => {
 });
 
 describe('Sentry init wiring', () => {
-  for (const file of ['src/bootstrap/sentry-init.ts', 'pro-test/src/sentry.ts']) {
+  for (const file of ['packages/client/bootstrap/sentry-init.ts']) {
     it(`${file} scrubs events, breadcrumbs, transactions and spans`, () => {
       const src = read(file);
       for (const hook of ['beforeBreadcrumb', 'beforeSendTransaction', 'beforeSendSpan']) {

@@ -3,7 +3,7 @@ import { test, describe } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { derivePipelinePublicBadge } from '../src/shared/pipeline-evidence';
+import { derivePipelinePublicBadge } from '../packages/server/_shared/pipeline-evidence';
 
 // Regression tests for the bootstrap-first-paint path of PipelineStatusPanel.
 // The exact bug this guards against: bootstrap hydrates raw JSON from

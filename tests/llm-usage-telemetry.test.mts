@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { callLlm } from '../server/_shared/llm.ts';
+import { callLlm } from '../packages/server/_shared/llm.ts';
 
 const ENV_KEYS = [
   'OPENROUTER_API_KEY', 'OLLAMA_API_URL', 'LLM_API_URL', 'LLM_API_KEY', 'LLM_MODEL',

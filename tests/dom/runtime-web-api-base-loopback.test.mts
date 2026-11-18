@@ -1,7 +1,7 @@
 /**
  * A loopback page must not redirect /api/ to a remote API origin.
  *
- * `api/_cors.js` and `server/cors.ts` both drop bare `localhost` / `127.0.0.1`
+ * `api/_cors.js` and `packages/server/cors.ts` both drop bare `localhost` / `127.0.0.1`
  * from the allow-list when NODE_ENV is production — deliberately, with a
  * comment saying so. So a browser on http://127.0.0.1:<port> that sends its
  * /api/ traffic to https://api.worldmonitor.app gets 403 on every call and
@@ -24,7 +24,7 @@ const REMOTE_API = 'https://api.worldmonitor.app';
 async function loadRuntimeWith(
   { apiBase, hostname, protocol = 'http:' }:
     { apiBase?: string; hostname: string; protocol?: 'http:' | 'https:' },
-): Promise<typeof import('@/services/runtime')> {
+): Promise<typeof import('@wm/client/services/runtime')> {
   vi.resetModules();
   vi.stubEnv('VITE_WS_API_URL', apiBase ?? '');
   // protocol/host matter: the desktop detector treats an https loopback origin
@@ -36,7 +36,7 @@ async function loadRuntimeWith(
     href: `${protocol}//${hostname}/`,
     origin: `${protocol}//${hostname}`,
   });
-  return import('@/services/runtime');
+  return import('@wm/client/services/runtime');
 }
 
 describe('getConfiguredWebApiBaseUrl on a loopback page', () => {

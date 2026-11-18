@@ -1,15 +1,11 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import {
-  TRANSLATE_TARGET_LANGUAGES,
   __setTranslateBudgetLimiterForTests,
   summarizeArticle,
-} from '../server/worldmonitor/news/v1/summarize-article.ts';
+} from '../packages/server/worldmonitor/news/v1/summarize-article.ts';
 
-const root = resolve(import.meta.dirname, '..');
 const ENV_KEYS = ['OPENROUTER_API_KEY', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'] as const;
 const originalEnv = new Map<string, string | undefined>();
 const originalFetch = globalThis.fetch;
@@ -102,18 +98,5 @@ describe('summarize-article translate target language', () => {
     assert.notEqual(response.errorType, 'ValidationError');
     assert.notEqual(response.errorType, 'AuthError');
     assert.ok(llmCalls.length > 0, 'a supported target must reach the provider');
-  });
-
-  it('accepts every language the dashboard UI can request', () => {
-    // NewsPanel translates into the current i18n language, so the server
-    // allowlist must cover the whole UI catalogue, including zh-TW.
-    const source = readFileSync(resolve(root, 'src/services/i18n.ts'), 'utf8');
-    const match = source.match(/const SUPPORTED_LANGUAGES = \[([^\]]+)\]/);
-    assert.ok(match, 'SUPPORTED_LANGUAGES declaration not found in src/services/i18n.ts');
-    const uiLanguages = [...match[1]!.matchAll(/'([^']+)'/g)].map((m) => m[1]!);
-    assert.ok(uiLanguages.length > 10);
-    for (const lang of uiLanguages) {
-      assert.ok(TRANSLATE_TARGET_LANGUAGES.has(lang), `translate must accept UI language ${lang}`);
-    }
   });
 });

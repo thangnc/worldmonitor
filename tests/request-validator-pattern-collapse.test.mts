@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { collapseAdjacentClassQuantifiers } from '../server/request-validator.ts';
-import { GENERATED_MESSAGE_RULES } from '../src/generated/server/request_validation.ts';
+import { collapseAdjacentClassQuantifiers } from '../packages/server/request-validator.ts';
+import { GENERATED_MESSAGE_RULES } from '../packages/contracts/generated/server/request_validation.ts';
 
 // ---------------------------------------------------------------------------
 // Why this test exists

@@ -1,0 +1,14 @@
+{
+  "name": "@wm/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "WorldMonitor RPC contracts: proto sources, the sebuf-generated TypeScript clients and servers, and the generated OpenAPI specs. Regenerate with `make generate`; never edit generated/ or openapi/ by hand.",
+  "type": "module",
+  "exports": {
+    "./generated/*.ts": "./generated/*.ts",
+    "./generated/*": "./generated/*.ts",
+    "./openapi/*": "./openapi/*",
+    "./proto/*": "./proto/*",
+    "./package.json": "./package.json"
+  }
+}

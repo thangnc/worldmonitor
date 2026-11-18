@@ -473,12 +473,6 @@ The load-bearing rule: credential class never determines plan family, so any rul
 
 The MCP transport this server implements over HTTP: JSON-RPC 2.0 requests via `POST`, with optional Server-Sent Events when the client advertises `Accept: text/event-stream`. Its `405` on a standalone stream-open is not an error but a contract — MCP SDK clients read it as the graceful "no standalone stream" signal and complete the handshake. Anything that converts that `405` into a `200` (including a CDN replaying a cached discovery response) breaks the handshake.
 
-### Agent Discovery File
-
-One of the published plain-text or Markdown documents an assistant reads to learn what the site offers without crawling it: the short LLM briefing at `/llms.txt`, its full corpus at `/llms-full.txt`, the Markdown homepage served to agent user agents, and the AI-search answer page. They are the *content* half of agent discovery — the MCP Server Card says how to call the product; these say what it publishes.
-
-The load-bearing rule: each file is partly hand-authored and partly generated, and every generated section has exactly one producing script, which splices it into the hand-authored text at a stable anchor and can re-derive it byte-for-byte for a staleness check. A page family that only a registry knows about must be listed by that script, never typed in by hand — otherwise it is crawlable but invisible to assistants. See also: MCP Server Card, Discovery Read vs. Transport Operation.
-
 ### Client Callback Allowlist
 
 The closed set of redirect addresses an MCP client may register for its OAuth sign-in: any plain-http address on the local host name or the IPv4 loopback address, plus the published callbacks of named hosted clients, each matched exactly as that client sends it.
@@ -642,6 +636,8 @@ A run with no timestamp is never superseded, so the alarm fails closed. The alar
 
 ### Tiered Gate
 
+Retired in refactor Phase 1b, when `.husky/pre-push` became a short gate that runs only the checks the branch's changes touch. The entry records how the upstream hook worked.
+
 The pre-push check suite split into two tiers: a state-dependent tier (secret guards, PR-state and branch-contamination checks, lockfile sync) that runs on every push, and a tree-dependent tier (typechecks, invariant lints, bundle checks, scoped tests) that runs only for the paths the branch diff actually touches. Configuration-file changes, or an unresolvable branch diff, escalate the tree-dependent tier to run everything. The gate is a fast local pre-flight, not the merge gate — CI remains the full-suite authority.
 
 ### Green-Tree Cache
@@ -667,6 +663,8 @@ A dependency advisory the security gate knowingly tolerates, recorded per-lockfi
 The baseline is an exemption list, not a suppression: an advisory outside it fails the gate for every branch at once, which is why a newly published advisory blocks the whole repository until someone either patches or baselines it. Each entry carries its justification inline so a later reader can re-evaluate rather than inherit a bare allowlist, and an entry that no longer matches any live advisory is surfaced as stale so the list does not accrete dead exemptions. See also: Third-Party Rot, Acceptance Baseline.
 
 ### Deploy Gate
+
+Retired in refactor Phase 1b: `ci.yml` runs every job on every pull request, so its own check results are the gate. The entry records how the upstream gate worked.
 
 The single merge-blocking status that CI computes for a commit once the gated workflows finish, from a fixed list of check-run names. Each listed name resolves to the conclusion of its latest check run: a name no run has published holds the gate pending, a skipped conclusion counts as passing, and any other non-success fails it. A periodic sweep re-evaluates pending or stale statuses, so a status that arrived before its checks heals on its own. It is the CI counterpart of the Tiered Gate, which is a local pre-flight rather than the merge authority.
 
@@ -1107,13 +1105,13 @@ The comparison needs enough accumulated history to be meaningful and is suppress
 
 ### Live Detection
 
-A retired process that worked out which broadcast a news channel was airing at the moment a viewer asked, instead of trusting an identifier recorded when the channel was added. It scraped youtube.com channel pages through a residential proxy and was retired after #5503 flagged that as a YouTube Terms of Service violation; a channel lookup on `/api/youtube/live` now answers 410 `channel_live_detection_retired`. Live News and webcams instead play verified streams listed in `src/config/live-video-sources.ts`, and the live video session labels a stream live only after the official player or the stream playlist confirms it in the viewer's browser.
+A retired process that worked out which broadcast a news channel was airing at the moment a viewer asked, instead of trusting an identifier recorded when the channel was added. It scraped youtube.com channel pages through a residential proxy and was retired after #5503 flagged that as a YouTube Terms of Service violation; a channel lookup on `/api/youtube/live` now answers 410 `channel_live_detection_retired`. Live News and webcams instead play verified streams listed in `packages/client/config/live-video-sources.ts`, and the live video session labels a stream live only after the official player or the stream playlist confirms it in the viewer's browser.
 
 Its failure mode applies to any live check. An empty detection answer could not be told apart from "this channel is not live right now", so broken detection quietly sent every dependent channel to its Fallback Stream at once, and the only visible symptom was pinned broadcasts playing ended or unrelated video. Live status must be checked against a positive signal, never inferred from the absence of errors. See also: Fallback Stream.
 
 ### Fallback Stream
 
-A specific broadcast identifier pinned to a Live News channel or webcam slot. Before Live Detection was retired, it played only when detection yielded nothing. Each slot is now an ordered list of sources in `src/config/live-video-sources.ts` (a stream address, a pinned broadcast, or a channel's live embed), tried in order until one is verified live; dead, ended, and unembeddable sources are skipped and never shown as live. A slot that lists a channel also tries the video that channel had live when the `seed-live-video-resolved` cron last read its `/live` page, immediately before the channel entry, so a broadcaster that restarts its stream under a new identifier needs no catalog edit.
+A specific broadcast identifier pinned to a Live News channel or webcam slot. Before Live Detection was retired, it played only when detection yielded nothing. Each slot is now an ordered list of sources in `packages/client/config/live-video-sources.ts` (a stream address, a pinned broadcast, or a channel's live embed), tried in order until one is verified live; dead, ended, and unembeddable sources are skipped and never shown as live. A slot that lists a channel also tries the video that channel had live when the `seed-live-video-resolved` cron last read its `/live` page, immediately before the channel entry, so a broadcaster that restarts its stream under a new identifier needs no catalog edit.
 
 A Fallback Stream decays with no code change. The provider ends the broadcast, restarts it under a new identifier, deletes it, or reassigns it, and the pinned identifier then points at an error, an ended recording, or another channel's content. Verification keeps an ended or deleted source from playing under a live label, but a dead source is skipped in favour of the next one, so the dashboard shows a problem only once no source in the slot is left. Keeping sources honest takes a recurring liveness check against the provider (`npm run live-video:check -- --all` reports entries that are not live and slots with no entries), not code review. See also: Live Detection.
 

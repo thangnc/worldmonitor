@@ -22,7 +22,7 @@ import {
   SEC_8K_STREAM_KEY as SERVER_8K_KEY,
   SEC_CIK_MAP_KEY as SERVER_CIK_KEY,
   SEC_CIK_MAP_MAX_STALE_MIN as SERVER_CIK_MAX_STALE_MIN,
-} from '../server/_shared/sec-edgar';
+} from '../packages/server/_shared/sec-edgar';
 import { __testing__ as healthTesting } from '../api/health.js';
 
 const root = resolve(import.meta.dirname, '..');
@@ -85,7 +85,7 @@ describe('SEC corporate-intelligence production registration (#5695)', () => {
   });
 
   it('registers fail-closed 30/min rate policies for the three provider-proxy GETs', () => {
-    const rateLimit = read('server/_shared/rate-limit.ts');
+    const rateLimit = read('packages/server/_shared/rate-limit.ts');
     for (const route of [
       '/api/intelligence/v1/get-company-enrichment',
       '/api/intelligence/v1/list-company-signals',
@@ -115,7 +115,7 @@ describe('SEC corporate-intelligence production registration (#5695)', () => {
   it('keeps seeders inside scripts/ (nixpacks bundle constraint)', () => {
     for (const script of ['scripts/seed-sec-cik-map.mjs', 'scripts/seed-sec-8k-stream.mjs']) {
       const source = read(script);
-      assert.doesNotMatch(source, /from '\.\.\/(server|src|shared|api)\//, `${script} must not import outside scripts/`);
+      assert.doesNotMatch(source, /from '\.\.\/(server|packages\/server|src|shared|api)\//, `${script} must not import outside scripts/`);
     }
   });
 });

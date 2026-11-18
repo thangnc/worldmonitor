@@ -1,13 +1,13 @@
 ---
 name: verify-worldmonitor
-description: Verify WorldMonitor dashboard behavior with existing browser tests or a scoped manual drive. Use for panels, map layers, settings, search, country briefs, boot, or dashboard screenshots.
+description: Verify the WorldMonitor Lite UI (/lite) with a scoped manual drive. Use for the Briefing, the Geopolitics, Finance and Technology screens, Sources, the map layers popover, scrolling, or Lite screenshots.
 metadata:
   internal: true
 ---
 
 # Verify WorldMonitor
 
-WorldMonitor's primary surface is a browser dashboard: a Vite/TypeScript SPA served at `/dashboard`, with a map, a panel grid, a settings overlay, and a command palette. This skill launches one isolated instance of it, drives a feature the way a user does, and leaves evidence behind.
+WorldMonitor's web surface is the Lite UI: a Preact SPA served at `/lite`, with a Briefing home and Geopolitics, Finance & Crypto, Technology & AI and Sources screens. This skill launches one isolated instance of it, drives a feature the way a user does, and leaves evidence behind.
 
 This skill proves browser behavior. Use the [code and check map](../../../CLAUDE.md#find-the-code-and-its-checks) for backend, desktop, worker, or documentation changes.
 
@@ -16,7 +16,7 @@ Run everything from the repo root of the worktree under test.
 ## Choose the proof
 
 1. Name the user action and expected result. Load the matching [feature recipe](features/README.md), including its data path and proof limits.
-2. Follow [worktree preparation](../../../CONTRIBUTING.md#worktrees-and-preflight). Run an existing strict test first when it covers the outcome. Country Brief uses `npm run test:e2e:country-brief`. Playwright owns that test's server; do not also run `launch` for it.
+2. Follow [worktree preparation](../../../CONTRIBUTING.md#worktrees-and-preflight). Run an existing strict test first when it covers the outcome.
 3. For an interaction the test does not cover, use the manual steps below. Extend an existing test when a lasting regression check is needed.
 4. Report the exercised path, controlled responses, evidence, and unmet criteria. Apply the [local API proof limits](../../../CONTRIBUTING.md#verify-the-changed-path). A successful drive proves only its assertions.
 
@@ -28,10 +28,8 @@ One long-lived dev server per run; every drive gets a fresh browser context agai
 .claude/skills/verify-worldmonitor/scripts/wm-verify.sh launch
 ```
 
-It picks the first free port in 4480-4487, starts `VITE_E2E=1 VITE_VARIANT=full npm run dev`, waits until `/tests/map-harness.html` answers 200 (the same readiness probe `playwright.config.ts` uses — it forces a real module transform, so 200 means "can serve the app", not just "socket open"), and writes `.claude/verify-evidence/instance.json` with the pid, port and base URL.
+It picks the first free port in 4480-4487, starts `VITE_E2E=1 npm run dev`, waits until `/lite.html` answers 200 (it forces a real module transform, so 200 means "can serve the app", not just "socket open"), and writes `.claude/verify-evidence/instance.json` with the pid, port and base URL.
 
-- `VITE_E2E=1` is not optional. It is what stamps `data-wm-event-handlers-ready` and `data-wm-initial-data-ready` on `<html>`; every drive waits on those markers.
-- Pick a variant with `WM_VERIFY_VARIANT=tech|finance|commodity|energy|happy`.
 - Force a port with `launch <port>`. Launch refuses a port someone else holds rather than fighting for it.
 - Prepare dependencies through preflight before launch. If Chromium is missing, run `npx playwright install chromium`.
 
@@ -43,7 +41,7 @@ It picks the first free port in 4480-4487, starts `VITE_E2E=1 VITE_VARIANT=full 
 .claude/skills/verify-worldmonitor/scripts/wm-verify.sh doctor
 ```
 
-Read-only. Answers "is this instance worth driving?": the recorded pid is alive, the port is held by **our** process tree (walking parents, so vite-under-npm counts), `/dashboard` returns 200 with the app shell, the process is still vite/npm, and the launch recorded `VITE_E2E=1`. It also prints the dev-server log's error-line count and path.
+Read-only. Answers "is this instance worth driving?": the recorded pid is alive, the port is held by **our** process tree (walking parents, so vite-under-npm counts), `/lite` returns 200 with the Lite app shell, the process is still vite/npm, and the launch recorded `VITE_E2E=1`. It also prints the dev-server log's error-line count and path.
 
 Run it before the first drive, after any drive that failed, and any time behavior looks wrong. Exit code 0 = OK.
 
@@ -58,16 +56,11 @@ If doctor cannot see the problem — a wedged page on a healthy server — relau
 A step file default-exports an async function and lives in `steps/`:
 
 ```js
-import { seedProfile, waitForBoot, waitForMap } from './_profile.mjs';
-
 export default async function ({ page, base, shot, log, expectVisible }) {
-  await seedProfile(page);                       // clear storage, dismiss first-run overlays
-  await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
-  await waitForBoot(page, { data: true });       // data-wm-* readiness markers
-  const renderer = await waitForMap(page);       // 'deckgl' | 'globe' | 'svg'
-  await expectVisible('#panelsGrid .panel');
-  await shot('booted');
-  log('renderer', renderer);
+  await page.goto(`${base}/lite/finance`, { waitUntil: 'domcontentloaded' });
+  await expectVisible('[data-testid="market-events"]');
+  await shot('finance');
+  log('title', await page.textContent('h1'));
 }
 ```
 
@@ -77,21 +70,12 @@ Ready-made steps, one per mapped feature:
 
 | Step | Feature |
 |---|---|
-| `steps/dashboard-boot.mjs` | [Dashboard boot](features/dashboard-boot.md) |
-| `steps/panel-settings.mjs` | [Panel settings](features/panel-settings.md) |
-| `steps/country-brief.mjs` | [Country brief](features/country-brief.md) |
-| `steps/global-search.mjs` | [Global search](features/global-search.md) |
-| `steps/map-layers.mjs` | [Map layers](features/map-layers.md) |
-| `steps/lite-ui.mjs` | [Lite UI](features/lite-ui.md) at `/lite`; same launch and `WM_VERIFY_EXPECT` switch as `lite-profile.mjs` |
+| `steps/lite-ui.mjs` | [Lite UI](features/lite-ui.md) at `/lite`: the default route and every screen at desktop and phone widths |
 | `steps/lite-sources.mjs` | Lite Sources screen at `/lite/sources`; routes the compact health check to a labelled test fixture ([recipe](features/lite-ui.md)) |
 | `steps/lite-scroll.mjs` | Lite overlay scrollbars: no gutter, shown only on hover, sticky sidebar, scroll reset on screen switch, the Sources table's own bar ([recipe](features/lite-ui.md)) |
 | `steps/lite-layers-popover.mjs` | Lite map layers popover on Geopolitics, Finance and Technology, desktop and mobile: stays inside the map card, footer included, and its rows scroll to the last one ([recipe](features/lite-ui.md)) |
-| `steps/lite-profile.mjs` | Lite deployment profile ([spec](../../../docs/engineering/architecture/lite.md)); launch with `VITE_LITE_PROFILE=true` and drive with `WM_VERIFY_EXPECT=lite`, or without the flag and `WM_VERIFY_EXPECT=full` |
-| `steps/_inspect.mjs` | not a feature — dumps live panel keys, layer handles, header ids, and the map renderer when a handle in the map has drifted |
 
-Environment switches: `WM_VERIFY_HEADED=1` (real window, real GPU — the only way to get the deck.gl map), `WM_VERIFY_SOFTWARE_GL=1` (reproduce the repo's playwright GL flags), `WM_VERIFY_PANEL`, `WM_VERIFY_LAYER`, `WM_VERIFY_COUNTRY`, `WM_VERIFY_SEARCH`.
-
-Stable handles worth knowing: `#panelsGrid .panel[data-panel="<key>"]`, `#unifiedSettingsBtn`, `#us-tab-panels`, `#usPanelToggles .panel-toggle-item[data-panel="<key>"]`, `.panels-save-layout`, `#searchBtn`, `.search-modal .search-input`, `.search-result-item[data-index]`, `.layer-toggle[data-layer="<key>"]`, `#country-deep-dive-panel`, `#deep-dive-close`, `#mapDimensionToggle`.
+Environment switch: `WM_VERIFY_HEADED=1` opens a real window with a real GPU.
 
 ## Evidence
 
@@ -101,8 +85,8 @@ Proof standards for this app:
 
 - Drive the real user path — the gear button, the chip, the deep link — not an internal setter or a test-only endpoint.
 - Capture the action and its result, not just the final screen: a screenshot before the change and one after.
-- Check the side effect next to the pixel: the persisted `localStorage` key, the `?layers=` / `?country=` URL, the re-read DOM state. A panel that appears but is not persisted is a bug the screenshot cannot see.
-- Wait on the app's own readiness markers. A fixed sleep either flakes or hides a regression.
+- Check the side effect next to the pixel: the URL, the persisted `localStorage` key, the re-read DOM state.
+- Wait on the app's own state (`[data-source-state]` leaving `loading`). A fixed sleep either flakes or hides a regression.
 - Use the [local API proof limits](../../../CONTRIBUTING.md#verify-the-changed-path). Inspect the response and the handler path before classifying an API failure. Do not dismiss an error merely because the run is local.
 
 ## Cleanup

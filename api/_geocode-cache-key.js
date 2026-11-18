@@ -1,5 +1,5 @@
 /**
- * Edge-safe mirror of shared/geocode-cache-key.js (#7279).
+ * Edge-safe mirror of packages/shared/geocode-cache-key.js (#7279).
  *
  * api/*.js may only import same-directory _*.js helpers and packages
  * (CLAUDE.md). Keep the public shape and function bodies in lockstep with

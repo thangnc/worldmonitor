@@ -49,7 +49,7 @@ export const HS2_CODES = Array.from(new Set([
 ])).sort((a, b) => Number(a) - Number(b));
 
 // Lightweight copy of the chokepoint registry fields needed for exposure computation.
-// Kept in sync with src/config/chokepoint-registry.ts — update both together.
+// Kept in sync with packages/client/config/chokepoint-registry.ts — update both together.
 /** @type {Array<{id: string, displayName: string, routeIds: string[], shockModelSupported: boolean}>} */
 const CHOKEPOINT_REGISTRY = [
   { id: 'suez',            displayName: 'Suez Canal',            shockModelSupported: true,  routeIds: ['china-europe-suez','china-us-east-suez','gulf-europe-oil','qatar-europe-lng','singapore-med','india-europe'] },

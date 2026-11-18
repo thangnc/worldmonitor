@@ -1,6 +1,6 @@
 #!/usr/bin/env -S npx tsx
 /**
- * Validates every key in ENDPOINT_RATE_POLICIES (server/_shared/rate-limit.ts)
+ * Validates every key in ENDPOINT_RATE_POLICIES (packages/server/_shared/rate-limit.ts)
  * is a real gateway route by checking the OpenAPI specs generated from protos.
  * Catches rename-drift that causes policies to become dead code (the
  * sanctions-entity-search review finding — the policy key was
@@ -42,10 +42,10 @@ import { pathToFileURL } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const OPENAPI_DIR = join(ROOT, 'docs/api');
-const RATE_LIMIT_SRC = join(ROOT, 'server/_shared/rate-limit.ts');
+const OPENAPI_DIR = join(ROOT, 'packages/contracts/openapi');
+const RATE_LIMIT_SRC = join(ROOT, 'packages/server/_shared/rate-limit.ts');
 const API_EXCEPTIONS = join(ROOT, 'api/api-route-exceptions.json');
-const RUNTIME_RATE_LIMIT_DIRS = ['server', 'api'].map((dir) => join(ROOT, dir));
+const RUNTIME_RATE_LIMIT_DIRS = ['packages/server', 'api'].map((dir) => join(ROOT, dir));
 const RUNTIME_SOURCE_EXTENSIONS = new Set(['.js', '.cjs', '.mjs', '.ts', '.tsx']);
 
 async function extractRateLimitPolicyModule() {
@@ -105,7 +105,7 @@ function extractRoutesFromOpenApi() {
 
 function extractEdgeFunctionRoutes() {
   // Top-level Vercel Edge Functions registered as non-proto exceptions in
-  // api/api-route-exceptions.json don't appear in docs/api/*.openapi.yaml
+  // api/api-route-exceptions.json don't appear in packages/contracts/openapi/*.openapi.yaml
   // (no proto → no generated path). They can still register a rate-limit
   // policy that's enforced in-handler via `checkScopedRateLimit` — most
   // notably /api/mcp-proxy (PR #3821 / #3805 review). Convert each exception
@@ -194,12 +194,12 @@ async function main() {
       console.error(`  - ${key}`);
     }
     console.error('\nEach key must be either:');
-    console.error('  (a) a proto-generated RPC path that appears in docs/api/<Service>.openapi.yaml');
+    console.error('  (a) a proto-generated RPC path that appears in packages/contracts/openapi/<Service>.openapi.yaml');
     console.error('      (gateway-enforced via checkEndpointRateLimit), OR');
     console.error('  (b) a top-level Vercel Edge Function registered in');
     console.error('      api/api-route-exceptions.json (enforced in-handler via checkScopedRateLimit).');
     console.error('\nChecklist:');
-    console.error('  1. The key matches the path in docs/api/<Service>.openapi.yaml exactly, OR');
+    console.error('  1. The key matches the path in packages/contracts/openapi/<Service>.openapi.yaml exactly, OR');
     console.error('     api/<that-key>.ts (or .js) is listed in api/api-route-exceptions.json.');
     console.error('  2. If you renamed the RPC in proto, update the policy key to match.');
     console.error('  3. If the policy is for a non-proto legacy route, remove it once that route is migrated.\n');
@@ -293,9 +293,9 @@ async function main() {
     console.error('external providers/LLMs, so it must NOT silently inherit the availability-first');
     console.error('global fallback on a Redis outage. Triage each route above into exactly one of:\n');
     console.error('  (a) ENDPOINT_RATE_POLICIES + FAIL_CLOSED_ENDPOINT_RATE_POLICY_REQUIRED');
-    console.error('      (server/_shared/rate-limit.ts) — the route is expensive / provider-backed /');
+    console.error('      (packages/server/_shared/rate-limit.ts) — the route is expensive / provider-backed /');
     console.error('      mutation-like and should return 503 when the limiter is unavailable, OR');
-    console.error('  (b) RATE_LIMIT_MUTATION_FALLBACK_EXEMPT (server/_shared/rate-limit.ts) — the');
+    console.error('  (b) RATE_LIMIT_MUTATION_FALLBACK_EXEMPT (packages/server/_shared/rate-limit.ts) — the');
     console.error('      route is safe to fail open (add a justification comment/reason explaining');
     console.error('      why: e.g. read-only despite POST, Redis-only write, already auth-gated).\n');
     process.exit(1);
@@ -309,7 +309,7 @@ async function main() {
     }
     console.error('\nRoutes in FAIL_CLOSED_ENDPOINT_RATE_POLICY_REQUIRED rely on');
     console.error('checkEndpointRateLimit defaulting to fail closed when Redis is unavailable.');
-    console.error('Do not pass { failClosed: false } from server/ or api/ runtime code;');
+    console.error('Do not pass { failClosed: false } from packages/server/ or api/ runtime code;');
     console.error('move genuinely safe non-GET routes to RATE_LIMIT_MUTATION_FALLBACK_EXEMPT');
     console.error('or documented read routes to GLOBAL_RATE_LIMIT_FALLBACK_READ_ROUTES instead.\n');
     process.exit(1);

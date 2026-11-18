@@ -21,7 +21,7 @@ is the wrong instrument for that pattern.
 
 Explicit non-goals (do not "fix" #8406 with these):
 
-- Lowering `GLOBAL_RATE_LIMIT` in `server/_shared/rate-limit.ts`
+- Lowering `GLOBAL_RATE_LIMIT` in `packages/server/_shared/rate-limit.ts`
 - Changing entitlement enforcement
 - Blocking or banning accounts automatically
 
@@ -34,7 +34,7 @@ routes** in a short window is qualitatively different from request volume.
 | --- | --- | --- |
 | Dataset | `wm_api_usage` | See [usage telemetry](../architecture/usage-telemetry.md) |
 | Event filter | `event_type == "request"` and `reason in ("tier_403", "auth_401")` | Entitlement deny + unauthenticated reject. Do not fold in `auth_403` / origin blocks unless the monitor is deliberately widened later. |
-| Identity | `principal_id` | Clerk user id or hashed API/widget key. **Anon emits `principal_id: null`** (`server/_shared/usage-identity.ts`) — the primary monitor therefore covers authenticated principals only. |
+| Identity | `principal_id` | Clerk user id or hashed API/widget key. **Anon emits `principal_id: null`** (`packages/server/_shared/usage-identity.ts`) — the primary monitor therefore covers authenticated principals only. |
 | Diversity metric | `dcount(route)` | Route fan-out, not request count. A free user retrying one premium panel is low diversity; a scanner walking many paths is high. |
 
 Pen-test reference (authorized Strix run, 2026-09-19): one free principal produced
@@ -111,7 +111,7 @@ fan-out. That would be an alarm nobody trusts.
 ```
 
 Group by `principal_id` + `auth_kind` only. For `clerk_jwt`, `customer_id` is
-the active org when present else the user (`server/_shared/usage-identity.ts`),
+the active org when present else the user (`packages/server/_shared/usage-identity.ts`),
 so including it in the group key can split one principal across rows and
 suppress the alert.
 
@@ -213,6 +213,6 @@ make IP noisier than `principal_id`.
 ## Related
 
 - [Usage telemetry](../architecture/usage-telemetry.md) — field dictionary and other APL recipes
-- `server/_shared/usage-identity.ts` — `principal_id` is null for anon
-- `server/_shared/rate-limit.ts` — volumetric limits (out of scope for this signal)
+- `packages/server/_shared/usage-identity.ts` — `principal_id` is null for anon
+- `packages/server/_shared/rate-limit.ts` — volumetric limits (out of scope for this signal)
 - Issue [#8406](https://github.com/koala73/worldmonitor/issues/8406)

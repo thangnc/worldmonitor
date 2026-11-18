@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import ts from 'typescript';
 
-import { CURATED_COUNTRIES, TIER1_COUNTRIES } from '../src/config/countries.ts';
+import { CURATED_COUNTRIES, TIER1_COUNTRIES } from '../packages/server/_shared/countries.ts';
 import {
   CII_CONFLICT_ACTIVITY_CAP,
   CII_CONFLICT_ACTIVITY_PIVOT,
@@ -49,8 +49,8 @@ import {
   STRATEGIC_RISK_SCALE_FACTOR,
   STRATEGIC_RISK_SCALE_FLOOR,
   STRATEGIC_RISK_TOP_N,
-} from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
-import { TIER1_COUNTRIES as SERVER_TIER1_COUNTRIES } from '../server/worldmonitor/intelligence/v1/_shared.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
+import { TIER1_COUNTRIES as SERVER_TIER1_COUNTRIES } from '../packages/server/worldmonitor/intelligence/v1/_shared.ts';
 import {
   BASELINE_RISK,
   CII_REALTIME_REQUIRED_SIGNAL_FAMILY_COUNT,
@@ -72,15 +72,15 @@ import {
   normalizeRiskScoreAdvisoryDisclosure,
   normalizeCountryName,
   selectCiiTrendPriorSnapshot,
-} from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
-import { CII_CLIMATE_ZONE_COUNTRIES } from '../shared/cii-climate-zones.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+import { CII_CLIMATE_ZONE_COUNTRIES } from '../packages/shared/cii-climate-zones.ts';
 import {
   CII_BASELINE_RISK as SHARED_BASELINE_RISK,
   CII_COUNTRY_WEIGHTS,
   CII_EVENT_MULTIPLIER as SHARED_EVENT_MULTIPLIER,
   DEFAULT_CII_BASELINE_RISK,
   DEFAULT_CII_EVENT_MULTIPLIER,
-} from '../shared/cii-weights.ts';
+} from '../packages/shared/cii-weights.ts';
 import { CLIMATE_ZONES } from '../scripts/_climate-zones.mjs';
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
@@ -139,10 +139,15 @@ interface ScoreLevelCutoff {
   level: string;
 }
 
-interface ParsedScoreLevelFunction {
-  cutoffs: ScoreLevelCutoff[];
-  fallback: string;
-}
+// The dashboard's getScoreLevel (src/services/cached-risk-scores.ts) was removed
+// with the legacy UI. Its cutoffs stay pinned here so the version-keyed protocol
+// snapshot hash below is unchanged.
+const CII_UI_SCORE_LEVEL_CUTOFFS: ScoreLevelCutoff[] = [
+  { min: 81, level: 'critical' },
+  { min: 66, level: 'high' },
+  { min: 51, level: 'elevated' },
+  { min: 31, level: 'normal' },
+];
 
 function findFunctionDeclaration(sourceFile: ts.SourceFile, functionName: string): ts.FunctionDeclaration {
   let found: ts.FunctionDeclaration | null = null;
@@ -174,67 +179,6 @@ function findTopLevelConstDeclaration(
     }
   }
   return null;
-}
-
-function getReturnString(statement: ts.Statement): string | null {
-  const returnStatement = ts.isBlock(statement)
-    ? statement.statements.length === 1 && ts.isReturnStatement(statement.statements[0])
-      ? statement.statements[0]
-      : null
-    : ts.isReturnStatement(statement)
-      ? statement
-      : null;
-
-  const expression = returnStatement?.expression;
-  if (!expression) return null;
-  return ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)
-    ? expression.text
-    : null;
-}
-
-function getScoreCutoff(expression: ts.Expression): number | null {
-  if (!ts.isBinaryExpression(expression)) return null;
-  if (expression.operatorToken.kind !== ts.SyntaxKind.GreaterThanEqualsToken) return null;
-  if (!ts.isIdentifier(expression.left) || expression.left.text !== 'score') return null;
-  return ts.isNumericLiteral(expression.right) ? Number(expression.right.text) : null;
-}
-
-function parseScoreLevelFunction(source: string, functionName: string): ParsedScoreLevelFunction {
-  const sourceFile = ts.createSourceFile(
-    `${functionName}.ts`,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
-  const fn = findFunctionDeclaration(sourceFile, functionName);
-  assert.ok(fn.body, `${functionName} must have a function body`);
-
-  const cutoffs: ScoreLevelCutoff[] = [];
-  let fallback: string | null = null;
-
-  for (const statement of fn.body.statements) {
-    if (ts.isIfStatement(statement)) {
-      const min = getScoreCutoff(statement.expression);
-      const level = getReturnString(statement.thenStatement);
-      assert.notEqual(min, null, `${functionName} has an unsupported cutoff condition`);
-      assert.notEqual(level, null, `${functionName} cutoff ${min} must return a string literal`);
-      cutoffs.push({ min, level });
-      continue;
-    }
-
-    if (ts.isReturnStatement(statement)) {
-      fallback = getReturnString(statement);
-    }
-  }
-
-  assert.ok(cutoffs.length > 0, `${functionName} must declare score >= cutoff returns`);
-  assert.ok(fallback, `${functionName} must end with a string fallback return`);
-  return { cutoffs, fallback };
-}
-
-function extractScoreLevelCutoffs(source: string, functionName: string): ScoreLevelCutoff[] {
-  return parseScoreLevelFunction(source, functionName).cutoffs;
 }
 
 type ScoreHelperSnapshotValue = string | number | ScoreHelperSnapshotValue[] | {
@@ -558,13 +502,6 @@ function assertFormulaLiteralCovered(
     )),
     `CII formula snapshot must cover ${region} literal ${value} in context: ${contextSnippet}`,
   );
-}
-
-function evaluateScoreLevel(parsed: ParsedScoreLevelFunction, score: number): string {
-  for (const cutoff of parsed.cutoffs) {
-    if (score >= cutoff.min) return cutoff.level;
-  }
-  return parsed.fallback;
 }
 
 function hashJson(value: unknown): string {
@@ -1596,6 +1533,7 @@ describe('CII scoring', () => {
     const handlerPath = resolve(
       fileURLToPath(new URL('.', import.meta.url)),
       '..',
+      'packages',
       'server',
       'worldmonitor',
       'intelligence',
@@ -1749,7 +1687,7 @@ describe('CII scoring', () => {
       assert.ok(Number.isFinite(mult), `${s.region} eventMultiplier should be finite, got ${mult}`);
       assert.ok(mult > 0, `${s.region} eventMultiplier should be > 0, got ${mult}`);
       assert.ok(mult <= 5, `${s.region} eventMultiplier should be <= 5 (sanity), got ${mult}`);
-      assert.equal(mult, expected, `${s.region} eventMultiplier should match shared/cii-weights.ts`);
+      assert.equal(mult, expected, `${s.region} eventMultiplier should match packages/shared/cii-weights.ts`);
     }
   });
 
@@ -1808,23 +1746,23 @@ describe('CII scoring', () => {
   it('server and frontend baseline/multiplier values match shared CII weights for every country', () => {
     const sharedCodes = Object.keys(CII_COUNTRY_WEIGHTS).sort();
     assert.deepEqual(Object.keys(CURATED_COUNTRIES).sort(), sharedCodes,
-      'CURATED_COUNTRIES keys must match shared/cii-weights.ts keys');
+      'CURATED_COUNTRIES keys must match packages/shared/cii-weights.ts keys');
     assert.deepEqual(Object.keys(TIER1_COUNTRIES).sort(), sharedCodes,
-      'frontend TIER1_COUNTRIES keys must match shared/cii-weights.ts keys');
+      'frontend TIER1_COUNTRIES keys must match packages/shared/cii-weights.ts keys');
     assert.deepEqual(Object.keys(SERVER_TIER1_COUNTRIES).sort(), sharedCodes,
-      'server _shared.ts TIER1_COUNTRIES keys must match shared/cii-weights.ts keys (computeCIIScores iterates this map)');
+      'server _shared.ts TIER1_COUNTRIES keys must match packages/shared/cii-weights.ts keys (computeCIIScores iterates this map)');
 
     const scores = computeCIIScores([], emptyAux());
     for (const code of sharedCodes) {
       const expected = CII_COUNTRY_WEIGHTS[code as keyof typeof CII_COUNTRY_WEIGHTS];
       assert.equal(CURATED_COUNTRIES[code]?.baselineRisk, expected.baselineRisk,
-        `${code} frontend baselineRisk should come from shared/cii-weights.ts`);
+        `${code} frontend baselineRisk should come from packages/shared/cii-weights.ts`);
       assert.equal(CURATED_COUNTRIES[code]?.eventMultiplier, expected.eventMultiplier,
-        `${code} frontend eventMultiplier should come from shared/cii-weights.ts`);
+        `${code} frontend eventMultiplier should come from packages/shared/cii-weights.ts`);
       assert.equal(BASELINE_RISK[code], expected.baselineRisk,
-        `${code} server BASELINE_RISK should come from shared/cii-weights.ts`);
+        `${code} server BASELINE_RISK should come from packages/shared/cii-weights.ts`);
       assert.equal(EVENT_MULTIPLIER[code], expected.eventMultiplier,
-        `${code} server EVENT_MULTIPLIER should come from shared/cii-weights.ts`);
+        `${code} server EVENT_MULTIPLIER should come from packages/shared/cii-weights.ts`);
       assert.equal(SHARED_BASELINE_RISK[code as keyof typeof SHARED_BASELINE_RISK], expected.baselineRisk,
         `${code} shared baseline map should be derived from CII_COUNTRY_WEIGHTS`);
       assert.equal(SHARED_EVENT_MULTIPLIER[code as keyof typeof SHARED_EVENT_MULTIPLIER], expected.eventMultiplier,
@@ -1847,9 +1785,8 @@ describe('CII scoring', () => {
       `No CII protocol snapshot for ${CII_FORMULA_VERSION}. Add a new snapshot hash when bumping CII_FORMULA_VERSION.`,
     );
 
-    const cachedRiskSource = readRepoFile('src/services/cached-risk-scores.ts');
-    const getRiskScoresSource = readRepoFile('server/worldmonitor/intelligence/v1/get-risk-scores.ts');
-    const climateZoneSource = readRepoFile('shared/cii-climate-zones.ts');
+    const getRiskScoresSource = readRepoFile('packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts');
+    const climateZoneSource = readRepoFile('packages/shared/cii-climate-zones.ts');
     const scoreFormulaLiterals = extractScoreFormulaLiterals(getRiskScoresSource);
     const scoreHelperInputs = extractScoreHelperInputSnapshot(getRiskScoresSource, climateZoneSource);
     assertFormulaLiteralCovered(scoreFormulaLiterals, 'climateSeverityScore', 5, 'return 5');
@@ -1913,7 +1850,7 @@ describe('CII scoring', () => {
       },
       scoreFormulaLiterals,
       scoreHelperInputs,
-      scoreLevelCutoffs: extractScoreLevelCutoffs(cachedRiskSource, 'getScoreLevel'),
+      scoreLevelCutoffs: CII_UI_SCORE_LEVEL_CUTOFFS,
       // Coordinate attribution: which Tier-1 country a fire, jamming hex, quake or strike scores to.
       countryBordersSha256: createHash('sha256').update(readRepoFile('scripts/shared/cii-country-borders.data.mjs')).digest('hex'),
     };
@@ -2003,30 +1940,6 @@ describe('CII scoring', () => {
       Europe: ['DE', 'FR'],
       'Middle East': ['IR', 'IL', 'SA'],
     });
-  });
-
-  it('getScoreLevel uses canonical CII UI bands at 81/66/51/31', () => {
-    const cachedRiskSource = readRepoFile('src/services/cached-risk-scores.ts');
-    const cachedScoreLevel = parseScoreLevelFunction(cachedRiskSource, 'getScoreLevel');
-    const expectedCutoffs = [
-      { min: 81, level: 'critical' },
-      { min: 66, level: 'high' },
-      { min: 51, level: 'elevated' },
-      { min: 31, level: 'normal' },
-    ];
-
-    assert.deepEqual(cachedScoreLevel.cutoffs, expectedCutoffs);
-    assert.equal(cachedScoreLevel.fallback, 'low');
-
-    for (const [score, level] of [
-      [81, 'critical'], [80, 'high'],
-      [66, 'high'], [65, 'elevated'],
-      [51, 'elevated'], [50, 'normal'],
-      [31, 'normal'], [30, 'low'],
-    ] as const) {
-      assert.equal(evaluateScoreLevel(cachedScoreLevel, score), level,
-        `cached getScoreLevel(${score}) should be ${level}`);
-    }
   });
 
   // ===== Strategic risk roll-up (issue #3725) =====
@@ -2219,7 +2132,7 @@ describe('CII scoring', () => {
     }
     // STRATEGIC_RISK_SCALE_FACTOR sanity (used in the doc).
     assert.equal(STRATEGIC_RISK_SCALE_FACTOR, 0.7,
-      `STRATEGIC_RISK_SCALE_FACTOR is documented as 0.7 — bump CII_FORMULA_VERSION and update docs/methodology/cii-risk-scores.mdx if changing.`);
+      `STRATEGIC_RISK_SCALE_FACTOR is documented as 0.7 — bump CII_FORMULA_VERSION and update docs/engineering/methodology/cii-risk-scores.md if changing.`);
   });
 
   it('region filter normalizes ISO2 input and omits global strategic risk', () => {
@@ -2272,7 +2185,7 @@ describe('CII scoring', () => {
   it('handler marks stale-cache and cold-cache fallback responses as degraded', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const source = readFileSync(
-      resolve(root, 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
+      resolve(root, 'packages', 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
       'utf8',
     );
 
@@ -2291,7 +2204,7 @@ describe('CII scoring', () => {
   it('handler preserves live cached payloads if advisory backfill rebuild fails', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const source = readFileSync(
-      resolve(root, 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
+      resolve(root, 'packages', 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
       'utf8',
     );
 
@@ -2305,7 +2218,7 @@ describe('CII scoring', () => {
   it('proto schema constrains advisory_provenance vocabulary', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const proto = readFileSync(
-      resolve(root, 'proto', 'worldmonitor', 'intelligence', 'v1', 'intelligence.proto'),
+      resolve(root, 'packages', 'contracts', 'proto', 'worldmonitor', 'intelligence', 'v1', 'intelligence.proto'),
       'utf8',
     );
 
@@ -2321,21 +2234,21 @@ describe('CII scoring', () => {
     const expectedMilitary = 'Security-mobility contribution from military flights, military vessels, aviation disruption, and GPS interference (0-100).';
     const staleSourcePattern = /ACLED\/UCDP|AIS disruption/;
 
-    const proto = readRepoFile('proto/worldmonitor/intelligence/v1/intelligence.proto');
+    const proto = readRepoFile('packages/contracts/proto/worldmonitor/intelligence/v1/intelligence.proto');
     const protoBlock = proto.match(/message CiiComponents \{[\s\S]*?\n\}/)?.[0] ?? '';
     assert.ok(protoBlock, 'intelligence.proto must define CiiComponents.');
     assert.ok(protoBlock.includes(expectedGeo), 'intelligence.proto must describe geo_convergence with current ACLED-only sources.');
     assert.ok(protoBlock.includes(expectedMilitary), 'intelligence.proto must describe military_activity with military vessels.');
     assert.doesNotMatch(protoBlock, staleSourcePattern);
 
-    const serviceOpenApi = JSON.parse(readRepoFile('docs/api/IntelligenceService.openapi.json')) as {
+    const serviceOpenApi = JSON.parse(readRepoFile('packages/contracts/openapi/IntelligenceService.openapi.json')) as {
       components?: { schemas?: { CiiComponents?: { properties?: Record<string, { description?: string }> } } };
     };
     const ciiProperties = serviceOpenApi.components?.schemas?.CiiComponents?.properties ?? {};
     assert.equal(ciiProperties.geoConvergence?.description, expectedGeo);
     assert.equal(ciiProperties.militaryActivity?.description, expectedMilitary);
 
-    for (const path of ['docs/api/IntelligenceService.openapi.yaml', 'docs/api/worldmonitor.openapi.yaml']) {
+    for (const path of ['packages/contracts/openapi/IntelligenceService.openapi.yaml', 'packages/contracts/openapi/worldmonitor.openapi.yaml']) {
       const openApi = readRepoFile(path);
       const block = openApi.match(/\n {8}[A-Za-z0-9_]*CiiComponents:\n[\s\S]*?(?=\n {8}[A-Za-z][A-Za-z0-9_]*:\n)/)?.[0] ?? '';
       assert.ok(block, `${path} must define CiiComponents.`);
@@ -2347,13 +2260,14 @@ describe('CII scoring', () => {
 
   // ===== Methodology doc drift guard (issue #3725) =====
 
-  it('docs/methodology/cii-risk-scores.mdx lists every CURATED_COUNTRIES code', () => {
+  it('docs/engineering/methodology/cii-risk-scores.md lists every CURATED_COUNTRIES code', () => {
     const docPath = resolve(
       fileURLToPath(new URL('.', import.meta.url)),
       '..',
       'docs',
+      'engineering',
       'methodology',
-      'cii-risk-scores.mdx',
+      'cii-risk-scores.md',
     );
     const doc = readFileSync(docPath, 'utf8');
     const missing: string[] = [];
@@ -2362,7 +2276,7 @@ describe('CII scoring', () => {
       if (!new RegExp(`\\|\\s${code}\\s\\|`).test(doc)) missing.push(code);
     }
     assert.equal(missing.length, 0,
-      `docs/methodology/cii-risk-scores.mdx is missing rows for: ${missing.join(', ')}. Update the methodology doc and bump CII_FORMULA_VERSION.`);
+      `docs/engineering/methodology/cii-risk-scores.md is missing rows for: ${missing.join(', ')}. Update the methodology doc and bump CII_FORMULA_VERSION.`);
   });
 
   it('methodology doc baseline/multiplier columns match BASELINE_RISK and EVENT_MULTIPLIER exactly (numeric drift guard)', () => {
@@ -2379,8 +2293,9 @@ describe('CII scoring', () => {
       fileURLToPath(new URL('.', import.meta.url)),
       '..',
       'docs',
+      'engineering',
       'methodology',
-      'cii-risk-scores.mdx',
+      'cii-risk-scores.md',
     );
     const doc = readFileSync(docPath, 'utf8');
     // Parse the per-country table. Rows look like:
@@ -2418,7 +2333,7 @@ describe('CII scoring', () => {
       }
     }
     assert.equal(drifts.length, 0,
-      `methodology doc drift:\n  ${drifts.join('\n  ')}\nBump CII_FORMULA_VERSION and reconcile docs/methodology/cii-risk-scores.mdx with server BASELINE_RISK / EVENT_MULTIPLIER.`);
+      `methodology doc drift:\n  ${drifts.join('\n  ')}\nBump CII_FORMULA_VERSION and reconcile docs/engineering/methodology/cii-risk-scores.md with server BASELINE_RISK / EVENT_MULTIPLIER.`);
   });
 
   it('every TIER1_COUNTRIES code is listed in the methodology doc (server tables stay in sync)', () => {
@@ -2426,8 +2341,9 @@ describe('CII scoring', () => {
       fileURLToPath(new URL('.', import.meta.url)),
       '..',
       'docs',
+      'engineering',
       'methodology',
-      'cii-risk-scores.mdx',
+      'cii-risk-scores.md',
     );
     const doc = readFileSync(docPath, 'utf8');
     const missing: string[] = [];
@@ -2435,7 +2351,7 @@ describe('CII scoring', () => {
       if (!new RegExp(`\\|\\s${code}\\s\\|`).test(doc)) missing.push(code);
     }
     assert.equal(missing.length, 0,
-      `docs/methodology/cii-risk-scores.mdx is missing rows for TIER1 codes: ${missing.join(', ')}.`);
+      `docs/engineering/methodology/cii-risk-scores.md is missing rows for TIER1 codes: ${missing.join(', ')}.`);
   });
 
   it('methodology doc references the current CII_FORMULA_VERSION', () => {
@@ -2443,8 +2359,9 @@ describe('CII scoring', () => {
       fileURLToPath(new URL('.', import.meta.url)),
       '..',
       'docs',
+      'engineering',
       'methodology',
-      'cii-risk-scores.mdx',
+      'cii-risk-scores.md',
     );
     const doc = readFileSync(docPath, 'utf8');
     assert.ok(doc.includes(`**${CII_FORMULA_VERSION}**`) || doc.includes(`'${CII_FORMULA_VERSION}'`) || doc.includes(`"${CII_FORMULA_VERSION}"`),
@@ -2452,10 +2369,9 @@ describe('CII scoring', () => {
   });
 
   it('methodology doc discloses advisory fallback and CII attribution caveats', () => {
-    const methodologyDoc = readRepoFile('docs/methodology/cii-risk-scores.mdx');
-    const overviewDoc = readRepoFile('docs/country-instability-index.mdx');
-    const dataSourcesDoc = readRepoFile('docs/data-sources.mdx');
-    const riskScoresSource = readRepoFile('server/worldmonitor/intelligence/v1/get-risk-scores.ts');
+    const methodologyDoc = readRepoFile('docs/engineering/methodology/cii-risk-scores.md');
+    const overviewDoc = readRepoFile('docs/engineering/methodology/country-instability-index.md');
+    const riskScoresSource = readRepoFile('packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts');
     const fallbackBlock = riskScoresSource.match(/const ADVISORY_LEVELS_FALLBACK[\s\S]*?\};/)?.[0] ?? '';
     assert.ok(fallbackBlock, 'get-risk-scores.ts must keep the advisory fallback table inspectable.');
 
@@ -2470,7 +2386,7 @@ describe('CII scoring', () => {
       assert.match(
         methodologyDoc,
         new RegExp(`^\\| \`${code}\` \\| [^|]+ \\| ${label} \\|`, 'm'),
-        `cii-risk-scores.mdx must disclose fallback advisory level for ${code}.`,
+        `cii-risk-scores.md must disclose fallback advisory level for ${code}.`,
       );
     }
 
@@ -2478,16 +2394,6 @@ describe('CII scoring', () => {
       methodologyDoc,
       /live security-advisory feed[\s\S]{0,160}fallback/i,
       'methodology doc must state that live advisory data wins before fallback.',
-    );
-    assert.match(
-      dataSourcesDoc,
-      /Live advisory feed values override the fallback/i,
-      'data-sources doc must state that CII advisory fallback does not override live feed values.',
-    );
-    assert.doesNotMatch(
-      dataSourcesDoc,
-      /consensus bonus/i,
-      'data-sources doc must not preserve the retired server-side consensus bonus claim.',
     );
     assert.match(
       methodologyDoc,
@@ -2519,10 +2425,9 @@ describe('CII scoring', () => {
     );
   });
 
-  it('public CII docs reference the current RPC route and backend-authoritative v3 conflict curve', () => {
+  it('the CII methodology references the current RPC route', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-    const methodologyDoc = readFileSync(resolve(root, 'docs', 'methodology', 'cii-risk-scores.mdx'), 'utf8');
-    const algorithmsDoc = readFileSync(resolve(root, 'docs', 'algorithms.mdx'), 'utf8');
+    const methodologyDoc = readFileSync(resolve(root, 'docs/engineering/methodology/cii-risk-scores.md'), 'utf8');
 
     assert.ok(
       methodologyDoc.includes('GET /api/intelligence/v1/get-risk-scores'),
@@ -2533,59 +2438,12 @@ describe('CII scoring', () => {
       /GET \/api\/intelligence\/risk-scores/,
       'methodology doc must not reference the retired pre-RPC CII route',
     );
-    assert.match(
-      algorithmsDoc,
-      /Authoritative CII scores come from the server-side `GET \/api\/intelligence\/v1\/get-risk-scores` RPC/,
-      'algorithms doc must identify the server RPC as the authoritative CII source',
-    );
-    assert.match(
-      algorithmsDoc,
-      /fallback\/local renderer path after cached backend scores/,
-      'algorithms doc must describe frontend scoring as fallback/local rendering after cached backend scores',
-    );
-    assert.match(
-      algorithmsDoc,
-      /min\(70, log1p\(rawActivity\) \/ log1p\(4000\) \* 70\)/,
-      'algorithms doc must publish the v3 conflict activity cap=70 curve',
-    );
-    assert.doesNotMatch(
-      algorithmsDoc,
-      /server-side score .* uses the same formulas as the frontend/i,
-      'algorithms doc must not overclaim server/frontend formula parity',
-    );
-    assert.doesNotMatch(
-      algorithmsDoc,
-      /Weighted ACLED events .* capped at 50/i,
-      'algorithms doc must not describe the server-authoritative v3 conflict activity cap as 50',
-    );
   });
 
-  it('public docs separate server Strategic Risk headline from panel additive context', () => {
+  it('the CII methodology publishes advisory provenance values', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-    const algorithmsDoc = readFileSync(resolve(root, 'docs', 'algorithms.mdx'), 'utf8');
-    const strategicRiskDoc = readFileSync(resolve(root, 'docs', 'strategic-risk.mdx'), 'utf8');
-    const methodologyDoc = readFileSync(resolve(root, 'docs', 'methodology', 'cii-risk-scores.mdx'), 'utf8');
+    const methodologyDoc = readFileSync(resolve(root, 'docs/engineering/methodology/cii-risk-scores.md'), 'utf8');
 
-    for (const [label, doc] of [
-      ['docs/algorithms.mdx', algorithmsDoc],
-      ['docs/strategic-risk.mdx', strategicRiskDoc],
-    ] as const) {
-      assert.match(
-        doc,
-        /server(?:-published|-side)? Strategic Risk headline|displayed\/server headline/i,
-        `${label} must name the server/displayed headline Strategic Risk score`,
-      );
-      assert.match(
-        doc,
-        /top 5 CII|top-5 CII/i,
-        `${label} must say the server headline comes from the top-5 CII roll-up`,
-      );
-      assert.match(
-        doc,
-        /panel(?:-local)? context|panel context/i,
-        `${label} must distinguish additive panel context from the server headline`,
-      );
-    }
     assert.match(
       methodologyDoc,
       /advisory_provenance[\s\S]*live[\s\S]*fallback[\s\S]*absent/,
@@ -2597,7 +2455,6 @@ describe('CII scoring', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const changelogs = [
       ['CHANGELOG.md', readFileSync(resolve(root, 'CHANGELOG.md'), 'utf8')],
-      ['docs/changelog.mdx', readFileSync(resolve(root, 'docs', 'changelog.mdx'), 'utf8')],
     ] as const;
 
     for (const [label, changelog] of changelogs) {
@@ -2620,7 +2477,6 @@ describe('CII scoring', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const changelogs = [
       ['CHANGELOG.md', readFileSync(resolve(root, 'CHANGELOG.md'), 'utf8')],
-      ['docs/changelog.mdx', readFileSync(resolve(root, 'docs', 'changelog.mdx'), 'utf8')],
     ] as const;
 
     for (const [label, changelog] of changelogs) {
@@ -2648,9 +2504,9 @@ describe('CII scoring', () => {
 
   it('CII dynamicScore contract allows signed 24-hour movement deltas', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-    const proto = readFileSync(resolve(root, 'proto', 'worldmonitor', 'intelligence', 'v1', 'intelligence.proto'), 'utf8');
-    const serviceOpenapi = readFileSync(resolve(root, 'docs', 'api', 'IntelligenceService.openapi.yaml'), 'utf8');
-    const unifiedOpenapi = readFileSync(resolve(root, 'docs', 'api', 'worldmonitor.openapi.yaml'), 'utf8');
+    const proto = readFileSync(resolve(root, 'packages', 'contracts', 'proto', 'worldmonitor', 'intelligence', 'v1', 'intelligence.proto'), 'utf8');
+    const serviceOpenapi = readFileSync(resolve(root, 'packages', 'contracts', 'openapi', 'IntelligenceService.openapi.yaml'), 'utf8');
+    const unifiedOpenapi = readFileSync(resolve(root, 'packages', 'contracts', 'openapi', 'worldmonitor.openapi.yaml'), 'utf8');
 
     assert.match(
       proto,
@@ -2670,15 +2526,11 @@ describe('CII scoring', () => {
     }
   });
 
-  it('current public CII docs do not reintroduce pre-v3 stale claims', () => {
+  it('current CII docs do not reintroduce pre-v3 stale claims', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const publicDocPaths = [
-      'docs/country-instability-index.mdx',
-      'docs/strategic-risk.mdx',
-      'docs/algorithms.mdx',
-      'docs/overview.mdx',
-      'docs/features.mdx',
-      'docs/methodology/cii-risk-scores.mdx',
+      'docs/engineering/methodology/country-instability-index.md',
+      'docs/engineering/methodology/cii-risk-scores.md',
       'docs/engineering/archive/legacy/DOCUMENTATION.md',
       'docs/engineering/product/COMMUNITY-PROMOTION-GUIDE.md',
     ];
@@ -2722,7 +2574,7 @@ describe('CII scoring', () => {
 
   it('methodology doc publishes the current conflict curve coefficients', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-    const doc = readFileSync(resolve(root, 'docs', 'methodology', 'cii-risk-scores.mdx'), 'utf8');
+    const doc = readFileSync(resolve(root, 'docs/engineering/methodology/cii-risk-scores.md'), 'utf8');
 
     assert.ok(
       doc.includes(`cap = ${CII_CONFLICT_ACTIVITY_CAP}`) && doc.includes(`pivot = ${CII_CONFLICT_ACTIVITY_PIVOT}`),
@@ -2733,7 +2585,7 @@ describe('CII scoring', () => {
   it('risk-score Redis payload keys are derived from the CII formula version', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const source = readFileSync(
-      resolve(root, 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
+      resolve(root, 'packages', 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
       'utf8',
     );
     assert.match(
@@ -2773,26 +2625,23 @@ describe('CII scoring', () => {
         expectedKeys: [expectedLiveKey, expectedStaleKey, expectedTrendPrefix],
       },
       {
-        relPath: 'server/_shared/cache-keys.ts',
+        relPath: 'packages/server/_shared/cache-keys.ts',
         expectedKeys: [expectedLiveKey, expectedStaleKey, expectedTrendPrefix],
       },
-      { relPath: 'shared/bootstrap-tier-keys.js', expectedKeys: [expectedStaleKey] },
+      { relPath: 'packages/shared/bootstrap-tier-keys.js', expectedKeys: [expectedStaleKey] },
       { relPath: 'api/bootstrap.js', expectedRefs: ['BOOTSTRAP_CACHE_KEYS'] },
       { relPath: 'api/health.js', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale', 'CII_RISK_SCORE_CACHE_KEYS.live'] },
-      { relPath: 'api/mcp/registry/cache-tools.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
-      { relPath: 'server/worldmonitor/intelligence/v1/brief-story-context.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
-      { relPath: 'server/worldmonitor/intelligence/v1/chat-analyst-context.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
-      { relPath: 'server/worldmonitor/intelligence/v1/get-country-risk.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
+      { relPath: 'packages/server/worldmonitor/intelligence/v1/chat-analyst-context.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
+      { relPath: 'packages/server/worldmonitor/intelligence/v1/get-country-risk.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'scripts/seed-cross-source-signals.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'scripts/seed-forecasts.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'scripts/regional-snapshot/balance-vector.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'scripts/regional-snapshot/evidence-collector.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'scripts/regional-snapshot/freshness.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'scripts/regional-snapshot/trigger-evaluator.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
-      { relPath: 'api/mcp/registry/analysis-tools.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.live'] },
       { relPath: 'tests/regional-snapshot.test.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'scripts/shipping-webhook-worker.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.live', 'CII_RISK_SCORE_CACHE_KEYS.stale'] },
-      { relPath: 'shared/event-triggers.json', expectedKeys: [expectedLiveKey, expectedStaleKey] },
+      { relPath: 'packages/shared/event-triggers.json', expectedKeys: [expectedLiveKey, expectedStaleKey] },
     ];
 
     const violations: string[] = [];

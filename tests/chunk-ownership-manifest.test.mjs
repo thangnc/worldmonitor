@@ -1,6 +1,5 @@
 // Build-time chunk ownership manifest — classifier, emitted snippet, and the
-// contract between the build (vite.config.ts) and the runtime reader
-// (src/bootstrap/sentry-init.ts).
+// runtime reader (packages/client/bootstrap/sentry-init.ts).
 //
 // Why this exists: `beforeSend` runs in the browser before sourcemapping, so a
 // hashed filename was the only ownership signal and it was read with a
@@ -23,11 +22,10 @@ import {
   appendChunkOwnership,
   buildChunkOwnershipSnippet,
   chunkHasFirstPartyModule,
-} from '../shared/chunk-ownership.ts';
+} from '../packages/shared/chunk-ownership.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const sentryInitSrc = readFileSync(resolve(here, '../src/bootstrap/sentry-init.ts'), 'utf8');
-const viteConfigSrc = readFileSync(resolve(here, '../vite.config.ts'), 'utf8');
+const sentryInitSrc = readFileSync(resolve(here, '../packages/client/bootstrap/sentry-init.ts'), 'utf8');
 
 describe('chunkHasFirstPartyModule', () => {
   it('classifies a pure node_modules chunk as vendor', () => {
@@ -138,16 +136,6 @@ describe('build <-> runtime contract', () => {
       sentryInitSrc.includes(`globalThis.${CHUNK_OWNERSHIP_GLOBAL}`),
       `sentry-init.ts must read globalThis.${CHUNK_OWNERSHIP_GLOBAL}`,
     );
-  });
-
-  it('the vite plugin is registered and CALLS the shared helpers', () => {
-    assert.ok(viteConfigSrc.includes('firstPartyChunkManifestPlugin()'), 'plugin must be registered');
-    // Assert the call sites, not the import line. An earlier version of this
-    // test matched the bare identifiers and stayed green while the plugin body
-    // called a helper that was no longer imported — the build caught it, the
-    // test did not.
-    assert.ok(viteConfigSrc.includes('appendChunkOwnership('), 'plugin must call the shared splicer');
-    assert.ok(viteConfigSrc.includes('chunkHasFirstPartyModule('), 'plugin must call the shared classifier');
   });
 
   it('the runtime still keeps the name regex as an explicit fallback', () => {

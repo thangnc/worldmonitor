@@ -254,37 +254,22 @@ test('GET response preserves origin cache variance when the Worker adds Origin v
   const calls = [];
   globalThis.fetch = async (request, options) => {
     calls.push({ request, options });
-    return new Response('<html></html>', {
+    return new Response('{}', {
       status: 200,
-      headers: request.url.endsWith('/api/story')
-        ? { 'Content-Type': 'text/html; charset=utf-8', Vary: 'User-Agent' }
-        : { 'Content-Type': 'text/html; charset=utf-8' },
+      headers: { 'Content-Type': 'application/json', Vary: 'User-Agent' },
     });
   };
   try {
-    const storyReq = makeRequest('GET', 'https://api.worldmonitor.app/api/story', {
+    const req = makeRequest('GET', 'https://api.worldmonitor.app/api/health', {
       Origin: KNOWN_GOOD,
       'User-Agent': 'Twitterbot/1.0',
     });
-    const storyResp = await worker.fetch(storyReq);
-    assert.equal(storyResp.status, 200);
-    assert.equal(storyResp.headers.get('vary'), 'User-Agent, Origin');
-    assert.deepEqual(calls[0].options, {
-      cf: {
-        vary: {
-          default: { action: 'bypass' },
-          headers: {
-            'user-agent': { action: 'passthrough' },
-          },
-        },
-      },
-    });
-
-    const healthReq = makeRequest('GET', 'https://api.worldmonitor.app/api/health', {
-      Origin: KNOWN_GOOD,
-    });
-    await worker.fetch(healthReq);
-    assert.equal(calls[1].options, undefined, 'other API routes must keep the default fetch policy');
+    const resp = await worker.fetch(req);
+    assert.equal(resp.status, 200);
+    assert.equal(resp.headers.get('vary'), 'User-Agent, Origin');
+    // The /api/story crawler variant left with that route (refactor 1c-3):
+    // every API route keeps the default fetch policy.
+    assert.equal(calls[0].options, undefined);
   } finally {
     globalThis.fetch = original;
   }

@@ -2,7 +2,7 @@
 // scoreSocialCohesion, scoreBorderSecurity, and scoreStateContinuity.
 //
 // The audit (PR 5.2 of plan 2026-04-24-002 — see
-// `docs/methodology/known-limitations.md#displacement-field-mapping`)
+// `docs/engineering/methodology/known-limitations.md#displacement-field-mapping`)
 // established that the field mapping is code-correct. This test pins
 // four invariants so a future UNHCR schema rename or a well-meaning
 // seeder refactor cannot silently zero the signal across the board:
@@ -33,7 +33,7 @@ import {
   scoreBorderSecurity,
   scoreStateContinuity,
   type ResilienceSeedReader,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const DISPLACEMENT_KEY = `displacement:summary:v1:${CURRENT_YEAR}`;

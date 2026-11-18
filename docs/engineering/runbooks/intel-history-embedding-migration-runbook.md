@@ -40,7 +40,7 @@ Only `EMBED_CACHE_PREFIX` changes automatically with the model and dimension.
 | `INTEL_HISTORY_EMBED_MODEL` | `convex/intelHistory.ts` (#9885) | `openai/text-embedding-3-small@512`, stamped on every row |
 | `dimensions` of `by_embedding` | `convex/schema.ts`, table `intelHistory` | `512` |
 | `CACHE_VERSION` | `scripts/lib/brief-dedup-consts.mjs` | seeder-side embedding cache namespace; bump on any model or dimension change |
-| `EMBED_CACHE_PREFIX` | `server/_shared/intel-history-embed.ts` | query-vector cache; derived from `EMBED_MODEL` and `EMBED_DIMS`, so it moves by itself |
+| `EMBED_CACHE_PREFIX` | `packages/server/_shared/intel-history-embed.ts` | query-vector cache; derived from `EMBED_MODEL` and `EMBED_DIMS`, so it moves by itself |
 
 Producers: `scripts/_seed-history.mjs` (`appendSeedHistory`, at most 150 rows
 per run in chunks of 50) from `seed-conflict-intel`, `seed-energy-intelligence`

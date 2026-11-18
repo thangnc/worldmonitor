@@ -30,10 +30,10 @@ const repoRoot = resolve(__dirname, '..');
 
 // The CJS leg: the canonical shared/ copy, the one requireShared prefers.
 const require = createRequire(import.meta.url);
-const { classifyStablecoin } = require('../shared/stablecoin-classifier.cjs');
+const { classifyStablecoin } = require('../packages/shared/stablecoin-classifier.cjs');
 
 const { pegThresholds } = JSON.parse(
-  readFileSync(join(repoRoot, 'shared', 'stablecoins.json'), 'utf-8'),
+  readFileSync(join(repoRoot, 'packages', 'shared', 'stablecoins.json'), 'utf-8'),
 );
 
 describe('classifyStablecoin — peg boundaries', () => {
@@ -162,7 +162,7 @@ describe('every writer of market:stablecoins:v1 uses the shared classifier', () 
   const WRITERS = [
     'scripts/ais-relay.cjs',
     'scripts/seed-stablecoin-markets.mjs',
-    'server/worldmonitor/market/v1/list-stablecoin-markets.ts',
+    'packages/server/worldmonitor/market/v1/list-stablecoin-markets.ts',
   ];
 
   for (const relPath of WRITERS) {

@@ -24,7 +24,7 @@ Products are served at runtime from `https://api.worldmonitor.app/api/product-ca
 - **Free** — `price: 0`, no productId, card links to dashboard.
 - **Pro Monthly** — `pdt_0Nbtt71uObulf7fGXhQup` ($39.99/mo).
 - **Pro Annual** — `pdt_0NbttMIfjLWC10jHQWYgJ` ($399.99/yr, ~17% discount).
-- **Desktop keys** — Pro includes 2 and Pro Business 3 (same `wm_` format; kind stored server-side). They give the subscriber a signed-in Pro session's access from the desktop app, up to 7,500 requests/day and 120/minute per account, and are denied on `/api/v2/`, shipping webhooks, MCP via key and OAuth key grants. They are denied, not revoked, when coverage lapses. On a self-hosted install (`LOCAL_API_MODE=docker`), each browser user can store their own desktop key through the sidecar's `/api/selfhost-key` route (HttpOnly `wm-desktop-key` cookie, 30 days). The sidecar checks it against `GET /api/desktop-key/status`, which accepts desktop-kind keys only and does not charge the meter, then relays the paths in `shared/selfhost-relay-paths.js` (`PREMIUM_RPC_PATHS` minus the API-only set) to the cloud with that key. Relayed calls are charged to the owner's desktop allocation. Operator keys (`WORLDMONITOR_API_KEY`, `WORLDMONITOR_VALID_KEYS`) are never relayed, and `WORLDMONITOR_SELFHOST_RELAY=off` disables the relay. The per-owner meter is the only enforced bound on one key serving many visitors; there is no operator-wide key.
+- **Desktop keys** — Pro includes 2 and Pro Business 3 (same `wm_` format; kind stored server-side). They give the subscriber a signed-in Pro session's access from the desktop app, up to 7,500 requests/day and 120/minute per account, and are denied on `/api/v2/`, shipping webhooks, MCP via key and OAuth key grants. They are denied, not revoked, when coverage lapses. On a self-hosted install (`LOCAL_API_MODE=docker`), each browser user can store their own desktop key through the sidecar's `/api/selfhost-key` route (HttpOnly `wm-desktop-key` cookie, 30 days). The sidecar checks it against `GET /api/desktop-key/status`, which accepts desktop-kind keys only and does not charge the meter, then relays the paths in `packages/shared/selfhost-relay-paths.js` (`PREMIUM_RPC_PATHS` minus the API-only set) to the cloud with that key. Relayed calls are charged to the owner's desktop allocation. Operator keys (`WORLDMONITOR_API_KEY`, `WORLDMONITOR_VALID_KEYS`) are never relayed, and `WORLDMONITOR_SELFHOST_RELAY=off` disables the relay. The per-owner meter is the only enforced bound on one key serving many visitors; there is no operator-wide key.
 - **API Starter** — `pdt_0NbttVmG1SERrxhygbbUq` ($99.99/mo, 1k req/day).
 - **API Annual** — `pdt_0Nbu2lawHYE3dv2THgSEV` ($999/yr).
 - **API Business** — `pdt_0Nbttg7NuOJrhbyBGCius` ($299.99/mo, 10k req/day, commercial-use license + 5 bundled Pro seats (any corporate email domain); monthly-only, published in #4945; Starter→Business upgrades ride the Dodo collection/portal path).
@@ -96,7 +96,7 @@ Both surfaces take the same path since #4449: a top-level redirect to Dodo's hos
 
 - **Edge endpoints** that accept Clerk JWTs must go through `validateBearerToken` (`server/auth-session.ts`). Applies to `/api/create-checkout`, `/api/customer-portal`, `/api/referral/me`.
 - **Middleware UA guard** (`middleware.ts`): short-UA guard 403s non-browser fetches by default. New API endpoints called from Railway cron must be added to `PUBLIC_API_PATHS`.
-- **Gateway premium check** (`server/gateway.ts`): accepts either Clerk `publicMetadata.plan === 'pro'` role OR Convex `entitlements.tier >= 1 && validUntil >= now`. Both signals must agree for a request to be treated as paid.
+- **Gateway premium check** (`packages/server/gateway.ts`): accepts either Clerk `publicMetadata.plan === 'pro'` role OR Convex `entitlements.tier >= 1 && validUntil >= now`. Both signals must agree for a request to be treated as paid.
 - **CORS**: Cloudflare Worker `api-cors-preflight` is the source of truth for `api.worldmonitor.app`. Overrides `api/_cors.js` + `vercel.json`. Worker source lives at [`workers/api-cors-preflight/`](https://github.com/koala73/worldmonitor/tree/main/workers/api-cors-preflight); it short-circuits OPTIONS preflight at the edge (skipping Vercel) and stamps CORS headers onto non-OPTIONS responses on the way back. Unit-tested in `workers/api-cors-preflight/index.test.mjs`, smoke-tested live in `tests/cors-preflight-live.test.mjs` (gated by `LIVE_SMOKE=1`), and deployed by `.github/workflows/deploy-worker.yml` on changes under `workers/api-cors-preflight/`. The Worker's allowlist + Allow-Headers list MUST stay a superset of `api/_cors.js#getCorsHeaders`; drift breaks credentialed CORS site-wide (2026-05-27 outage post-mortem).
 - **HMAC identity bridge**: Dodo metadata `wm_user_id` is signed with a server-side key (`convex/lib/identitySigning.ts`) so webhooks can trust the user association without an additional lookup.
 
@@ -107,7 +107,7 @@ This public reference documents current deployed behavior. Internal planning and
 ## File index (quick reference)
 
 ```
-src/services/
+packages/client/services/
 ├── clerk.ts                  # Clerk init + token cache
 ├── auth-state.ts             # Central auth session
 ├── billing.ts                # Subscription watch + openBillingPortal

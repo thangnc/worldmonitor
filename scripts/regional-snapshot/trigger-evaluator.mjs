@@ -9,8 +9,8 @@ import { CII_RISK_SCORE_CACHE_KEYS } from '../_cii-risk-cache-keys.mjs';
 /**
  * @param {string} regionId
  * @param {Record<string, any>} sources
- * @param {import('../../shared/regions.types.js').BalanceVector} balance
- * @returns {import('../../shared/regions.types.js').TriggerLadder}
+ * @param {import('../../packages/shared/regions.types.js').BalanceVector} balance
+ * @returns {import('../../packages/shared/regions.types.js').TriggerLadder}
  */
 export function evaluateTriggers(regionId, sources, balance) {
   const active = [];

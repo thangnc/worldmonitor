@@ -22,7 +22,7 @@ import {
   CII_STRIKE_HALF_LIFE_DAYS,
   CII_STRIKE_SEVERITY_WEIGHTS,
   CII_STRIKE_WINDOW_DAYS,
-} from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
 import {
   computeCIIScores,
   confirmedStrikeDaysFromEvents,
@@ -32,7 +32,7 @@ import {
   strikePressure,
   strikePressureBoost,
   strikePressureFloor,
-} from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;

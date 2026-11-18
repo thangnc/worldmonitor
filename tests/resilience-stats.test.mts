@@ -9,7 +9,7 @@ import {
   minMaxNormalize,
   nrcForecast,
   round,
-} from '../server/_shared/resilience-stats';
+} from '../packages/server/_shared/resilience-stats';
 
 test('cronbachAlpha returns the expected coefficient for a known matrix', () => {
   const alpha = cronbachAlpha([

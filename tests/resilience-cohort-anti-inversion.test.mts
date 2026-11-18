@@ -18,7 +18,7 @@
 //
 // SOURCE OF TRUTH — COHORT MEMBERSHIP
 //
-// Membership is committed JSON at server/worldmonitor/resilience/v1/cohorts/
+// Membership is committed JSON at packages/server/worldmonitor/resilience/v1/cohorts/
 // so it can be reviewed independently from test code. DO NOT inline cohort
 // lists here.
 //
@@ -43,7 +43,7 @@ import { dirname, resolve } from 'node:path';
 import { before, describe, it } from 'node:test';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const COHORTS_DIR = resolve(here, '../server/worldmonitor/resilience/v1/cohorts');
+const COHORTS_DIR = resolve(here, '../packages/server/worldmonitor/resilience/v1/cohorts');
 const FIXTURE_RANKING_PATH = resolve(here, 'fixtures/resilience-cohort-anti-inversion-ranking.json');
 
 interface CohortFile {
@@ -143,7 +143,7 @@ async function loadSeedUtils() {
 }
 
 async function loadRankingKey(): Promise<string> {
-  const sharedModule = await import('../server/worldmonitor/resilience/v1/_shared.ts');
+  const sharedModule = await import('../packages/server/worldmonitor/resilience/v1/_shared.ts');
   return (sharedModule as { RESILIENCE_RANKING_CACHE_KEY: string }).RESILIENCE_RANKING_CACHE_KEY;
 }
 

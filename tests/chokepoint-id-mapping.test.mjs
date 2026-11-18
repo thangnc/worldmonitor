@@ -5,10 +5,10 @@ import {
   relayNameToId,
   portwatchNameToId,
   corridorRiskNameToId,
-} from '../server/worldmonitor/supply-chain/v1/_chokepoint-ids.ts';
-import { CHOKEPOINTS } from '../server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts';
-import { THREAT_LEVEL } from '../server/worldmonitor/supply-chain/v1/_scoring.mjs';
-import { CHOKEPOINT_THREAT_LEVELS } from '../shared/chokepoint-threat-levels.js';
+} from '../packages/server/worldmonitor/supply-chain/v1/_chokepoint-ids.ts';
+import { CHOKEPOINTS } from '../packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts';
+import { THREAT_LEVEL } from '../packages/server/worldmonitor/supply-chain/v1/_scoring.mjs';
+import { CHOKEPOINT_THREAT_LEVELS } from '../packages/shared/chokepoint-threat-levels.js';
 
 describe('CANONICAL_CHOKEPOINTS registry', () => {
   it('contains exactly 13 canonical chokepoints', () => {
@@ -74,10 +74,10 @@ describe('portwatchNameToId', () => {
 
 import { readFileSync } from 'node:fs';
 const relaySrc = readFileSync('scripts/ais-relay.cjs', 'utf8');
-const handlerSrc = readFileSync('server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts', 'utf8');
+const handlerSrc = readFileSync('packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts', 'utf8');
 
 describe('chokepoint threat levels', () => {
-  // The relay reads shared/chokepoint-threat-levels.js; the RPC handler
+  // The relay reads packages/shared/chokepoint-threat-levels.js; the RPC handler
   // declares the same levels beside their prose descriptions. Both are
   // imported and compared. The previous version scraped both files with
   // regexes and wrapped the comparison in `if (relayMatch && handlerMatch)`,

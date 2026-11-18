@@ -36,7 +36,7 @@ export { SCORING_VERSION };
 /**
  * @param {string} regionId
  * @param {Record<string, any>} sources - keyed by Redis key, see freshness.mjs
- * @returns {{ vector: import('../../shared/regions.types.js').BalanceVector }}
+ * @returns {{ vector: import('../../packages/shared/regions.types.js').BalanceVector }}
  */
 export function computeBalanceVector(regionId, sources) {
   const region = REGIONS.find((r) => r.id === regionId);

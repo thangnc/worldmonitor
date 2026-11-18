@@ -67,17 +67,22 @@ describe('VITE secret environment guard (#5213)', () => {
   });
 
   it('runs the strict guard before every Vite or Tauri production build entrypoint', () => {
-    const scripts = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).scripts;
-    const guardedCommands = Object.entries(scripts)
-      .filter(([, command]) => /(?:vite|tauri) build/.test(command));
+    // The root package and the web app (apps/web, refactor PR 2.5). The web
+    // app runs the root's guard script from the repository root, where the
+    // .env files are.
+    const guardedCommands = [
+      ['package.json', /^npm run security:vite-env-secrets -- --strict-local &&/],
+      ['apps/web/package.json', /^npm --prefix \.\.\/\.\. run security:vite-env-secrets -- --strict-local &&/],
+    ].flatMap(([file, guard]) => {
+      const scripts = JSON.parse(readFileSync(new URL(`../${file}`, import.meta.url), 'utf8')).scripts;
+      return Object.entries(scripts)
+        .filter(([, command]) => /(?:vite|tauri) build/.test(command))
+        .map(([name, command]) => [`${file} ${name}`, command, guard]);
+    });
 
     assert.ok(guardedCommands.length > 0, 'expected production build commands');
-    for (const [name, command] of guardedCommands) {
-      assert.match(
-        command,
-        /^npm run security:vite-env-secrets -- --strict-local &&/,
-        `${name} must run the strict VITE secret guard before building`,
-      );
+    for (const [name, command, guard] of guardedCommands) {
+      assert.match(command, guard, `${name} must run the strict VITE secret guard before building`);
     }
   });
 

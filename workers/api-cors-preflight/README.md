@@ -27,15 +27,15 @@ source in-repo means future CORS changes:
 - Show up in `git log` / `git blame` / code review / greptile.
 - Get unit-tested in this directory (`index.test.mjs`).
 - Get smoke-tested against live prod (`tests/cors-preflight-live.test.mjs`).
-- Deploy from CI on merge (`.github/workflows/deploy-worker.yml`).
+- Deploy by hand with `wrangler deploy`. The CI deploy workflow was removed until the production environment is chosen (2026-11-19).
 
 ## Deploy
 
-### From CI (preferred)
+### From CI (removed)
 
-Merge to `main` → `.github/workflows/deploy-worker.yml` runs `wrangler deploy`
-automatically when `workers/api-cors-preflight/**` changes. Requires repo
-secrets:
+The `deploy-worker.yml` workflow that ran `wrangler deploy` on merges to `main`
+was removed on 2026-11-19: this deployment has no production environment yet.
+A future pipeline needs these secrets:
 
 - `CLOUDFLARE_API_TOKEN` — token with `Workers Scripts:Edit` + `Workers
   Routes:Edit` for the `worldmonitor.app` zone.
@@ -107,8 +107,8 @@ by which path answered (`no-store` from KV, `TIER_CACHE[tier]` from the origin).
 The CORS shape is unified; caching deliberately is not.
 
 `tests/cors-preflight-live.test.mjs` asserts all of this against a **deployed**
-URL, and the `live-smoke` job in `.github/workflows/deploy-worker.yml` runs it
-automatically after every Worker deploy. The handler-level guard in
+URL. The removed deploy workflow ran it after every Worker deploy; run it by
+hand after a manual deploy. The handler-level guard in
 `api/bootstrap-auth.test.mjs` cannot: it calls `handler()` directly, so it never
 sees what the edge does to the bytes afterwards. Both read the same assertions
 from `tests/helpers/public-bootstrap-contract.mjs`.

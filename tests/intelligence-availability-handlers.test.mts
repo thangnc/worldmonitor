@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test, before, after } from 'node:test';
-import { listSatellites } from '../server/worldmonitor/intelligence/v1/list-satellites';
-import { listSecurityAdvisories } from '../server/worldmonitor/intelligence/v1/list-security-advisories';
-import { searchGdeltDocuments } from '../server/worldmonitor/intelligence/v1/search-gdelt-documents';
+import { listSatellites } from '../packages/server/worldmonitor/intelligence/v1/list-satellites';
+import { listSecurityAdvisories } from '../packages/server/worldmonitor/intelligence/v1/list-security-advisories';
+import { searchGdeltDocuments } from '../packages/server/worldmonitor/intelligence/v1/search-gdelt-documents';
 
 const INTEL_TOPIC_IDS = ['military', 'cyber', 'nuclear', 'sanctions', 'intelligence', 'maritime'];
 const MIN_ADVISORY_COUNTRY_COVERAGE = 100;
@@ -108,8 +108,8 @@ test('GDELT: one untitled article in the seed is dropped, the valid articles are
 });
 
 test('generated intelligence routes preserve unavailable HTTP status and successful empty bodies', async t => {
-  const { createIntelligenceServiceRoutes } = await import('../src/generated/server/worldmonitor/intelligence/v1/service_server');
-  const { mapErrorToResponse } = await import('../server/error-mapper');
+  const { createIntelligenceServiceRoutes } = await import('../packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server');
+  const { mapErrorToResponse } = await import('../packages/server/error-mapper');
   const routes = createIntelligenceServiceRoutes({ listSatellites, listSecurityAdvisories } as never, { onError: mapErrorToResponse });
   const redis = mockRedis(t);
   for (const [suffix, empty, malformed] of [

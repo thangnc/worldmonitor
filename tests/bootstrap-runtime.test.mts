@@ -6,8 +6,8 @@ import {
   getBootstrapHydrationState,
   getHydratedData,
   waitForBootstrapSlowTier,
-} from '../src/services/bootstrap';
-import type { BootstrapTransferRumSample } from '../src/bootstrap/bootstrap-transfer-rum';
+} from '../packages/client/services/bootstrap';
+import type { BootstrapTransferRumSample } from '../packages/client/bootstrap/bootstrap-transfer-rum';
 
 type Deferred<T> = {
   promise: Promise<T>;

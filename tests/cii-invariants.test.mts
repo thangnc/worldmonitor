@@ -1,5 +1,5 @@
 // CII invariant suite: the required properties P1–P16 of
-// docs/methodology/cii-change-brief.md, measured with the scoring seam on the
+// docs/engineering/methodology/cii-change-brief.md, measured with the scoring seam on the
 // committed production fixtures (tests/fixtures/cii/) and on synthetic
 // scenarios. Thresholds come from the brief and must not be loosened to make
 // a formula pass.
@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import { after, describe, it } from 'node:test';
 
-import iso3ToIso2 from '../shared/iso3-to-iso2.json' with { type: 'json' };
+import iso3ToIso2 from '../packages/shared/iso3-to-iso2.json' with { type: 'json' };
 import { loadCiiFixtures, pairsOrderedAgainstBlend, type CiiFixture } from '../scripts/lib/cii-fixtures.mts';
 import {
   assessCiiInputAvailability,
@@ -20,9 +20,9 @@ import {
   scoreCiiAuxiliarySources,
   type AuxiliarySources,
   type CiiScoreTableRow,
-} from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
-import { CII_FORMULA_VERSION } from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
-import { TIER1_COUNTRIES } from '../server/worldmonitor/intelligence/v1/_shared.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+import { CII_FORMULA_VERSION } from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
+import { TIER1_COUNTRIES } from '../packages/server/worldmonitor/intelligence/v1/_shared.ts';
 
 /**
  * Properties the formula named by CII_FORMULA_VERSION is known to fail. Shrink

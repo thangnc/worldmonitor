@@ -14,8 +14,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest';
-import { rssFeedCacheKey } from '../server/worldmonitor/news/v1/_rss-cache';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
+import { rssFeedCacheKey } from '../packages/server/worldmonitor/news/v1/_rss-cache';
 import { shouldDropOpinionTrack } from '../scripts/lib/digest-opinion-track-filter.mjs';
 
 const {
@@ -214,7 +214,7 @@ describe('buildStoryTrackHsetFields — story:track:v1 HSET contract', () => {
     // `category`, so the brief composer always saw the 'General' default
     // for every story. This test locks the persistence going forward:
     // category is written as the canonical lowercase EventCategory value
-    // (display capitalization happens once in shared/brief-filter.js at
+    // (display capitalization happens once in packages/shared/brief-filter.js at
     // envelope build, not here). See plan
     // docs/engineering/plans/2026-05-17-002-fix-persist-story-track-category-plan.md.
     const conflictItem = baseItem({ category: 'conflict' });
@@ -227,7 +227,7 @@ describe('buildStoryTrackHsetFields — story:track:v1 HSET contract', () => {
 
   it('T2-T4: defensive write — missing / non-string upstream category becomes empty string, never literal "undefined"', () => {
     // The fallback chain is: missing here → '' on Redis →
-    // shared/brief-filter.js:365's `asTrimmedString(raw.category) || 'General'`
+    // packages/shared/brief-filter.js:365's `asTrimmedString(raw.category) || 'General'`
     // converts back to 'General' for graceful degradation. The
     // critical contract is that NO literal 'undefined' or '42' string
     // ever reaches Redis from a malformed upstream value.
@@ -561,7 +561,7 @@ describe('fetchAndParseRss — cache prefix invalidation contract', () => {
     // refactor cannot silently revert to v4.
     const __dirname = dirname(fileURLToPath(import.meta.url));
     const src = readFileSync(
-      resolve(__dirname, '..', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
+      resolve(__dirname, '..', 'packages', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
       'utf-8',
     );
     // v9→v10: warm v9 rows retain only the first five RSS entries.

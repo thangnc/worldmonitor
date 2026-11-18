@@ -14,14 +14,14 @@ import { injectJson, injectYaml } from '../scripts/openapi-inject-async-jobs.mjs
 // 202 Accepted job envelope with a Location header pointing at the
 // GetScenarioStatus poll endpoint. The runtime honors the contract via the
 // setSuccessStatusOverride gateway side-channel
-// (server/worldmonitor/scenario/v1/run-scenario.ts); this test keeps the
+// (packages/server/worldmonitor/scenario/v1/run-scenario.ts); this test keeps the
 // published spec in sync so agents (and the ora.ai / orank scanner, which
 // falls back to the spec for auth-gated routes — check `async-job-pattern`)
 // always see the documented pattern. A fresh `make generate` must re-run the
 // injector.
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 
 const RUN_PATH = '/api/scenario/v1/run-scenario';
 const POLL_PATH = '/api/scenario/v1/get-scenario-status';
@@ -77,19 +77,16 @@ describe('OpenAPI async-job pattern contract (RunScenario 202)', () => {
     assert.ok(bundle.paths?.[POLL_PATH]?.get, 'bundle must keep the poll endpoint published');
   });
 
-  it('runtime honors the documented 202 (fail-closed source assertions)', () => {
-    // The handler marks the request for the 202 upgrade + Location header…
-    const handler = readFileSync(resolve(root, 'server/worldmonitor/scenario/v1/run-scenario.ts'), 'utf8');
-    assert.match(handler, /setSuccessStatusOverride\(ctx\.request,\s*202\)/, 'run-scenario.ts must set the 202 override');
-    assert.match(handler, /setResponseHeader\(ctx\.request,\s*'Location'/, 'run-scenario.ts must set the Location header');
-    // …and the gateway drains + applies it (POST-200 only).
-    const gateway = readFileSync(resolve(root, 'server/gateway.ts'), 'utf8');
+  it('gateway runtime can honor a documented 202 (fail-closed source assertions)', () => {
+    // The RunScenario handler is deferred (scripts/lib/sebuf-deferred-services.mjs);
+    // the gateway keeps draining + applying a handler's 202 override (POST-200 only).
+    const gateway = readFileSync(resolve(root, 'packages/server/gateway.ts'), 'utf8');
     // The handler writes on the principal-stamped clone it was given, so the
     // drain must read that same object (gateway-side-channel-principal.test.ts
     // proves the runtime behaviour for an authenticated caller).
     assert.match(gateway, /drainSuccessStatusOverride\(requestForHandler\)/, 'gateway.ts must drain the status override from the request the handler received');
     // Location must be CORS-exposed or browser agents cannot read the poll URL.
-    const cors = readFileSync(resolve(root, 'server/cors.ts'), 'utf8');
+    const cors = readFileSync(resolve(root, 'packages/server/cors.ts'), 'utf8');
     assert.match(cors, /'Location',/, 'cors.ts EXPOSED_HEADERS must include Location');
   });
 

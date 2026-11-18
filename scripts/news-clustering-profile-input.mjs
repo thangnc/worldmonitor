@@ -7,7 +7,7 @@ export function bundleProfileInput() {
     stdin: {
       contents: `export { protoItemToNewsItem } from './src/services/news-digest-items.ts';
         export { clusterNewsCore } from './shared/news-clustering-core.js';
-        export { SOURCE_TIERS, getSourceTier } from './server/_shared/source-tiers.ts';
+        export { SOURCE_TIERS, getSourceTier } from './packages/server/_shared/source-tiers.ts';
         `,
       loader: 'ts', resolveDir: process.cwd(),
     },

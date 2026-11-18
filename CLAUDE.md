@@ -1,30 +1,28 @@
 # CLAUDE.md
 
-WorldMonitor is a real-time global intelligence dashboard for geopolitics, military activity, markets, climate, cyber threats, maritime traffic, and aviation. A TypeScript browser app uses Vercel Edge APIs, Railway data workers, and Upstash Redis. Tauri adds a desktop app and Node.js sidecar.
+WorldMonitor is a real-time global intelligence dashboard for geopolitics, military activity, markets, climate, cyber threats, maritime traffic, and aviation. The Lite web app (Preact) uses Vercel Edge APIs, data workers, and Upstash Redis. Tauri adds a desktop app and Node.js sidecar.
 
 Claude Code is the only supported coding agent for this repository. This file is the canonical agent guide. It covers workflow rules, commands, the change → check map, test-suite ownership, landmarks, and import boundaries. The project's Claude Code setup lives in `.claude/`:
 
 | Path | What it does |
 |---|---|
-| `.claude/rules/` | Path-scoped rules. Each loads only when Claude works on matching files: edge API, seeders, proto, browser, tests, CI, Convex, desktop, docs. Keep them short and link to the canonical docs. |
+| `.claude/rules/` | Path-scoped rules. Each loads only when Claude works on matching files: edge API, seeders, proto, browser, tests, CI, docs. Keep them short and link to the canonical docs. |
 | `.claude/skills/` | Engineering skills: `verify-worldmonitor` (browser proof), `sentry-triage`, `learn` (`/learn`: record a lesson in the engineering knowledge base), and `ship` (user-invoked `/ship`: deliver a worktree's change as a PR on this fork). |
 | `.claude/agents/` | Subagents: `edge-contract-reviewer` (repo contract review of a diff). |
-| `.claude/hooks/` + `.claude/settings.json` | Block hand edits to `src/generated/`, `docs/api/`, the generated `docs/engineering/*/INDEX.md` files, and `package-lock.json`; Biome-lint each edited JS/TS file. |
+| `.claude/hooks/` + `.claude/settings.json` | Block hand edits to `packages/contracts/generated/`, `packages/contracts/openapi/`, the generated `docs/engineering/*/INDEX.md` files, and `package-lock.json`; Biome-lint each edited JS/TS file. |
 | `CLAUDE.local.md`, `.claude/settings.local.json` | Personal overrides. Git ignores them. |
-
-`skills/` at the repo root is different: it holds published product recipes for API and MCP consumers.
 
 Deeper references: [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIBUTING.md), [CONCEPTS.md](CONCEPTS.md).
 
 ## Product direction: World Monitor Lite profile
 
-The owner runs a private, low-noise build of the `full` variant, focused on three domains: geopolitics and conflicts, finance and crypto, and technology and AI. [docs/engineering/architecture/lite.md](docs/engineering/architecture/lite.md) is the canonical spec: scope by panel ID, owner decisions, platform map, intelligence reuse map, and phase plan. Change it before changing scope or architecture. File-level rules are in `.claude/rules/lite-profile.md`.
+The owner runs a private, low-noise dashboard, World Monitor Lite, focused on three domains: geopolitics and conflicts, finance and crypto, and technology and AI. [docs/engineering/architecture/lite.md](docs/engineering/architecture/lite.md) is the canonical spec: scope by panel ID, owner decisions, platform map, intelligence reuse map, and phase plan. Change it before changing scope or architecture. File-level rules are in `.claude/rules/lite-profile.md`.
 
 - New work serves one of the three domains, or passes the spec's decision rule for optional modules. Say which when proposing it.
 - Early indicators come first: feeds that report army activity, violence, macro releases, bond moves, hacking, releases and outages as soon as they happen. Link each indicator to the news around it, and say "No linked news found" rather than guess a cause (spec: Early indicators).
-- Lite behavior and custom features sit behind the profile env flag. With the flag off, behavior matches upstream. Do not add a `lite` variant.
-- The owner's front page is the Lite UI at `/lite` (`src/lite/`, Preact and Tailwind): the cross-domain Briefing, with the three domain screens as its children. Its widgets show real data, a labelled derived rule, or labelled samples, never unlabelled samples.
-- Reuse the existing `shared/` intelligence modules (story identity, publisher families, credibility, corroboration, keyword spikes, grounded briefs) before writing new scoring, dedup, or brief code.
+- Upstream sync is dropped (2026-11-07): Lite is the product, and only the ingestion architecture is kept. The [refactor plan](docs/engineering/plans/2026-11-18-001-refactor-lite-monorepo-plan.md) removed the old dashboard, the profile flag and the site variants in Phase 1, then moves to npm workspaces + Turborepo and Vite 8, with hosting last. Build Lite work directly: no env flag, no flag-off path, no site variant. [Legacy features](docs/engineering/product/legacy-features.md) lists what leaves and how to bring it back.
+- The owner's front page is the Lite UI at `/lite` (`apps/web/src/lite/`, Preact and Tailwind): the cross-domain Briefing, with the three domain screens as its children. Its widgets show real data, a labelled derived rule, or labelled samples, never unlabelled samples.
+- Reuse the existing `packages/shared/` intelligence modules (story identity, publisher families, credibility, corroboration, keyword spikes, grounded briefs) before writing new scoring, dedup, or brief code.
 - Add no new datastore (Supabase Postgres, R2 raw archive) until its phase gate in the spec is met. Redis stays the store the dashboard reads.
 - Model work at the event level, not the article level. Keep sources, timestamps, confidence, and the distinction between confirmed facts, attributed claims, and model inference visible.
 - The deployment stays private and access-gated under the "World Monitor" name. Opening it to others needs a distinct name first (trademark policy).
@@ -59,25 +57,26 @@ Merge, auto-merge, and deployment require explicit authorization in the current 
 Node 24 (`.nvmrc`).
 
 ```bash
-npm run dev                      # Vite dev server, full variant (also serves registered sebuf RPC handlers via sebufApiPlugin)
-npm run dev:tech                 # other variants: dev:finance, dev:commodity, dev:energy, dev:happy
-npm run desktop:dev              # Tauri desktop app with sidecar
+npm run dev                      # Vite dev server for the Lite UI at /lite (apps/web); also serves the API routes it calls (apps/web/vite.dev-api.ts)
 
-npm run typecheck                # browser code (tsc --noEmit)
-npm run typecheck:api            # api/ + server/ (tsconfig.api.json) plus Convex audits
+npm run typecheck                # browser code (tsc --noEmit; the root tsconfig.json extends apps/web/tsconfig.json)
+npm run typecheck:api            # api/ + packages/server/ (tsconfig.api.json)
 npm run lint                     # biome + safe-html guard
 npm run lint:boundaries          # browser import-direction enforcement
 npm run lint:api-contract        # hand-written api/ routes must be listed in api/api-route-exceptions.json
+npx turbo run typecheck build    # the same tasks through the Turborepo cache (turbo.json); CI runs them this way
+npm run build                    # the deploy build (vercel.json): runs @wm/web's build, which writes the root dist/
 
-npm run test:data                # tests/*.test.{mjs,mts}, cli/test (node:test, sharded runner)
+npm run test:data                # tests/*.test.{mjs,mts} (node:test, sharded runner)
 npm run test:dom                 # tests/dom (vitest, vitest.dom.config.mts)
-npm run test:convex              # convex/, server/__tests__, correlation engine (vitest)
-npm run test:sidecar             # api/ node suites + src-tauri sidecar
+npm run test:server              # packages/server/__tests__, correlation engine (vitest)
+npm run test:sidecar             # api/ node suites + the Docker Node API server (docker/local-api/)
 
-make generate                    # regenerate src/generated/ + docs/api/ from proto/
-npm run generate                 # regenerate committed derived files (product facts, llms, AI search, catalogs)
+make generate                    # regenerate packages/contracts/generated/ + packages/contracts/openapi/ from packages/contracts/proto/
+npm run generate                 # regenerate committed derived files (catalogs, source attribution, indexes)
 npm run seed:lite:watch          # keep the Lite seeders fresh in local Redis (seed:lite once, seed:lite:status read-only)
-npm run docs:check               # required after CI workflow changes
+npm run relay:local              # the AIS relay on 127.0.0.1:3004 against local Redis (CONTRIBUTING.md "Live data locally")
+npm run docs:check               # required after CI workflow changes: CI/CD table, sebuf version, /api/health examples
 ```
 
 Running a single test:
@@ -86,10 +85,9 @@ Running a single test:
 node --import tsx --test tests/<name>.test.mjs        # node:test suite (.mjs or .mts); find by subject: ls tests/ | grep <subject>
 npx vitest run --config vitest.dom.config.mts tests/dom/<file>
 npx vitest run --config vitest.config.mts <path>
-cross-env VITE_VARIANT=full npx playwright test e2e/<spec>.spec.ts --project=chromium
 ```
 
-Production build per variant: `npm run build:full` (or `build:tech`, `build:finance`, …). The pre-push hook (`.husky/pre-push`) runs tsc for src + API, edge-bundle checks, markdown/MDX lint, and the version sync check.
+Production build: `npm run build` (the Lite UI into `dist/`; `build:full` is an alias Vercel used). The pre-push hook (`.husky/pre-push`) runs the identity and secret-dump gates, then only the checks the branch's changes touch: tsc for src and API, the edge-bundle check, import boundaries, markdown lint, `docs:check`, and `make generate` drift.
 
 ## Include UI evidence in pull requests
 
@@ -102,17 +100,17 @@ Production build per variant: `npm run build:full` (or `build:tech`, `build:fina
 
 | Change | Code and guidance | Required verification |
 |---|---|---|
-| Browser behavior | `src/components/`, `src/app/`, `src/services/`, `src/config/`; [architecture](ARCHITECTURE.md) | Focused behavior check, `npm run typecheck`, `npm run lint:boundaries` |
-| API and handlers | `api/`, `server/`; [endpoint guide](docs/adding-endpoints.mdx) | Focused handler check, `npm run typecheck:api`; `npm run test:sidecar` owns the `api/` node suites; `edge-contract-reviewer` subagent before the PR |
-| Data workers and cache | `scripts/`, `server/_shared/`; [health contracts](docs/health-endpoints.mdx) | Producer and reader checks with fixtures; separately record live freshness evidence when required |
-| Proto and generated clients | `proto/`, `src/generated/`; [code generation](CONTRIBUTING.md#working-with-sebuf-rpc-framework) | `make generate` requires buf + sebuf v0.11.1 plugins; verify generated diff |
-| Desktop and sidecar | `src-tauri/`; [architecture](ARCHITECTURE.md) | Focused Rust checks or `npm run test:sidecar` |
+| Browser behavior | `apps/web/` (the Lite UI in `src/lite/`, `lite.html`, the Vite configs), and the `packages/client/services/`, `packages/client/config/` and `packages/client/utils/` modules it imports; [Lite spec](docs/engineering/architecture/lite.md) | Focused behavior check, `npm run typecheck`, `npm run lint:boundaries` |
+| API and handlers | `api/`, `packages/server/`; [endpoint guide](docs/engineering/architecture/adding-endpoints.md) | Focused handler check, `npm run typecheck:api`; `npm run test:sidecar` owns the `api/` node suites; `edge-contract-reviewer` subagent before the PR |
+| Data workers and cache | `scripts/`, `packages/server/_shared/`; [health contracts](docs/engineering/architecture/health-endpoints.md) | Producer and reader checks with fixtures; separately record live freshness evidence when required |
+| Proto and generated clients | `packages/contracts/proto/`, `packages/contracts/generated/`; [code generation](CONTRIBUTING.md#working-with-sebuf-rpc-framework) | `make generate` requires buf + sebuf v0.11.1 plugins; verify generated diff |
+| Docker Node API server | `docker/local-api/`, `docker/build-handlers.mjs` | `npm run test:sidecar` |
 | CI workflows | `.github/workflows/`; [CI/CD table](ARCHITECTURE.md#11-cicd) | Add or update each workflow's table entry. Run `npm run docs:check` and validate the changed workflow before pushing. The pre-push hook enforces the documentation check for workflow changes |
-| Committed derived files (product facts, llms, AI search, catalogs) | `scripts/generate-derived.mjs`; [derived files](CONTRIBUTING.md#derived-files) | `npm run generate`, then commit what it rewrote |
-| Tests and documentation | `tests/`, `e2e/`, `docs/`; [verification guide](CONTRIBUTING.md#verify-the-changed-path) | Relevant existing test or docs check, `git diff --check` |
-| Claude Code setup | `CLAUDE.md`, `.claude/` | Check that every path, symbol, and command it names exists; run the tests that read it (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/agent-page.test.mjs`, `tests/sentry-triage-skill.test.mjs`, `tests/engineering-docs.test.mjs`) and `npm run docs:check` |
+| Committed derived files (catalogs, source attribution, indexes) | `scripts/generate-derived.mjs`; [derived files](CONTRIBUTING.md#derived-files) | `npm run generate`, then commit what it rewrote |
+| Tests and documentation | `tests/`, `docs/`; [verification guide](CONTRIBUTING.md#verify-the-changed-path) | Relevant existing test or docs check, `git diff --check` |
+| Claude Code setup | `CLAUDE.md`, `.claude/` | Check that every path, symbol, and command it names exists; run the tests that read it (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/sentry-triage-skill.test.mjs`, `tests/engineering-docs.test.mjs`) and `npm run docs:check` |
 
-For public documents and API collections, use `https://www.worldmonitor.app` for website and documentation links. Keep MCP and OAuth endpoint identities on the apex host. Run `node --test tests/agent-corpus-canonical-host.test.mjs` after changing published URLs.
+The deployment is private (refactor 1c-3): it publishes no documentation site, agent corpus (`llms.txt`, markdown twins, `.well-known` cards) or SEO output, and `public/robots.txt` disallows all crawling. Do not add public pages; engineering documentation goes in `docs/engineering/`.
 
 ## Landmarks
 
@@ -122,45 +120,46 @@ Grep the named symbol. Do not scan these files top to bottom.
 |---|---|
 | Health keys and seed staleness | `api/health.js`: `BOOTSTRAP_KEYS`, `STANDALONE_KEYS`, `SEED_META`, `ON_DEMAND_KEYS`, `readSeedMeta`, `classifyKey` |
 | Shared seeder helpers | `scripts/_seed-utils.mjs`: `loadEnvFile`, `resolveSeedMetaKey`, `writeSeedMeta`, `writeExtraKeyWithMetaAtomically`, `withRetry` |
-| RPC access control | Split by design: `PREMIUM_RPC_PATHS` in `src/shared/premium-paths.ts`, `PUBLIC_NO_AUTH_RPC_PATHS` in `server/gateway.ts`, `validateApiKey` in `api/_api-key.js`, `isPublicSharedRpcRequest` in `src/shared/public-rpc-cache.ts` |
+| RPC access control | `validateApiKey` in `api/_api-key.js` (anonymous session or operator key); `PREMIUM_RPC_PATHS` in `packages/client/shared/premium-paths.ts` (operator key only); `PUBLIC_NO_AUTH_RPC_PATHS` in `packages/server/gateway.ts` and `isPublicSharedRpcRequest` in `packages/client/shared/public-rpc-cache.ts` (no credential) |
 | A shared term | `CONCEPTS.md`, one `###` heading per term; grep the term itself |
 
-Test path, command, and owning CI job. Read this instead of `.github/workflows/test.yml`.
+Test path, command, and owning CI job (`.github/workflows/ci.yml`).
 
 | Test path | Command | CI job |
 |---|---|---|
-| `tests/*.test.mjs`, `tests/*.test.mts`, `cli/test/`, `api/security/report.test.mjs` | `npm run test:data` | `unit-shards` |
-| `tests/dom/` | `npm run test:dom` | `dom-tests` |
-| `convex/__tests__/`, `server/__tests__/`, `src/services/correlation-engine/` | `npm run test:convex` | `convex-tests` |
-| `api/` node suites except `api/security/report.test.mjs`, and `src-tauri/` | `npm run test:sidecar` | `sidecar` |
+| `tests/*.test.mjs`, `tests/*.test.mts`, `api/security/report.test.mjs` | `npm run test:data` | `unit` (3 shards); suites that read built output run in `build` |
+| `tests/dom/` | `npm run test:dom` | `dom` |
+| `packages/server/__tests__/` | `npm run test:server` | `server` |
+| `api/` node suites except `api/security/report.test.mjs`, and `docker/local-api/` | `npm run test:sidecar` | `server` |
 
 Find a suite by subject with `ls tests/ | grep <subject>` before searching the tree.
 
 ## Architecture at a glance
 
-**Runtime topology.** Browser SPA (`src/`) → Vercel Edge Functions (`api/`, `middleware.ts`) → Upstash Redis, which Railway workers (`scripts/seed-*.mjs`, the long-running relay `scripts/ais-relay.cjs`) fill from roughly 850 upstream hosts. The Tauri desktop app (`src-tauri/`) wraps the same SPA and redirects fetches to a local Node.js sidecar. Convex (`convex/`) holds user-scoped state: auth, entitlements, API keys, alert rules, notification channels, preferences.
+**Runtime topology.** Lite SPA (`apps/web/src/lite/`) → Vercel Edge Functions (`api/`, `middleware.ts`) → Upstash Redis, which Railway workers (`scripts/seed-*.mjs`, the long-running relay `scripts/ais-relay.cjs`) fill from roughly 850 upstream hosts. There is no user-scoped backend: Convex, Clerk, billing, MCP and OAuth were removed in refactor Phase 1c.
 
-**Request path is cache-first.** Most domain RPCs do not hit upstreams per request. Seeders write Redis keys through `atomicPublish()` / `writeSeedMeta` in `scripts/_seed-utils.mjs`, always alongside `seed-meta:<key>` (`fetchedAt`, `recordCount`). Edge handlers read via `cachedFetchJson()` (`server/_shared/redis.ts`), which coalesces concurrent misses. `api/health.js` grades staleness per key from that seed-meta. Some domains (scorecard, supply-chain vulnerability, physical divergence) are pure read models of a Railway-published cohort. A data change usually spans producer script → Redis key → handler → bootstrap/health registration → panel.
+**Request path is cache-first.** Most domain RPCs do not hit upstreams per request. Seeders write Redis keys through `atomicPublish()` / `writeSeedMeta` in `scripts/_seed-utils.mjs`, always alongside `seed-meta:<key>` (`fetchedAt`, `recordCount`). Edge handlers read via `cachedFetchJson()` (`packages/server/_shared/redis.ts`), which coalesces concurrent misses. `api/health.js` grades staleness per key from that seed-meta. Some domains (scorecard, supply-chain vulnerability, physical divergence) are pure read models of a Railway-published cohort. A data change usually spans producer script → Redis key → handler → bootstrap/health registration → panel.
 
-**Proto/sebuf contract.** `proto/` defines services with `(sebuf.http.config)` annotations. `make generate` emits TS client stubs (`src/generated/client/`), server types (`src/generated/server/`) and OpenAPI (`docs/api/`). Handlers live in `server/worldmonitor/<domain>/v1/handler.ts`. The thin entry points `api/<domain>/v<N>/[rpc].ts` call `createDomainGateway` (`server/gateway.ts`), which runs origin check → CORS → API key → rate limit → route → handler → ETag/304 → cache-tier headers. Every Edge function is esbuild-bundled per file; `tests/edge-functions.test.mjs` enforces that it stays self-contained. CI (`proto-check.yml`) fails when generated output is stale.
+**Proto/sebuf contract.** `packages/contracts/proto/` defines services with `(sebuf.http.config)` annotations. `make generate` emits TS client stubs (`packages/contracts/generated/client/`), server types (`packages/contracts/generated/server/`) and OpenAPI (`packages/contracts/openapi/`). Handlers live in `packages/server/worldmonitor/<domain>/v1/handler.ts`. The thin entry points `api/<domain>/v<N>/[rpc].ts` call `createDomainGateway` (`packages/server/gateway.ts`), which runs origin check → CORS → API key (premium routes: operator key only) → rate limit → route → handler → ETag/304 → cache-tier headers. Every Edge function is esbuild-bundled per file; `tests/edge-functions.test.mjs` enforces that it stays self-contained. CI (`proto-check.yml`) fails when generated output is stale.
 
-**Frontend.** No framework and no state library (the Lite UI in `src/lite/` is the one Preact and Tailwind exception; see the Lite spec). `src/main.ts` → `App.init()`, which runs in phases: storage/i18n → ML worker → sidecar wait → two-tier `/api/bootstrap` hydration (fast and slow tiers) → layout → UI → `loadAllData()` → `startSmartPollLoop()` refresh. Shared mutable state lives in `AppContext`; URL state syncs through `src/utils/urlState.ts`. Panels extend `src/components/Panel.ts` and render through the debounced `setSafeContent()` with the `safeHtml` template (or `setContentNodes`) with event delegation (lint guards: `lint:safe-html`, `lint:panel-content-writes`). There are two map renderers, `DeckGLMap` (deck.gl/maplibre) and `GlobeMap` (globe.gl); layers are declared in `src/config/map-layer-definitions.ts`. Heavy work runs in `src/workers/` (clustering/correlation, ONNX ML).
+**Frontend.** The Lite UI (`apps/web/src/lite/`, Preact and Tailwind, entry `apps/web/lite.html` → `apps/web/src/lite/main.tsx`) is the only web app, the `@wm/web` workspace (`apps/web/`, with `vite.config.ts` and `vite.dev-api.ts`). Vite runs with `apps/web` as its root but reads the repository root's `.env*` and `public/` and writes the root `dist/`; refactor Phase 1 removed the old vanilla-TS dashboard (`src/components/`, `src/app/`, `App.ts`). It reads data through the generated sebuf clients and the `packages/client/services/` modules it imports, and draws maps with MapLibre (`apps/web/src/lite/map/`). What was removed, and how to bring a feature back, is in [legacy features](docs/engineering/product/legacy-features.md).
 
 **Bootstrap data.** Startup datasets come from `api/bootstrap.js` and are read with `getHydratedData(key)`. Opt-in panels use `ensureHydrated(key)` (on-demand path). Each new key must also be registered in `api/health.js`.
 
-**Variants.** One codebase builds several sites (full, tech, finance, commodity, energy, happy), selected by `VITE_VARIANT` at build time and by hostname at runtime (`src/config/variant.ts`). Variants change default panels, layers, refresh intervals and theme. When a change affects one variant, check the others too (e2e scripts exist per variant).
+**No variants, no profile flag.** Refactor Phase 1d removed `VITE_VARIANT`/`SITE_VARIANT` and `VITE_LITE_PROFILE`. `/` and `/dashboard` always 307 to `/lite` (query kept): `vercel.json` owns that redirect, and `docker/nginx.conf*` and `apps/web/vite.dev-api.ts` mirror it. A `variant` request parameter on the news RPCs (`full`, `tech`, `finance`) names a feed digest edition on the server, not a site variant.
 
-**`shared/` vs `src/shared/`.** The top-level `shared/` holds logic that both the browser and server/MCP must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side.
+**`packages/shared/` vs `packages/client/`.** The `@wm/shared` workspace package (`packages/shared/`) holds logic that both the browser and the server must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side. The `@wm/client` workspace package (`packages/client/`) holds the browser modules the Lite UI builds on (`services/`, `config/`, `types/`, `utils/`, `bootstrap/`, `locales/`, and `shared/` for the premium and public RPC path lists the gateway also reads). `scripts/shared/` is the Railway seeders' byte-identical mirror of parts of it (mirror tests keep them in sync), because scripts-rooted services cannot see the rest of the repository.
 
-**Other surfaces.** `api/mcp.ts` (MCP server), `sdk/`, `cli/`, `pro-test/` (pro landing site, built into `public/pro`), `blog-site/` (built into `public/blog`), `docs/` (Mintlify public site; engineering records live in `docs/engineering/`, mapped by [its README](docs/engineering/README.md)), `skills/` (published product recipes, distinct from the `.claude/skills/` engineering skills). `claude-plugin/`, `gemini-extension.json`, and `public/agents.md` distribute the product to agent clients. They are not development tooling.
+**Other surfaces.** `docs/` holds only `docs/engineering/` (engineering records, mapped by [its README](docs/engineering/README.md)). The `@wm/contracts` workspace package (`packages/contracts/`) holds the proto sources, the generated TypeScript (`generated/`) and the generated OpenAPI (`openapi/`). The `@wm/shared` workspace package (`packages/shared/`) holds the cross-runtime logic and data. The Mintlify public site, the published `skills/` recipes, the SDKs, CLI, MCP server, agent-client plugins and the public agent and SEO outputs were removed in refactor Phase 1c.
 
 ## Critical boundaries
 
-The browser import direction is `types -> config -> services -> components -> app -> App.ts`. [lint-boundaries.mjs](scripts/lint-boundaries.mjs) enforces import boundaries.
+The browser import direction is `types -> config -> services -> lite` (`packages/client/{types,config,services}` → `apps/web/src/lite/`), and `apps/web/src/lite/` imports no removed dashboard code. [lint-boundaries.mjs](scripts/lint-boundaries.mjs) enforces import boundaries.
 
-- Legacy `api/*.js` entries are self-contained JavaScript. Import same-directory `_*.js` helpers or packages, never `server/` or `src/`.
-- TypeScript API entries may import `server/` and `src/generated/`, but no other browser code. `server/` must not import `src/components/` or `src/app/`.
-- Edit proto definitions and regenerate. Never hand-edit `src/generated/`.
+- Legacy `api/*.js` entries are self-contained JavaScript. Import same-directory `_*.js` helpers or packages, never `packages/server/` or `apps/web/`.
+- TypeScript API entries may import `packages/server/` and `packages/contracts/generated/`, but no other browser code. Nothing under `packages/` imports `apps/` (`@wm/web`).
+- The Lite UI imports the workspace packages by name (`@wm/client/services/...`, `@wm/contracts/generated/...`, `@wm/shared/...`, `@wm/server/_shared/...`); there is no `@/` alias. Files inside `packages/client/` import each other by relative path. `api/`, `packages/server/` (`@wm/server`), `packages/shared/`, `middleware.ts`, `apps/web/vite.dev-api.ts` and the `packages/client/` modules they import use relative paths into `packages/contracts/`, `packages/shared/`, `packages/server/` and `packages/client/` until a Vercel preview proves workspace packages in Edge bundles (`lint:boundaries` enforces both).
+- Edit proto definitions and regenerate. Never hand-edit `packages/contracts/generated/`.
 - Use shared cache and response helpers. Use `cachedFetchJson()` when applicable. Include every request-varying parameter in cache keys.
 - Edge code must not import `node:http`, `node:https`, or `node:zlib`. Use `(...args) => globalThis.fetch(...args)`, never `fetch.bind(globalThis)`.
 - Include a `User-Agent` on server fetches. Stagger Yahoo Finance requests by 150 ms.
@@ -172,8 +171,8 @@ The browser import direction is `types -> config -> services -> components -> ap
 - For browser behavior, invoke the `verify-worldmonitor` skill. Start with an existing strict feature test. Use manual driving for the interaction being changed.
 - For Sentry events, invoke the `sentry-triage` skill. Its default is read-only triage.
 - To deliver a change from a worktree, the user runs `/ship`. It verifies, commits signed, pushes `<type>/<slug>`, opens the PR on `thangnc/worldmonitor`, and watches CI. It never merges or deploys on its own.
-- After changing `api/`, `server/`, `scripts/seed-*`, or `src/services/`, run the `edge-contract-reviewer` subagent on the diff before opening a PR.
-- Before changing an area, check the [engineering knowledge base](docs/engineering/README.md). Grep [solutions/INDEX.md](docs/engineering/solutions/INDEX.md) for the area, symbol, or symptom: it lists every lesson by the area where the fix lives. [plans/INDEX.md](docs/engineering/plans/INDEX.md) shows which plans shipped. Use [CONCEPTS.md](CONCEPTS.md) for shared terms and [design philosophy](docs/architecture.mdx) for design decisions.
+- After changing `api/`, `packages/server/`, `scripts/seed-*`, or `packages/client/services/`, run the `edge-contract-reviewer` subagent on the diff before opening a PR.
+- Before changing an area, check the [engineering knowledge base](docs/engineering/README.md). Grep [solutions/INDEX.md](docs/engineering/solutions/INDEX.md) for the area, symbol, or symptom: it lists every lesson by the area where the fix lives. [plans/INDEX.md](docs/engineering/plans/INDEX.md) shows which plans shipped. Use [CONCEPTS.md](CONCEPTS.md) for shared terms and [design philosophy](docs/engineering/architecture/design-philosophy.md) for design decisions.
 - When a session teaches a durable repo convention or exposes a trap, record it with the `learn` skill (`/learn`): a lesson in `docs/engineering/solutions/`, a line in the matching `.claude/rules/` file, or a term in CONCEPTS.md. Personal memory is not enough.
 
 Run the smallest meaningful proof first. Preserve useful regression coverage. Run heavy checks sequentially. Report failures honestly. Keep locally verified, PR ready, merged, deployed, observed in production, and acceptance complete as separate claims.

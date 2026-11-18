@@ -1,4 +1,4 @@
-// Mirror of server/worldmonitor/shipping/v2/deliver-webhook.ts for the Railway
+// Mirror of packages/server/worldmonitor/shipping/v2/deliver-webhook.ts for the Railway
 // worker, which runs from scripts/ with no TS loader. The wire format must stay
 // byte-identical; tests/shipping-webhook-delivery-parity.test.mjs pins it.
 

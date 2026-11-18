@@ -902,12 +902,6 @@ describe('buildScorecard', () => {
     );
   });
 
-  it('docs/signal-intelligence.mdx quotes both rules verbatim', () => {
-    const lines = readFileSync(new URL('../docs/signal-intelligence.mdx', import.meta.url), 'utf8').split('\n');
-    const quote = lines.find((line) => line.startsWith('> An emission resolves HIT'));
-    assert.equal(quote, `> ${MARKET_ALERT_RESOLUTION_RULE} ${MARKET_ALERT_BASE_RATE_RULE}`);
-  });
-
   it('reports the paired hit rate over the rows whose control scored, beside the base rate', async () => {
     const dueAt = NOW + MARKET_ALERT_WINDOW_MS;
     const two = ingest(ingest({}, [marketSignal('silent_divergence', WHEAT)], NOW - 2 * HOUR).ledger, [marketSignal('silent_divergence', CRUDE)]).ledger;

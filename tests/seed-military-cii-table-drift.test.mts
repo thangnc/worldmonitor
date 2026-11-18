@@ -1,6 +1,6 @@
 // Drift guard for scripts/seed-military-cii.mjs.
 //
-// The seed job is self-contained by necessity — scripts/ cannot import from server/ or
+// The seed job is self-contained by necessity — scripts/ cannot import from packages/server/ or
 // src/ under the Railway nixpacks packaging — so it re-embeds country reference tables
 // with the server modules as the implicit source of truth. Nothing at runtime detects
 // when the two copies diverge. Tests CAN cross the boundary, so this asserts parity.
@@ -18,14 +18,14 @@ import {
   TIER1_COUNTRIES as SEED_TIER1,
   geoToCountry as seedGeoToCountry,
 } from '../scripts/seed-military-cii.mjs';
-import { TIER1_COUNTRIES as SERVER_TIER1 } from '../server/worldmonitor/intelligence/v1/_shared.ts';
-import { geoToCountry as serverGeoToCountry } from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+import { TIER1_COUNTRIES as SERVER_TIER1 } from '../packages/server/worldmonitor/intelligence/v1/_shared.ts';
+import { geoToCountry as serverGeoToCountry } from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
 
 test('seed TIER1_COUNTRIES matches the server source of truth exactly', () => {
   assert.deepEqual(
     SEED_TIER1,
     SERVER_TIER1,
-    'scripts/seed-military-cii.mjs TIER1_COUNTRIES has drifted from server/.../_shared.ts — '
+    'scripts/seed-military-cii.mjs TIER1_COUNTRIES has drifted from packages/server/.../_shared.ts — '
       + 'the seed would score a different country set than the CII engine',
   );
 });

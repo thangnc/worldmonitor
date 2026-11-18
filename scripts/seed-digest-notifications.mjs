@@ -25,12 +25,12 @@ import { loadEnvFile } from './_env-file.mjs';
 loadEnvFile(import.meta.url);
 
 const require = createRequire(import.meta.url);
-const DIGEST_DIPLOMACY_DATA = require('../shared/diplomacy-keywords.json');
+const DIGEST_DIPLOMACY_DATA = require('../packages/shared/diplomacy-keywords.json');
 // Watchlist story alerts (#4922 U3): stocks.json feeds the ticker
 // dictionary; loaded via the createRequire JSON pattern this file already
 // uses for diplomacy-keywords.json (avoids the two-sided `with {type:
 // 'json'}` bundler/node trap — see vercel-edge-gotchas).
-const WATCHLIST_STOCKS_DATA = require('../shared/stocks.json');
+const WATCHLIST_STOCKS_DATA = require('../packages/shared/stocks.json');
 const { decrypt } = require('./lib/crypto.cjs');
 const {
   assertNotificationWebhookDeliveryUrlSafe,
@@ -56,11 +56,11 @@ const {
 } = require('./lib/email-unsubscribe.cjs');
 const { sendResendEmail } = require('./lib/resend-send.cjs');
 import { readRawJsonFromUpstash, redisPipeline } from '../api/_upstash-json.js';
-import { classifyFeelGood } from '../server/_shared/feelgood-classifier.js';
-import { classifyEphemeralLiveCoverage } from '../shared/ephemeral-live-classifier.js';
+import { classifyFeelGood } from '../packages/server/_shared/feelgood-classifier.js';
+import { classifyEphemeralLiveCoverage } from '../packages/shared/ephemeral-live-classifier.js';
 import {
   deriveNotificationStoryPhase,
-} from '../shared/story-phase.js';
+} from '../packages/shared/story-phase.js';
 import { shouldDropOpinionTrack } from './lib/digest-opinion-track-filter.mjs';
 import {
   briefCandidateDue,
@@ -97,11 +97,11 @@ import {
   DIGEST_MEDIUM_LIMIT,
   renderDigestEmailHtml,
 } from './lib/digest-email-html.mjs';
-import { issueSlotInTz } from '../shared/brief-filter.js';
+import { issueSlotInTz } from '../packages/shared/brief-filter.js';
 import {
   MIN_CORROBORATING_PUBLISHERS,
   countPublisherFamilies,
-} from '../shared/publisher-families.js';
+} from '../packages/shared/publisher-families.js';
 import {
   enrichBriefEnvelopeWithLLM,
   generateDigestProse,
@@ -114,7 +114,7 @@ import {
   resolveNonDueSynthesisReuse,
   DEFAULT_NONDUE_SYNTHESIS_REUSE_MIN,
 } from './lib/brief-synthesis-reuse.mjs';
-import { assertBriefEnvelope } from '../server/_shared/brief-render.js';
+import { assertBriefEnvelope } from '../packages/server/_shared/brief-render.js';
 import { signBriefUrl, BriefUrlError } from './lib/brief-url-sign.mjs';
 import {
   deduplicateStories,
@@ -139,7 +139,7 @@ import {
   readStoryCorroboration,
   storyCorroborationField,
 } from './lib/digest-corroboration.mjs';
-import { buildTickerDictionary } from '../shared/ticker-extract.js';
+import { buildTickerDictionary } from '../packages/shared/ticker-extract.js';
 import { scanAndEnqueueWatchlistStoryEvents as scanWatchlistStoryEvents } from './lib/watchlist-story-scan.mjs';
 
 const EPHEMERAL_LIVE_LOG_TITLE_SAMPLE_LIMIT = 5;
@@ -272,7 +272,7 @@ const BRIEF_WHY_MATTERS_ENDPOINT_URL =
 
 /**
  * Lowercase + collapse whitespace to mirror extractor-side gate in
- * server/worldmonitor/news/v1/list-feed-digest.ts
+ * packages/server/worldmonitor/news/v1/list-feed-digest.ts
  * (normalizeForDescriptionEquality). Duplicated (not imported) because
  * that module is .ts on a different loader path; a shared .mjs helper
  * would be a cleaner home if more surfaces adopt this check.
@@ -299,7 +299,7 @@ async function callAnalystWhyMatters(story) {
   // Forward a trimmed story payload so the endpoint only sees the
   // fields it validates. `description` is NEW for prompt-v2 — when
   // upstream has a real one (falls back to headline via
-  // shared/brief-filter.js:134), it gives the LLM a grounded sentence
+  // packages/shared/brief-filter.js:134), it gives the LLM a grounded sentence
   // beyond the headline. Skip when it equals the headline (no signal).
   const payload = {
     headline: story.headline ?? '',
@@ -655,7 +655,7 @@ function digestSignalText(text) {
 }
 
 // Word-start containment in digest-normalized text. Mirrors
-// shared/brief-filter.js:containsKeywordToken — prevents 'pact' inside
+// packages/shared/brief-filter.js:containsKeywordToken — prevents 'pact' inside
 // 'impact' (false positive) while still matching 'iran' inside
 // 'iranian' (demonym preserved). PR #3909 review (P2).
 function digestContainsKeywordToken(text, kw) {
@@ -851,10 +851,10 @@ async function buildDigest(rule, windowStartMs) {
       // EventCategory persisted by parseRssXml + buildStoryTrackHsetFields
       // (`isFeelGood` PR added the field; the category sibling closes the
       // 8/8 'General' threads-card gap PR #3697 exposed). Defensive empty
-      // string on missing/non-string: shared/brief-filter.js's
+      // string on missing/non-string: packages/shared/brief-filter.js's
       // `asTrimmedString(raw.category) || 'General'` fallback covers
       // pre-stamp residue rows. Display-side word-wise titleCase happens
-      // once at the envelope-build site in shared/brief-filter.js.
+      // once at the envelope-build site in packages/shared/brief-filter.js.
       category: typeof track.category === 'string' ? track.category : '',
       // Cross-title entity corroboration persisted by list-feed-digest.
       // This is distinct from exact-title source sets: the brief composer

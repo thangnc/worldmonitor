@@ -2,10 +2,14 @@
 .DEFAULT_GOAL := help
 
 # Variables
-PROTO_DIR := proto
-GEN_CLIENT_DIR := src/generated/client
-GEN_SERVER_DIR := src/generated/server
-DOCS_API_DIR := docs/api
+# The contracts workspace package (packages/contracts, `@wm/contracts`) holds the
+# proto sources and everything generated from them. packages/contracts/proto/buf.gen.yaml
+# writes its outputs relative to PROTO_DIR; keep the two in sync.
+CONTRACTS_DIR := packages/contracts
+PROTO_DIR := $(CONTRACTS_DIR)/proto
+GEN_CLIENT_DIR := $(CONTRACTS_DIR)/generated/client
+GEN_SERVER_DIR := $(CONTRACTS_DIR)/generated/server
+DOCS_API_DIR := $(CONTRACTS_DIR)/openapi
 
 # Go install settings
 # Use the public module proxy for public dependencies, with direct fallback.
@@ -101,11 +105,11 @@ generate: clean ## Generate code from proto definitions
 	@# and letting a stale sebuf on the normal PATH win — the exact
 	@# failure mode this PR is trying to prevent (Codex high-severity on
 	@# 9c0058a). The plugin-executable check covers ALL three sebuf
-	@# binaries invoked by proto/buf.gen.yaml (protoc-gen-ts-client,
+	@# binaries invoked by packages/contracts/proto/buf.gen.yaml (protoc-gen-ts-client,
 	@# protoc-gen-ts-server, protoc-gen-openapiv3) — guarding only one
 	@# would let `buf generate` fall through to a stale copy of the
 	@# others on PATH, recreating the mixed-version failure mode. Keep
-	@# this list in sync with proto/buf.gen.yaml.
+	@# this list in sync with packages/contracts/proto/buf.gen.yaml.
 	@#
 	@# `buf` stays on the caller's PATH (never PLUGIN_DIR). CI must put
 	@# GOPATH/bin on PATH after `make install-buf` — see proto-check.yml.
@@ -142,11 +146,14 @@ generate: clean ## Generate code from proto definitions
 	@# Product-only provider values must be removed after every schema/example
 	@# injector so a later generator step cannot reintroduce them.
 	@node scripts/openapi-restrict-provider-redistribution.mjs
-	@node scripts/generate-scorecard-edge-mirrors.mjs
 	@echo "Code generation complete!"
 
+# origin/main keeps the buf module at proto/ until the packages/contracts layout
+# (refactor PR 2.1) reaches it. Compare against whichever path main holds.
+BREAKING_AGAINST_SUBDIR = $(shell git cat-file -e origin/main:$(PROTO_DIR)/buf.yaml 2>/dev/null && echo $(PROTO_DIR) || echo proto)
+
 breaking: ## Check for breaking changes against main
-	cd $(PROTO_DIR) && buf breaking --against '../.git#branch=origin/main,subdir=proto'
+	buf breaking $(PROTO_DIR) --against '.git#branch=origin/main,subdir=$(BREAKING_AGAINST_SUBDIR)'
 
 format: ## Format protobuf files
 	cd $(PROTO_DIR) && buf format -w

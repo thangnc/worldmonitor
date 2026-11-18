@@ -29,13 +29,13 @@ describe('unicode safety scan scope', () => {
   // still pass. Changing either list should be a deliberate, reviewed edit.
   it('pins the scanned roots', () => {
     assert.deepEqual(SCAN_ROOTS, [
-      'src',
-      'server',
+      'apps/web/src',
+      'packages/client',
+      'packages/server',
       'api',
       'scripts',
       'tests',
       'e2e',
-      'pro-test',
       '.github',
       '.husky',
     ]);
@@ -45,7 +45,7 @@ describe('unicode safety scan scope', () => {
     assert.deepEqual(EXCLUDED_PREFIXES, [
       '.git/',
       'node_modules/',
-      'src/generated/',
+      'packages/contracts/generated/',
       'docs/',
       'blog-site/',
       'public/blog/',
@@ -60,12 +60,11 @@ describe('unicode safety scan scope', () => {
     // later blanket-excluded, exactly one of these flips.
     for (const path of [
       'src/services/i18n.ts',
-      'server/handler.js',
+      'packages/server/handler.js',
       'api/product-catalog.js',
       'scripts/translate-locales.mjs',
       'tests/locale-staleness.test.mjs',
       'e2e/pricing.spec.ts',
-      'pro-test/src/i18n.ts',
       '.github/workflows/ci.yml',
       '.husky/pre-commit',
     ]) {
@@ -76,7 +75,7 @@ describe('unicode safety scan scope', () => {
   it('never scans dependencies, at any depth', () => {
     assert.equal(shouldScanFile('node_modules/pkg/index.js'), false);
     assert.equal(shouldScanFile('scripts/node_modules/pkg/index.js'), false);
-    assert.equal(shouldScanFile('pro-test/node_modules/pkg/dist/app.js'), false);
+    assert.equal(shouldScanFile('e2e/node_modules/pkg/dist/app.js'), false);
     // Segment match, not substring — a first-party dir merely containing the
     // word stays covered.
     assert.equal(shouldScanFile('src/node_modules_helper/a.ts'), true);
@@ -107,8 +106,8 @@ describe('unicode safety locale allowance', () => {
 
   it('allows the joiners Persian and Devanagari require', () => {
     const persian = 'MCP ' + ZWNJ + ' SDK';
-    assert.deepEqual(scanText('pro-test/src/locales/fa.json', persian), []);
-    assert.deepEqual(scanText('src/locales/hi.json', 'a' + ZWJ + 'b'), []);
+    assert.deepEqual(scanText('packages/client/locales/fa.json', persian), []);
+    assert.deepEqual(scanText('packages/client/locales/hi.json', 'a' + ZWJ + 'b'), []);
   });
 
   it('still rejects bidi controls inside locale data', () => {
@@ -116,13 +115,13 @@ describe('unicode safety locale allowance', () => {
     // reverses a rendered digit run, so "$39.99" can display as something else
     // while the JSON a reviewer reads looks correct.
     const spoofed = '$39.99' + RLO + '/mo';
-    const found = scanText('pro-test/src/locales/fa.json', spoofed);
+    const found = scanText('packages/client/locales/fa.json', spoofed);
     assert.equal(found.length, 1);
     assert.equal(found[0].kind, 'bidi-control');
   });
 
   it('still rejects other invisible characters inside locale data', () => {
-    const found = scanText('src/locales/fa.json', 'price' + ZWSP + 'tag');
+    const found = scanText('packages/client/locales/fa.json', 'price' + ZWSP + 'tag');
     assert.equal(found.length, 1);
     assert.equal(found[0].kind, 'zero-width');
   });
@@ -135,9 +134,9 @@ describe('unicode safety locale allowance', () => {
 
 describe('unicode safety real tree', () => {
   it('accepts every locale file currently committed', () => {
-    // Behavioural counterpart: the real files use these characters, so a
-    // regression in the allowance is a hard failure rather than a theory.
-    let carriers = 0;
+    // Behavioural counterpart: every committed locale file must pass the scan
+    // as committed, so a regression in the allowance is a hard failure.
+    let scanned = 0;
     for (const dir of LOCALE_DATA_PREFIXES) {
       const abs = join(ROOT, dir);
       if (!statSync(abs).isDirectory()) continue;
@@ -145,11 +144,11 @@ describe('unicode safety real tree', () => {
         if (!name.endsWith('.json')) continue;
         const rel = dir + name;
         const text = readFileSync(join(ROOT, rel), 'utf8');
-        if (text.includes(ZWNJ) || text.includes(ZWJ) || text.includes(ZWSP)) carriers++;
+        scanned++;
         assert.deepEqual(scanText(rel, text), [], rel + ' must pass the scan as committed');
       }
     }
-    assert.ok(carriers > 0, 'expected at least one locale file to use a joiner');
+    assert.ok(scanned > 0, 'expected at least one committed locale file');
   });
 
   it('keeps every locale data directory in the repo covered by the allowance', () => {
@@ -181,7 +180,7 @@ describe('unicode safety real tree', () => {
     };
     walk(ROOT);
 
-    assert.ok(localeDirs.length >= 2, 'expected to find the app and pro-test locale directories');
+    assert.ok(localeDirs.length >= 1, 'expected to find the app locale directory');
     for (const dir of localeDirs) {
       assert.ok(
         LOCALE_DATA_PREFIXES.includes(dir) || EXCLUDED_PREFIXES.includes(dir),

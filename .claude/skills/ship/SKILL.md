@@ -27,13 +27,12 @@ Fork facts that override the upstream wording:
    - Look for an existing PR for that branch: `gh pr list --repo thangnc/worldmonitor --head <type>/<slug> --state open`. If one exists, ship to it (steps 5 and 7) and never open a second one.
    - `git fetch origin main`, then `git merge-base --is-ancestor origin/main HEAD`. If `main` moved, merge it in (`git merge origin/main`, which is signed) and rerun the affected checks.
 2. **Verify, and report the real output.** Pick the checks from the change → check map for the paths in `git diff --name-only origin/main...HEAD` plus the working tree. At minimum:
-   - Browser code (`src/`): `npm run typecheck`, `npm run lint`, `npm run lint:boundaries`, and the focused suites (`ls tests/ | grep <subject>`).
-   - `api/`, `server/`, `scripts/seed-*`, `src/services/`: also `npm run typecheck:api`, and run the `edge-contract-reviewer` agent on the diff. Include what it found.
+   - Browser code (`apps/web/`, `packages/client/`): `npm run typecheck`, `npm run lint`, `npm run lint:boundaries`, and the focused suites (`ls tests/ | grep <subject>`).
+   - `api/`, `packages/server/`, `scripts/seed-*`, `packages/client/services/`: also `npm run typecheck:api`, and run the `edge-contract-reviewer` agent on the diff. Include what it found.
    - `.github/workflows/`: `actionlint` on the changed workflow and `npm run docs:check`.
-   - `CLAUDE.md` or `.claude/`: the tests that read them (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/agent-page.test.mjs`, `tests/sentry-triage-skill.test.mjs`) and `npm run docs:check`.
-   - `src/lite/`, `lite.html`, the Lite routes: `tests/lite-ui.test.mts`, `tests/lite-profile.test.mts`, `npx vitest run --config vitest.dom.config.mts tests/dom/lite-ui.test.mts`, and `npm run build:full` (its `bundle:check` budget too).
+   - `CLAUDE.md` or `.claude/`: the tests that read them (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/sentry-triage-skill.test.mjs`) and `npm run docs:check`.
+   - `apps/web/src/lite/`, `apps/web/lite.html`, the Lite routes (`vercel.json`, `middleware.ts`, `docker/nginx.conf*`, `apps/web/vite.dev-api.ts`): `tests/lite-ui.test.mts`, `tests/deploy-config.test.mjs`, `npx vitest run --config vitest.dom.config.mts tests/dom/lite-ui.test.mts`, and `npm run build`.
    - A suite that also fails on a clean `origin/main` is a baseline failure, not this change's. Prove it with a detached worktree of `origin/main` before saying so.
-   - A build rewrites `src/config/docs-page-dates.generated.ts` and `public/sitemap*.xml`. Restore them with `git checkout --` afterwards.
 3. **UI evidence.** When the change adds or alters UI:
    - Drive it with the `verify-worldmonitor` skill. For `/lite`, use `steps/lite-ui.mjs`.
    - Capture desktop (1440) and phone (390) screenshots, and label any test data.
@@ -68,7 +67,6 @@ Fork facts that override the upstream wording:
 8. **Stop and report.** Give the PR link and the CI result.
    - Don't merge unless the user asks.
    - When they do: `gh pr merge <n> --repo thangnc/worldmonitor --merge --match-head-commit <full sha>`. Use a merge commit, never squash or rebase.
-   - A push to `main` starts Convex Deploy, which fails because the fork has no `CONVEX_DEPLOY_KEY`. That is expected. Nothing deploys, so never add the key to make it pass.
    - Deploying is a separate authorization. Merging is not deploying.
    - After the merge, and only when asked:
      - `ExitWorktree` with `action: remove`

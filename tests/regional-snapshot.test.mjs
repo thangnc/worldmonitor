@@ -17,7 +17,7 @@ import {
   getRegionCorridors,
   countryCriticality,
   isSignalInRegion,
-} from '../shared/geography.js';
+} from '../packages/shared/geography.js';
 
 import { computeBalanceVector, SCORING_VERSION } from '../scripts/regional-snapshot/balance-vector.mjs';
 import { deriveRegime, buildRegimeState } from '../scripts/regional-snapshot/regime-derivation.mjs';
@@ -36,7 +36,7 @@ import { classifyInputs, FRESHNESS_REGISTRY } from '../scripts/regional-snapshot
 // Geography
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('shared/geography', () => {
+describe('packages/shared/geography', () => {
   it('exports 8 regions with the expected IDs', () => {
     assert.equal(REGIONS.length, 8);
     assert.deepEqual(REGION_IDS.sort(), [

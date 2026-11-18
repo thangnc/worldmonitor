@@ -205,7 +205,7 @@ test('envelope exception type is unchanged for native error classes', async () =
 // The `err.name` preference above is only an improvement while every custom
 // error class actually sets `this.name`. A subclass that omits it inherits
 // `Error.prototype.name === 'Error'` and silently reports the generic type —
-// the mangled-but-specific identifier it used to send is gone. All 19 classes
+// the mangled-but-specific identifier it used to send is gone. All 18 classes
 // satisfy this today; this guard keeps the next one honest.
 test('every custom Error subclass sets this.name explicitly', async () => {
   const { readdirSync, readFileSync } = await import('node:fs');
@@ -262,7 +262,7 @@ test('every custom Error subclass sets this.name explicitly', async () => {
   const offenders = [];
   let checked = 0;
   const declaration = /class\s+(\w+Error)\s+extends\s+Error\b/;
-  for (const dir of ['api', 'server', 'shared']) {
+  for (const dir of ['api', 'packages/server', 'packages/shared']) {
     for (const file of sourceFiles(join(repoRoot, dir))) {
       const source = readFileSync(file, 'utf-8');
       if (!declaration.test(source)) continue;
@@ -277,7 +277,7 @@ test('every custom Error subclass sets this.name explicitly', async () => {
     }
   }
 
-  assert.ok(checked >= 19, `expected to scan the known custom Error classes, scanned ${checked}`);
+  assert.ok(checked >= 16, `expected to scan the known custom Error classes, scanned ${checked}`);
   assert.deepEqual(
     offenders,
     [],

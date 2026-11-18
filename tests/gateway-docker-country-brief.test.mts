@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
 import { issueSessionToken } from '../api/_session.js';
-import { createDomainGateway } from '../server/gateway.ts';
-import { hashKeySync } from '../server/_shared/usage-identity.ts';
-import type { RouteDescriptor } from '../server/router.ts';
+import { createDomainGateway } from '../packages/server/gateway.ts';
+import { hashKeySync } from '../packages/server/_shared/usage-identity.ts';
+import type { RouteDescriptor } from '../packages/server/router.ts';
 
 const COUNTRY_BRIEF_PATH = '/api/intelligence/v1/get-country-intel-brief';
 const OTHER_PREMIUM_PATH = '/api/market/v1/analyze-stock';

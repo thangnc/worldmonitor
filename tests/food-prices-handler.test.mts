@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
-import { getFoodPrices } from '../server/worldmonitor/economic/v1/get-food-prices';
-import { buildFoodPriceSource } from '../server/worldmonitor/economic/v1/food-prices';
-import sources from '../shared/food-price-sources.json';
-import { drainResponseHeaders } from '../server/_shared/response-headers';
+import { getFoodPrices } from '../packages/server/worldmonitor/economic/v1/get-food-prices';
+import { buildFoodPriceSource } from '../packages/server/worldmonitor/economic/v1/food-prices';
+import sources from '../packages/shared/food-price-sources.json';
+import { drainResponseHeaders } from '../packages/server/_shared/response-headers';
 
 const now = Date.parse('2026-10-29T12:00:00Z');
 const source = sources.find(source => source.id === 'da')!;

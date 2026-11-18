@@ -1,7 +1,7 @@
 import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCallsign, toIataCallsign, icaoToIata } from '../server/_shared/airline-codes.ts';
-import { getWingbitsLiveFlight } from '../server/worldmonitor/military/v1/get-wingbits-live-flight.ts';
+import { parseCallsign, toIataCallsign, icaoToIata } from '../packages/server/_shared/airline-codes.ts';
+import { getWingbitsLiveFlight } from '../packages/server/worldmonitor/military/v1/get-wingbits-live-flight.ts';
 
 const ECS_BASE = 'https://ecs-api.wingbits.com/v1/flights';
 const PHOTOS_BASE = 'https://api.planespotters.net/pub/photos/hex';

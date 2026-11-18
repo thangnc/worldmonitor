@@ -3,7 +3,7 @@
 // Middle East strike feed: Telegram + GDELT -> conflict:iran-events:v1.
 //
 // The key name and event schema are unchanged from the retired manual
-// LiveUAMap dump (proto/worldmonitor/conflict/v1/list_iran_events.proto), so
+// LiveUAMap dump (packages/contracts/proto/worldmonitor/conflict/v1/list_iran_events.proto), so
 // every consumer (map layer, CII strike pressure, country brief, MCP) keeps working.
 //
 // Pipeline, all pure except the injected I/O:
@@ -14,7 +14,7 @@
 //                           Defense alert classifier).
 //   3. gazetteer            place -> coordinates; unknown places fall back to the
 //                           reported country's centroid, never Iran's.
-//   4. trust                shared/telegram-channel-trust.ts, mirrored below.
+//   4. trust                packages/shared/telegram-channel-trust.ts, mirrored below.
 //                           Tier-1 official channels stand alone; independent
 //                           channels stand alone for observed events; channels
 //                           with propaganda risk 'high' (belligerent state media)
@@ -65,7 +65,7 @@ const SEVERITY_RANK = { moderate: 0, elevated: 1, high: 2, critical: 3 };
 const KIND_CATEGORY = { strike: 'airstrike', intercept: 'defense', claim: 'claim' };
 const CLASS_RANK = { official: 0, independent: 1, propaganda: 2 };
 
-// Mirror of shared/telegram-channel-trust.ts: handle -> [editorial tier,
+// Mirror of packages/shared/telegram-channel-trust.ts: handle -> [editorial tier,
 // propaganda risk, stateAffiliated]. The relay is CommonJS with no TS loader,
 // so it cannot import the registry; tests/middle-east-strikes.test.mjs pins
 // this table to the registry, so a trust edit there fails CI until mirrored.

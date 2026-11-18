@@ -1,5 +1,5 @@
 // Type surface for scripts/_conflict-gdelt.mjs (pure, import-safe helpers) so
-// server/ TypeScript consumers pass typecheck:api — same pattern as
+// packages/server/ TypeScript consumers pass typecheck:api — same pattern as
 // _simulation-queue-constants.d.mts. Keep in sync with the .mjs exports.
 
 export declare const GDELT_COUNTRY_NAMES: Record<string, string>;

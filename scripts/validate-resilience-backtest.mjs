@@ -26,7 +26,7 @@ import { unwrapEnvelope } from './_seed-envelope-source.mjs';
 
 loadEnvFile(import.meta.url);
 
-// Source of truth: server/worldmonitor/resilience/v1/_shared.ts
+// Source of truth: packages/server/worldmonitor/resilience/v1/_shared.ts
 const RESILIENCE_SCORE_CACHE_PREFIX = 'resilience:score:v29:';
 
 // Mirror of _shared.ts#currentCacheFormula — must stay in lockstep so
@@ -43,7 +43,7 @@ const MIN_SCORED_COUNTRIES = 5;
 let _scoreAllDimensions = null;
 let _RESILIENCE_DIMENSION_TYPES = null;
 try {
-  const mod = await import('../server/worldmonitor/resilience/v1/_dimension-scorers.ts');
+  const mod = await import('../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts');
   _scoreAllDimensions = mod.scoreAllDimensions;
   _RESILIENCE_DIMENSION_TYPES = mod.RESILIENCE_DIMENSION_TYPES;
 } catch {

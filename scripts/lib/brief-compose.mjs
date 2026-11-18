@@ -22,9 +22,9 @@ import {
   assembleStubbedBriefEnvelope,
   filterTopStories,
   issueDateInTz,
-} from '../../shared/brief-filter.js';
-import { classifyEphemeralLiveCoverage } from '../../shared/ephemeral-live-classifier.js';
-import { sanitizeForPrompt, sanitizeHeadline } from '../../server/_shared/llm-sanitize.js';
+} from '../../packages/shared/brief-filter.js';
+import { classifyEphemeralLiveCoverage } from '../../packages/shared/ephemeral-live-classifier.js';
+import { sanitizeForPrompt, sanitizeHeadline } from '../../packages/server/_shared/llm-sanitize.js';
 
 // ── Rule dedupe (one brief per user, not per variant) ───────────────────────
 
@@ -715,7 +715,7 @@ export function stripHeadlinePrefix(title) {
  *      category field (rare in steady state; possible during the
  *      48h-accumulator post-deploy residue window per PR #3751).
  *   2. **filterTopStories' `asTrimmedString(raw.category) || 'General'`
- *      at `shared/brief-filter.js:384`.** Fires for the envelope/display
+ *      at `packages/shared/brief-filter.js:384`.** Fires for the envelope/display
  *      path, which is a separate consumer that reads from the same
  *      upstream story shape but takes a different code route.
  * Removing either guard leaves the corresponding path exposed to
@@ -731,7 +731,7 @@ export function stripHeadlinePrefix(title) {
  *     headings, so feeding `'conflict'` is the cleaner signal than
  *     feeding `'Conflict'`.
  *   - **The envelope/display path** goes through filterTopStories'
- *     `out.push` (`shared/brief-filter.js`) where `titleCase` runs
+ *     `out.push` (`packages/shared/brief-filter.js`) where `titleCase` runs
  *     once to produce `'Conflict'` for the threads card,
  *     magazine story-page, and public-thread fallback stub. Display
  *     surfaces want human readability.
@@ -834,7 +834,7 @@ function digestStoryToUpstreamTopStory(s) {
     threatLevel: s?.severity,
     importanceScore: Number.isFinite(Number(s?.currentScore)) ? Number(s.currentScore) : undefined,
     // Transient coherence signal from story:track:v1. Not written into
-    // BriefStory; shared/brief-filter.js consumes it before envelope
+    // BriefStory; packages/shared/brief-filter.js consumes it before envelope
     // assembly to keep an entity-corroborated flashpoint-diplomacy lead
     // aligned with the first rendered card when the LLM ranked it first.
     entityCorroborationCount: Number.isFinite(Number(s?.entityCorroborationCount))
@@ -902,8 +902,8 @@ function digestStoryToUpstreamTopStory(s) {
  * @param {{ clusters: number; multiSource: number }} insightsNumbers
  * @param {{
  *   nowMs?: number,
- *   onDrop?: import('../../shared/brief-filter.js').DropMetricsFn,
- *   onOrder?: import('../../shared/brief-filter.js').OrderMetricsFn,
+ *   onDrop?: import('../../packages/shared/brief-filter.js').DropMetricsFn,
+ *   onOrder?: import('../../packages/shared/brief-filter.js').OrderMetricsFn,
  *   synthesis?: {
  *     lead?: string,
  *     threads?: Array<{ tag: string, teaser: string }>,
@@ -1029,7 +1029,7 @@ export function composeBriefFromDigestStories(rule, digestStories, insightsNumbe
  * (hantavirus) was covered by no thread at all. Here threads are one
  * per topic-cluster, in the EXACT order the stories render.
  *
- * `orderBriefCandidates` (shared/brief-filter.js) emits same-cluster
+ * `orderBriefCandidates` (packages/shared/brief-filter.js) emits same-cluster
  * stories contiguously, so a consecutive-run group on `clusterId`
  * reproduces the walk's block order without needing the transient
  * topic key (which is deliberately not written onto BriefStory).

@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { bootstrapTierKeyNames } from '../shared/bootstrap-tier-keys.js';
+import { bootstrapTierKeyNames } from '../packages/shared/bootstrap-tier-keys.js';
 import { buildBootstrapPayloadByteLedger } from '../scripts/publish-bootstrap-tiers.mjs';
 import {
   BOOTSTRAP_PAYLOAD_BUDGET_MANIFEST,
@@ -260,7 +260,7 @@ test('feature-gated uncaptured keys match the Iran-enabled registry gap', () => 
 });
 
 test('web and desktop bootstrap deadlines stay unchanged', () => {
-  const src = readFileSync(join(root, 'src/services/bootstrap.ts'), 'utf8');
+  const src = readFileSync(join(root, 'packages/client/services/bootstrap.ts'), 'utf8');
   assert.match(src, /web:\s*\{\s*fast:\s*1_200,\s*slow:\s*3_000\s*\}/);
   assert.match(src, /desktop:\s*\{\s*fast:\s*5_000,\s*slow:\s*8_000\s*\}/);
 });

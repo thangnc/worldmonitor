@@ -22,69 +22,10 @@ const ANCHORED_REASON_TERMS = ['tauri', 'sidecar', 'desktop updater'];
 
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 
-const ROUTE_EXPECTATIONS = [
-  {
-    path: 'api/miit-news.js',
-    reasonTerms: ['miit', 'rss/xml', 'application/rss+xml'],
-    sourceTerms: ['miit.gov.cn', 'rss', 'application/rss+xml'],
-  },
-  {
-    path: 'api/youtube/embed.js',
-    reasonTerms: ['youtube', 'iframe', 'html', 'text/html'],
-    sourceTerms: ['youtube.com', 'iframe', 'text/html'],
-  },
-];
-
-function assertRouteSpecificException(entry, { path, reasonTerms, sourceTerms }) {
-  assert.equal(entry.path, path);
-  assert.equal(entry.category, 'non-json');
-  for (const term of reasonTerms) {
-    assert.ok(
-      entry.reason.toLowerCase().includes(term),
-      `${path} reason must mention ${term}`,
-    );
-  }
-  const source = readFileSync(resolve(repoRoot, entry.path), 'utf8').toLowerCase();
-  for (const term of sourceTerms) {
-    assert.ok(source.includes(term), `${path} source must mention ${term}`);
-  }
-}
-
 describe('api-route-exceptions manifest', () => {
   it('has a non-empty exceptions array', () => {
     assert.ok(Array.isArray(manifest.exceptions));
     assert.ok(manifest.exceptions.length > 0);
-  });
-
-  for (const expectation of ROUTE_EXPECTATIONS) {
-    it(`${expectation.path} retains its route-specific non-JSON rationale`, () => {
-      const entry = manifest.exceptions.find(({ path }) => path === expectation.path);
-      assert.ok(entry, `missing exception for ${expectation.path}`);
-      assertRouteSpecificException(entry, expectation);
-    });
-  }
-
-  it('rejects category and rationale regressions for route-specific exceptions', () => {
-    const miitNews = manifest.exceptions.find(({ path }) => path === 'api/miit-news.js');
-    const youtubeEmbed = manifest.exceptions.find(({ path }) => path === 'api/youtube/embed.js');
-
-    assert.ok(miitNews);
-    assert.ok(youtubeEmbed);
-    assert.throws(() => {
-      assertRouteSpecificException(
-        { ...miitNews, category: 'upstream-proxy' },
-        ROUTE_EXPECTATIONS[0],
-      );
-    });
-    assert.throws(() => {
-      assertRouteSpecificException(
-        {
-          ...youtubeEmbed,
-          reason: 'YouTube oEmbed proxy returns metadata as application/json.',
-        },
-        ROUTE_EXPECTATIONS[1],
-      );
-    });
   });
 
   for (const [idx, entry] of manifest.exceptions.entries()) {

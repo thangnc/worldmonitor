@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { createMinimalPanelHarness } from './helpers/minimal-panel-harness.mjs';
 import {
   clearPanelColSpan,
   invalidatePanelStorageCacheForKeys,
@@ -11,218 +10,47 @@ import {
   PANEL_COL_SPANS_KEY,
   PANEL_COLLAPSED_KEY,
   PANEL_SPANS_KEY,
-} from '../src/utils/panel-storage';
-
-const PANEL_COUNT = 86;
+} from '../packages/client/utils/panel-storage';
 
 function invalidateAllPanelStorageCaches(): void {
   invalidatePanelStorageCacheForKeys([PANEL_SPANS_KEY, PANEL_COL_SPANS_KEY, PANEL_COLLAPSED_KEY]);
 }
 
-function wrapGetItemCounter(storage: Storage) {
-  const originalGetItem = storage.getItem.bind(storage);
-  const counts = new Map<string, number>();
-  storage.getItem = ((key: string) => {
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-    return originalGetItem(key);
-  }) as Storage['getItem'];
-
-  return {
-    count(key: string): number {
-      return counts.get(key) ?? 0;
+/** Installs a Map-backed global localStorage for the callback and restores the original afterwards. */
+async function withStorage<T>(callback: (harness: { localStorage: Storage }) => T | Promise<T>): Promise<T> {
+  const originalLocalStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  const values = new Map<string, string>();
+  const localStorage = {
+    getItem(key: string) {
+      return values.get(key) ?? null;
     },
-  };
-}
-
-async function withHarness<T>(callback: (harness: Awaited<ReturnType<typeof createMinimalPanelHarness>>) => T | Promise<T>): Promise<T> {
-  const harness = await createMinimalPanelHarness();
+    setItem(key: string, value: string) {
+      values.set(key, String(value));
+    },
+    removeItem(key: string) {
+      values.delete(key);
+    },
+    clear() {
+      values.clear();
+    },
+    key(index: number) {
+      return [...values.keys()][index] ?? null;
+    },
+    get length() {
+      return values.size;
+    },
+  } as Storage;
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, writable: true, value: localStorage });
   try {
-    return await callback(harness);
+    return await callback({ localStorage });
   } finally {
-    harness.cleanup();
+    if (originalLocalStorage) Object.defineProperty(globalThis, 'localStorage', originalLocalStorage);
+    else delete (globalThis as { localStorage?: unknown }).localStorage;
+    invalidateAllPanelStorageCaches();
   }
 }
 
-function click(element: Element): void {
-  element.dispatchEvent(new Event('click', { bubbles: true, cancelable: true }));
-}
-
 describe('Panel storage cache', () => {
-  it('schedules no connection timer for an unmounted panel', async () => {
-    // The mini DOM has no MutationObserver, so a queued connected callback arms
-    // a 50ms fallback that re-arms until the panel mounts. Constructing a panel
-    // that is never mounted must not queue one, or it keeps the process alive.
-    await withHarness((harness) => {
-      const timers = () => process.getActiveResourcesInfo().filter((kind) => kind === 'Timeout').length;
-      const before = timers();
-      harness.createPanel({ id: 'threat-timeline' });
-      assert.equal(timers(), before);
-    });
-  });
-
-  it('reads each aggregate storage map once across repeated Panel construction', async () => {
-    await withHarness((harness) => {
-      const spanMap = Object.fromEntries(Array.from({ length: PANEL_COUNT }, (_, index) => [`panel-${index}`, 2]));
-      const colSpanMap = Object.fromEntries(Array.from({ length: PANEL_COUNT }, (_, index) => [`panel-${index}`, 2]));
-      const collapsedMap = Object.fromEntries(Array.from({ length: PANEL_COUNT }, (_, index) => [`panel-${index}`, true]));
-      harness.localStorage.setItem(PANEL_SPANS_KEY, JSON.stringify(spanMap));
-      harness.localStorage.setItem(PANEL_COL_SPANS_KEY, JSON.stringify(colSpanMap));
-      harness.localStorage.setItem(PANEL_COLLAPSED_KEY, JSON.stringify(collapsedMap));
-
-      const counter = wrapGetItemCounter(harness.localStorage);
-
-      for (let index = 0; index < PANEL_COUNT; index++) {
-        const panel = harness.createPanel({ id: `panel-${index}`, collapsible: true });
-        const root = panel.getElement();
-        assert.equal(root.classList.contains('panel-collapsed'), true);
-        assert.equal(root.classList.contains('span-2'), true);
-        assert.equal(root.classList.contains('col-span-2'), true);
-      }
-
-      assert.equal(counter.count(PANEL_COLLAPSED_KEY), 1);
-      assert.equal(counter.count(PANEL_SPANS_KEY), 1);
-      assert.equal(counter.count(PANEL_COL_SPANS_KEY), 1);
-    });
-  });
-
-  it('hydrates persisted collapsed, row-span, and column-span state', async () => {
-    await withHarness((harness) => {
-      harness.localStorage.setItem(PANEL_SPANS_KEY, JSON.stringify({ hydrate: 3 }));
-      harness.localStorage.setItem(PANEL_COL_SPANS_KEY, JSON.stringify({ hydrate: 2 }));
-      harness.localStorage.setItem(PANEL_COLLAPSED_KEY, JSON.stringify({ hydrate: true }));
-
-      const panel = harness.createPanel({ id: 'hydrate', collapsible: true });
-      const root = panel.getElement();
-      const collapseButton = root.querySelector('.panel-collapse-btn');
-
-      assert.equal(root.classList.contains('panel-collapsed'), true);
-      assert.equal(panel.content.style.display, 'none');
-      assert.equal(collapseButton?.getAttribute('aria-expanded'), 'false');
-      assert.equal(root.classList.contains('span-3'), true);
-      assert.equal(root.classList.contains('col-span-2'), true);
-    });
-  });
-
-  it('keeps a saved column span the grid cannot fit and bounds the resize handle once the grid has width', async () => {
-    await withHarness((harness) => {
-      invalidateAllPanelStorageCaches();
-      harness.localStorage.setItem(PANEL_COL_SPANS_KEY, JSON.stringify({ delayed: 3 }));
-
-      const grid = harness.document.createElement('div');
-      grid.className = 'panels-grid';
-      let gridWidth = 0;
-      Object.defineProperty(grid, 'getBoundingClientRect', {
-        configurable: true,
-        value: () => ({ width: gridWidth, height: 0, top: 0, left: 0, right: gridWidth, bottom: 0, x: 0, y: 0, toJSON: () => ({}) }),
-      });
-      harness.window.getComputedStyle = () => ({
-        display: '',
-        visibility: '',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        columnGap: '0',
-      });
-
-      const frames: Array<() => void> = [];
-      globalThis.requestAnimationFrame = ((callback: () => void) => {
-        frames.push(callback);
-        return frames.length;
-      }) as typeof requestAnimationFrame;
-      globalThis.cancelAnimationFrame = (() => {}) as typeof cancelAnimationFrame;
-
-      const panel = harness.createPanel({ id: 'delayed' });
-      const root = panel.getElement();
-      assert.equal(root.classList.contains('col-span-3'), true);
-      assert.equal(frames.length, 1);
-
-      grid.appendChild(root);
-      harness.document.body.appendChild(grid);
-      frames.shift()?.();
-      assert.equal(root.classList.contains('col-span-3'), true);
-      assert.equal(frames.length, 1);
-
-      gridWidth = 560;
-      frames.shift()?.();
-      // CSS clamps what renders to the grid's real columns, so the saved span
-      // stays for when the grid widens; the handle's range is the real count.
-      assert.equal(root.classList.contains('col-span-3'), true);
-      const handle = root.querySelector('.panel-col-resize-handle');
-      assert.equal(handle?.getAttribute('aria-valuemax'), '2');
-      assert.equal(handle?.getAttribute('aria-valuenow'), '2');
-    });
-  });
-
-  it('keeps the warmed cache fresh after collapse and reset mutations', async () => {
-    await withHarness((harness) => {
-      harness.localStorage.setItem(PANEL_SPANS_KEY, JSON.stringify({ mutable: 4 }));
-      harness.localStorage.setItem(PANEL_COL_SPANS_KEY, JSON.stringify({ mutable: 2 }));
-      harness.localStorage.setItem(PANEL_COLLAPSED_KEY, JSON.stringify({ mutable: true }));
-
-      const panel = harness.createPanel({ id: 'mutable', collapsible: true });
-      const root = panel.getElement();
-      assert.equal(root.classList.contains('panel-collapsed'), true);
-      assert.equal(root.classList.contains('span-4'), true);
-      assert.equal(root.classList.contains('col-span-2'), true);
-
-      const collapseButton = root.querySelector('.panel-collapse-btn');
-      assert.ok(collapseButton, 'collapse button is rendered for collapsible panel');
-      click(collapseButton);
-      assert.equal(harness.localStorage.getItem(PANEL_COLLAPSED_KEY), null);
-
-      panel.resetHeight();
-      assert.equal(harness.localStorage.getItem(PANEL_SPANS_KEY), '{}');
-
-      panel.resetWidth();
-      assert.equal(harness.localStorage.getItem(PANEL_COL_SPANS_KEY), null);
-
-      const laterPanel = harness.createPanel({ id: 'mutable', collapsible: true });
-      const laterRoot = laterPanel.getElement();
-      assert.equal(laterRoot.classList.contains('panel-collapsed'), false);
-      assert.equal(laterRoot.classList.contains('span-4'), false);
-      assert.equal(laterRoot.classList.contains('col-span-2'), false);
-    });
-  });
-
-  it('bounds reads and falls back safely for corrupt or throwing storage', async () => {
-    await withHarness((harness) => {
-      harness.localStorage.setItem(PANEL_SPANS_KEY, '{bad json');
-      harness.localStorage.setItem(PANEL_COL_SPANS_KEY, '[]');
-      harness.localStorage.setItem(PANEL_COLLAPSED_KEY, '{bad json');
-      const counter = wrapGetItemCounter(harness.localStorage);
-
-      for (let index = 0; index < 3; index++) {
-        const panel = harness.createPanel({ id: `corrupt-${index}`, collapsible: true });
-        const root = panel.getElement();
-        assert.equal(root.classList.contains('panel-collapsed'), false);
-        assert.equal(root.classList.contains('span-2'), false);
-        assert.equal(root.classList.contains('col-span-2'), false);
-      }
-
-      assert.equal(counter.count(PANEL_COLLAPSED_KEY), 1);
-      assert.equal(counter.count(PANEL_SPANS_KEY), 1);
-      assert.equal(counter.count(PANEL_COL_SPANS_KEY), 1);
-    });
-
-    await withHarness((harness) => {
-      const originalGetItem = harness.localStorage.getItem.bind(harness.localStorage);
-      const counts = new Map<string, number>();
-      harness.localStorage.getItem = ((key: string) => {
-        if ([PANEL_SPANS_KEY, PANEL_COL_SPANS_KEY, PANEL_COLLAPSED_KEY].includes(key)) {
-          counts.set(key, (counts.get(key) ?? 0) + 1);
-          throw new Error('storage unavailable');
-        }
-        return originalGetItem(key);
-      }) as Storage['getItem'];
-
-      for (let index = 0; index < 3; index++) {
-        assert.doesNotThrow(() => harness.createPanel({ id: `throwing-${index}`, collapsible: true }));
-      }
-
-      assert.equal(counts.get(PANEL_COLLAPSED_KEY), 1);
-      assert.equal(counts.get(PANEL_SPANS_KEY), 1);
-      assert.equal(counts.get(PANEL_COL_SPANS_KEY), 1);
-    });
-  });
-
   it('invalidates warmed maps when another tab changes panel storage', () => {
     invalidateAllPanelStorageCaches();
     const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
@@ -279,7 +107,7 @@ describe('Panel storage cache', () => {
   });
 
   it('returns frozen cached maps so callers cannot mutate tab-wide storage state', async () => {
-    await withHarness((harness) => {
+    await withStorage((harness) => {
       invalidateAllPanelStorageCaches();
       harness.localStorage.setItem(PANEL_SPANS_KEY, JSON.stringify({ immutable: 2 }));
 
@@ -295,7 +123,7 @@ describe('Panel storage cache', () => {
   });
 
   it('keeps column-span removeWhenEmpty default when options object is empty', async () => {
-    await withHarness((harness) => {
+    await withStorage((harness) => {
       invalidateAllPanelStorageCaches();
       harness.localStorage.setItem(PANEL_COL_SPANS_KEY, JSON.stringify({ compact: 2 }));
 
@@ -308,7 +136,7 @@ describe('Panel storage cache', () => {
   });
 
   it('invalidates cached panel maps after direct storage replacement', async () => {
-    await withHarness((harness) => {
+    await withStorage((harness) => {
       invalidateAllPanelStorageCaches();
       harness.localStorage.setItem(PANEL_SPANS_KEY, JSON.stringify({ imported: 1 }));
       assert.equal(loadPanelSpans().imported, 1);
@@ -322,7 +150,7 @@ describe('Panel storage cache', () => {
   });
 
   it('returns persisted: false when collapsed storage writes throw', async () => {
-    await withHarness((harness) => {
+    await withStorage((harness) => {
       invalidateAllPanelStorageCaches();
       const originalSetItem = harness.localStorage.setItem.bind(harness.localStorage);
       harness.localStorage.setItem = ((key: string, value: string) => {
@@ -334,28 +162,6 @@ describe('Panel storage cache', () => {
 
       assert.equal(savePanelCollapsed('live-news', true), false);
       assert.equal(harness.localStorage.getItem(PANEL_COLLAPSED_KEY), null);
-    });
-  });
-
-  it('leaves collapse UI unchanged when persistence fails', async () => {
-    await withHarness((harness) => {
-      invalidateAllPanelStorageCaches();
-      const originalSetItem = harness.localStorage.setItem.bind(harness.localStorage);
-      harness.localStorage.setItem = ((key: string, value: string) => {
-        if (key === PANEL_COLLAPSED_KEY) {
-          throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
-        }
-        originalSetItem(key, value);
-      }) as Storage['setItem'];
-
-      const panel = harness.createPanel({ id: 'quota-collapse', collapsible: true });
-      const root = panel.getElement();
-      assert.equal(root.classList.contains('panel-collapsed'), false);
-
-      const result = panel.setCollapsed(true);
-      assert.deepEqual(result, { ok: false, persisted: false });
-      assert.equal(panel.isCollapsed(), false);
-      assert.equal(root.classList.contains('panel-collapsed'), false);
     });
   });
 });

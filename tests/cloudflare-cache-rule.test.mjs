@@ -17,12 +17,9 @@
 // needs a Cloudflare token and therefore cannot run in the unit gate.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-import { CONTENT_CORPUS_PREFIXES } from '../scripts/discover-content-corpus-pages.mjs';
 import {
+  CONTENT_CORPUS_PREFIXES,
   AGENT_TEXT_FILES,
   AGENT_USER_AGENTS,
   CORPUS_HOST,
@@ -41,152 +38,8 @@ import {
   planApply,
   runCloudflareCacheRule,
 } from '../scripts/cloudflare-cache-rule.mjs';
-import { nonDefaultLandingLocales } from '../shared/indexable-landing-locales.ts';
-import agentRequestPolicy from '../shared/agent-request-policy.json' with { type: 'json' };
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const vercelConfig = JSON.parse(readFileSync(resolve(__dirname, '../vercel.json'), 'utf-8'));
-
-const HTML_ENTRY_EDGE_CACHE = 'public, s-maxage=600, stale-while-revalidate=60';
-const INDEXABLE_LANDING_SEGMENTS = new Set(nonDefaultLandingLocales().map((locale) => locale.pathSegment));
-
-/**
- * vercel.json sources that advertise the shared TTL and that the rule leaves
- * alone on purpose. `/dashboard.html` is the rewrite destination behind
- * `/dashboard`, `/stocks` and `/story`: no link or sitemap sends anyone to it,
- * and claiming it would store a second copy of the dashboard shell under a URL
- * the canonical one never invalidates. The entry documents themselves — `/` and
- * `/dashboard`, which the dashboard-managed "WWW entry HTML" rule used to cache
- * without any representation guard — are claimed since #7804 (ENTRY_DOCUMENTS).
- */
-const UNCLAIMED_ENTRY_SOURCES = new Set(['/dashboard.html']);
-
-/**
- * Classify one vercel.json header source that advertises the shared TTL.
- *
- * Shapes in use:
- *   /  /dashboard                  the entry documents, exact (ENTRY_DOCUMENTS)
- *   /(es|pt|ru|fr|de|ar)           slashless locale landings, exact documents
- *   /(es|pt|ru|fr|de|ar)/          trailing-slash locale landings, exact documents
- *   /(a|b|c)                       bare corpus families (308s, mirrored anyway)
- *   /(a|b|c)/(.*)                  nested corpus families
- *   /blog                          a bare family that is itself a document
- *   /blog/((?!_astro/|og/).*)      a nested family with carve-outs; `x$` marks an exact path
- *   /(llms\.txt|home\.md)          root-level files, dots escaped
- *
- * Returns null for anything else so the caller can fail loudly: a shape this
- * parser does not know would otherwise contribute nothing and let the rule
- * silently under-claim — the drift that produced #7659.
- */
-function classifyVercelSource(source) {
-  // Before the bare-family shape: `/dashboard` would otherwise read as a family.
-  if (ENTRY_DOCUMENTS.includes(source)) return { documents: [source] };
-  let match = source.match(/^\/\(([^()]+)\)\/\(\.\*\)$/);
-  if (match) {
-    return { nested: match[1].split('|').map((family) => [family, { prefixes: [], exact: [] }]) };
-  }
-  match = source.match(/^\/([a-z-]+)\/\(\(\?!([^()]+)\)\.\*\)$/);
-  if (match) {
-    const carveOuts = match[2].split('|');
-    return {
-      nested: [[match[1], {
-        prefixes: carveOuts.filter((carveOut) => !carveOut.endsWith('$')),
-        exact: carveOuts.filter((carveOut) => carveOut.endsWith('$')).map((carveOut) => carveOut.slice(0, -1)),
-      }]],
-    };
-  }
-  match = source.match(/^\/\(([^()]+)\)\/$/);
-  if (match) {
-    const ids = match[1].split('|');
-    if (ids.length && ids.every((id) => INDEXABLE_LANDING_SEGMENTS.has(id))) {
-      return { documents: ids.map((id) => `/${id}/`) };
-    }
-  }
-  match = source.match(/^\/\(([^()]+)\)$/);
-  if (match) {
-    const names = match[1].split('|').map((name) => name.replace(/\\\./g, '.'));
-    const files = names.filter((name) => name.includes('.'));
-    const bare = names.filter((name) => !name.includes('.'));
-    if (!files.length && bare.length && bare.every((name) => INDEXABLE_LANDING_SEGMENTS.has(name))) {
-      return { documents: bare.map((name) => `/${name}`) };
-    }
-    return { bare, files };
-  }
-  match = source.match(/^\/([a-z-]+)$/);
-  if (match) return { bare: [match[1]] };
-  return null;
-}
-
-/** Everything vercel.json advertises as shared-cacheable, by shape. */
-function vercelEdgeCacheSurface() {
-  const surface = { bare: new Set(), nested: new Map(), files: new Set(), documents: new Set() };
-  for (const entry of vercelConfig.headers ?? []) {
-    const cdn = entry.headers.find((header) => header.key === 'CDN-Cache-Control');
-    if (cdn?.value !== HTML_ENTRY_EDGE_CACHE) continue;
-    if (UNCLAIMED_ENTRY_SOURCES.has(entry.source)) continue;
-    const parsed = classifyVercelSource(entry.source);
-    assert.ok(
-      parsed,
-      `${entry.source} advertises a shared CDN-Cache-Control but is not a shape this test knows;`
-        + ' teach classifyVercelSource() its shape or add it to UNCLAIMED_ENTRY_SOURCES',
-    );
-    for (const name of parsed.bare ?? []) surface.bare.add(name);
-    for (const name of parsed.files ?? []) surface.files.add(name);
-    for (const name of parsed.documents ?? []) surface.documents.add(name);
-    for (const [family, carveOuts] of parsed.nested ?? []) surface.nested.set(family, carveOuts);
-  }
-  return surface;
-}
-
-/**
- * Everything the generated expression claims, in the same shape, read back from
- * the wirefilter text rather than from the constants that produced it — the
- * point is to catch the expression builder dropping something, not to compare a
- * constant with itself.
- */
-function ruleClaims(expression) {
-  const claims = { bare: new Set(), nested: new Map(), files: new Set(), documents: new Set() };
-  for (const set of expression.matchAll(/http\.request\.uri\.path in \{([^}]*)\}/g)) {
-    for (const literal of set[1].match(/"[^"]+"/g) ?? []) {
-      const name = literal.slice(2, -1);
-      if (ENTRY_DOCUMENTS.includes(`/${name}`)) claims.documents.add(`/${name}`);
-      else (name.includes('.') ? claims.files : claims.bare).add(name);
-    }
-  }
-  let current = null;
-  for (const line of expression.split('\n')) {
-    const document = line.match(/^\s*or \(?http\.request\.uri\.path eq "([^"]+)"/);
-    if (document) {
-      claims.documents.add(document[1]);
-      continue;
-    }
-    const claim = line.match(/^\s*or \(?starts_with\(http\.request\.uri\.path, "\/([^/"]+)\/"\)/);
-    if (claim) {
-      claims.nested.set(claim[1], { prefixes: [], exact: [] });
-      current = line.includes('or (') ? claim[1] : null;
-      continue;
-    }
-    if (!current) continue;
-    if (/^\s*\)\s*$/.test(line)) {
-      current = null;
-      continue;
-    }
-    const prefix = line.match(/and not starts_with\(http\.request\.uri\.path, "\/([^/"]+)\/(.+)"\)/);
-    if (prefix) {
-      assert.equal(prefix[1], current, `carve-out ${line.trim()} sits under the wrong family`);
-      claims.nested.get(current).prefixes.push(prefix[2]);
-      continue;
-    }
-    const exact = line.match(/and http\.request\.uri\.path ne "\/([^/"]+)\/(.+)"/);
-    if (exact) {
-      assert.equal(exact[1], current, `carve-out ${line.trim()} sits under the wrong family`);
-      claims.nested.get(current).exact.push(exact[2]);
-    }
-  }
-  return claims;
-}
-
-const sorted = (iterable) => [...iterable].sort();
+import { nonDefaultLandingLocales } from '../packages/shared/indexable-landing-locales.ts';
+import agentRequestPolicy from '../packages/shared/agent-request-policy.json' with { type: 'json' };
 
 /** The live "WWW entry HTML" rule as read from the zone on 2026-09-06, under a fixture id. */
 function retiredEntryRule(overrides = {}) {
@@ -218,42 +71,6 @@ describe('cloudflare corpus cache rule', () => {
         `/${prefix}/... must be matched — those are the pages crawlers actually fetch`,
       );
     }
-  });
-
-  it('claims exactly the surface vercel.json advertises as shared-cacheable', () => {
-    // The failure this guards is the one that produced #7659 and then #7747: a
-    // route gains its origin CDN-Cache-Control header and nobody extends the
-    // Cloudflare rule (or the reverse), so one half is correct and the page still
-    // never caches. Both directions, all three shapes.
-    const advertised = vercelEdgeCacheSurface();
-    const claimed = ruleClaims(rule.expression);
-
-    // Positive controls: the parsers must actually be seeing the new shapes.
-    assert.ok(advertised.nested.has('blog') && advertised.nested.has('docs'), 'vercel.json must advertise /blog and /docs');
-    assert.ok(
-      advertised.nested.has('accuracy') && claimed.nested.has('accuracy'),
-      '/accuracy/ shipped with the origin CDN header; the Cloudflare rule must claim it too (#8070)',
-    );
-    assert.ok(advertised.files.has('llms.txt'), 'vercel.json must advertise /llms.txt');
-    assert.ok(claimed.nested.get('docs')?.exact.length, 'the rule must carve an exact path out of /docs');
-
-    assert.ok(advertised.documents.has('/') && advertised.documents.has('/dashboard'), 'vercel.json must advertise / and /dashboard');
-    assert.ok(advertised.documents.has('/es/') && advertised.documents.has('/es'), 'vercel.json must advertise locale landings as exact documents');
-
-    assert.deepEqual(sorted(claimed.bare), sorted(advertised.bare), 'bare document paths');
-    assert.deepEqual(sorted(claimed.files), sorted(advertised.files), 'root agent text files');
-    assert.deepEqual(sorted(claimed.documents), sorted(advertised.documents), 'entry documents (#7804)');
-    assert.deepEqual(sorted(claimed.nested.keys()), sorted(advertised.nested.keys()), 'prefix-claimed families');
-    for (const [family, carveOuts] of advertised.nested) {
-      const inRule = claimed.nested.get(family);
-      assert.deepEqual(sorted(inRule.prefixes), sorted(carveOuts.prefixes), `${family}: carve-out prefixes`);
-      assert.deepEqual(sorted(inRule.exact), sorted(carveOuts.exact), `${family}: carve-out exact paths`);
-    }
-
-    // And the constants the script exports are what both halves were built from.
-    assert.deepEqual(sorted(claimed.nested.keys()), sorted(EDGE_CACHED_FAMILIES));
-    assert.deepEqual(sorted(claimed.files), sorted(AGENT_TEXT_FILES));
-    assert.deepEqual(sorted(claimed.documents), sorted(ENTRY_DOCUMENTS));
   });
 
   it('admits an HTML document only for the HTML representation: no RSC flight headers, no negotiated media types', () => {
@@ -323,39 +140,6 @@ describe('cloudflare corpus cache rule', () => {
     assert.ok(rule.expression.includes('http.request.uri.path.extension in {"md" "txt" "xml"}'));
     assert.ok(!rule.expression.includes('path.extension ne ""'), 'must not exempt every extension');
     assert.ok(!rule.expression.includes('path.extension in {"" "html"}'), 'the exemption is an allowlist of files, not a denylist of documents');
-  });
-
-  it('claims both sitemaps, with the origin TTL header to match (#7869)', () => {
-    // Round 7 of the GEO audit measured /sitemap.xml and /sitemap-main.xml
-    // `cf-cache-status: DYNAMIC` under a GET while every other corpus route hit.
-    // The bypass rule names /sitemap.xml outright and .xml is outside
-    // Cloudflare's default-cacheable extensions, so neither half alone moves
-    // them: the claim below grants eligibility, the vercel.json header supplies
-    // the TTL. The generic surface-equality test above catches one half going
-    // missing; this one names the URLs so dropping BOTH still fails.
-    const advertised = vercelEdgeCacheSurface();
-    for (const file of ['sitemap.xml', 'sitemap-main.xml']) {
-      assert.ok(
-        AGENT_TEXT_FILES.includes(file),
-        `${file} must be claimed by the cache rule or Cloudflare's bypass keeps it DYNAMIC`,
-      );
-      assert.ok(
-        advertised.files.has(file),
-        `vercel.json must advertise /${file} with the shared CDN-Cache-Control, or the claim caches at Vercel's static default`,
-      );
-    }
-  });
-
-  it('leaves the blog asset prefixes to the zone\'s older "Blog" rule', () => {
-    // That rule gives /blog/_astro/, /blog/og/ and /blog/images/ a month-long
-    // override TTL. Cloudflare lets the last matching rule write edge_ttl, so
-    // claiming them here would replace the month with "respect origin" — for
-    // Vercel's static default, an origin round-trip per request.
-    assert.deepEqual([...FAMILY_EXCLUSIONS.blog.prefixes], ['_astro/', 'og/', 'images/']);
-    for (const prefix of FAMILY_EXCLUSIONS.blog.prefixes) {
-      assert.ok(rule.expression.includes(`and not starts_with(http.request.uri.path, "/blog/${prefix}")`));
-    }
-    assert.ok(rule.expression.includes('"/blog"'), '/blog is the blog index, a document in its own right');
   });
 
   it('deliberately claims the agent-facing markdown twins alongside the HTML', () => {
@@ -446,7 +230,7 @@ describe('cloudflare corpus cache rule', () => {
 
   it('keeps the declared AI agents off the homepage entry, and only the homepage', () => {
     // middleware.ts rewrites GET / to /home.md for the User-Agents in
-    // shared/agent-request-policy.json (`Vary: User-Agent`, no-store). The
+    // packages/shared/agent-request-policy.json (`Vary: User-Agent`, no-store). The
     // no-store keeps that markdown out of the edge; the other direction is the
     // problem: Cloudflare answers from the stored browser HTML before the
     // middleware runs, so a crawler on a warm edge server never sees its

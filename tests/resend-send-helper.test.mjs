@@ -1,13 +1,12 @@
 // Shared Resend send path. Two layers:
 // 1. scripts/lib/resend-send.cjs (Railway digest + relay workers): default
 //    Reply-To and treating resend@4's resolved `{ error }` as a failure.
-// 2. A static guard: every Convex POST to Resend's /emails endpoint goes
-//    through convex/lib/resendEmail.ts (suppression check + Reply-To), and
-//    the Railway workers never call `resend.emails.send` directly.
+// 2. A static guard: the Railway workers never call `resend.emails.send`
+//    directly.
 import { strict as assert } from 'node:assert';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -80,26 +79,7 @@ describe('scripts/lib/resend-send.cjs', () => {
   });
 });
 
-function walk(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    if (name === '_generated' || name === '__tests__' || name === 'node_modules') continue;
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) walk(full, out);
-    else if (/\.(ts|js|mjs|cjs)$/.test(name) && !/\.test\./.test(name)) out.push(full);
-  }
-  return out;
-}
-
 describe('every send goes through a shared helper', () => {
-  it('Convex code posts to Resend /emails only from convex/lib/resendEmail.ts', () => {
-    const offenders = walk(join(root, 'convex'))
-      .filter((file) => /api\.resend\.com\/emails/.test(readFileSync(file, 'utf8')))
-      .map((file) => relative(root, file))
-      .filter((file) => file !== join('convex', 'lib', 'resendEmail.ts'));
-    assert.deepEqual(offenders, [],
-      'Route Convex email sends through sendResendEmail (convex/lib/resendEmail.ts) so suppression and Reply-To apply.');
-  });
-
   it('Railway mail workers never call resend.emails.send directly', () => {
     for (const file of ['scripts/seed-digest-notifications.mjs', 'scripts/notification-relay.cjs']) {
       const src = readFileSync(join(root, file), 'utf8');

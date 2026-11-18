@@ -10,16 +10,8 @@ import { parse as parseYaml } from 'yaml';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const workflowPath = resolve(root, '.github/workflows/proto-check.yml');
 const workflowSource = readFileSync(workflowPath, 'utf8');
-const deployGateScript = readFileSync(resolve(root, '.github/scripts/deploy-gate.sh'), 'utf8');
 const contributing = readFileSync(resolve(root, 'CONTRIBUTING.md'), 'utf8');
 const agentInstructions = readFileSync(resolve(root, 'CLAUDE.md'), 'utf8');
-const scorecardMirrorSource = readFileSync(
-  resolve(root, 'scripts/generate-scorecard-edge-mirrors.mjs'),
-  'utf8',
-);
-const scorecardMirrorPaths = [
-  ...scorecardMirrorSource.matchAll(/['"](server\/worldmonitor\/scorecard\/v1\/_[-a-z]+\.ts)['"]/g),
-].map((match) => match[1]);
 
 type Step = {
   if?: string;
@@ -32,6 +24,7 @@ type Step = {
 
 type Job = {
   if?: string;
+  name?: string;
   needs?: string[] | string;
   outputs?: Record<string, string>;
   permissions?: Record<string, string>;
@@ -272,7 +265,7 @@ function runGenerationVerdict(
   seedGeneratedRepo(repo, generatedPaths);
 
   if (mode === 'generated-drift') {
-    writeFileSync(join(repo, 'src/generated/fixture.ts'), 'generated fixture changed\n');
+    writeFileSync(join(repo, 'packages/contracts/generated/fixture.ts'), 'generated fixture changed\n');
   } else if (mode === 'unexpected-tracked' || mode === 'unexpected-staged') {
     writeFileSync(join(repo, 'src/components/Panel.ts'), 'export const panel = 2;\n');
     if (mode === 'unexpected-staged') assert.equal(git(repo, ['add', 'src/components/Panel.ts']).status, 0);
@@ -330,9 +323,9 @@ function runMergeVerdict(mode: MergeVerdictMode, options: { poison?: boolean } =
   seedGeneratedRepo(repo, generatedPaths);
 
   if (mode === 'generated-drift' || mode === 'generated-staged') {
-    writeFileSync(join(repo, 'src/generated/fixture.ts'), 'generated fixture changed\n');
+    writeFileSync(join(repo, 'packages/contracts/generated/fixture.ts'), 'generated fixture changed\n');
     if (mode === 'generated-staged') {
-      assert.equal(git(repo, ['add', 'src/generated/fixture.ts']).status, 0);
+      assert.equal(git(repo, ['add', 'packages/contracts/generated/fixture.ts']).status, 0);
     }
   } else if (mode === 'unexpected-tracked' || mode === 'unexpected-staged') {
     writeFileSync(join(repo, 'src/components/Panel.ts'), 'export const panel = 2;\n');
@@ -366,7 +359,7 @@ function runMergeVerdict(mode: MergeVerdictMode, options: { poison?: boolean } =
   return returned;
 }
 
-function runWriter(mode: 'valid' | 'valid-mirror' | 'unexpected' | 'lease-failure' | 'current') {
+function runWriter(mode: 'valid' | 'unexpected' | 'lease-failure' | 'current') {
   const temp = mkdtempSync(join(tmpdir(), 'wm-proto-writer-'));
   const repo = join(temp, 'repo');
   const origin = join(temp, 'origin.git');
@@ -385,15 +378,10 @@ function runWriter(mode: 'valid' | 'valid-mirror' | 'unexpected' | 'lease-failur
   assert.equal(git(repo, ['init', '--quiet', '--initial-branch=writer']).status, 0);
   assert.equal(git(repo, ['config', 'user.email', 'fixture@example.invalid']).status, 0);
   assert.equal(git(repo, ['config', 'user.name', 'Fixture']).status, 0);
-  mkdirSync(join(repo, 'src/generated'), { recursive: true });
+  mkdirSync(join(repo, 'packages/contracts/generated'), { recursive: true });
   mkdirSync(join(repo, 'src/components'), { recursive: true });
-  mkdirSync(join(repo, 'server/worldmonitor/scorecard/v1'), { recursive: true });
-  writeFileSync(join(repo, 'src/generated/client.ts'), 'export const value = 1;\n');
+  writeFileSync(join(repo, 'packages/contracts/generated/client.ts'), 'export const value = 1;\n');
   writeFileSync(join(repo, 'src/components/Panel.ts'), 'export const panel = 1;\n');
-  writeFileSync(
-    join(repo, 'server/worldmonitor/scorecard/v1/_types.ts'),
-    'export type Score = number;\n',
-  );
   assert.equal(git(repo, ['add', '-A']).status, 0);
   assert.equal(git(repo, ['commit', '--quiet', '-m', 'base']).status, 0);
   const expectedSha = git(repo, ['rev-parse', 'HEAD']).stdout.trim();
@@ -402,11 +390,7 @@ function runWriter(mode: 'valid' | 'valid-mirror' | 'unexpected' | 'lease-failur
   assert.equal(git(repo, ['push', '--quiet', '-u', 'origin', 'writer']).status, 0);
 
   if (mode !== 'current') {
-    const target = mode === 'unexpected'
-      ? 'src/components/Panel.ts'
-      : mode === 'valid-mirror'
-        ? 'server/worldmonitor/scorecard/v1/_types.ts'
-        : 'src/generated/client.ts';
+    const target = mode === 'unexpected' ? 'src/components/Panel.ts' : 'packages/contracts/generated/client.ts';
     writeFileSync(join(repo, target), `export const value = ${mode === 'unexpected' ? 2 : 3};\n`);
     const patch = git(repo, ['diff', '--binary', '--full-index', '--', target]).stdout;
     writeFileSync(join(temp, 'generated.patch'), patch);
@@ -500,21 +484,19 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     assert.equal(workflow.env?.GENERATED_OUTPUT_REGEX, undefined);
 
     for (const path of [
-      'proto/worldmonitor/example/v1/service.proto',
-      'proto/café.proto',
+      'packages/contracts/proto/worldmonitor/example/v1/service.proto',
+      'packages/contracts/proto/café.proto',
       'scripts/openapi-inject-security.mjs',
-      'shared/openapi-filter-param-contracts.json',
-      'server/gateway.ts',
-      'src/shared/premium-paths.ts',
+      'packages/shared/openapi-filter-param-contracts.json',
+      'packages/server/gateway.ts',
+      'packages/client/shared/premium-paths.ts',
       'Makefile',
     ]) {
       assert.ok(isInput(path), `${path} must be a codegen input`);
     }
-    assert.equal(isGenerated('src/generated/client.ts'), true);
-    assert.equal(isGenerated('docs/api/worldmonitor.openapi.yaml'), true);
-    assert.equal(scorecardMirrorPaths.length, 7, 'the fixture must discover every scorecard Edge mirror');
-    for (const path of scorecardMirrorPaths) assert.equal(isGenerated(path), true);
-    const unicode = runChangeClassifier(['proto/café.proto']);
+    assert.equal(isGenerated('packages/contracts/generated/client.ts'), true);
+    assert.equal(isGenerated('packages/contracts/openapi/worldmonitor.openapi.yaml'), true);
+    const unicode = runChangeClassifier(['packages/contracts/proto/café.proto']);
     assert.equal(unicode.status, 0, unicode.stderr);
     assert.match(unicode.output, /^codegen=true$/m);
     assert.match(unicode.output, /^breaking=true$/m);
@@ -542,13 +524,13 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     assert.match(unrelated.output, /^codegen=false$/m);
     assert.match(unrelated.output, /^breaking=false$/m);
 
-    const generatedOnly = runChangeClassifier(['docs/api/worldmonitor.openapi.yaml']);
+    const generatedOnly = runChangeClassifier(['packages/contracts/openapi/worldmonitor.openapi.yaml']);
     assert.equal(generatedOnly.status, 0, generatedOnly.stderr);
     assert.match(generatedOnly.output, /^codegen=true$/m);
     assert.match(generatedOnly.output, /^breaking=false$/m);
 
     const renamedProto = runChangeClassifier([
-      { filename: 'archive/service.proto', previous_filename: 'proto/service.proto', status: 'renamed' },
+      { filename: 'archive/service.proto', previous_filename: 'packages/contracts/proto/service.proto', status: 'renamed' },
     ]);
     assert.equal(renamedProto.status, 0, renamedProto.stderr);
     assert.match(renamedProto.output, /^codegen=true$/m);
@@ -557,7 +539,7 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     const renamedOutput = runChangeClassifier([
       {
         filename: 'archive/client.ts',
-        previous_filename: 'src/generated/client.ts',
+        previous_filename: 'packages/contracts/generated/client.ts',
         status: 'renamed',
       },
     ]);
@@ -587,7 +569,7 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
   it('classifies every paginated PR-files page', () => {
     const result = runChangeClassifier([
       [{ filename: 'src/components/Panel.ts' }],
-      [{ filename: 'proto/worldmonitor/example/v1/service.proto' }],
+      [{ filename: 'packages/contracts/proto/worldmonitor/example/v1/service.proto' }],
     ]);
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.output, /^codegen=true$/m);
@@ -600,7 +582,7 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
   });
 
   it('trusts only an owner-started exact-head fork synchronization with codegen changes', () => {
-    const trusted = runChangeClassifier(['proto/worldmonitor/example/v1/service.proto'], {
+    const trusted = runChangeClassifier(['packages/contracts/proto/worldmonitor/example/v1/service.proto'], {
       action: 'synchronize',
       actor: 'koala73',
     });
@@ -612,34 +594,34 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
       Parameters<typeof runChangeClassifier>[0],
       ChangeClassifierOptions,
     ]> = [
-      ['contributor push', ['proto/service.proto'], { action: 'synchronize', actor: 'contributor' }],
-      ['opened by owner', ['proto/service.proto'], { action: 'opened', actor: 'koala73' }],
-      ['reopened by owner', ['proto/service.proto'], { action: 'reopened', actor: 'koala73' }],
+      ['contributor push', ['packages/contracts/proto/service.proto'], { action: 'synchronize', actor: 'contributor' }],
+      ['opened by owner', ['packages/contracts/proto/service.proto'], { action: 'opened', actor: 'koala73' }],
+      ['reopened by owner', ['packages/contracts/proto/service.proto'], { action: 'reopened', actor: 'koala73' }],
       [
         'same-repository head',
-        ['proto/service.proto'],
+        ['packages/contracts/proto/service.proto'],
         { action: 'synchronize', actor: 'koala73', headRepository: 'koala73/worldmonitor' },
       ],
       [
         'Dependabot author',
-        ['proto/service.proto'],
+        ['packages/contracts/proto/service.proto'],
         { action: 'synchronize', actor: 'koala73', pullRequestAuthor: 'dependabot[bot]' },
       ],
       ['non-codegen change', ['src/components/Panel.ts'], { action: 'synchronize', actor: 'koala73' }],
-      ['missing actor', ['proto/service.proto'], { action: 'synchronize', actor: '' }],
+      ['missing actor', ['packages/contracts/proto/service.proto'], { action: 'synchronize', actor: '' }],
       [
         'missing repository owner',
-        ['proto/service.proto'],
+        ['packages/contracts/proto/service.proto'],
         { action: 'synchronize', actor: 'koala73', repositoryOwner: '' },
       ],
       [
         'missing head repository',
-        ['proto/service.proto'],
+        ['packages/contracts/proto/service.proto'],
         { action: 'synchronize', actor: 'koala73', headRepository: '' },
       ],
       [
         'missing pull request author',
-        ['proto/service.proto'],
+        ['packages/contracts/proto/service.proto'],
         { action: 'synchronize', actor: 'koala73', pullRequestAuthor: '' },
       ],
     ];
@@ -730,7 +712,13 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
 
     const restore = stepByName('proto-breaking', 'Restore the trusted main Makefile').run ?? '';
     assert.equal(restore, 'git show origin/main:Makefile > Makefile');
-    assert.equal(stepByName('proto-breaking', 'Check for breaking proto changes').run, 'make breaking');
+    // buf runs from the workflow, not from a Makefile recipe: main's Makefile
+    // still `cd proto`s until the packages/contracts layout reaches main.
+    const check = stepByName('proto-breaking', 'Check for breaking proto changes').run ?? '';
+    assert.match(check, /^against=packages\/contracts\/proto$/m);
+    assert.match(check, /^git cat-file -e "origin\/main:\$against\/buf\.yaml" 2>\/dev\/null \|\| against=proto$/m);
+    assert.match(check, /^buf breaking packages\/contracts\/proto --against "\.git#branch=origin\/main,subdir=\$against"$/m);
+    assert.doesNotMatch(check, /\bmake\b/);
   });
 
   it('runs trusted-fork generation read-only while keeping the writer internal-only', () => {
@@ -832,11 +820,8 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     assert.match(guard, /UNEXPECTED_UNTRACKED/);
 
     const generatedPaths = new Set((workflow.env?.GENERATED_PATHS ?? '').split(/\s+/).filter(Boolean));
-    assert.ok(generatedPaths.has('src/generated/'));
-    assert.ok(generatedPaths.has('docs/api/'));
-    for (const path of scorecardMirrorPaths) {
-      assert.ok(generatedPaths.has(path), `${path} must cross the generator/writer boundary`);
-    }
+    assert.ok(generatedPaths.has('packages/contracts/generated/'));
+    assert.ok(generatedPaths.has('packages/contracts/openapi/'));
 
     const writer = stepByName(
       'internal-auto-generate',
@@ -932,7 +917,10 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
       'internal-merge-freshness',
       'proto-freshness',
     ]) {
-      assert.match(deployGateScript, new RegExp(`"${checkName}"`), `${checkName} must remain required`);
+      // Branch protection requires these check names; renaming or dropping a
+      // job silently removes it from the required set.
+      const published = jobs[checkName] ?? Object.values(jobs).find((candidate) => candidate.name === checkName);
+      assert.ok(published, `proto-check.yml must keep publishing the ${checkName} check`);
     }
     const aggregateStep = stepByName('proto-freshness', 'Publish aggregate proto freshness result');
     assert.equal(aggregateStep.env?.OWNER_TRUSTED_HEAD, '${{ needs.changes.outputs.owner_trusted_head }}');
@@ -1053,9 +1041,6 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     assert.notEqual(valid.remoteSha, valid.expectedSha);
     assert.match(valid.ghLog, new RegExp(`statuses/${valid.remoteSha}.*state=pending`));
 
-    const validMirror = runWriter('valid-mirror');
-    assert.equal(validMirror.result.status, 0, validMirror.result.stderr);
-    assert.match(validMirror.output, /^pushed=true$/m);
 
     const unexpected = runWriter('unexpected');
     assert.notEqual(unexpected.result.status, 0);

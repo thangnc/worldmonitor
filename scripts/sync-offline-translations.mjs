@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * Regenerate the inline translation table inside public/offline.html from
- * src/locales/<lng>.json `shell.offlineTitle` / `shell.offlineMessage` /
+ * packages/client/locales/<lng>.json `shell.offlineTitle` / `shell.offlineMessage` /
  * `shell.offlineRetry`. The offline page is served by the service worker with
  * no JS bundle, so it can't reuse i18next at runtime — its translations have
  * to be inlined ahead of time.
  *
  * Run after:
- *   - editing the EN offline.* strings in src/locales/en.json
+ *   - editing the EN offline.* strings in packages/client/locales/en.json
  *   - running scripts/translate-locales.mjs to backfill non-English locales
  *   - adding a new supported locale
  *
@@ -20,7 +20,7 @@ import path from 'node:path';
 
 const LOCALES = ['en', 'ar', 'bg', 'cs', 'de', 'el', 'es', 'fa', 'fr', 'hi', 'hr', 'hu', 'it', 'ja', 'ko', 'nl', 'pl', 'pt', 'ro', 'ru', 'sv', 'sw', 'th', 'tr', 'uk', 'vi', 'zh', 'zh-TW'];
 const OFFLINE_HTML = 'public/offline.html';
-const LOCALES_DIR = 'src/locales';
+const LOCALES_DIR = 'packages/client/locales';
 
 const START = '      var T = {';
 const END = '      };';

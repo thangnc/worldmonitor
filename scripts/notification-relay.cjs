@@ -1145,7 +1145,7 @@ function isPermissiveUnattributedEvent(event) {
  * Regional-intelligence events (regional_regime_shift, regional_corridor_break,
  * regional_trigger_activation, regional_buffer_failure) are region-scoped, not
  * country-attributed. A country-scoped rule matches when ANY of its countries
- * belongs to the event's region (shared/iso2-to-region.json, World Bank
+ * belongs to the event's region (packages/shared/iso2-to-region.json, World Bank
  * taxonomy). Missing/unknown region_id — including the 'global' region, which
  * has no member countries — drops for scoped rules.
  *
@@ -1202,7 +1202,7 @@ function regionalEventMatchesCountryScope(event, rule) {
  * rule.countries=['US'] + event.payload.countryCode='IR' → drop.
  *
  * Country values are normalized to uppercase ISO-3166 alpha-2 via the full
- * shared/country-names.json map before matching. Values the map cannot
+ * packages/shared/country-names.json map before matching. Values the map cannot
  * resolve fall through to the unattributed branch above.
  */
 function eventMatchesCountryScope(event, rule) {
@@ -1279,7 +1279,7 @@ function ruleMatchesEventType(rule, event) {
  *
  * Delivery requires a non-empty intersection between `rule.tickers`
  * (normalized uppercase by convex/alertRules.ts normalizeTickers) and
- * `payload.tickers` (uppercase by shared/ticker-extract.js). The uppercase
+ * `payload.tickers` (uppercase by packages/shared/ticker-extract.js). The uppercase
  * re-normalization here is defensive against unnormalized legacy rows.
  *
  * Every other event type passes through untouched.

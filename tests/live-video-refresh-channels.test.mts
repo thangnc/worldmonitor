@@ -16,7 +16,7 @@ describe('scripts/shared/live-video-refresh-channels.generated.json', () => {
   it('equals the catalog (run npm run sync:live-video-channels after editing a channel entry)', () => {
     assert.equal(committedText, renderRefreshChannels(DEFAULT_CATALOG));
     assert.deepEqual(committed.channels, refreshChannels(DEFAULT_CATALOG));
-    assert.equal(committed.generatedFrom, 'src/config/live-video-sources.ts');
+    assert.equal(committed.generatedFrom, 'packages/client/config/live-video-sources.ts');
   });
 
   it('lists only catalog slots, never a canary on its own', () => {

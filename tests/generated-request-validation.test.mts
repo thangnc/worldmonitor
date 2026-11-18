@@ -3,22 +3,22 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { serverOptions } from '../server/gateway.ts';
-import { validateGeneratedRequest } from '../server/request-validator.ts';
-import { GENERATED_REQUEST_TYPES } from '../src/generated/server/request_validation.ts';
+import { serverOptions } from '../packages/server/gateway.ts';
+import { validateGeneratedRequest } from '../packages/server/request-validator.ts';
+import { GENERATED_REQUEST_TYPES } from '../packages/contracts/generated/server/request_validation.ts';
 import {
   createMarketServiceRoutes,
   type MarketServiceHandler,
-} from '../src/generated/server/worldmonitor/market/v1/service_server.ts';
+} from '../packages/contracts/generated/server/worldmonitor/market/v1/service_server.ts';
 import {
   createBatchServiceRoutes,
   type BatchServiceHandler,
-} from '../src/generated/server/worldmonitor/batch/v1/service_server.ts';
+} from '../packages/contracts/generated/server/worldmonitor/batch/v1/service_server.ts';
 
-import { createConsumerPricesServiceRoutes, type ConsumerPricesServiceHandler } from '../src/generated/server/worldmonitor/consumer_prices/v1/service_server.ts';
+import { createConsumerPricesServiceRoutes, type ConsumerPricesServiceHandler } from '../packages/contracts/generated/server/worldmonitor/consumer_prices/v1/service_server.ts';
 
 const ROOT = join(import.meta.dirname, '..');
-const GENERATED_SERVER_ROOT = join(ROOT, 'src/generated/server/worldmonitor');
+const GENERATED_SERVER_ROOT = join(ROOT, 'packages/contracts/generated/server/worldmonitor');
 
 function walkFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -375,7 +375,7 @@ describe('generated request validation', () => {
       'the generated validator registry must cover every generated route callback',
     );
 
-    const viteConfig = readFileSync(join(ROOT, 'vite.config.ts'), 'utf8');
+    const viteConfig = readFileSync(join(ROOT, 'apps/web/vite.dev-api.ts'), 'utf8');
     assert.match(viteConfig, /validateRequest:\s*validateGeneratedRequest/);
   });
 });

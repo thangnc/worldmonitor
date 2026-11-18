@@ -9,13 +9,14 @@ import {
   recomputeReferenceManifest,
   type ResilienceReferenceManifest,
 } from '../scripts/resilience-reference-recompute.mts';
-import { RESILIENCE_SCORE_CACHE_PREFIX } from '../server/worldmonitor/resilience/v1/_shared.ts';
+import { RESILIENCE_SCORE_CACHE_PREFIX } from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..');
 const MANIFEST_PATH = path.join(
   REPO_ROOT,
   'docs',
+  'engineering',
   'methodology',
   'country-resilience-index',
   'reference-edition',

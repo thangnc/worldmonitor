@@ -6,7 +6,7 @@
  * labels whose items carried the same copy (title + lead) but sit in different
  * publisher families. Corroboration already counts each such group once; this
  * report is for a person deciding whether the outlets belong in one curated
- * family in shared/publisher-families.js. Nothing is written or auto-added.
+ * family in packages/shared/publisher-families.js. Nothing is written or auto-added.
  *
  *   npm run syndication:candidates                 # live digest (full, en)
  *   npm run syndication:candidates -- --file d.json   # a saved digest response
@@ -101,7 +101,7 @@ async function main(argv) {
     return;
   }
   console.log(`${candidates.length} same-copy group(s) across publisher families. Each already counts once;`);
-  console.log('review whether the outlets belong in one curated family (shared/publisher-families.js).\n');
+  console.log('review whether the outlets belong in one curated family (packages/shared/publisher-families.js).\n');
   for (const candidate of candidates) {
     console.log(`- ${candidate.labels.join(' + ')}  (${candidate.stories} ${candidate.stories === 1 ? 'story' : 'stories'})`);
     console.log(`    families: ${candidate.families.join(', ')}`);

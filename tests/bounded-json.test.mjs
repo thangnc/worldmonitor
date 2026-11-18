@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { stringifyWithinBudget } from '../server/_shared/bounded-json.ts';
+import { stringifyWithinBudget } from '../packages/server/_shared/bounded-json.ts';
 
 describe('stringifyWithinBudget', () => {
   it('matches JSON.stringify for plain JSON values under the cap', () => {

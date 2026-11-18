@@ -20,7 +20,7 @@ import {
 // loses real 429/header/default-error/malformed-body behavior.
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const apiDir = resolve(root, 'docs/api');
+const apiDir = resolve(root, 'packages/contracts/openapi');
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'delete', 'patch', 'options', 'head']);
 const RATE_LIMIT_HEADERS = [
   'X-RateLimit-Limit',

@@ -7,7 +7,7 @@ import { sha256 } from '@noble/hashes/sha256';
  *
  * Before this module the codebase answered that question three different
  * ways: scripts/_clustering.mjs (title-token Jaccard ≥ 0.5),
- * server/worldmonitor/news/v1/dedup.mjs (word-overlap > 0.6 of the smaller
+ * packages/server/worldmonitor/news/v1/dedup.mjs (word-overlap > 0.6 of the smaller
  * set), and list-feed-digest.ts story tracking (EXACT sha256 of the
  * normalized title — so any wording edit forked the story and deflated
  * corroboration). All three now delegate here.

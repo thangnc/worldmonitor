@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import {
   publisherFamilyFor,
   publisherNameForFamily,
-} from '../shared/publisher-families.js';
+} from '../packages/shared/publisher-families.js';
 import { assertKnownOriginCode, resolveSourceOrigin } from './source-origin.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,10 +24,10 @@ export const SYNDICATION_TRANSPORT_HOSTS = Object.freeze(new Set([
   'news.google.com',
 ]));
 
-// Every feed is declared once in shared/news-catalog.json. src/config/feeds.ts
-// and server/worldmonitor/news/v1/_feeds.ts are views over it and hold no URLs.
+// Every feed is declared once in packages/shared/news-catalog.json. src/config/feeds.ts
+// and packages/server/worldmonitor/news/v1/_feeds.ts are views over it and hold no URLs.
 export const FEED_DECLARATION_FILES = Object.freeze([
-  'shared/news-catalog.json',
+  'packages/shared/news-catalog.json',
 ]);
 
 const FEEDBURNER_TRANSPORT_HOSTS = Object.freeze(new Set([
@@ -398,7 +398,7 @@ export function scanNamedFeedDeclarations(rootDir = ROOT) {
 }
 
 export function loadSourceGeography(rootDir = ROOT) {
-  const path = join(rootDir, 'shared/source-geography.json');
+  const path = join(rootDir, 'packages/shared/source-geography.json');
   let source;
   try {
     source = readFileSync(path, 'utf8');

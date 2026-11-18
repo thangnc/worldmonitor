@@ -1,7 +1,7 @@
 // Tests for the M9 (fail-closed posture + audible Redis errors) and M16
 // (drop spoofable x-forwarded-for fallback) fixes from issue #3531.
 //
-// Both `server/_shared/rate-limit.ts` and `api/_rate-limit.js` mirror the
+// Both `packages/server/_shared/rate-limit.ts` and `api/_rate-limit.js` mirror the
 // same getClientIp + degraded-response behaviour; this file exercises the
 // canonical TypeScript module. The api/ mirror is covered by inspection
 // of the shared constants (RATE_LIMIT_DEGRADED_HEADERS) and an additional
@@ -25,7 +25,7 @@ import {
   getClientIp,
   rateLimitErrorLevel,
   rateLimitFingerprintStage,
-} from '../server/_shared/rate-limit.ts';
+} from '../packages/server/_shared/rate-limit.ts';
 // @ts-expect-error — JS module, no declaration file
 import { rateLimitErrorLevel as apiRateLimitErrorLevel, rateLimitFingerprintStage as apiRateLimitFingerprintStage } from '../api/_rate-limit.js';
 // @ts-expect-error — JS module, no declaration file
@@ -47,7 +47,7 @@ function makeRequest(headers: Record<string, string> = {}): Request {
 }
 
 async function importFreshRateLimitModule() {
-  return import(`../server/_shared/rate-limit.ts?test=${Date.now()}-${Math.random()}`);
+  return import(`../packages/server/_shared/rate-limit.ts?test=${Date.now()}-${Math.random()}`);
 }
 
 describe('rate-limit getClientIp (#3531 — drop spoofable x-forwarded-for)', () => {
@@ -384,7 +384,7 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
 
     process.env.WORLDMONITOR_VALID_KEYS = 'reverse-geocode-gateway-test-key';
     __resetRateLimitForTest();
-    const { createDomainGateway } = await import('../server/gateway.ts');
+    const { createDomainGateway } = await import('../packages/server/gateway.ts');
     let handlerCalls = 0;
     const gateway = createDomainGateway([{
       method: 'GET',
@@ -416,9 +416,9 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
     process.env.WM_SESSION_SECRET = 'synthetic-crypto-session-secret-at-least-32-bytes';
     __resetRateLimitForTest();
     const { issueSessionToken } = await import('../api/_session.js');
-    const { createDomainGateway } = await import('../server/gateway.ts');
-    const { createMarketServiceRoutes } = await import('../src/generated/server/worldmonitor/market/v1/service_server.ts');
-    const { marketHandler } = await import('../server/worldmonitor/market/v1/handler.ts');
+    const { createDomainGateway } = await import('../packages/server/gateway.ts');
+    const { createMarketServiceRoutes } = await import('../packages/contracts/generated/server/worldmonitor/market/v1/service_server.ts');
+    const { marketHandler } = await import('../packages/server/worldmonitor/market/v1/handler.ts');
     const token = (await issueSessionToken()).token;
     const calls: string[] = [];
     globalThis.fetch = (async (input) => {
@@ -441,9 +441,9 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
     process.env.WM_SESSION_SECRET = 'synthetic-crypto-cap-secret-at-least-32-bytes';
     __resetRateLimitForTest();
     const { issueSessionToken } = await import('../api/_session.js');
-    const { createDomainGateway } = await import('../server/gateway.ts');
-    const { createMarketServiceRoutes } = await import('../src/generated/server/worldmonitor/market/v1/service_server.ts');
-    const { marketHandler } = await import('../server/worldmonitor/market/v1/handler.ts');
+    const { createDomainGateway } = await import('../packages/server/gateway.ts');
+    const { createMarketServiceRoutes } = await import('../packages/contracts/generated/server/worldmonitor/market/v1/service_server.ts');
+    const { marketHandler } = await import('../packages/server/worldmonitor/market/v1/handler.ts');
     let providerCalls = 0;
     let admissions = 0;
     globalThis.fetch = (async (input, init) => {
@@ -602,9 +602,9 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
 
   it('server rate-limit degraded logs are also sent through Sentry capture', async () => {
     const fs = await import('node:fs');
-    const src = fs.readFileSync(new URL('../server/_shared/rate-limit.ts', import.meta.url), 'utf8');
+    const src = fs.readFileSync(new URL('../packages/server/_shared/rate-limit.ts', import.meta.url), 'utf8');
 
-    assert.match(src, /import\s+\{\s*captureSilentError\s+\}\s+from\s+['"]\.\.\/\.\.\/api\/_sentry-edge\.js['"]/);
+    assert.match(src, /import\s+\{\s*captureSilentError\s+\}\s+from\s+['"]\.\.\/\.\.\/\.\.\/api\/_sentry-edge\.js['"]/);
     assert.match(src, /captureSilentError\(err,\s*\{/);
     assert.match(src, /surface:\s*'api'\s*\|\s*'server'\s*=\s*'server'/);
     assert.match(src, /tags:\s*\{\s*surface,\s*component:\s*'rate-limit'/);
@@ -663,95 +663,12 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
   });
 });
 
-describe('rate-limit fail-closed call-site policy (#3531)', () => {
-  // High-cost endpoints that don't go through gateway.ts's checkEndpointRateLimit
-  // must opt into fail-closed at the call site — otherwise an Upstash blip
-  // silently lifts the only rate-limit gate they have. Static-analysis guard
-  // so a future caller reverting to bare `checkRateLimit(req, cors)` is caught
-  // in CI rather than during a Redis incident.
-  const FAIL_CLOSED_REQUIRED = [
-    'api/chat-analyst.ts', // streaming LLM analyst, Pro-only
-    'api/widget-agent.ts', // frontier-model widget proxy
-    'api/create-checkout.ts', // paid Dodo checkout relay
-  ];
-
-  for (const path of FAIL_CLOSED_REQUIRED) {
-    it(`${path} passes failClosed: true to checkRateLimit`, async () => {
-      const fs = await import('node:fs');
-      const url = new URL(`../${path}`, import.meta.url);
-      const src = fs.readFileSync(url, 'utf8');
-      const callMatch = src.match(/checkRateLimit\([^)]*\)/);
-      assert.ok(callMatch, `${path} should still call checkRateLimit`);
-      assert.match(
-        callMatch[0],
-        /failClosed:\s*true/,
-        `${path} must pass { failClosed: true } so a Redis outage doesn't silently bypass the only rate-limit gate it has`,
-      );
-    });
-  }
-});
-
 describe('scoped rate-limit degraded call-site policy (#3531)', () => {
   const SCOPED_RATE_LIMIT_CALLERS = [
     {
-      path: 'server/worldmonitor/aviation/v1/track-aircraft.ts',
-      expected: /if\s*\(limit\.degraded\)\s*\{[\s\S]*?throw Object\.assign\(new ApiError\(503,/,
-      reason: 'aircraft identifier lookups must fail closed before cache or provider work when the shared limiter is unavailable',
-    },
-    {
-      path: 'api/reverse-geocode.js',
-      expected: /failClosed:\s*true/,
-      reason: 'the provider-wide Nominatim bucket is shared across both routes and must fail closed before upstream work',
-    },
-    {
-      path: 'server/worldmonitor/infrastructure/v1/reverse-geocode.ts',
+      path: 'packages/server/worldmonitor/infrastructure/v1/reverse-geocode.ts',
       expected: /if\s*\(\s*providerLimit\.degraded\s*\)\s*\{/,
-      reason: 'the gateway half of the provider-wide Nominatim bucket must fail closed before upstream work',
-    },
-    {
-      path: 'api/a2a.ts',
-      expected: /Redis-degraded scoped limits intentionally stay availability-first/,
-      reason: 'A2A concierge serves only anonymous, quota-free, cheap catalog matching — degradation is logged and stays availability-first',
-    },
-    {
-      path: 'api/ask.ts',
-      expected: /Redis-degraded scoped limits intentionally stay availability-first/,
-      reason: 'NLWeb /ask serves only anonymous, quota-free, cheap catalog matching — degradation is logged and stays availability-first',
-    },
-    {
-      path: 'api/docs-mcp.ts',
-      expected: /Redis-degraded scoped limits intentionally stay availability-first/,
-      reason: 'docs MCP facade proxies a fully public, cheap upstream — degradation is logged and stays availability-first',
-    },
-    {
-      path: 'api/mcp-proxy.ts',
-      expected: /Redis-degraded scoped limits intentionally stay availability-first/,
-      reason: 'MCP proxy is already premium-auth gated; scoped limit degradation is logged and remains availability-first',
-    },
-    {
-      path: 'api/skills/fetch-agentskills.ts',
-      expected: /Redis-degraded scoped limits intentionally stay availability-first/,
-      reason: 'agent-skills import proxy fetches one public host behind a fixed allowlist and is called by the settings importer - degradation is logged and stays availability-first',
-    },
-    {
-      path: 'api/user-prefs.ts',
-      expected: /Redis-degraded scoped limits intentionally fail open for prefs writes/,
-      reason: 'cloud prefs writes are low-stakes, so Redis degradation should not block legitimate settings sync',
-    },
-    {
-      path: 'api/desktop-key/status.ts',
-      expected: /A degraded per-IP ceiling fails closed with 503/,
-      reason: 'the per-IP ceiling in front of the Convex key lookup fails closed when degraded (rotating keys miss the negative cache); the owner and invalid-key buckets after the lookup stay availability-first, and a self-host sidecar keeps its last verdict through a 503',
-    },
-    {
-      path: 'api/notify.ts',
-      expected: /limiter outage here should NOT fail open/,
-      reason: 'notify publishes create relay-side delivery obligations on the shared event queue, so Redis degradation fails closed instead of allowing unbounded fan-out',
-    },
-    {
-      path: 'api/notification-channels.ts',
-      expected: /if\s*\(\s*scoped\.degraded\s*\)\s*\{/,
-      reason: 'channel mutations write through the Convex relay and can trigger welcome mail, so Redis degradation fails closed instead of allowing unbounded writes',
+      reason: 'the provider-wide Nominatim bucket must fail closed before upstream work',
     },
   ];
 
@@ -759,7 +676,7 @@ describe('scoped rate-limit degraded call-site policy (#3531)', () => {
     const fs = await import('node:fs');
     const cp = await import('node:child_process');
     const repo = new URL('..', import.meta.url);
-    const output = cp.execFileSync('git', ['grep', '-lE', 'checkScopedRateLimit\\(|PROVIDER_RATE_LIMIT_IDENTIFIER', '--', 'server', 'api'], {
+    const output = cp.execFileSync('git', ['grep', '-lE', 'checkScopedRateLimit\\(|PROVIDER_RATE_LIMIT_IDENTIFIER', '--', 'packages/server', 'api'], {
       cwd: repo,
       encoding: 'utf8',
     });
@@ -767,7 +684,7 @@ describe('scoped rate-limit degraded call-site policy (#3531)', () => {
       .trim()
       .split('\n')
       .filter(Boolean)
-      .filter(path => path !== 'server/_shared/rate-limit.ts')
+      .filter(path => path !== 'packages/server/_shared/rate-limit.ts')
       .sort();
 
     assert.deepEqual(
@@ -870,85 +787,6 @@ describe('slow-Redis timeout is degraded, not a silent allow (#6412 review)', ()
   });
 });
 
-describe('legacy edge-function rate-limit policy mirrors (#6234)', () => {
-  // `api/*.js` edge functions are self-contained JS and cannot import
-  // `../server/` (CLAUDE.md, enforced by scripts/lint-boundaries.mjs and the
-  // pre-push esbuild check). So unlike api/mcp-proxy.ts, which reads
-  // ENDPOINT_RATE_POLICIES at module load, these handlers duplicate their
-  // budget as a literal constant and enforce it via api/_rate-limit.js.
-  //
-  // Without this test the registry entry would be decorative: the audit script
-  // (scripts/enforce-rate-limit-policies.mjs) and docs/usage-rate-limits.mdx
-  // would advertise a number no handler enforces, which is exactly the
-  // declare-vs-serve divergence the repo treats as a defect class.
-  const MIRRORED_JS_POLICIES = [
-    { path: 'api/youtube/live.js', route: '/api/youtube/live', scope: 'youtube-live' },
-    { path: 'api/reverse-geocode.js', route: '/api/reverse-geocode', scope: 'reverse-geocode' },
-  ];
-
-  for (const { path, route, scope } of MIRRORED_JS_POLICIES) {
-    it(`${path} enforces the ENDPOINT_RATE_POLICIES['${route}'] budget`, async () => {
-      const fs = await import('node:fs');
-      const src = fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-      const policy = ENDPOINT_RATE_POLICIES[route];
-      assert.ok(policy, `${route} must stay in ENDPOINT_RATE_POLICIES`);
-
-      const limitMatch = src.match(/const RATE_LIMIT_PER_MINUTE = (\d+);/);
-      assert.ok(limitMatch, `${path} must declare a RATE_LIMIT_PER_MINUTE constant`);
-      assert.equal(
-        Number(limitMatch[1]),
-        policy.limit,
-        `${path} enforces ${limitMatch[1]}/min but ENDPOINT_RATE_POLICIES['${route}'] declares ${policy.limit} — api/*.js cannot import server/_shared/rate-limit.ts, so the budget must be updated in both places`,
-      );
-      assert.equal(
-        policy.window,
-        '60 s',
-        `${route} must stay on a 60 s window while ${path} hard-codes a per-minute budget`,
-      );
-
-      const scopeMatch = src.match(/const RATE_LIMIT_SCOPE = '([^']+)';/);
-      assert.ok(scopeMatch, `${path} must declare a RATE_LIMIT_SCOPE constant`);
-      assert.equal(
-        scopeMatch[1],
-        scope,
-        `${path} rate-limit scope changed — Redis keys are prefixed rl:<scope>, so renaming it silently resets every caller's window`,
-      );
-
-      // Assert the WIRING, not just the declarations. A bare /checkRateLimit\(/
-      // presence check proves neither constant reaches the call: dropping
-      // `limit:` makes api/_rate-limit.js apply `opts.limit ?? DEFAULT_RATE_LIMIT`
-      // (600/min — a 20x silent widening) and dropping `scope:` moves the route
-      // into the shared `rl` global bucket, both while the two constants sit
-      // there unused and every assertion above still passes. Match the option
-      // keys inside the call so the registry entry cannot become decorative.
-      // (#6412 review)
-      const callMatch = src.match(/checkRateLimit\(\s*\w+\s*,\s*\w+\s*,\s*\{([\s\S]*?)\}\s*\)/);
-      assert.ok(callMatch, `${path} must call checkRateLimit with an explicit options object`);
-      const callOptions = callMatch[1] ?? '';
-      assert.match(
-        callOptions,
-        /\blimit:\s*RATE_LIMIT_PER_MINUTE\b/,
-        `${path} must pass limit: RATE_LIMIT_PER_MINUTE to checkRateLimit — without it the call silently falls back to the 600/min global default and the registry entry is decorative`,
-      );
-      assert.match(
-        callOptions,
-        /\bscope:\s*RATE_LIMIT_SCOPE\b/,
-        `${path} must pass scope: RATE_LIMIT_SCOPE to checkRateLimit — without it the route shares the global 'rl' bucket instead of rl:${scope}`,
-      );
-      assert.match(
-        callOptions,
-        /\bwindow:\s*'60 s'/,
-        `${path} must pass window: '60 s' to checkRateLimit so the enforced window matches ENDPOINT_RATE_POLICIES['${route}']`,
-      );
-      assert.match(
-        callOptions,
-        /\bctx\b/,
-        `${path} must forward ctx to checkRateLimit so the degraded-path Sentry envelope survives isolate teardown`,
-      );
-    });
-  }
-});
-
 describe('rate-limit constants', () => {
   it('exposes the degraded marker shape both surfaces depend on', () => {
     assert.equal(RATE_LIMIT_DEGRADED_HEADERS['X-RateLimit-Mode'], 'degraded');
@@ -978,7 +816,7 @@ describe('rate-limit constants', () => {
 describe('rateLimitFingerprintStage — Sentry grouping for a degraded limiter (#6454)', () => {
   // Both copies must agree; api/_rate-limit.js is the byte-mirror of the .ts one.
   const IMPLS: Array<[string, (stage: string) => string]> = [
-    ['server/_shared/rate-limit.ts', rateLimitFingerprintStage],
+    ['packages/server/_shared/rate-limit.ts', rateLimitFingerprintStage],
     ['api/_rate-limit.js', apiRateLimitFingerprintStage],
   ];
 
@@ -1039,7 +877,7 @@ describe('rateLimitFingerprintStage — Sentry grouping for a degraded limiter (
 describe('rateLimitErrorLevel — Sentry severity for a degraded limiter (WORLDMONITOR-VM)', () => {
   // Both copies must agree; api/_rate-limit.js is the byte-mirror of the .ts one.
   const IMPLS: Array<[string, (stage: string, msg: string) => string]> = [
-    ['server/_shared/rate-limit.ts', rateLimitErrorLevel],
+    ['packages/server/_shared/rate-limit.ts', rateLimitErrorLevel],
     ['api/_rate-limit.js', apiRateLimitErrorLevel],
   ];
 

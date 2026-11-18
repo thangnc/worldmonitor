@@ -11,11 +11,11 @@
  * country-intel) which was fixed manually because there was no enforcement.
  *
  * How it works:
- *   1. Dynamic `import()` of PREMIUM_RPC_PATHS from src/shared/premium-paths.ts
+ *   1. Dynamic `import()` of PREMIUM_RPC_PATHS from packages/client/shared/premium-paths.ts
  *      (via tsx, same pattern as enforce-rate-limit-policies.mjs) → set of
  *      premium HTTP paths. Live import means reformatting the source literal
  *      can never desync the lint from the runtime (#3287 follow-up).
- *   2. Walk src/generated/client/ → map each ServiceClient class to its
+ *   2. Walk packages/contracts/generated/client/ → map each ServiceClient class to its
  *      method-name → path table (the `let path = "/api/..."` line each
  *      generated method opens with).
  *   3. Walk src/ (excluding generated) with the TypeScript AST. For each
@@ -29,16 +29,17 @@
  * globalThis.fetch + premiumClient with premiumFetch on the same class)
  * stay clean, since publicClient never calls a premium method.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import { isMainModule } from './lib/main-module.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const PREMIUM_PATHS_SRC = join(ROOT, 'src/shared/premium-paths.ts');
-const GEN_CLIENT_DIR = join(ROOT, 'src/generated/client');
-const SRC_DIR = join(ROOT, 'src');
+const PREMIUM_PATHS_SRC = join(ROOT, 'packages/client/shared/premium-paths.ts');
+const GEN_CLIENT_DIR = join(ROOT, 'packages/contracts/generated/client');
+// Browser source: the Lite UI (apps/web/src/) and the modules it builds on (packages/client/).
+const SRC_DIRS = [join(ROOT, 'apps/web/src'), join(ROOT, 'packages/client')];
 const PREMIUM_FETCH_SRC = join(ROOT, 'src/services/premium-fetch.ts');
 
 /**
@@ -251,7 +252,7 @@ function loadClientClassMap() {
 
 function collectSourceFiles() {
   const out = [];
-  walk(SRC_DIR, (file) => {
+  for (const dir of SRC_DIRS) walk(dir, (file) => {
     if (file.startsWith(GEN_CLIENT_DIR)) return;
     if (!/\.(ts|tsx)$/.test(file)) return;
     if (file.endsWith('.d.ts')) return;
@@ -437,8 +438,12 @@ function checkFile(filePath, clientClassMap, premiumPaths) {
 }
 
 async function main() {
-  // Before trusting any adapter exemption, prove the exemption is real.
-  assertDelegatingAdapters();
+  // Before trusting any adapter exemption, prove the exemption is real. The
+  // Lite UI has no premiumFetch (refactor Phase 1 removed the dashboard's
+  // premium clients), so without it no adapter is exempt and any premium
+  // call fails below.
+  if (existsSync(PREMIUM_FETCH_SRC)) assertDelegatingAdapters();
+  else DELEGATING_ADAPTERS.clear();
   const premiumPaths = await loadPremiumPaths();
   const clientClassMap = loadClientClassMap();
   const files = collectSourceFiles();
@@ -468,9 +473,9 @@ async function main() {
       console.error('');
     }
     console.error('Each ServiceClient that calls a method whose path is in');
-    console.error('src/shared/premium-paths.ts PREMIUM_RPC_PATHS must be constructed with');
+    console.error('packages/client/shared/premium-paths.ts PREMIUM_RPC_PATHS must be constructed with');
     console.error('  { fetch: premiumFetch }');
-    console.error('imported from @/services/premium-fetch.\n');
+    console.error('(a fetch wrapper that sends the caller\'s credentials).\n');
     console.error('Why: globalThis.fetch sends no auth header, so signed-in browser pros');
     console.error('without a WORLDMONITOR_API_KEY get a 401 the generated client swallows');
     console.error('into the empty fallback. premiumFetch injects WM key / Clerk bearer when');
@@ -487,7 +492,7 @@ async function main() {
   }
 
   console.log(
-    `\u2713 premium-fetch parity clean: ${clientClassMap.size} ServiceClient classes scanned, ${premiumPaths.size} premium paths checked, ${files.length} src/ files analyzed.`,
+    `\u2713 premium-fetch parity clean: ${clientClassMap.size} ServiceClient classes scanned, ${premiumPaths.size} premium paths checked, ${files.length} apps/web/src/ and packages/client/ files analyzed.`,
   );
 }
 

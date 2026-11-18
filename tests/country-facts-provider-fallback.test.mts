@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { __clearLocalUnavailableBackoffForTests } from '../server/_shared/redis.ts';
+import { __clearLocalUnavailableBackoffForTests } from '../packages/server/_shared/redis.ts';
 import {
   getCountryFacts,
   selectWikidataEntityId,
-} from '../server/worldmonitor/intelligence/v1/get-country-facts.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/get-country-facts.ts';
 
 const originalFetch = globalThis.fetch;
 const originalRedisUrl = process.env.UPSTASH_REDIS_REST_URL;

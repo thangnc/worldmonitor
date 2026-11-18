@@ -6,7 +6,6 @@ import { resolve } from 'node:path';
 import middleware, { config as middlewareConfig } from '../middleware.ts';
 import {
   AGENT_NOT_FOUND_CONTENT_TYPE,
-  AGENT_NOT_FOUND_INDEXES,
   AGENT_NOT_FOUND_PASSTHROUGH_PREFIXES,
   AGENT_NOT_FOUND_STATUS,
   HUMAN_NOT_FOUND_CONTENT_TYPE,
@@ -16,9 +15,8 @@ import {
   isKnownPublicPagePath,
   prefersAgentNotFound,
   suggestNotFoundSection,
-} from '../src/config/agent-not-found.ts';
-import { CONTENT_CORPUS_PREFIXES } from '../scripts/discover-content-corpus-pages.mjs';
-import { indexableLandingPassthroughPrefixes } from '../shared/indexable-landing-locales.ts';
+} from '../packages/server/_shared/agent-not-found.ts';
+import { LITE_SCREEN_PATHS } from '../packages/client/config/lite-route.ts';
 
 const vercelConfig = JSON.parse(
   readFileSync(resolve(import.meta.dirname, '../vercel.json'), 'utf8'),
@@ -85,7 +83,7 @@ describe('prefersAgentNotFound (content negotiation)', () => {
 });
 
 describe('agent-friendly 404s (orank agent-friendly-404)', () => {
-  it('returns HTTP 404 markdown that points agents at sitemap, llms.txt, and docs', async () => {
+  it('returns HTTP 404 markdown that points agents at the Lite UI', async () => {
     const res = call('/some-path-that-does-not-exist', { accept: '*/*' });
     assert.ok(res instanceof Response, 'unknown paths must not fall through as a soft-404');
     assert.equal(res.status, AGENT_NOT_FOUND_STATUS);
@@ -94,9 +92,9 @@ describe('agent-friendly 404s (orank agent-friendly-404)', () => {
     const body = await res.text();
     assert.ok(body.startsWith('# Not found'), 'body must be heading-led markdown, not an HTML app shell');
     assert.ok(body.includes('/some-path-that-does-not-exist'));
-    assert.ok(body.includes(AGENT_NOT_FOUND_INDEXES.llmsTxt));
-    assert.ok(body.includes(AGENT_NOT_FOUND_INDEXES.sitemap));
-    assert.ok(body.includes(AGENT_NOT_FOUND_INDEXES.docs));
+    assert.ok(body.includes(`(${LITE_SCREEN_PATHS.briefing})`));
+    // The deployment is private: no public agent indexes to advertise.
+    assert.doesNotMatch(body, /llms\.txt|sitemap|\/docs\//);
   });
 
   it('answers agent HEAD with 404 markdown and no body', async () => {
@@ -120,8 +118,8 @@ describe('agent-friendly 404s (orank agent-friendly-404)', () => {
     assert.match(body, /<html/i);
     assert.match(body, /Page not found/i);
     assert.doesNotMatch(body, /^# Not found/m);
-    assert.ok(body.includes('/dashboard'));
-    assert.ok(body.includes(AGENT_NOT_FOUND_INDEXES.docs.replace('https://www.worldmonitor.app', '')));
+    assert.ok(body.includes(`href="${LITE_SCREEN_PATHS.briefing}"`));
+    assert.doesNotMatch(body, /\/docs\//);
   });
 
   it('answers browser HEAD with 404 HTML and no body', async () => {
@@ -143,8 +141,14 @@ describe('agent-friendly 404s (orank agent-friendly-404)', () => {
   });
 
   it('does not intercept known product routes or mutating methods', () => {
-    for (const path of ['/', '/dashboard', '/stocks/AAPL', '/story', '/pro', '/docs/mcp', '/countries/united-states', ...indexableLandingPassthroughPrefixes()]) {
+    for (const path of ['/', '/dashboard', '/stocks/AAPL', '/story', ...Object.values(LITE_SCREEN_PATHS)]) {
       assert.equal(call(path, { accept: '*/*' }), undefined, `${path} must keep its vercel.json route`);
+    }
+    // The /pro and /blog builds (refactor Phase 1b), the docs site, the
+    // crawlable corpus and the public agent pages (1c-3) are gone, so their
+    // paths get the agent-friendly 404 rather than Vercel's static HTML one.
+    for (const path of ['/pro', '/pro/welcome.html', '/blog/some-post', '/pricing', '/docs/mcp', '/countries/united-states', '/trust', '/es/']) {
+      assert.ok(call(path, { accept: 'text/markdown' }), `${path} has no route and must not pass through`);
     }
     assert.equal(call('/some-path-that-does-not-exist', { method: 'POST', accept: '*/*' }), undefined);
   });
@@ -154,21 +158,6 @@ describe('agent-friendly 404s (orank agent-friendly-404)', () => {
       const res = call(path, { accept: '*/*' });
       assert.ok(res instanceof Response, `${path} must 404`);
       assert.equal(res.status, 404);
-    }
-  });
-
-  it('serves the /trust page (#9093), which used to be a leaked SPA guess', async () => {
-    for (const path of ['/trust', '/trust/', '/trust/review/']) {
-      assert.equal(call(path, { accept: '*/*' }), undefined, `${path} must reach its static page`);
-    }
-  });
-
-  it('passthrough prefixes cover every crawlable corpus section', () => {
-    for (const prefix of CONTENT_CORPUS_PREFIXES) {
-      assert.ok(
-        (AGENT_NOT_FOUND_PASSTHROUGH_PREFIXES as readonly string[]).includes(`/${prefix}`),
-        `corpus prefix /${prefix} must not 404 real static pages`,
-      );
     }
   });
 
@@ -209,29 +198,26 @@ describe('agent-friendly 404s (orank agent-friendly-404)', () => {
     assert.equal(html, buildHumanNotFoundHtml());
     assert.match(html, /<!DOCTYPE html>/i, 'Vercel filesystem 404s must be a human HTML page');
     assert.match(html, /Page not found/i);
-    assert.ok(html.includes('/dashboard'));
-    assert.ok(html.includes('/docs/documentation'));
+    assert.ok(html.includes(`href="${LITE_SCREEN_PATHS.briefing}"`));
+    assert.doesNotMatch(html, /\/docs\//);
     assert.doesNotMatch(html, /^# Not found/m);
-    assert.equal(
-      buildAgentNotFoundMarkdown('/missing').includes(AGENT_NOT_FOUND_INDEXES.llmsTxt),
-      true,
-    );
+    assert.ok(buildAgentNotFoundMarkdown('/missing').includes(LITE_SCREEN_PATHS.briefing));
   });
 });
 
 describe('human 404 guides a lost reader to a real page', () => {
   it('suggests the section a mistyped or singular first segment was reaching for', () => {
     const cases: Array<[string, string | null]> = [
-      ['/countri/iran', '/countries/'],
-      ['/country/iran', '/countries/'],
-      ['/crisis/sudan-conflict', '/crises/'],
-      ['/chokepoint/suez-canal', '/chokepoints/'],
-      ['/comparison/liveuamap', '/compare/'],
-      ['/documentation', '/docs/documentation'],
-      ['/blogs/some-post', '/blog/'],
+      ['/geopolitcs/iran', LITE_SCREEN_PATHS.geopolitics],
+      ['/conflict/sudan', LITE_SCREEN_PATHS.geopolitics],
+      ['/market/spx', LITE_SCREEN_PATHS.finance],
+      ['/technolgy', LITE_SCREEN_PATHS.tech],
+      ['/source', LITE_SCREEN_PATHS.sources],
+      ['/documentation', null],
+      ['/blogs/some-post', null],
       ["/'to", null],
       ['/zzzzzz', null],
-      [`/${'countries'.repeat(900)}`, null],
+      [`/${'sources'.repeat(900)}`, null],
       ['/', null],
     ];
     for (const [path, expected] of cases) {
@@ -239,13 +225,13 @@ describe('human 404 guides a lost reader to a real page', () => {
     }
   });
 
-  it('makes the likely destination the primary action, with the dashboard second', () => {
-    const body = buildHumanNotFoundHtml('/countri/iran');
+  it('makes the likely destination the primary action, with the Briefing second', () => {
+    const body = buildHumanNotFoundHtml('/geopolitcs/iran');
     assert.match(body, /<main\b/);
     assert.match(body, /<nav aria-label="Primary">/);
-    assert.match(body, /<a class="cta" href="\/countries\/">Go to Countries/);
-    assert.match(body, /<a class="secondary" href="\/dashboard">/);
-    assert.match(buildHumanNotFoundHtml("/'to"), /<a class="cta" href="\/dashboard">Open the live dashboard/);
+    assert.match(body, /<a class="cta" href="\/lite\/geopolitics">Go to Geopolitics/);
+    assert.match(body, /<a class="secondary" href="\/lite">/);
+    assert.match(buildHumanNotFoundHtml("/'to"), /<a class="cta" href="\/lite">Open the Briefing/);
     for (const section of HUMAN_NOT_FOUND_SECTIONS) {
       assert.ok(body.includes(`href="${section.href}"`), section.href);
       assert.ok(body.includes(section.description), section.label);
@@ -257,7 +243,7 @@ describe('human 404 guides a lost reader to a real page', () => {
     assert.doesNotMatch(body, /Go to /);
     assert.doesNotMatch(buildHumanNotFoundHtml(), /Go to /);
     assert.doesNotMatch(body, /<script\b/i);
-    assert.match(body, /<meta name="robots" content="noindex">/);
+    assert.match(body, /<meta name="robots" content="noindex, nofollow">/);
   });
 
   it('links every section to its final URL, never through a redirect', () => {

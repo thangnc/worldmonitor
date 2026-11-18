@@ -734,16 +734,6 @@ describe('evaluation corpus: SLA, VOID by reason and latency across both lanes (
     assert.ok(!JSON.stringify(computeScorecard({}, NOW).corpus).includes('NaN'));
   });
 
-  it('documents the service levels and corpus fields in both languages', () => {
-    assert.equal(RESOLVER_CYCLE_MS, DAY_MS + 60 * 60 * 1000, 'the docs say one daily run plus an hour');
-    assert.equal(DEFAULT_JUDGED_SLA_MS, 2 * DAY_MS, 'the docs say 2 days');
-    for (const path of ['docs/panels/forecast.mdx', 'docs/zh/panels/forecast.mdx']) {
-      const text = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-      for (const term of ['hardResolutionBoundMs', 'RESOLVER_CYCLE_MS', 'DEFAULT_JUDGED_SLA_MS', 'scoredWithinSlaCount', 'voidWithinSlaCount', 'byGenerationOrigin', 'registrationCoverage', 'resolvedWithinSlaCount', 'voidByReason', 'emissionHash', 'receiptHash', 'emission_snapshot_required', 'wmMinusMarketBrier', 'skillLogScore', 'slaScope', 'registrationScope', '| 76 ', '| 15 ']) {
-        assert.ok(text.includes(term), `${path} names ${term}`);
-      }
-    }
-  });
 });
 
 describe('Phase-2 betEngine slice + promotion flag (#5525 U14)', () => {
@@ -1090,13 +1080,6 @@ describe('projection horizon lane (#7075)', () => {
       assert.equal(horizonGrades.unversionedScored, 0);
     });
 
-    it('documents the same minimums in both forecast panel docs', () => {
-      const en = readFileSync(new URL('../docs/panels/forecast.mdx', import.meta.url), 'utf8');
-      const zh = readFileSync(new URL('../docs/zh/panels/forecast.mdx', import.meta.url), 'utf8');
-      assert.ok(en.includes(`at least ${SKILL_MIN_FAMILIES} forecast families, with at least ${SKILL_MIN_OUTCOME_FAMILIES} YES families and ${SKILL_MIN_OUTCOME_FAMILIES} NO families`));
-      assert.ok(zh.includes(`至少 ${SKILL_MIN_FAMILIES} 个预测族，其中至少 ${SKILL_MIN_OUTCOME_FAMILIES} 个为 YES、至少 ${SKILL_MIN_OUTCOME_FAMILIES} 个为 NO`));
-      for (const doc of [en, zh]) assert.ok(doc.includes('`horizonGrades`') && doc.includes('`meetsFamilyOutcomeMinimums`'));
-    });
   });
 });
 
@@ -1716,11 +1699,6 @@ describe('spec-origin follow-through slice (#7067)', () => {
     assert.equal(specOrigins.byOrigin.hard.market.entries, 1);
     assert.equal(specOrigins.excludedBetEngine, 1);
   });
-
-  it('stays off the public scorecard contract', async () => {
-    const { SCORECARD_DECLARED_FIELDS } = await import('../scripts/build-accuracy-page.mjs');
-    for (const field of ['specOrigins', 'withheldAtEmission']) assert.ok(!SCORECARD_DECLARED_FIELDS.includes(field), field);
-  });
 });
 
 describe('ledger totals and funnel count published forecasts only (#8990)', () => {
@@ -1794,15 +1772,4 @@ describe('ledger totals and funnel count published forecasts only (#8990)', () =
 });
 
 describe('published ledger population in the docs (#8990)', () => {
-  it('names the schema version and the download field in both languages', () => {
-    for (const path of ['docs/panels/forecast.mdx', 'docs/zh/panels/forecast.mdx']) {
-      const text = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-      assert.match(text, /`totals` (and|和) `funnel`/, `${path} names both blocks`);
-      assert.ok(text.includes('`schemaVersion` 3'), `${path} names schema 3`);
-      assert.ok(text.includes('ledgerPopulation'), `${path} names the download field`);
-      for (const term of ['isPublishedEntry', 'isPublishedOriginEntry', 'vsMarketSkill', '2026-10-08 resolver run']) {
-        assert.ok(text.includes(term) || (term === '2026-10-08 resolver run' && text.includes('2026-10-08 结算运行')), `${path} names ${term}`);
-      }
-    }
-  });
 });

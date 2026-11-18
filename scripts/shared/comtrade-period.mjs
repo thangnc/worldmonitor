@@ -1,7 +1,7 @@
 // Shared UN Comtrade annual-period helpers. Single source of truth imported by:
 //   - scripts/seed-trade-flows.mjs                              (strategic commodity flows)
 //   - scripts/seed-comtrade-bilateral-hs4.mjs                   (bulk per-country seeder)
-//   - server/worldmonitor/supply-chain/v1/_bilateral-hs4-lazy.ts (on-demand fallback)
+//   - packages/server/worldmonitor/supply-chain/v1/_bilateral-hs4-lazy.ts (on-demand fallback)
 //
 // Before PR #5641's review these three carried three byte-identical copies of
 // recentPeriod(). The copies mattered: seed-trade-flows.mjs already had a

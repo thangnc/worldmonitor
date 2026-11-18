@@ -17,9 +17,9 @@ Source of truth: CLAUDE.md test-suite table, [CONTRIBUTING.md "Verify the change
 |---|---|---|
 | Data, contract, script | `tests/*.test.{mjs,mts}` | node:test (`npm run test:data`) |
 | DOM (happy-dom) | `tests/dom/` | vitest (`npm run test:dom`) |
-| Convex, server, correlation engine | `convex/__tests__/`, `server/__tests__/` | vitest (`npm run test:convex`) |
+| Server | `packages/server/__tests__/` | vitest (`npm run test:server`) |
 | `api/` node suites, sidecar | next to the code | `npm run test:sidecar` |
-| Browser | `e2e/*.spec.ts` | Playwright, one `VITE_VARIANT` per run |
+| Browser | `.claude/skills/verify-worldmonitor/steps/` | Playwright drive through the `verify-worldmonitor` skill (no `e2e/` suite) |
 
 The two runners are not interchangeable. A vitest file run under node:test fails with a bare "test failed" message, so put each file in its runner's directory.
 
@@ -33,6 +33,7 @@ The two runners are not interchangeable. A vitest file run under node:test fails
 - A test double must not be richer than the real library it replaces.
 - Pin fixtures and clocks. Do not depend on live upstreams, rolling captures, or today's date.
 - Do not delete or weaken a check without evidence that its protection is obsolete, redundant, or ineffective.
+- A worktree under `.claude/worktrees/` resolves missing packages through the main checkout's `node_modules`. After removing packages, check imports against `package-lock.json` instead of trusting a local pass ([lesson](../../docs/engineering/solutions/test-failures/worktree-resolves-removed-packages-through-the-main-checkout.md)).
 
 ## Run
 
@@ -40,7 +41,6 @@ The two runners are not interchangeable. A vitest file run under node:test fails
 node --import tsx --test tests/<name>.test.mjs
 npx vitest run --config vitest.dom.config.mts tests/dom/<file>
 npx vitest run --config vitest.config.mts <path>
-cross-env VITE_VARIANT=full npx playwright test e2e/<spec>.spec.ts --project=chromium
 ```
 
 Run heavy suites one after another, not in parallel. A timeout, skipped job, or unmet prerequisite is not a pass.

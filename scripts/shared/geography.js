@@ -4,11 +4,11 @@
 // Used by:
 //   - scripts/seed-regional-snapshots.mjs (snapshot writer)
 //   - scripts/regional-snapshot/* (compute modules)
-//   - server/worldmonitor/intelligence/v1/* (Phase 1+ RPC handlers)
+//   - packages/server/worldmonitor/intelligence/v1/* (Phase 1+ RPC handlers)
 //   - src/components/RegionalIntelligenceBoard (Phase 1 UI)
 //
 // Region taxonomy is anchored to World Bank region codes (EAS/ECS/LCN/MEA/NAC/SAS/SSF)
-// with strategic overrides applied to shared/iso2-to-region.json (built once from
+// with strategic overrides applied to packages/shared/iso2-to-region.json (built once from
 // https://api.worldbank.org/v2/country?format=json&per_page=300).
 //
 // Strategic overrides (deviations from raw WB classification):

@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 
 import { __testing__ as healthTesting } from '../api/health.js';
 import { extractBundleSections } from './helpers/bundle-section-parser.mjs';
-import { bootstrapTierKeyNames } from '../shared/bootstrap-tier-keys.js';
+import { bootstrapTierKeyNames } from '../packages/shared/bootstrap-tier-keys.js';
 import { GTA_FIRE_KEY, GTA_POLICE_KEY, GTA_UPDATE_WRITER_ENABLED } from '../scripts/lib/gta-update.mjs';
 import {
   TPS_CALLS_KEY,
@@ -18,7 +18,7 @@ import {
   TPS_MCI_SEMANTIC,
   TPS_MCI_SOURCE,
 } from '../scripts/lib/tps-open-data.mjs';
-import { TORONTO_SAFETY_SOURCES } from '../shared/toronto-safety.js';
+import { TORONTO_SAFETY_SOURCES } from '../packages/shared/toronto-safety.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(join(root, rel), 'utf8');
@@ -63,7 +63,7 @@ describe('Toronto safety qualification wiring (#7012)', () => {
       true,
     );
 
-    const coreSrc = read('shared/toronto-safety.js');
+    const coreSrc = read('packages/shared/toronto-safety.js');
     assert.match(coreSrc, /live_dispatch/);
     assert.match(coreSrc, /reported_occurrence/);
     assert.match(coreSrc, /annual_aggregate/);
@@ -74,9 +74,6 @@ describe('Toronto safety qualification wiring (#7012)', () => {
     assert.match(coreSrc, /productionWriter: 'disabled'/);
     assert.match(coreSrc, /productionWriter: 'bundle'/);
     assert.equal(/safety:toronto-tfs:v1|safety:toronto-tps:v1/.test(coreSrc), false);
-    assert.match(read('src/services/toronto-safety.ts'), /SafetyServiceClient/);
-    assert.match(read('src/components/TorontoSafetyPanel.ts'), /reported occurrences/i);
-    assert.match(read('server/worldmonitor/safety/v1/get-toronto-safety.ts'), /MAX_LIMIT = 100/);
   });
 
   it('keeps the scripts-only Railway contract aligned with the shared API contract', () => {
@@ -147,11 +144,11 @@ describe('Toronto safety qualification wiring (#7012)', () => {
       assert.equal(onDemand.includes(name), false);
       assert.equal(Object.hasOwn(BOOTSTRAP_KEYS, name), false);
     }
-    const bootstrapSrc = read('shared/bootstrap-tier-keys.js');
+    const bootstrapSrc = read('packages/shared/bootstrap-tier-keys.js');
     assert.equal(SAFETY_HINT.test(bootstrapSrc), false);
   });
 
-  it('keeps GTA out of production writers, health probes, and MCP', () => {
+  it('keeps GTA out of production writers and health probes', () => {
     assert.equal(GTA_UPDATE_WRITER_ENABLED, false);
     const seeder = read('scripts/seed-gta-update.mjs');
     assert.match(seeder, /LOCKED DISABLED|writer disabled/i);
@@ -166,10 +163,6 @@ describe('Toronto safety qualification wiring (#7012)', () => {
     assert.equal(/gtaupdate\.com|gta-update-police|safety:toronto:gta-update/.test(healthSrc), false);
     const seedHealth = read('api/seed-health.js');
     assert.equal(SAFETY_HINT.test(seedHealth) && /gta-update/.test(seedHealth), false);
-    const mcpGrant = read('src/mcp-grant-main.ts');
-    assert.equal(/gtaupdate|gta-update/.test(mcpGrant), false);
-    const mcpApi = read('api/mcp.ts');
-    assert.equal(/gtaupdate|gta-update|safety:toronto:gta-update/.test(mcpApi), false);
   });
 
   it('registers TPS as on-demand health only, not default bootstrap', () => {
@@ -187,11 +180,9 @@ describe('Toronto safety qualification wiring (#7012)', () => {
     assert.match(tpsSeeder, /Capacity decision/);
   });
 
-  it('does not fold Toronto safety into canadaAlerts, canadaRoads, weather, or news', () => {
+  it('does not fold Toronto safety into canadaAlerts, weather, or news', () => {
     const alerts = read('scripts/lib/canada-alerts-union.mjs');
-    const roads = read('src/services/canada-roads-core.ts');
     assert.equal(SAFETY_HINT.test(alerts), false);
-    assert.equal(SAFETY_HINT.test(roads), false);
     assert.equal(TORONTO_SAFETY_SOURCES.every((source) => !source.canonicalKey.startsWith('alerts:canada')), true);
     assert.equal(TORONTO_SAFETY_SOURCES.every((source) => !source.canonicalKey.startsWith('infra:')), true);
   });

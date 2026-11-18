@@ -38,7 +38,7 @@ declare global {
 async function loadProxyModule(): Promise<{
   fetchWithProxy(url: string, init?: RequestInit): Promise<Response>;
 }> {
-  const entryPath = resolve(root, 'src/utils/proxy.ts');
+  const entryPath = resolve(root, 'packages/client/utils/proxy.ts');
   const stubs = new Map([
     ['runtime-stub', `
       export function isDesktopRuntime() { return false; }

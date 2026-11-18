@@ -38,7 +38,7 @@ The website supplies its normal authenticated service adapter. The plugin suppli
 | `src/components/CountryBriefOutput.ts` | Report/story presentation from rendered country sections | Use the same settled section snapshot; test actual downloads in the sandbox. |
 | `api/mcp/registry/rpc-tools.ts` | Narrative country brief and existing data tools | Preserve contracts. Add explicit view routing rather than widening the AI tool into an implicit full-dashboard fetch. |
 | `api/mcp/ui/news-dashboard-app.ts` | Trusted built asset loading and sandbox CSP | Reuse its bounded, fixed-origin asset-loading policy for the country entry. No arbitrary URL or nested website iframe. |
-| `server/gateway.ts`, `api/mcp/auth.ts`, quota helpers | Authorization and billing | Keep server enforcement on each request. Do not pass credentials into the frame or trust client entitlement flags. |
+| `packages/server/gateway.ts`, `api/mcp/auth.ts`, quota helpers | Authorization and billing | Keep server enforcement on each request. Do not pass credentials into the frame or trust client entitlement flags. |
 | `skills/fetch-country-brief/SKILL.md`, MCP country prompt | Narrative-first routing | Route view requests to the new renderer; preserve explicit text-only use. Regenerate skill-extension output using its normal generator. |
 
 ## Shape

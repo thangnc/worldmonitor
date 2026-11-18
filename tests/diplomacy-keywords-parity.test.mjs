@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
 
 const canonical = JSON.parse(
-  await readFile(resolve(REPO_ROOT, 'shared/diplomacy-keywords.json'), 'utf8'),
+  await readFile(resolve(REPO_ROOT, 'packages/shared/diplomacy-keywords.json'), 'utf8'),
 );
 
 function readFromRoot(relPath) {
@@ -52,8 +52,8 @@ test('canonical JSON has the expected shape', () => {
   }
 });
 
-test('shared/brief-filter.js sources keywords from canonical JSON', async () => {
-  const src = await readFromRoot('shared/brief-filter.js');
+test('packages/shared/brief-filter.js sources keywords from canonical JSON', async () => {
+  const src = await readFromRoot('packages/shared/brief-filter.js');
   assert.match(
     src,
     /import\s+diplomacyKeywordsData\s+from\s+['"]\.\/diplomacy-keywords\.json['"]/,
@@ -74,13 +74,13 @@ test('shared/brief-filter.js sources keywords from canonical JSON', async () => 
 test('scripts/_clustering.mjs sources keywords from canonical JSON', async () => {
   const src = await readFromRoot('scripts/_clustering.mjs');
   // Either `./shared/diplomacy-keywords.json` (scripts/shared mirror)
-  // or `../shared/diplomacy-keywords.json` (root) is acceptable.
+  // or `../packages/shared/diplomacy-keywords.json` (root) is acceptable.
   // _clustering.mjs uses the mirror because seed-insights.mjs deploys
   // via nixpacks with rootDirectory=scripts. The mirror is enforced
   // byte-identical by tests/edge-functions.test.mjs.
   assert.match(
     src,
-    /require\(\s*['"]\.{1,2}\/shared\/diplomacy-keywords\.json['"]\s*\)/,
+    /require\(\s*['"](?:\.\/|\.\.\/packages\/)shared\/diplomacy-keywords\.json['"]\s*\)/,
     '_clustering.mjs must require the canonical JSON',
   );
   assert.doesNotMatch(
@@ -97,14 +97,14 @@ test('scripts/_clustering.mjs sources keywords from canonical JSON', async () =>
 
 test('scripts/seed-digest-notifications.mjs sources keywords from canonical JSON', async () => {
   const src = await readFromRoot('scripts/seed-digest-notifications.mjs');
-  // Either `./shared/...` (scripts/shared mirror) or `../shared/...`
+  // Either `./shared/...` (scripts/shared mirror) or `../packages/shared/...`
   // (root). seed-digest-notifications runs under Dockerfile.digest-
-  // notifications which COPYs root shared/ explicitly, so `../shared/`
+  // notifications which COPYs packages/shared/ files explicitly, so `../packages/shared/`
   // is fine. Accepting both forms keeps the test robust to a future
   // Docker-vs-nixpacks repackaging.
   assert.match(
     src,
-    /require\(\s*['"]\.{1,2}\/shared\/diplomacy-keywords\.json['"]\s*\)/,
+    /require\(\s*['"](?:\.\/|\.\.\/packages\/)shared\/diplomacy-keywords\.json['"]\s*\)/,
     'seed-digest-notifications.mjs must require the canonical JSON',
   );
   assert.doesNotMatch(
@@ -114,8 +114,8 @@ test('scripts/seed-digest-notifications.mjs sources keywords from canonical JSON
   );
 });
 
-test('server/worldmonitor/news/v1/list-feed-digest.ts sources keywords from canonical JSON', async () => {
-  const src = await readFromRoot('server/worldmonitor/news/v1/list-feed-digest.ts');
+test('packages/server/worldmonitor/news/v1/list-feed-digest.ts sources keywords from canonical JSON', async () => {
+  const src = await readFromRoot('packages/server/worldmonitor/news/v1/list-feed-digest.ts');
   assert.match(
     src,
     /import\s+diplomacyKeywordsData\s+from\s+['"]\.\.\/\.\.\/\.\.\/\.\.\/shared\/diplomacy-keywords\.json['"]/,
@@ -141,25 +141,16 @@ test('scripts/ais-relay.cjs RELAY_* literals match canonical JSON', async () => 
   assert.deepEqual(
     parseStringArrayLiteral(src, 'RELAY_DIPLOMACY_KEYWORDS'),
     canonical.diplomacyKeywords,
-    'RELAY_DIPLOMACY_KEYWORDS drifted from shared/diplomacy-keywords.json',
+    'RELAY_DIPLOMACY_KEYWORDS drifted from packages/shared/diplomacy-keywords.json',
   );
   assert.deepEqual(
     parseStringArrayLiteral(src, 'RELAY_FLASHPOINT_SCORING_KEYWORDS'),
     canonical.flashpointKeywords,
-    'RELAY_FLASHPOINT_SCORING_KEYWORDS drifted from shared/diplomacy-keywords.json',
+    'RELAY_FLASHPOINT_SCORING_KEYWORDS drifted from packages/shared/diplomacy-keywords.json',
   );
   assert.deepEqual(
     parsePairArrayLiteral(src, 'RELAY_DIPLOMACY_FLASHPOINT_PAIRS'),
     canonical.diplomacyFlashpointPairs,
-    'RELAY_DIPLOMACY_FLASHPOINT_PAIRS drifted from shared/diplomacy-keywords.json',
-  );
-});
-
-test('src/services/parallel-analysis.ts FLASHPOINT_KEYWORDS matches canonical JSON', async () => {
-  const src = await readFromRoot('src/services/parallel-analysis.ts');
-  assert.deepEqual(
-    parseStringArrayLiteral(src, 'FLASHPOINT_KEYWORDS'),
-    canonical.flashpointKeywords,
-    'parallel-analysis.ts FLASHPOINT_KEYWORDS drifted from shared/diplomacy-keywords.json',
+    'RELAY_DIPLOMACY_FLASHPOINT_PAIRS drifted from packages/shared/diplomacy-keywords.json',
   );
 });

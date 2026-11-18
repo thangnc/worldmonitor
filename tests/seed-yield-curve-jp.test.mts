@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { afterEach, it } from 'node:test';
 import { fetchJgbCurve } from '../scripts/seed-yield-curve-jp.mjs';
 import { contentMeta, latestExtraKeyEntry, yearExtraKeyEntry } from '../scripts/seed-yield-curves-shared.mjs';
-import { govYieldCurveFromLatest, govYieldCurvesFromShards } from '../server/worldmonitor/economic/v1/government-yield-curves.ts';
+import { govYieldCurveFromLatest, govYieldCurvesFromShards } from '../packages/server/worldmonitor/economic/v1/government-yield-curves.ts';
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });

@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { briefIrrelevanceReason, isBriefRelevantTitle } from '../shared/brief-relevance.js';
-import { briefGroundingGap } from '../scripts/crawlable-developments.mjs';
+import { briefIrrelevanceReason, isBriefRelevantTitle } from '../packages/shared/brief-relevance.js';
 
 describe('briefIrrelevanceReason', () => {
   it('rejects the sports, awards and entertainment rows that grounded 2026-09-21 briefs', () => {
@@ -68,25 +66,5 @@ describe('briefIrrelevanceReason', () => {
     assert.equal(briefIrrelevanceReason(undefined), null);
     assert.equal(briefIrrelevanceReason('   '), null);
     assert.equal(isBriefRelevantTitle('World Cup qualifier postponed'), false);
-  });
-});
-
-describe('brief relevance replay over the 2026-09-28 frozen snapshot', () => {
-  // The relevance filter must remove noise without collapsing grounding. The
-  // 2026-09-28 freeze published 101 briefs; the filter may cost only those
-  // whose grounding was the noise itself (Kenya: every other row is one
-  // publisher; Cape Verde: the only curated row is a FIFA story).
-  const fixture = JSON.parse(readFileSync(new URL('./fixtures/brief-relevance-2026-09-28.json', import.meta.url), 'utf8'));
-
-  it('keeps at least 90 of the 101 published briefs grounded', () => {
-    let published = 0;
-    let stillGrounded = 0;
-    for (const headlines of Object.values(fixture.countries)) {
-      published += 1;
-      const eligible = headlines.filter((row) => isBriefRelevantTitle(row.title));
-      if (briefGroundingGap(eligible) === null) stillGrounded += 1;
-    }
-    assert.equal(published, 101);
-    assert.ok(stillGrounded >= 90, `only ${stillGrounded} of ${published} briefs keep grounding`);
   });
 });

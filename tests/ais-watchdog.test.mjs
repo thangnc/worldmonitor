@@ -7,7 +7,7 @@ import {
   createAisReconnectPolicy,
   createSocketOwnership,
   parseAisEnvNumber,
-} from '../shared/ais-watchdog.js';
+} from '../packages/shared/ais-watchdog.js';
 
 // A controllable clock. `wall` is deliberately able to move backwards (an NTP
 // step, or a suspend/resume) while `mono` only ever advances — that asymmetry is

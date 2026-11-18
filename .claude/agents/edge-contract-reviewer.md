@@ -1,6 +1,6 @@
 ---
 name: edge-contract-reviewer
-description: Reviews a WorldMonitor diff for repo-specific contract violations that typecheck and lint miss — Edge runtime imports, fetch binding, cache-key completeness, api/ import boundaries, seed-meta writes, bootstrap/health registration. Use proactively after changing api/, server/, scripts/seed-*, or src/services/, and before opening a PR.
+description: Reviews a WorldMonitor diff for repo-specific contract violations that typecheck and lint miss — Edge runtime imports, fetch binding, cache-key completeness, api/ import boundaries, seed-meta writes, bootstrap/health registration. Use proactively after changing api/, packages/server/, scripts/seed-*, or packages/client/services/, and before opening a PR.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -19,20 +19,20 @@ Read the surrounding code of each changed hunk before judging it. Use `CLAUDE.md
 
 For each changed file, check the rules that apply to its location:
 
-1. **Edge runtime (`api/**`, `server/**`, `middleware.ts`)**
+1. **Edge runtime (`api/**`, `packages/server/**`, `middleware.ts`)**
    - No imports of `node:http`, `node:https`, `node:zlib` (or their bare forms).
    - Fetch passed as a value must be `(...args) => globalThis.fetch(...args)`, never `fetch.bind(globalThis)`.
    - Edge functions are bundled per file: flag new imports that pull unrelated modules into an entry point.
 
 2. **Import boundaries**
-   - Legacy `api/*.js` imports only same-directory `_*.js` helpers or packages — never `server/` or `src/`.
-   - TypeScript API entries may import `server/` and `src/generated/` only, no other browser code.
-   - `server/` must not import `src/components/` or `src/app/`.
-   - Browser direction: `types -> config -> services -> components -> app -> App.ts`.
-   - Logic shared by browser and server lives once in top-level `shared/`; flag a second copy.
+   - Legacy `api/*.js` imports only same-directory `_*.js` helpers or packages — never `packages/server/` or `apps/web/`.
+   - TypeScript API entries may import `packages/server/` and `packages/contracts/generated/` only, no other browser code.
+   - Nothing under `packages/` imports `apps/web/` (`@wm/web`).
+   - Browser direction: `types -> config -> services -> lite`, i.e. `packages/client/{types,config,services}/` then `apps/web/src/lite/` (`scripts/lint-boundaries.mjs`).
+   - Logic shared by browser and server lives once in `packages/shared/` (`@wm/shared`); flag a second copy. `api/`, `packages/server/`, `middleware.ts` and `packages/shared/` import it by relative path, never as `@wm/shared`, and import `packages/server/` and `packages/client/` by relative path, never as `@wm/server` or `@wm/client`; the `packages/client/` modules they reach use relative imports only.
 
 3. **Caching**
-   - Handlers fetching upstream on demand should use `cachedFetchJson()` (`server/_shared/redis.ts`).
+   - Handlers fetching upstream on demand should use `cachedFetchJson()` (`packages/server/_shared/redis.ts`).
    - Every request-varying parameter (query params, path params, user/plan scope, variant, locale) must be part of the cache key. Trace each input of the handler to the key; a missing one serves wrong data to other callers.
    - New cache-tier choice matches data volatility (fast/medium/slow/static/daily/no-store).
 
@@ -47,8 +47,8 @@ For each changed file, check the rules that apply to its location:
    - A new key is registered in `api/health.js` (`BOOTSTRAP_KEYS` / `STANDALONE_KEYS` / `ON_DEMAND_KEYS` / `SEED_META`) and, if it is startup data, in `api/bootstrap.js`. Opt-in panels stay on the on-demand path.
 
 6. **Generated and access-control code**
-   - No hand edits under `src/generated/`; proto changes must be accompanied by regenerated output.
-   - New RPC paths are classified consistently across `PREMIUM_RPC_PATHS` (`src/shared/premium-paths.ts`), `PUBLIC_NO_AUTH_RPC_PATHS` (`server/gateway.ts`), and `api/api-route-exceptions.json` for hand-written routes.
+   - No hand edits under `packages/contracts/generated/`; proto changes must be accompanied by regenerated output.
+   - New RPC paths are classified consistently across `PREMIUM_RPC_PATHS` (`packages/client/shared/premium-paths.ts`), `PUBLIC_NO_AUTH_RPC_PATHS` (`packages/server/gateway.ts`), and `api/api-route-exceptions.json` for hand-written routes.
 
 ## Output
 

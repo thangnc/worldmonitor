@@ -25,7 +25,7 @@ export {
 // (NODE_TEST_CONTEXT is set) skip retries so fail-open / fail-closed tests that
 // point UPSTASH_REDIS_REST_URL at a fake host degrade immediately instead of
 // stalling. Production (env unset) keeps the resilient default. Mirrors
-// REDIS_TEST_RETRY_OPTS in server/_shared/rate-limit.ts and PR #3963.
+// REDIS_TEST_RETRY_OPTS in packages/server/_shared/rate-limit.ts and PR #3963.
 const REDIS_TEST_RETRY_OPTS = process.env.NODE_TEST_CONTEXT ? { retry: false } : {};
 
 const DEFAULT_RATE_LIMIT_SCOPE = 'global';
@@ -82,7 +82,7 @@ async function getRatelimit(policy) {
 // one condition in two: the SDK-race arm throws `Upstash endpoint rate-limit
 // decision timed out` (already `warning`) while the abort arm paged
 // (WORLDMONITOR-VM). Both are absorbed by the same fail-closed 503.
-// Mirrored verbatim in server/_shared/rate-limit.ts.
+// Mirrored verbatim in packages/server/_shared/rate-limit.ts.
 //
 // Exported purely as a test seam: the classification is only observable through
 // a Sentry capture otherwise, and a source-regex assertion would false-pass on
@@ -97,19 +97,19 @@ export function rateLimitErrorLevel(stage, msg) {
 
 // Failure-mode suffixes worth their own Sentry issue. Closed set — unlike a
 // route or scope, these describe HOW the limiter failed, not who called it.
-// Mirrored verbatim in server/_shared/rate-limit.ts.
+// Mirrored verbatim in packages/server/_shared/rate-limit.ts.
 const RATE_LIMIT_FINGERPRINT_SUFFIXES = new Set(['missing-config', 'timeout', 'edge-proof']);
 
 /**
  * Collapse a limiter stage to the low-cardinality token Sentry should GROUP on.
  *
- * Stage strings embed the caller (`checkScopedRateLimit:/api/skills/fetch-agentskills`)
+ * Stage strings embed the caller (`checkScopedRateLimit:<route>`)
  * so the `stage` TAG can answer "which routes are affected". That is wrong for a
  * fingerprint: Sentry groups by fingerprint, so the raw stage mints one issue per
  * caller for a single Redis slowdown. Keep the head, plus a closed set of
  * failure-mode suffixes; the full stage stays a tag. Exported as a pure function
  * so the mapping is unit-testable rather than asserted through a Sentry capture.
- * Mirrored verbatim in server/_shared/rate-limit.ts. (#6454)
+ * Mirrored verbatim in packages/server/_shared/rate-limit.ts. (#6454)
  *
  * @param {string} stage
  * @returns {string}
@@ -123,7 +123,7 @@ export function rateLimitFingerprintStage(stage) {
 
 function logRateLimitDegraded(stage, err, ctx) {
   const msg = err instanceof Error ? err.message : String(err);
-  // Keep the prefix stable — server/_shared/rate-limit.ts emits the same
+  // Keep the prefix stable — packages/server/_shared/rate-limit.ts emits the same
   // shape and operators grep across both surfaces.
   console.error(`[rate-limit] redis-error stage=${stage} msg=${msg}`);
   captureSilentError(err, {
@@ -232,7 +232,7 @@ export async function checkRateLimit(request, corsHeaders, opts = {}) {
     // log and no Sentry event. Route it through the same degraded handling as a
     // thrown Redis error so the bypass window is visible, and so `failClosed`
     // callers still get their 503. Mirrors checkEndpointRateLimit and
-    // checkScopedRateLimit in server/_shared/rate-limit.ts. (#6412 review)
+    // checkScopedRateLimit in packages/server/_shared/rate-limit.ts. (#6412 review)
     if (result.reason === 'timeout') {
       logRateLimitDegraded('checkRateLimit:timeout', new Error('Upstash rate-limit decision timed out'), opts.ctx);
       if (opts.failClosed) return rateLimitDegradedResponse(corsHeaders);

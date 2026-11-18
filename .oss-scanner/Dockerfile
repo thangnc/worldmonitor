@@ -42,22 +42,23 @@ RUN rustc --version && cargo --version
 COPY . /src
 WORKDIR /src
 
-# Root workspace: web app, Vercel edge handlers (api/), server/, convex/, tests.
+# Root workspace: apps/web, Vercel edge handlers (api/), packages/, tests.
 # postinstall regenerates the untracked inventory modules.
 RUN npm ci
 
 # Separate lockfiles for services that ship from this repo:
 #   scripts/              Railway relay + seeders
 #   consumer-prices-core/ consumer-prices API service
-#   pro-test/             /pro marketing pages (needed by build:pro)
 RUN npm ci --prefix scripts \
-    && npm ci --prefix consumer-prices-core \
-    && npm ci --prefix pro-test
+    && npm ci --prefix consumer-prices-core
 
 # Typecheck and build the frontend into dist/, as the root Dockerfile does.
-RUN npm run build:pro && npx tsc && npx vite build
+# Vite 8 lists every config-graph feature its future native config loader
+# lacks; the dev API handlers make that list ~960 lines (apps/web/vite.config.ts).
+ENV VITE_CONFIG_NATIVE_IGNORE_WARNING=true
+RUN npx tsc && npx vite build --config apps/web/vite.config.ts
 
-# The local API server (src-tauri/sidecar/local-api-server.mjs) loads esbuild
+# The local API server (docker/local-api/local-api-server.mjs) loads esbuild
 # bundles of the handlers. The script bundles them in a copy at
 # /opt/worldmonitor-runtime so /src keeps the real source.
 RUN sh .oss-scanner/build-runtime.sh

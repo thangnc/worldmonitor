@@ -10,7 +10,7 @@
 // IMPORTANT: this script must use the SAME pillar aggregation path the
 // production API exposes, not a local re-implementation with different
 // weighting semantics. We therefore import `buildPillarList` directly
-// from `server/worldmonitor/resilience/v1/_pillar-membership.ts` (which
+// from `packages/server/worldmonitor/resilience/v1/_pillar-membership.ts` (which
 // weights member domains by their average dimension coverage, not by
 // their static domain weights) and replicate `_shared.ts#buildDomainList`
 // inline so domain scores are produced by the same coverage-weighted
@@ -28,11 +28,11 @@ import {
   MATCHED_PAIRS,
   evaluateWholeIndexMatchedPairs,
 } from '../tests/helpers/resilience-matched-pairs.mts';
-import wgiIndicatorKeys from '../shared/wgi-indicator-keys.json' with { type: 'json' };
+import wgiIndicatorKeys from '../packages/shared/wgi-indicator-keys.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..');
-const SNAPSHOT_DIR = path.join(REPO_ROOT, 'docs', 'snapshots');
+const SNAPSHOT_DIR = path.join(REPO_ROOT, 'docs', 'engineering', 'methodology', 'country-resilience-index', 'snapshots');
 
 loadEnvFile(import.meta.url);
 
@@ -759,7 +759,7 @@ function pearsonCorrelation(xs, ys) {
 }
 
 async function main() {
-  const scorerMod = await import('../server/worldmonitor/resilience/v1/_dimension-scorers.ts');
+  const scorerMod = await import('../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts');
   const {
     scoreAllDimensions,
     RESILIENCE_DIMENSION_ORDER,
@@ -805,16 +805,16 @@ async function main() {
     listScorableCountries,
     PENALTY_ALPHA,
     penalizedPillarScore,
-  } = await import('../server/worldmonitor/resilience/v1/_shared.ts');
+  } = await import('../packages/server/worldmonitor/resilience/v1/_shared.ts');
 
   const {
     buildPillarList,
     PILLAR_ORDER,
     PILLAR_WEIGHTS,
-  } = await import('../server/worldmonitor/resilience/v1/_pillar-membership.ts');
+  } = await import('../packages/server/worldmonitor/resilience/v1/_pillar-membership.ts');
 
   const { INDICATOR_REGISTRY } = await import(
-    '../server/worldmonitor/resilience/v1/_indicator-registry.ts'
+    '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts'
   );
 
   const domainWeights = {};
@@ -1183,7 +1183,7 @@ async function main() {
     baselineComparison = {
       status: 'unavailable',
       reason:
-        'No baseline snapshot found in docs/snapshots/. Expected resilience-ranking-live-pre-repair-<date>.json from PR 0 freeze.',
+        'No baseline snapshot found in docs/engineering/methodology/country-resilience-index/snapshots/. Expected resilience-ranking-live-pre-repair-<date>.json from PR 0 freeze.',
     };
   } else {
     const baselineScores = baseline.scoresByCountry;

@@ -11,12 +11,12 @@ component:
 |---|---|---|
 | SPA (vanilla TS + Vite) | `src/`, `index.html`, `public/` | browser |
 | Edge API handlers | `api/` (Vercel Edge functions), `middleware.ts`, `vercel.json` | Vercel |
-| Proto-first RPC gateway and domain handlers | `server/`, `proto/` | Vercel Edge (via `api/`) |
+| Proto-first RPC gateway and domain handlers | `packages/server/`, `packages/contracts/proto/` | Vercel Edge (via `api/`) |
 | MCP server + OAuth 2.1 authorization server | `api/mcp*`, `api/mcp/`, `api/oauth/`, `api/oauth-*.ts` | Vercel Edge |
 | Accounts, API keys, billing, entitlements, notifications | `convex/` | Convex Cloud |
 | Relay (RSS proxy, AIS WebSocket, Telegram, notification delivery) and seeders | `scripts/` (`ais-relay.cjs`, `notification-relay.cjs`, `seed-*.mjs`) | Railway |
 | Consumer-prices scraper/API | `consumer-prices-core/` | Railway |
-| Desktop shell and local API sidecar | `src-tauri/` (Rust), `src-tauri/sidecar/local-api-server.mjs` | user's machine |
+| Desktop shell and local API sidecar | `src-tauri/` (Rust), `docker/local-api/local-api-server.mjs` | user's machine |
 | Self-hosted image | `Dockerfile`, `docker/` | anyone's server |
 | CORS preflight worker | `workers/api-cors-preflight/` | Cloudflare |
 
@@ -44,7 +44,7 @@ Untrusted input:
 - One user cannot read or change another user's data: API keys, notification
   channels, alert rules, saved state, billing, MCP grants.
 - Pro-only RPCs, MCP tools, and quotas are enforced server-side. The client
-  hiding a button is not the check (`api/_api-key.js`, `server/gateway.ts`,
+  hiding a button is not the check (`api/_api-key.js`, `packages/server/gateway.ts`,
   `convex/entitlements.ts`, `api/mcp/quota.ts`).
 - Server-side fetches cannot reach private, loopback, link-local or cloud
   metadata addresses. The RSS proxy only fetches allowlisted domains,
@@ -67,7 +67,7 @@ new findings unless you can show they are worse than described.
 
 Highest value, in order:
 
-1. Authentication and authorization: `server/_shared/auth-session.ts`,
+1. Authentication and authorization: `packages/server/_shared/auth-session.ts`,
    `api/_api-key.js`, `api/_user-api-key*`, `api/agent-auth.ts`,
    `api/oauth/`, `api/mcp/auth.ts`, `convex/apiKeys.ts`, `convex/mcpProTokens.ts`,
    `api/desktop-auth/`.
@@ -77,9 +77,9 @@ Highest value, in order:
 3. SSRF surfaces: `api/rss-proxy*`, `scripts/ais-relay.cjs` RSS path,
    `api/mcp-proxy.ts`, notification webhook delivery
    (`scripts/notification-relay.cjs`, `api/notification-channels.ts`).
-4. XSS in the SPA from feed/news/LLM content (`src/components/`, `src/services/`).
+4. XSS in the SPA from feed/news/LLM content (`src/components/`, `packages/client/services/`).
 5. Desktop trust boundary: `src-tauri/src/main.rs`, `src-tauri/capabilities/`,
-   `src-tauri/sidecar/local-api-server.mjs`.
+   `docker/local-api/local-api-server.mjs`.
 6. Cache and rate-limit integrity: a per-user or Pro response served to
    another caller via Redis or CDN keys; rate-limit bypass via spoofed client IP
    (`api/_client-ip.js`, `api/_rate-limit.js`).
@@ -90,7 +90,7 @@ upstream-controlled redirects), `consumer-prices-core/`, `workers/`.
 
 Out of scope: `blog-site/`, `pro-test/` (static marketing pages), `demos/`,
 `docs/`, `e2e/`, `tests/` (except as harnesses), generated files
-(`*.generated.*`, `convex/_generated/`, `src/generated/`), and anything under
+(`*.generated.*`, `convex/_generated/`, `packages/contracts/generated/`), and anything under
 `node_modules/`.
 
 ## How to exercise it
@@ -118,7 +118,7 @@ Redis, Convex and upstream fetches.
   export LOCAL_API_TOKEN=scan-local-token
   cd /opt/worldmonitor-runtime && LOCAL_API_MODE=docker LOCAL_API_PORT=46123 \
     LOCAL_API_RESOURCE_DIR=/opt/worldmonitor-runtime \
-    node src-tauri/sidecar/local-api-server.mjs &
+    node docker/local-api/local-api-server.mjs &
   curl -H "x-worldmonitor-local-token: $LOCAL_API_TOKEN" \
     http://127.0.0.1:46123/api/product-catalog
   ```

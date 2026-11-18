@@ -13,7 +13,7 @@ import {
   compileCompanyMonitoringGoldLabels,
   type CompanyMonitoringCurationManifest,
   type CompanyMonitoringGoldCurationManifest,
-} from '../shared/company-monitoring-curation.ts';
+} from '../packages/shared/company-monitoring-curation.ts';
 
 const versions = {
   protocolVersion: 'cm_eval_v1',

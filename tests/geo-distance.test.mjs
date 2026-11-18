@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { haversineKm } from '../shared/geo-distance.ts';
+import { haversineKm } from '../packages/shared/geo-distance.ts';
 
 const HALF_CIRCUMFERENCE_KM = Math.PI * 6371;
 

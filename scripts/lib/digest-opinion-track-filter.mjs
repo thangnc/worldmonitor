@@ -4,7 +4,7 @@
 // only rows with no stamp keeps legacy residue covered without allowing the
 // same stored row to change category as wall-clock time advances.
 
-import { classifyOpinion } from '../../server/_shared/opinion-classifier.js';
+import { classifyOpinion } from '../../packages/server/_shared/opinion-classifier.js';
 
 function isMissingStamp(value) {
   return typeof value !== 'string' || value.length === 0;

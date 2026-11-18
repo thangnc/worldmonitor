@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import {
   ACLED_DEFAULT_WINDOW_MS,
   resolveAcledEventWindow,
-} from '../server/worldmonitor/conflict/v1/list-acled-events.ts';
+} from '../packages/server/worldmonitor/conflict/v1/list-acled-events.ts';
 
 describe('ACLED conflict date window', () => {
   it('treats generated zero timestamps as an unset recent window', () => {

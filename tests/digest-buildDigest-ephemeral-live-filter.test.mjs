@@ -29,7 +29,7 @@ const buildDigestBody = seedSrc.slice(buildDigestStart, buildDigestEnd);
 describe('buildDigest ephemeral-live filter wiring', () => {
   it('imports classifyEphemeralLiveCoverage from the shared classifier', () => {
     assert.ok(
-      seedSrc.includes("import { classifyEphemeralLiveCoverage } from '../shared/ephemeral-live-classifier.js'"),
+      seedSrc.includes("import { classifyEphemeralLiveCoverage } from '../packages/shared/ephemeral-live-classifier.js'"),
       'must import the same classifier used by ingest and compose',
     );
   });

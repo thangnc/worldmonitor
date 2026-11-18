@@ -3,7 +3,7 @@
  * `secret !== expected` for the x-probe-secret header, opening a
  * timing oracle on RELAY_SHARED_SECRET. Every other internal-auth
  * endpoint in the codebase uses the `timingSafeEqual` helper from
- * server/_shared/internal-auth.ts.
+ * packages/server/_shared/internal-auth.ts.
  *
  * This test scans every file under api/ for the pattern of comparing a
  * secret/token/bearer-bearing reference against an env-var value, an
@@ -38,8 +38,8 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const apiDir = join(__dirname, '..', 'api');
-// The desktop sidecar authenticates every local request against LOCAL_API_TOKEN.
-const sidecarDir = join(__dirname, '..', 'src-tauri', 'sidecar');
+// The local API sidecar authenticates every local request against LOCAL_API_TOKEN.
+const sidecarDir = join(__dirname, '..', 'docker', 'local-api');
 
 // Variable-name fragments we treat as secret-bearing. Matched
 // case-insensitively as a SUBSTRING of an identifier, so `secret` alone
@@ -316,18 +316,18 @@ describe('no non-timing-safe secret comparison in api/ (#3803)', () => {
       violations,
       [],
       `Non-timing-safe secret comparison detected in: ${violations.join(', ')}. ` +
-        `Use timingSafeEqual from server/_shared/internal-auth.ts instead. See issue #3803.`,
+        `Use timingSafeEqual from packages/server/_shared/internal-auth.ts instead. See issue #3803.`,
     );
   });
 
-  it('no such comparison exists in the desktop sidecar sources either', async () => {
+  it('no such comparison exists in the local API sidecar sources either', async () => {
     const files = await walk(sidecarDir);
     assert.ok(files.some((file) => file.endsWith('local-api-server.mjs')), 'sidecar walk must include local-api-server.mjs');
     const pattern = buildSecretComparePattern();
     const violations: string[] = [];
     for (const file of files) {
       if (pattern.test(normaliseForScan(await readFile(file, 'utf8')))) {
-        violations.push(file.slice(file.indexOf('/src-tauri/') + 1));
+        violations.push(file.slice(file.indexOf('/docker/') + 1));
       }
     }
     assert.deepEqual(violations, [], `Non-timing-safe secret comparison detected in: ${violations.join(', ')}`);

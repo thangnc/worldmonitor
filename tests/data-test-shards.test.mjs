@@ -14,8 +14,8 @@ const durations = JSON.parse(readFileSync(join(root, 'scripts/shared/data-test-d
 // The shard count comes from the workflow, not a literal here: the proof below
 // is that the shards CI actually runs cover the inventory exactly once, and a
 // count pinned in this file would keep passing after the matrix changed.
-const workflow = parse(readFileSync(join(root, '.github/workflows/test.yml'), 'utf8'));
-const ciShards = workflow.jobs['unit-shards'].strategy.matrix.shard;
+const workflow = parse(readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8'));
+const ciShards = workflow.jobs.unit.strategy.matrix.shard;
 const ciShardCount = ciShards.length;
 const [, , ...patterns] = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
   .scripts['test:data'].trim().split(/\s+/);
@@ -114,54 +114,8 @@ test('--durations places files by the given estimates, and every shard still cov
   }
 });
 
-test('every unit shard reads the one durations entry the run looked up, and one shard in turn saves after every run, red or green', () => {
-  const changes = workflow.jobs.changes;
-  const lookup = changes.steps.find((step) => step.id === 'durations');
-  assert.equal(lookup.with['lookup-only'], true);
-  assert.equal(lookup['continue-on-error'], true);
-  assert.equal(changes.outputs.durations_key, '${{ steps.durations.outputs.cache-matched-key }}');
-  const prefix = lookup.with['restore-keys'];
-  const path = lookup.with.path;
-  assert.equal(path, '~/data-test-durations/durations.json');
-
-  const steps = workflow.jobs['unit-shards'].steps;
-  const index = (name) => steps.findIndex((step) => step.name === name);
-  const restore = steps[index('Restore the newest measured durations')];
-  // Exact key, no fallback: a shard on other estimates would partition differently.
-  assert.equal(restore.with.key, '${{ needs.changes.outputs.durations_key }}');
-  assert.equal(restore.with['restore-keys'], undefined);
-  assert.equal(restore.with['fail-on-cache-miss'], true);
-  assert.equal(restore.with.path, path);
-  const testStep = steps[index('Data tests without built output')];
-  assert.equal(testStep.env.DURATIONS_KEY, restore.with.key);
-  assert.match(testStep.run, /\$\{DURATIONS_KEY:\+--durations="\$HOME\/data-test-durations\/durations\.json"\}/);
-
-  const blend = steps[index("Blend this shard's timings into the estimates")];
-  const save = steps[index('Save the estimates for the next run')];
-  assert.ok(index('Data tests without built output') < steps.indexOf(blend) && steps.indexOf(blend) < steps.indexOf(save));
-  for (const step of [blend, save]) {
-    // Saved after failing runs too, and never the reason a shard is red.
-    assert.match(step.if, /!cancelled\(\)/);
-    assert.equal(step['continue-on-error'], true);
-  }
-  assert.match(blend.run, /refresh-data-test-durations\.mjs --blend/);
-  // One shard saves per run: the one after the shard whose entry was restored,
-  // so the turn rotates within the cache scope; a red saver passes it on.
-  assert.equal(blend.env.SHARD, '${{ matrix.shard }}');
-  assert.equal(blend.env.SHARD_TOTAL, '${{ strategy.job-total }}');
-  assert.match(blend.run, /saver=\$\(\( last % SHARD_TOTAL \+ 1 \)\)/);
-  assert.match(blend.run, /\[ -f "\$next" \] \|\| cp "\$previous" "\$next"/);
-  // The lookup key must not prefix-match any saved entry, or a re-run of an
-  // old run would restore its own stale entry ahead of the newest.
-  assert.ok(!lookup.with.key.includes('github.run_id') && !/^data-test-durations-v1-\d/.test(lookup.with.key), lookup.with.key);
-  assert.ok(save.uses.startsWith('actions/cache/save@'));
-  assert.ok(save.with.key.startsWith(prefix), `${save.with.key} must match restore-keys ${prefix}`);
-  assert.match(save.with.key, /matrix\.shard/);
-  assert.equal(save.with.path, path);
-});
-
 test('the shards and the built-output job together execute the complete data inventory exactly once, including new files', () => {
-  assert.ok(ciShardCount >= 2, `unit-shards matrix must list at least two shards, got ${JSON.stringify(ciShards)}`);
+  assert.ok(ciShardCount >= 2, `unit matrix must list at least two shards, got ${JSON.stringify(ciShards)}`);
   assert.deepEqual(ciShards, Array.from({ length: ciShardCount }, (_, i) => i + 1), 'shard indices must be 1..N');
   const shards = ciShards.map((index) => {
     const result = run([...patterns, '--built-output=exclude', `--shard=${index}/${ciShardCount}`, '--list']);
@@ -176,7 +130,7 @@ test('the shards and the built-output job together execute the complete data inv
   assert.equal(new Set(all).size, inventory.length);
   assert.ok(shards.every((files) => files.length > 0), 'no CI shard may be empty');
   assert.ok(all.includes('api/security/report.test.mjs'));
-  assert.ok(all.some((file) => file.startsWith('cli/test/')));
+  assert.ok(all.some((file) => file.startsWith('workers/api-cors-preflight/')));
   const withNewFile = partitionTests([...inventory, 'tests/new-unmeasured.test.mts'], durations, ciShardCount).flat();
   assert.equal(withNewFile.filter((file) => file === 'tests/new-unmeasured.test.mts').length, 1);
   const full = run([...patterns, '--list']);
@@ -192,15 +146,10 @@ test('suites that read built output run in the job that builds it', () => {
   // shard it would fail on the missing tree rather than prove anything.
   for (const file of inventory) {
     const source = readFileSync(join(root, file), 'utf8');
-    if (/built-output-guard|pro-built-output/.test(source)) assert.ok(built.has(file), `${file} imports a built-output guard`);
+    if (/built-output-guard/.test(source)) assert.ok(built.has(file), `${file} imports a built-output guard`);
   }
-  for (const file of ['tests/dashboard-eager-chunks.test.mjs', 'tests/pro-welcome-prerender.test.mjs', 'tests/deploy-config.test.mjs']) {
-    assert.ok(built.has(file), `${file} reads dist/ or public/pro/`);
-  }
-  // Loads pro-test/vite.config.ts, whose plugins resolve from pro-test/node_modules;
-  // only build:pro installs that tree in CI (ERR_MODULE_NOT_FOUND in a shard, #8752).
-  for (const file of ['tests/sentry-release-build.test.mts']) {
-    assert.ok(built.has(file), `${file} needs pro-test's install`);
+  for (const file of ['tests/deploy-config.test.mjs']) {
+    assert.ok(built.has(file), `${file} reads dist/`);
   }
   assert.ok(built.size < inventory.length / 4, `the built-output job should hold a small slice, got ${built.size}`);
 });
@@ -208,15 +157,11 @@ test('suites that read built output run in the job that builds it', () => {
 test('built-output classification matches the paths and guards suites use', () => {
   for (const source of [
     "readFileSync('dist/index.html')",
-    'resolve(root, "public/pro/welcome.html")',
     'const page = `${root}/dist/pro.html`',
     "import { guardBuiltOutput } from './_lib/built-output-guard.mjs'",
-    "import { shouldSkipProBuiltOutput } from './_lib/pro-built-output.mjs'",
     "process.env.WM_EXPECT_BUILT_OUTPUT === '1'",
-    "resolve('pro-test/node_modules/.cache')",
-    "['marketing', 'pro-test/vite.config.ts']",
   ]) assert.equal(readsBuiltOutput(source), true, source);
-  for (const source of ["readFileSync('src/main.ts')", 'const distance = 3;', "readFileSync('public/favicon.ico')", 'const redistribute = 1;', "readFileSync('pro-test/src/main.ts')"]) {
+  for (const source of ["readFileSync('src/main.ts')", 'const distance = 3;', "readFileSync('public/favicon.ico')", 'const redistribute = 1;', "readFileSync('public/pro/welcome.html')"]) {
     assert.equal(readsBuiltOutput(source), false, source);
   }
   const sources = { a: "readFileSync('dist/x')", b: 'plain' };

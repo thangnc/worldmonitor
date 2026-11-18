@@ -20,7 +20,7 @@ import {
   lastGoodKey,
   parseAcceptedMeta,
   shouldReplaceAccepted,
-} from '../server/worldmonitor/news/v1/_lastgood';
+} from '../packages/server/worldmonitor/news/v1/_lastgood';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -168,7 +168,7 @@ describe('durable last-good policy (#7084)', () => {
   });
 
   it('the Redis script and the sidecar gate share one threshold', async () => {
-    const { DIGEST_LASTGOOD_PUBLISH_SCRIPT } = await import('../shared/digest-lastgood-publish-script.mjs');
+    const { DIGEST_LASTGOOD_PUBLISH_SCRIPT } = await import('../packages/shared/digest-lastgood-publish-script.mjs');
     assert.match(
       DIGEST_LASTGOOD_PUBLISH_SCRIPT,
       new RegExp(`nextData\\.items \\* 100 < currentData\\.items \\* ${LASTGOOD_MIN_ITEM_PCT}\\b`),
@@ -295,7 +295,7 @@ describe('durable last-good wiring (#7084)', () => {
     ].join('\n');
     const result = await build({
       stdin: {
-        contents: "export * from './server/worldmonitor/news/v1/list-feed-digest.ts'; export { createNewsServiceRoutes } from './src/generated/server/worldmonitor/news/v1/service_server.ts';",
+        contents: "export * from './packages/server/worldmonitor/news/v1/list-feed-digest.ts'; export { createNewsServiceRoutes } from './packages/contracts/generated/server/worldmonitor/news/v1/service_server.ts';",
         loader: 'ts',
         resolveDir: root,
         sourcefile: 'digest-lastgood-test-entry.ts',
@@ -310,7 +310,7 @@ describe('durable last-good wiring (#7084)', () => {
         name: 'stub-redis',
         setup(b: any) {
           // Resolve to an absolute path before deciding. Matching the import
-          // SPELLING missed `./redis` from inside server/_shared (which is how
+          // SPELLING missed `./redis` from inside packages/server/_shared (which is how
           // digest-revocations.ts reaches it), so that module silently bundled
           // the REAL redis client and read process.env instead of the stub.
           b.onResolve({ filter: /redis(\.ts)?$/ }, (args: any) => {
@@ -1138,7 +1138,7 @@ describe('durable last-good wiring (#7084)', () => {
     // its own file, so it holds a copy; this parity check is what keeps the
     // copy honest. (Text comparison is the point here: the pinned TEXT is
     // the contract the proxy enforces.)
-    const { DIGEST_LASTGOOD_PUBLISH_SCRIPT } = await import('../shared/digest-lastgood-publish-script.mjs');
+    const { DIGEST_LASTGOOD_PUBLISH_SCRIPT } = await import('../packages/shared/digest-lastgood-publish-script.mjs');
     reset();
     await mod.__testing__.publishAcceptedSnapshot('full', 'en', body(['https://a/1'], COVERAGE));
     const cmd = evalCalls()[0] as string[];

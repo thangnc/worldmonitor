@@ -4,7 +4,7 @@
 // Scores every rankable country TWICE against production-seeded data — once
 // with RESILIENCE_EDUCATION_ENABLED off (baseline) and once on (proposed) —
 // and evaluates the five acceptance gates from
-// `docs/methodology/education-flag-flip-runbook.md`.
+// `docs/engineering/methodology/education-flag-flip-runbook.md`.
 //
 // READ-ONLY. It calls `scoreAllDimensions` and the pure aggregation helpers,
 // never `buildResilienceScore` / `ensureResilienceScoreCached`, because those
@@ -30,17 +30,17 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { CHROME_UA, loadEnvFile } from './_seed-utils.mjs';
-import { unwrapEnvelope } from '../server/_shared/seed-envelope.ts';
+import { unwrapEnvelope } from '../packages/server/_shared/seed-envelope.ts';
 import {
   scoreAllDimensions,
   RESILIENCE_DIMENSION_WEIGHTS,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import {
   buildDimensionList,
   buildDomainList,
   penalizedPillarScore,
-} from '../server/worldmonitor/resilience/v1/_shared.ts';
-import { buildPillarList } from '../server/worldmonitor/resilience/v1/_pillar-membership.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
+import { buildPillarList } from '../packages/server/worldmonitor/resilience/v1/_pillar-membership.ts';
 import {
   MATCHED_PAIRS,
   evaluateWholeIndexMatchedPairs,
@@ -90,8 +90,8 @@ const canonicalize = (value) => {
 const canonicalJson = (value) => JSON.stringify(canonicalize(value));
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const jsonEqual = (left, right) => canonicalJson(left) === canonicalJson(right);
-const ACCEPTANCE_ARTIFACT_DIRECTORY = 'docs/snapshots';
-const ACCEPTANCE_RECAPTURE_COMMAND = 'DRY_RUN_OUTPUT=docs/snapshots/resilience-education-acceptance-$(date -u +%F).json node --import tsx/esm scripts/dry-run-resilience-education-flip.mjs';
+const ACCEPTANCE_ARTIFACT_DIRECTORY = 'docs/engineering/methodology/country-resilience-index/snapshots';
+const ACCEPTANCE_RECAPTURE_COMMAND = 'DRY_RUN_OUTPUT=docs/engineering/methodology/country-resilience-index/snapshots/resilience-education-acceptance-$(date -u +%F).json node --import tsx/esm scripts/dry-run-resilience-education-flip.mjs';
 
 function formatAcceptanceArtifactPath(filename) {
   if (typeof filename !== 'string' || filename.length === 0) {
@@ -636,7 +636,7 @@ async function extractionCoverageGate() {
     buildIndicatorExtractionPlan,
     EXTRACTION_RULES,
   } = await import('./compare-resilience-current-vs-proposed.mjs');
-  const { INDICATOR_REGISTRY } = await import('../server/worldmonitor/resilience/v1/_indicator-registry.ts');
+  const { INDICATOR_REGISTRY } = await import('../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts');
   const plan = buildIndicatorExtractionPlan(INDICATOR_REGISTRY);
   const educationRule = EXTRACTION_RULES.femaleUpperSecondaryAttainment;
   const educationPayload = educationRule?.key ? await readKey(educationRule.key) : null;

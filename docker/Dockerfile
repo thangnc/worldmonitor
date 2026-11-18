@@ -22,46 +22,21 @@ RUN npm ci --include=dev --ignore-scripts
 
 # Build-time configuration. Pass via --build-arg. Other VITE_* vars (e.g. VITE_PMTILES_URL)
 # can be added here or via --build-arg for custom builds; see .env.example for the full list.
-ARG VITE_VARIANT=full
 ARG VITE_WS_API_URL=https://api.worldmonitor.app
-# World Monitor Lite deployment profile (docs/engineering/architecture/lite.md). Off by default.
-ARG VITE_LITE_PROFILE=
 
-ENV VITE_VARIANT=${VITE_VARIANT}
 ENV VITE_WS_API_URL=${VITE_WS_API_URL}
-ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}
-
-# The crawlable-corpus step runs the source-attribution drift gate. Inventory
-# facts write untracked .js into api/, so the gate must see the pristine
-# checkout first (#7435). tsc + vite stay later so they copy the generated
-# assets into dist/.
-RUN npm run build:crawlable-corpus && npm run build:sitemap
-
-# Generated inventory assets are intentionally untracked. Recreate them in the
-# clean release image before Vite copies public/ into dist/.
-RUN node scripts/generate-inventory-facts.mjs
-
-# public/pro/ is a build product, not committed bytes (#6898), and
-# docker/nginx.conf.template routes `location ^~ /pro` + `/pro/assets/` — so
-# unlike /blog (deliberately skipped here) the image must build pro-test or it
-# serves a 404 behind a live route. build:pro installs pro-test's own lockfile.
-RUN npm run build:pro
 
 # tsc + vite build directly like the sidecar image's builder. `npm run build`
-# would chain build:blog (blog-site has its own lockfile, not installed here)
-# and the prebuild openapi/agent-skills generators.
-RUN npx tsc && npx vite build && npx vite build --config vite.lite.config.ts
-RUN test -s dist/product-facts.json
-# The SPA entry point. vite.config.ts's dashboardHtmlOutputPlugin renames
-# index.html -> dashboard.html, and docker/nginx.conf.template both indexes it
-# and falls back to it from `location /` — so if the rename ever changes, every
-# route in the image serves a 404 while every other assertion here still passes.
-RUN test -s dist/dashboard.html
-# Assert the /pro pages survived the public/ -> dist/ copy. build:pro succeeding
-# proves public/pro/ exists; it does NOT prove Vite copied it, and nginx routes
-# `location ^~ /pro` regardless (#6898). Without this an outDir/publicDir change
-# ships a green image that 404s behind a live route.
-RUN test -s dist/pro/index.html && test -s dist/pro/welcome.html
+# would also run the Vite env secrets check, which the
+# image does not need. The root tsconfig.json is the web app's program, and the
+# app's Vite config (apps/web) writes the repository root's dist/.
+# Vite 8 lists every config-graph feature its future native config loader
+# lacks; the dev API handlers make that list ~960 lines (apps/web/vite.config.ts).
+ENV VITE_CONFIG_NATIVE_IGNORE_WARNING=true
+RUN npx tsc && npx vite build --config apps/web/vite.config.ts
+# The SPA entry point: docker/nginx.conf.template rewrites /lite and its screens
+# to it, so without it every app route in the image serves a 404.
+RUN test -s dist/lite.html
 
 
 # Stage 2: Serve the built assets from nginx.
@@ -75,7 +50,6 @@ ENV API_UPSTREAM=https://api.worldmonitor.app
 COPY --from=builder /app/dist/ ./
 COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template
 COPY docker/nginx-security-headers.conf /etc/nginx/security_headers.conf
-COPY docker/nginx-embed-security-headers.conf /etc/nginx/embed_security_headers.conf
 COPY docker/nginx-oauth-authorize-security-headers.conf /etc/nginx/oauth_authorize_security_headers.conf
 COPY docker/nginx-youtube-embed-security-headers.conf /etc/nginx/youtube_embed_security_headers.conf
 COPY docker/docker-entrypoint.sh /docker-entrypoint.sh

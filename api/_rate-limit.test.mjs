@@ -1,7 +1,7 @@
 // Tests for the M9 (fail-closed posture + audible Redis errors) and M16
 // (drop spoofable x-forwarded-for fallback) fixes from issue #3531 — Vercel
 // edge mirror at api/_rate-limit.js. Behavioural parity with
-// server/_shared/rate-limit.ts is enforced by string-comparing
+// packages/server/_shared/rate-limit.ts is enforced by string-comparing
 // RATE_LIMIT_DEGRADED_HEADERS / UNKNOWN_CLIENT_IP across the two files.
 
 import assert from 'node:assert/strict';
@@ -225,7 +225,7 @@ describe('api/_rate-limit checkRateLimit fail-open / fail-closed (#3531 M9)', ()
 });
 
 describe('api/_rate-limit constants parity', () => {
-  it('mirrors server/_shared/rate-limit degraded-marker shape', () => {
+  it('mirrors packages/server/_shared/rate-limit degraded-marker shape', () => {
     assert.equal(RATE_LIMIT_DEGRADED_HEADERS['X-RateLimit-Mode'], 'degraded');
     assert.equal(RATE_LIMIT_DEGRADED_HEADERS['Retry-After'], '5');
   });
@@ -233,7 +233,7 @@ describe('api/_rate-limit constants parity', () => {
 
 describe('api/_rate-limit checkRateLimit EVALSHA-unsupported fallback (mirrors tests/rate-limit.test.mts #7c)', () => {
   // The api/ mirror was only covered by the constants-parity block above —
-  // if this file's limitWithFallback drifts from server/_shared/rate-limit.ts
+  // if this file's limitWithFallback drifts from packages/server/_shared/rate-limit.ts
   // or mishandles the redis-rest proxy's "Command not allowed: EVALSHA"
   // response, API routes could keep failing while the tested server helper
   // stays green. Exercise the mirror's own fallback path end to end.

@@ -96,7 +96,7 @@ test('production reads preserve the WB debt envelope required by the fail-closed
 
 test('the committed production acceptance artifact is internally consistent', () => {
   const artifact = JSON.parse(readFileSync(
-    new URL('../docs/snapshots/resilience-financial-system-exposure-acceptance-2026-08-13.json', import.meta.url),
+    new URL('../docs/engineering/methodology/country-resilience-index/snapshots/resilience-financial-system-exposure-acceptance-2026-08-13.json', import.meta.url),
     'utf8',
   ));
 
@@ -112,8 +112,19 @@ test('the committed production acceptance artifact is internally consistent', ()
   assert.equal(artifact.acceptanceGates.gates[1].evidence.underThreeCount, 196);
   assert.equal(artifact.acceptanceGates.gates[1].evidence.maxAbsDelta < 2.24, true);
   assert.equal(artifact.acceptanceGates.gates[2].evidence.changes.length, 0);
-  const harnessSha256 = createHash('sha256')
-    .update(readFileSync(new URL('../scripts/dry-run-resilience-financial-system-exposure-flip.mjs', import.meta.url)))
-    .digest('hex');
+  // The artifact pins the harness bytes that produced it. Refactor 2.3 moved
+  // server/ to packages/server/ and rewrote only the harness's import
+  // specifiers, so hash the file with that one mechanical rewrite undone; any
+  // other edit to the harness still breaks the pin.
+  const rawHarness = readFileSync(
+    new URL('../scripts/dry-run-resilience-financial-system-exposure-flip.mjs', import.meta.url),
+    'utf8',
+  );
+  // The rewrite is exactly the four packages/server imports; a specifier that
+  // went back to ../server/ would no longer resolve, so it must not pass.
+  assert.equal(rawHarness.includes("from '../server/"), false);
+  assert.equal(rawHarness.split("from '../packages/server/").length - 1, 4);
+  const harnessSource = rawHarness.replaceAll("from '../packages/server/", "from '../server/");
+  const harnessSha256 = createHash('sha256').update(harnessSource).digest('hex');
   assert.equal(artifact.capture.harnessSha256, harnessSha256);
 });

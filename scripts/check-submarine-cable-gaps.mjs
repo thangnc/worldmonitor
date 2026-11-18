@@ -60,7 +60,7 @@ const lines = [
   `Generated ${new Date().toISOString().slice(0, 10)} by \`node scripts/check-submarine-cable-gaps.mjs --out ${outPath ?? '<path>'}\`.`,
   `Source: ${BASE}/cable/all.json (+ per-cable detail). Curated list: ${curated.size} cables. TeleGeography: ${all.length} cables.`,
   `Missing in-service cables landing in ${minCountries}+ countries: ${gaps.length}. Sorted by country count, then length.`,
-  'To add one: append its slug to CABLE_REGIONS in scripts/seed-submarine-cables.mjs and mirror the seeded entry in src/config/geo-map.ts.',
+  'To add one: append its slug to CABLE_REGIONS in scripts/seed-submarine-cables.mjs and mirror the seeded entry in packages/client/config/geo-map.ts.',
   '',
   '| Slug | Name | RFS | Length | Countries |',
   '| --- | --- | --- | --- | --- |',

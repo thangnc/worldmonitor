@@ -51,7 +51,7 @@ test('a seeded non-CN country index is served from Redis without touching Yahoo'
     throw new Error(`unexpected request: ${url}`);
   }) as typeof fetch;
 
-  const { getCountryStockIndex } = await import('../server/worldmonitor/market/v1/get-country-stock-index.ts');
+  const { getCountryStockIndex } = await import('../packages/server/worldmonitor/market/v1/get-country-stock-index.ts');
   const result = await getCountryStockIndex({} as never, { countryCode: 'DE' } as never);
 
   assert.equal(result.available, true);
@@ -95,7 +95,7 @@ test('a seed row for the wrong country is rejected rather than served', async (t
     throw new Error(`unexpected request: ${url}`);
   }) as typeof fetch;
 
-  const { getCountryStockIndex } = await import('../server/worldmonitor/market/v1/get-country-stock-index.ts');
+  const { getCountryStockIndex } = await import('../packages/server/worldmonitor/market/v1/get-country-stock-index.ts');
   const result = await getCountryStockIndex({} as never, { countryCode: 'FR' } as never);
 
   assert.equal(result.code, 'FR', 'a mismatched seed row must not leak another country’s index');
@@ -103,7 +103,7 @@ test('a seed row for the wrong country is rejected rather than served', async (t
 });
 
 test('every country in the public enum has an index definition', async () => {
-  const contracts = (await import('../shared/openapi-filter-param-contracts.json', {
+  const contracts = (await import('../packages/shared/openapi-filter-param-contracts.json', {
     with: { type: 'json' },
   })).default as {
     marketCountryStockIndexes: Record<string, {
@@ -162,7 +162,7 @@ test('a flagged country answers available:false without touching Redis or Yahoo'
 
   // PL stays flagged `unavailable`; RU moved to the MOEX ISS leg in #6153 and
   // is covered by tests/country-stock-index-moex.test.mjs.
-  const { getCountryStockIndex } = await import('../server/worldmonitor/market/v1/get-country-stock-index.ts');
+  const { getCountryStockIndex } = await import('../packages/server/worldmonitor/market/v1/get-country-stock-index.ts');
   const result = await getCountryStockIndex({} as never, { countryCode: 'PL' } as never);
 
   assert.equal(result.available, false);
@@ -171,7 +171,7 @@ test('a flagged country answers available:false without touching Redis or Yahoo'
 });
 
 test('a country with no tracked index is still rejected ahead of the flag check', async () => {
-  const { getCountryStockIndex } = await import('../server/worldmonitor/market/v1/get-country-stock-index.ts');
+  const { getCountryStockIndex } = await import('../packages/server/worldmonitor/market/v1/get-country-stock-index.ts');
   const result = await getCountryStockIndex({} as never, { countryCode: 'BV' } as never);
   assert.equal(result.available, false);
   assert.equal(result.code, 'BV');

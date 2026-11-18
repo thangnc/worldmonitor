@@ -1,7 +1,7 @@
 // Executable calibration gates for `financialSystemExposure` (#6459).
 //
 // The construct shipped flag-dark in PR #3407 with its activation anchor
-// written as PROSE in `docs/methodology/financial-system-exposure.md`
+// written as PROSE in `docs/engineering/methodology/financial-system-exposure.md`
 // § "Sanctions-isolated jurisdiction sanity check": eight sanctions-isolated
 // jurisdictions must score < 20 before the flag flips. Nothing evaluated that
 // sentence. It was unsatisfiable — Russia scored ~70 — and the construct sat
@@ -27,7 +27,7 @@ import {
   FIN_SYS_BAND_PREMIUM_FLOOR,
   FIN_SYS_EXPOSURE_COMPREHENSIVE_EMBARGO,
   scoreFinancialSystemExposure,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import { RESILIENCE_COHORTS, type ResilienceCohort } from './helpers/resilience-cohorts.mts';
 import { FIN_SYS_EXPOSURE_MATCHED_PAIRS } from './helpers/resilience-matched-pairs.mts';
 import { FINSYS_FIXTURE_CAPTURED_AT, createFinSysFixtureReader } from './helpers/resilience-finsys-fixtures.mts';
@@ -36,7 +36,7 @@ import { FINSYS_FIXTURE_CAPTURED_AT, createFinSysFixtureReader } from './helpers
 // raising it there re-opens the doc/code gap this file closes.
 const SANCTIONS_ANCHOR_CEILING = 20;
 const METHODOLOGY = readFileSync(
-  new URL('../docs/methodology/financial-system-exposure.md', import.meta.url),
+  new URL('../docs/engineering/methodology/financial-system-exposure.md', import.meta.url),
   'utf8',
 );
 

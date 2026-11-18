@@ -82,7 +82,7 @@ reach the consumer, which is a narrower set than it first appears.
 | **MCP server instructions** | The `Content safety:` stanza in `SERVER_INSTRUCTIONS` (`api/mcp/constants.ts`), returned in `initialize.result.instructions`, which the MCP lifecycle spec has clients surface to the model. | **Yes — this is the primary channel.** Delivered verbatim, once per session, to every agent regardless of host. |
 | MCP tool description | A content-safety clause at the end of every affected tool description. `tools/list` compresses to the first sentence, so this arrives via `describe_tool`, which the instructions tell agents to call. | Partially — only if the agent asks for the full definition. |
 | MCP `outputSchema` | `INTEL_HISTORY_RECORD_SCHEMA` in `api/mcp/registry/rpc-tools.ts` — `title`, `summary`, `sourceUrl` and `resource`. | **Host-dependent; assume no.** Kept because it is the contract REST clients and `describe_tool` read. |
-| REST / OpenAPI | The `UNTRUSTED CONTENT` note and per-field comments on `IntelHistoryRecord` in `proto/worldmonitor/intelligence/v1/intel_history_record.proto`, which flow into the generated specs. | N/A — human and client-generator surface. |
+| REST / OpenAPI | The `UNTRUSTED CONTENT` note and per-field comments on `IntelHistoryRecord` in `packages/contracts/proto/worldmonitor/intelligence/v1/intel_history_record.proto`, which flow into the generated specs. | N/A — human and client-generator surface. |
 | Docs | The Historical intelligence sections of `docs/mcp-tools-reference.mdx` and `docs/mcp-overview.mdx`, plus their `docs/zh` mirrors. | N/A — human surface. |
 | Structured provenance | `resource` names the producing feed and `sourceUrl` the underlying report, so a consumer that wants to weight records by source already can. | Yes — in every response body. |
 
@@ -102,7 +102,7 @@ A consuming agent that ignores the marking is still injectable. Provenance
 marking reduces the risk; it is not a boundary. We accept that, for the same
 reason we accept it on the news tools: the alternative — mutating an
 intelligence archive on a bypassable blocklist heuristic — costs the product's
-core property and does not close the hole either. `server/_shared/llm-sanitize.js`
+core property and does not close the hole either. `packages/server/_shared/llm-sanitize.js`
 says the same thing about itself in its own header.
 
 What makes the durable case *different from* the news case, and therefore

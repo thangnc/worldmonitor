@@ -78,15 +78,15 @@ server-authoritative methodology and guarded by an expanded CII drift test.
 
 | Area | Source of truth | Documentation | Guard rails | Result |
 | --- | --- | --- | --- | --- |
-| CII scorer | `server/worldmonitor/intelligence/v1/get-risk-scores.ts`, `shared/cii-weights.ts`, `server/worldmonitor/intelligence/v1/_risk-config.ts` | `docs/methodology/cii-risk-scores.mdx`, `docs/country-instability-index.mdx`, `docs/algorithms.mdx` | `tests/cii-docs-drift.test.mts`, `tests/cii-scoring.test.mts`, `tests/frontend-cii-source-of-truth.test.mts` | Aligned |
+| CII scorer | `packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts`, `shared/cii-weights.ts`, `packages/server/worldmonitor/intelligence/v1/_risk-config.ts` | `docs/engineering/methodology/cii-risk-scores.md`, `docs/engineering/methodology/country-instability-index.md`, `docs/algorithms.mdx` | `tests/cii-docs-drift.test.mts`, `tests/cii-scoring.test.mts`, `tests/frontend-cii-source-of-truth.test.mts` | Aligned |
 | CII provenance and fallback | Cached risk-score handler, seed metadata, advisory fallback logic | CII methodology page and API docs describe server authority, advisory fallback, movement windows, and `methodology_version` | `tests/cached-risk-scores.test.mts`, `tests/seed-health-risk-scores.test.mjs` | Aligned |
 | CII public summaries | LLM and press surfaces, README, homepage SEO copy | `public/llms.txt`, `public/llms-full.txt`, `docs/engineering/product/PRESS_KIT.md`, `README.md`, `index.html` | Expanded CII docs-drift test blocks stale CII and product-count claims | Fixed in this audit |
 | Strategic Risk rollup | Frontend Strategic Risk panel and server CII response contract | `docs/strategic-risk.mdx` and CII methodology describe top-country server rollup semantics | CII drift/source-of-truth tests | Aligned |
-| CRI scorer | `server/worldmonitor/resilience/v1/_dimension-scorers.ts`, `_shared.ts`, `_pillar-membership.ts` | `docs/methodology/country-resilience-index.mdx` | `tests/resilience-doc-parity.test.mts`, `tests/resilience-methodology-lint.test.mts`, `tests/resilience-release-gate.test.mts` | Aligned |
+| CRI scorer | `packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts`, `_shared.ts`, `_pillar-membership.ts` | `docs/methodology/country-resilience-index.mdx` | `tests/resilience-doc-parity.test.mts`, `tests/resilience-methodology-lint.test.mts`, `tests/resilience-release-gate.test.mts` | Aligned |
 | CRI manifest and coverage | Runtime manifest handler, score export, source-failure paths | CRI methodology documents rankable universe, active and retired dimensions, imputation, coverage, and release-gate posture | `tests/resilience-runtime-manifest.test.mts`, `tests/resilience-source-failure.test.mts`, `tests/resilience-coverage-influence-gate.test.mts` | Aligned |
-| News digest and briefing | `server/worldmonitor/news/v1/*`, digest cooldown libs, brief share/sign routes, feed inventory | `docs/methodology/news-digest-and-briefing.mdx` | `tests/news-digest-methodology-parity.test.mjs`, `tests/brief-url-sign.test.mjs`, `tests/brief-share-url.test.mts`, `tests/brief-edge-route-smoke.test.mjs` | Aligned |
+| News digest and briefing | `packages/server/worldmonitor/news/v1/*`, digest cooldown libs, brief share/sign routes, feed inventory | `docs/methodology/news-digest-and-briefing.mdx` | `tests/news-digest-methodology-parity.test.mjs`, `tests/brief-url-sign.test.mjs`, `tests/brief-share-url.test.mts`, `tests/brief-edge-route-smoke.test.mjs` | Aligned |
 | MCP | `api/mcp/*`, `public/.well-known/mcp/server-card.json` | `docs/mcp-server.mdx`, `docs/mcp-quickstart.mdx`, `docs/mcp-jmespath.mdx`, `docs/mcp-error-catalog.mdx` | MCP capability, resource, protocol, JMESPath, and reference-doc tests | Aligned |
-| REST/OpenAPI/proto | `proto/`, `server/worldmonitor/*`, generated docs under `docs/api/` | API reference, endpoint guide, auth docs, source-specific methodology pages | Proto freshness workflow, API parity tests, sidecar/API tests | Aligned for reviewed surfaces |
+| REST/OpenAPI/proto | `proto/`, `packages/server/worldmonitor/*`, generated docs under `docs/api/` | API reference, endpoint guide, auth docs, source-specific methodology pages | Proto freshness workflow, API parity tests, sidecar/API tests | Aligned for reviewed surfaces |
 | Forecast/scenario/chokepoint/markets | Forecast integrity, scenario docs, chokepoint seed docs, market methodology contracts | Relevant methodology docs and API descriptions | Forecast provenance, scenario parity, chokepoint, and market contract tests | Aligned for reviewed surfaces |
 | Platform counts and variants | Variant configs, generated stats, feed inventory, locale files, layer registry | LLM files, press kit, community guide, architecture docs, homepage SEO copy | Expanded CII docs-drift test and stale-claim sweep | Fixed in this audit |
 
@@ -159,7 +159,7 @@ Updated files:
 - `public/llms-full.txt`
 - `docs/engineering/product/PRESS_KIT.md`
 - `docs/engineering/product/COMMUNITY-PROMOTION-GUIDE.md`
-- `docs/architecture.mdx`
+- `docs/engineering/architecture/design-philosophy.md`
 - `docs/ai-intelligence.mdx`
 - `docs/Docs_To_Review/ARCHITECTURE.md`
 - `docs/engineering/archive/legacy/DATA_MODEL.md`
@@ -244,7 +244,7 @@ npx markdownlint-cli2 \
   README.md \
   docs/engineering/product/PRESS_KIT.md \
   docs/engineering/product/COMMUNITY-PROMOTION-GUIDE.md \
-  docs/architecture.mdx \
+  docs/engineering/architecture/design-philosophy.md \
   docs/ai-intelligence.mdx \
   docs/Docs_To_Review/ARCHITECTURE.md \
   docs/engineering/archive/legacy/DATA_MODEL.md \

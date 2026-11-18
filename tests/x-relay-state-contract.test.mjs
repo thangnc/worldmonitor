@@ -6,7 +6,6 @@ import { readFileSync } from 'node:fs';
 // checks here; tests/x-poll-cycle.test.mjs executes the extracted cycle behavior.
 const relay = readFileSync(new URL('../scripts/ais-relay.cjs', import.meta.url), 'utf8');
 const health = readFileSync(new URL('../api/health.js', import.meta.url), 'utf8');
-const healthDocs = readFileSync(new URL('../docs/health-endpoints.mdx', import.meta.url), 'utf8');
 const railwayServices = JSON.parse(
   readFileSync(new URL('../scripts/railway-services.json', import.meta.url), 'utf8'),
 );
@@ -101,13 +100,6 @@ describe('X relay wiring contract', () => {
   it('requires both X settings before Railway deploys the relay', () => {
     const relayService = railwayServices.find((entry) => entry.service === 'ais-relay');
     assert.deepEqual(relayService?.requiredEnv, ['X_BEARER_TOKEN', 'X_CURATED_LIST_ID']);
-  });
-
-  it('requires both shared-budget services to cross the UTC cutover together', () => {
-    const workerService = railwayServices.find((entry) => entry.service === 'company-monitoring-worker');
-    assert.ok(workerService?.watchPatterns.includes('scripts/lib/x-post-budget.cjs'));
-    assert.match(healthDocs, /Deploy both `ais-relay` and `company-monitoring-worker` from the new head/);
-    assert.match(healthDocs, /all old instances of both services have exited before the boundary/);
   });
 
   it('keeps only aggregate List bookkeeping in relay state', () => {

@@ -1,5 +1,5 @@
 // App-serving hosts only; sibling vendor hosts do not inherit browser trust.
-// Keep aligned with convex/payments/returnUrlOrigin.ts and CORS parity tests.
+// Keep aligned with the CORS parity tests.
 const APP_ORIGIN_PATTERN = /^https:\/\/(?:(?:www|app|api|tech|finance|commodity|happy|energy)\.)?worldmonitor\.app$/;
 const MAX_ORIGIN_BYTES = 300;
 const ORIGIN_ENCODER = new TextEncoder();
@@ -19,7 +19,7 @@ const ALLOWED_ORIGIN_PATTERNS = [
   /^https?:\/\/[a-z0-9-]+\.tauri\.localhost(:\d+)?$/i,
   /^tauri:\/\/localhost$/,
   /^asset:\/\/localhost$/,
-  // Only allow bare localhost/127.0.0.1 in non-production (matches server/cors.ts)
+  // Only allow bare localhost/127.0.0.1 in non-production (matches packages/server/cors.ts)
   ...(process.env.NODE_ENV === 'production' ? [] : [
     /^https?:\/\/localhost(:\d+)?$/,
     /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
@@ -51,14 +51,11 @@ const EXPOSED_HEADERS = [
   'Idempotent-Replayed',
   // Poll URL on a gateway 202 Accepted async job (#4810). The Worker stamps
   // this list over every api.worldmonitor.app response, so it must be here
-  // for browser agents to read it, not only in server/cors.ts.
+  // for browser agents to read it, not only in packages/server/cors.ts.
   'Location',
-  // Billing-verification denials (server/_shared/entitlement-check.ts) carry
-  // the reason here alongside `Retry-After`. Docs advertise the header
-  // (docs/usage-errors.mdx) but it was not exposed, so a cross-origin browser
-  // client — the Tauri desktop shell, widget embeds, anything on
-  // api.worldmonitor.app — could not read it and had to parse `code` from the
-  // body to tell a retryable verification blip from a terminal lapse (#5622).
+  // Billing-verification denials carried their reason here (#5622). The
+  // entitlement backend is gone and nothing sets it now; it stays exposed
+  // because docs/usage-errors.mdx still advertises it.
   'X-Billing-Verification',
   // IETF RateLimit fields (draft-ietf-httpapi-ratelimit-headers): RateLimit-Policy
   // + RateLimit-Limit are advertised on every API response (vercel.json); the

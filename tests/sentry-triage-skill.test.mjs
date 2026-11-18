@@ -2,10 +2,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parseFrontmatter } from '../scripts/build-agent-skills-index.mjs';
+import { readRecord } from '../scripts/lib/engineering-docs.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SKILL_DIR = 'sentry-triage';
@@ -31,7 +31,7 @@ function assertTokensInOrder(text, tokens) {
 
 describe('cursor skill: sentry-triage', () => {
   const markdown = readFileSync(SKILL_PATH, 'utf8');
-  const frontmatter = parseFrontmatter(markdown);
+  const { frontmatter } = readRecord(ROOT, relative(ROOT, SKILL_PATH));
 
   it('uses Cursor Agent Skills frontmatter that matches the folder name', () => {
     assert.equal(frontmatter.name, SKILL_DIR);

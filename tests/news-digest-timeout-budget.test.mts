@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest';
-import { keepUnrecordedLabels, labelChangeFor, recordLabelChanges, STORY_LABEL_FIELD, storyLabel } from '../server/_shared/label-history';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
+import { keepUnrecordedLabels, labelChangeFor, recordLabelChanges, STORY_LABEL_FIELD, storyLabel } from '../packages/server/_shared/label-history';
 import {
   __resetFetcherTimeoutForTests,
   __setFetcherTimeoutForTests,
   cachedFetchJson,
   REDIS_OP_TIMEOUT_MS,
   REDIS_PIPELINE_TIMEOUT_MS,
-} from '../server/_shared/redis';
+} from '../packages/server/_shared/redis';
 
 const {
   VERCEL_INITIAL_RESPONSE_LIMIT_MS,
@@ -23,7 +23,7 @@ const {
 } = __testing__;
 
 const DIGEST_SRC = readFileSync(
-  new URL('../server/worldmonitor/news/v1/list-feed-digest.ts', import.meta.url),
+  new URL('../packages/server/worldmonitor/news/v1/list-feed-digest.ts', import.meta.url),
   'utf8',
 );
 

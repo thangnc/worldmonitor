@@ -12,7 +12,7 @@ carrying those findings forward as open work.
 - Branch inspected: `origin/main` at `eae7068f5` (`Surface social velocity seed
   failures (#4084)`), with PRs #4077 through #4086 present in the recent log.
 - Methodology source: `docs/methodology/country-resilience-index.mdx`.
-- Open acceptance runbook: `docs/methodology/energy-v2-flag-flip-runbook.md`.
+- Open acceptance runbook: `docs/engineering/methodology/energy-v2-flag-flip-runbook.md`.
 - Snapshot directory inspected: `docs/snapshots/`.
 
 ## Closed Stale Findings
@@ -165,7 +165,7 @@ Required evidence:
 Do not synthesize these files. `scripts/freeze-resilience-ranking.mjs` verifies
 score anchors through `/api/resilience/v1/get-resilience-score`, which requires
 `WORLDMONITOR_API_KEY`. The operator path and exact commands are documented in
-`docs/methodology/energy-v2-flag-flip-runbook.md`.
+`docs/engineering/methodology/energy-v2-flag-flip-runbook.md`.
 
 Acceptance is closed only after those real artifacts are captured with
 production credentials, committed under `docs/snapshots/`, and accepted by the

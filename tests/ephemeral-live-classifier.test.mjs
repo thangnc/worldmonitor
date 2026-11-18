@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyEphemeralLiveCoverage } from '../shared/ephemeral-live-classifier.js';
+import { classifyEphemeralLiveCoverage } from '../packages/shared/ephemeral-live-classifier.js';
 
 describe('classifyEphemeralLiveCoverage', () => {
   it('drops WATCH LIVE programming teasers that become stale by digest time', () => {

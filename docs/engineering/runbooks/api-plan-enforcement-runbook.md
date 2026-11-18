@@ -49,7 +49,7 @@ Then, for how far over each account actually runs:
 Both queries read `wm_api_usage`, which is a REST-only view. MCP tool calls
 have never appeared in it: the MCP edge signs its downstream fetches with the
 internal HMAC (`api/mcp/auth.ts:178`), and the gateway's whole per-account
-meter block sits behind `if (!internalMcpVerified)` (`server/gateway.ts:1909`),
+meter block sits behind `if (!internalMcpVerified)` (`packages/server/gateway.ts:1909`),
 so an MCP-originated request never touches `rl:apikey:day:` and never emits a
 `wm_api_usage` row. The measurement below is therefore a floor, not the
 account's demand — see [Summing the two halves](#summing-the-two-halves).
@@ -77,7 +77,7 @@ each other. Neither one on its own is the number the flip will enforce.
 
 - **REST demand** — the Axiom queries above, or the meter key directly:
   `rl:apikey:day:<userId>:<YYYY-MM-DD>` in Upstash. In production
-  `envPrefix()` is empty (`server/_shared/pro-mcp-token.ts:481`), so the key
+  `envPrefix()` is empty (`packages/server/_shared/pro-mcp-token.ts:481`), so the key
   is exactly that; preview deploys carry an `<env>:<sha>:` prefix.
 - **MCP demand** — `mcp:pro-usage:<userId>:<YYYY-MM-DD>`, the dedicated
   counter API tiers charge while the flag is off.
@@ -111,7 +111,7 @@ fixed; clear the second before flipping, and decide about the third.
 REST and MCP reject through different protocols. The REST path
 (`reserveDailyMeter`) does an `INCR`, decides, then issues a *separate* `DECR` on
 rejection. The MCP path does the whole reservation in one Lua `EVAL`
-(`shared/mcp-quota-reserve-script.mjs`) that can `DECRBY` its own weight and then
+(`packages/shared/mcp-quota-reserve-script.mjs`) that can `DECRBY` its own weight and then
 `SET` the key down to the enforced limit to clamp residue.
 
 Interleaved, a REST `DECR` can land after the MCP clamp has already written the
@@ -121,7 +121,7 @@ extra calls are served for free. Bounded, but it is revenue leaking in the wrong
 direction.
 
 **Shipped.** The script takes an `ARGV[4]` clamp flag
-(`shared/mcp-quota-reserve-script.mjs:46`, applied at `:91`), and `reserveQuota`
+(`packages/shared/mcp-quota-reserve-script.mjs:46`, applied at `:91`), and `reserveQuota`
 passes `0` exactly when the budget resolves to the shared counter
 (`api/mcp/quota.ts:212`, from the `isSharedRestCounter` predicate at `:144` that
 also picks the key). Absent or unparseable defaults to ENABLED, so the dedicated

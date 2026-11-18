@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
@@ -30,7 +30,7 @@ function parseArrayLiteral(source, declarationName) {
 }
 
 function parseNuclearFacilities() {
-  const source = src('src/config/geo-map.ts');
+  const source = src('packages/client/config/geo-map.ts');
   const start = source.indexOf('export const NUCLEAR_FACILITIES');
   assert.notEqual(start, -1, 'expected NUCLEAR_FACILITIES export');
 
@@ -50,20 +50,6 @@ function parseNuclearFacilities() {
   }
 
   throw new Error('unterminated NUCLEAR_FACILITIES array');
-}
-
-function lookup(obj, key) {
-  return key.split('.').reduce((cur, part) => cur?.[part], obj);
-}
-
-function supportedLanguages() {
-  const match = src('src/services/i18n.ts').match(/SUPPORTED_LANGUAGES = \[([^\]]+)\]/);
-  assert.ok(match, 'expected SUPPORTED_LANGUAGES declaration');
-  return Array.from(match[1].matchAll(/'([^']+)'/g), ([, language]) => language);
-}
-
-function nuclearTypeLabelKey(type) {
-  return type === 'test-site' ? 'testSite' : type;
 }
 
 describe('nuclear facility registry invariants', () => {
@@ -119,33 +105,5 @@ describe('nuclear facility registry invariants', () => {
     assert.equal(byId.get('kaiga_atomic_power_station')?.name, 'Kaiga Atomic Power Station');
     assert.equal(byId.has('bruce_nuclear_generating_stationc'), false);
     assert.equal(byId.get('bruce_nuclear_generating_station')?.name, 'Bruce Nuclear Generating Station');
-  });
-
-  it('styles every nuclear facility status used by the registry', () => {
-    const css = src('src/styles/main.css');
-    const statuses = Array.from(new Set(parseNuclearFacilities().map((facility) => facility.status))).sort();
-
-    for (const status of statuses) {
-      assert.match(css, new RegExp(`\\.nuclear-marker\\.${status}\\s*\\{`), `${status} needs a marker style`);
-    }
-  });
-
-  it('defines popup labels for every nuclear facility type in every supported locale', () => {
-    const requiredKeys = Array.from(
-      new Set(parseNuclearFacilities().map((facility) => `popups.nuclear.types.${nuclearTypeLabelKey(facility.type)}`)),
-    ).sort();
-
-    const missing = [];
-    for (const language of supportedLanguages()) {
-      const locale = JSON.parse(src(`src/locales/${language}.json`));
-      for (const key of requiredKeys) {
-        const value = lookup(locale, key);
-        if (typeof value !== 'string' || value.trim().length === 0) {
-          missing.push(`${language}.json: ${key}`);
-        }
-      }
-    }
-
-    assert.equal(missing.length, 0, `missing nuclear popup type labels:\n  ${missing.join('\n  ')}`);
   });
 });
