@@ -823,11 +823,14 @@ describe('Lite tech map', async () => {
     assert.deepEqual(outageMarkers(list, NOW, '24h').map((m) => m.id), ['outage:live', 'outage:major', 'outage:long']);
     const markers = outageMarkers(list.slice(0, 4), NOW, '7d');
     // No orange on the map: a major outage is red, a partial one amber.
-    assert.deepEqual(markers.map((m) => [m.id, m.kind, m.glyph, m.state, m.fill]), [
-      ['outage:live', 'event', 'zap', 'crit', 'solid'],
-      ['outage:major', 'event', 'ban', 'crit', 'solid'],
-      ['outage:old', 'event', 'wifi-off', 'elev', 'background'],
+    assert.deepEqual(markers.map((m) => [m.id, m.kind, m.glyph, m.state]), [
+      ['outage:live', 'event', 'zap', 'crit'],
+      ['outage:major', 'event', 'ban', 'crit'],
+      ['outage:old', 'event', 'wifi-off', 'elev'],
     ]);
+    // Events are always solid (2026-11-19); an ended outage says so in its card.
+    assert.ok(markers.every((m) => !('fill' in m)));
+    assert.match(markers[2]!.popup.lines[1]!.text, /ended/);
   });
 
   it('keeps attack-server indicators seen inside the range, and undated ones at every range', () => {
@@ -941,18 +944,17 @@ describe('Lite map marker grammar (design "Spec — Map markers")', async () => 
 
   it('colours every shape by state from the mark tokens, never by domain', () => {
     const classes = [
-      ...Object.values(marks.EVENT_CLASS).flatMap((byState) => Object.values(byState)),
+      ...Object.values(marks.EVENT_CLASS),
       ...Object.values(marks.AGGREGATE_CLASS).flatMap((byState) => Object.values(byState)),
       ...Object.values(marks.ASSET_CLASS),
       ...Object.values(marks.JUDGEMENT_BORDER),
     ].join(' ');
     assert.doesNotMatch(classes, /\b(?:bg|border|text)-(?:geo|fin|tech|high|ok)\b/);
     for (const state of marks.MARK_STATES) {
-      // Solid: state fill (the glyph is always dark ink). Reported: 35% fill with the outline. Background: 10% fill, 30% outline.
-      assert.match(marks.EVENT_CLASS.solid[state], new RegExp(`border-mark-${state} bg-mark-${state}$`));
-      assert.match(marks.EVENT_CLASS.reported[state], new RegExp(`border-mark-${state} bg-mark-${state}/35`));
-      assert.match(marks.EVENT_CLASS.background[state], new RegExp(`border-mark-${state}/30 bg-mark-${state}/10`));
+      // An event is always the solid state fill under the dark glyph, so it reads on the dark map (2026-11-19).
+      assert.equal(marks.EVENT_CLASS[state], `border-mark-${state} bg-mark-${state}`);
       assert.match(marks.AGGREGATE_CLASS.reported[state], new RegExp(`bg-mark-${state}/20`));
+      assert.equal(marks.AGGREGATE_CLASS.background[state], `border-mark-${state}/30 bg-mark-${state}/10`);
     }
     assert.equal(marks.SELECTED_RING, 'ring-2 ring-mark-ring');
     assert.equal(marks.STALE, 'opacity-45');

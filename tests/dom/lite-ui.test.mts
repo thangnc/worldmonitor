@@ -1078,7 +1078,9 @@ describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS inte
     const ymd = (t: number) => new Date(t).toISOString().slice(0, 10);
     const CELL = '841f41dffffffff';
     const sea = {
-      incidents: [{ id: 'u1', incidentNumber: 41, incidentType: 'Explosion near vessel', place: '45nm W of Hodeidah, Yemen', description: 'Master reports an explosion near the vessel.', location: { latitude: 14.8, longitude: 42.3 }, occurredAt: now - 2 * HOUR, reportedAt: 0 }],
+      incidents: [{ id: 'u1', incidentNumber: 41, incidentType: 'Explosion near vessel', place: '45nm W of Hodeidah, Yemen', description: 'Master reports an explosion near the vessel.', location: { latitude: 14.8, longitude: 42.3 }, occurredAt: now - 2 * HOUR, reportedAt: 0 },
+        // Older than the 24 h fire window but inside the 7-day range: still a solid mark (2026-11-19).
+        { id: 'u2', incidentNumber: 38, incidentType: 'Suspicious approach', place: '60nm E of Aden, Yemen', description: 'A skiff approached the vessel.', location: { latitude: 12.9, longitude: 46.0 }, occurredAt: now - 3 * DAY, reportedAt: 0 }],
       fetchedAt: now - 60_000, dataAvailable: true, stale: false,
     };
     const highCells = {
@@ -1137,8 +1139,10 @@ describe('Lite Geopolitics: layers popover, aircraft, sea incidents and GPS inte
       const group = root.querySelector('[data-marker="aircraft-group:kyiv"] [data-mark-kind]');
       expect([group?.getAttribute('data-mark-kind'), group?.getAttribute('data-mark-fill'), group?.textContent]).toEqual(['aggregate', 'reported', '6']);
       const ship = root.querySelector('[data-marker="sea:u1"] [data-mark-kind]');
-      expect([ship?.getAttribute('data-mark-kind'), ship?.getAttribute('data-mark-glyph'), ship?.getAttribute('data-mark-fill'), ship?.getAttribute('data-mark-state')]).toEqual(['event', 'ship', 'solid', 'crit']);
+      expect([ship?.getAttribute('data-mark-kind'), ship?.getAttribute('data-mark-glyph'), ship?.getAttribute('data-mark-state'), ship?.classList.contains('bg-mark-crit')]).toEqual(['event', 'ship', 'crit', true]);
       expect(ship?.classList.contains('ring-2')).toBe(false);
+      const olderShip = root.querySelector('[data-marker="sea:u2"] [data-mark-kind]');
+      expect([olderShip?.getAttribute('data-mark-kind'), olderShip?.getAttribute('data-mark-state'), olderShip?.classList.contains('bg-mark-elev')]).toEqual(['event', 'elev', true]);
 
       // A sea card opens its marker's card on the map.
       await act(() => (panel().querySelector('[data-indicator="sea:u1"]') as HTMLButtonElement).click());

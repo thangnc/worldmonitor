@@ -73,7 +73,6 @@ export interface EventMarker extends MarkerBase {
   kind: 'event';
   glyph: MarkGlyph;
   state: MarkState;
-  fill: MarkFill;
 }
 
 /** A place we watch: a cloud region, a data centre, a chokepoint, a bank (spec grammar: asset). */
@@ -92,7 +91,7 @@ export interface AggregateMarker extends MarkerBase {
   /** The count at which the circle reaches its 40 px maximum. */
   fullAt: number;
   state: MarkState;
-  fill: 'reported' | 'background';
+  fill: MarkFill;
   /** Nearby ones merge by zoom, summing `count` (UCDP locations); a click on a merged circle zooms in. */
   cluster?: { noun: string; unit: string };
 }
@@ -188,7 +187,7 @@ function MarkerMark({ marker, selected }: { marker: MapMarker; selected: boolean
   const stale = marker.stale;
   switch (marker.kind) {
     case 'event':
-      return <EventMark glyph={marker.glyph} state={marker.state} fill={marker.fill} selected={selected} stale={stale} />;
+      return <EventMark glyph={marker.glyph} state={marker.state} selected={selected} stale={stale} />;
     case 'asset':
       return <AssetMark glyph={marker.glyph} state={marker.state} selected={selected} stale={stale} />;
     case 'aggregate':
