@@ -140,7 +140,7 @@ Edge functions are bundled per file: each deployed function may not pull in unre
 |------|---------|
 | `_cors.js` | Origin allowlist (worldmonitor.app, Vercel previews, tauri://localhost, localhost) |
 | `_rate-limit.js` | Upstash sliding window rate limiting, IP extraction |
-| `_api-key.js` | Origin-aware API key validation (desktop requires key, trusted browser exempt) |
+| `_api-key.js` | Credential check: anonymous `wms_` session or operator key (`WORLDMONITOR_VALID_KEYS`, header or `__Host-wm-pro-key` cookie) |
 | `_relay.js` | Factory for proxying requests to Railway relay service |
 
 ### Gateway Factory
@@ -150,7 +150,7 @@ Edge functions are bundled per file: each deployed function may not pull in unre
 1. Origin check (403 if disallowed)
 2. CORS headers
 3. OPTIONS preflight
-4. API key validation
+4. API key validation (`validateApiKey`; `PREMIUM_RPC_PATHS` require an operator key, everything else also takes an anonymous session)
 5. Rate limiting (endpoint-specific, then global fallback)
 6. Route matching (static Map lookup, then dynamic `{param}` scan)
 7. POST-to-GET compatibility (for stale clients). Unmatched POSTs with a trusted `Content-Length` under 1 MB may be retried as GET when a GET handler exists for the path. The body is all-or-nothing: JSON objects of scalars and scalar arrays become query parameters; object values, nested/non-scalar array members, non-object JSON, malformed JSON, and unread bodies return 400 without applying a partial translation. Empty or whitespace-only bodies still fall through to GET with no extra query parameters. Unknown paths still 404/405. Array expansion remains capped at 200 values per key.

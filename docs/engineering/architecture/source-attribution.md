@@ -110,7 +110,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | AusTender (www.tenders.gov.au) | structured — scripts/seed-global-tenders.mjs |
 | av.alarabiya.net (av.alarabiya.net) | feed — src/config/live-video-sources.ts |
 | aws.amazon.com (aws.amazon.com) | Excluded / candidate — No current fetch observed |
-| Axiom telemetry (api.axiom.co) | structured — api/_usage-telemetry.js, scripts/deploy-error-canary.mjs, scripts/lib/llm-telemetry.cjs, scripts/seed-forecasts.mjs, +2 more |
+| Axiom telemetry (api.axiom.co) | structured — api/_usage-telemetry.js, scripts/deploy-error-canary.mjs, scripts/lib/llm-telemetry.cjs, scripts/seed-forecasts.mjs, +1 more |
 | AyiboPost (ayibopost.com) | feed — shared/news-catalog.json |
 | azertag.az (azertag.az) | feed — shared/news-catalog.json |
 | azure.status.microsoft (azure.status.microsoft) | operational-status — server/worldmonitor/infrastructure/v1/list-service-statuses.ts |
@@ -169,7 +169,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | City of Toronto Open Data (secure.toronto.ca) | structured — scripts/lib/toronto-road-restrictions.mjs |
 | civil.ge (civil.ge) | feed — shared/news-catalog.json |
 | Claude link (claude.ai) | Excluded / candidate — No current fetch observed |
-| Clerk identity service (api.clerk.com) | structured — server/auth-session.ts |
+| Clerk identity service (api.clerk.com) | Excluded / candidate — No current fetch observed |
 | climate.copernicus.eu (climate.copernicus.eu) | structured — scripts/seed-climate-news.mjs |
 | Cloudflare Browser MCP (browser.mcp.cloudflare.com) | Excluded / candidate — No current fetch observed |
 | Cloudflare Radar MCP (radar.mcp.cloudflare.com) | Excluded / candidate — No current fetch observed |
@@ -338,7 +338,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | geospatial-usace.opendata.arcgis.com (geospatial-usace.opendata.arcgis.com) | structured — scripts/fetch-mirta-bases.mjs |
 | ghoapi.azureedge.net (ghoapi.azureedge.net) | structured — scripts/seed-resilience-static.mjs |
 | github.blog (github.blog) | feed — shared/news-catalog.json |
-| github.com (github.com) | structured — api/health.js, scripts/build-plane-alert-watchlist.mjs, scripts/generate-airline-codes.mjs, scripts/seed-research.mjs, +1 more |
+| github.com (github.com) | structured — api/health.js, scripts/build-plane-alert-watchlist.mjs, scripts/generate-airline-codes.mjs, scripts/seed-research.mjs |
 | Global Affairs Canada (SEMA consolidated sanctions) (www.international.gc.ca) | structured — scripts/_sema-sanctions.mjs |
 | Global Energy Monitor (globalenergymonitor.org) | structured — scripts/import-gem-pipelines.mjs |
 | globalinitiative.net (globalinitiative.net) | feed — shared/news-catalog.json |
@@ -793,7 +793,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | World Bank Open Data (api.worldbank.org) | structured — scripts/_defense-industrial-source.mjs, scripts/_demographics-capability-source.mjs, scripts/ais-relay.cjs, scripts/seed-bis-lbs.mjs, +13 more |
 | World Monitor hosted API (api.worldmonitor.app) | feed+structured — scripts/_widget-data-policy.cjs, scripts/ais-relay.cjs, scripts/audit-resilience-cohorts.mjs, scripts/capture-seed-recovery.mjs, +16 more |
 | World Monitor proxy (proxy.worldmonitor.app) | structured — scripts/seed-security-advisories.mjs, src/utils/proxy.ts |
-| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, scripts/_country-stock-index-moex.mjs, scripts/_upstash-rest.mjs, scripts/capture-mcp-fixture.mjs, +31 more |
+| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, scripts/_country-stock-index-moex.mjs, scripts/_upstash-rest.mjs, scripts/capture-mcp-fixture.mjs, +29 more |
 | World Monitor web app (www.worldmonitor.app) | structured — api/_cors.js, api/not-found.ts, scripts/build-open-data-chokepoints.mjs, scripts/build-un-m49-regions.mjs, +14 more |
 | WorldMonitor test origin (worldmonitor.invalid) | structured — api/_md-url-twin.ts, src/shared/public-rpc-cache.ts |
 | worldmonitor.mintlify.dev (worldmonitor.mintlify.dev) | Excluded / candidate — No current fetch observed |

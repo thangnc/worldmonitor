@@ -19,8 +19,8 @@ import {
 // every authenticated RPC, not by proto handlers, so a fresh `make generate`
 // must re-run the injectors or the published specs lose the real retry
 // semantics. The code enums are asserted against the SAME source parsers the
-// injectors stamp from, mirroring how mcp-api-parity pins doc claims to
-// server/_shared/entitlement-check.ts.
+// injectors stamp from. Those parsers now return the contract frozen in
+// scripts/lib/openapi-codegen.mjs (the runtime entitlement gates were removed).
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const apiDir = resolve(root, 'docs/api');
@@ -54,7 +54,7 @@ function assertBillingSchema(spec, label) {
   assert.deepEqual(
     schema.properties?.code?.enum,
     RETRYABLE_CODES,
-    `${label}: BillingVerificationError.code enum must match the codes derived from server/_shared/entitlement-check.ts`,
+    `${label}: BillingVerificationError.code enum must match the codes frozen in scripts/lib/openapi-codegen.mjs`,
   );
   assert.deepEqual(schema.required, ['error', 'code'], `${label}: BillingVerificationError must require error and code`);
   assert.equal(

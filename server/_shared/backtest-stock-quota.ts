@@ -1,6 +1,6 @@
-import { TRUSTED_USER_ID_HEADER } from './mcp-internal-hmac';
+import { TRUSTED_USER_ID_HEADER } from './rate-limit';
 import { getKeyPrefix } from './redis';
-import { PRO_DAILY_QUOTA_TTL_SECONDS, secondsUntilUtcMidnight } from './pro-mcp-token';
+import { PRO_DAILY_QUOTA_TTL_SECONDS, secondsUntilUtcMidnight } from './direct-llm-quota';
 
 /**
  * Daily Yahoo-history budget for `GET /api/market/v1/backtest-stock`.

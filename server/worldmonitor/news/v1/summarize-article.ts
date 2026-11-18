@@ -21,10 +21,7 @@ import { checkIpScopedEdgeProof, checkScopedRateLimit, getClientRateLimitKey, re
 import { CHROME_UA } from '../../../_shared/constants';
 import { isModelUsable, isProviderAvailable, recordModelFailure, recordModelSuccess } from '../../../_shared/llm-health';
 import { sanitizeHeadlinesLight, sanitizeForPrompt, sanitizeForPromptLine } from '../../../_shared/llm-sanitize.js';
-import {
-  getPremiumRpcBillingErrorType,
-  resolvePremiumCallerIdentity,
-} from '../../../_shared/premium-check';
+import { resolvePremiumCallerIdentity } from '../../../_shared/premium-check';
 import {
   markRetryableResponse,
   markUnservedLlmResponse,
@@ -184,9 +181,7 @@ export async function summarizeArticle(
   // never reached (ai-routing-policy.ts). An unrestricted caller may name only
   // a default-chain provider: opt-in providers (anthropic) are reachable
   // through a policy, never on a request's say-so.
-  // Translate mode is free, so the gateway may not have resolved a Clerk
-  // session; the identity this handler resolved covers that case.
-  const aiRouting = await resolveAiRouting(ctx.request, premiumIdentity.userId);
+  const aiRouting = await resolveAiRouting(ctx.request);
   const routingPolicy = toLlmRoutingPolicy(aiRouting);
   const policyChain = routingPolicy ? resolveProviderChain({ routingPolicy }) : null;
   const provider = policyChain
@@ -210,25 +205,6 @@ export async function summarizeArticle(
   };
 
   if (requiresPremium && !isPremium) {
-    const billingDenial = premiumIdentity.billingDenial;
-    if (billingDenial) {
-      if (billingDenial.retryable) {
-        markRetryableResponse(ctx.request);
-        setResponseHeader(ctx.request, 'Retry-After', String(billingDenial.retryAfterSeconds));
-        setResponseHeader(ctx.request, 'X-Billing-Verification', billingDenial.code);
-      }
-      return unserved({
-        summary: '',
-        model: '',
-        provider,
-        tokens: 0,
-        fallback: true,
-        error: billingDenial.message,
-        errorType: getPremiumRpcBillingErrorType(billingDenial),
-        status: 'SUMMARIZE_STATUS_ERROR',
-        statusDetail: billingDenial.code,
-      });
-    }
     return unserved({
       summary: '',
       model: '',

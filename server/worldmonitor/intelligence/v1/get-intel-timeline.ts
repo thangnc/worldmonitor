@@ -5,36 +5,19 @@ import type {
   GetIntelTimelineResponse,
 } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
 import { ValidationError } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
-import {
-  intelHistoryTimeline,
-  resolveLimit,
-} from '../../../_shared/intel-history-client';
-import { cacheSuccessfulHistoryRead, validateHistoryScope } from '../../../_shared/intel-history-contract';
+import { validateHistoryScope } from '../../../_shared/intel-history-contract';
 
-/** Server-side default when the request omits `limit`. */
-const DEFAULT_LIMIT = 50;
-
-/** Hard cap — TIMELINE_MAX_LIMIT in convex/intelHistory.ts. */
+/** Hard cap on `limit`, kept from the published contract. */
 const MAX_LIMIT = 200;
 
 /**
  * GetIntelTimeline handler.
  *
- * Reverse-chronological read of the durable history store. No embedding and no
- * ranking, so unlike its two siblings this route spends nothing per request
- * beyond one Convex query.
- *
- * SCOPE IS MANDATORY. `domain` and `country` are the two indexed scopes on the
- * table; an unscoped read has no index to serve it and Convex throws, which
- * this layer could only report as an outage. Rejecting it here with a 400
- * (ValidationError naming `domain`, so MCP callers get Invalid params) tells the caller their
- * request was wrong instead of blaming the backend. buf.validate cannot
- * express "at least one of", so the check lives in code.
- *
- * A store failure returns an empty result with `upstreamUnavailable: true`
- * rather than a 5xx, so the gateway does not cache an empty timeline for the
- * slow tier's TTL. Premium-gated at the gateway via PREMIUM_RPC_PATHS +
- * ENDPOINT_ENTITLEMENTS.
+ * The durable history store (Convex `intelHistory`) was removed with Convex,
+ * and the Lite UI does not call this route. The request is still validated,
+ * then the handler answers the documented store-outage shape:
+ * `upstreamUnavailable: true` with no records, which the gateway serves as
+ * no-store. It never reports an empty history as a successful read.
  */
 export const getIntelTimeline: IntelligenceServiceHandler['getIntelTimeline'] = async (
   _ctx: ServerContext,
@@ -48,17 +31,9 @@ export const getIntelTimeline: IntelligenceServiceHandler['getIntelTimeline'] = 
     throw new ValidationError([{ field: 'domain', description: 'At least one of domain or country is required' }]);
   }
 
-  const limit = resolveLimit(scope.limit, DEFAULT_LIMIT, MAX_LIMIT);
   const cursor = req.cursor ?? '';
   if (typeof cursor !== 'string' || cursor.length > 4096) {
     throw new ValidationError([{ field: 'cursor', description: 'cursor must be a string of at most 4096 characters' }]);
   }
-  const result = await cacheSuccessfulHistoryRead('timeline-page', {
-    domain, country, from: scope.from, to: scope.to, limit, cursor,
-  }, () => intelHistoryTimeline({ ...scope, limit, cursor }));
-  if (!result) {
-    return { records: [], partial: false, upstreamUnavailable: true, nextCursor: '' };
-  }
-
-  return { records: result.records, partial: result.partial, upstreamUnavailable: false, nextCursor: result.nextCursor };
+  return { records: [], partial: false, upstreamUnavailable: true, nextCursor: '' };
 };
