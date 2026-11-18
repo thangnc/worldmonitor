@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **846 active source hosts** representing **826 active providers** (**361 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **845 active source hosts** representing **825 active providers** (**360 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -25,7 +25,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | 36kr.com (36kr.com) | feed — packages/shared/news-catalog.json |
 | 444.hu (444.hu) | feed — packages/shared/news-catalog.json |
 | a16z.com (a16z.com) | feed — packages/shared/news-catalog.json |
-| abacus.worldmonitor.app (abacus.worldmonitor.app) | structured — scripts/check-analytics-collector.mjs |
+| abacus.worldmonitor.app (abacus.worldmonitor.app) | Excluded / candidate — No current fetch observed |
 | abc-iview-mediapackagestreams-2.akamaized.net (abc-iview-mediapackagestreams-2.akamaized.net) | feed — packages/client/config/live-video-sources.ts |
 | abplivetv.pc.cdn.bitgravity.com (abplivetv.pc.cdn.bitgravity.com) | Excluded / candidate — No current fetch observed |
 | acleddata.com (acleddata.com) | structured — packages/server/_shared/acled-auth.ts, packages/server/_shared/acled.ts, scripts/seed-conflict-intel.mjs, scripts/seed-unrest-events.mjs, +1 more |
@@ -86,7 +86,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | api.statistiken.bundesbank.de (api.statistiken.bundesbank.de) | structured — scripts/seed-yield-curve-de.mjs |
 | api.stlouisfed.org (api.stlouisfed.org) | structured — scripts/seed-economic-calendar.mjs, scripts/seed-us-cpi.mjs, scripts/seed-us-interest-rates.mjs |
 | api.ted.europa.eu (api.ted.europa.eu) | structured — scripts/seed-global-tenders.mjs |
-| api.telegram.org (api.telegram.org) | structured — scripts/notification-relay.cjs, scripts/seed-digest-notifications.mjs |
+| api.telegram.org (api.telegram.org) | Excluded / candidate — No current fetch observed |
 | api.typesafe.ai (api.typesafe.ai) | structured — scripts/lib/internal-links.mjs |
 | api.tzevaadom.co.il (api.tzevaadom.co.il) | structured — scripts/ais-relay.cjs |
 | api.unhcr.org (api.unhcr.org) | structured — scripts/seed-displacement-summary.mjs |
@@ -438,7 +438,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | live-hls-web-ajm.getaj.net (live-hls-web-ajm.getaj.net) | feed — packages/client/config/live-video-sources.ts |
 | live-stream.skynewsarabia.com (live-stream.skynewsarabia.com) | feed — packages/client/config/live-video-sources.ts |
 | live.alarabiya.net (live.alarabiya.net) | feed — packages/client/config/live-video-sources.ts |
-| live.dodopayments.com (live.dodopayments.com) | structured — scripts/ais-relay.cjs |
+| live.dodopayments.com (live.dodopayments.com) | Excluded / candidate — No current fetch observed |
 | live.livetvstream.co.uk (live.livetvstream.co.uk) | feed — packages/client/config/live-video-sources.ts |
 | live.presstv.co.uk (live.presstv.co.uk) | feed — packages/client/config/live-video-sources.ts |
 | live.rudaw.net (live.rudaw.net) | feed — packages/client/config/live-video-sources.ts |
@@ -694,7 +694,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | tenders.go.ke (tenders.go.ke) | structured — scripts/_global-tender-feeds.mjs |
 | tenders.procurement.gov.ge (tenders.procurement.gov.ge) | structured — scripts/_global-tender-feeds.mjs |
 | test (test) | structured — scripts/seed-forecasts.mjs |
-| test.dodopayments.com (test.dodopayments.com) | structured — scripts/ais-relay.cjs |
+| test.dodopayments.com (test.dodopayments.com) | Excluded / candidate — No current fetch observed |
 | th.usembassy.gov (th.usembassy.gov) | structured — scripts/seed-security-advisories.mjs |
 | The Daily Star (thedailystar.net) | feed — packages/shared/news-catalog.json |
 | The Economist (economist.com) | feed — packages/shared/news-catalog.json |
@@ -793,8 +793,8 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | World Bank Open Data (api.worldbank.org) | structured — packages/server/worldmonitor/economic/v1/list-world-bank-indicators.ts, packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts, packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts, scripts/_defense-industrial-source.mjs, +13 more |
 | World Monitor hosted API (api.worldmonitor.app) | feed+structured — packages/client/services/runtime.ts, packages/shared/news-catalog.json, scripts/_widget-data-policy.cjs, scripts/ais-relay.cjs, +16 more |
 | World Monitor proxy (proxy.worldmonitor.app) | structured — packages/client/utils/proxy.ts, scripts/seed-security-advisories.mjs |
-| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/server/_shared/brief-url.ts, +24 more |
-| World Monitor web app (www.worldmonitor.app) | structured — api/_cors.js, api/not-found.ts, packages/server/_shared/deprecation-policy.ts, packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts, +12 more |
+| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/server/_shared/brief-url.ts, +21 more |
+| World Monitor web app (www.worldmonitor.app) | structured — api/_cors.js, api/not-found.ts, packages/server/_shared/deprecation-policy.ts, packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts, +10 more |
 | WorldMonitor test origin (worldmonitor.invalid) | structured — api/_md-url-twin.ts, packages/client/shared/public-rpc-cache.ts |
 | worldmonitor.mintlify.dev (worldmonitor.mintlify.dev) | Excluded / candidate — No current fetch observed |
 | wublockchain.com (wublockchain.com) | feed — packages/shared/news-catalog.json |

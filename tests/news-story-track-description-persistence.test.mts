@@ -16,7 +16,6 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
 import { rssFeedCacheKey } from '../packages/server/worldmonitor/news/v1/_rss-cache';
-import { shouldDropOpinionTrack } from '../scripts/lib/digest-opinion-track-filter.mjs';
 
 const {
   buildStoryTrackHsetFields,
@@ -130,14 +129,9 @@ describe('buildStoryTrackHsetFields — story:track:v1 HSET contract', () => {
     assert.strictEqual(item.isOpinion, true);
     const persisted = fieldsToMap(buildStoryTrackHsetFields(item, '1784030400000', 42));
     assert.strictEqual(persisted.get('isOpinion'), '1');
-    assert.strictEqual(
-      shouldDropOpinionTrack(Object.fromEntries(persisted)),
-      true,
-      'the stamped RSS record must be excluded by the digest read-path policy',
-    );
   });
 
-  it('carries the Al Jazeera duration-led retrospective verdict from RSS into the digest filter', () => {
+  it('carries the Al Jazeera duration-led retrospective verdict from RSS into the persisted track', () => {
     const result = parseRssXml(
       `<?xml version="1.0"?><rss><channel><item>
         <title>10 years on from Turkiye’s failed coup attempt on Erdogan</title>
@@ -154,11 +148,6 @@ describe('buildStoryTrackHsetFields — story:track:v1 HSET contract', () => {
     assert.strictEqual(item.isOpinion, true);
     const persisted = fieldsToMap(buildStoryTrackHsetFields(item, '1784147709000', 42));
     assert.strictEqual(persisted.get('isOpinion'), '1');
-    assert.strictEqual(
-      shouldDropOpinionTrack(Object.fromEntries(persisted)),
-      true,
-      'the stamped anniversary retrospective must be excluded before severity bucketing',
-    );
   });
 
   it('writes isFeelGood as "1" / "0" — stamps the feel-good verdict on the row (Veterans-warplanes anchor)', () => {

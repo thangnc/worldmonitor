@@ -15,7 +15,6 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Build context per Dockerfile, relative to the repository root. Everything
 // not listed builds from the root (the documented `docker build -f <file> .`).
 const CONTEXT_BY_DOCKERFILE = {
-  'consumer-prices-core/Dockerfile': 'consumer-prices-core',
   'docker/Dockerfile.redis-rest': 'docker',
 };
 
@@ -42,7 +41,8 @@ function copySources(source) {
 
 describe('Dockerfile COPY sources exist', () => {
   it('finds the tracked Dockerfiles', () => {
-    assert.ok(dockerfiles.length >= 10, `expected the repository's Dockerfiles, found ${dockerfiles.length}`);
+    // The Lite images: the app, the relay, the frontend and the Redis REST proxy.
+    assert.ok(dockerfiles.length >= 4, `expected the repository's Dockerfiles, found ${dockerfiles.length}`);
   });
 
   it('parses COPY sources and skips multi-stage copies (positive control)', () => {
