@@ -19,7 +19,7 @@ Source of truth: CLAUDE.md test-suite table, [CONTRIBUTING.md "Verify the change
 | DOM (happy-dom) | `tests/dom/` | vitest (`npm run test:dom`) |
 | Server, correlation engine | `server/__tests__/`, `src/services/correlation-engine/` | vitest (`npm run test:server`) |
 | `api/` node suites, sidecar | next to the code | `npm run test:sidecar` |
-| Browser | `e2e/*.spec.ts` | Playwright, one `VITE_VARIANT` per run |
+| Browser | `.claude/skills/verify-worldmonitor/steps/` | Playwright drive through the `verify-worldmonitor` skill (no `e2e/` suite) |
 
 The two runners are not interchangeable. A vitest file run under node:test fails with a bare "test failed" message, so put each file in its runner's directory.
 
@@ -41,7 +41,6 @@ The two runners are not interchangeable. A vitest file run under node:test fails
 node --import tsx --test tests/<name>.test.mjs
 npx vitest run --config vitest.dom.config.mts tests/dom/<file>
 npx vitest run --config vitest.config.mts <path>
-cross-env VITE_VARIANT=full npx playwright test e2e/<spec>.spec.ts --project=chromium
 ```
 
 Run heavy suites one after another, not in parallel. A timeout, skipped job, or unmet prerequisite is not a pass.

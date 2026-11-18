@@ -16,11 +16,11 @@ Deeper references: [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIB
 
 ## Product direction: World Monitor Lite profile
 
-The owner runs a private, low-noise build of the `full` variant, focused on three domains: geopolitics and conflicts, finance and crypto, and technology and AI. [docs/engineering/architecture/lite.md](docs/engineering/architecture/lite.md) is the canonical spec: scope by panel ID, owner decisions, platform map, intelligence reuse map, and phase plan. Change it before changing scope or architecture. File-level rules are in `.claude/rules/lite-profile.md`.
+The owner runs a private, low-noise dashboard, World Monitor Lite, focused on three domains: geopolitics and conflicts, finance and crypto, and technology and AI. [docs/engineering/architecture/lite.md](docs/engineering/architecture/lite.md) is the canonical spec: scope by panel ID, owner decisions, platform map, intelligence reuse map, and phase plan. Change it before changing scope or architecture. File-level rules are in `.claude/rules/lite-profile.md`.
 
 - New work serves one of the three domains, or passes the spec's decision rule for optional modules. Say which when proposing it.
 - Early indicators come first: feeds that report army activity, violence, macro releases, bond moves, hacking, releases and outages as soon as they happen. Link each indicator to the news around it, and say "No linked news found" rather than guess a cause (spec: Early indicators).
-- Upstream sync is dropped (2026-11-07): Lite is the product, and only the ingestion architecture is kept. The [refactor plan](docs/engineering/plans/2026-11-18-001-refactor-lite-monorepo-plan.md) removes the old dashboard and the flag-off paths, then moves to npm workspaces + Turborepo and Vite 8, with hosting last. New work needs no flag-off parity; leave existing flag gates for that plan's Phase 1 to remove together. Do not add a `lite` variant. [Legacy features](docs/engineering/product/legacy-features.md) lists what leaves and how to bring it back.
+- Upstream sync is dropped (2026-11-07): Lite is the product, and only the ingestion architecture is kept. The [refactor plan](docs/engineering/plans/2026-11-18-001-refactor-lite-monorepo-plan.md) removed the old dashboard, the profile flag and the site variants in Phase 1, then moves to npm workspaces + Turborepo and Vite 8, with hosting last. Build Lite work directly: no env flag, no flag-off path, no site variant. [Legacy features](docs/engineering/product/legacy-features.md) lists what leaves and how to bring it back.
 - The owner's front page is the Lite UI at `/lite` (`src/lite/`, Preact and Tailwind): the cross-domain Briefing, with the three domain screens as its children. Its widgets show real data, a labelled derived rule, or labelled samples, never unlabelled samples.
 - Reuse the existing `shared/` intelligence modules (story identity, publisher families, credibility, corroboration, keyword spikes, grounded briefs) before writing new scoring, dedup, or brief code.
 - Add no new datastore (Supabase Postgres, R2 raw archive) until its phase gate in the spec is met. Redis stays the store the dashboard reads.
@@ -143,7 +143,7 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 **Bootstrap data.** Startup datasets come from `api/bootstrap.js` and are read with `getHydratedData(key)`. Opt-in panels use `ensureHydrated(key)` (on-demand path). Each new key must also be registered in `api/health.js`.
 
-**Variants.** `VITE_VARIANT` and the variant configs in `src/config/` still exist for the server and seeders; the web build is the Lite UI only. Refactor Phase 1 removes the remaining variant and flag-off paths.
+**No variants, no profile flag.** Refactor Phase 1d removed `VITE_VARIANT`/`SITE_VARIANT` and `VITE_LITE_PROFILE`. `/` and `/dashboard` always 307 to `/lite` (query kept): `vercel.json` owns that redirect, and `docker/nginx.conf*` and `vite.dev-api.ts` mirror it. A `variant` request parameter on the news RPCs (`full`, `tech`, `finance`) names a feed digest edition on the server, not a site variant.
 
 **`shared/` vs `src/shared/`.** The top-level `shared/` holds logic that both the browser and the server must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side.
 
@@ -154,7 +154,7 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 The browser import direction is `types -> config -> services -> lite`, and `src/lite/` imports no removed dashboard code. [lint-boundaries.mjs](scripts/lint-boundaries.mjs) enforces import boundaries.
 
 - Legacy `api/*.js` entries are self-contained JavaScript. Import same-directory `_*.js` helpers or packages, never `server/` or `src/`.
-- TypeScript API entries may import `server/` and `src/generated/`, but no other browser code. `server/` must not import `src/components/` or `src/app/`.
+- TypeScript API entries may import `server/` and `src/generated/`, but no other browser code. `server/` must not import `src/lite/`.
 - Edit proto definitions and regenerate. Never hand-edit `src/generated/`.
 - Use shared cache and response helpers. Use `cachedFetchJson()` when applicable. Include every request-varying parameter in cache keys.
 - Edge code must not import `node:http`, `node:https`, or `node:zlib`. Use `(...args) => globalThis.fetch(...args)`, never `fetch.bind(globalThis)`.

@@ -32,14 +32,19 @@ http {
 
   server {
     listen 80;
+    # Keep redirect Locations relative: the published port (docker-compose maps
+    # 3000:8080) and a TLS proxy in front are invisible to nginx, so an absolute
+    # Location would point at the container's own port and scheme.
+    absolute_redirect off;
     server_name _;
 
     root /usr/share/nginx/html;
     # The Lite UI (lite.html) is the only page; / and the old dashboard routes
-    # redirect to /lite, matching vercel.json.
+    # redirect to /lite with a 307 that keeps the query string, matching
+    # vercel.json (temporary: /lite moves in the deployment phase).
     index index.html;
-    location = / { return 302 /lite; }
-    location ~ ^/(?:dashboard|story|stocks(?:/[^/]+)?)/?$ { return 302 /lite; }
+    location = / { return 307 /lite$is_args$args; }
+    location ~ ^/(?:dashboard|story|stocks(?:/[^/]+)?)/?$ { return 307 /lite$is_args$args; }
 
     # World Monitor Lite UI: /lite and its screens serve lite.html with the
     # shared security headers of the location below.

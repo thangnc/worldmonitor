@@ -47,12 +47,11 @@ cmd_launch() {
   fi
 
   mkdir -p "$EVIDENCE_ROOT"
-  local variant="${WM_VERIFY_VARIANT:-full}"
-  echo "VITE_E2E=1 VITE_VARIANT=$variant port=$port" >"$EVIDENCE_ROOT/launch-env.txt"
-  echo "[wm-verify] starting VITE_VARIANT=$variant dev server on 127.0.0.1:$port"
+  echo "VITE_E2E=1 port=$port" >"$EVIDENCE_ROOT/launch-env.txt"
+  echo "[wm-verify] starting the dev server on 127.0.0.1:$port"
   (
     cd "$REPO_ROOT"
-    VITE_E2E=1 VITE_VARIANT="$variant" npm run dev -- --host 127.0.0.1 --port "$port" \
+    VITE_E2E=1 npm run dev -- --host 127.0.0.1 --port "$port" \
       >"$LOG_FILE" 2>&1 &
     echo $! >"$EVIDENCE_ROOT/.pid"
   )
@@ -84,11 +83,10 @@ cmd_launch() {
       pid: Number(process.argv[2]),
       port: Number(process.argv[3]),
       baseUrl: 'http://127.0.0.1:' + process.argv[3],
-      variant: process.argv[4],
       startedAt: new Date().toISOString(),
-      log: process.argv[5],
+      log: process.argv[4],
     }, null, 2) + '\n');
-  " "$INSTANCE_FILE" "$pid" "$port" "$variant" "$LOG_FILE"
+  " "$INSTANCE_FILE" "$pid" "$port" "$LOG_FILE"
 
   echo "[wm-verify] ready in ${waited}s — http://127.0.0.1:$port/lite (pid $pid)"
   cat "$INSTANCE_FILE"

@@ -31,11 +31,6 @@ RUN node scripts/generate-inventory-facts.mjs
 # Output is api/**/*.js alongside the source .ts files
 RUN node docker/build-handlers.mjs
 
-# World Monitor Lite deployment profile (docs/engineering/architecture/lite.md). Off by default;
-# pass --build-arg VITE_LITE_PROFILE=true to open the image on /lite.
-ARG VITE_LITE_PROFILE=
-ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}
-
 # Build the Vite frontend (outputs to dist/)
 # Skip blog build — blog-site has its own deps not installed here
 RUN npx tsc && npx vite build

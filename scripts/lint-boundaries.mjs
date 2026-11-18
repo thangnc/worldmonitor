@@ -3,7 +3,7 @@
  * Architectural boundary lint.
  *
  * Enforces forward-only dependency direction:
- *   types → config → services → components → app → App.ts
+ *   types → config → services → lite
  *
  * Violations are imports that go backwards in this chain.
  * Lines with "boundary-ignore" comments are excluded.
@@ -11,7 +11,8 @@
  * Also checks:
  *   - api/ legacy .js: must not import from src/ or server/ (self-contained)
  *   - api/ RPC .ts: may import server/ and src/generated/, but not src/ app code
- *   - server/ must not import from src/components/ or src/app/
+ *   - server/ must not import the Lite UI (src/lite/)
+ *   - nothing outside src/lite/ imports the Lite UI
  *
  * Exit code 1 if violations found. Agent-readable output.
  */
@@ -23,7 +24,7 @@ const SRC = 'src';
 const ROOT = process.cwd();
 
 // Layer order (lower index = lower layer, can only import from same or lower)
-const LAYERS = ['types', 'config', 'services', 'components', 'app'];
+const LAYERS = ['types', 'config', 'services', 'lite'];
 
 function getLayer(filePath) {
   const rel = relative(join(ROOT, SRC), filePath);
@@ -96,7 +97,7 @@ for (const file of srcFiles) {
   }
 }
 
-// --- Check 2: server/ must not import from src/components/ or src/app/ ---
+// --- Check 2: server/ must not import the Lite UI (src/lite/) ---
 const serverFiles = walkDir(join(ROOT, 'server'));
 for (const file of serverFiles) {
   const content = readFileSync(file, 'utf8');
@@ -107,14 +108,14 @@ for (const file of serverFiles) {
     if (line.includes('boundary-ignore')) continue;
     if (i > 0 && lines[i - 1].includes('boundary-ignore')) continue;
 
-    if (line.match(/from\s+['"].*\/(components|app)\//)) {
+    if (line.match(/from\s+['"].*\/src\/lite\//)) {
       violations.push({
         file: relative(ROOT, file),
         line: i + 1,
         from: 'server',
-        to: 'src/' + line.match(/(components|app)/)[1],
+        to: 'src/lite',
         text: line.trim(),
-        remedy: 'Server code must not import browser UI code. Extract shared logic into server/_shared/ or src/types/.',
+        remedy: 'Server code must not import browser UI code. Extract shared logic into shared/, server/_shared/ or src/types/.',
       });
     }
   }
@@ -123,7 +124,7 @@ for (const file of serverFiles) {
 // --- Check 3: api/ boundary rules ---
 // Legacy api/*.js: fully self-contained (no ../server/ or ../src/ imports)
 // Sebuf RPC api/**/*.ts: may import server/ and src/generated/ (bundled at deploy),
-//   but must NOT import src/ non-generated paths (components, services, config, etc.)
+//   but must NOT import src/ non-generated paths (lite, services, config, etc.)
 const apiFiles = walkDir(join(ROOT, 'api'), ['.js', '.mjs', '.ts']);
 for (const file of apiFiles) {
   const basename = file.split('/').pop();
@@ -147,7 +148,7 @@ for (const file of apiFiles) {
           from: 'api (RPC)',
           to: 'src (non-generated)',
           text: line.trim(),
-          remedy: 'RPC Edge Functions may import from server/ and src/generated/, but not from src/ application code (components, services, config).',
+          remedy: 'RPC Edge Functions may import from server/ and src/generated/, but not from src/ application code (lite, services, config).',
         });
       }
     } else {
@@ -166,13 +167,15 @@ for (const file of apiFiles) {
   }
 }
 
-// --- Check 4: src/lite/ (the Lite UI) is a separate surface ---
-// It may import types, config, services, utils and generated clients, but never
-// the dashboard UI (components, app, App.ts). Nothing outside src/lite/ may
-// import it. See .claude/rules/lite-profile.md.
+// --- Check 4: src/lite/ (the Lite UI) sits on top ---
+// It may import types, config, services, utils, shared and generated clients.
+// Nothing outside src/lite/ may import it (Check 1 covers the layered
+// directories; this covers bootstrap/, utils/, workers and the rest).
+// See .claude/rules/lite-profile.md.
 const LITE_DIR = join(ROOT, SRC, 'lite');
 for (const file of srcFiles) {
   const inLite = file.startsWith(LITE_DIR + '/') || file.startsWith(LITE_DIR + '\\');
+  if (inLite) continue;
   const lines = readFileSync(file, 'utf8').split('\n');
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -181,14 +184,7 @@ for (const file of srcFiles) {
     const spec = line.match(/(?:from\s+|import\()['"]([^'"]+)['"]/)?.[1];
     if (!spec) continue;
     const target = spec.startsWith('.') ? relative(join(ROOT, SRC), resolve(dirname(file), spec)) : null;
-    const dashboardUi = /^@\/(components|app|App)(\/|$)/.test(spec)
-      || (target != null && /^(components|app|App)(\/|\\|\.|$)/.test(target));
-    if (inLite && dashboardUi) {
-      violations.push({
-        file: relative(ROOT, file), line: i + 1, from: 'lite', to: spec, text: line.trim(),
-        remedy: 'The Lite UI must not import dashboard UI code. Import from services/, config/ or shared/ instead.',
-      });
-    } else if (!inLite && /^@\/lite(\/|$)|\/lite\//.test(spec) && !spec.includes('lite-profile')) {
+    if (/^@\/lite(\/|$)/.test(spec) || (target != null && /^lite(\/|\\|$)/.test(target))) {
       violations.push({
         file: relative(ROOT, file), line: i + 1, from: 'src', to: spec, text: line.trim(),
         remedy: 'Only src/lite/ may import the Lite UI.',

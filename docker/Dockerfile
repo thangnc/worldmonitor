@@ -22,14 +22,9 @@ RUN npm ci --include=dev --ignore-scripts
 
 # Build-time configuration. Pass via --build-arg. Other VITE_* vars (e.g. VITE_PMTILES_URL)
 # can be added here or via --build-arg for custom builds; see .env.example for the full list.
-ARG VITE_VARIANT=full
 ARG VITE_WS_API_URL=https://api.worldmonitor.app
-# World Monitor Lite deployment profile (docs/engineering/architecture/lite.md). Off by default.
-ARG VITE_LITE_PROFILE=
 
-ENV VITE_VARIANT=${VITE_VARIANT}
 ENV VITE_WS_API_URL=${VITE_WS_API_URL}
-ENV VITE_LITE_PROFILE=${VITE_LITE_PROFILE}
 
 # tsc + vite build directly like the sidecar image's builder. `npm run build`
 # would also run the Vite env secrets check, which the

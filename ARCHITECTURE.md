@@ -113,11 +113,9 @@ No external state library. `AppContext` is a central mutable object holding: map
 - **ml.worker.ts**: ONNX inference via `@xenova/transformers` (MiniLM-L6 embeddings, sentiment, summarization, NER), in-worker vector store for headline memory
 - **vector-db.ts**: IndexedDB-backed vector store for semantic search
 
-### Variant System
+### No variants
 
-Detected by hostname (`tech.worldmonitor.app` → tech, `finance.worldmonitor.app` → finance, etc.) or localStorage on desktop. Controls: default panels, map layers, refresh intervals, theme, UI text. Variant change resets all settings to defaults.
-
-**Source files**: `src/main.ts`, `src/App.ts`, `src/app/`, `src/components/Panel.ts`, `src/components/DeckGLMap.ts`, `src/components/GlobeMap.ts`, `src/config/variant.ts`, `src/workers/`
+Refactor Phase 1d removed the site variants (`VITE_VARIANT`, `SITE_VARIANT`, the `tech.`/`finance.`/… host detection) and the Lite profile flag (`VITE_LITE_PROFILE`). The Lite UI (`src/lite/`) is the one web app on every host; `/` and `/dashboard` 307 to `/lite` (`vercel.json`, `docker/nginx.conf*`, `vite.dev-api.ts`). The `variant` parameter of the news RPCs names a server-side digest edition, not a site variant.
 
 ---
 

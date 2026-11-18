@@ -39,20 +39,9 @@ World Monitor is a real-time OSINT dashboard built with **Vanilla TypeScript** (
 | **Convex** | Billing, entitlements, user state, forms, and intelligence history |
 | **Playwright** | End-to-end and visual regression testing |
 
-### Variant System
+### One app, no variants
 
-The codebase produces app variants from the same source, each targeting a different audience or use case:
-
-| Variant | Command | Focus |
-|---|---|---|
-| `full` | `npm run dev` | Geopolitics, military, conflicts, infrastructure |
-| `tech` | `npm run dev:tech` | Startups, AI/ML, cloud, cybersecurity |
-| `finance` | `npm run dev:finance` | Markets, trading, central banks, commodities |
-| `commodity` | `npm run dev:commodity` | Commodities, mining, energy markets |
-| `happy` | `npm run dev:happy` | Positive news and constructive signals |
-| `energy` | `npm run dev:energy` | Energy security, chokepoints, oil/gas |
-
-Variants share all code but differ in default panels, map layers, and RSS feeds. Variant configs live in `src/config/variants/`.
+The web app is the Lite UI (`src/lite/`, served at `/lite`). Refactor Phase 1d removed the site variants (`VITE_VARIANT`) and the Lite profile flag (`VITE_LITE_PROFILE`), so there is one build and no flag to set. See the [Lite spec](docs/engineering/architecture/lite.md).
 
 ### Directory Structure
 
@@ -60,7 +49,7 @@ Variants share all code but differ in default panels, map layers, and RSS feeds.
 |---|---|
 | `src/components/` | UI components |
 | `src/services/` | Data fetching modules — sebuf client wrappers, AI, signal analysis |
-| `src/config/` | Static data and variant configs (feeds, geo, military, pipelines, ports) |
+| `src/config/` | Static data and route config (geo, military, ports, Lite routes) |
 | `src/generated/` | Auto-generated sebuf client + server stubs (**do not edit by hand**) |
 | `src/types/` | TypeScript type definitions |
 | `src/locales/` | i18n JSON files |
@@ -119,30 +108,17 @@ For interactive development, run the commands below. Install the full toolchain
 with `make install` when you need code generation or the broader build tools.
 
 ```bash
-# Start the development server (full variant, default)
+# Start the development server (the Lite UI at /lite)
 npm run dev
-
-# Start other variants
-npm run dev:tech
-npm run dev:finance
-npm run dev:commodity
-npm run dev:happy
-npm run dev:energy
 
 # Run type checking
 npm run typecheck
 
 # Run tests
 npm run test:data          # Data integrity tests
-npm run test:e2e:full      # Playwright end-to-end tests (full variant)
 
-# Production build (per variant)
-npm run build              # full
-npm run build:tech
-npm run build:finance
-npm run build:commodity
-npm run build:happy
-npm run build:energy
+# Production build (the Lite UI into dist/)
+npm run build
 ```
 
 The dev server runs at `http://localhost:3000` (override the port with `DEV_PORT` in `.env.local`). Run `make help` to see all available make targets.
@@ -278,7 +254,7 @@ required gates. Run focused checks first and heavy checks sequentially. Keep use
 regression coverage. Remove a check only with evidence that its protection is
 obsolete, redundant, or ineffective.
 
-For PWA changes, build with `VITE_VARIANT=full npx vite build`, then run
+For PWA changes, build with `npx vite build`, then run
 `node --import tsx --test tests/pwa-precache.test.mjs tests/pwa-recovery.test.mjs tests/deploy-config.test.mjs`.
 The generated worker precaches the dashboard entry's static JavaScript/CSS
 dependencies and the fixed offline/install assets, with a 32-file, 2 MiB budget
@@ -379,7 +355,7 @@ checks. These tests do not execute CodeQL or prove SARIF upload access.
 ## Pull Request Process
 
 1. Keep one feature or fix per PR. Check for an existing PR before creating one. Push fixes to that PR's head, including its original fork remote when maintainer edits are enabled. Never open a replacement without explicit authorization.
-2. Follow [the completion workflow](#complete-one-change). Update docs when behavior or contracts change. Run the required checks for affected code and variants. In the description, state the user outcome, evidence, and unverified paths. Link the related issue.
+2. Follow [the completion workflow](#complete-one-change). Update docs when behavior or contracts change. Run the required checks for affected code. In the description, state the user outcome, evidence, and unverified paths. Link the related issue.
 3. Refresh the base and remote PR head before pushing. Confirm no unmerged paths, reconcile current `main`, and verify that local HEAD is the captured PR head or contains it. Rerun affected checks after conflict resolution. Never bypass the pre-push gate with `--no-verify`.
 4. Open the PR ready for review. Keep one owner responsible for relevant review and CI repairs on the same PR. Requesting reviewers, invoking review automation, merge, auto-merge, and deployment each require the applicable explicit authorization.
 5. Base recovery and follow-up PRs on `main`. A stacked PR whose parent merges and auto-deletes its branch can report `MERGED` while its commits never reach `main`.
@@ -458,7 +434,7 @@ This repository is developed with [Claude Code](https://claude.com/claude-code),
 
 ### File Organization
 
-- Static layer/geo data and variant configs go in `src/config/`
+- Static layer/geo data and route config go in `src/config/`
 - Sebuf handler implementations go in `server/worldmonitor/{domain}/v1/`
 - Edge function gateway and legacy endpoints go in `api/`
 - UI components (panels, map, modals) go in `src/components/`

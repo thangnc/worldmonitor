@@ -28,9 +28,8 @@ One long-lived dev server per run; every drive gets a fresh browser context agai
 .claude/skills/verify-worldmonitor/scripts/wm-verify.sh launch
 ```
 
-It picks the first free port in 4480-4487, starts `VITE_E2E=1 VITE_VARIANT=full npm run dev`, waits until `/lite.html` answers 200 (it forces a real module transform, so 200 means "can serve the app", not just "socket open"), and writes `.claude/verify-evidence/instance.json` with the pid, port and base URL.
+It picks the first free port in 4480-4487, starts `VITE_E2E=1 npm run dev`, waits until `/lite.html` answers 200 (it forces a real module transform, so 200 means "can serve the app", not just "socket open"), and writes `.claude/verify-evidence/instance.json` with the pid, port and base URL.
 
-- Pick a variant with `WM_VERIFY_VARIANT=tech|finance|commodity|energy|happy`.
 - Force a port with `launch <port>`. Launch refuses a port someone else holds rather than fighting for it.
 - Prepare dependencies through preflight before launch. If Chromium is missing, run `npx playwright install chromium`.
 

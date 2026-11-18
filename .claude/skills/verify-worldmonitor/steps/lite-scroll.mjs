@@ -1,7 +1,7 @@
 /**
  * Feature: overlay scrollbars in the Lite UI (src/lite/components/scroll.tsx).
  *
- * Launch with VITE_LITE_PROFILE=true. Proves the page scrolls under an overlay
+ * Launch with `wm-verify.sh launch`. Proves the page scrolls under an overlay
  * scrollbar that takes no width and shows only while the pointer is over the
  * page, that switching screens resets the scroll to the top, that the sidebar
  * stays in view while the page scrolls, and that the Sources table and the

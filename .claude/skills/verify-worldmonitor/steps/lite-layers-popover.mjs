@@ -2,7 +2,7 @@
  * Feature: the map layers popover on the Lite domain screens
  * (src/lite/components/LayersPopover.tsx).
  *
- * Launch with VITE_LITE_PROFILE=true. On each domain map, opening "Layers"
+ * Launch with `wm-verify.sh launch`. On each domain map, opening "Layers"
  * shows the whole popover inside the map card: its bottom edge, footer
  * included, stays within the card that clips it. When the rows do not fit,
  * they scroll under an overlay scrollbar and the last row can be reached.

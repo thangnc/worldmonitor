@@ -17,6 +17,8 @@ The Lite UI (`src/lite/`, Preact and Tailwind) is the only web app. Refactor Pha
 ## Rules
 
 - Imports flow `types -> config -> services -> lite`. Logic shared with the server or MCP lives once in top-level `shared/`.
+- There is one build: no site variant (`VITE_VARIANT`) and no profile flag (`VITE_LITE_PROFILE`); refactor Phase 1d removed both. Do not reintroduce a build-time switch for Lite behavior.
+- The dev server's `/` and `/dashboard` redirect (`liteDevRoutePlugin` in `vite.dev-api.ts`) mirrors `vercel.json`: a 307 to `/lite` that keeps the query string. Change them together (`lite-profile.md`, "Default route").
 - Do not assign `innerHTML`/`outerHTML` or call `insertAdjacentHTML`. Render with Preact.
 - Use the helper in `src/utils/safe-storage.ts` instead of dereferencing `localStorage`. Some Android WebViews expose it as `null`.
 - A service client that calls a premium RPC must authenticate it; the Lite UI calls none (`npm run lint:premium-fetch`). Other clients use `{ fetch: (...args) => globalThis.fetch(...args) }`.

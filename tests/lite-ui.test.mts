@@ -1,13 +1,13 @@
 // World Monitor Lite UI (`/lite`, docs/engineering/architecture/lite.md "Lite UI").
-// Covers the pure parts: routing, the default-route redirect in middleware.ts
-// and src/main.ts, and the labelled heuristics the widgets display.
-import { afterEach, describe, it } from 'node:test';
+// Covers the pure parts: routing, the middleware's unknown-page gate for the
+// Lite paths, and the labelled heuristics the widgets display. The `/` and
+// `/dashboard` redirect lives in vercel.json (tests/deploy-config.test.mjs).
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   LITE_SCREEN_PATHS,
   parseLiteScreen,
-  shouldRedirectToLite,
 } from '../src/config/lite-route.ts';
 import {
   corroborationOf,
@@ -106,78 +106,33 @@ describe('Lite routes', () => {
   });
 });
 
-describe('Lite default route (client guard in src/main.ts)', () => {
-  const on = { enabled: true, fullDashboardInSession: false };
-
-  it('sends / and /dashboard to /lite only when the profile is on', () => {
-    assert.equal(shouldRedirectToLite('/', '', on), true);
-    assert.equal(shouldRedirectToLite('/dashboard', '', on), true);
-    assert.equal(shouldRedirectToLite('/dashboard/', '', on), true);
-    assert.equal(shouldRedirectToLite('/', '', { ...on, enabled: false }), false);
-    assert.equal(shouldRedirectToLite('/dashboard', '', { ...on, enabled: false }), false);
-  });
-
-  it('keeps the full dashboard reachable with ?full=1 or a remembered session', () => {
-    assert.equal(shouldRedirectToLite('/dashboard', '?full=1', on), false);
-    assert.equal(shouldRedirectToLite('/dashboard', '', { ...on, fullDashboardInSession: true }), false);
-  });
-
-  it('never hijacks a shared map view, deep link or standalone window', () => {
-    for (const query of ['?lat=1&lon=2', '?layers=conflicts', '?country=UA', '?settings=1', '?live-channels=1', '?c=IR']) {
-      assert.equal(shouldRedirectToLite('/dashboard', query, on), false, query);
-    }
-    assert.equal(shouldRedirectToLite('/stocks', '', on), false);
-    assert.equal(shouldRedirectToLite('/lite', '', on), false);
-  });
-});
-
-describe('Lite default route (middleware.ts)', () => {
-  const original = process.env.VITE_LITE_PROFILE;
-  afterEach(() => {
-    if (original === undefined) delete process.env.VITE_LITE_PROFILE;
-    else process.env.VITE_LITE_PROFILE = original;
-  });
+describe('Lite routes (middleware.ts)', () => {
   const request = (path: string) =>
     new Request(`https://monitor.example.com${path}`, { headers: { host: 'monitor.example.com', 'user-agent': 'Mozilla/5.0', accept: 'text/html' } });
 
-  it('307s / to /lite with the query when the profile is on', () => {
-    process.env.VITE_LITE_PROFILE = 'true';
-    const resp = middleware(request('/?utm_source=x')) as Response;
-    assert.equal(resp.status, 307);
-    assert.equal(resp.headers.get('location'), 'https://monitor.example.com/lite?utm_source=x');
-    assert.match(resp.headers.get('cache-control') ?? '', /no-store/);
-  });
-
-  it('leaves / alone when the profile is off', () => {
-    delete process.env.VITE_LITE_PROFILE;
-    const resp = middleware(request('/')) as Response | undefined;
-    assert.notEqual(resp?.status, 307);
-    assert.notEqual(resp?.headers.get('location'), 'https://monitor.example.com/lite');
-  });
-
-  it('still sends a legacy map link to the dashboard when the profile is on', () => {
-    process.env.VITE_LITE_PROFILE = 'true';
-    const resp = middleware(request('/?lat=10&lon=20')) as Response;
-    assert.equal(resp.status, 308);
-    assert.match(resp.headers.get('location') ?? '', /\/dashboard\?lat=10&lon=20$/);
-  });
-
-  it('applies the same rule as the client guard: ?full=1 and dashboard state keep the dashboard', () => {
-    process.env.VITE_LITE_PROFILE = 'true';
-    for (const query of ['?full=1', '?preset=lite-desk', '?mission=x', '?settings=1', '?live-channels=1', '?expanded=1']) {
-      const resp = middleware(request(`/${query}`)) as Response | undefined;
-      assert.notEqual(resp?.status, 307, query);
-    }
-  });
-
   it('lets exactly the five Lite paths through the unknown-page 404 gate', () => {
-    delete process.env.VITE_LITE_PROFILE;
     for (const path of ['/lite', '/lite/', '/lite/geopolitics', '/lite/finance', '/lite/tech', '/lite/sources']) {
       const resp = middleware(request(path)) as Response | undefined;
       assert.notEqual(resp?.status, 404, path);
     }
     const unknown = middleware(request('/lite/unknown')) as Response | undefined;
     assert.equal(unknown?.status, 404);
+  });
+
+  it('never redirects a root link to the deleted dashboard; vercel.json owns / and /dashboard', () => {
+    for (const path of ['/', '/?lat=1&lon=2', '/?full=1', '/?layers=conflicts&zoom=3', '/dashboard']) {
+      assert.equal(middleware(request(path)), undefined, path);
+    }
+  });
+
+  it('308s a crawler to the same Lite URL without index-noise keys, kept out of shared caches', () => {
+    const bot = new Request('https://monitor.example.com/lite/finance?utm_source=x&ref=y&q=1', { headers: { 'user-agent': 'Googlebot/2.1' } });
+    const resp = middleware(bot) as Response;
+    assert.equal(resp.status, 308);
+    assert.equal(resp.headers.get('location'), 'https://monitor.example.com/lite/finance?q=1');
+    assert.equal(resp.headers.get('vary'), 'User-Agent');
+    assert.equal(resp.headers.get('cdn-cache-control'), 'no-store');
+    assert.equal(middleware(request('/lite/finance?utm_source=x')), undefined, 'people keep the attribution keys');
   });
 });
 
