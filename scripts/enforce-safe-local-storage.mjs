@@ -267,17 +267,10 @@ export const GUARD_EXEMPT_FILES = new Set(['src/utils/safe-storage.ts']);
  */
 export const LEGACY_RAW_LOCAL_STORAGE = [
   'src/config/variant.ts :: localStorage.<member> x1',
-  'src/services/analytics.ts :: <global>.localStorage x3',
-  'src/services/i18n.ts :: localStorage.<member> x3',
   'src/services/market-watchlist.ts :: localStorage.<member> x6',
-  'src/services/mission-presets.ts :: localStorage.<member> x7',
   'src/services/persistent-cache.ts :: localStorage.<member> x3',
   'src/services/runtime-config.ts :: localStorage.<member> x2',
-  'src/services/tab-store.ts :: localStorage.<member> x2',
-  'src/services/widget-store.ts :: localStorage.<member> x4',
-  'src/utils/index.ts :: localStorage.<member> x2',
   'src/utils/panel-storage.ts :: localStorage.<member> x3',
-  'src/utils/theme-manager.ts :: localStorage.<member> x3',
 ];
 
 /**
@@ -286,7 +279,7 @@ export const LEGACY_RAW_LOCAL_STORAGE = [
  * scan toward zero and let every assertion pass vacuously — the silent
  * failure mode this guard exists to prevent.
  */
-export const MIN_SCANNED_FILES = 200;
+export const MIN_SCANNED_FILES = 160;
 
 /**
  * `<idiom> xN` for every raw-storage dereference in `source`, with counts.
@@ -359,7 +352,7 @@ function main() {
 
   if (result.scannedFiles.length < MIN_SCANNED_FILES) {
     problems.push(
-      `Expected >= ${MIN_SCANNED_FILES} scanned files under src/ (240 after the dashboard removal), found ${result.scannedFiles.length} — the scan or the source layout has drifted.`,
+      `Expected >= ${MIN_SCANNED_FILES} scanned files under src/ (179 after refactor Phase 1c), found ${result.scannedFiles.length} — the scan or the source layout has drifted.`,
     );
   }
 

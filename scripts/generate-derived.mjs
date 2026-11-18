@@ -29,15 +29,12 @@ const MAX_PASSES = 3;
 // [name, command, write flag]. Every command also accepts --check.
 export const STEPS = [
   ['browser news catalog', [...TSX, 'scripts/generate-browser-news-catalog.mjs']],
-  ['entitlement crosswalk', [NODE, 'scripts/generate-entitlement-crosswalk.mjs']],
   ['agent skills index', [NODE, 'scripts/build-agent-skills-index.mjs']],
   ['engineering index', [NODE, 'scripts/generate-engineering-index.mjs']],
   ['source attribution', [NODE, 'scripts/source-attribution.mjs'], '--write'],
   ['bootstrap tier keys', [NODE, 'scripts/sync-bootstrap-tier-keys.mjs']],
   ['live video channels', [...TSX, 'scripts/sync-live-video-refresh-channels.mjs']],
   ['sandbox fixtures', [NODE, 'scripts/generate-sandbox-fixtures.mjs']],
-  ['scorecard edge mirrors', [NODE, 'scripts/generate-scorecard-edge-mirrors.mjs']],
-  ['Sentry Convex probe filters', [NODE, 'scripts/sync-sentry-convex-probe-filters.mjs'], '--write'],
   ['legal digests', [NODE, 'scripts/legal-digests.mjs']],
   ['legal PDFs', [NODE, 'scripts/build-legal-pdfs.mjs']],
   ['story phase fading study', [NODE, 'scripts/study-story-phase-fading.mjs']],
@@ -50,15 +47,6 @@ function run([cmd, ...args], flag) {
 
 function main() {
   const checkOnly = process.argv.includes('--check');
-  // The product config has no --check; it is cheap and deterministic, so the
-  // write mode always runs it.
-  if (!checkOnly) {
-    const config = run([...TSX, 'scripts/generate-product-config.mjs']);
-    if (!config.ok) {
-      console.error(`generate: product config failed:\n${config.output}`);
-      return 1;
-    }
-  }
   const steps = STEPS;
 
   const regenerated = new Set();

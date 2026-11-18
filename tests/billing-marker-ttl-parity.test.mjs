@@ -74,8 +74,6 @@ test('entitlement cache key prefix is derived identically by every writer and re
   const sources = [
     ['server/_shared/entitlement-check.ts', read('server/_shared/entitlement-check.ts')],
     ['api/_user-api-key.js', read('api/_user-api-key.js')],
-    ['convex/payments/cacheActions.ts', read('convex/payments/cacheActions.ts')],
-    ['convex/accountDeletion/sideEffects.ts', read('convex/accountDeletion/sideEffects.ts')],
   ];
 
   // The two assertions below must BIND, not merely co-occur. An earlier version
@@ -124,7 +122,7 @@ test('entitlement cache key prefix is derived identically by every writer and re
   }
 });
 
-test('exactly four files derive the entitlements cache key', async () => {
+test('exactly two files derive the entitlements cache key', async () => {
   // The `sources` list above is hardcoded, so a FIFTH derivation added anywhere
   // in the repo would be invisible to it — the drift would be silent in exactly
   // the way #5600 was. Pin the count repo-wide.
@@ -132,14 +130,12 @@ test('exactly four files derive the entitlements cache key', async () => {
   const root = new URL('../', import.meta.url).pathname;
   const out = execFileSync(
     'git',
-    ['grep', '-l', '-F', 'entitlements:${', '--', 'api', 'server', 'convex', 'src', 'scripts'],
+    ['grep', '-l', '-F', 'entitlements:${', '--', 'api', 'server', 'src', 'scripts'],
     { cwd: root, encoding: 'utf8' },
   );
   const files = out.split('\n').filter(Boolean).sort();
   assert.deepEqual(files, [
     'api/_user-api-key.js',
-    'convex/accountDeletion/sideEffects.ts',
-    'convex/payments/cacheActions.ts',
     'server/_shared/entitlement-check.ts',
   ], 'a new entitlements-cache-key derivation appeared; add it to the parity list above');
 });

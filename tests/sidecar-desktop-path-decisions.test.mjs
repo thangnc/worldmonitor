@@ -4,6 +4,8 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { DEFERRED_GENERATED_SERVICES } from '../scripts/lib/sebuf-deferred-services.mjs';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 
@@ -13,7 +15,9 @@ const root = resolve(__dirname, '..');
  * A versioned family (api/v{N}/{domain}/[rpc].ts) must be routed to the cloud
  * on purpose by the local-api server — otherwise it only reaches the cloud
  * through the 404 "handler missing" fallback, which is an accident, and a dead
- * end when cloudFallback is off.
+ * end when cloudFallback is off. A family whose gateway was retired on purpose
+ * (a DEFERRED_GENERATED_SERVICES entry: server helpers kept, no api/ entry) is
+ * deliberately unreachable and needs no decision.
  */
 
 const sidecar = readFileSync(resolve(root, 'docker/local-api/local-api-server.mjs'), 'utf-8');
@@ -44,6 +48,7 @@ function serverFamilies() {
         bundled: version === 'v1' && existsSync(resolve(root, bundledEntry)),
         versioned: existsSync(resolve(root, versionedEntry)),
         urlPrefix: version === 'v1' ? `/api/${domain}/v1/` : `/api/${version}/${domain}/`,
+        deferred: DEFERRED_GENERATED_SERVICES.has(`${domain.replaceAll('-', '_')}/${version}`),
       });
     }
   }
@@ -54,12 +59,20 @@ describe('local-api path decision per server/worldmonitor route family (#5907)',
   const families = serverFamilies();
 
   it('finds the families the repo is known to have', () => {
-    assert.ok(families.length >= 36, `expected the sebuf domains, saw ${families.length}`);
-    assert.ok(families.some((f) => f.key === 'v2/shipping'), 'the shipping v2 family is the case this test exists for');
+    // The 13 RPC gateways the Lite UI calls. Retired families (deferred
+    // services) add to the directory count until Phase 2 removes their helpers.
+    const served = families.filter((f) => f.bundled || f.versioned);
+    assert.ok(served.length >= 13, `expected the kept sebuf domains, saw ${served.length}`);
+  });
+
+  it('a retired family has no api entry left behind', () => {
+    for (const f of families.filter((x) => x.deferred)) {
+      assert.ok(!f.bundled && !f.versioned, `${f.key}: is a deferred service but still has an api entry`);
+    }
   });
 
   it('every family has exactly one api entry the local-api server can reason about', () => {
-    for (const f of families) {
+    for (const f of families.filter((x) => !x.deferred)) {
       assert.ok(
         f.bundled || f.versioned,
         `${f.key}: no api/${f.domain}/v1/[rpc].ts and no api/${f.version}/${f.domain}/[rpc].ts — the local-api server cannot see this family at all`,

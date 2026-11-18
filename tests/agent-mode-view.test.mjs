@@ -59,10 +59,6 @@ describe('agent-mode view (/?mode=agent)', () => {
     for (const key of ['javascript', 'python', 'ruby', 'go']) {
       assert.match(sdks[key].url, /^https:\/\//, `sdks.${key}.url must be a registry URL`);
     }
-    // The SDK sources these advertise must exist in-repo.
-    for (const dir of ['sdk/python', 'sdk/ruby', 'sdk/go']) {
-      assert.doesNotThrow(() => readFileSync(join(ROOT, dir, 'README.md')), `${dir} must exist`);
-    }
   });
 
   it('the homepage markdown mirror gives agents useful follow-on context', () => {

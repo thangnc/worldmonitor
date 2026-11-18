@@ -130,9 +130,6 @@
       "references": [
         {
           "path": "scripts/check-analytics-collector.mjs"
-        },
-        {
-          "path": "src/services/analytics.ts"
         }
       ]
     },
@@ -261,9 +258,6 @@
       "references": [
         {
           "path": "scripts/seed-aviation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/list-aviation-news.ts"
         }
       ]
     },
@@ -323,9 +317,6 @@
       "references": [
         {
           "path": "scripts/seed-aviation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/list-aviation-news.ts"
         }
       ]
     },
@@ -486,9 +477,6 @@
         },
         {
           "path": "scripts/seed-military-flights.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/list-aircraft-emergencies.ts"
         }
       ]
     },
@@ -620,12 +608,6 @@
       "attribution": "Excluded from the provider count: identity-control-plane request.",
       "status": "excluded",
       "references": [
-        {
-          "path": "api/_desktop-auth.ts"
-        },
-        {
-          "path": "api/user/passkey-offer.ts"
-        },
         {
           "path": "server/auth-session.ts"
         }
@@ -1122,18 +1104,10 @@
       "host": "api.resend.com",
       "provider": "Resend email service",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: transactional email/control-plane service",
       "attribution": "Excluded from the provider count: transactional email delivery.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "server/worldmonitor/leads/v1/register-interest.ts"
-        },
-        {
-          "path": "server/worldmonitor/leads/v1/submit-contact.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "api.riksbank.se",
@@ -1305,15 +1279,10 @@
       "host": "api.travelpayouts.com",
       "provider": "Travelpayouts flight-price data",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Travelpayouts API terms; commercial use and redistribution require review",
       "attribution": "Travelpayouts; link to the returned flight-price response.",
-      "status": "terms-review",
-      "references": [
-        {
-          "path": "server/worldmonitor/aviation/v1/_providers/travelpayouts_data.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "api.typesafe.ai",
@@ -1440,16 +1409,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "api/mcp/registry/webcam-tools.ts"
-        },
-        {
-          "path": "api/mcp/skill-extension/generated.ts"
-        },
-        {
           "path": "scripts/seed-webcams.mjs"
-        },
-        {
-          "path": "server/worldmonitor/webcam/v1/get-webcam-image.ts"
         }
       ]
     },
@@ -1525,18 +1485,6 @@
       "status": "excluded",
       "references": [
         {
-          "path": "api/a2a.ts"
-        },
-        {
-          "path": "api/internal/mcp-grant-mint.ts"
-        },
-        {
-          "path": "api/mcp/downstream.ts"
-        },
-        {
-          "path": "api/mcp/skill-extension/generated.ts"
-        },
-        {
           "path": "scripts/_widget-data-policy.cjs"
         },
         {
@@ -1609,9 +1557,6 @@
       "references": [
         {
           "path": "scripts/seed-supply-chain-trade.mjs"
-        },
-        {
-          "path": "server/worldmonitor/trade/v1/_shared.ts"
         }
       ]
     },
@@ -2301,9 +2246,6 @@
       "references": [
         {
           "path": "scripts/ais-relay.cjs"
-        },
-        {
-          "path": "server/_shared/brief-carousel-render.ts"
         }
       ]
     },
@@ -2376,15 +2318,10 @@
       "host": "chatgpt.com",
       "provider": "ChatGPT link",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: documentation/UI link",
       "attribution": "Excluded from the provider count: UI link, not an ingested source.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "api/oauth/_client-metadata.js"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "chathamhouse.org",
@@ -2446,15 +2383,10 @@
       "host": "claude.ai",
       "provider": "Claude link",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: documentation/UI link",
       "attribution": "Excluded from the provider count: UI link, not an ingested source.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "api/oauth/_client-metadata.js"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "climate.copernicus.eu",
@@ -2481,15 +2413,6 @@
       "references": [
         {
           "path": "api/_notification-webhook-ssrf.ts"
-        },
-        {
-          "path": "api/mcp-proxy.ts"
-        },
-        {
-          "path": "server/_shared/email-validation.ts"
-        },
-        {
-          "path": "server/worldmonitor/shipping/v2/webhook-shared.ts"
         }
       ]
     },
@@ -2834,15 +2757,10 @@
       "host": "customer.dodopayments.com",
       "provider": "customer.dodopayments.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/services/billing.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "d24qbtp4vooyzi.cloudfront.net",
@@ -3200,9 +3118,6 @@
         },
         {
           "path": "scripts/seed-aviation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/_shared.ts"
         }
       ]
     },
@@ -3365,21 +3280,10 @@
       "host": "discord.com",
       "provider": "discord.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "api/channel-oauth-bind.ts"
-        },
-        {
-          "path": "api/discord/oauth/callback.ts"
-        },
-        {
-          "path": "api/discord/oauth/start.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "discord.gg",
@@ -3543,15 +3447,10 @@
       "host": "earth-search.aws.element84.com",
       "provider": "Element84 Earth Search STAC",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "AWS Open Data and dataset-specific collection licenses",
       "attribution": "Element84 Earth Search; preserve the collection license and link to the item.",
-      "status": "terms-review",
-      "references": [
-        {
-          "path": "server/worldmonitor/imagery/v1/search-imagery.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "earthobservatory.nasa.gov",
@@ -3576,9 +3475,6 @@
       "attribution": "Credit earthquake.usgs.gov and link to the original upstream API/dataset.",
       "status": "terms-review",
       "references": [
-        {
-          "path": "api/mcp/skill-extension/generated.ts"
-        },
         {
           "path": "scripts/seed-earthquakes.mjs"
         }
@@ -4552,9 +4448,6 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "api/symbol-search.ts"
-        },
-        {
           "path": "scripts/ais-relay.cjs"
         },
         {
@@ -4893,9 +4786,6 @@
         },
         {
           "path": "server/_shared/agent-feedback.ts"
-        },
-        {
-          "path": "src/services/analytics.ts"
         }
       ]
     },
@@ -5255,13 +5145,7 @@
       "status": "reviewed",
       "references": [
         {
-          "path": "api/mcp/skill-extension/generated.ts"
-        },
-        {
           "path": "scripts/seed-supply-chain-trade.mjs"
-        },
-        {
-          "path": "server/worldmonitor/trade/v1/get-us-import-duty.ts"
         }
       ]
     },
@@ -5738,15 +5622,10 @@
       "host": "jmespath.org",
       "provider": "jmespath.org",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "api/mcp/constants.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "jrj.sh.gov.cn",
@@ -6112,9 +5991,6 @@
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
       "status": "excluded",
       "references": [
-        {
-          "path": "api/product-catalog.js"
-        },
         {
           "path": "scripts/ais-relay.cjs"
         }
@@ -6705,9 +6581,6 @@
       "references": [
         {
           "path": "scripts/seed-aviation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/_shared.ts"
         }
       ]
     },
@@ -7004,9 +6877,6 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "api/reverse-geocode.js"
-        },
-        {
           "path": "server/worldmonitor/infrastructure/v1/reverse-geocode.ts"
         }
       ]
@@ -7253,9 +7123,6 @@
       "references": [
         {
           "path": "scripts/seed-aviation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/list-aviation-news.ts"
         }
       ]
     },
@@ -7643,9 +7510,6 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "api/mcp/skill-extension/generated.ts"
-        },
-        {
           "path": "scripts/_bet-templates-markets.mjs"
         },
         {
@@ -7817,9 +7681,6 @@
       "attribution": "Excluded from the external-provider count: first-party proxy endpoint.",
       "status": "excluded",
       "references": [
-        {
-          "path": "api/widget-agent.ts"
-        },
         {
           "path": "scripts/seed-security-advisories.mjs"
         },
@@ -8540,15 +8401,10 @@
       "host": "schema.org",
       "provider": "schema.org",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Provider terms for this upstream API/dataset; verify before redistribution",
       "attribution": "Credit schema.org and link to the original upstream API/dataset.",
-      "status": "terms-review",
-      "references": [
-        {
-          "path": "api/ask.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "schemas.agentskills.io",
@@ -8916,9 +8772,6 @@
       "references": [
         {
           "path": "scripts/seed-aviation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/list-aviation-news.ts"
         }
       ]
     },
@@ -8968,21 +8821,10 @@
       "host": "slack.com",
       "provider": "slack.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "api/channel-oauth-bind.ts"
-        },
-        {
-          "path": "api/slack/oauth/callback.ts"
-        },
-        {
-          "path": "api/slack/oauth/start.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "slidstvo.info",
@@ -9097,9 +8939,6 @@
         },
         {
           "path": "scripts/seed-capital-flows.mjs"
-        },
-        {
-          "path": "server/worldmonitor/economic/v1/_bis-shared.ts"
         }
       ]
     },
@@ -9400,13 +9239,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "api/telegram-feed.js"
-        },
-        {
           "path": "scripts/ais-relay.cjs"
-        },
-        {
-          "path": "server/worldmonitor/leads/v1/register-interest.ts"
         }
       ]
     },
@@ -9653,9 +9486,6 @@
       "status": "excluded",
       "references": [
         {
-          "path": "api/product-catalog.js"
-        },
-        {
           "path": "scripts/ais-relay.cjs"
         }
       ]
@@ -9881,9 +9711,6 @@
       "references": [
         {
           "path": "scripts/seed-aviation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/list-aviation-news.ts"
         }
       ]
     },
@@ -10349,9 +10176,6 @@
       "references": [
         {
           "path": "scripts/audit-sentry-resolve-pins.mjs"
-        },
-        {
-          "path": "scripts/sync-sentry-convex-probe-filters.mjs"
         }
       ]
     },
@@ -10425,9 +10249,6 @@
       "references": [
         {
           "path": "scripts/seed-aviation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/list-aviation-news.ts"
         }
       ]
     },
@@ -10477,15 +10298,10 @@
       "host": "wa.me",
       "provider": "wa.me",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "server/worldmonitor/leads/v1/register-interest.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "wabi-europe-north-b-api.analysis.windows.net",
@@ -10650,16 +10466,7 @@
       "status": "reviewed",
       "references": [
         {
-          "path": "api/mcp/skill-extension/generated.ts"
-        },
-        {
           "path": "scripts/ais-relay.cjs"
-        },
-        {
-          "path": "server/worldmonitor/trade/v1/_tradestats-tariff.ts"
-        },
-        {
-          "path": "server/worldmonitor/trade/v1/get-bilateral-tariff.ts"
         }
       ]
     },
@@ -10667,15 +10474,10 @@
       "host": "workos.com",
       "provider": "workos.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "api/oauth-authorization-server.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "worldmonitor.app",
@@ -10690,43 +10492,13 @@
           "path": "api/_agent-metadata.ts"
         },
         {
-          "path": "api/a2a.ts"
-        },
-        {
-          "path": "api/ask.ts"
-        },
-        {
-          "path": "api/mcp/skill-extension/generated.ts"
-        },
-        {
-          "path": "api/miit-news.js"
-        },
-        {
-          "path": "api/notification-suppressions.js"
-        },
-        {
-          "path": "api/oauth/authorize.js"
-        },
-        {
           "path": "api/og-story.js"
-        },
-        {
-          "path": "api/opensky.js"
-        },
-        {
-          "path": "api/referral/me.ts"
-        },
-        {
-          "path": "api/reverse-geocode.js"
         },
         {
           "path": "api/seed-contract-probe.ts"
         },
         {
           "path": "api/story.js"
-        },
-        {
-          "path": "api/telegram-feed.js"
         },
         {
           "path": "scripts/_country-stock-index-moex.mjs"
@@ -10813,9 +10585,6 @@
           "path": "server/_shared/brief-url.ts"
         },
         {
-          "path": "server/_shared/channel-oauth-state.ts"
-        },
-        {
           "path": "server/_shared/intel-history-embed.ts"
         },
         {
@@ -10864,9 +10633,6 @@
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
       "status": "excluded",
       "references": [
-        {
-          "path": "api/docs-mcp.ts"
-        },
         {
           "path": "src/config/docs-locale-seo.ts"
         }
@@ -11263,9 +11029,6 @@
       "references": [
         {
           "path": "scripts/seed-aviation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/list-aviation-news.ts"
         }
       ]
     },
@@ -11280,9 +11043,6 @@
       "references": [
         {
           "path": "scripts/seed-aviation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/list-aviation-news.ts"
         }
       ]
     },
@@ -12313,9 +12073,6 @@
       "references": [
         {
           "path": "scripts/seed-aviation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/list-aviation-news.ts"
         }
       ]
     },
@@ -12994,15 +12751,10 @@
       "host": "www.linkedin.com",
       "provider": "www.linkedin.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "server/worldmonitor/leads/v1/register-interest.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "www.livescience.com",
@@ -13081,9 +12833,6 @@
       "attribution": "Credit www.miit.gov.cn and link to the original upstream API/dataset.",
       "status": "terms-review",
       "references": [
-        {
-          "path": "api/miit-news.js"
-        },
         {
           "path": "scripts/china-policy/adapters.mjs"
         }
@@ -14751,21 +14500,10 @@
       "host": "www.windy.com",
       "provider": "www.windy.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Provider terms for this upstream API/dataset; verify before redistribution",
       "attribution": "Credit www.windy.com and link to the original upstream API/dataset.",
-      "status": "terms-review",
-      "references": [
-        {
-          "path": "api/mcp/registry/webcam-tools.ts"
-        },
-        {
-          "path": "api/mcp/skill-extension/generated.ts"
-        },
-        {
-          "path": "server/worldmonitor/webcam/v1/get-webcam-image.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "www.winnipegfreepress.com",
@@ -14820,21 +14558,6 @@
       "references": [
         {
           "path": "api/_cors.js"
-        },
-        {
-          "path": "api/a2a.ts"
-        },
-        {
-          "path": "api/ask.ts"
-        },
-        {
-          "path": "api/customer-portal.ts"
-        },
-        {
-          "path": "api/mcp/skill-extension/generated.ts"
-        },
-        {
-          "path": "api/mcp/ui/news-dashboard-app.ts"
         },
         {
           "path": "api/not-found.ts"
@@ -14979,19 +14702,10 @@
       "status": "excluded",
       "references": [
         {
-          "path": "api/youtube/embed.js"
-        },
-        {
-          "path": "api/youtube/live.js"
-        },
-        {
           "path": "scripts/check-live-video-sources.mjs"
         },
         {
           "path": "scripts/lib/live-video-channel-live.mjs"
-        },
-        {
-          "path": "server/worldmonitor/aviation/v1/get-youtube-live-stream-info.ts"
         },
         {
           "path": "src/config/live-video-sources.ts"
@@ -15130,9 +14844,6 @@
       "references": [
         {
           "path": "scripts/cross-strait-activity/japan-x.mjs"
-        },
-        {
-          "path": "server/worldmonitor/leads/v1/register-interest.ts"
         }
       ]
     },

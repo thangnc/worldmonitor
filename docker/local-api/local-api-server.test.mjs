@@ -2656,9 +2656,20 @@ test('Docker rejects native administration without changing configuration, cache
     res.end('{"data":[{"id":"fixture-model"}]}');
   });
   const privatePort = await listen(privateProvider);
-  const relayModule = pathToFileURL(path.resolve(import.meta.dirname, '../../api/oref-alerts.js')).href;
+  // A minimal relay-backed handler: reads the relay URL and secret from the
+  // process env at request time, as the server's relay helpers do
+  // (server/_shared/relay.ts), so the assertions below see whether a rejected
+  // admin request changed the outbound destination.
+  const relayHandler = [
+    'export default async function handler() {',
+    "  const base = String(process.env.WS_RELAY_URL).replace(/\\/$/, '');",
+    '  const secret = process.env.RELAY_SHARED_SECRET;',
+    "  const res = await fetch(`${base}/oref/alerts`, { headers: { 'x-relay-key': secret, Authorization: `Bearer ${secret}` } });",
+    '  return new Response(await res.text(), { status: res.status });',
+    '}',
+  ].join('\n');
   const localApi = await setupApiDir({
-    'oref-alerts.js': `export { default } from ${JSON.stringify(relayModule)};`,
+    'oref-alerts.js': relayHandler,
     'missing.js': `import './absent.js'; export default () => new Response('unreachable');`,
   });
   const verboseStatePath = path.join(localApi.apiDir, 'verbose-mode.json');

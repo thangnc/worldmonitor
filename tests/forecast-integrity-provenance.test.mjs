@@ -32,18 +32,6 @@ function countMatches(source, pattern) {
 }
 
 describe('forecast integrity and provenance surfaces', () => {
-  it('exposes degraded forecast backend state instead of empty success only', () => {
-    const handler = read('server/worldmonitor/forecast/v1/get-forecasts.ts');
-    const proto = read('proto/worldmonitor/forecast/v1/get_forecasts.proto');
-
-    assert.match(proto, /bool degraded = 3;/);
-    assert.match(proto, /bool stale = 4;/);
-    assert.match(proto, /string error = 5;/);
-    assert.match(handler, /getRawJson\(REDIS_KEY\)/);
-    assert.match(handler, /degraded:\s*true/);
-    assert.match(handler, /error:\s*'forecast_backend_unavailable'/);
-  });
-
   it('documents market calibration limits and projection clamp heuristics', () => {
     const docs = read('docs/panels/forecast.mdx');
     const zhDocs = read('docs/zh/panels/forecast.mdx');

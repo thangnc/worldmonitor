@@ -929,8 +929,8 @@ export function isRetryableHttpStatus(status) {
  *     Clamping is legitimate: the server's hint may be conservative, so an
  *     earlier retry can still succeed.
  *   - `capMs` — also a ceiling, plus "when <= 0 there is no time left at all,
- *     so stop". Kept exactly as-is: scripts/_seed-history.mjs passes a fixed
- *     `RELAY_RETRY_AFTER_CAP_MS` here, so it is NOT a remaining-budget signal.
+ *     so stop". Kept exactly as-is: callers pass a fixed ceiling here, so it
+ *     is NOT a remaining-budget signal.
  *   - `remainingBudgetMs` (#6110) — the wall clock the caller actually has
  *     left. This one can produce a VERDICT, not just a clamp: if the server's
  *     own hint meets or exceeds it, no retry inside this run can succeed, so

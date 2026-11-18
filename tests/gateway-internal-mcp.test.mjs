@@ -24,6 +24,7 @@ import { readFile } from 'node:fs/promises';
 import { createDomainGateway } from '../server/gateway.ts';
 import {
   signInternalMcpRequest,
+  buildInternalMcpHeaders,
   getInternalMcpVerifiedNonce,
   INTERNAL_MCP_SIG_HEADER,
   INTERNAL_MCP_USER_ID_HEADER,
@@ -409,16 +410,12 @@ describe('gateway internal-MCP HMAC verify — happy paths', () => {
 
   it('HMAC-signed user_key request cannot increment rl:apikey:day even when REST enforcement is on', async () => {
     process.env.API_RATE_LIMIT_ENFORCE = 'true';
-    const { buildAuthHeaders } = await import(`../api/mcp/auth.ts?t=${Date.now()}`);
     const url = 'https://example.test/api/news/v1/summarize-article';
     const body = JSON.stringify({ provider: 'auto', mode: 'brief' });
-    const headers = await buildAuthHeaders(
-      { kind: 'user_key', apiKey: 'wm_must_not_reach_gateway_meter', userId: PRO_USER_ID },
-      'POST',
-      url,
-      body,
+    const headers = buildInternalMcpHeaders(
+      await signInternalMcpRequest({ method: 'POST', url, body, userId: PRO_USER_ID, secret: HMAC_SECRET }),
     );
-    assert.equal(headers['X-WorldMonitor-Key'], undefined, 'signer must not attach the dashboard key');
+    assert.equal(headers['X-WorldMonitor-Key'], undefined, 'signed headers must not carry a dashboard key');
 
     const handler = makeGateway();
     const { result: res, dailyIncrements } = await withDailyMeterRecorder(() => handler(new Request(url, {
@@ -453,12 +450,8 @@ describe('gateway internal-MCP HMAC verify — happy paths', () => {
     );
     assert.match(raw.dailyIncrements[0], new RegExp(`rl:apikey:day:${API_KEY_OWNER_ID}:`));
 
-    const { buildAuthHeaders } = await import(`../api/mcp/auth.ts?t=${Date.now()}`);
-    const headers = await buildAuthHeaders(
-      { kind: 'user_key', apiKey: USER_API_KEY, userId: API_KEY_OWNER_ID },
-      'GET',
-      url,
-      null,
+    const headers = buildInternalMcpHeaders(
+      await signInternalMcpRequest({ method: 'GET', url, body: null, userId: API_KEY_OWNER_ID, secret: HMAC_SECRET }),
     );
     const signed = await withDailyMeterRecorder(() => handler(new Request(url, { method: 'GET', headers })));
     assert.equal(signed.result.status, 200, `signed user_key request should pass, body=${await signed.result.clone().text()}`);

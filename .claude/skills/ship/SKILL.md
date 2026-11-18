@@ -68,7 +68,6 @@ Fork facts that override the upstream wording:
 8. **Stop and report.** Give the PR link and the CI result.
    - Don't merge unless the user asks.
    - When they do: `gh pr merge <n> --repo thangnc/worldmonitor --merge --match-head-commit <full sha>`. Use a merge commit, never squash or rebase.
-   - A push to `main` starts Convex Deploy, which fails because the fork has no `CONVEX_DEPLOY_KEY`. That is expected. Nothing deploys, so never add the key to make it pass.
    - Deploying is a separate authorization. Merging is not deploying.
    - After the merge, and only when asked:
      - `ExitWorktree` with `action: remove`

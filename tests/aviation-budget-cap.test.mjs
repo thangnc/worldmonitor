@@ -3,7 +3,6 @@
  * total paid usage under the plan limit.
  *
  *   reserveAviationStackCalls()  server/worldmonitor/aviation/v1/_avstack-budget.ts
- *   request-time wiring          list-airport-flights.ts, get-flight-status.ts
  *   seeder backstop              scripts/seed-aviation.mjs
  *
  * Behavioural tests mock the Upstash pipeline so the shared counter is
@@ -124,35 +123,6 @@ describe('aviation budget: reserveAviationStackCalls enforces ceilings', () => {
 describe('aviation budget: call sites are wired to the cap', () => {
   const read = (p) => readFileSync(resolve(root, p), 'utf-8');
 
-  it('carrier aggregate includes the billing cycle', () => {
-    const src = read('server/worldmonitor/aviation/v1/get-carrier-ops.ts');
-    assert.match(src, /aviation:carrier-ops:.*:v2:\$\{aviationStackBudgetCycle\(\)\}/);
-  });
-
-  it('list-airport-flights reserves budget and quantizes the limit out of the cache key', () => {
-    const src = read('server/worldmonitor/aviation/v1/list-airport-flights.ts');
-    assert.match(src, /reserveAviationStackCalls\(1, 'request'\)/);
-    assert.match(src, /aviationStackBudgetCycle\(\)/);
-    // Cache key must NOT vary by limit (was the spend-multiplying explosion).
-    assert.doesNotMatch(src, /aviation:flights:\$\{airport\}:\$\{[^}]*\}:\$\{limit\}/);
-    // Keyed by LEG, not by the caller's requested direction: three of the four
-    // directions issue the same dep_iata query, so keying on direction stored
-    // duplicate departure payloads under two extra paid keys.
-    assert.match(src, /aviation:flights:\$\{airport\}:\$\{leg\}:v3:\$\{aviationStackBudgetCycle\(\)\}/);
-    assert.doesNotMatch(src, /aviation:flights:\$\{airport\}:\$\{direction\}/);
-    // Upstream always fetches a fixed page per leg, then slices in memory.
-    assert.match(src, /limit:\s*String\(UPSTREAM_PAGE\)/);
-    assert.match(src, /flights\.slice\(0, limit\)/);
-  });
-
-  it('get-flight-status reserves budget before the upstream call and negative-caches relay errors', () => {
-    const src = read('server/worldmonitor/aviation/v1/get-flight-status.ts');
-    assert.match(src, /reserveAviationStackCalls\(1, 'request'\)/);
-    assert.match(src, /aviation:status:\$\{flightNumber\}:\$\{date\}:\$\{origin\}:v1:\$\{aviationStackBudgetCycle\(\)\}/);
-    assert.match(src, /Flight status relay fetch failed/);
-    assert.match(src, /unavailableSource = 'error';\n\s+return null;/);
-  });
-
   it('seeder reserves its batch against the same shared counter + key', () => {
     const src = read('scripts/seed-aviation.mjs');
     assert.match(src, /reserveAviationStackBudget\(AVIATIONSTACK_LIST\.length\)/);
@@ -260,11 +230,6 @@ describe('aviation budget: call sites are wired to the cap', () => {
       hardCap - requestCap >= 40_320,
       `only ${hardCap - requestCap} reserved for the seeder, which needs ~40,320/cycle`,
     );
-  });
-
-  it('request cache keys carry the budget cycle so denials expire at rollover', () => {
-    assert.match(read('server/worldmonitor/aviation/v1/list-airport-flights.ts'), /aviationStackBudgetCycle\(\)/);
-    assert.match(read('server/worldmonitor/aviation/v1/get-flight-status.ts'), /aviationStackBudgetCycle\(\)/);
   });
 
   it('seeder freshness gate is clamped below the health staleness window', () => {

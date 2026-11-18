@@ -29,7 +29,7 @@ description: "World Monitor 提供两个健康检查端点用于持续监控数�
 | `503` | `REDIS_DOWN` | 所需的 Redis 健康数据读取失败 |
 | `503` | `REFRESH_PENDING` | 刷新尚未完成且没有保留的上一次判定；按 `Retry-After: 3` 等待后重试 |
 
-> 总体健康判定位于 JSON 的 `status` 字段中，而非 HTTP 状态码。已完成评估的健康状态返回 `200`，这样警告级别的种子抖动不会触发 HTTP 状态监控器的抖动（参见 PR #2699）。`REDIS_DOWN` 返回 `503`，因为当 Redis 不可达时，端点无法评估任何内容，所以普通的 HTTP 探测必须看到失败。 刷新进行中时，未持有刷新租约的请求返回上一次发布的判定：HTTP `200`，并带有 `"stale": true` 和 `"staleReason": "REFRESH_PENDING"`，其 `status` 与 `checkedAt` 保持该判定发布时的值。上一次判定保留 10 分钟，且超过宽限截止时间后不再提供。只有在没有保留的判定时才返回 `503` 的 `REFRESH_PENDING`，这并不证明 Redis 中断。此响应不包含 `checkedAt`、汇总或虚构的检查结果。两种响应都不会被缓存。持有租约的请求本身受 22 秒请求截止时间约束：每个 Redis 命令和中继网关探测的超时取其自身超时与剩余时间中的较小值。截止时间耗尽时，它与等待中的请求相同处理，而不会超过边缘函数 25 秒的首字节限制：有保留的判定时返回该判定（HTTP `200`，标记为 stale），否则返回 `503` 的 `REFRESH_PENDING`，并带有 `Retry-After: 3`。定时新鲜度监控器仅对此状态进行有界重试：最多 12 次请求，总窗口为 45 秒；其他错误仍会失败。
+> 总体健康判定位于 JSON 的 `status` 字段中，而非 HTTP 状态码。已完成评估的健康状态返回 `200`，这样警告级别的种子抖动不会触发 HTTP 状态监控器的抖动（参见 PR #2699）。`REDIS_DOWN` 返回 `503`，因为当 Redis 不可达时，端点无法评估任何内容，所以普通的 HTTP 探测必须看到失败。 刷新进行中时，未持有刷新租约的请求返回上一次发布的判定：HTTP `200`，并带有 `"stale": true` 和 `"staleReason": "REFRESH_PENDING"`，其 `status` 与 `checkedAt` 保持该判定发布时的值。上一次判定保留 10 分钟，且超过宽限截止时间后不再提供。只有在没有保留的判定时才返回 `503` 的 `REFRESH_PENDING`，这并不证明 Redis 中断。此响应不包含 `checkedAt`、汇总或虚构的检查结果。两种响应都不会被缓存。持有租约的请求本身受 22 秒请求截止时间约束：每个 Redis 命令的超时取其自身超时与剩余时间中的较小值。截止时间耗尽时，它与等待中的请求相同处理，而不会超过边缘函数 25 秒的首字节限制：有保留的判定时返回该判定（HTTP `200`，标记为 stale），否则返回 `503` 的 `REFRESH_PENDING`，并带有 `Retry-After: 3`。定时新鲜度监控器仅对此状态进行有界重试：最多 12 次请求，总窗口为 45 秒；其他错误仍会失败。
 
 顶层 `status` 表示用户可见平台的可用性，而不是所有数据源都完全正常。因此，当警告由可用的最后一次正常数据控制时，`HEALTHY` 可以与 `summary` 和 `problems` 中的警告同时出现。
 
@@ -39,8 +39,8 @@ description: "World Monitor 提供两个健康检查端点用于持续监控数�
 {
   "status": "HEALTHY | WARNING | DEGRADED | UNHEALTHY | REDIS_DOWN | REFRESH_PENDING",
   "summary": {
-    "total": 404,
-    "ok": 403,
+    "total": 401,
+    "ok": 400,
     "warn": 0,
     "containedWarn": 0,
     "onDemandWarn": 1,
@@ -97,9 +97,6 @@ consumer-prices-core 服务会将每个市场的抓取覆盖率快照写入 `con
 | `EMPTY_ON_DEMAND` | 警告 | 按需键尚无数据（在首次请求之前为预期情况）；计入 `summary.onDemandWarn` |
 | `EMPTY` | 严重 | Bootstrap 或种子填充的独立键无数据 |
 | `EMPTY_DATA` | 严重 | 键存在但包含零条记录（且 0 对它来说不是有效状态） |
-| `RELAY_GATE_MISCONFIGURED` | 严重 | 提供 `/api/health` 的生产构建看不到 `CONVEX_TENANT_RELAY_SECRET` 或中继站点 URL（`CONVEX_SITE_URL`，或网关同样接受的 `CONVEX_URL`），或者解析得到的 URL 格式错误或不是 `https:`；在所有这些情况下，判定都在发送任何请求之前得出，租户密钥绝不会以明文传输。在缺少环境变量的情形下，结账、客户门户和通知渠道在到达 Convex 之前就返回 503。该状态出现在 `relayGatewayGate` 存活性条目上；它不是数据键，但在生产构建上会计入 `summary.total` 一次，因此那里的 `total` 等于键注册表大小加一，`ok + warn + onDemandWarn + crit` 的分区关系仍然成立。设置变量（`CONVEX_SITE_URL`，或网关同样接受的 `CONVEX_URL`）后重新部署生产环境：忽略构建步骤会为 `main` 上同一提交的重新部署执行构建 |
-| `RELAY_GATE_REJECTED` | 严重 | 已部署的 Convex 租户中继网关对本构建的网关凭据（无请求体的 `POST /relay/create-checkout`）返回 `401`。任一侧都可能过期：在上一次 `convex deploy` 之后写入的变量在下一次推送之前，在已部署函数内读取为 undefined。探测每个判定快照（60 秒）只运行一次，而不是每次轮询 |
-| `RELAY_GATE_UNREACHABLE` | 宽限期后为警告 | 网关探测没有得到可分类的回答（网络错误、超时、5xx，或除 `401` / `400 MISSING_FIELDS` 之外的任何响应）。这是传输层判定，不是凭据判定。首次出现时带有三分钟的 `transportGraceUntil`：在此期间计入 `ok`、出现在紧凑响应的 `pending` 中，且不是运维问题；截止时间过后仍然存在的故障会移入 `problems` 并计入 `summary.warn`。该截止时间跨扫描保存在 Redis 中，包括仅等待其他扫描探测结果的扫描（它以 `probed: false` 保存其回退判定，下一次扫描会重新探测而不是复用），因此探测扫描在发布前崩溃不会重新开始宽限期——但这仅在有另一个扫描正在等待时成立，因为该回退判定只由未抢到探测租约的扫描写入。如果唯一的计划任务调用者抢到租约后在发布前崩溃，则不会保存任何内容，下一次运行将是首次出现。截止时间过后，连续状态改由 `transportGraceExpiredAt` 承载：继续发布已过期的宽限截止时间会使每份判定快照都不可复用，使每次轮询都退化为完整扫描而不是热读取。中继本身不会以该频率被重新探测：只要缓存中存在可复用的网关判定，无论端点被轮询多少次，每个新鲜度窗口大约只联系网关一次。有两条路径不会留下可复用的判定——仅等待的扫描所保存的回退判定（`probed: false`），以及发布失败的探测——这两种情况之后的扫描都会重新探测。连续多次扫描持续出现意味着 Convex 故障或 `CONVEX_SITE_URL` 错误 |
 
 ### 级联组
 
@@ -410,28 +407,6 @@ curl -o /dev/null -s -w "%{http_code}" "https://api.worldmonitor.app/api/health?
 | 航运费率、卫星 | 90-120 | 180-240 |
 | GPS 干扰、流离失所 | 360 | 720 |
 | 伊朗事件、UCDP | 210-5040 | 420-10080 |
-
-### 历史情报写入（`intel-history:*`）
-
-以 `intel-history:` 为前缀的领域**不**描述种子的规范化发布，而是跟踪该采集器在发布之后向历史情报库追加数据的链路是否仍然正常：
-
-| 领域 | 跟踪对象 |
-|--------|--------|
-| `intel-history:conflict:acled-intel` | 来自 `seed-conflict-intel` 的历史追加 |
-| `intel-history:military:cross-strait-activity` | 来自 `seed-cross-strait-activity` 的历史追加 |
-| `intel-history:energy:intelligence` | 来自 `seed-energy-intelligence` 的历史追加 |
-
-该追加按设计为「失败即放行」：它运行时规范化发布已经提交，因此追加失败绝不能让整次运行失败。这意味着采集器自身的条目（`conflict:acled-intel` 等）会保持 `ok`，而历史数据却在悄悄停止累积。这些条目就是那个独立信号：
-
-- `fetchedAt` 是最近一次**成功**追加的时间，而不是最近一次尝试的时间。抵达了中继的运行会推进它；什么都没送达的运行（所有分块被拒，或整体时间预算在首个请求发出前就耗尽）则不会。因此中继一旦损坏该时间戳就会冻结，于是条目按通常的 2 倍间隔规则变为 `stale`。
-- `status: "error"` 表示追加已连续两次运行失败——或者在首个刻度上，表示此前成功追加时存在的中继凭据现已被移除。
-- `lastErrorCode` 在存在失败原因时给出原因：`http_401`、`budget_exhausted`、`all_chunks_failed`、`config_removed`，或一个截断后的错误类名。若该写入链路从未失败过则不存在此字段。
-- `status: "not_configured"` 表示该部署**从未**拥有过中继凭据。它可见但绝不告警——除了配置中继之外，没有任何运维操作能消除该状态。成功追加之后再丢失凭据不属于此状态，那会报告 `error` 并附带 `lastErrorCode: "config_removed"`。
-- `recordCount` 是最近一次成功追加时中继接受的记录量。零是合法值：一次记录全部被去重的运行同样证明链路是通的。
-
-更细粒度的单次运行详情——`lastErrorReason`、`consecutiveFailures`、`missingConfig`，以及写入/去重/放弃的计数——**不会**由任一端点返回。它们保存在 Redis 记录 `intel-history:ingest-health:<domain>:<resource>:v1` 中，端点正是从该记录投影而来。
-
-若此处为 `stale` 或 `error` 而采集器条目为 `ok`，说明规范化数据没有问题，需要排查的是历史情报库。
 
 ### 示例请求
 

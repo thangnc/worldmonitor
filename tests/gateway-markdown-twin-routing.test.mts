@@ -527,7 +527,9 @@ describe('page twins (api/md-twin.ts) never hop into an API function', () => {
     )) as { rewrites: Array<{ source: string; destination: string }> };
     const apiRewrites = vercel.rewrites.filter((rule) =>
       rule.destination.startsWith('/api/') && !rule.destination.startsWith('/api/md-twin'));
-    assert.ok(apiRewrites.length > 5);
+    // The MCP/OAuth/agent rewrites left in the Lite phase 1c; at least the
+    // signatures-directory rewrite remains, so the loop below cannot pass vacuously.
+    assert.ok(apiRewrites.some((rule) => rule.destination === '/api/http-message-signatures-directory'));
     for (const { source } of apiRewrites) {
       const literal = source.split('/:')[0]!;
       assert.equal(isPageTwinSibling(literal), false, `${source} rewrites into /api/ and must not be a page twin sibling`);

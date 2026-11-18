@@ -327,6 +327,9 @@ function handlerUsesField(handlerPath, field) {
 export function collectQueryParamContractViolations(root, options = {}) {
   const scopedProtoFiles = options.scopedProtoFiles ?? DEFAULT_SCOPED_PROTO_FILES;
   const forcedNoopQueryParams = options.forcedNoopQueryParams ?? DEFAULT_FORCED_NOOP_QUERY_PARAMS;
+  // Deferred services (scripts/lib/sebuf-deferred-services.mjs) have no gateway,
+  // so there is no handler to hold their query params to.
+  const skipServices = options.skipServices ?? new Set();
   const seenQueryParams = new Set();
   const protoRoot = join(root, 'proto', 'worldmonitor');
   const protoFiles = walk(protoRoot).filter((file) => file.endsWith('.proto'));
@@ -344,6 +347,8 @@ export function collectQueryParamContractViolations(root, options = {}) {
     if (fields.length === 0) continue;
 
     const protoRel = slash(relative(join(root, 'proto'), protoFile));
+    const serviceKey = protoRel.split('/').slice(1, 3).join('/');
+    if (skipServices.has(serviceKey)) continue;
     const isScopedProto = scopedProtoFiles.has(protoRel);
     const hasAnnotatedField = fields.some((field) => field.unimplemented);
     if (!isScopedProto && !hasAnnotatedField) continue;
@@ -395,6 +400,8 @@ export function collectQueryParamContractViolations(root, options = {}) {
   }
 
   for (const forced of forcedNoopQueryParams) {
+    // "worldmonitor/<domain>/<version>/<file>.proto:<param>"
+    if (skipServices.has(forced.split('/').slice(1, 3).join('/'))) continue;
     if (!seenQueryParams.has(forced)) {
       violations.push({
         file: 'scripts/lib/sebuf-query-param-contract.mjs',

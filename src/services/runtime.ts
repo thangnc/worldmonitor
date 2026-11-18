@@ -1,6 +1,5 @@
 import { SITE_VARIANT } from '@/config/variant';
 import { safeStorageGet } from '@/utils/safe-storage';
-import { getClerkToken } from '@/services/clerk';
 import { sleepBeforeRetry, withBillingVerificationRetry } from '@/services/billing-retry';
 import { hasExplicitDesktopSignals, isDesktopRuntime } from './desktop-runtime';
 
@@ -324,14 +323,6 @@ function isKeyFreeApiTarget(target: string): boolean {
     || target.startsWith('/api/version');
 }
 
-// Key issuance (API and embed) asks Clerk whether the caller's session is live.
-// It needs the caller's standard session token (it carries `sid`). The desktop
-// cloud credential is a template token without one.
-function isSessionBoundApiTarget(target: string): boolean {
-  const path = target.split('?')[0];
-  return path === '/api/user-api-keys' || path === '/api/user-embed-keys';
-}
-
 function callerBearer(input: RequestInfo | URL, init?: RequestInit): string | undefined {
   const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
   const value = headers.get('Authorization');
@@ -355,11 +346,8 @@ async function fetchLocalWithStartupRetry(
   const signal = init?.signal === undefined ? (input instanceof Request ? input.signal : undefined) : init.signal;
   // Routes that can carry local secrets never leave the machine, so they
   // never need the user's cloud credential.
-  const userAuthorization = isLocalOnlyApiTarget(target)
-    ? undefined
-    : isSessionBoundApiTarget(target)
-      ? callerBearer(input, init)
-      : (await (await import('@/services/desktop-cloud-auth')).getDesktopCloudAuthorization()) ?? undefined;
+  // The desktop cloud credential left with the desktop app (refactor Phase 1b).
+  const userAuthorization = isLocalOnlyApiTarget(target) ? undefined : callerBearer(input, init);
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
@@ -500,7 +488,6 @@ export function installWebApiRedirect(): void {
    *   1. Existing auth headers — left unchanged (API key users keep their flow)
    *   2. WORLDMONITOR_API_KEY from runtime config → X-WorldMonitor-Key
    *   3. Tester session (wm-pro-key / wm-widget-key HttpOnly cookie)
-   *   4. Clerk Pro session → Authorization: Bearer <token>
    * Runs on every web deployment (with or without API base redirect).
    * Returns the original init unchanged for non-premium paths (zero overhead).
    */
@@ -519,20 +506,9 @@ export function installWebApiRedirect(): void {
         return { ...withCredentials(init), headers };
       }
     } catch { /* runtime-config unavailable — fall through */ }
-    // Legacy test seam. In production, tester keys live in HttpOnly cookies
-    // and are sent through credentials: 'include'.
-    const { getBrowserTesterKey } = await import('@/services/widget-store');
-    const testerKey = getBrowserTesterKey();
-    if (testerKey) {
-      headers.set('X-WorldMonitor-Key', testerKey);
-      return { ...withCredentials(init), headers };
-    }
-    // Clerk Pro: inject Bearer token (fallback for users without a tester key)
-    const token = await getClerkToken();
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-      return { ...withCredentials(init), headers };
-    }
+    // Tester sessions ride the HttpOnly wm-pro-key cookie: dispatch applies
+    // withCredentials() to every redirected /api/ request, so no
+    // script-visible key is read here.
     return init;
   };
 

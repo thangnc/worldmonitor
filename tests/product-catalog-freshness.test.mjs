@@ -1,10 +1,10 @@
 /**
- * Product catalog freshness tests.
+ * Product catalog tests.
  *
- * Verifies that the generated catalog files (the shared catalog JSON and the
- * Edge module emitted from it) match the canonical catalog in
- * convex/config/productCatalog.ts.
- * Bidirectional: checks generated→catalog AND catalog→generated.
+ * The canonical Convex catalog, its generator and the Edge product-catalog
+ * route are gone (Lite Phase 1c). shared/product-catalog.generated.json stays
+ * as a committed artifact that scripts/ais-relay.cjs still serves, so pin its
+ * shape and the relay's wiring, and keep raw Dodo product ids out of source.
  */
 
 import { describe, it } from 'node:test';
@@ -22,22 +22,8 @@ const PRODUCT_ID_EXCLUDE_PATTERNS = [
   'dist/',
   '.git',
   '.claude/worktrees/',
-  'convex/_generated/',
-  'convex/config/productCatalog',
-  'api/product-catalog',
-  'api/_product-catalog.generated',
-  'api/_product-fallback-prices',
-  'src/config/products.generated',
-  'src/config/product-ids.generated',
   'tests/',
-  'convex/__tests__/',
   'e2e/',
-  // Zero-import leaf: statically imported by the eager dashboard code, so it
-  // cannot import the catalog without breaking the eager-chunk budget. It
-  // mirrors the Pro-family ids as literals; its drift-guard test asserts them
-  // against the generated catalog, giving the same catalog-sync this guard wants.
-  'src/services/pro-activation-state',
-  'scripts/generate-product-config',
 ];
 
 function isMissingPathError(error) {
@@ -107,7 +93,7 @@ function collectRawProductIds(root, filesystem = {}) {
   return results;
 }
 
-describe('Product catalog freshness', () => {
+describe('Generated product catalog', () => {
   const generatedCatalog = JSON.parse(readFileSync(join(ROOT, 'shared/product-catalog.generated.json'), 'utf8'));
 
   it('generated tier config exposes plan limits for public plans', () => {
@@ -122,26 +108,7 @@ describe('Product catalog freshness', () => {
     assert.equal(ent?.planLimits?.dashboardAiCallsPerDay, 25000, 'Enterprise dashboard-AI ceiling should be visible');
   });
 
-  it('every publicVisible catalog tier group appears in the generated public tier groups', () => {
-    const catalogSrc = readFileSync(join(ROOT, 'convex/config/productCatalog.ts'), 'utf8');
-    const blocks = catalogSrc.split(/\n\s*\w+:\s*\{/).slice(1);
-    const visibleGroups = new Set();
-    for (const block of blocks) {
-      if (block.includes('publicVisible: true')) {
-        const groupMatch = block.match(/tierGroup:\s*["']([^"']+)["']/);
-        if (groupMatch) visibleGroups.add(groupMatch[1]);
-      }
-    }
-    assert.ok(visibleGroups.size > 0, 'expected to read publicVisible tier groups from the catalog');
-    for (const group of visibleGroups) {
-      assert.ok(
-        generatedCatalog.publicTierGroups.includes(group) && generatedCatalog.tierConfig[group],
-        `Catalog tier group "${group}" is publicVisible but missing from shared/product-catalog.generated.json`,
-      );
-    }
-  });
-
-  it('Edge and Railway catalogs consume the generated canonical tier config', () => {
+  it('the Railway relay consumes the generated tier config', () => {
     const expectedFeature = generatedCatalog.tierConfig.pro.features.find((f) => /\bMCP\b/.test(f));
     assert.equal(
       expectedFeature,
@@ -154,13 +121,9 @@ describe('Product catalog freshness', () => {
       ['free', 'pro', 'pro_business', 'api_starter', 'api_business', 'enterprise'],
     );
 
-    const edgeSrc = readFileSync(join(ROOT, 'api/product-catalog.js'), 'utf8');
     const relaySrc = readFileSync(join(ROOT, 'scripts/ais-relay.cjs'), 'utf8');
-    assert.match(edgeSrc, /from '\.\/_product-catalog\.generated\.js'/);
-    assert.match(edgeSrc, /from '\.\/_inventory-facts\.generated\.js'/);
     assert.match(relaySrc, /requireShared\('product-catalog\.generated\.json'\)/);
     assert.match(relaySrc, /requireShared\('inventory-facts\.generated\.json'\)/);
-    assert.doesNotMatch(edgeSrc, /MANUAL MIRROR/);
     assert.doesNotMatch(relaySrc, /MANUAL MIRROR/);
 
     const dockerfile = readFileSync(join(ROOT, 'Dockerfile.relay'), 'utf8');
@@ -184,10 +147,9 @@ describe('Product catalog freshness', () => {
     }
   });
 
-  // The license chips travel in `highlightFeatures`. The generated JSON bundle
-  // is what BOTH consumers (Railway seeder via requireShared, edge endpoint via
-  // _product-catalog.generated.js) serve from, so pin each chip into both.
-  it('license chips (highlightFeatures) match across the generated bundle and edge module', () => {
+  // The license chips travel in `highlightFeatures`; the Railway relay serves
+  // them from the generated JSON bundle via requireShared.
+  it('license chips (highlightFeatures) stay on the four sellable paid tiers', () => {
     const bundle = generatedCatalog;
     const bundleHighlights = {};
     for (const [group, config] of Object.entries(bundle.tierConfig)) {
@@ -198,57 +160,6 @@ describe('Product catalog freshness', () => {
       ['api_business', 'api_starter', 'pro', 'pro_business'],
       'the four sellable paid tier groups must retain their named license-chip contracts',
     );
-
-    // The edge module is a second emitted artifact of the same generator run;
-    // a partial regen could leave it stale, so pin each chip string into it.
-    const edgeGenerated = readFileSync(join(ROOT, 'api/_product-catalog.generated.js'), 'utf8');
-
-    for (const [group, highlights] of Object.entries(bundleHighlights)) {
-      for (const chip of highlights) {
-        assert.ok(edgeGenerated.includes(JSON.stringify(chip).slice(1, -1)),
-          'api/_product-catalog.generated.js is missing chip "' + chip + '" for ' + group + ' — partial regen?');
-      }
-    }
-  });
-
-  it('every currentForCheckout catalog entry appears in generated products', () => {
-    // Reverse check: catalog → generated. Catches generator silently dropping entries.
-    const freshCatalog = JSON.parse(readFileSync(join(ROOT, 'shared/product-catalog.generated.json'), 'utf8'));
-    const allGeneratedIds = Object.keys(freshCatalog.products);
-
-    // Read catalog entries that should be in generated (currentForCheckout with a dodoProductId)
-    // Parse from the catalog source file since we can't import TS
-    const catalogSrc = readFileSync(join(ROOT, 'convex/config/productCatalog.ts'), 'utf8');
-    const checkoutBlocks = catalogSrc.split(/\n\s*\w+:\s*\{/).slice(1);
-    for (const block of checkoutBlocks) {
-      const hasCheckout = block.includes('currentForCheckout: true');
-      const idMatch = block.match(/dodoProductId:\s*["']([^"']+)["']/);
-      if (hasCheckout && idMatch) {
-        assert.ok(
-          allGeneratedIds.includes(idMatch[1]),
-          `Catalog entry with dodoProductId ${idMatch[1]} has currentForCheckout=true but is missing from shared/product-catalog.generated.json`,
-        );
-      }
-    }
-  });
-
-  it('generated fallback prices have entries for all self-serve products', () => {
-    const fallbackIds = Object.keys(generatedCatalog.fallbackPrices);
-
-    // Every self-serve product with a price should have a fallback
-    const catalogSrc = readFileSync(join(ROOT, 'convex/config/productCatalog.ts'), 'utf8');
-    const blocks = catalogSrc.split(/\n\s*\w+:\s*\{/).slice(1);
-    for (const block of blocks) {
-      const isSelfServe = block.includes('selfServe: true');
-      const idMatch = block.match(/dodoProductId:\s*["']([^"']+)["']/);
-      const priceMatch = block.match(/priceCents:\s*(\d+)/);
-      if (isSelfServe && idMatch && priceMatch && Number(priceMatch[1]) > 0) {
-        assert.ok(
-          fallbackIds.includes(idMatch[1]),
-          `Self-serve product ${idMatch[1]} missing from generated fallback prices`,
-        );
-      }
-    }
   });
 });
 

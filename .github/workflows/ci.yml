@@ -162,11 +162,11 @@ jobs:
         with:
           node-version: '24'
       - uses: ./.github/actions/install-root-deps
-      - run: npm run test:convex
+      - run: npm run test:server
       - run: npm run test:sidecar
 
   # Services that still live in this repository but outside the Lite web app.
-  # Each keeps its upstream gate until 1c or Phase 2 decides its fate.
+  # Each keeps its upstream gate until Phase 2 decides its fate.
   consumer-prices:
     name: consumer-prices-core tests
     runs-on: ubuntu-latest
@@ -181,25 +181,6 @@ jobs:
       - uses: ./.github/actions/install-redis
       - run: npm ci --prefix consumer-prices-core
       - run: npm test --prefix consumer-prices-core
-
-  zapier:
-    name: Zapier integration tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: integrations/zapier
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: integrations/zapier/package-lock.json
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm test
 
   umami-postgres:
     name: Umami Postgres integration

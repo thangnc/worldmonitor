@@ -2,18 +2,11 @@
 import {
   CROSS_STRAIT_ACTIVITY_KEY,
   CROSS_STRAIT_BLOCKED_SOURCE_REASONS,
-  MND_RETENTION_REPORTING_DAYS,
-  REVIEWED_JAPAN_MOD_OBSERVATIONS,
   fetchCrossStraitActivitySnapshot,
   validateCrossStraitActivitySnapshot,
 } from './cross-strait-activity/adapters.mjs';
 import { DAY_MIN, tokensToContentMeta } from './_content-age-helpers.mjs';
 import { loadEnvFile, readSeedSnapshot, runSeed, writeExtraKey } from './_seed-utils.mjs';
-import {
-  HISTORY_MAX_RECORDS_PER_RUN,
-  appendSeedHistory,
-  makeSeedHistoryAfterPublish,
-} from './_seed-history.mjs';
 
 loadEnvFile(import.meta.url);
 
@@ -27,13 +20,6 @@ export const CROSS_STRAIT_ACTIVITY_FETCH_PHASE_TIMEOUT_MS = 240_000;
 // archive, its compact bootstrap projection, and both source-health records.
 export const CROSS_STRAIT_ACTIVITY_PUBLISH_CLEANUP_HEADROOM_MS = 40_000;
 export const CROSS_STRAIT_ACTIVITY_LOCK_TTL_MS = 320_000;
-// One-off recovery batches the full retained archive through the shared
-// 150-row embedding cap. Each batch still spends the 30s history append
-// budget, so the lock has to cover fetch + every batch + publish cleanup.
-export const CROSS_STRAIT_ACTIVITY_ONE_OFF_LOCK_TTL_MS = 480_000;
-export const CROSS_STRAIT_HISTORY_MAX_RECORDS =
-  MND_RETENTION_REPORTING_DAYS + REVIEWED_JAPAN_MOD_OBSERVATIONS.length;
-const HISTORY_APPEND_BUDGET_MS = 30_000;
 // Keep this literal inside scripts/: Railway's nixpacks service copies only
 // scripts/, so importing the shared browser/Edge registry would crash at boot.
 // The production-registration test pins it to BOOTSTRAP_CACHE_KEYS.
@@ -48,20 +34,6 @@ if (CROSS_STRAIT_ACTIVITY_LOCK_TTL_MS <= (
   CROSS_STRAIT_ACTIVITY_FETCH_PHASE_TIMEOUT_MS + CROSS_STRAIT_ACTIVITY_PUBLISH_CLEANUP_HEADROOM_MS
 )) {
   throw new Error('cross-Strait activity lock TTL must exceed fetch deadline plus publish cleanup headroom');
-}
-
-if (CROSS_STRAIT_ACTIVITY_ONE_OFF_LOCK_TTL_MS <= (
-  CROSS_STRAIT_ACTIVITY_FETCH_PHASE_TIMEOUT_MS
-  + CROSS_STRAIT_ACTIVITY_PUBLISH_CLEANUP_HEADROOM_MS
-  + Math.ceil(CROSS_STRAIT_HISTORY_MAX_RECORDS / HISTORY_MAX_RECORDS_PER_RUN) * HISTORY_APPEND_BUDGET_MS
-)) {
-  throw new Error('cross-Strait one-off lock TTL must cover fetch, full-archive history batches, and publish cleanup');
-}
-
-export function crossStraitActivityLockTtlMs(env = process.env) {
-  return env.WM_ONE_OFF_HISTORY_RECEIPT === '1'
-    ? CROSS_STRAIT_ACTIVITY_ONE_OFF_LOCK_TTL_MS
-    : CROSS_STRAIT_ACTIVITY_LOCK_TTL_MS;
 }
 
 function withoutRevisionHistory(observation) {
@@ -343,108 +315,6 @@ async function fetchSnapshot() {
   return fetchCrossStraitActivitySeedSnapshot();
 }
 
-// Which country's ministry reported the observation, for the history store's
-// filterable country field (the activity itself concerns the Taiwan Strait).
-const HISTORY_SOURCE_COUNTRY = Object.freeze({ 'taiwan-mnd': 'TW', 'japan-mod': 'JP' });
-
-/**
- * Project published cross-Strait observations into intel-history records
- * (#5694). Observations are revisioned in place (same id, new vintage); the
- * dedupe key intentionally uses the bare observation id so history keeps the
- * first-seen vintage rather than one row per correction.
- */
-export function buildCrossStraitHistoryRecords(snapshot) {
-  return (snapshot?.observations ?? []).map((obs) => {
-    if (!obs?.id) return null;
-    const occurredAt = Date.parse(obs.reportingDay ?? '') || Date.parse(obs.publicationTime ?? '');
-    if (!Number.isFinite(occurredAt) || occurredAt <= 0) return null;
-    const categories = obs.categories && typeof obs.categories === 'object'
-      ? Object.entries(obs.categories)
-        .filter(([, value]) => value != null && value !== '')
-        .map(([key, value]) => `${key}: ${value}`)
-        .join('; ')
-      : '';
-    const detail = obs.summary || categories || obs.originalTerminology || 'activity report';
-    return {
-      dedupeKey: `military:cross-strait-activity:${obs.id}`,
-      country: HISTORY_SOURCE_COUNTRY[obs.sourceId],
-      category: obs.observationKind || undefined,
-      title: `Cross-Strait activity ${obs.reportingDay ?? ''}: ${detail}`.trim(),
-      summary: obs.summary || undefined,
-      sourceUrl: obs.sourceUrl || undefined,
-      occurredAt,
-    };
-  }).filter(Boolean);
-}
-
-/**
- * Scheduled ticks keep the shared 150-row embedding cap. The guarded one-off
- * reuses that cap as a batch size so the full retained archive can still
- * satisfy lossless postflight (validation drops fail; cap slicing does not).
- */
-export async function appendCrossStraitHistoryArchive(
-  args,
-  { append = appendSeedHistory } = {},
-) {
-  const records = Array.isArray(args?.records) ? args.records : [];
-  if (records.length > CROSS_STRAIT_HISTORY_MAX_RECORDS) {
-    throw new Error(
-      `cross-Strait history archive has ${records.length} records; maximum is ${CROSS_STRAIT_HISTORY_MAX_RECORDS}`,
-    );
-  }
-
-  const aggregate = {
-    inserted: 0,
-    skipped: 0,
-    retracted: 0,
-    chunks: 0,
-    abandoned: 0,
-    failedChunks: 0,
-    inputRecords: 0,
-    normalizedRecords: 0,
-    droppedRecords: 0,
-  };
-  const batches = records.length > 0
-    ? Array.from(
-      { length: Math.ceil(records.length / HISTORY_MAX_RECORDS_PER_RUN) },
-      (_, index) => records.slice(
-        index * HISTORY_MAX_RECORDS_PER_RUN,
-        (index + 1) * HISTORY_MAX_RECORDS_PER_RUN,
-      ),
-    )
-    : [[]];
-
-  for (const batch of batches) {
-    const result = await append({ ...args, records: batch });
-    if (result?.skipped === 'unconfigured') return result;
-    for (const field of Object.keys(aggregate)) {
-      aggregate[field] += Number(result?.[field]) || 0;
-    }
-  }
-  return aggregate;
-}
-
-// This seeder's completion marker rides afterFreshness, so history takes the
-// afterPublish slot.
-const standardCrossStraitHistoryAfterPublish = makeSeedHistoryAfterPublish({
-  domain: 'military',
-  resource: 'cross-strait-activity',
-  buildRecords: buildCrossStraitHistoryRecords,
-});
-
-export function crossStraitHistoryAfterPublish(data, meta, deps = {}) {
-  const fullArchive = process.env.WM_ONE_OFF_HISTORY_RECEIPT === '1';
-  const append = fullArchive
-    ? (args) => appendCrossStraitHistoryArchive(args, {
-      append: deps.append ?? appendSeedHistory,
-    })
-    : (deps.append ?? appendSeedHistory);
-  return standardCrossStraitHistoryAfterPublish(data, meta, {
-    ...deps,
-    append,
-  });
-}
-
 function validatePublishableSnapshot(snapshot) {
   if (!validateCrossStraitActivitySnapshot(snapshot)) return false;
   // runSeed commits the canonical key before extraKeys. Precomputing the
@@ -459,7 +329,7 @@ function validatePublishableSnapshot(snapshot) {
 if (process.argv[1]?.endsWith('seed-cross-strait-activity.mjs')) {
   runSeed('military', 'cross-strait-activity', CROSS_STRAIT_ACTIVITY_KEY, fetchSnapshot, {
     ttlSeconds: CROSS_STRAIT_ACTIVITY_TTL_SECONDS,
-    lockTtlMs: crossStraitActivityLockTtlMs(),
+    lockTtlMs: CROSS_STRAIT_ACTIVITY_LOCK_TTL_MS,
     fetchPhaseTimeoutMs: CROSS_STRAIT_ACTIVITY_FETCH_PHASE_TIMEOUT_MS,
     validateFn: validatePublishableSnapshot,
     declareRecords: (snapshot) => snapshot.observations.length,
@@ -480,7 +350,6 @@ if (process.argv[1]?.endsWith('seed-cross-strait-activity.mjs')) {
       metaCritical: true,
     }],
     beforePublish: crossStraitActivityBeforePublish,
-    afterPublish: crossStraitHistoryAfterPublish,
     afterFreshness: crossStraitActivityAfterPublish,
   });
 }

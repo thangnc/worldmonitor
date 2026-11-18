@@ -130,7 +130,7 @@ test('the shards and the built-output job together execute the complete data inv
   assert.equal(new Set(all).size, inventory.length);
   assert.ok(shards.every((files) => files.length > 0), 'no CI shard may be empty');
   assert.ok(all.includes('api/security/report.test.mjs'));
-  assert.ok(all.some((file) => file.startsWith('cli/test/')));
+  assert.ok(all.some((file) => file.startsWith('workers/api-cors-preflight/')));
   const withNewFile = partitionTests([...inventory, 'tests/new-unmeasured.test.mts'], durations, ciShardCount).flat();
   assert.equal(withNewFile.filter((file) => file === 'tests/new-unmeasured.test.mts').length, 1);
   const full = run([...patterns, '--list']);

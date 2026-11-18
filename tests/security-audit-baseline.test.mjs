@@ -470,11 +470,13 @@ describe('security audit baseline', () => {
     const rootLock = readRepoJson('package-lock.json');
     const cpcLock = readRepoJson('consumer-prices-core/package-lock.json');
 
-    for (const [label, entry] of [
-      ['root @istanbuljs', rootLock.packages['node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml']],
-    ]) {
-      assert.ok(entry, `${label} js-yaml must be present`);
-      assert.ok(atLeast(entry.version, '3.15.1'), `${label} js-yaml ${entry.version} is below the patched 3.15.1`);
+    // Every js-yaml copy in the root tree, whichever major it resolves to.
+    const rootEntries = Object.entries(rootLock.packages)
+      .filter(([path]) => /(^|\/)node_modules\/js-yaml$/.test(path));
+    assert.ok(rootEntries.length > 0, 'root js-yaml must be present');
+    for (const [path, entry] of rootEntries) {
+      const patched = entry.version.startsWith('3.') ? '3.15.1' : '4.3.1';
+      assert.ok(atLeast(entry.version, patched), `root ${path} ${entry.version} is below the patched ${patched}`);
     }
 
     for (const [label, entry] of [
@@ -510,7 +512,7 @@ describe('security audit baseline', () => {
     const viteEsbuild = lockfile.packages['node_modules/vite/node_modules/esbuild'];
 
     assert.equal(packageJson.overrides?.esbuild, undefined);
-    assert.equal(packageJson.overrides?.convex?.esbuild, '0.28.1');
+    assert.equal(packageJson.devDependencies?.esbuild, '0.28.1');
     assert.equal(rootEsbuild?.version, '0.28.1');
     assert.equal(vite?.dependencies?.esbuild, '^0.25.0');
     assert.ok(viteEsbuild, 'Vite must keep its own esbuild when root uses the audit-patched version');

@@ -663,95 +663,17 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
   });
 });
 
-describe('rate-limit fail-closed call-site policy (#3531)', () => {
-  // High-cost endpoints that don't go through gateway.ts's checkEndpointRateLimit
-  // must opt into fail-closed at the call site — otherwise an Upstash blip
-  // silently lifts the only rate-limit gate they have. Static-analysis guard
-  // so a future caller reverting to bare `checkRateLimit(req, cors)` is caught
-  // in CI rather than during a Redis incident.
-  const FAIL_CLOSED_REQUIRED = [
-    'api/chat-analyst.ts', // streaming LLM analyst, Pro-only
-    'api/widget-agent.ts', // frontier-model widget proxy
-    'api/create-checkout.ts', // paid Dodo checkout relay
-  ];
-
-  for (const path of FAIL_CLOSED_REQUIRED) {
-    it(`${path} passes failClosed: true to checkRateLimit`, async () => {
-      const fs = await import('node:fs');
-      const url = new URL(`../${path}`, import.meta.url);
-      const src = fs.readFileSync(url, 'utf8');
-      const callMatch = src.match(/checkRateLimit\([^)]*\)/);
-      assert.ok(callMatch, `${path} should still call checkRateLimit`);
-      assert.match(
-        callMatch[0],
-        /failClosed:\s*true/,
-        `${path} must pass { failClosed: true } so a Redis outage doesn't silently bypass the only rate-limit gate it has`,
-      );
-    });
-  }
-});
-
 describe('scoped rate-limit degraded call-site policy (#3531)', () => {
   const SCOPED_RATE_LIMIT_CALLERS = [
     {
-      path: 'server/worldmonitor/aviation/v1/track-aircraft.ts',
-      expected: /if\s*\(limit\.degraded\)\s*\{[\s\S]*?throw Object\.assign\(new ApiError\(503,/,
-      reason: 'aircraft identifier lookups must fail closed before cache or provider work when the shared limiter is unavailable',
-    },
-    {
-      path: 'api/reverse-geocode.js',
-      expected: /failClosed:\s*true/,
-      reason: 'the provider-wide Nominatim bucket is shared across both routes and must fail closed before upstream work',
-    },
-    {
       path: 'server/worldmonitor/infrastructure/v1/reverse-geocode.ts',
       expected: /if\s*\(\s*providerLimit\.degraded\s*\)\s*\{/,
-      reason: 'the gateway half of the provider-wide Nominatim bucket must fail closed before upstream work',
-    },
-    {
-      path: 'api/a2a.ts',
-      expected: /Redis-degraded scoped limits intentionally stay availability-first/,
-      reason: 'A2A concierge serves only anonymous, quota-free, cheap catalog matching — degradation is logged and stays availability-first',
-    },
-    {
-      path: 'api/ask.ts',
-      expected: /Redis-degraded scoped limits intentionally stay availability-first/,
-      reason: 'NLWeb /ask serves only anonymous, quota-free, cheap catalog matching — degradation is logged and stays availability-first',
-    },
-    {
-      path: 'api/docs-mcp.ts',
-      expected: /Redis-degraded scoped limits intentionally stay availability-first/,
-      reason: 'docs MCP facade proxies a fully public, cheap upstream — degradation is logged and stays availability-first',
-    },
-    {
-      path: 'api/mcp-proxy.ts',
-      expected: /Redis-degraded scoped limits intentionally stay availability-first/,
-      reason: 'MCP proxy is already premium-auth gated; scoped limit degradation is logged and remains availability-first',
+      reason: 'the provider-wide Nominatim bucket must fail closed before upstream work',
     },
     {
       path: 'api/skills/fetch-agentskills.ts',
       expected: /Redis-degraded scoped limits intentionally stay availability-first/,
       reason: 'agent-skills import proxy fetches one public host behind a fixed allowlist and is called by the settings importer - degradation is logged and stays availability-first',
-    },
-    {
-      path: 'api/user-prefs.ts',
-      expected: /Redis-degraded scoped limits intentionally fail open for prefs writes/,
-      reason: 'cloud prefs writes are low-stakes, so Redis degradation should not block legitimate settings sync',
-    },
-    {
-      path: 'api/desktop-key/status.ts',
-      expected: /A degraded per-IP ceiling fails closed with 503/,
-      reason: 'the per-IP ceiling in front of the Convex key lookup fails closed when degraded (rotating keys miss the negative cache); the owner and invalid-key buckets after the lookup stay availability-first, and a self-host sidecar keeps its last verdict through a 503',
-    },
-    {
-      path: 'api/notify.ts',
-      expected: /limiter outage here should NOT fail open/,
-      reason: 'notify publishes create relay-side delivery obligations on the shared event queue, so Redis degradation fails closed instead of allowing unbounded fan-out',
-    },
-    {
-      path: 'api/notification-channels.ts',
-      expected: /if\s*\(\s*scoped\.degraded\s*\)\s*\{/,
-      reason: 'channel mutations write through the Convex relay and can trigger welcome mail, so Redis degradation fails closed instead of allowing unbounded writes',
     },
   ];
 
@@ -868,85 +790,6 @@ describe('slow-Redis timeout is degraded, not a silent allow (#6412 review)', ()
       resetApi();
     }
   });
-});
-
-describe('legacy edge-function rate-limit policy mirrors (#6234)', () => {
-  // `api/*.js` edge functions are self-contained JS and cannot import
-  // `../server/` (CLAUDE.md, enforced by scripts/lint-boundaries.mjs and the
-  // pre-push esbuild check). So unlike api/mcp-proxy.ts, which reads
-  // ENDPOINT_RATE_POLICIES at module load, these handlers duplicate their
-  // budget as a literal constant and enforce it via api/_rate-limit.js.
-  //
-  // Without this test the registry entry would be decorative: the audit script
-  // (scripts/enforce-rate-limit-policies.mjs) and docs/usage-rate-limits.mdx
-  // would advertise a number no handler enforces, which is exactly the
-  // declare-vs-serve divergence the repo treats as a defect class.
-  const MIRRORED_JS_POLICIES = [
-    { path: 'api/youtube/live.js', route: '/api/youtube/live', scope: 'youtube-live' },
-    { path: 'api/reverse-geocode.js', route: '/api/reverse-geocode', scope: 'reverse-geocode' },
-  ];
-
-  for (const { path, route, scope } of MIRRORED_JS_POLICIES) {
-    it(`${path} enforces the ENDPOINT_RATE_POLICIES['${route}'] budget`, async () => {
-      const fs = await import('node:fs');
-      const src = fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-      const policy = ENDPOINT_RATE_POLICIES[route];
-      assert.ok(policy, `${route} must stay in ENDPOINT_RATE_POLICIES`);
-
-      const limitMatch = src.match(/const RATE_LIMIT_PER_MINUTE = (\d+);/);
-      assert.ok(limitMatch, `${path} must declare a RATE_LIMIT_PER_MINUTE constant`);
-      assert.equal(
-        Number(limitMatch[1]),
-        policy.limit,
-        `${path} enforces ${limitMatch[1]}/min but ENDPOINT_RATE_POLICIES['${route}'] declares ${policy.limit} — api/*.js cannot import server/_shared/rate-limit.ts, so the budget must be updated in both places`,
-      );
-      assert.equal(
-        policy.window,
-        '60 s',
-        `${route} must stay on a 60 s window while ${path} hard-codes a per-minute budget`,
-      );
-
-      const scopeMatch = src.match(/const RATE_LIMIT_SCOPE = '([^']+)';/);
-      assert.ok(scopeMatch, `${path} must declare a RATE_LIMIT_SCOPE constant`);
-      assert.equal(
-        scopeMatch[1],
-        scope,
-        `${path} rate-limit scope changed — Redis keys are prefixed rl:<scope>, so renaming it silently resets every caller's window`,
-      );
-
-      // Assert the WIRING, not just the declarations. A bare /checkRateLimit\(/
-      // presence check proves neither constant reaches the call: dropping
-      // `limit:` makes api/_rate-limit.js apply `opts.limit ?? DEFAULT_RATE_LIMIT`
-      // (600/min — a 20x silent widening) and dropping `scope:` moves the route
-      // into the shared `rl` global bucket, both while the two constants sit
-      // there unused and every assertion above still passes. Match the option
-      // keys inside the call so the registry entry cannot become decorative.
-      // (#6412 review)
-      const callMatch = src.match(/checkRateLimit\(\s*\w+\s*,\s*\w+\s*,\s*\{([\s\S]*?)\}\s*\)/);
-      assert.ok(callMatch, `${path} must call checkRateLimit with an explicit options object`);
-      const callOptions = callMatch[1] ?? '';
-      assert.match(
-        callOptions,
-        /\blimit:\s*RATE_LIMIT_PER_MINUTE\b/,
-        `${path} must pass limit: RATE_LIMIT_PER_MINUTE to checkRateLimit — without it the call silently falls back to the 600/min global default and the registry entry is decorative`,
-      );
-      assert.match(
-        callOptions,
-        /\bscope:\s*RATE_LIMIT_SCOPE\b/,
-        `${path} must pass scope: RATE_LIMIT_SCOPE to checkRateLimit — without it the route shares the global 'rl' bucket instead of rl:${scope}`,
-      );
-      assert.match(
-        callOptions,
-        /\bwindow:\s*'60 s'/,
-        `${path} must pass window: '60 s' to checkRateLimit so the enforced window matches ENDPOINT_RATE_POLICIES['${route}']`,
-      );
-      assert.match(
-        callOptions,
-        /\bctx\b/,
-        `${path} must forward ctx to checkRateLimit so the degraded-path Sentry envelope survives isolate teardown`,
-      );
-    });
-  }
 });
 
 describe('rate-limit constants', () => {

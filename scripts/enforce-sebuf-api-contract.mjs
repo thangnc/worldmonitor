@@ -322,7 +322,9 @@ for (const deferredViolation of collectDeferredServiceViolations({
 
 // --- Proto query-param implementation guard ---
 
-const queryParamContract = collectQueryParamContractViolations(ROOT);
+const queryParamContract = collectQueryParamContractViolations(ROOT, {
+  skipServices: new Set(DEFERRED_GENERATED_SERVICES.keys()),
+});
 for (const v of queryParamContract.violations) {
   violation(v.file, v.message, v.remedy);
 }

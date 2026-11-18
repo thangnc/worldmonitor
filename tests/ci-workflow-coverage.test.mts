@@ -189,7 +189,7 @@ const REQUIRED_PR_SCRIPTS = [
   'test:data',
   'test:dom',
   'test:sidecar',
-  'test:convex',
+  'test:server',
 ] as const;
 
 
@@ -204,10 +204,10 @@ const PR_GATE_WORKFLOWS = [
 ] as const;
 
 // The Lite gate's own jobs, then the gates of services outside the web app
-// (consumer-prices-core, Zapier, Umami, digest image) that 1c or Phase 2 decides.
+// (consumer-prices-core, Umami, digest image) that Phase 2 decides.
 const CI_JOBS = [
   'checks', 'unit', 'build', 'dom', 'server', 'health-probe-cutovers',
-  'consumer-prices', 'zapier', 'umami-postgres', 'digest-image',
+  'consumer-prices', 'umami-postgres', 'digest-image',
 ] as const;
 
 
@@ -302,151 +302,6 @@ function securityAuditLockfiles(): string[] {
   return securityAuditSteps().map((step: { run: string }) => step.run.match(/--lockfile "([^"]+)"/)?.[1]).sort();
 }
 
-describe('MCP live smoke — the production detection net', () => {
-  const smokeWorkflow = read(resolve(workflowsDir, 'mcp-live-smoke.yml'));
-
-  // A 2026-09-03 FUNCTION_INVOCATION_FAILED outage ran 13:24→16:30 UTC and was
-  // caught by neither Sentry nor Axiom (the platform kills the function before
-  // any handler code runs, so nothing first-party can observe it). The schedule
-  // is therefore the only net for a failure BETWEEN deploys, and its cadence is
-  // the upper bound on how long one can run unnoticed. At `23 */6 * * *` the
-  // outage fell entirely between the 12:23 and 18:23 runs.
-  it('probes production at least four times an hour, not six-hourly', () => {
-    const crons = Array.from(
-      smokeWorkflow.matchAll(/^\s+- cron:\s*['"]([^'"]+)['"]/gm),
-      ([, value]) => value.trim(),
-    );
-    assert.equal(crons.length, 1, 'exactly one schedule entry');
-    const fields = crons[0].split(/\s+/);
-    assert.equal(fields.length, 5, `schedule must have exactly five fields; got "${crons[0]}"`);
-    const [minute, hour, dayOfMonth, month, dayOfWeek] = fields;
-    assert.match(
-      minute,
-      /^\*\/([1-9]|1[0-5])$/,
-      `schedule must run at least every 15 minutes; got "${crons[0]}". A sparser `
-        + 'cadence is how a multi-hour outage slips between two runs.',
-    );
-    assert.equal(hour, '*', 'the hour field must not narrow the schedule back down');
-    assert.equal(dayOfMonth, '*', 'the day-of-month field must not narrow the schedule back down');
-    assert.equal(month, '*', 'the month field must not narrow the schedule back down');
-    assert.equal(dayOfWeek, '*', 'the day-of-week field must not narrow the schedule back down');
-  });
-
-  // These three literals are the entire gate. GitHub's API returns
-  // environment 'Production' (capital P) and creator 'vercel[bot]' — verified
-  // against repos/koala73/worldmonitor/deployments on 2026-09-04. A drift to
-  // 'production' would skip every run while looking exactly like the healthy
-  // case, because most deployment_status events SHOULD skip (Preview, Railway,
-  // Mintlify, and the pending/in_progress states of all of them).
-  it('gates the per-deploy trigger on the shapes the GitHub API actually sends', () => {
-    assert.match(smokeWorkflow, /^\s+deployment_status:\s*$/m, 'per-deploy trigger present');
-    assert.match(smokeWorkflow, /deployment_status\.state == 'success'/);
-    assert.match(smokeWorkflow, /deployment\.environment == 'Production'/);
-    assert.match(smokeWorkflow, /deployment\.creator\.login == 'vercel\[bot\]'/);
-    // Without the escape hatch the schedule/push/dispatch runs would ALSO be
-    // evaluated against deployment_status fields and skip — disabling the net
-    // entirely rather than just the per-deploy half.
-    assert.match(smokeWorkflow, /github\.event_name != 'deployment_status' \|\|/);
-  });
-
-  it('checks out the deployed sha on a per-deploy run, not the branch tip', () => {
-    assert.match(
-      smokeWorkflow,
-      /ref:\s*\$\{\{\s*github\.event_name == 'deployment_status' && github\.event\.deployment\.sha/,
-    );
-  });
-
-  it('runs on pushes that change MCP smoke helpers', () => {
-    const pushBlock = smokeWorkflow.match(/\n {2}push:\n[\s\S]*?(?=\n {2}[a-z_]+:)/)?.[0];
-    assert.ok(pushBlock, 'MCP live smoke workflow must define a push trigger');
-    assert.match(pushBlock, /^\s+- 'scripts\/mcp-proxy-live-smoke\.mjs'\s*$/m);
-    assert.match(pushBlock, /^\s+- 'scripts\/mcp-smoke-http\.mjs'\s*$/m);
-  });
-
-  it('writes and uploads a diagnostic report for both passing and failing runs', () => {
-    const smokeJob = YAML.parse(smokeWorkflow).jobs.smoke;
-    const probe = smokeJob.steps.find((step: { run?: string }) => step.run?.includes('mcp-live-smoke.mjs'));
-    assert.match(probe?.run ?? '', /--report\s+"\$RUNNER_TEMP\/mcp-live-smoke-report\.json"/);
-
-    const upload = smokeJob.steps.find((step: { uses?: string }) => step.uses?.startsWith('actions/upload-artifact@'));
-    assert.equal(upload?.if, '${{ always() }}');
-    assert.equal(upload?.uses, 'actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f');
-    assert.equal(upload?.with?.path, '${{ runner.temp }}/mcp-live-smoke-report.json');
-    assert.equal(upload?.with?.['if-no-files-found'], 'error');
-    assert.equal(upload?.with?.['retention-days'], 14);
-    assert.match(upload?.with?.name ?? '', /github\.run_id.*github\.run_attempt/);
-  });
-
-  // Workflow-level concurrency lets a pending or in-progress Production event
-  // evict a QUEUED successful-production smoke before the job gate skips it.
-  // An evicted run reads as neither pass nor fail, which is the worst outcome
-  // for a detection net.
-  it('applies concurrency only after the deployment-status gate', () => {
-    const smokeJob = workflowJobBlock(smokeWorkflow, 'smoke');
-    assert.doesNotMatch(
-      smokeWorkflow,
-      /^concurrency:\s*$/m,
-      'workflow-level concurrency applies before the job gate, so a skipped deployment event can evict a queued probe',
-    );
-    assert.match(smokeJob, /^\s{4}concurrency:\s*$/m);
-    assert.match(smokeJob, /group:\s*mcp-live-smoke-\$\{\{[^}]*deployment\.environment/);
-    assert.match(smokeJob, /cancel-in-progress:\s*false/);
-  });
-});
-
-describe('live cache sweep deployment timing', () => {
-  it('runs after successful production deploys and retains scheduled and manual checks', () => {
-    const workflow = YAML.parse(read(resolve(workflowsDir, 'live-api-cache-auth.yml')));
-    assert.ok(Object.hasOwn(workflow.on, 'deployment_status'));
-    assert.equal(workflow.on.push, undefined, 'a merge is not a completed production deployment');
-    assert.deepEqual(workflow.on.schedule, [{ cron: '47 */6 * * *' }]);
-    assert.ok(Object.hasOwn(workflow.on, 'workflow_dispatch'));
-
-    const job = workflow.jobs.sweep;
-    for (const [event, state, environment, creator, expected] of [
-      ['deployment_status', 'success', 'Production', 'vercel[bot]', true],
-      ['deployment_status', 'pending', 'Production', 'vercel[bot]', false],
-      ['deployment_status', 'failure', 'Production', 'vercel[bot]', false],
-      ['deployment_status', 'success', 'Preview', 'vercel[bot]', false],
-      ['deployment_status', 'success', 'Production', 'railway[bot]', false],
-      ['schedule', '', '', '', true],
-      ['workflow_dispatch', '', '', '', true],
-    ]) {
-      const github = { event_name: event, repository: 'koala73/worldmonitor', event: event === 'deployment_status' ? {
-        deployment_status: { state },
-        deployment: { environment, creator: { login: creator } },
-      } : {} };
-      assert.equal(runInNewContext(job.if, { github }, { timeout: 1000 }), expected, `${event}/${state}/${environment}/${creator}`);
-    }
-    assert.equal(workflow.concurrency, undefined);
-    assert.equal(job.concurrency['cancel-in-progress'], false);
-    // Keyed on the deployment environment, as in mcp-live-smoke: one shared group
-    // would let schedule, dispatch and Production runs evict each other while pending.
-    assert.match(job.concurrency.group, /deployment\.environment/);
-    assert.match(job.steps[0].with.ref, /github\.event\.deployment\.sha/);
-    assert.match(job.steps[0].with.ref, /\|\| github\.sha/, 'schedule and dispatch runs must fall back to github.sha');
-    const probe = job.steps.find((step: { env?: Record<string, string> }) => step.env?.LIVE_API_CACHE_TESTS === '1');
-    assert.ok(probe);
-    // The marker list and the pass count are both load-bearing (see the run step's
-    // comment): a name dropped from the loop silently stops enforcing that probe
-    // group, and the count must track the suite's markers plus its self-check.
-    const probeLoop = probe.run.match(/for probe in ([a-z -]+); do/);
-    assert.ok(probeLoop, 'the run step must enumerate the mandatory probe markers');
-    const enforced = probeLoop[1].split(' ');
-    assert.deepEqual(enforced, [
-      'bootstrap-auth', 'warm-cache', 'generated-rpc', 'premium-rpc',
-      'mcp-protocol', 'oauth-metadata', 'corpus-edge-cache', 'document-edge-cache',
-      'entry-document-edge-cache', 'agent-api-errors',
-    ]);
-    const suite = read(resolve(root, 'tests/live-api-cache-auth-regression.test.mjs'));
-    const emitted = [...suite.matchAll(/markProbeCompleted\('([a-z-]+)'\)/g)].map((m) => m[1]);
-    assert.deepEqual([...enforced].sort(), [...emitted].sort(), 'the workflow must enforce exactly the markers the suite emits');
-    const required = probe.run.match(/"\$pass_count" -lt (\d+)/);
-    assert.ok(required, 'the run step must require a minimum pass count');
-    assert.equal(Number(required[1]), emitted.length + 1, 'required passes = mandatory probe groups + the suite self-check');
-  });
-});
-
 // #7593: a `deployment_status` trigger is privileged — repo secrets and a
 // write-capable GITHUB_TOKEN are in scope — and these workflows check out
 // `github.event.deployment.sha`, so a dependency install there would resolve
@@ -536,13 +391,14 @@ describe('deployment_status triggers — npm cache scope hygiene (#7593)', () =>
       if (problems.length > 0) offenders.push(`${file}\n    - ${problems.join('\n    - ')}`);
     }
 
-    // Not vacuous: mcp-live-smoke.yml's deployment_status trigger is pinned
-    // by the describe above, so if the sweep stops seeing that file the
-    // trigger parser has broken and this guard is green while covering
-    // nothing.
-    assert.ok(
-      scanned.includes('mcp-live-smoke.yml'),
-      'the sweep matched no workflows — mcp-live-smoke.yml still triggers on deployment_status, so the trigger parser here is broken and this guard covers nothing',
+    // No workflow triggers on deployment_status since mcp-live-smoke.yml and
+    // live-api-cache-auth.yml were removed (Lite Phase 1c). Pin that so a new
+    // one is noticed and reviewed against this guard; the self-test below
+    // keeps the trigger parser and ban patterns able to fire.
+    assert.deepEqual(
+      scanned,
+      [],
+      'a workflow now triggers on deployment_status — confirm it passes the ban below, then update this expectation',
     );
     assert.deepEqual(
       offenders,
@@ -1015,10 +871,9 @@ describe('CI workflow coverage', () => {
 // 2026-09-20 the repo peaked at 43 concurrent jobs and live commits waited
 // 200-327 s for a runner, turning a 7-minute check wall into 19-27 minutes.
 //
-// Eviction is safe here precisely because it is unsafe in mcp-live-smoke.yml
-// (see 'applies concurrency only after the deployment-status gate' above).
-// There an evicted run reads as neither pass nor fail and the detection net
-// loses a probe. A superseded PR run has no verdict anyone will read.
+// Eviction is safe here because a superseded PR run has no verdict anyone
+// will read (unlike a live detection-net probe, where an evicted run reads as
+// neither pass nor fail).
 // Branch protection evaluates the head SHA only.
 //
 // Cancellation is scoped to pull_request. A push to main still owes a verdict,

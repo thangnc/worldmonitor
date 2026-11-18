@@ -187,8 +187,6 @@ describe('API and methodology surfaces', () => {
   const credDoc = readSrc('docs/methodology/news-credibility.mdx');
   const digestDoc = readSrc('docs/methodology/news-digest-and-briefing.mdx');
   const openApiYaml = readSrc('docs/api/NewsService.openapi.yaml');
-  const mcpCacheSrc = readSrc('api/mcp/registry/cache-tools.ts');
-  const mcpNlpSrc = readSrc('api/mcp/registry/nlp-tools.ts');
 
   it('methodology page documents weights, high-risk cap, and distinctness', () => {
     assert.match(credDoc, /Propaganda risk \| `0\.50`/);
@@ -208,13 +206,5 @@ describe('API and methodology surfaces', () => {
     assert.match(openApiYaml, /source tier × 30%/);
     assert.match(openApiYaml, /propaganda risk × 50%/);
     assert.match(openApiYaml, /independent\n\s+corroboration × 20%/s);
-  });
-
-  it('MCP get_news_intelligence and get_news_clusters expose credibilityScore', () => {
-    assert.match(mcpCacheSrc, /credibilityScore: \{ type: 'number'/);
-    assert.match(mcpNlpSrc, /credibilityScore: \{\n\s+type: 'number'/s);
-    assert.match(mcpNlpSrc, /const digestCredibilityScore = cluster\.credibilityScore/);
-    assert.match(mcpNlpSrc, /credibilityScore: Number\.isFinite\(digestCredibilityScore\)/);
-    assert.match(mcpNlpSrc, /: computeCredibilityScore\(\{/);
   });
 });

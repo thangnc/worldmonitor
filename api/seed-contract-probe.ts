@@ -205,13 +205,12 @@ export async function checkProbe(spec: ProbeSpec): Promise<ProbeResult> {
 interface BoundaryCheck {
   endpoint: string;
   /** Optional: require a specific `X-*-Source` header value to prove the
-   *  intended code-path served the response (e.g. `'cache'` for product-catalog
-   *  so we know the enveloped-read path actually ran, not fallback). */
+   *  intended code-path served the response (e.g. `'cache'`, so we know the
+   *  enveloped-read path actually ran, not a fallback). */
   requireSourceHeader?: { name: string; value: string };
 }
 
 const BOUNDARY_CHECKS: BoundaryCheck[] = [
-  { endpoint: '/api/product-catalog', requireSourceHeader: { name: 'x-product-catalog-source', value: 'cache' } },
   { endpoint: '/api/bootstrap' },
 ];
 

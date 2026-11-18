@@ -74,7 +74,6 @@ updates:
       - "/"
       - "/consumer-prices-core"
       - "/docker/umami/runtime"
-      - "/integrations/zapier"
       - "/scripts"
       - "/workers/api-cors-preflight"
       - "/workers/railway-reconcile-control"
@@ -83,7 +82,7 @@ updates:
     # Security updates only, on purpose. open-pull-requests-limit caps VERSION
     # updates exclusively — security-update PRs are drawn from a separate
     # internal budget and never consume this one — so 0 switches off routine
-    # weekly bumps across seven directories while leaving advisory fixes, and
+    # weekly bumps across six directories while leaving advisory fixes, and
     # the grouping below (which does apply to them), fully intact. Raising this
     # above 0 is how you would later opt into routine version bumps; do that
     # deliberately, with an `ignore` rule for semver-major, rather than by

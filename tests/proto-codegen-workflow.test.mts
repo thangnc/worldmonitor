@@ -12,13 +12,6 @@ const workflowPath = resolve(root, '.github/workflows/proto-check.yml');
 const workflowSource = readFileSync(workflowPath, 'utf8');
 const contributing = readFileSync(resolve(root, 'CONTRIBUTING.md'), 'utf8');
 const agentInstructions = readFileSync(resolve(root, 'CLAUDE.md'), 'utf8');
-const scorecardMirrorSource = readFileSync(
-  resolve(root, 'scripts/generate-scorecard-edge-mirrors.mjs'),
-  'utf8',
-);
-const scorecardMirrorPaths = [
-  ...scorecardMirrorSource.matchAll(/['"](server\/worldmonitor\/scorecard\/v1\/_[-a-z]+\.ts)['"]/g),
-].map((match) => match[1]);
 
 type Step = {
   if?: string;
@@ -366,7 +359,7 @@ function runMergeVerdict(mode: MergeVerdictMode, options: { poison?: boolean } =
   return returned;
 }
 
-function runWriter(mode: 'valid' | 'valid-mirror' | 'unexpected' | 'lease-failure' | 'current') {
+function runWriter(mode: 'valid' | 'unexpected' | 'lease-failure' | 'current') {
   const temp = mkdtempSync(join(tmpdir(), 'wm-proto-writer-'));
   const repo = join(temp, 'repo');
   const origin = join(temp, 'origin.git');
@@ -387,13 +380,8 @@ function runWriter(mode: 'valid' | 'valid-mirror' | 'unexpected' | 'lease-failur
   assert.equal(git(repo, ['config', 'user.name', 'Fixture']).status, 0);
   mkdirSync(join(repo, 'src/generated'), { recursive: true });
   mkdirSync(join(repo, 'src/components'), { recursive: true });
-  mkdirSync(join(repo, 'server/worldmonitor/scorecard/v1'), { recursive: true });
   writeFileSync(join(repo, 'src/generated/client.ts'), 'export const value = 1;\n');
   writeFileSync(join(repo, 'src/components/Panel.ts'), 'export const panel = 1;\n');
-  writeFileSync(
-    join(repo, 'server/worldmonitor/scorecard/v1/_types.ts'),
-    'export type Score = number;\n',
-  );
   assert.equal(git(repo, ['add', '-A']).status, 0);
   assert.equal(git(repo, ['commit', '--quiet', '-m', 'base']).status, 0);
   const expectedSha = git(repo, ['rev-parse', 'HEAD']).stdout.trim();
@@ -402,11 +390,7 @@ function runWriter(mode: 'valid' | 'valid-mirror' | 'unexpected' | 'lease-failur
   assert.equal(git(repo, ['push', '--quiet', '-u', 'origin', 'writer']).status, 0);
 
   if (mode !== 'current') {
-    const target = mode === 'unexpected'
-      ? 'src/components/Panel.ts'
-      : mode === 'valid-mirror'
-        ? 'server/worldmonitor/scorecard/v1/_types.ts'
-        : 'src/generated/client.ts';
+    const target = mode === 'unexpected' ? 'src/components/Panel.ts' : 'src/generated/client.ts';
     writeFileSync(join(repo, target), `export const value = ${mode === 'unexpected' ? 2 : 3};\n`);
     const patch = git(repo, ['diff', '--binary', '--full-index', '--', target]).stdout;
     writeFileSync(join(temp, 'generated.patch'), patch);
@@ -512,8 +496,6 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     }
     assert.equal(isGenerated('src/generated/client.ts'), true);
     assert.equal(isGenerated('docs/api/worldmonitor.openapi.yaml'), true);
-    assert.equal(scorecardMirrorPaths.length, 7, 'the fixture must discover every scorecard Edge mirror');
-    for (const path of scorecardMirrorPaths) assert.equal(isGenerated(path), true);
     const unicode = runChangeClassifier(['proto/café.proto']);
     assert.equal(unicode.status, 0, unicode.stderr);
     assert.match(unicode.output, /^codegen=true$/m);
@@ -834,9 +816,6 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     const generatedPaths = new Set((workflow.env?.GENERATED_PATHS ?? '').split(/\s+/).filter(Boolean));
     assert.ok(generatedPaths.has('src/generated/'));
     assert.ok(generatedPaths.has('docs/api/'));
-    for (const path of scorecardMirrorPaths) {
-      assert.ok(generatedPaths.has(path), `${path} must cross the generator/writer boundary`);
-    }
 
     const writer = stepByName(
       'internal-auto-generate',
@@ -1056,9 +1035,6 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
     assert.notEqual(valid.remoteSha, valid.expectedSha);
     assert.match(valid.ghLog, new RegExp(`statuses/${valid.remoteSha}.*state=pending`));
 
-    const validMirror = runWriter('valid-mirror');
-    assert.equal(validMirror.result.status, 0, validMirror.result.stderr);
-    assert.match(validMirror.output, /^pushed=true$/m);
 
     const unexpected = runWriter('unexpected');
     assert.notEqual(unexpected.result.status, 0);

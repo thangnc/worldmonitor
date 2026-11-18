@@ -2008,15 +2008,6 @@ describe('generateStoryDescription — sanitisation + prefix bump (U5)', () => {
 describe('generateWhyMatters — v11 endpoint-cache cross-read (#4914)', () => {
   const V11_PROSE = 'Closure of the Strait of Hormuz would freeze a fifth of seaborne crude and force allied navies to respond.';
 
-  it('pins the endpoint cache to v11 and its shadow cohort to v7', async () => {
-    const { readFile } = await import('node:fs/promises');
-    const src = await readFile(new URL('../api/internal/brief-why-matters.ts', import.meta.url), 'utf8');
-    assert.match(src, /const cacheKey = `brief:llm:whymatters:v11:\$\{hash\}`;/);
-    assert.match(src, /const shadowKey = `brief:llm:whymatters:shadow:v7:\$\{hash\}`;/);
-    assert.doesNotMatch(src, /const cacheKey = `brief:llm:whymatters:v9:/);
-    assert.doesNotMatch(src, /const shadowKey = `brief:llm:whymatters:shadow:v6:/);
-  });
-
   async function seedV10(cache, s, envelopeOverrides = {}) {
     const hash = await hashBriefStory(s);
     cache.store.set(`brief:llm:whymatters:v11:${hash}`, {

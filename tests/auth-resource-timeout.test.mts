@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const never = <T>(): Promise<T> => new Promise<T>(() => {});
 const after = <T>(ms: number, value: T): Promise<T> => new Promise((resolve) => setTimeout(() => resolve(value), ms));
 
 /**
@@ -123,49 +122,6 @@ test('wm-session request-body read must terminate for a body that never ends', a
   } finally {
     globalThis.fetch = originalFetch;
     delete process.env.WM_SESSION_BODY_TIMEOUT_MS;
-  }
-});
-
-test('widget-agent request-body read must terminate for a body that never ends', async () => {
-  process.env.WIDGET_AGENT_KEY = 'server-widget-key';
-  process.env.PRO_WIDGET_KEY = 'server-pro-key';
-  process.env.WORLDMONITOR_VALID_KEYS = 'browser-test-key';
-  process.env.WIDGET_AGENT_BODY_TIMEOUT_MS = '50';
-
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = (() => never<Response>()) as typeof fetch;
-  try {
-    const { default: handler, __setWidgetAgentSpendDepsForTests } = await import('../api/widget-agent.ts?resource-repro=1');
-    __setWidgetAgentSpendDepsForTests({
-      checkRateLimit: async () => null,
-    });
-    let cancelled = false;
-    const body = new ReadableStream<Uint8Array>({
-      start(controller) {
-        controller.enqueue(new TextEncoder().encode('{"prompt":"'));
-      },
-      cancel() { cancelled = true; },
-    });
-    const req = new Request('https://www.worldmonitor.app/api/widget-agent', {
-      method: 'POST',
-      headers: {
-        Origin: 'https://www.worldmonitor.app',
-        'Content-Type': 'application/json',
-        'X-WorldMonitor-Key': 'browser-test-key',
-      },
-      body,
-      duplex: 'half',
-    } as RequestInit & { duplex: 'half' });
-
-    const outcome = await Promise.race([
-      handler(req).then((res) => { assert.equal(res.status, 408); return 'settled'; }),
-      after(500, 'still-pending'),
-    ]);
-    assert.equal(outcome, 'settled');
-    assert.equal(cancelled, true);
-  } finally {
-    globalThis.fetch = originalFetch;
-    delete process.env.WIDGET_AGENT_BODY_TIMEOUT_MS;
   }
 });
 

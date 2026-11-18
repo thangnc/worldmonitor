@@ -511,7 +511,7 @@ Product facts, `llms.txt`, the AI search briefing, source attribution, catalogs,
 
 ### Generated Artifacts in Pull Requests
 
-`make generate` writes generated files under `src/generated/` and `docs/api/`, plus the seven scorecard Edge mirrors named by `scripts/generate-scorecard-edge-mirrors.mjs`. These files remain committed to the repository, but they must never be edited by hand.
+`make generate` writes generated files under `src/generated/` and `docs/api/`. These files remain committed to the repository, but they must never be edited by hand.
 
 For pull requests created from branches in this repository, a read-only job runs the pinned generator against the exact PR head. A fresh writer job applies only the validated generated-artifact patch; it does not execute repository-controlled code with a write token. When generated files drift, CI appends a `chore(proto): update generated artifacts` commit to the same branch. GitHub creates fresh PR runs for the automated update in an approval-required state; a maintainer must approve them in the merge box. `proto-generated-followup` remains pending until that new head produces no further drift. CI also regenerates against the synthetic merge result so concurrent proto changes on `main` cannot leave an internally consistent branch stale after merge. Proto Generation Check reports every proto job and the aggregate `proto-freshness` result on each pull request.
 

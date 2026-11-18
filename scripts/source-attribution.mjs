@@ -1176,11 +1176,6 @@ const EXCLUDED_HOSTS = new Set([
   // None of them is an ingested upstream dataset, so they belong with the
   // other webmaster-console hosts above rather than in the provider count.
   'oauth2.googleapis.com',
-  // MCP OAuth clients' published Client ID Metadata Documents
-  // (api/oauth/_client-metadata.js). Fetched to authorize a connection, never
-  // ingested as data.
-  'claude.ai',
-  'chatgpt.com',
   'searchconsole.googleapis.com',
   'www.googleapis.com',
   'yandex.com',

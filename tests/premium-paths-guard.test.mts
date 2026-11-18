@@ -38,16 +38,9 @@ import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
 // Each entry must point to a real file under `api/` and explain WHY path-
 // gated Bearer injection isn't the right mechanism for that endpoint.
 
-const PREMIUM_FETCH_BYPASS_ALLOWLIST: Record<string, string> = {
-  '/api/widget-agent':
-    'WidgetChatModal.ts and McpDataPanel.ts call widgetAgentUrl() via plain ' +
-    'fetch() with their own auth surface (X-Widget-Key / X-Pro-Key / Bearer) ' +
-    'rather than premiumFetch.',
-  '/api/me/entitlement':
-    'checkout.ts attaches the Clerk Bearer ' +
-    'manually. premiumFetch would short-circuit on tester keys and break the ' +
-    'free→pro promotion polling flow.',
-};
+// Empty since the Lite refactor removed /api/widget-agent and
+// /api/me/entitlement; no direct-edge endpoint bypasses premiumFetch today.
+const PREMIUM_FETCH_BYPASS_ALLOWLIST: Record<string, string> = {};
 
 // Gateway-level direct-LLM routes also require a Clerk identity before quota
 // reservation. Browser callers must therefore enter through premiumFetch so
@@ -135,11 +128,16 @@ describe('premium-paths guard — every premium-gated direct-edge endpoint is co
     gated.push({ route, file });
   }
 
-  it('scan finds at least one premium-gated endpoint — sanity check for regex/walk', () => {
+  // No kept api/ entry gates on premium today, so `gated` may be empty. Prove
+  // the walk and the regex still work instead, so an empty scan stays a real
+  // result rather than a broken walker.
+  it('scan walks the api/ entrypoints and the gate regex still matches — sanity check for regex/walk', () => {
     assert.ok(
-      gated.length > 0,
-      'Scan found zero premium-gated direct-edge endpoints — regex or walk likely broken',
+      files.some((f) => fileToRoute(f) === '/api/seed-contract-probe'),
+      'Scan did not reach api/seed-contract-probe.ts — the api/ walk is likely broken',
     );
+    assert.ok(PREMIUM_GATE_RE.test('if (!(await isCallerPremium(req))) {'));
+    assert.ok(PREMIUM_GATE_RE.test("jsonResponse({ error: 'Pro subscription required' }, 403)"));
   });
 
   for (const { route, file } of gated) {

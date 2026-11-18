@@ -131,18 +131,14 @@ describe("direct LLM daily quota", () => {
       "/api/news/v1/summarize-article",
     ]);
     expect(DIRECT_LLM_GATEWAY_QUOTA_PATHS.has("/api/market/v1/backtest-stock")).toBe(false);
-    expect([...DIRECT_LLM_SELF_METERED_QUOTA_PATHS].sort()).toEqual([
-      "/api/chat-analyst",
-      "/api/widget-agent",
-    ]);
+    // The self-metered handlers left with refactor Phase 1c.
+    expect([...DIRECT_LLM_SELF_METERED_QUOTA_PATHS]).toEqual([]);
     expect([...DIRECT_LLM_QUOTA_PATHS].sort()).toEqual([
-      "/api/chat-analyst",
       "/api/intelligence/v1/classify-event",
       "/api/intelligence/v1/deduct-situation",
       "/api/intelligence/v1/get-country-intel-brief",
       "/api/market/v1/analyze-stock",
       "/api/news/v1/summarize-article",
-      "/api/widget-agent",
     ]);
   });
 });

@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   DEFERRED_GENERATED_SERVICES,
@@ -13,6 +16,7 @@ import {
 // INERT on the shipped tree (the service exists, no gateway exists), which means CI
 // passing on the repo proves nothing about any of them. Hence direct unit coverage.
 
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KEY = 'demo_domain/v1';
 const ENTRY = { removalIssue: '#1234', owner: '@someone', reviewBy: '2026-11-05' };
 
@@ -74,8 +78,15 @@ describe('deferred generated service classification', () => {
 
 describe('the shipped deferred list', () => {
   it('carries a removal issue, an owner, and a review date for every entry', () => {
+    // A removal reference is either an issue (#NNNN) or a named refactor phase
+    // that points at a committed plan, so the reader can find what ends the deferral.
     for (const [key, entry] of DEFERRED_GENERATED_SERVICES) {
-      assert.match(entry.removalIssue, /^#\d+$/, `${key} needs a #NNNN removal issue`);
+      const plan = /^refactor Phase \w+ \((docs\/engineering\/plans\/[\w.-]+\.md)\)$/.exec(entry.removalIssue);
+      if (plan) {
+        assert.ok(existsSync(join(ROOT, plan[1])), `${key} names a removal plan that does not exist: ${plan[1]}`);
+      } else {
+        assert.match(entry.removalIssue, /^#\d+$/, `${key} needs a #NNNN removal issue or a refactor plan reference`);
+      }
       assert.match(entry.owner, /^@[\w-]+$/, `${key} needs an @owner`);
       assert.match(entry.reviewBy, /^\d{4}-\d{2}-\d{2}$/, `${key} needs an ISO reviewBy date`);
     }

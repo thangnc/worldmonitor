@@ -11,7 +11,6 @@ import {
 import { getRootlessDocsDestination } from './src/config/docs-root-redirects';
 import { shouldRedirectToLite } from './src/config/lite-route';
 import agentRequestPolicy from './shared/agent-request-policy.json';
-import { isMcpAliasRequest, normalizeMcpHost } from './shared/mcp-host-policy';
 
 function userAgentTokenPattern(tokens: readonly string[]): RegExp {
   return new RegExp(`(?:^|[^a-z0-9-])(?:${tokens.join('|')})(?:$|[^a-z0-9-])`, 'i');
@@ -47,21 +46,11 @@ const UNBOUNDED_DASHBOARD_ROOT_QUERY_KEYS = ['lat', 'lon', 'zoom'] as const;
 //   UptimeRobot + ops curl. Was blocked by the curl/bot UA regex before this
 //   exception landed (Vercel log 2026-04-15: "Middleware 403 Forbidden" on
 //   /api/seed-contract-probe).
-// - /api/internal/brief-why-matters: requires RELAY_SHARED_SECRET Bearer
-//   (subtle-crypto HMAC timing-safe compare in server/_shared/internal-auth.ts).
-//   Called from the Railway digest-notifications cron whose fetch() uses the
-//   Node undici default UA, which is short enough to trip the "no UA or
-//   suspiciously short" 403 below (Railway log 2026-04-21 post-#3248 merge:
-//   every cron call returned 403 and silently fell back to legacy Gemini).
 // - /api/llms.txt: static, intentionally-public agent-discovery document
 //   (the section-level llms.txt for the developer/API surface, served from
 //   public/api/llms.txt). It MUST bypass the bot gate — AI crawlers (ClaudeBot,
 //   GPTBot, PerplexityBot, CCBot, …) are the entire audience for an llms.txt,
 //   yet every one of those UAs matches BOT_UA and would otherwise 403.
-// - /api/product-catalog: public read-only pricing catalog (Redis-cached,
-//   keyless, advertised as service-meta in /.well-known/api-catalog). Agents
-//   evaluating the product are a primary audience; an agent-journey run (#4854)
-//   got 403 here and concluded the endpoint didn't exist.
 // - /api/download.md: curated static markdown twin of GET /api/download.
 //   Kept on the exact allowlist so a future glob refactor cannot drop the
 //   sampled URL. Other GET/HEAD /api/**/*.md twins pass only for AI crawlers
@@ -71,9 +60,7 @@ const PUBLIC_API_PATHS = new Set([
   '/api/version',
   '/api/health',
   '/api/seed-contract-probe',
-  '/api/internal/brief-why-matters',
   '/api/llms.txt',
-  '/api/product-catalog',
   '/api/download.md',
 ]);
 
@@ -88,15 +75,6 @@ function isMarkdownTwinBypass(pathname: string, method: string, ua: string): boo
 const SOCIAL_IMAGE_UA =
   /Slack-ImgProxy|Slackbot|twitterbot|facebookexternalhit|linkedinbot|telegrambot|whatsapp|discordbot|redditbot/i;
 
-// Must match the exact route shape enforced by
-// api/brief/carousel/[userId]/[issueDate]/[page].ts:
-//   /api/brief/carousel/<userId>/YYYY-MM-DD-HHMM/<0|1|2>
-// The issueDate segment is a per-run slot (date + HHMM in the user's
-// tz) so same-day digests produce distinct carousel URLs.
-// pageFromIndex() in brief-carousel-render.ts accepts only 0/1/2, so
-// the trailing segment is tightly bounded.
-const BRIEF_CAROUSEL_PATH_RE =
-  /^\/api\/brief\/carousel\/[^/]+\/\d{4}-\d{2}-\d{2}-\d{4}\/[0-2]\/?$/;
 
 function hasLegacyDashboardRootState(searchParams: URLSearchParams): boolean {
   return LEGACY_DASHBOARD_ROOT_QUERY_KEYS.some((key) => searchParams.has(key));
@@ -197,17 +175,7 @@ export default function middleware(request: Request) {
   const url = new URL(request.url);
   const ua = request.headers.get('user-agent') ?? '';
   const path = url.pathname;
-  const host = normalizeMcpHost(request.headers.get('host') ?? url.hostname);
-  const aliasMcpRequest = isMcpAliasRequest(url.hostname, path)
-    || isMcpAliasRequest(request.headers.get('host') ?? '', path);
-
-  // Product MCP aliases are migration-only surfaces. Let every policy request
-  // reach the handler so it returns the protocol-shaped response and emits one
-  // bounded migration event. This bypass must precede generic crawler/API bot
-  // gates, which otherwise turn direct alias transport calls into a 403.
-  // The handler repeats the policy because dotted well-known paths bypass this
-  // middleware matcher.
-  if (aliasMcpRequest) return;
+  const host = (request.headers.get('host') ?? url.hostname).toLowerCase().replace(/\.+$/, '').replace(/:\d+$/, '');
 
   // Bots indexing ?ref= / utm_* dashboard URLs as distinct pages (#7380), and
   // map-state deep links as an unbounded redirect space (#7660). Humans still
@@ -310,24 +278,7 @@ export default function middleware(request: Request) {
   }
 
   // Allow social preview/image bots on OG image assets.
-  //
-  // Image-returning API routes that don't end in `.png` also need
-  // an explicit carve-out — otherwise server-side fetches from
-  // Slack / Telegram / Discord / LinkedIn / WhatsApp / Facebook /
-  // Twitter / Reddit all trip the BOT_UA gate below. Telegram
-  // surfaces it as error 400 "WEBPAGE_CURL_FAILED" on sendMediaGroup;
-  // the others silently drop the preview image.
-  //
-  // Only the brief carousel route shape is allowlisted — a strict
-  // regex (same shape enforced by the handler) prevents a future
-  // /api/brief/carousel/admin or similar sibling from accidentally
-  // inheriting this bypass. HMAC token in the URL is the real auth;
-  // this allowlist is defence-in-depth for any well-shaped request
-  // whose UA happens to be in SOCIAL_IMAGE_UA.
-  if (
-    path.endsWith('.png') ||
-    BRIEF_CAROUSEL_PATH_RE.test(path)
-  ) {
+  if (path.endsWith('.png')) {
     if (SOCIAL_IMAGE_UA.test(ua)) {
       return;
     }
@@ -444,8 +395,7 @@ async function proxyDocsLocaleHtml(request: Request, url: URL, host: string): Pr
 
 export const config = {
   matcher: [
-    '/mcp',
     '/api/:path*',
-    '/((?!api(?:/|$)|mcp(?:/|$)|.*\\.[^/]+$).*)',
+    '/((?!api(?:/|$)|.*\\.[^/]+$).*)',
   ],
 };

@@ -912,7 +912,7 @@ describe('zero-frame async-rejection patterns (timeout / DOMException / OOM / DO
     assert.ok(files.length > 100, `sanity: expected to scan src/, got ${files.length} files`);
     const kindSetters = files.filter((f) => /tags:\s*\{[^}]*\bkind:/.test(readFileSync(f, 'utf-8')));
     assert.ok(
-      kindSetters.length >= 2,
+      kindSetters.length >= 1,
       `sanity: expected to find the per-call-site kind tags, found ${kindSetters.length}`,
     );
     assert.ok(

@@ -8,15 +8,9 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import * as provenance from '../shared/source-provenance.ts';
 import { CONFIGURED_SOURCE_PROVENANCE_DECLARATIONS } from '../shared/source-provenance-declarations.ts';
 import { getSourceTier } from '../server/_shared/source-tiers.ts';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const repoRoot = join(__dirname, '..');
 
 // Namespace access keeps each case red on its own when an export is missing.
 const api = provenance as unknown as Record<string, any>;
@@ -160,12 +154,5 @@ describe('state affiliation survives a note (#6419)', () => {
     assert.ok(badge);
     assert.match(badge!.title, /USA/);
     assert.match(badge!.title, /US government-funded/);
-  });
-});
-
-describe('MCP news app renders the shared summary (#6419)', () => {
-  it('news-intelligence-app no longer derives provenance labels', () => {
-    const source = readFileSync(join(repoRoot, 'api/mcp/ui/news-intelligence-app.ts'), 'utf8');
-    assert.doesNotMatch(source, /riskReviewed/);
   });
 });
