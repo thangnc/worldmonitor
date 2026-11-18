@@ -75,6 +75,7 @@ npm run test:sidecar             # api/ node suites + the Docker Node API server
 make generate                    # regenerate packages/contracts/generated/ + packages/contracts/openapi/ from packages/contracts/proto/
 npm run generate                 # regenerate committed derived files (catalogs, source attribution, indexes)
 npm run seed:lite:watch          # keep the Lite seeders fresh in local Redis (seed:lite once, seed:lite:status read-only)
+npm run relay:local              # the AIS relay on 127.0.0.1:3004 against local Redis (CONTRIBUTING.md "Live data locally")
 npm run docs:check               # required after CI workflow changes: CI/CD table, sebuf version, /api/health examples
 ```
 

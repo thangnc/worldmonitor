@@ -123,6 +123,31 @@ npm run build
 
 The dev server runs at `http://localhost:3000` (override the port with `DEV_PORT` in `.env.local`). Run `make help` to see all available make targets.
 
+### Live data locally: three shells
+
+The Lite screens read Redis, so live data needs the two writers that production runs beside the API. Point `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.local` at your Redis, then run each in its own shell:
+
+```bash
+npm run dev                # 1. the app and its API handlers
+npm run seed:lite:watch    # 2. the Lite seeders, each on its own interval (scripts/run-lite-seeders.mjs)
+npm run relay:local        # 3. the AIS relay (scripts/ais-relay.cjs)
+```
+
+The relay keeps an AIS stream open (`AISSTREAM_API_KEY`) and publishes what no seeder writes, such as the chokepoint transit summaries and the vessel snapshot that the Finance map's chokepoint status reads. The API handlers reach it at `WS_RELAY_URL` (`http://localhost:3004`). `relay:local` reads `.env.local` and is for your machine only:
+
+- it listens on `127.0.0.1`;
+- it starts without auth when `RELAY_SHARED_SECRET` is unset, and logs a `[SECURITY]` warning saying so;
+- it may write to a plain-`http://` Redis REST proxy, such as `docker/redis-rest-proxy.mjs`.
+
+Never expose it on a network. To run it with auth, set `RELAY_SHARED_SECRET` in `.env.local`; the dev server's handlers send the same value.
+
+The Redis REST proxy (`docker/redis-rest-proxy.mjs`) runs only the `EVAL` scripts on its pinned allowlist. Two writes that Lite uses are not on it yet, so against the proxy they fail while plain commands work:
+
+- the relay's chokepoint transit summaries (`Durable transit gate update failed`);
+- the health verdict snapshot (`[health] verdict snapshot write failed`).
+
+Upstash runs any script, so both work there.
+
 ### Build Prerequisites
 
 `npm run check:prereqs` reports everything missing in one pass and, when the
