@@ -17,7 +17,7 @@ Two constraints shape the plan:
 - **Turbopack is Next.js-only and needs React**, so it cannot bundle a Preact app. The Preact-compatible equivalent is **Vite 8 with Rolldown** (Rust bundler). The repo is on Vite `^6.4.5`.
 - **Preact is already in use** in `src/lite/` (JSX via `tsconfig.json` `jsxImportSource`, Tailwind 4 via `@tailwindcss/vite`, built by `vite.lite.config.ts`). Deleting the old vanilla dashboard makes the whole web app Preact. `@preact/preset-vite` is missing, so there is no state-preserving HMR (prefresh) or devtools hook.
 
-The legacy catalog is [legacy-features.md](../product/legacy-features.md). Production keeps deploying exactly as today (Vercel, `api/` Edge functions at the repo root) until the final phase. Each step is one PR that passes CI.
+The legacy catalog is [legacy-features.md](../product/legacy-features.md). Production keeps deploying exactly as today (Vercel, `api/` Edge functions at the repo root) until the final phase. Each step is one PR that passes CI. Refactor PRs target the integration branch `refactor/lite-monorepo`, cut from `main` on 2026-11-18, not `main`. The owner merges that branch into `main` once the refactor checks out on it.
 
 ## Phase 0 — Record the decisions
 
