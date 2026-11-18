@@ -41,19 +41,18 @@ World Monitor is a real-time OSINT dashboard built with **Vanilla TypeScript** (
 
 ### One app, no variants
 
-The web app is the Lite UI (`src/lite/`, served at `/lite`). Refactor Phase 1d removed the site variants (`VITE_VARIANT`) and the Lite profile flag (`VITE_LITE_PROFILE`), so there is one build and no flag to set. See the [Lite spec](docs/engineering/architecture/lite.md).
+The web app is the Lite UI (`apps/web/src/lite/`, served at `/lite`). Refactor Phase 1d removed the site variants (`VITE_VARIANT`) and the Lite profile flag (`VITE_LITE_PROFILE`), so there is one build and no flag to set. See the [Lite spec](docs/engineering/architecture/lite.md).
 
 ### Directory Structure
 
 | Directory | Purpose |
 |---|---|
-| `src/components/` | UI components |
+| `apps/web/` | The web app, workspace package `@wm/web`: `lite.html`, the Lite UI in `src/lite/` (screens, components, map, data adapters), `vite.config.ts` and the dev-server API routes in `vite.dev-api.ts`. It builds into the repository root's `dist/` |
 | `packages/client/services/` | Data fetching modules — sebuf client wrappers, AI, signal analysis |
 | `packages/client/config/` | Static data and route config (geo, military, ports, Lite routes) |
 | `packages/contracts/generated/` | Auto-generated sebuf client + server stubs, workspace package `@wm/contracts` (**do not edit by hand**) |
 | `packages/client/types/` | TypeScript type definitions |
 | `packages/client/locales/` | i18n JSON files |
-| `src/workers/` | Web Workers for analysis |
 | `packages/server/` | Sebuf handler implementations |
 | `api/` | Vercel Edge Functions (sebuf gateway + legacy endpoints) |
 | `packages/contracts/proto/` | Protobuf service and message definitions |
@@ -109,7 +108,7 @@ For interactive development, run the commands below. Install the full toolchain
 with `make install` when you need code generation or the broader build tools.
 
 ```bash
-# Start the development server (the Lite UI at /lite)
+# Start the development server (the Lite UI at /lite, from apps/web)
 npm run dev
 
 # Run type checking
@@ -255,7 +254,7 @@ required gates. Run focused checks first and heavy checks sequentially. Keep use
 regression coverage. Remove a check only with evidence that its protection is
 obsolete, redundant, or ineffective.
 
-For PWA changes, build with `npx vite build`, then run
+For PWA changes, build with `npm run build`, then run
 `node --import tsx --test tests/pwa-precache.test.mjs tests/pwa-recovery.test.mjs tests/deploy-config.test.mjs`.
 The generated worker precaches the dashboard entry's static JavaScript/CSS
 dependencies and the fixed offline/install assets, with a 32-file, 2 MiB budget
@@ -276,7 +275,7 @@ local command and CI coverage. Extend that proof for a changed outcome instead o
 creating a second runner.
 
 `npm run dev` serves the app and executes registered versioned RPC handlers through
-`sebufApiPlugin` in `vite.config.ts`. This includes the prediction handler. It also
+`sebufApiPlugin` in `apps/web/vite.dev-api.ts`. This includes the prediction handler. It also
 has selected legacy dev middleware. Other legacy API routes depend on their proxy
 or middleware configuration and may return source text or an error.
 
@@ -526,7 +525,7 @@ To add a new data layer to the map:
 2. **Add the proto service** (if the data needs a backend proxy) — define messages and RPC methods in `packages/contracts/proto/worldmonitor/{domain}/v1/`
 3. **Generate stubs** — run `make generate`
 4. **Implement the handler** in `packages/server/worldmonitor/{domain}/v1/`
-5. **Register the handler** in `api/[domain]/v1/[rpc].ts` and `vite.config.ts` (for local dev)
+5. **Register the handler** in `api/[domain]/v1/[rpc].ts` and `apps/web/vite.dev-api.ts` (for local dev)
 6. **Create the service module** in `packages/client/services/{domain}/` wrapping the generated client
 7. **Add the layer config** and implement the map renderer following existing layer patterns
 8. **Add to layer toggles** — make it toggleable in the UI
@@ -543,7 +542,7 @@ For endpoints that deal with non-JSON payloads (XML feeds, binary data, HTML emb
 
 ### Source attribution ledger
 
-Any new outbound host that appears in a URL literal under `scripts/`, `packages/server/`, `api/`, `src/`, or `packages/client/` is discovered by `scripts/source-attribution.mjs` and needs a curated row in `packages/shared/source-attribution-manifest.json`. This catches contributions that only add data — a feed URL, an MCP preset in `src/services/mcp-store.ts` — with no obvious link to the ledger:
+Any new outbound host that appears in a URL literal under `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, or `packages/client/` is discovered by `scripts/source-attribution.mjs` and needs a curated row in `packages/shared/source-attribution-manifest.json`. This catches contributions that only add data — a feed URL, an MCP preset in `src/services/mcp-store.ts` — with no obvious link to the ledger:
 
 ```bash
 npm run sources:check     # fails with "missing manifest entry for <host>"

@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "//": "The browser program: the Lite UI, the @wm/client package and the two packages/shared modules only the browser build reads. The root tsconfig.json extends this file, so the root `npm run typecheck` (tsc --noEmit) and this package's typecheck check the same files and share one build-info cache.",
+  "compilerOptions": {
+    "types": ["vite/client", "webmcp-types"],
+    "incremental": true,
+    "tsBuildInfoFile": "../../node_modules/.cache/tsconfig.tsbuildinfo"
+  },
+  "include": ["src", "../../packages/client", "../../packages/shared/indexable-landing-locales.ts", "../../packages/shared/pwa-precache.ts"]
+}

@@ -18,8 +18,10 @@ import { guardBuiltOutput, shouldSkipBuiltOutput } from './_lib/built-output-gua
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf-8'));
+// The web app's own manifest (refactor PR 2.5): the root build runs its build.
+const webPackageJson = JSON.parse(readFileSync(resolve(__dirname, '../apps/web/package.json'), 'utf-8'));
 const vercelConfig = JSON.parse(readFileSync(resolve(__dirname, '../vercel.json'), 'utf-8'));
-const viteConfigSource = readFileSync(resolve(__dirname, '../vite.config.ts'), 'utf-8');
+const viteConfigSource = readFileSync(resolve(__dirname, '../apps/web/vite.config.ts'), 'utf-8');
 const middlewareSource = readFileSync(resolve(__dirname, '../middleware.ts'), 'utf-8');
 const dockerfileSource = readFileSync(resolve(__dirname, '../Dockerfile'), 'utf-8');
 const dockerNginxSource = readFileSync(resolve(__dirname, '../docker/nginx.conf'), 'utf-8');
@@ -30,11 +32,11 @@ const SPA_HTML_CACHE_SOURCE = '/((?!api|assets|src|tmp|server|favico|map-styles|
 const GLOBAL_SECURITY_HEADER_SOURCE = '/(.*)';
 const WEBMCP_PRODUCTION_HOST_PATTERN = '^(?:www|tech|finance|commodity|happy|energy)\\.worldmonitor\\.app$';
 const GLOBAL_CSP_INLINE_SCRIPT_HTML_FILES = [
-  'lite.html',
+  'apps/web/lite.html',
   'public/offline.html',
 ];
 const GLOBAL_CSP_EXTERNAL_SCRIPT_HTML_FILES = [
-  'lite.html',
+  'apps/web/lite.html',
 ];
 const STATIC_SCRIPT_NONCE = 'wm-static-bootstrap';
 
@@ -403,7 +405,7 @@ describe('deploy/cache configuration guardrails', () => {
     assert.match(viteConfigSource, /^\s*sourcemap: false,$/m);
     assert.equal(viteConfigSource.match(/sourcemap:/g)?.length, 1, 'vite.config.ts must set sourcemap in exactly one place');
     assert.doesNotMatch(viteConfigSource, /sentryVitePlugin|stripPrivateSourceMapsPlugin|viteSourcemapSetting/);
-    assert.match(packageJson.scripts.build, / && npm run check:source-maps$/);
+    assert.match(webPackageJson.scripts.build, / && npm --prefix \.\.\/\.\. run check:source-maps$/);
     assert.equal(packageJson.scripts['check:source-maps'], 'node --import tsx scripts/check-no-public-source-maps.mjs dist');
   });
 });
@@ -940,7 +942,7 @@ describe('security header guardrails', () => {
   });
 
   it('dashboard CSP is header-only and keeps https: for runtime fetch/media', () => {
-    const liteHtml = readFileSync(resolve(__dirname, '../lite.html'), 'utf-8');
+    const liteHtml = readFileSync(resolve(__dirname, '../apps/web/lite.html'), 'utf-8');
     const headerCsp = getHeaderValue('Content-Security-Policy');
     assert.equal(hasCspMeta(liteHtml), false, 'lite.html must not ship a CSP meta tag');
 
@@ -958,7 +960,7 @@ describe('security header guardrails', () => {
   });
 
   it('dashboard CSP font and style sources are first-party across deploy surfaces', () => {
-    const liteHtml = readFileSync(resolve(__dirname, '../lite.html'), 'utf-8');
+    const liteHtml = readFileSync(resolve(__dirname, '../apps/web/lite.html'), 'utf-8');
     const headerCsp = getHeaderValue('Content-Security-Policy');
     assert.equal(hasCspMeta(liteHtml), false, 'lite.html must not ship a CSP meta tag');
     const nginxCsp = getNginxHeaderValue('Content-Security-Policy');
@@ -1125,7 +1127,7 @@ describe('security header guardrails', () => {
   it('CSP frame directives include every variant hostname', () => {
     const variantHosts = VARIANT_HOSTS;
     const headerCsp = getHeaderValue('Content-Security-Policy');
-    const liteHtml = readFileSync(resolve(__dirname, '../lite.html'), 'utf-8');
+    const liteHtml = readFileSync(resolve(__dirname, '../apps/web/lite.html'), 'utf-8');
     assert.equal(hasCspMeta(liteHtml), false, 'lite.html must not ship a CSP meta tag');
     const nginxCsp = getNginxHeaderValue('Content-Security-Policy');
     assert.ok(nginxCsp, 'nginx-security-headers.conf must have a Content-Security-Policy header');
@@ -1161,7 +1163,7 @@ describe('security header guardrails', () => {
   // Per-file assertions, so the built /pro pages drop out of the population
   // rather than taking the five committed files down with them (#6898).
   it('HTML entry script tags carry the nonce trusted by the header CSP', () => {
-    const liteHtml = readFileSync(resolve(__dirname, '../lite.html'), 'utf-8');
+    const liteHtml = readFileSync(resolve(__dirname, '../apps/web/lite.html'), 'utf-8');
     const headerCsp = getHeaderValue('Content-Security-Policy');
     assert.equal(hasCspMeta(liteHtml), false, 'lite.html must not ship a CSP meta tag');
     assert.ok(
@@ -1484,15 +1486,21 @@ describe('Lite deploy contracts', () => {
     // used to live -- invisible to the repo and changeable without a diff.
     // The Lite UI is the only web app: the deploy build is the secrets check,
     // the browser typecheck, the Lite Vite build and the source-map gate.
-    // build:full stays as an alias so older callers build the same thing.
+    // Since refactor PR 2.5 it is the web app's build (apps/web), which runs
+    // the two root checks from the repository root; the root build delegates
+    // to it. build:full stays as an alias so older callers build the same thing.
     assert.equal(
       vercelConfig.buildCommand,
       'npm run build',
       'vercel.json must pin buildCommand so the deploy contract lives in the repo, not the dashboard',
     );
+    // The Vite config lives in apps/web since refactor PR 2.5, so the output
+    // directory must not depend on the dashboard's framework detection.
+    assert.equal(vercelConfig.outputDirectory, 'dist');
+    assert.equal(packageJson.scripts.build, 'npm run build -w @wm/web');
     assert.equal(
-      packageJson.scripts.build,
-      'npm run security:vite-env-secrets -- --strict-local && tsc && vite build && npm run check:source-maps',
+      webPackageJson.scripts.build,
+      'npm --prefix ../.. run security:vite-env-secrets -- --strict-local && tsc && vite build && npm --prefix ../.. run check:source-maps',
     );
     assert.equal(packageJson.scripts['build:full'], 'npm run build');
     assert.equal(packageJson.scripts.prebuild, undefined, 'the deploy build must not run hidden prebuild generators');
@@ -1510,8 +1518,8 @@ describe('Lite deploy contracts', () => {
     ]) {
       // The images build only the Lite entry: no second Vite config, and no
       // corpus or sitemap generation inside the image.
-      assert.match(source, /^RUN npx tsc && npx vite build$/m, name + ' must run the Lite Vite build');
-      assert.deepEqual(source.match(/^RUN .*vite build.*$/gm), ['RUN npx tsc && npx vite build'], name + ' must run exactly one Vite build');
+      assert.match(source, /^RUN npx tsc && npx vite build --config apps\/web\/vite\.config\.ts$/m, name + ' must run the Lite Vite build');
+      assert.deepEqual(source.match(/^RUN .*vite build.*$/gm), ['RUN npx tsc && npx vite build --config apps/web/vite.config.ts'], name + ' must run exactly one Vite build');
       assert.doesNotMatch(source, /--config vite\.lite\.config\.ts/, name + ' must not build a second Vite config');
       assert.doesNotMatch(source, /npm run build:crawlable-corpus/, name + ' must not build the static corpus');
       assert.doesNotMatch(source, /npm run build:sitemap/, name + ' must not generate the root sitemap');
@@ -1542,11 +1550,11 @@ describe('Lite deploy contracts', () => {
   });
 
   it('builds Vercel when the Lite entry or its Vite config changes, and watches no deleted entry', () => {
-    for (const path of ['lite.html', 'vite.config.ts', 'vite.dev-api.ts']) {
-      assert.equal(vercelIgnoreSource.split(`'${path}'`).length - 1, 2, `${path} must trigger main and preview builds`);
-    }
-    for (const path of ['index.html', 'vite.lite.config.ts']) {
-      assert.equal(vercelIgnoreSource.includes(`'${path}'`), false, `${path} was deleted and must not be watched`);
+    // The web app (lite.html, src/lite/, the Vite configs) lives in apps/web
+    // since refactor PR 2.5, so 'apps/' covers it on main and on previews.
+    assert.equal(vercelIgnoreSource.split(`'apps/'`).length - 1, 2, 'apps/ must trigger main and preview builds');
+    for (const path of ['index.html', 'vite.lite.config.ts', 'src/', 'lite.html', 'vite.config.ts', 'vite.dev-api.ts']) {
+      assert.equal(vercelIgnoreSource.includes(`'${path}'`), false, `${path} was deleted or moved to apps/web and must not be watched`);
     }
   });
 
@@ -1793,7 +1801,9 @@ describe('Lite deploy contracts', () => {
     for (const name of ['build', 'build:full']) {
       assert.doesNotMatch(packageJson.scripts[name], /npm run (?:product:facts|build:openapi)\b/, `${name} must not chain a deleted generator`);
     }
-    assert.match(packageJson.scripts.build, /&& tsc && vite build && /);
+    assert.deepEqual(Object.keys(webPackageJson.scripts).filter((name) => name.startsWith('prebuild')), []);
+    assert.doesNotMatch(webPackageJson.scripts.build, /npm (?:--prefix \S+ )?run (?:product:facts|build:openapi)\b/);
+    assert.match(webPackageJson.scripts.build, /&& tsc && vite build && /);
   });
 
   it('does not reintroduce a shadowing /api/:path* → /api/not-found rewrite', () => {

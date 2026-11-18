@@ -115,7 +115,7 @@ No external state library. `AppContext` is a central mutable object holding: map
 
 ### No variants
 
-Refactor Phase 1d removed the site variants (`VITE_VARIANT`, `SITE_VARIANT`, the `tech.`/`finance.`/… host detection) and the Lite profile flag (`VITE_LITE_PROFILE`). The Lite UI (`src/lite/`) is the one web app on every host; `/` and `/dashboard` 307 to `/lite` (`vercel.json`, `docker/nginx.conf*`, `vite.dev-api.ts`). The `variant` parameter of the news RPCs names a server-side digest edition, not a site variant.
+Refactor Phase 1d removed the site variants (`VITE_VARIANT`, `SITE_VARIANT`, the `tech.`/`finance.`/… host detection) and the Lite profile flag (`VITE_LITE_PROFILE`). The Lite UI (`apps/web/src/lite/`) is the one web app on every host; `/` and `/dashboard` 307 to `/lite` (`vercel.json`, `docker/nginx.conf*`, `apps/web/vite.dev-api.ts`). The `variant` parameter of the news RPCs names a server-side digest edition, not a site variant.
 
 ---
 
@@ -357,7 +357,7 @@ The five-factor scorecard adds an atomic two-key read pattern: `scorecard:five-f
 
 ### Edge Function Guardrails
 
-`tests/edge-functions.test.mjs` validates that all non-helper `api/*.js` files are self-contained: no `node:` built-in imports, no cross-directory `../packages/` or `../src/` imports. The pre-push hook also runs an esbuild bundle check on each endpoint.
+`tests/edge-functions.test.mjs` validates that all non-helper `api/*.js` files are self-contained: no `node:` built-in imports, no cross-directory `../packages/` or `../apps/` imports. The pre-push hook also runs an esbuild bundle check on each endpoint.
 
 ### Pre-Push Hook
 
@@ -415,6 +415,12 @@ gates.
 ├── api/                    Vercel Edge Functions (self-contained JS)
 │   ├── _*.js               Shared helpers (CORS, rate-limit, API key, relay, Sentry, session)
 │   └── <domain>/           Domain endpoints (aviation/, climate/, conflict/, ...)
+├── apps/
+│   └── web/                @wm/web: the Lite UI, the only web app (Vite root; builds into the root dist/)
+│       ├── lite.html       App shell (vercel.json and nginx rewrite /lite and its screens to it)
+│       ├── src/lite/       Preact + Tailwind screens, components, map and data adapters
+│       ├── vite.config.ts  The one Vite config (reads the root .env* and public/)
+│       └── vite.dev-api.ts Dev-server routes: sebuf RPCs, /api/health, /api/bootstrap, the /lite redirect
 ├── consumer-prices-core/   Consumer-price collection service (Playwright scrapers, per-country baskets; Railway/Docker)
 ├── data/                   Static data (telegram channels, OREF threat translations, gamma irradiators)
 ├── deploy/                 Deployment configs (nginx)
@@ -439,15 +445,6 @@ gates.
 │   └── shared/             @wm/shared: logic and data the browser, server and seeders apply the same way (scripts/shared/ mirrors part of it)
 ├── public/                 Static assets served as-is (favicons, textures, map styles, data, robots.txt, 404.html)
 ├── scripts/                Seed scripts, build helpers, relay service
-├── src/                    Browser SPA (TypeScript)
-│   ├── app/                App orchestration managers
-│   ├── components/         Panel subclasses + map components
-│   ├── data/               Static JSON datasets (conservation, renewable, happiness)
-│   ├── e2e/                Map test harnesses (consumed by Playwright specs)
-│   ├── embed/              Embeddable widget loader
-│   ├── shims/              Runtime shims (child-process for sidecar)
-│   ├── styles/             Global CSS (layers, themes, panel styles)
-│   └── workers/            Web Workers (analysis, ML, vector DB)
 ├── src-tauri/              Tauri desktop shell (Rust)
 │   └── sidecar/            Node.js sidecar API server
 ├── tests/                  Unit/integration tests (node:test)

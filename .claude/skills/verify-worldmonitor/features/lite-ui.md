@@ -1,10 +1,10 @@
 # Lite UI
 
-The owner's web app, World Monitor Lite ([spec](../../../../docs/engineering/architecture/lite.md#lite-ui-lite)): a sidebar, the cross-domain Briefing home and its three domain screens, built with Preact and Tailwind in `src/lite/`. `/` and the old dashboard routes (`/dashboard`, `/stocks`, `/story`) redirect to it.
+The owner's web app, World Monitor Lite ([spec](../../../../docs/engineering/architecture/lite.md#lite-ui-lite)): a sidebar, the cross-domain Briefing home and its three domain screens, built with Preact and Tailwind in `apps/web/src/lite/`. `/` and the old dashboard routes (`/dashboard`, `/stocks`, `/story`) redirect to it.
 
 ## Sub-features
 
-- `lite-default-route`: `/` and `/dashboard` land on `/lite` (vercel.json redirects, nginx in Docker, `vite.dev-api.ts` in dev).
+- `lite-default-route`: `/` and `/dashboard` land on `/lite` (vercel.json redirects, nginx in Docker, `apps/web/vite.dev-api.ts` in dev).
 - `lite-screens`: the Briefing (`/lite`) and its children `/lite/geopolitics`, `/lite/finance` and `/lite/tech` render through the sidebar links, and the Briefing's domain tags and panel links, without a page load.
 - `lite-badges`: sample widgets carry `[data-sample="true"]`; rule-based values carry `[data-derived="true"]`; a real source that is empty or failed renders `[data-source-state]`.
 - `lite-soon`: Alerts, Watchlists, Scoring rules, Settings and each domain screen's primary action are `[data-soon="true"]`.
@@ -18,7 +18,7 @@ The owner's web app, World Monitor Lite ([spec](../../../../docs/engineering/arc
 ## Driving it with wm-verify
 
 - **Screens.** `wm-verify.sh launch`, then `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-ui.mjs --name lite-ui`. It asserts the redirects, visits each screen at 1440 and 390 px, logs every source state and sample count, and checks there is no horizontal overflow.
-- **Sources.** `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-sources.mjs --name lite-sources`. By default the step routes `/api/health?compact=1` to a TEST DATA fixture (one failing, one degraded check), so its assertions do not depend on local Redis, and labels its screenshots `test-data`. `WM_VERIFY_LIVE_HEALTH=1` leaves the request alone: the dev server runs `api/health.js` (`healthDevPlugin` in `vite.dev-api.ts`) against the Redis in `.env.local`, so the screen shows that Redis's real verdicts.
+- **Sources.** `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-sources.mjs --name lite-sources`. By default the step routes `/api/health?compact=1` to a TEST DATA fixture (one failing, one degraded check), so its assertions do not depend on local Redis, and labels its screenshots `test-data`. `WM_VERIFY_LIVE_HEALTH=1` leaves the request alone: the dev server runs `api/health.js` (`healthDevPlugin` in `apps/web/vite.dev-api.ts`) against the Redis in `.env.local`, so the screen shows that Redis's real verdicts.
 - **Scrollbars.** `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-scroll.mjs --name lite-scroll`. The page scrolls in `<html>` (the overlay library makes it the viewport, so `window.scrollTo` still works) under `body > .os-scrollbar-vertical`; each `<OverlayScroll>` host carries `[data-lite-scroll]`. Headless Chromium has no window edge, so the step sends the `pointerleave` a real exit fires. Wait for a wheel scroll to settle before a screenshot: a frame mid-scroll shows the sticky sidebar mid-move. No local map card is long enough to scroll, so check one by appending labelled test content.
 - **Layers popover.** `wm-verify.sh drive .claude/skills/verify-worldmonitor/steps/lite-layers-popover.mjs --name layers-popover`. The map `Card` clips with `overflow-hidden`, so the popover measures the room left in it when it opens and scrolls its rows; the step fails when the popover or its footer ends below the card.
 - **Map ranges.** Geopolitics and Technology carry the shared 6h/24h/7d buttons (`[data-testid="time-range"]`, each with a `title`); each popover row's `[data-range-note]` says what that layer shows at the range. On Technology, 6h and 24h DDoS shading needs `cf:radar:ddos-windows:v1` (`seed-internet-outages`); without it locally the map shows "DDoS targets 6h: source unavailable" and shades nothing, which is the intended state, not a bug.

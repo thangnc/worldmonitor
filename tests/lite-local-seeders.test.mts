@@ -17,7 +17,7 @@ const read = (path: string) => readFileSync(path, 'utf8');
 
 type Section = (typeof LITE_SEED_SECTIONS)[number];
 
-function liteSources(dir = join(root, 'src/lite')): string[] {
+function liteSources(dir = join(root, 'apps/web/src/lite')): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) return liteSources(path);

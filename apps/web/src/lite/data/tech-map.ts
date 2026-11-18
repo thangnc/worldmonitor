@@ -2,7 +2,7 @@
  * The Technology screen's "Infrastructure & cyber map" (spec: Screen design ›
  * Technology & AI). Pure rules from the feeds to map layers:
  *
- * Marks follow the one map grammar (src/lite/map/marks.tsx):
+ * Marks follow the one map grammar (apps/web/src/lite/map/marks.tsx):
  *
  * - DDoS targets: country shading on the shared blue ramp by share of attack
  *   traffic over the selected range (who is attacked), with the top few labelled.

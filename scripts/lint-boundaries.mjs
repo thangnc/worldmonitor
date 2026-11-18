@@ -5,22 +5,22 @@
  * Enforces forward-only dependency direction:
  *   types → config → services → lite
  * where types, config and services are packages/client/{types,config,services}/
- * and lite is the Lite UI (src/lite/).
+ * and lite is the Lite UI (apps/web/src/lite/).
  *
  * Violations are imports that go backwards in this chain, whether written as
  * @wm/client/<layer>/... or as a relative path.
  * Lines with "boundary-ignore" comments are excluded.
  *
  * Also checks:
- *   - api/ legacy .js: must not import from src/ or packages/ (self-contained)
+ *   - api/ legacy .js: must not import from apps/ or packages/ (self-contained)
  *   - api/ RPC .ts: may import packages/server/ and packages/contracts/generated/, but not
- *     browser code (src/, packages/client/)
+ *     browser code (apps/web/, packages/client/)
  *   - api/, packages/server/, packages/shared/, packages/client/shared/, middleware.ts,
- *     vite.dev-api.ts and the packages/client and src/ files they import reach
- *     @wm/contracts, @wm/shared, @wm/server and @wm/client by relative path, not by
- *     package name or the removed @/ alias
- *   - packages/server/ must not import the Lite UI (src/lite/)
- *   - nothing outside src/lite/ imports the Lite UI
+ *     apps/web/vite.dev-api.ts and the packages/client and apps/web files they import
+ *     reach @wm/contracts, @wm/shared, @wm/server and @wm/client by relative path, not
+ *     by package name or the removed @/ alias
+ *   - packages/ never import apps/ (by relative path or as @wm/web)
+ *   - nothing outside apps/web/src/lite/ imports the Lite UI
  *
  * Exit code 1 if violations found. Agent-readable output.
  */
@@ -28,7 +28,8 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { dirname, join, relative, resolve } from 'path';
 
-const SRC = 'src';
+// The web app (apps/web, @wm/web): the Lite UI in src/lite/ and the Vite configs.
+const WEB = join('apps', 'web');
 const CLIENT = join('packages', 'client');
 const ROOT = process.cwd();
 
@@ -38,7 +39,7 @@ const LAYER_DIRS = {
   types: join(ROOT, CLIENT, 'types'),
   config: join(ROOT, CLIENT, 'config'),
   services: join(ROOT, CLIENT, 'services'),
-  lite: join(ROOT, SRC, 'lite'),
+  lite: join(ROOT, WEB, 'src', 'lite'),
 };
 
 function getLayer(filePath) {
@@ -78,10 +79,10 @@ function walkDir(dir, ext = ['.ts', '.tsx', '.js', '.mjs']) {
 
 const violations = [];
 
-// --- Check 1: layer boundaries (packages/client/{types,config,services} → src/lite) ---
-const srcFiles = walkDir(join(ROOT, SRC));
+// --- Check 1: layer boundaries (packages/client/{types,config,services} → apps/web/src/lite) ---
+const webFiles = walkDir(join(ROOT, WEB));
 const clientFiles = walkDir(join(ROOT, CLIENT));
-for (const file of [...clientFiles, ...srcFiles]) {
+for (const file of [...clientFiles, ...webFiles]) {
   const fileLayer = getLayer(file);
   if (!fileLayer) continue;
   const fileIdx = getLayerIndex(fileLayer);
@@ -120,34 +121,41 @@ for (const file of [...clientFiles, ...srcFiles]) {
   }
 }
 
-// --- Check 2: packages/server/ must not import the Lite UI (src/lite/) ---
-const serverFiles = walkDir(join(ROOT, 'packages', 'server'));
-for (const file of serverFiles) {
-  const content = readFileSync(file, 'utf8');
-  const lines = content.split('\n');
+// --- Check 2: packages/ never import apps/ (the web app sits on top) ---
+// Workspace packages are libraries the apps build on; an import from
+// packages/ into apps/ (a relative path or @wm/web) reverses that and would
+// make turbo's package graph lie.
+const APPS_DIR = join(ROOT, 'apps');
+const packageFiles = walkDir(join(ROOT, 'packages'), ['.ts', '.tsx', '.js', '.mjs', '.cjs', '.mts', '.cts']);
+for (const file of packageFiles) {
+  const lines = readFileSync(file, 'utf8').split('\n');
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.includes('boundary-ignore')) continue;
     if (i > 0 && lines[i - 1].includes('boundary-ignore')) continue;
 
-    if (line.match(/from\s+['"].*\/src\/lite\//)) {
-      violations.push({
-        file: relative(ROOT, file),
-        line: i + 1,
-        from: 'server',
-        to: 'src/lite',
-        text: line.trim(),
-        remedy: 'Server code must not import browser UI code. Extract shared logic into packages/shared/, packages/server/_shared/ or packages/client/types/.',
-      });
+    for (const [, spec] of line.matchAll(/(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\(\s*|^\s*import\s+)['"]([^'"]+)['"]/g)) {
+      const target = spec.startsWith('.') ? resolve(dirname(file), spec) : null;
+      if (/^@wm\/web(\/|$)/.test(spec) || (target != null && (target === APPS_DIR || target.startsWith(APPS_DIR + '/')))) {
+        violations.push({
+          file: relative(ROOT, file),
+          line: i + 1,
+          from: relative(ROOT, file).split('/').slice(0, 2).join('/'),
+          to: 'apps/web',
+          text: line.trim(),
+          remedy: 'Packages must not import the web app. Extract shared logic into packages/shared/, packages/server/_shared/ or packages/client/.',
+        });
+        break;
+      }
     }
   }
 }
 
 // --- Check 3: api/ boundary rules ---
-// Legacy api/*.js: fully self-contained (no ../packages/ or ../src/ imports)
+// Legacy api/*.js: fully self-contained (no ../packages/ or ../apps/ imports)
 // Sebuf RPC api/**/*.ts: may import packages/server/ and packages/contracts/generated/ (bundled at deploy),
-//   but must NOT import browser code (src/lite, packages/client/)
+//   but must NOT import browser code (apps/web/, packages/client/)
 const apiFiles = walkDir(join(ROOT, 'api'), ['.js', '.mjs', '.ts']);
 for (const file of apiFiles) {
   const basename = file.split('/').pop();
@@ -164,7 +172,7 @@ for (const file of apiFiles) {
 
     if (isTs) {
       // RPC .ts files: allow packages/server/ and packages/contracts/generated/, block browser code
-      const browser = line.match(/from\s+['"]\.\..*\/(src|packages\/client)\//);
+      const browser = line.match(/from\s+['"]\.\..*\/(apps\/web|packages\/client)\//);
       if (browser) {
         violations.push({
           file: relative(ROOT, file),
@@ -172,12 +180,12 @@ for (const file of apiFiles) {
           from: 'api (RPC)',
           to: browser[1],
           text: line.trim(),
-          remedy: 'RPC Edge Functions may import from packages/server/ and packages/contracts/generated/, but not from browser code (src/lite, packages/client).',
+          remedy: 'RPC Edge Functions may import from packages/server/ and packages/contracts/generated/, but not from browser code (apps/web, packages/client).',
         });
       }
     } else {
       // Legacy .js files: fully self-contained
-      if (line.match(/from\s+['"]\.\.\/(?:src|server|packages)\//)) {
+      if (line.match(/from\s+['"]\.\.\/(?:apps|server|packages)\//)) {
         violations.push({
           file: relative(ROOT, file),
           line: i + 1,
@@ -191,14 +199,15 @@ for (const file of apiFiles) {
   }
 }
 
-// --- Check 4: src/lite/ (the Lite UI) sits on top ---
+// --- Check 4: apps/web/src/lite/ (the Lite UI) sits on top ---
 // It may import @wm/client (types, config, services, utils, bootstrap, shared),
-// @wm/shared and generated clients. Nothing outside src/lite/ may import it:
+// @wm/shared and generated clients. Nothing outside apps/web/src/lite/ may import it:
 // Check 1 covers the layered directories; this covers the rest of
-// packages/client (bootstrap/, utils/, shared/, locales/) and src/.
+// packages/client (bootstrap/, utils/, shared/, locales/) and the rest of
+// apps/web (the Vite configs); Check 2 covers the other packages.
 // See .claude/rules/lite-profile.md.
 const LITE_DIR = LAYER_DIRS.lite;
-for (const file of [...clientFiles, ...srcFiles]) {
+for (const file of [...clientFiles, ...webFiles]) {
   const inLite = file.startsWith(LITE_DIR + '/') || file.startsWith(LITE_DIR + '\\');
   if (inLite) continue;
   const lines = readFileSync(file, 'utf8').split('\n');
@@ -208,10 +217,10 @@ for (const file of [...clientFiles, ...srcFiles]) {
     if (i > 0 && lines[i - 1].includes('boundary-ignore')) continue;
     for (const [, spec] of line.matchAll(/(?:\bfrom\s+|\bimport\(\s*|^\s*import\s+)['"]([^'"]+)['"]/g)) {
       const target = spec.startsWith('.') ? resolve(dirname(file), spec) : null;
-      if (/^@\/lite(\/|$)/.test(spec) || (target != null && (target === LITE_DIR || target.startsWith(LITE_DIR + '/')))) {
+      if (/^@\/lite(\/|$)/.test(spec) || /^@wm\/web(\/|$)/.test(spec) || (target != null && (target === LITE_DIR || target.startsWith(LITE_DIR + '/')))) {
         violations.push({
-          file: relative(ROOT, file), line: i + 1, from: relative(ROOT, file).startsWith(SRC) ? 'src' : 'packages/client', to: spec, text: line.trim(),
-          remedy: 'Only src/lite/ may import the Lite UI.',
+          file: relative(ROOT, file), line: i + 1, from: relative(ROOT, file).startsWith(WEB) ? 'apps/web' : 'packages/client', to: spec, text: line.trim(),
+          remedy: 'Only apps/web/src/lite/ may import the Lite UI.',
         });
         break;
       }
@@ -221,14 +230,15 @@ for (const file of [...clientFiles, ...srcFiles]) {
 
 // --- Check 5: Edge-reachable code imports the workspace packages by relative path ---
 // Vercel's Edge bundler has not been proven to resolve npm workspace packages,
-// so api/, packages/server/, packages/shared/, middleware.ts and vite.dev-api.ts
-// import packages/contracts/, packages/shared/, packages/server/ and
-// packages/client/ relatively, and so does every packages/client/ or src/ file
-// they reach (packages/client/shared/ and the config and utils modules the
-// handlers import). The @/ alias is gone (refactor PR 2.4), so it is rejected
-// here too. Other browser code (src/lite/ and the rest of packages/client/) may
-// use the @wm/contracts, @wm/shared and @wm/client package names; @wm/server
-// is rejected in all of these files.
+// so api/, packages/server/, packages/shared/, middleware.ts and
+// apps/web/vite.dev-api.ts import packages/contracts/, packages/shared/,
+// packages/server/ and packages/client/ relatively, and so does every
+// packages/client/ or apps/web/ file they reach (packages/client/shared/ and
+// the config and utils modules the handlers import). The @/ alias is gone
+// (refactor PR 2.4), so it is rejected here too. Other browser code (the Lite
+// UI in apps/web/src/lite/ and the rest of packages/client/) may use the
+// @wm/contracts, @wm/shared and @wm/client package names, and the Lite UI also
+// @wm/server; every package name is rejected in the Edge-reachable files.
 const EDGE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts'];
 const edgeRoots = [
   ...walkDir(join(ROOT, 'api'), EDGE_EXTS),
@@ -236,7 +246,7 @@ const edgeRoots = [
   ...walkDir(join(ROOT, 'packages', 'shared'), EDGE_EXTS),
   ...walkDir(join(ROOT, CLIENT, 'shared'), EDGE_EXTS),
   join(ROOT, 'middleware.ts'),
-  join(ROOT, 'vite.dev-api.ts'),
+  join(ROOT, WEB, 'vite.dev-api.ts'),
 ];
 const RELATIVE_SPEC_RE = /(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\(\s*|^\s*import\s+)['"](\.{1,2}\/[^'"]+)['"]/gm;
 function resolveRelative(fromFile, spec) {
@@ -250,7 +260,7 @@ function resolveRelative(fromFile, spec) {
   return null;
 }
 const edgeFiles = new Set(edgeRoots);
-const browserRoots = [join(ROOT, SRC) + '/', join(ROOT, CLIENT) + '/'];
+const browserRoots = [join(ROOT, WEB) + '/', join(ROOT, CLIENT) + '/'];
 const queue = [...edgeRoots];
 while (queue.length > 0) {
   const file = queue.pop();
@@ -276,7 +286,7 @@ for (const file of edgeFiles) {
       const target = pkg === '@' ? 'the @/ alias' : pkg;
       violations.push({
         file: relative(ROOT, file), line: i + 1, from: 'edge-reachable', to: target, text: line.trim(),
-        remedy: `Import ${pkg === '@' ? 'packages/client/' : pkg.replace('@wm/', 'packages/') + '/'} by relative path from api/, packages/server/, packages/shared/, packages/client/shared/, middleware.ts, vite.dev-api.ts and the packages/client and src/ files they import.`,
+        remedy: `Import ${pkg === '@' ? 'packages/client/' : pkg.replace('@wm/', 'packages/') + '/'} by relative path from api/, packages/server/, packages/shared/, packages/client/shared/, middleware.ts, apps/web/vite.dev-api.ts and the packages/client and apps/web files they import.`,
       });
     }
   }

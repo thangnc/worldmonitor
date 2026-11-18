@@ -556,7 +556,7 @@ function ConflictMap({
   );
 }
 
-// The same swatches as the map (src/lite/map/marks.tsx), states in the spec's order.
+// The same swatches as the map (apps/web/src/lite/map/marks.tsx), states in the spec's order.
 const UcdpMark = () => <AggregateMark count={0} fullAt={1} state="crit" fill="background" size={12} />;
 /** Amber and red H3 cells, as the map draws them (medium 2–10 %, high above 10 %). */
 const GpsMark = () => <SwatchRun><StatusAreaSwatch state="elev" shape="hex" /><StatusAreaSwatch state="crit" shape="hex" /></SwatchRun>;

@@ -26,9 +26,9 @@ before(async () => {
   // Execute the real config, replacing only the upload boundary. No token
   // or network access is needed to observe what we pass to the Sentry plugin.
   await build({
-    entryPoints: ['vite.config.ts'], outfile: join(scratch, 'dashboard.mjs'),
+    entryPoints: ['apps/web/vite.config.ts'], outfile: join(scratch, 'dashboard.mjs'),
     bundle: true, platform: 'node', format: 'esm', packages: 'external',
-    define: { __dirname: JSON.stringify(resolve('.')) },
+    define: { __dirname: JSON.stringify(resolve('apps/web')) },
     plugins: [{
       name: 'capture-sentry-upload-options',
       setup(bundler) {

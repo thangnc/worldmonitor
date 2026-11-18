@@ -1,6 +1,6 @@
 /**
  * Feature: the map layers popover on the Lite domain screens
- * (src/lite/components/LayersPopover.tsx).
+ * (apps/web/src/lite/components/LayersPopover.tsx).
  *
  * Launch with `wm-verify.sh launch`. On each domain map, opening "Layers"
  * shows the whole popover inside the map card: its bottom edge, footer

@@ -17,7 +17,7 @@ Source of truth: CLAUDE.md "Critical boundaries", [docs/engineering/architecture
 ## Rules
 
 - Every Edge entry is esbuild-bundled per file. Do not import `node:http`, `node:https`, or `node:zlib`. Pass fetch as `(...args) => globalThis.fetch(...args)`, never `fetch.bind(globalThis)`.
-- Legacy `api/*.js` imports only same-directory `_*.js` helpers or packages. TypeScript entries may import `packages/server/` and `packages/contracts/generated/` only, by relative path (not `@wm/server` or `@wm/contracts`). `packages/server/` never imports the Lite UI (`src/lite/`); it reaches `packages/client/` modules (the RPC path lists, trade-route and chokepoint config, `utils/summary-cache-key`) by relative path, not `@wm/client`.
+- Legacy `api/*.js` imports only same-directory `_*.js` helpers or packages. TypeScript entries may import `packages/server/` and `packages/contracts/generated/` only, by relative path (not `@wm/server` or `@wm/contracts`). `packages/server/` never imports the web app (`apps/web/`, `lint:boundaries` Check 2); it reaches `packages/client/` modules (the RPC path lists, trade-route and chokepoint config, `utils/summary-cache-key`) by relative path, not `@wm/client`.
 - Type handlers against the generated interface using indexed access, as shown in the endpoint guide.
 - Read upstream data through `cachedFetchJson()` (`packages/server/_shared/redis.ts`). Put every request-varying input in the cache key: query and path params, user or plan scope, variant, locale.
 - Pick the cache tier from how often the data changes. Health responses are never cached.

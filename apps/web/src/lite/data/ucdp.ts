@@ -6,7 +6,7 @@ import { regionOfPoint, type GeoRegion } from './transforms';
  * UCDP events as conflict-map markers, one per exact event location, as the
  * dashboard's UCDP layer draws them. Events UCDP geocodes to the same point
  * share one marker, whose popup lists each of them. The map clusters nearby
- * locations by zoom (src/lite/map/LiteMap.tsx), so only visible ones become
+ * locations by zoom (apps/web/src/lite/map/LiteMap.tsx), so only visible ones become
  * DOM elements and no location is dropped.
  */
 

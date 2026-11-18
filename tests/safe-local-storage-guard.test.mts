@@ -31,12 +31,12 @@ const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
 describe('raw localStorage guard (#7833)', () => {
   const scan = scanRepo(REPO_ROOT);
 
-  it('sees the whole src population', () => {
+  it('sees the whole browser source population', () => {
     // Without this the scan could silently match nothing (a moved directory, a
     // changed extension filter) and every assertion below would pass vacuously.
     assert.ok(
       scan.scannedFiles.length >= MIN_SCANNED_FILES,
-      `expected >= ${MIN_SCANNED_FILES} scanned files under src/ (93 after refactor PR 2.1), found ${scan.scannedFiles.length} — the scan or the source layout has drifted`,
+      `expected >= ${MIN_SCANNED_FILES} scanned files under apps/web/src/ and packages/client/ (84 after refactor PR 2.4), found ${scan.scannedFiles.length} — the scan or the source layout has drifted`,
     );
     assert.ok(
       scan.observed.length > 0,

@@ -127,9 +127,13 @@ describe('check-no-public-source-maps deploy gate', () => {
 
   it('runs at the end of the Vercel build command', async () => {
     const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
+    const web = JSON.parse(await readFile(join(root, 'apps/web/package.json'), 'utf8'));
     const vercel = JSON.parse(await readFile(join(root, 'vercel.json'), 'utf8'));
     assert.equal(vercel.buildCommand, 'npm run build');
-    assert.match(pkg.scripts.build, /&& npm run check:source-maps$/);
+    // The root build is the web app's build (refactor PR 2.5), which ends with
+    // the repository root's check over the root dist/.
+    assert.equal(pkg.scripts.build, 'npm run build -w @wm/web');
+    assert.match(web.scripts.build, /&& npm --prefix \.\.\/\.\. run check:source-maps$/);
     assert.match(pkg.scripts['check:source-maps'], /scripts\/check-no-public-source-maps\.mjs dist$/);
   });
 });
@@ -137,7 +141,7 @@ describe('check-no-public-source-maps deploy gate', () => {
 describe('bundler configs that ship to production', () => {
   // Every config here was reviewed for source-map output. A new bundler
   // config must follow packages/shared/source-map-policy.ts before it joins this list.
-  const REVIEWED = ['vite.config.ts'];
+  const REVIEWED = ['apps/web/vite.config.ts'];
 
   it('has no unreviewed bundler config', () => {
     const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n');
@@ -150,7 +154,7 @@ describe('bundler configs that ship to production', () => {
   it('builds no production source maps', async () => {
     const read = (p: string) => readFile(join(root, p), 'utf8');
     // The Lite UI has no Sentry upload, so it builds no maps at all.
-    const main = await read('vite.config.ts');
+    const main = await read('apps/web/vite.config.ts');
     assert.equal(main.match(/sourcemap/gi)?.length, 1, 'vite.config.ts sets sourcemap exactly once');
     assert.match(main, /\n\s*sourcemap:\s*false,\n/);
   });

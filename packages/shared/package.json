@@ -11,5 +11,8 @@
     "./*.cjs": "./*.cjs",
     "./*.json": "./*.json",
     "./*": "./*.ts"
+  },
+  "dependencies": {
+    "@wm/contracts": "*"
   }
 }

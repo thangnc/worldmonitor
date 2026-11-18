@@ -6,7 +6,7 @@
  * DERIVED and says how in a tooltip (docs/engineering/architecture/lite.md, "Lite UI").
  */
 import type { NewsItem } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
-import type { Corroboration } from '../../../packages/server/_shared/corroboration';
+import type { Corroboration } from '@wm/server/_shared/corroboration';
 import { GEO_CATEGORIES, MARKET_CATEGORIES, TECH_CATEGORIES, corroborationOf, isPrimarySource, type LiteItem, type Tone } from './transforms';
 
 export type Domain = 'geo' | 'fin' | 'tech';

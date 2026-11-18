@@ -1,10 +1,4 @@
 {
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "types": ["vite/client", "webmcp-types"],
-    "incremental": true,
-    "tsBuildInfoFile": "node_modules/.cache/tsconfig.tsbuildinfo"
-  },
-  "include": ["src", "packages/client", "packages/shared/indexable-landing-locales.ts", "packages/shared/pwa-precache.ts"],
-  "exclude": ["src/workers/ml.worker.ts"]
+  "//": "The browser program lives in apps/web/tsconfig.json (refactor PR 2.5); `npm run typecheck` runs it from here, and tsconfig.dom-tests.json and tsconfig.contract-tests.json extend this file.",
+  "extends": "./apps/web/tsconfig.json"
 }

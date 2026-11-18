@@ -8,8 +8,8 @@
 import type { ListFeedDigestResponse, NewsItem } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
 import { getSourceType } from '@wm/shared/source-provenance';
 import { MIN_CORROBORATING_PUBLISHERS } from '@wm/shared/publisher-families.js';
-import { getSourceTier } from '../../../packages/server/_shared/source-tiers';
-import { assessCorroboration, evidenceFromItem, type Corroboration } from '../../../packages/server/_shared/corroboration';
+import { getSourceTier } from '@wm/server/_shared/source-tiers';
+import { assessCorroboration, evidenceFromItem, type Corroboration } from '@wm/server/_shared/corroboration';
 import { SIMILARITY_THRESHOLD, jaccardSimilarity, tokenize } from '@wm/shared/text-analysis-core.js';
 
 export type Tone = 'crit' | 'high' | 'elev' | 'ok' | 'muted' | 'dim';

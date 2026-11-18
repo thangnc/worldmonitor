@@ -228,7 +228,7 @@ describe('browser bundle secret guard (#3704)', () => {
 
   it('client source uses only reviewed VITE_* browser env names', async () => {
     const sourceFiles = [
-      ...await listFiles(resolve(repoRoot, 'src'), CLIENT_SOURCE_EXTENSIONS),
+      ...await listFiles(resolve(repoRoot, 'apps/web/src'), CLIENT_SOURCE_EXTENSIONS),
       ...await listFiles(resolve(repoRoot, 'packages/client'), CLIENT_SOURCE_EXTENSIONS),
     ];
     const seen = new Map<string, string[]>();
@@ -280,7 +280,7 @@ describe('browser bundle secret guard (#3704)', () => {
   });
 
   it('vite.config.ts does not inline platform-only secrets via define', async () => {
-    const source = await readRepoFile('vite.config.ts');
+    const source = await readRepoFile('apps/web/vite.config.ts');
     // `define:` injects literal values into the client bundle regardless
     // of `envPrefix`. We only need to inspect the block when it exists —
     // a future refactor that removes the block entirely is strictly
@@ -327,7 +327,7 @@ describe('browser bundle secret guard (#3704)', () => {
   });
 
   it('vite.config.ts does not set a custom envPrefix that would expose unprefixed secrets', async () => {
-    const source = await readRepoFile('vite.config.ts');
+    const source = await readRepoFile('apps/web/vite.config.ts');
     // Vite's default is `envPrefix: 'VITE_'`. If a future contributor
     // sets `envPrefix: ''`, includes a non-VITE_ prefix in an array form
     // (`envPrefix: ['VITE_', '']`), or replaces the default with a

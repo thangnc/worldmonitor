@@ -24,8 +24,8 @@
     "packages/*"
   ],
   "scripts": {
-    "lint": "biome lint ./src ./packages/client ./packages/server ./api ./tests ./scripts ./middleware.ts && npm run lint:safe-html",
-    "lint:fix": "biome check ./src ./packages/client ./packages/server ./api ./tests ./scripts ./middleware.ts --fix",
+    "lint": "biome lint ./apps/web/src ./packages/client ./packages/server ./api ./tests ./scripts ./middleware.ts && npm run lint:safe-html",
+    "lint:fix": "biome check ./apps/web/src ./packages/client ./packages/server ./api ./tests ./scripts ./middleware.ts --fix",
     "lint:boundaries": "node scripts/lint-boundaries.mjs",
     "lint:api-contract": "node scripts/enforce-sebuf-api-contract.mjs",
     "lint:safe-html": "node scripts/enforce-safe-html.mjs",
@@ -64,7 +64,7 @@
     "sources:generate": "node scripts/source-attribution.mjs --write",
     "sources:check": "node scripts/source-attribution.mjs --check",
     "syndication:candidates": "node scripts/syndication-candidates.mjs",
-    "dev": "vite",
+    "dev": "vite --config apps/web/vite.config.ts",
     "postinstall": "npm run inventory:facts",
     "gen:openapi:security": "node scripts/openapi-inject-security.mjs",
     "gen:openapi:examples": "node scripts/openapi-inject-examples.mjs",
@@ -84,7 +84,7 @@
     "typecheck:all": "tsc --noEmit && tsc --noEmit -p tsconfig.api.json",
     "audit:inventory-counts": "node scripts/check-inventory-count-contracts.mjs",
     "audit:sentry-resolve-pins": "node scripts/audit-sentry-resolve-pins.mjs",
-    "preview": "vite preview",
+    "preview": "vite preview --config apps/web/vite.config.ts",
     "report:geo-coverage": "node scripts/geo-coverage-report.mjs",
     "seed:lite": "node scripts/run-lite-seeders.mjs",
     "seed:lite:status": "node scripts/run-lite-seeders.mjs --status",
@@ -106,7 +106,7 @@
     "company-monitoring:blind-evaluation": "tsx scripts/company-monitoring-blind-evaluation.mts",
     "company-monitoring:offline-predictions": "tsx scripts/company-monitoring-offline-predictions.mts",
     "test:server:watch": "vitest --config vitest.config.mts",
-    "build": "npm run security:vite-env-secrets -- --strict-local && tsc && vite build && npm run check:source-maps",
+    "build": "npm run build -w @wm/web",
     "build:full": "npm run build",
     "test:sidecar": "node --test docker/local-api/local-api-server.test.mjs docker/local-api/youtube-embed-message.test.mjs api/_cors.test.mjs api/_session.test.mjs api/_api-key.test.mjs api/_rate-limit.test.mjs api/_sentry-common.test.mjs api/bootstrap-auth.test.mjs api/bootstrap-cors.test.mjs api/health-cors.test.mjs api/wm-session.test.mjs scripts/ais-relay-rss.test.cjs scripts/ais-relay-ingestion.test.cjs scripts/ais-relay-entity-decode.test.cjs scripts/ais-relay-seed-fetchedat.test.cjs scripts/ais-relay-ais-gaps.test.cjs scripts/ais-relay-opensky-shared-cooldown.test.cjs api/loaders-xml-wms-regression.test.mjs"
   },

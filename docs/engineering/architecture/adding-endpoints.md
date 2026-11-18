@@ -157,7 +157,7 @@ export const seismologyHandler: SeismologyServiceHandler = {
 npx tsc --noEmit   # should pass with zero errors
 ```
 
-The route is already live through the domain gateway in `api/seismology/v1/[rpc].ts`. `createSeismologyServiceRoutes()` picks up the new RPC automatically — no route-table or `vite.config.ts` edits are needed.
+The route is already live through the domain gateway in `api/seismology/v1/[rpc].ts`. `createSeismologyServiceRoutes()` picks up the new RPC automatically — no route-table or `apps/web/vite.dev-api.ts` edits are needed.
 
 ### 7. Check the generated docs
 
@@ -320,7 +320,7 @@ There is no repository-wide catch-all gateway file or shared route array to edit
 
 ### 8. Register in the Vite dev server
 
-Edit `vite.config.ts` — add the lazy import and route mount inside the `sebufApiPlugin()` function. Follow the existing pattern (search for any other service to see the exact locations).
+Edit `apps/web/vite.dev-api.ts` — add the lazy import and route mount inside the `sebufApiPlugin()` function. Follow the existing pattern (search for any other service to see the exact locations).
 
 ### 9. Create the frontend service wrapper
 

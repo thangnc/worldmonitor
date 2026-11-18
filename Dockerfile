@@ -15,9 +15,10 @@ ENV npm_config_install_links=true
 
 # Install root dependencies (layer-cached until package.json changes)
 COPY package.json package-lock.json ./
-# Workspace manifests: npm ci links each workspace package (@wm/client, @wm/contracts,
-# @wm/server, @wm/shared) into node_modules, so its package.json must exist
+# Workspace manifests: npm ci links each workspace (@wm/web, @wm/client,
+# @wm/contracts, @wm/server, @wm/shared) into node_modules, so its package.json must exist
 # before the install.
+COPY apps/web/package.json ./apps/web/
 COPY packages/client/package.json ./packages/client/
 COPY packages/contracts/package.json ./packages/contracts/
 COPY packages/server/package.json ./packages/server/
@@ -38,9 +39,9 @@ RUN node scripts/generate-inventory-facts.mjs
 # Output is api/**/*.js alongside the source .ts files
 RUN node docker/build-handlers.mjs
 
-# Build the Vite frontend (outputs to dist/)
+# Build the Vite frontend (apps/web; outputs to the repository root's dist/)
 # Skip blog build — blog-site has its own deps not installed here
-RUN npx tsc && npx vite build
+RUN npx tsc && npx vite build --config apps/web/vite.config.ts
 
 # ── Stage 2: Runtime dependencies ───────────────────────────────────────────
 FROM node:24-alpine@sha256:feb76650b7195319268c59cb2d419c732d6c499b13bf5296f16ab59eb1f0a4f3 AS runtime-deps

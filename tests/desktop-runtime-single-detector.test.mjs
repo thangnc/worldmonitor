@@ -7,7 +7,7 @@ import ts from 'typescript';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
-const browserRoots = [join(root, 'src'), join(root, 'packages', 'client')];
+const browserRoots = [join(root, 'apps', 'web', 'src'), join(root, 'packages', 'client')];
 
 /**
  * #5912: two desktop-runtime detectors used to coexist. `isDesktopRuntime()`

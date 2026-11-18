@@ -31,9 +31,9 @@ const GATES = [
   {
     file: 'scripts/enforce-safe-html.mjs',
     setup(root) {
-      mkdirSync(join(root, 'src'), { recursive: true });
+      mkdirSync(join(root, 'apps/web/src'), { recursive: true });
       writeFileSync(
-        join(root, 'src/fixture.ts'),
+        join(root, 'apps/web/src/fixture.ts'),
         'const element = document.createElement("div");\nelement.innerHTML = userHtml;\n',
       );
     },
@@ -43,7 +43,7 @@ const GATES = [
     file: 'scripts/enforce-safe-local-storage.mjs',
     setup(root) {
       // The guard scans both browser roots and fails on a missing one.
-      mkdirSync(join(root, 'src'), { recursive: true });
+      mkdirSync(join(root, 'apps/web/src'), { recursive: true });
       mkdirSync(join(root, 'packages/client/services'), { recursive: true });
       writeFileSync(
         join(root, 'packages/client/services/failing-store.ts'),

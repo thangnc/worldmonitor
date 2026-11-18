@@ -28,7 +28,7 @@ const ROOT = process.cwd();
 // asymmetry means a directory absent here is still gated on commit but never
 // swept in CI.
 export const SCAN_ROOTS = [
-  'src',
+  'apps/web/src',
   'packages/client',
   'packages/server',
   'api',

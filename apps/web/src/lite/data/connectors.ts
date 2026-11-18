@@ -15,7 +15,7 @@
  * packages/shared/source-attribution-manifest.json.
  */
 import type { ListFeedDigestResponse } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
-import { SOURCE_TIERS, TIER_MEANING, type DeclaredTier } from '../../../packages/server/_shared/source-tiers';
+import { SOURCE_TIERS, TIER_MEANING, type DeclaredTier } from '@wm/server/_shared/source-tiers';
 import type { CompactHealth, CompactHealthCheck, DigestEdition } from './sources';
 import type { ResourceState } from './store';
 

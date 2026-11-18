@@ -358,7 +358,7 @@ describe('Comtrade reporter-code source-of-truth guard', () => {
   const checkedFiles = [
     ...collectRuntimeSources(join(root, 'scripts')),
     ...collectRuntimeSources(join(root, 'packages', 'server')),
-    ...collectRuntimeSources(join(root, 'src')),
+    ...collectRuntimeSources(join(root, 'apps', 'web', 'src')),
     ...collectRuntimeSources(join(root, 'packages', 'client')),
   ];
   const inlineReporterMapDeclaration =
