@@ -4,10 +4,10 @@
 # Runs scripts/seed-bundle-resilience-validation.mjs which spawns:
 #   - benchmark-resilience-external.mjs
 #   - backtest-resilience-outcomes.mjs
-#   - validate-resilience-sensitivity.mjs (imports ../server/*.ts via tsx)
+#   - validate-resilience-sensitivity.mjs (imports ../packages/server/*.ts via tsx)
 #
 # The validation scripts only touch node: builtins, local helpers, and .ts
-# files under ../server/ via dynamic import. The ONLY external runtime dep
+# files under ../packages/server/ via dynamic import. The ONLY external runtime dep
 # is tsx (to register the ESM loader for .ts imports).
 # =============================================================================
 
@@ -33,10 +33,10 @@ RUN npm install --prefix /app --no-save --no-audit --no-fund --no-package-lock t
 # crashes with ERR_MODULE_NOT_FOUND in production. Copying the whole scripts/
 # dir is ~2 MB larger and robust to the next import.
 #
-# validate-resilience-sensitivity.mjs dynamic-imports ../server/*.ts so the
-# full server/ tree is copied (scorers pull from packages/shared/ and data/ at runtime).
+# validate-resilience-sensitivity.mjs dynamic-imports ../packages/server/*.ts so the
+# full packages/server/ tree is copied (scorers pull from packages/shared/ and data/ at runtime).
 COPY scripts/ ./scripts/
-COPY server/ ./server/
+COPY packages/server/ ./packages/server/
 COPY packages/shared/ ./packages/shared/
 COPY data/ ./data/
 COPY tsconfig.base.json tsconfig.json tsconfig.api.json ./

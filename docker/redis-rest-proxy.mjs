@@ -729,7 +729,7 @@ const PANEL_REQUEST_READ_SCRIPT = [
   'return {1, n}',
 ].join('\n');
 
-// Pinned copy of CII_DAILY_WRITE_LUA in server/worldmonitor/intelligence/v1/get-risk-scores.ts.
+// Pinned copy of CII_DAILY_WRITE_LUA in packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts.
 const CII_DAILY_HISTORY_WRITE_SCRIPT = [
   "",
   "local count = #KEYS - 3",
@@ -1106,7 +1106,7 @@ function respondError(res, err) {
     // Same reasoning one status class over. A blocked command already logs
     // itself in assertCommandAllowed; a 500 logged nothing, and the primary
     // caller discards the body (`console.warn('[redis] runRedisTransaction HTTP
-    // ' + response.status)` in server/_shared/redis.ts), so a re-run of #8265
+    // ' + response.status)` in packages/server/_shared/redis.ts), so a re-run of #8265
     // would leave `docker compose logs redis-rest` silent and the app log
     // holding a bare status with no cause. That is the same blind spot the
     // HSETNX/HINCRBY gap sat in for months (#6937).
@@ -1205,7 +1205,7 @@ const server = http.createServer(async (req, res) => {
       // with an error; node-redis hides the ordered replies on err.replies
       // instead of returning them. Upstash answers that with HTTP 200 and an
       // ordered array carrying {error} for the failed entries — the shape
-      // /pipeline above emits and the shape server/_shared/redis.ts already
+      // /pipeline above emits and the shape packages/server/_shared/redis.ts already
       // scans (`data.find((item) => item.error || item.result === 'ERR')`), a
       // branch that could never fire while this route always threw. Before
       // this, one WRONGTYPE turned a transaction that DID run into an opaque

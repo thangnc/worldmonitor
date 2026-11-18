@@ -6,7 +6,7 @@ import bootstrapHandler, {
   isPublicWeatherBootstrapRequest,
 } from '../api/bootstrap.js';
 import { issueSessionToken } from '../api/_session.js';
-import { createDomainGateway, PUBLIC_NO_AUTH_RPC_PATHS } from '../server/gateway.ts';
+import { createDomainGateway, PUBLIC_NO_AUTH_RPC_PATHS } from '../packages/server/gateway.ts';
 
 // The four map RPCs entered PUBLIC_NO_AUTH_RPC_PATHS in #4290 for one reason:
 // the cross-site embed had no credential to present. It now polls the single

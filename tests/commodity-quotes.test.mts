@@ -5,14 +5,14 @@ import { createMarketServiceRoutes, ValidationError } from '../packages/contract
 import { __resetRateLimitForTest } from '../api/_rate-limit.js';
 import { issueSessionToken } from '../api/_session.js';
 import marketGateway from '../api/market/v1/[rpc].ts';
-import { marketHandler } from '../server/worldmonitor/market/v1/handler.ts';
+import { marketHandler } from '../packages/server/worldmonitor/market/v1/handler.ts';
 import {
   SUPPORTED_COMMODITY_SYMBOLS,
   filterCommoditySeed,
   normalizeCommoditySymbol,
   resolveCommodityQuery,
   throwUnsupportedCommodityError,
-} from '../server/worldmonitor/market/v1/list-commodity-quotes';
+} from '../packages/server/worldmonitor/market/v1/list-commodity-quotes';
 
 function seedQuote(symbol: string) {
   return { symbol, name: symbol, display: symbol, price: 1, change: 0, sparkline: [] };

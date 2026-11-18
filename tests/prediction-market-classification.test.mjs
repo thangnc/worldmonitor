@@ -811,7 +811,7 @@ describe('classification tag data', () => {
   });
 
   it('stays consistent with the RPC category contracts that select these pools', () => {
-    // server/.../list-prediction-markets.ts maps a requested category to a pool
+    // packages/server/.../list-prediction-markets.ts maps a requested category to a pool
     // using these contracts. A category the RPC calls "tech" must not be
     // classified into a different pool by the producer, or the RPC serves the
     // wrong bucket for it.

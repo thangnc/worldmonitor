@@ -166,7 +166,7 @@ branch never engaged and every wait was pure jitter. The ladder now reads
 **Its unit is inferred by magnitude, because Dodo does not publish one.** The
 header is genuinely ambiguous across the industry: the IETF draft's
 `RateLimit-Reset` is delta-seconds, while this repo's own API emits
-`X-RateLimit-Reset` as epoch-milliseconds (`server/_shared/api-key-rate-limit.ts`).
+`X-RateLimit-Reset` as epoch-milliseconds (`packages/server/_shared/api-key-rate-limit.ts`).
 All three encodings are accepted:
 
 - below `1e9` — delta-seconds (a delta that large would be ~31 years)

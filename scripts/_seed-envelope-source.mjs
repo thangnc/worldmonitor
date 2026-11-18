@@ -1,9 +1,9 @@
 // Single source of truth for the seed-envelope helpers.
 //
 // This file is hand-authored but its PUBLIC SHAPE is mirrored verbatim in:
-//   - server/_shared/seed-envelope.ts  (imported from server/**/*.ts and scripts/**/*.mjs)
+//   - packages/server/_shared/seed-envelope.ts  (imported from packages/server/**/*.ts and scripts/**/*.mjs)
 //   - api/_seed-envelope.js            (imported from api/*.js — edge-safe, per CLAUDE.md
-//                                       forbidding api/ → server/ imports)
+//                                       forbidding api/ → packages/server/ imports)
 //
 // Parity is enforced by scripts/verify-seed-envelope-parity.mjs and covered by a
 // test in tests/seed-envelope-parity.test.mjs.

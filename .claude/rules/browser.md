@@ -16,7 +16,7 @@ The Lite UI (`src/lite/`, Preact and Tailwind) is the only web app. Refactor Pha
 
 ## Rules
 
-- Imports flow `types -> config -> services -> lite`. Logic shared with the server or MCP lives once in `packages/shared/`; browser code imports it as `@wm/shared/...`, except `src/shared/` and the `src/` modules `server/` imports, which use relative paths (`lint:boundaries` Check 5).
+- Imports flow `types -> config -> services -> lite`. Logic shared with the server or MCP lives once in `packages/shared/`; browser code imports it as `@wm/shared/...`, except `src/shared/` and the `src/` modules `packages/server/` imports, which use relative paths (`lint:boundaries` Check 5).
 - There is one build: no site variant (`VITE_VARIANT`) and no profile flag (`VITE_LITE_PROFILE`); refactor Phase 1d removed both. Do not reintroduce a build-time switch for Lite behavior.
 - The dev server's `/` and `/dashboard` redirect (`liteDevRoutePlugin` in `vite.dev-api.ts`) mirrors `vercel.json`: a 307 to `/lite` that keeps the query string. Change them together (`lite-profile.md`, "Default route").
 - Do not assign `innerHTML`/`outerHTML` or call `insertAdjacentHTML`. Render with Preact.

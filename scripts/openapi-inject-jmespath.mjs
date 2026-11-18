@@ -3,10 +3,10 @@
  * Advertise the universal `?jmespath=` response-projection parameter on every
  * GET operation in the generated OpenAPI specs.
  *
- * The REST gateway (server/gateway.ts) applies an optional JMESPath expression
+ * The REST gateway (packages/server/gateway.ts) applies an optional JMESPath expression
  * from the `jmespath` query parameter to any JSON GET response before it is
  * returned — parity with the `jmespath` argument the MCP server already exposes
- * on every tool (api/mcp/jmespath.ts, server/_shared/response-projection.ts).
+ * on every tool (api/mcp/jmespath.ts, packages/server/_shared/response-projection.ts).
  * The sebuf generator only emits parameters that map to a proto request field,
  * so this gateway-level parameter (which belongs to no proto message) has to be
  * injected post-generation.

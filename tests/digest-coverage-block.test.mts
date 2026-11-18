@@ -4,12 +4,12 @@ import { dirname, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { buildDigestCoverage, type FeedAttemptOutcome } from '../server/worldmonitor/news/v1/_attempts';
-import { __testing__ as digestTesting } from '../server/worldmonitor/news/v1/list-feed-digest';
+import { buildDigestCoverage, type FeedAttemptOutcome } from '../packages/server/worldmonitor/news/v1/_attempts';
+import { __testing__ as digestTesting } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const digestSource = readFileSync(
-  resolve(here, '..', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
+  resolve(here, '..', 'packages', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
   'utf-8',
 );
 

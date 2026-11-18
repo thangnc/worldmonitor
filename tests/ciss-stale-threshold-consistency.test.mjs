@@ -43,7 +43,7 @@ test('CISS stale threshold: canonical seeder value and shared TS mirror agree', 
 
 test('server RPC imports the shared CISS threshold — no local copy', () => {
   for (const path of [
-    'server/worldmonitor/economic/v1/get-eu-fsi.ts',
+    'packages/server/worldmonitor/economic/v1/get-eu-fsi.ts',
   ]) {
     const src = read(path);
     assert.match(

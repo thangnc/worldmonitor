@@ -4,7 +4,7 @@
 //
 // Timeout and routing live TOGETHER on purpose: the Flash completion timeout is only
 // meaningful under throughput-sorted routing. seed-forecasts previously had the
-// timeout but NOT the routing (the routing existed only in server/_shared/llm.ts),
+// timeout but NOT the routing (the routing existed only in packages/server/_shared/llm.ts),
 // so OpenRouter free-routed its calls to backends 4-7x slower than the timeout
 // allowed and every market_implications run failed. Keeping both here means a
 // consumer cannot pick up one without the other.

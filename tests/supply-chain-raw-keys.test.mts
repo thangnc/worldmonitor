@@ -28,27 +28,27 @@ delete process.env.LOCAL_API_MODE;
 
 // Imported AFTER the env above so redis.ts's module-cached prefix is
 // computed under preview conditions.
-const redis = await import('../server/_shared/redis');
+const redis = await import('../packages/server/_shared/redis');
 const { listFuelShortages } = await import(
-  '../server/worldmonitor/supply-chain/v1/list-fuel-shortages'
+  '../packages/server/worldmonitor/supply-chain/v1/list-fuel-shortages'
 );
 const { getFuelShortageDetail } = await import(
-  '../server/worldmonitor/supply-chain/v1/get-fuel-shortage-detail'
+  '../packages/server/worldmonitor/supply-chain/v1/get-fuel-shortage-detail'
 );
 const { listStorageFacilities } = await import(
-  '../server/worldmonitor/supply-chain/v1/list-storage-facilities'
+  '../packages/server/worldmonitor/supply-chain/v1/list-storage-facilities'
 );
 const { getStorageFacilityDetail } = await import(
-  '../server/worldmonitor/supply-chain/v1/get-storage-facility-detail'
+  '../packages/server/worldmonitor/supply-chain/v1/get-storage-facility-detail'
 );
 const { listEnergyDisruptions } = await import(
-  '../server/worldmonitor/supply-chain/v1/list-energy-disruptions'
+  '../packages/server/worldmonitor/supply-chain/v1/list-energy-disruptions'
 );
 const { listPipelines } = await import(
-  '../server/worldmonitor/supply-chain/v1/list-pipelines'
+  '../packages/server/worldmonitor/supply-chain/v1/list-pipelines'
 );
 const { getPipelineDetail } = await import(
-  '../server/worldmonitor/supply-chain/v1/get-pipeline-detail'
+  '../packages/server/worldmonitor/supply-chain/v1/get-pipeline-detail'
 );
 
 /** Keys requested from the stubbed Upstash, decoded, in call order. */

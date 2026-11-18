@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import {
   DEFAULT_STRING_MAX_BYTES,
   validateGeneratedRequest,
-} from '../server/request-validator.ts';
+} from '../packages/server/request-validator.ts';
 import { GENERATED_MESSAGE_RULES } from '../packages/contracts/generated/server/request_validation.ts';
 
 // #8402: un-annotated (and max_bytes-less) proto strings must still reject

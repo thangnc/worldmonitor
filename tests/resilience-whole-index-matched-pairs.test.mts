@@ -6,10 +6,10 @@ import {
   MATCHED_PAIRS,
   evaluateWholeIndexMatchedPairs,
 } from './helpers/resilience-matched-pairs.mts';
-import { scoreAllDimensions } from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
-import { buildDimensionList, buildDomainList, penalizedPillarScore } from '../server/worldmonitor/resilience/v1/_shared.ts';
-import { buildPillarList } from '../server/worldmonitor/resilience/v1/_pillar-membership.ts';
-import type { ResilienceSeedReader } from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import { scoreAllDimensions } from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import { buildDimensionList, buildDomainList, penalizedPillarScore } from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
+import { buildPillarList } from '../packages/server/worldmonitor/resilience/v1/_pillar-membership.ts';
+import type { ResilienceSeedReader } from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 const fixture = wholeIndexFixture as typeof wholeIndexFixture & {
   __fixture: {

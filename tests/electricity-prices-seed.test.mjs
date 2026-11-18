@@ -479,7 +479,7 @@ describe('main() publication gate', () => {
   });
 
   it('keeps retained bytes, reader dates and health freshness through failure, then recovers', async () => {
-    const { buildResponseFromSpine } = await import('../server/worldmonitor/intelligence/v1/get-country-energy-profile.ts');
+    const { buildResponseFromSpine } = await import('../packages/server/worldmonitor/intelligence/v1/get-country-energy-profile.ts');
     process.env.ENTSO_E_TOKEN = 'entso-token';
     assert.equal(await main(), true);
     const snapshot = new Map(cache);

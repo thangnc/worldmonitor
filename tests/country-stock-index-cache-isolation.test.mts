@@ -38,7 +38,7 @@ test('CN country-index RPC prefers Railway data and leaves its key seed-owned', 
     throw new Error(`unexpected request: ${url}`);
   }) as typeof fetch;
 
-  const { getCountryStockIndex } = await import('../server/worldmonitor/market/v1/get-country-stock-index.ts');
+  const { getCountryStockIndex } = await import('../packages/server/worldmonitor/market/v1/get-country-stock-index.ts');
   const result = await getCountryStockIndex({} as never, { countryCode: 'CN' } as never);
 
   assert.equal(result.available, true);

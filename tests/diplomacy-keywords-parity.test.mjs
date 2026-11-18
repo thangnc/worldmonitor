@@ -114,11 +114,11 @@ test('scripts/seed-digest-notifications.mjs sources keywords from canonical JSON
   );
 });
 
-test('server/worldmonitor/news/v1/list-feed-digest.ts sources keywords from canonical JSON', async () => {
-  const src = await readFromRoot('server/worldmonitor/news/v1/list-feed-digest.ts');
+test('packages/server/worldmonitor/news/v1/list-feed-digest.ts sources keywords from canonical JSON', async () => {
+  const src = await readFromRoot('packages/server/worldmonitor/news/v1/list-feed-digest.ts');
   assert.match(
     src,
-    /import\s+diplomacyKeywordsData\s+from\s+['"]\.\.\/\.\.\/\.\.\/\.\.\/packages\/shared\/diplomacy-keywords\.json['"]/,
+    /import\s+diplomacyKeywordsData\s+from\s+['"]\.\.\/\.\.\/\.\.\/\.\.\/shared\/diplomacy-keywords\.json['"]/,
     'list-feed-digest.ts must import the canonical JSON',
   );
   assert.doesNotMatch(

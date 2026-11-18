@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createDomainGateway } from '../server/gateway.ts';
-import { __resetRateLimitForTest } from '../server/_shared/rate-limit.ts';
+import { createDomainGateway } from '../packages/server/gateway.ts';
+import { __resetRateLimitForTest } from '../packages/server/_shared/rate-limit.ts';
 import { __resetRateLimitForTest as __resetLegacyRateLimitForTest } from '../api/_rate-limit.js';
 import { isPageTwinSibling } from '../api/_md-url-twin.ts';
 import notFoundHandler from '../api/not-found.ts';

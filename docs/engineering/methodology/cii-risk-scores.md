@@ -271,7 +271,7 @@ Advisory levels can also add `advisoryBoost` before the floor is applied:
 "caution". The server first uses the live `intelligence:advisories:v1`
 `byCountry` level when available. If no live level is present for a tracked
 country, it may apply the embedded State Department fallback table in
-`server/worldmonitor/intelligence/v1/get-risk-scores.ts`. Each `CiiScore`
+`packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts`. Each `CiiScore`
 therefore exposes:
 
 | Wire field | Values | Meaning |
@@ -475,7 +475,7 @@ overallScore = min(100, round(weightedAvg * 0.70 + 15))             # banded to 
 
 The decay step, top-N window, scale-floor (`15`), and scale-factor (`0.70`)
 are all defined in
-[`server/worldmonitor/intelligence/v1/_risk-config.ts`](https://github.com/koala73/worldmonitor/blob/main/server/worldmonitor/intelligence/v1/_risk-config.ts).
+[`packages/server/worldmonitor/intelligence/v1/_risk-config.ts`](https://github.com/koala73/worldmonitor/blob/main/server/worldmonitor/intelligence/v1/_risk-config.ts).
 Their **rationale**:
 
 - **`STRATEGIC_RISK_POSITIONAL_DECAY = 0.15`** — the most-affected country
@@ -512,7 +512,7 @@ Any edit that changes server/API per-country baselines, event multipliers,
 climate-zone country attribution, strategic-risk roll-up coefficients, inline
 server formula literals, guarded top-level formula constants, or CII movement
 semantics **must** ship with a bump of `CII_FORMULA_VERSION` in
-`server/worldmonitor/intelligence/v1/_risk-config.ts`, an update to this
+`packages/server/worldmonitor/intelligence/v1/_risk-config.ts`, an update to this
 document in the same commit, and a public CHANGELOG entry. Source-of-truth
 refactors that preserve server/API scores do not bump the wire version. Tests in
 `tests/cii-scoring.test.mts` enforce that this document lists every country code

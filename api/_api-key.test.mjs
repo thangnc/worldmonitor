@@ -375,7 +375,7 @@ test('REGRESSION: wm_-prefixed key in WORLDMONITOR_VALID_KEYS is honored as ente
   }
 });
 
-test('WORLDMONITOR_VALID_KEYS entries are trimmed like server/_shared/premium-check.ts', async () => {
+test('WORLDMONITOR_VALID_KEYS entries are trimmed like packages/server/_shared/premium-check.ts', async () => {
   // "k1, k2" authenticated k2 at the gateway's premium check but not here.
   const previous = process.env.WORLDMONITOR_VALID_KEYS;
   process.env.WORLDMONITOR_VALID_KEYS = ` ${ENTERPRISE_KEY} , spaced-operator-key ,`;

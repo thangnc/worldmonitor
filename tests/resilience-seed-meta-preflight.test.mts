@@ -24,8 +24,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, it } from 'node:test';
 
-import { scoreEducation, createMemoizedSeedReader } from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
-import { warmMissingResilienceScores } from '../server/worldmonitor/resilience/v1/_shared.ts';
+import { scoreEducation, createMemoizedSeedReader } from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import { warmMissingResilienceScores } from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
 
 const META_KEY = 'seed-meta:resilience:education-attainment';
 const DATA_KEY = 'resilience:education-attainment:v1';

@@ -1,18 +1,18 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
-import { newsHandler } from '../server/worldmonitor/news/v1/handler';
-import { REVOKED_URLS_KEY } from '../server/_shared/digest-revocations';
-import { __resetKeyPrefixCacheForTests } from '../server/_shared/redis';
-import { drainResponseHeaders } from '../server/_shared/response-headers';
-import { lastGoodKey } from '../server/worldmonitor/news/v1/_lastgood';
-import { rssFeedCacheKey } from '../server/worldmonitor/news/v1/_rss-cache';
-import { VARIANT_FEEDS } from '../server/worldmonitor/news/v1/_feeds';
-import { NEWS_POOL_MAX_LANGUAGES, sourceLanguage } from '../server/worldmonitor/news/v1/list-news-pool';
+import { newsHandler } from '../packages/server/worldmonitor/news/v1/handler';
+import { REVOKED_URLS_KEY } from '../packages/server/_shared/digest-revocations';
+import { __resetKeyPrefixCacheForTests } from '../packages/server/_shared/redis';
+import { drainResponseHeaders } from '../packages/server/_shared/response-headers';
+import { lastGoodKey } from '../packages/server/worldmonitor/news/v1/_lastgood';
+import { rssFeedCacheKey } from '../packages/server/worldmonitor/news/v1/_rss-cache';
+import { VARIANT_FEEDS } from '../packages/server/worldmonitor/news/v1/_feeds';
+import { NEWS_POOL_MAX_LANGUAGES, sourceLanguage } from '../packages/server/worldmonitor/news/v1/list-news-pool';
 import { NEWS_POOL_LAYOUT } from '../packages/shared/news-pool-layout.generated';
 import { buildNewsPoolLayout } from '../packages/shared/news-catalog';
-import { getOutletProfile } from '../server/_shared/outlet-profile';
+import { getOutletProfile } from '../packages/server/_shared/outlet-profile';
 import { createNewsServiceRoutes, type ListNewsPoolResponse } from '../packages/contracts/generated/server/worldmonitor/news/v1/service_server';
-import { validateGeneratedRequest } from '../server/request-validator';
+import { validateGeneratedRequest } from '../packages/server/request-validator';
 
 const route = createNewsServiceRoutes(newsHandler, { validateRequest: validateGeneratedRequest })
   .find(entry => entry.path.endsWith('/list-news-pool'))!;

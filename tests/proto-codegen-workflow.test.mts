@@ -488,7 +488,7 @@ describe('proto codegen workflow trust boundaries (#3340)', () => {
       'packages/contracts/proto/café.proto',
       'scripts/openapi-inject-security.mjs',
       'packages/shared/openapi-filter-param-contracts.json',
-      'server/gateway.ts',
+      'packages/server/gateway.ts',
       'src/shared/premium-paths.ts',
       'Makefile',
     ]) {

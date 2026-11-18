@@ -103,7 +103,7 @@ COPY scripts/shared/iso2-to-region.json ./scripts/shared/iso2-to-region.json
 # (Slot B dedup-material helper, #4985). Missing it = ERR_MODULE_NOT_FOUND at
 # relay startup. Guarded by tests/dockerfile-relay-imports.test.mjs.
 COPY scripts/shared/notification-dedup.cjs ./scripts/shared/notification-dedup.cjs
-# notify-fields.cjs mirrors server/_shared/notify-fields.ts for the relay
+# notify-fields.cjs mirrors packages/server/_shared/notify-fields.ts for the relay
 # (no TS loader under scripts/package.json); required by notification-relay.cjs.
 #
 # NOTE on the guard: tests/dockerfile-relay-imports.test.mjs seeds its BFS from

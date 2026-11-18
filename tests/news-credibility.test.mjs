@@ -22,7 +22,7 @@ import {
   computeCredibilityScore,
 } from '../packages/shared/news-credibility.js';
 import { getSourcePropagandaRisk } from '../packages/shared/source-provenance.ts';
-import { getSourceTier } from '../server/_shared/source-tiers.ts';
+import { getSourceTier } from '../packages/server/_shared/source-tiers.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const readSrc = (rel) => readFileSync(resolve(root, rel), 'utf8');
@@ -157,7 +157,7 @@ describe('state-media vs wire — newsworthiness is not credibility', () => {
 });
 
 describe('digest wiring (source-textual)', () => {
-  const digestSrc = readSrc('server/worldmonitor/news/v1/list-feed-digest.ts');
+  const digestSrc = readSrc('packages/server/worldmonitor/news/v1/list-feed-digest.ts');
   const protoSrc = readSrc('packages/contracts/proto/worldmonitor/news/v1/news_item.proto');
 
   it('proto NewsItem has a credibility_score field distinct from importance_score', () => {
@@ -167,7 +167,7 @@ describe('digest wiring (source-textual)', () => {
   });
 
   it('list-feed-digest imports the shared scorer and writes credibilityScore', () => {
-    assert.match(digestSrc, /from '\.\.\/\.\.\/\.\.\/\.\.\/packages\/shared\/news-credibility\.js'/);
+    assert.match(digestSrc, /from '\.\.\/\.\.\/\.\.\/\.\.\/shared\/news-credibility\.js'/);
     assert.match(digestSrc, /return computeCredibilityScore\(\{/);
     assert.match(
       digestSrc,

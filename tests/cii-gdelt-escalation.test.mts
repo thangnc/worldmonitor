@@ -18,14 +18,14 @@ import {
   CII_GDELT_ESCALATION_CAP,
   CII_GDELT_ESCALATION_MAX_AGE_MS,
   CII_GDELT_LEVEL_MIN_ARTICLES,
-} from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
 import {
   computeCIIScores,
   countCiiRealtimeSignalDensityCoverage,
   gdeltCountryEventsFromSeed,
   gdeltEscalationScore,
   gdeltLevelScore,
-} from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
 import { summarizeCountryEvents } from '../scripts/_gdelt-country-events.mjs';
 
 const NOW = Date.parse('2026-10-19T12:00:00Z');

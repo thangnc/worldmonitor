@@ -20,9 +20,9 @@ import {
   scoreCiiAuxiliarySources,
   type AuxiliarySources,
   type CiiScoreTableRow,
-} from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
-import { CII_FORMULA_VERSION } from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
-import { TIER1_COUNTRIES } from '../server/worldmonitor/intelligence/v1/_shared.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+import { CII_FORMULA_VERSION } from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
+import { TIER1_COUNTRIES } from '../packages/server/worldmonitor/intelligence/v1/_shared.ts';
 
 /**
  * Properties the formula named by CII_FORMULA_VERSION is known to fail. Shrink

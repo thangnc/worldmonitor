@@ -27,7 +27,7 @@ import {
   FIN_SYS_BAND_PREMIUM_FLOOR,
   FIN_SYS_EXPOSURE_COMPREHENSIVE_EMBARGO,
   scoreFinancialSystemExposure,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import { RESILIENCE_COHORTS, type ResilienceCohort } from './helpers/resilience-cohorts.mts';
 import { FIN_SYS_EXPOSURE_MATCHED_PAIRS } from './helpers/resilience-matched-pairs.mts';
 import { FINSYS_FIXTURE_CAPTURED_AT, createFinSysFixtureReader } from './helpers/resilience-finsys-fixtures.mts';

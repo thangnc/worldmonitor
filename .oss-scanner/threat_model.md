@@ -11,7 +11,7 @@ component:
 |---|---|---|
 | SPA (vanilla TS + Vite) | `src/`, `index.html`, `public/` | browser |
 | Edge API handlers | `api/` (Vercel Edge functions), `middleware.ts`, `vercel.json` | Vercel |
-| Proto-first RPC gateway and domain handlers | `server/`, `packages/contracts/proto/` | Vercel Edge (via `api/`) |
+| Proto-first RPC gateway and domain handlers | `packages/server/`, `packages/contracts/proto/` | Vercel Edge (via `api/`) |
 | MCP server + OAuth 2.1 authorization server | `api/mcp*`, `api/mcp/`, `api/oauth/`, `api/oauth-*.ts` | Vercel Edge |
 | Accounts, API keys, billing, entitlements, notifications | `convex/` | Convex Cloud |
 | Relay (RSS proxy, AIS WebSocket, Telegram, notification delivery) and seeders | `scripts/` (`ais-relay.cjs`, `notification-relay.cjs`, `seed-*.mjs`) | Railway |
@@ -44,7 +44,7 @@ Untrusted input:
 - One user cannot read or change another user's data: API keys, notification
   channels, alert rules, saved state, billing, MCP grants.
 - Pro-only RPCs, MCP tools, and quotas are enforced server-side. The client
-  hiding a button is not the check (`api/_api-key.js`, `server/gateway.ts`,
+  hiding a button is not the check (`api/_api-key.js`, `packages/server/gateway.ts`,
   `convex/entitlements.ts`, `api/mcp/quota.ts`).
 - Server-side fetches cannot reach private, loopback, link-local or cloud
   metadata addresses. The RSS proxy only fetches allowlisted domains,
@@ -67,7 +67,7 @@ new findings unless you can show they are worse than described.
 
 Highest value, in order:
 
-1. Authentication and authorization: `server/_shared/auth-session.ts`,
+1. Authentication and authorization: `packages/server/_shared/auth-session.ts`,
    `api/_api-key.js`, `api/_user-api-key*`, `api/agent-auth.ts`,
    `api/oauth/`, `api/mcp/auth.ts`, `convex/apiKeys.ts`, `convex/mcpProTokens.ts`,
    `api/desktop-auth/`.

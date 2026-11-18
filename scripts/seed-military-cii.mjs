@@ -3,7 +3,7 @@
 // seed-military-cii.mjs — Phase 2 of the CII unification (docs/engineering/archive/plans/unify-cii-single-source.md).
 //
 // Aggregates military activity per country into a single Redis key the CII engine
-// (server/worldmonitor/intelligence/v1/get-risk-scores.ts) reads as one auxiliary source:
+// (packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts) reads as one auxiliary source:
 //
 //   - military FLIGHTS  — read from `military:flights:v1` (already operator-classified
 //                         by seed-military-flights.mjs)
@@ -23,7 +23,7 @@
 // SCHEDULING: like every other scripts/seed-*.mjs, this is a self-contained job run on a
 // schedule by Railway (the cron/job config lives in the Railway dashboard, not the repo).
 // Run cadence ~10 min; the output key TTL (3600s) tolerates a few skipped runs.
-// Self-contained by necessity — scripts/ cannot import from server/ or src/ under the
+// Self-contained by necessity — scripts/ cannot import from packages/server/ or src/ under the
 // Railway nixpacks packaging. Code shared with the server lives in scripts/shared/.
 //
 // Railway service config (set up manually via Railway dashboard or `railway service`):
@@ -47,7 +47,7 @@ const LIVE_KEY = 'intelligence:military-cii:v1';
 const LIVE_TTL = 3600;
 const RELAY_TIMEOUT_MS = 15_000;
 
-// ── Country reference tables (mirror server/.../get-risk-scores.ts + _shared.ts) ──────
+// ── Country reference tables (mirror packages/server/.../get-risk-scores.ts + _shared.ts) ──────
 
 const TIER1_COUNTRIES = {
   US: 'United States', RU: 'Russia', CN: 'China', UA: 'Ukraine', IR: 'Iran',
@@ -100,7 +100,7 @@ const COUNTRY_KEYWORDS = {
   QA: ['qatar', 'qatari', 'doha'],
 };
 
-// Mirrors safeNum() in server/.../get-risk-scores.ts — keep the names aligned.
+// Mirrors safeNum() in packages/server/.../get-risk-scores.ts — keep the names aligned.
 function safeNum(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;

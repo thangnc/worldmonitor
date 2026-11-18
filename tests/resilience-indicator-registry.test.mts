@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { RESILIENCE_DIMENSION_ORDER } from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import { RESILIENCE_DIMENSION_ORDER } from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import {
   INDICATOR_REGISTRY,
   getIndicatorSourceKeys,
-} from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
-import type { IndicatorSpec } from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
+import type { IndicatorSpec } from '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
 import {
   SCORER_DOC_PARITY_NON_LINEAR_IDS,
   SCORER_DOC_PARITY_SPECS,

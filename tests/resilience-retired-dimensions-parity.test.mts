@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 
 // Plan 2026-04-26-002 §U1: shape validation for cohort JSON fixtures.
 const here = dirname(fileURLToPath(import.meta.url));
-const COHORTS_DIR = resolve(here, '../server/worldmonitor/resilience/v1/cohorts');
+const COHORTS_DIR = resolve(here, '../packages/server/worldmonitor/resilience/v1/cohorts');
 const ISO2_RE = /^[A-Z]{2}$/;
 
 interface CohortShape {

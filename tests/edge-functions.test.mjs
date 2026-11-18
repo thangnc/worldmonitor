@@ -38,7 +38,7 @@ const allEdgeFunctions = trackedApiSources
 // All tracked .js and .ts files under api/ are used for node: built-in checks.
 // Note: .ts edge functions are intentionally excluded from the
 // module-isolation describe below because Vercel bundles them at build time, so
-// imports from '../server/' are valid. The node: built-in check still applies
+// imports from '../packages/server/' are valid. The node: built-in check still applies
 // regardless of depth, since Vercel Edge Runtime rejects node: imports at runtime.
 const allApiFiles = trackedApiSources.map((file) => ({
   name: file.slice('api/'.length),
@@ -135,7 +135,7 @@ describe('Edge Function no node: built-ins', () => {
 
 // Vercel's Node runtime compiles each file on its own and loads the result as
 // native ESM ("type": "module"), so a relative import must name the file it
-// resolves to. An extensionless `../server/_shared/x` bundles fine on Edge and
+// resolves to. An extensionless `../packages/server/_shared/x` bundles fine on Edge and
 // runs fine under tsx, then fails at module load in production with
 // ERR_MODULE_NOT_FOUND on every request. That is what reverted #7578 (GHSA-887j).
 // Walk each Node-runtime route's whole local import graph and require it.
@@ -200,11 +200,11 @@ describe('Legacy JS entries import only _-prefixed relative modules', () => {
 
 describe('Edge Function module isolation', () => {
   for (const { name, path } of allEdgeFunctions) {
-    it(`${name} does not import from ../server/ (Edge Functions cannot resolve cross-directory TS)`, () => {
+    it(`${name} does not import from ../packages/ (Edge Functions cannot resolve cross-directory TS)`, () => {
       const src = readFileSync(path, 'utf-8');
       assert.ok(
-        !src.includes("from '../server/"),
-        `${name}: imports from ../server/ — Vercel Edge Functions cannot resolve cross-directory TS imports. Inline the code or move to a same-directory .js helper.`,
+        !src.includes("from '../packages/"),
+        `${name}: imports from ../packages/ (packages/server, packages/shared, packages/contracts) — Vercel Edge Functions cannot resolve cross-directory TS imports. Inline the code or move to a same-directory .js helper.`,
       );
     });
 

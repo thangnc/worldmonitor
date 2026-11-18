@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { detectTrafficAnomaly, THREAT_LEVEL } from '../server/worldmonitor/supply-chain/v1/_scoring.mjs';
+import { detectTrafficAnomaly, THREAT_LEVEL } from '../packages/server/worldmonitor/supply-chain/v1/_scoring.mjs';
 import { summarizePortwatchHistory } from '../packages/shared/chokepoint-traffic-anomaly.js';
 import {
   CANONICAL_CHOKEPOINTS,
   corridorRiskNameToId,
-} from '../server/worldmonitor/supply-chain/v1/_chokepoint-ids.ts';
-import { CHOKEPOINTS } from '../server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts';
+} from '../packages/server/worldmonitor/supply-chain/v1/_chokepoint-ids.ts';
+import { CHOKEPOINTS } from '../packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts';
 import { CHOKEPOINT_THREAT_LEVELS } from '../packages/shared/chokepoint-threat-levels.js';
 import { readTransitWindow } from '../packages/shared/chokepoint-transit-window.js';
 
@@ -26,7 +26,7 @@ import { CORRIDOR_RISK_NAME_MAP, deriveCorridorRiskLevel } from '../packages/sha
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 const relaySrc = readFileSync(resolve(root, 'scripts/ais-relay.cjs'), 'utf-8');
-const handlerSrc = readFileSync(resolve(root, 'server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts'), 'utf-8');
+const handlerSrc = readFileSync(resolve(root, 'packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts'), 'utf-8');
 
 function makeDays(count, dailyTotal, startOffset) {
   const days = [];

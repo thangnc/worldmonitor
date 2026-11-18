@@ -1,7 +1,7 @@
 // Regression coverage for #3753 — parseClassifyCacheHit, the runtime
 // validator enrichWithAiCache runs on every getCachedJsonBatch hit before
 // `level`/`category` reach a typed ParsedItem
-// (server/worldmonitor/news/v1/list-feed-digest.ts).
+// (packages/server/worldmonitor/news/v1/list-feed-digest.ts).
 //
 // ParsedItem.category is declared `string`, but the LLM classify cache is
 // Redis-backed JSON: `unwrapEnvelope(parsed).data` returns `unknown`, so a
@@ -41,7 +41,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
 
 const { parseClassifyCacheHit, enrichWithAiCache } = __testing__;
 
@@ -256,7 +256,7 @@ describe('parseClassifyCacheHit — rejects malformed cache values wholesale', (
 // "list-feed-digest story-identity wiring" block in tests/story-identity.test.mjs.
 describe('parseClassifyCacheHit — call-site wiring (mutation lock)', () => {
   const digestSrc = readFileSync(
-    resolve(dirname(fileURLToPath(import.meta.url)), '../server/worldmonitor/news/v1/list-feed-digest.ts'),
+    resolve(dirname(fileURLToPath(import.meta.url)), '../packages/server/worldmonitor/news/v1/list-feed-digest.ts'),
     'utf-8',
   );
 

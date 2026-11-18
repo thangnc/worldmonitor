@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, it } from 'node:test';
 
-import { createDomainGateway } from '../server/gateway.ts';
+import { createDomainGateway } from '../packages/server/gateway.ts';
 import {
   appendDeprecationPolicyLink,
   appendDeprecationPolicyLinkToRecord,
   DEPRECATION_POLICY_LINK,
   DEPRECATION_POLICY_URL,
-} from '../server/_shared/deprecation-policy.ts';
+} from '../packages/server/_shared/deprecation-policy.ts';
 import handler from '../api/not-found.ts';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');

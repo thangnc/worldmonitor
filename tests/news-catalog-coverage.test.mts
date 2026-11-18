@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import { INTEL_EDITION, digestCarriesFeed } from '../packages/shared/news-catalog-browser';
 import { projectBrowserCatalog } from '../packages/shared/news-catalog';
-import { VALID_VARIANTS, __testing__ as digestTesting } from '../server/worldmonitor/news/v1/list-feed-digest';
+import { VALID_VARIANTS, __testing__ as digestTesting } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
 import { NEWS_LANGUAGES } from '../src/shared/public-rpc-cache';
 import {
   browserPlacedNames,

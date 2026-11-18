@@ -102,7 +102,7 @@ const REGIONS = {
   'taiwan strait': { terms: ['taiwan strait'], countries: ['TW'] },
   'western pacific': { terms: ['western pacific', 'taiwan strait', 'south china sea', 'east china sea', 'philippine sea', 'guam', 'okinawa'], countries: ['TW'] },
   'yemen/red sea': { terms: ['red sea', 'houthi', 'houthis', 'bab el mandeb', 'gulf of aden'], countries: ['YE'] },
-  // Chokepoints (server/_shared/chokepoint-registry.ts display names).
+  // Chokepoints (packages/server/_shared/chokepoint-registry.ts display names).
   'bab el-mandeb': { terms: ['bab el mandeb', 'red sea', 'houthi', 'houthis', 'gulf of aden'], countries: [] },
   'bosporus strait': { terms: ['bosporus', 'bosphorus'], countries: [] },
   'cape of good hope': { terms: ['cape of good hope'], countries: [] },
@@ -114,7 +114,7 @@ const REGIONS = {
   'strait of malacca': { terms: ['malacca'], countries: [] },
   'suez canal': { terms: ['suez'], countries: [] },
 };
-const CHOKEPOINT_REGISTRY = readFileSync(new URL('../server/_shared/chokepoint-registry.ts', import.meta.url), 'utf8');
+const CHOKEPOINT_REGISTRY = readFileSync(new URL('../packages/server/_shared/chokepoint-registry.ts', import.meta.url), 'utf8');
 export const CHOKEPOINT_LABELS = [...CHOKEPOINT_REGISTRY.matchAll(/displayName: '([^']+)'/g)].map((match) => match[1]);
 
 const sorted = (values) => [...new Set(values.filter(Boolean))].sort();

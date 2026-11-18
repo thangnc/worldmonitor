@@ -38,9 +38,9 @@ import {
   summarizeCyber,
   CYBER_DISCOVERY_HALF_LIFE_DAYS,
   CYBER_SNAPSHOT_WEIGHT_CAP,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import { RESILIENCE_FIXTURES, fixtureReader } from './helpers/resilience-fixtures.mts';
-import { createIndicatorTraceCollector } from '../server/worldmonitor/resilience/v1/_indicator-trace.ts';
+import { createIndicatorTraceCollector } from '../packages/server/worldmonitor/resilience/v1/_indicator-trace.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

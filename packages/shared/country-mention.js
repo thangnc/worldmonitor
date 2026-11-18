@@ -1,6 +1,6 @@
 // One country-mention matcher for every surface that grounds a country brief
 // on the news digest: the server's shared anonymous grounding
-// (server/worldmonitor/intelligence/v1/_country-brief-context.ts), the MCP
+// (packages/server/worldmonitor/intelligence/v1/_country-brief-context.ts), the MCP
 // get_country_brief tool (api/mcp/registry/rpc-tools.ts) and the crawlable
 // corpus freeze (scripts/freeze-crawlable-live-pulse.mjs).
 //

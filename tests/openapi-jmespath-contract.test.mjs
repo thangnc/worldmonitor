@@ -15,7 +15,7 @@ import {
 
 // Guards the universal `?jmespath=` response-projection parameter injected by
 // scripts/openapi-inject-jmespath.mjs. The REST gateway
-// (server/gateway.ts + server/_shared/response-projection.ts) genuinely honors
+// (packages/server/gateway.ts + packages/server/_shared/response-projection.ts) genuinely honors
 // this parameter on every JSON GET response — parity with the MCP server's
 // `jmespath` tool argument. Advertising it on every GET operation also keeps
 // ora.ai / orank's `api-schema-analysis` at "fully documented" (a parameterless

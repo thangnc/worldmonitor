@@ -28,7 +28,7 @@ message RunScenarioRequest {
 
 // The sebuf-generated server still emits 200 for every success (no per-RPC
 // status-code annotation exists), so the gateway upgrades the status via the
-// setSuccessStatusOverride side-channel (server/_shared/response-headers.ts).
+// setSuccessStatusOverride side-channel (packages/server/_shared/response-headers.ts).
 // (Detached: kept out of the public spec.)
 
 // RunScenarioResponse carries the enqueued job id. Clients poll

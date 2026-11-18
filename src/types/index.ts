@@ -122,7 +122,7 @@ export interface NewsLocationMarker {
   corroboration?: NewsCorroboration;
 }
 
-/** Structural copy of Corroboration in server/_shared/corroboration.ts; corroboration-flag.ts checks they match. */
+/** Structural copy of Corroboration in packages/server/_shared/corroboration.ts; corroboration-flag.ts checks they match. */
 export type NewsCorroboration =
   | { readonly state: 'corroborated'; readonly publishers: number }
   | { readonly state: 'single-publisher'; readonly publishers: 1 }

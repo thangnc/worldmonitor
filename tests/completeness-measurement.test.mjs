@@ -221,7 +221,7 @@ describe('server catalog extraction (#4920a)', () => {
 
 describe('coverage-ledger and provenance wiring (source-textual)', () => {
   it('digest counts every drop gate and publishes the ledger', () => {
-    const src = readSrc('server/worldmonitor/news/v1/list-feed-digest.ts');
+    const src = readSrc('packages/server/worldmonitor/news/v1/list-feed-digest.ts');
     assert.match(src, /droppedFeedCap = Math\.max\(0, matches\.length - ITEMS_PER_FEED\)/);
     // #7084: counted off the post-revocation `servable` list, not the raw one —
     // a revoked item must not occupy a cap slot NOR be counted as having

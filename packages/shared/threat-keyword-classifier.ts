@@ -7,7 +7,7 @@
  * and re-exports `classifyByKeyword` from here, so there is still one keyword
  * implementation and one set of keyword tables.
  *
- * NOT the same classifier as `server/worldmonitor/news/v1/_classifier.ts`.
+ * NOT the same classifier as `packages/server/worldmonitor/news/v1/_classifier.ts`.
  * That one labels the multi-source news digest and carries its own historical
  * downgrade rules; this one labels what the country panel shows. A surface that
  * must agree with the panel imports THIS module. Nothing here reads the DOM,

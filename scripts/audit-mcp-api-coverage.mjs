@@ -16,7 +16,7 @@
  * the explicit `_apiPaths` declarations on TOOL_REGISTRY entries and the
  * `EXCLUDED_FROM_MCP_PARITY` map, never source code.
  *
- * Classification rules (handler source's `server/_shared/redis` imports):
+ * Classification rules (handler source's `packages/server/_shared/redis` imports):
  *   - imports `cachedFetchJson` / `cachedFetchJsonWithMeta`
  *       -> fetch-on-miss (on-demand RPC, talks to an upstream)
  *   - imports only `getCachedJson` / `getRawJson` / `getCachedJsonBatch`
@@ -27,7 +27,7 @@
  *       -> unknown (manual triage required)
  *
  * Additionally annotates `llm-passthrough` when the handler imports
- * `callLlm` from `server/_shared/llm` — same handler may be both
+ * `callLlm` from `packages/server/_shared/llm` — same handler may be both
  * `fetch-on-miss` AND `llm-passthrough` (canonical example:
  * `classify-event`).
  *
@@ -57,7 +57,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
 const SPECS_DIR = join(REPO_ROOT, 'packages', 'contracts', 'openapi');
-const HANDLERS_ROOT = join(REPO_ROOT, 'server', 'worldmonitor');
+const HANDLERS_ROOT = join(REPO_ROOT, 'packages', 'server', 'worldmonitor');
 const MCP_FILE = join(REPO_ROOT, 'api', 'mcp.ts');
 
 // -----------------------------------------------------------------------------
@@ -187,7 +187,7 @@ function specFilenameToService(filename) {
 
 // -----------------------------------------------------------------------------
 // PascalCase operationId -> camelCase function name (matches the export name
-// imported by `server/worldmonitor/<service>/<version>/handler.ts`).
+// imported by `packages/server/worldmonitor/<service>/<version>/handler.ts`).
 //   `ListInternetDdosAttacks` -> `listInternetDdosAttacks`
 //   `GetBisCredit`            -> `getBisCredit`
 // -----------------------------------------------------------------------------
@@ -286,7 +286,7 @@ function resolveConstViaShared(identifier, handlerSource, handlerDir) {
   // Find every `import { ..., identifier, ... } from './X';` or `from '../../X';`
   // and check that shared file's exported consts. Follows any relative-path
   // import (`./` or `../`) one level deep — sufficient to catch the
-  // server/_shared/cache-keys.ts pattern climate handlers use.
+  // packages/server/_shared/cache-keys.ts pattern climate handlers use.
   const importRe = /import(?:\s+type)?\s*\{([^}]+)\}\s*from\s*['"](\.[^'"]+)['"]\s*;?/g;
   let m;
   while ((m = importRe.exec(handlerSource)) !== null) {
@@ -303,7 +303,7 @@ function resolveConstViaShared(identifier, handlerSource, handlerDir) {
 }
 
 // -----------------------------------------------------------------------------
-// Classify a handler by its `server/_shared/redis` import names + detect LLM
+// Classify a handler by its `packages/server/_shared/redis` import names + detect LLM
 // passthrough via `callLlm` import.
 // -----------------------------------------------------------------------------
 
@@ -449,7 +449,7 @@ function resolveHandlerFile(service, version, operationId) {
   return {
     handlerDir,
     handlerFile: candidate,
-    handlerRelPath: `server/worldmonitor/${service}/${version}/${basename}.ts`,
+    handlerRelPath: `packages/server/worldmonitor/${service}/${version}/${basename}.ts`,
     importedName: camelName,
   };
 }

@@ -162,7 +162,7 @@ describe('every writer of market:stablecoins:v1 uses the shared classifier', () 
   const WRITERS = [
     'scripts/ais-relay.cjs',
     'scripts/seed-stablecoin-markets.mjs',
-    'server/worldmonitor/market/v1/list-stablecoin-markets.ts',
+    'packages/server/worldmonitor/market/v1/list-stablecoin-markets.ts',
   ];
 
   for (const relPath of WRITERS) {

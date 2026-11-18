@@ -8,7 +8,7 @@ import {
   getFallbackOverlay,
   type AnalystData,
   type DividendProfile,
-} from '../server/worldmonitor/market/v1/analyze-stock.ts';
+} from '../packages/server/worldmonitor/market/v1/analyze-stock.ts';
 
 const emptyAnalystData: AnalystData = {
   analystConsensus: { strongBuy: 0, buy: 0, hold: 0, sell: 0, strongSell: 0, total: 0, period: '' },

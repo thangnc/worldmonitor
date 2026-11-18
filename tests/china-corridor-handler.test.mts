@@ -8,7 +8,7 @@ import {
   loadChinaCorridorRawSnapshots,
   projectChinaCorridorWireResponse,
   resolveChinaCorridorSnapshot,
-} from '../server/worldmonitor/supply-chain/v1/get-china-corridor-control-towers.ts';
+} from '../packages/server/worldmonitor/supply-chain/v1/get-china-corridor-control-towers.ts';
 import {
   parseChinaCorridorWirePayload,
   validateChinaCorridorProvenanceForSurface,

@@ -9,8 +9,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { computeEnergyShockScenario } from '../server/worldmonitor/intelligence/v1/compute-energy-shock.ts';
-import { CHOKEPOINT_LNG_EXPOSURE, computeGasDisruption } from '../server/worldmonitor/intelligence/v1/_shock-compute.ts';
+import { computeEnergyShockScenario } from '../packages/server/worldmonitor/intelligence/v1/compute-energy-shock.ts';
+import { CHOKEPOINT_LNG_EXPOSURE, computeGasDisruption } from '../packages/server/worldmonitor/intelligence/v1/_shock-compute.ts';
 import { buildLngOriginShares, parseLngRows, LNG_HORMUZ_SHARE_KEY } from '../scripts/shared/comtrade-lng-origin.mjs';
 import { normalizeComtradePartner } from '../scripts/shared/comtrade.mjs';
 import { installRedis } from './helpers/fake-upstash-redis.mts';

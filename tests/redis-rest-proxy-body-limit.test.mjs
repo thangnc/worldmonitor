@@ -75,7 +75,7 @@ function buildHelpers(env = {}) {
 }
 
 // The proxy has THREE body-reading POST routes — `/`, `/pipeline`, `/multi-exec`
-// — and all three are live in production (server/_shared/redis.ts and
+// — and all three are live in production (packages/server/_shared/redis.ts and
 // scripts/_seed-utils.mjs batch through pipeline/multi-exec). The probe mirrors
 // all three so a regression on any one of them fails behaviorally here, not just
 // in a source scan. Body read through the real readBody, errors through the real
@@ -257,7 +257,7 @@ describe('redis-rest proxy body limit (#7099)', () => {
   it('caps /pipeline and /multi-exec too, not just POST /', async () => {
     const limit = 4096;
     const { port } = await probeServer({ limit, drainLimit: limit * 2 });
-    // server/_shared/redis.ts and scripts/_seed-utils.mjs batch real traffic
+    // packages/server/_shared/redis.ts and scripts/_seed-utils.mjs batch real traffic
     // through both of these. A fix that only reached POST / would leave the
     // #7099 failure mode alive on the routes that carry multi-key writes.
     for (const route of ['/pipeline', '/multi-exec']) {

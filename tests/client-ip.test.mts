@@ -6,7 +6,7 @@ import {
   getClientRateLimitKey as getServerClientRateLimitKey,
   rateLimitKeyForIp as serverRateLimitKeyForIp,
   resetEdgeProofMismatchWarnedForTest as resetServer,
-} from '../server/_shared/client-ip.ts';
+} from '../packages/server/_shared/client-ip.ts';
 import {
   getClientIp as getApiClientIp,
   getClientRateLimitKey as getApiClientRateLimitKey,

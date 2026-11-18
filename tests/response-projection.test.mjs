@@ -5,10 +5,10 @@ import {
   projectJsonResponse,
   REST_JMESPATH_MAX_EXPR_BYTES,
   REST_JMESPATH_MAX_OUTPUT_BYTES,
-} from '../server/_shared/response-projection.ts';
+} from '../packages/server/_shared/response-projection.ts';
 
 // Unit coverage for the REST gateway's universal `?jmespath=` projection helper
-// (server/gateway.ts applies it to every JSON GET response). Mirrors the MCP
+// (packages/server/gateway.ts applies it to every JSON GET response). Mirrors the MCP
 // jmespath contract (api/mcp/jmespath.ts): projects on success, returns a
 // {_jmespath_error, original_keys} envelope on failure, never throws.
 

@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     environment: "edge-runtime",
     include: [
-      "server/__tests__/**/*.test.ts",
+      "packages/server/__tests__/**/*.test.ts",
       "src/services/correlation-engine/**/*.test.ts",
     ],
   },

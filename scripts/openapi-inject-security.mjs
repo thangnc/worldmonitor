@@ -6,7 +6,7 @@
  * annotation for describing authentication, so every generated spec omits
  * `components.securitySchemes`, a root `security` requirement, and the `401`
  * response — even though every non-public WorldMonitor RPC is authenticated at
- * the gateway (server/gateway.ts). This post-generation step adds them so the
+ * the gateway (packages/server/gateway.ts). This post-generation step adds them so the
  * published contract matches runtime reality. See umbrella issue #4599 (root
  * cause #1).
  *
@@ -73,7 +73,7 @@ if (BEARER_AUTH_PATHS.size === 0) {
 
 // Legacy-Pro-gated paths NOT covered by the newer ENDPOINT_ENTITLEMENTS tier
 // map. The gateway still guards these via `needsLegacyProBearerGate`
-// (server/gateway.ts) and returns 403 'Pro subscription required' when the
+// (packages/server/gateway.ts) and returns 403 'Pro subscription required' when the
 // caller presents no valid Pro session — but the generated spec documents no
 // 403 for them (#4599). Entitlement-gated paths are subtracted out so the
 // stricter, tier-aware entitlement 403 wins for any path that is in BOTH sets:
@@ -108,7 +108,7 @@ for (const path of TRUST_REVIEW_KEY_PATHS) {
 
 // ── Contract definitions ──────────────────────────────────────────────────
 // Header names mirror the gateway's accepted public API-key headers
-// (server/gateway.ts: X-WorldMonitor-Key / X-Api-Key) and docs/api-platform.mdx.
+// (packages/server/gateway.ts: X-WorldMonitor-Key / X-Api-Key) and docs/api-platform.mdx.
 const API_KEY_SECURITY_SCHEMES = {
   WorldMonitorKey: {
     type: 'apiKey',

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { projectMineralProduction } from '../server/worldmonitor/supply-chain/v1/get-mineral-production.ts';
+import { projectMineralProduction } from '../packages/server/worldmonitor/supply-chain/v1/get-mineral-production.ts';
 
 const payload = {
   fetchedAt: '2026-02-06T00:00:00.000Z',

@@ -400,18 +400,18 @@ function extractDeclaredRuntimeDependencies(files, repoRootDir) {
  * Hardcoding `hasTsx: false` and scripts-only dynamic roots was wrong for
  * exactly one service, and wrong in the direction that strands it.
  * Dockerfile.seed-bundle-resilience-validation installs tsx and COPYs
- * `server/`, and scripts/validate-resilience-sensitivity.mjs:169-185
- * dynamic-imports four `../server/worldmonitor/resilience/v1/*.ts` modules. A
+ * `packages/server/`, and scripts/validate-resilience-sensitivity.mjs:169-185
+ * dynamic-imports four `../packages/server/worldmonitor/resilience/v1/*.ts` modules. A
  * scripts-only, tsx-less walk cannot follow one of those edges, so the derived
- * closure contained ZERO server/ paths — and this service was previously
+ * closure contained ZERO packages/server/ paths — and this service was previously
  * unmanaged, i.e. protected by the broad fallback. Narrowing it would have
- * removed that floor and stopped server/ changes from ever rebuilding the
+ * removed that floor and stopped packages/server/ changes from ever rebuilding the
  * image, under a green "complete closure" check.
  *
  * Derived from the image rather than assumed, and read with the same
  * tests/_lib parser the sibling container guards use, so all of them read a
  * Dockerfile identically. tests/resilience-validation-import-graph.test.mjs
- * independently pins this same container as tsx + server/.
+ * independently pins this same container as tsx + packages/server/.
  */
 function dockerfileContainerContract(dockerfileName, repoRootDir) {
   const source = readFileSync(resolve(repoRootDir, dockerfileName), 'utf8');
@@ -1393,7 +1393,7 @@ describe('closure detection layers', () => {
   describe('the container model derived from a Dockerfile', () => {
     it('detects the tsx loader and the dynamic roots the image copies in', () => {
       // scripts/validate-resilience-sensitivity.mjs dynamic-imports
-      // ../server/worldmonitor/resilience/v1/*.ts. Without tsx and a server/
+      // ../packages/server/worldmonitor/resilience/v1/*.ts. Without tsx and a packages/server/
       // dynamic root the walk cannot follow those edges, and the derived
       // closure silently loses the entire server graph.
       const contract = dockerfileContainerContract(
@@ -1402,8 +1402,8 @@ describe('closure detection layers', () => {
       );
       assert.equal(contract.hasTsx, true, 'this image installs tsx and sets NODE_OPTIONS');
       assert.ok(
-        contract.dynamicRoots.some((dir) => dir.endsWith('/server')),
-        'server/ is COPYd into this image, so dynamic imports can land there',
+        contract.dynamicRoots.some((dir) => dir.endsWith('/packages/server')),
+        'packages/server/ is COPYd into this image, so dynamic imports can land there',
       );
     });
 
@@ -1504,18 +1504,18 @@ describe('closure detection layers', () => {
   describe('the runtime surface', () => {
     it('reaches the server TypeScript graph of the tsx container', () => {
       // The exact regression #6204's second review found: a scripts-only,
-      // tsx-less walk returned ZERO server/ paths for this service, and it had
+      // tsx-less walk returned ZERO packages/server/ paths for this service, and it had
       // just lost the broad fallback that was covering for that.
       const entry = registry.find((e) => e.service === 'seed-bundle-resilience-validation');
       const { runtimeFiles } = resolveRuntimeSurface(entry, repoRoot);
       for (const pinned of [
-        'server/worldmonitor/resilience/v1/_dimension-scorers.ts',
-        'server/worldmonitor/resilience/v1/_shared.ts',
-        'server/worldmonitor/resilience/v1/_pillar-membership.ts',
-        'server/worldmonitor/resilience/v1/_indicator-registry.ts',
+        'packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts',
+        'packages/server/worldmonitor/resilience/v1/_shared.ts',
+        'packages/server/worldmonitor/resilience/v1/_pillar-membership.ts',
+        'packages/server/worldmonitor/resilience/v1/_indicator-registry.ts',
         // Reached only THROUGH the server graph — proof the walk followed the
         // edge rather than merely listing the four dynamic-import targets.
-        'server/_shared/redis.ts',
+        'packages/server/_shared/redis.ts',
       ]) {
         assert.ok(runtimeFiles.has(pinned), `runtime surface must reach ${pinned}`);
         assert.ok(

@@ -4,13 +4,13 @@ import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { INDICATOR_REGISTRY } from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
+import { INDICATOR_REGISTRY } from '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
 import {
   RESILIENCE_DIMENSION_DOMAINS,
   getResilienceDomainWeight,
   type ResilienceDimensionId,
   type ResilienceDomainId,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 // PR 3 §3.6 — Coverage-and-influence cap on indicator weight.
 //
@@ -40,7 +40,7 @@ const NOMINAL_WEIGHT_CAP = 0.05; // 5%
 //   × domain weight in overall score.
 //
 // `dimension share of domain` is NOT 1/N_total — the scorer aggregates
-// by coverage-weighted mean (server/worldmonitor/resilience/v1/_shared.ts
+// by coverage-weighted mean (packages/server/worldmonitor/resilience/v1/_shared.ts
 // coverageWeightedMean), so a dimension that pins at coverage=0 drops
 // out of the denominator and the surviving dimensions' shares go UP,
 // not down. PR 3 commit 1 retires fuelStockDays by pinning its scorer

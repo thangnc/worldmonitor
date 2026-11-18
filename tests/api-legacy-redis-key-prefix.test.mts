@@ -1,6 +1,6 @@
 /**
  * #7674 — the legacy api/_upstash-json.js layer must resolve the deployment
- * key prefix exactly like server/_shared/redis.ts: app-owned keys ride the
+ * key prefix exactly like packages/server/_shared/redis.ts: app-owned keys ride the
  * `preview:<sha>:` namespace by default (reads AND writes), while
  * seeder-owned keys are read raw in every environment because the Railway
  * fleet publishes them bare.
@@ -204,7 +204,7 @@ describe('api/_upstash-json.js deployment key prefix mechanics (#7674)', () => {
   });
 
   it('the api prefix implementation stays byte-identical to the server mirror', async () => {
-    const serverRedis = await import('../server/_shared/redis.ts');
+    const serverRedis = await import('../packages/server/_shared/redis.ts');
     const savedEnv = process.env.VERCEL_ENV;
     const savedSha = process.env.VERCEL_GIT_COMMIT_SHA;
     try {
@@ -384,7 +384,7 @@ describe('seed-health classifies mixed producer keys for preview (#7674)', () =>
 describe('getRiskScores reads the app-owned temporal snapshot prefixed (#7674)', () => {
   it('temporal:anomalies:v1 is namespaced; seeder-owned sources stay raw', async () => {
     const { getRiskScores } = await import(
-      '../server/worldmonitor/intelligence/v1/get-risk-scores'
+      '../packages/server/worldmonitor/intelligence/v1/get-risk-scores'
     );
 
     globalThis.fetch = (async (input, _init = {}) => {

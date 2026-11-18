@@ -8,18 +8,18 @@ import {
   classifyDimensionFreshness,
   readFreshnessMap,
   resolveSeedMetaKey,
-} from '../server/worldmonitor/resilience/v1/_dimension-freshness.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-freshness.ts';
 import {
   INDICATOR_REGISTRY,
   getIndicatorSourceKeys,
-} from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
-import { STANDALONE_SOURCE_META_MAX_STALE_MIN } from '../server/worldmonitor/resilience/v1/_standalone-source-thresholds.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
+import { STANDALONE_SOURCE_META_MAX_STALE_MIN } from '../packages/server/worldmonitor/resilience/v1/_standalone-source-thresholds.ts';
 import {
   AGING_MULTIPLIER,
   FRESH_MULTIPLIER,
   cadenceUnitMs,
-} from '../server/_shared/resilience-freshness.ts';
-import type { ResilienceDimensionId } from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/_shared/resilience-freshness.ts';
+import type { ResilienceDimensionId } from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 // T1.5 propagation pass of the country-resilience reference-grade upgrade
 // plan. PR #2947 shipped the classifier foundation; this suite pins the

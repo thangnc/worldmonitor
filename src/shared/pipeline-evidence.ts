@@ -4,7 +4,7 @@
 // deterministic function of the raw evidence bundle, versioned so consumers
 // can pin a reader to a classifier version and reproduce results.
 //
-// Shared between the server handler (server/worldmonitor/supply-chain/v1/
+// Shared between the server handler (packages/server/worldmonitor/supply-chain/v1/
 // list-pipelines.ts — attaches the derived badge to the RPC response) AND
 // the client panel's bootstrap path (src/components/PipelineStatusPanel.ts —
 // runs the same deriver client-side on bootstrap-hydrated raw registries

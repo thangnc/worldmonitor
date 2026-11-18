@@ -7,9 +7,9 @@ import {
   isDueForRefresh,
   refreshFeedCache,
   type ParseResult,
-} from '../server/worldmonitor/news/v1/list-feed-digest';
-import { rssFeedCacheKey } from '../server/worldmonitor/news/v1/_rss-cache';
-import { __resetKeyPrefixCacheForTests } from '../server/_shared/redis';
+} from '../packages/server/worldmonitor/news/v1/list-feed-digest';
+import { rssFeedCacheKey } from '../packages/server/worldmonitor/news/v1/_rss-cache';
+import { __resetKeyPrefixCacheForTests } from '../packages/server/_shared/redis';
 import { createRedisFetch, type FakeRedisState } from './helpers/fake-upstash-redis.mts';
 
 const FEED = { name: 'Reuters World', url: 'https://feeds.example.org/world.xml' };
@@ -51,7 +51,7 @@ function cachedEntry(): ParseResult {
 }
 
 async function parsed(titles: string[], extra: Partial<ParseResult> = {}): Promise<ParseResult> {
-  const { __testing__ } = await import('../server/worldmonitor/news/v1/list-feed-digest');
+  const { __testing__ } = await import('../packages/server/worldmonitor/news/v1/list-feed-digest');
   return { ...__testing__.parseRssXml(rss(titles), FEED, VARIANT)!, ...extra };
 }
 

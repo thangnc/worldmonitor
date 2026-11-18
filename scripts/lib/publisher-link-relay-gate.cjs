@@ -13,7 +13,7 @@
 // link's registrable host must equal the item's feed-label family domain(s)
 // or a subdomain of one. The feed URL host (the strongest signal — the
 // publisher domain as registered) is composed by the digest-side caller
-// (server/worldmonitor/news/v1/list-feed-digest.ts, which knows the feed);
+// (packages/server/worldmonitor/news/v1/list-feed-digest.ts, which knows the feed);
 // the relay only ever sees item-scoped fields, so it gates on the curated
 // family table alone and fails closed (blank link) when the family names no
 // domains.

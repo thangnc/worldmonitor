@@ -6,12 +6,12 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { callLlm, callLlmReasoningStream, resolveProviderChain } from '../server/_shared/llm.ts';
-import { aiRoutingCacheSuffix, resolveAiRouting, toLlmRoutingPolicy } from '../server/_shared/ai-routing-policy.ts';
-import { toAnthropicMessages } from '../server/_shared/llm-anthropic.ts';
-import { classifyEvent } from '../server/worldmonitor/intelligence/v1/classify-event.ts';
-import { summarizeArticle } from '../server/worldmonitor/news/v1/summarize-article.ts';
-import { __testing__ as llmHealth } from '../server/_shared/llm-health.ts';
+import { callLlm, callLlmReasoningStream, resolveProviderChain } from '../packages/server/_shared/llm.ts';
+import { aiRoutingCacheSuffix, resolveAiRouting, toLlmRoutingPolicy } from '../packages/server/_shared/ai-routing-policy.ts';
+import { toAnthropicMessages } from '../packages/server/_shared/llm-anthropic.ts';
+import { classifyEvent } from '../packages/server/worldmonitor/intelligence/v1/classify-event.ts';
+import { summarizeArticle } from '../packages/server/worldmonitor/news/v1/summarize-article.ts';
+import { __testing__ as llmHealth } from '../packages/server/_shared/llm-health.ts';
 
 const ENV_KEYS = [
   'OPENROUTER_API_KEY', 'OLLAMA_API_URL', 'LLM_API_URL', 'LLM_API_KEY', 'LLM_MODEL',

@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { deduplicateHeadlines } from '../server/worldmonitor/news/v1/dedup.mjs';
+import { deduplicateHeadlines } from '../packages/server/worldmonitor/news/v1/dedup.mjs';
 import { aggregateHapiConflictEvents } from '../scripts/_conflict-hapi.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -29,7 +29,7 @@ const readSrc = (relPath) => readFileSync(resolve(root, relPath), 'utf-8');
 // ========================================================================
 
 describe('aggregateHapiConflictEvents (scripts/_conflict-hapi.mjs)', () => {
-  // #5554: server/worldmonitor/conflict/v1/get-humanitarian-summary.ts no longer
+  // #5554: packages/server/worldmonitor/conflict/v1/get-humanitarian-summary.ts no longer
   // fetches HAPI at all — it's a cache-only read of what this seeder writes (HDX's
   // app_identifier rate limiting is per-identifier, so a per-request RPC fetch would
   // stack uncoordinated traffic on top of the seeder's bulk refresh). The
@@ -142,14 +142,14 @@ describe('handler and prompt guards', () => {
     // #5554: HAPI rate-limits per identifier, so every direct-fetch call site
     // shares one throttle bucket. The RPC handler must read what the seeder
     // wrote rather than adding a second caller.
-    const src = readSrc('server/worldmonitor/conflict/v1/get-humanitarian-summary.ts');
+    const src = readSrc('packages/server/worldmonitor/conflict/v1/get-humanitarian-summary.ts');
     assert.doesNotMatch(src, /hapi\.humdata\.org/);
   });
 
   it('keeps named political figures out of the LLM prompt', () => {
     // A hardcoded name dates the prompt and biases summaries; the prompt asks
     // for context appropriate to the current date instead.
-    const src = readSrc('server/worldmonitor/news/v1/_shared.ts');
+    const src = readSrc('packages/server/worldmonitor/news/v1/_shared.ts');
     assert.doesNotMatch(src, /Donald Trump/);
   });
 });

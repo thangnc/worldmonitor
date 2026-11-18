@@ -14,9 +14,9 @@ import {
   scoreCiiFixture,
   trimCiiRawInputs,
 } from '../scripts/lib/cii-fixtures.mts';
-import { computeCiiScoreTable } from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
-import { CII_FORMULA_VERSION } from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
-import { TIER1_COUNTRIES } from '../server/worldmonitor/intelligence/v1/_shared.ts';
+import { computeCiiScoreTable } from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+import { CII_FORMULA_VERSION } from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
+import { TIER1_COUNTRIES } from '../packages/server/worldmonitor/intelligence/v1/_shared.ts';
 
 const FIXTURES = loadCiiFixtures();
 const TIER1_NAMES = new Set(Object.values(TIER1_COUNTRIES));

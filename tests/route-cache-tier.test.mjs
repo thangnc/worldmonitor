@@ -38,7 +38,7 @@ function extractGetRoutes() {
 }
 
 function extractCacheTierKeys() {
-  const gatewayPath = join(root, 'server', 'gateway.ts');
+  const gatewayPath = join(root, 'packages', 'server', 'gateway.ts');
   const src = readFileSync(gatewayPath, 'utf-8');
   const re = /'\/(api\/[^']+)':\s*'(fast|medium|slow|slow-browser|live-browser|static|daily|no-store|live)'/g;
   const entries = {};
@@ -63,7 +63,7 @@ describe('RPC_CACHE_TIER route parity', () => {
     assert.deepStrictEqual(
       missing,
       [],
-      `Missing RPC_CACHE_TIER entries for:\n  ${missing.join('\n  ')}\n\nAdd explicit tier entries in server/gateway.ts`,
+      `Missing RPC_CACHE_TIER entries for:\n  ${missing.join('\n  ')}\n\nAdd explicit tier entries in packages/server/gateway.ts`,
     );
   });
 
@@ -83,7 +83,7 @@ describe('RPC_CACHE_TIER route parity', () => {
   });
 
   it('no route uses the implicit default tier', () => {
-    const gatewaySrc = readFileSync(join(root, 'server', 'gateway.ts'), 'utf-8');
+    const gatewaySrc = readFileSync(join(root, 'packages', 'server', 'gateway.ts'), 'utf-8');
     // The declared per-route tier (RPC_CACHE_TIER + env override, captured as
     // `declaredTier`) still falls back to 'medium' — the tripwire that keeps
     // every route's tier explicit. `declaredTier` also gates the no-store floor.
@@ -116,7 +116,7 @@ describe('RPC_CACHE_TIER route parity', () => {
   });
 
   it('shared tiers include public s-maxage while private browser tiers do not', () => {
-    const gatewaySrc = readFileSync(join(root, 'server', 'gateway.ts'), 'utf-8');
+    const gatewaySrc = readFileSync(join(root, 'packages', 'server', 'gateway.ts'), 'utf-8');
     const slowLine = gatewaySrc.match(/^\s+slow: '.*'/m)?.[0] ?? '';
     assert.ok(slowLine.includes('public'), 'slow tier must include public for CF caching');
     assert.ok(slowLine.includes('s-maxage'), 'slow tier must include s-maxage for CF edge TTL');

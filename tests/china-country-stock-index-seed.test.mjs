@@ -61,7 +61,7 @@ test('the per-country handler keeps no CN-only gate and no legacy single key', (
   // that used to sit alongside them are covered behaviourally by
   // tests/country-stock-index-seed-all.test.mts.
   const handlerSource = readFileSync(
-    new URL('../server/worldmonitor/market/v1/get-country-stock-index.ts', import.meta.url),
+    new URL('../packages/server/worldmonitor/market/v1/get-country-stock-index.ts', import.meta.url),
     'utf8',
   );
   assert.doesNotMatch(handlerSource, /if \(code === 'CN'\)/);

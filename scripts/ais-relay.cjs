@@ -843,7 +843,7 @@ function upstashPublishXIfLockOwner({ lockKey, owner, snapshotKey, snapshot, pol
 // ─────────────────────────────────────────────────────────────
 // Seed envelope — canonical { _seed, data } shape. Mirrored from
 // scripts/_seed-envelope-source.mjs (ESM; can't be require()'d from CJS).
-// Source of truth lives there + api/_seed-envelope.js + server/_shared/seed-envelope.ts.
+// Source of truth lives there + api/_seed-envelope.js + packages/server/_shared/seed-envelope.ts.
 // Parity enforced by scripts/verify-seed-envelope-parity.mjs.
 // ─────────────────────────────────────────────────────────────
 function buildEnvelope({ fetchedAt, recordCount, sourceVersion, schemaVersion, state, failedDatasets, errorReason, groupId, data }) {
@@ -873,7 +873,7 @@ function envelopeWrite(key, data, ttlSeconds, meta) {
   return upstashSet(key, envelope, ttlSeconds);
 }
 
-// Envelope-aware read. Mirrors server/_shared/redis.ts::getCachedJson semantics:
+// Envelope-aware read. Mirrors packages/server/_shared/redis.ts::getCachedJson semantics:
 // returns the bare payload for contract-mode canonical keys ({_seed, data}) and
 // passes legacy shapes through unchanged. MUST be used for any seeded canonical
 // key — reading raw via upstashGet() on an enveloped key iterates {_seed, data}
@@ -5133,8 +5133,8 @@ function threatSummaryCountries(text) {
 
 
 // v5 (2026-04-28): bumped from v4 in lockstep with
-// server/worldmonitor/intelligence/v1/_shared.ts and
-// server/worldmonitor/news/v1/list-feed-digest.ts to evict cache entries
+// packages/server/worldmonitor/intelligence/v1/_shared.ts and
+// packages/server/worldmonitor/news/v1/list-feed-digest.ts to evict cache entries
 // that landed under the pre-publisher-prefix-fix classifier (PR #3480).
 // Brand-prefixed retrospective titles ("CBS News Radio flashback: ...")
 // had been promoted to severity=critical via the `invasion` keyword;
@@ -5150,7 +5150,7 @@ function classifyCacheKey(title) {
 }
 
 // LLM provider fallback chain — mirrors seed-insights.mjs LLM_PROVIDERS
-// Order mirrors server/_shared/llm.ts: paid OpenRouter, then two fixed free
+// Order mirrors packages/server/_shared/llm.ts: paid OpenRouter, then two fixed free
 // OpenRouter variants.
 const CLASSIFY_LLM_PROVIDERS = [
   {
@@ -6554,7 +6554,7 @@ function startTheaterPostureSeedLoop() {
 // The relay authenticates as a trusted internal caller via X-WorldMonitor-Key =
 // WORLDMONITOR_RELAY_KEY. The gateway validates this (timing-safe) against its
 // OWN WORLDMONITOR_RELAY_KEY for the warm-ping path allowlist only
-// (server/gateway.ts isRelayWarmPingRequest / RELAY_WARM_PING_PATHS). It is a
+// (packages/server/gateway.ts isRelayWarmPingRequest / RELAY_WARM_PING_PATHS). It is a
 // DEDICATED relay↔gateway secret — it does NOT need to be a
 // WORLDMONITOR_VALID_KEYS enterprise key, and shouldn't be (least privilege: it
 // unlocks only a cache-warm on these free endpoints, nothing else).
@@ -13016,7 +13016,7 @@ async function handleRelayRequest(req, res) {
     } else {
       // Live-tanker path: bbox-filtered + tanker-included responses skip the
       // pre-gzipped cache (bbox space would explode the cache key set).
-      // Handler-side 60s cache (server/worldmonitor/maritime/v1/get-vessel-snapshot.ts)
+      // Handler-side 60s cache (packages/server/worldmonitor/maritime/v1/get-vessel-snapshot.ts)
       // and the gateway 'live' tier absorb identical-bbox requests.
       const payload = {
         ...lastSnapshot,

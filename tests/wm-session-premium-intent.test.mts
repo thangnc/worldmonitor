@@ -15,7 +15,7 @@
 //
 // The regression these lock: `/api/news/v1/summarize-article` is premium per
 // REQUEST, not per path. The gateway charges Pro auth for spend-bearing
-// summarize calls (server/gateway.ts `shouldReserveGatewayDirectLlmQuota`)
+// summarize calls (packages/server/gateway.ts `shouldReserveGatewayDirectLlmQuota`)
 // while `mode: 'translate'` stays free — and translate REQUIRES the anonymous
 // wms_ cookie (verified against prod: no cookie ⇒ 401 "API key required").
 // So the path can be in neither PREMIUM_RPC_PATHS (breaks translate) nor

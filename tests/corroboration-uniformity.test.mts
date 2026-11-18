@@ -26,8 +26,8 @@ import {
   type ClaimEvidence,
   type Corroboration,
   type Publisher,
-} from '../server/_shared/corroboration.ts';
-import { SOURCE_TIERS, TIER_MEANING, declaredSourceTier, getSourceTier } from '../server/_shared/source-tiers.ts';
+} from '../packages/server/_shared/corroboration.ts';
+import { SOURCE_TIERS, TIER_MEANING, declaredSourceTier, getSourceTier } from '../packages/server/_shared/source-tiers.ts';
 import { clusterNewsCore } from '../packages/shared/news-clustering-core.js';
 import { THREAT_CATEGORIES, THREAT_LEVELS } from '../packages/shared/jev-classify.js';
 import {

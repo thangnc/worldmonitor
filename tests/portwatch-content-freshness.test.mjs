@@ -525,7 +525,7 @@ describe('content-freshness constant parity', () => {
     readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8');
 
   it('uses the budget the China corridor adapter actually enforces', () => {
-    const adapter = read('server/worldmonitor/supply-chain/v1/china-corridor-source-adapters.ts');
+    const adapter = read('packages/server/worldmonitor/supply-chain/v1/china-corridor-source-adapters.ts');
     const budgets = [
       ...adapter.matchAll(/contentFreshness\(observedAt,\s*([\d\s*]+),\s*assessedAt\)/g),
     ]
@@ -582,7 +582,7 @@ describe('content-freshness constant parity', () => {
   });
 
   it('declares exactly the countries the corridor control towers read', () => {
-    const towers = read('server/worldmonitor/supply-chain/v1/get-china-corridor-control-towers.ts');
+    const towers = read('packages/server/worldmonitor/supply-chain/v1/get-china-corridor-control-towers.ts');
     const prefix = 'supply_chain:portwatch-ports:v1:';
     const consumed = [
       ...towers.matchAll(new RegExp(`'${prefix.replace(/[:.]/g, '\\$&')}([A-Z]{2})'`, 'g')),
@@ -600,7 +600,7 @@ describe('content-freshness constant parity', () => {
   // with the nowcast still green. Pin that BOTH read the content clock, with
   // the same legacy fallback.
   it('ages the same content clock as the corridor gate it guards', () => {
-    const adapter = read('server/worldmonitor/supply-chain/v1/china-corridor-source-adapters.ts');
+    const adapter = read('packages/server/worldmonitor/supply-chain/v1/china-corridor-source-adapters.ts');
     assert.match(
       adapter,
       /isoTimestamp\(payload\.contentAsOfChangedAt\)\s*\n?\s*\?\?\s*isoTimestamp\(payload\.fetchedAt\)/,

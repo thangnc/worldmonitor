@@ -56,7 +56,7 @@ async function upstashCommand(url: string, token: string, command: unknown[]): P
 // consumer-prices-core is a standalone package so we inline the tiny helper
 // rather than taking a cross-package dependency. Keep in lockstep with:
 //   - scripts/_seed-envelope-source.mjs
-//   - server/_shared/seed-envelope.ts
+//   - packages/server/_shared/seed-envelope.ts
 //   - api/_seed-envelope.js
 // Any change to the envelope shape must update all four.
 const SOURCE_VERSION = 'consumer-prices-core-publish-v1';

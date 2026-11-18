@@ -4,7 +4,7 @@ import jmespath from 'jmespath';
  * Attribution rider — the accompaniment obligation, carried by construction.
  *
  * Restricted VALUES are already redacted before anything reaches this module.
- * `requiresRedistributableProvidersForDirectRpc` (server/_shared/provider-
+ * `requiresRedistributableProvidersForDirectRpc` (packages/server/_shared/provider-
  * redistribution.ts) is true for every MCP call, which drives
  * `enforceCommodityRedistributionPolicy` and `decideIndicatorRawRedistribution`
  * to blank or drop whatever may not be redistributed. What survives to the
@@ -22,14 +22,14 @@ import jmespath from 'jmespath';
  * remove it.
  *
  * Both surfaces import this module: `api/mcp/dispatch.ts` (keyed on the tool's
- * `_attribution`) and `server/gateway.ts` (keyed on the request pathname, via
+ * `_attribution`) and `packages/server/gateway.ts` (keyed on the request pathname, via
  * `REST_ATTRIBUTION_EXPRESSIONS`).
  *
- * It lives in `shared/`, not `server/_shared/`, because `shared/` is the only
+ * It lives in `shared/`, not `packages/server/_shared/`, because `shared/` is the only
  * directory reachable from every surface that needs the policy. `api/mcp/`
- * could import `server/_shared/` — 13 of its modules already do — but the
+ * could import `packages/server/_shared/` — 13 of its modules already do — but the
  * Railway seeder images build with `root_dir=scripts` and package only
- * `scripts/` and `shared/`, so a relative import that escapes into `server/`
+ * `scripts/` and `shared/`, so a relative import that escapes into `packages/server/`
  * is `ERR_MODULE_NOT_FOUND` at runtime there (see the rule stated at length in
  * `scripts/_simulation-queue-constants.mjs` and pinned by
  * `tests/scripts-railway-nixpacks-no-escape-import.test.mts`). A licence

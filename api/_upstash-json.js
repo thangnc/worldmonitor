@@ -2,7 +2,7 @@ import { unwrapEnvelope } from './_seed-envelope.js';
 
 /**
  * Deployment key prefix — the api-layer mirror of
- * `server/_shared/redis.ts::getKeyPrefix` (the M-6 fix). Preview/development
+ * `packages/server/_shared/redis.ts::getKeyPrefix` (the M-6 fix). Preview/development
  * Vercel deployments share one Upstash instance with production, so every key
  * THIS deployment owns is namespaced `preview:<sha>:…` to keep its reads and
  * writes out of the production namespace. Production (and any runtime without
@@ -240,7 +240,7 @@ export function readExistsFlags(results, keys) {
 
 /**
  * Prefix the key argument of one pipeline command, mirroring
- * `server/_shared/redis.ts::normalizePipelineCommand` so the two layers
+ * `packages/server/_shared/redis.ts::normalizePipelineCommand` so the two layers
  * behave identically: only the first string argument after the verb is a key,
  * and EVAL's KEYS are found via its key-count argument.
  */

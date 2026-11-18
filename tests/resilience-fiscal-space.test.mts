@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { scoreFiscalSpace } from '../server/worldmonitor/resilience/v1/_dimension-scorers';
+import { scoreFiscalSpace } from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers';
 
 const FISCAL_KEY = 'resilience:recovery:fiscal-space:v1';
 

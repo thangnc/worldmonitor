@@ -53,7 +53,7 @@ import {
   scoreFinancialSystemExposure,
   ResilienceConfigurationError,
   type ResilienceSeedReader,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import {
   FINSYS_BIS_FIXTURE,
   FINSYS_DEBT_FIXTURE,

@@ -1,7 +1,7 @@
 /**
  * Lightweight ACLED OAuth helper for seed scripts.
  *
- * Mirrors the credential exchange from server/_shared/acled-auth.ts
+ * Mirrors the credential exchange from packages/server/_shared/acled-auth.ts
  * without the Redis/TypeScript dependencies so plain .mjs scripts
  * can import it directly.
  */

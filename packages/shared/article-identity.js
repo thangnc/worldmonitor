@@ -7,7 +7,7 @@
 // Why this is a consumer-side rule and not a digest-side one (#8339): the
 // digest's categories are per-FEED regional groupings, and one publisher
 // registers several regional feeds in several categories.
-// server/worldmonitor/news/v1/_feeds.ts places France 24's four editions in
+// packages/server/worldmonitor/news/v1/_feeds.ts places France 24's four editions in
 // four different categories (europe, africa, latam, asia), so one wire story
 // legitimately arrives as several category rows with a byte-identical link. On
 // 2026-09-14 that put "France 24" (europe) and "France 24 LatAm" (latam) in one

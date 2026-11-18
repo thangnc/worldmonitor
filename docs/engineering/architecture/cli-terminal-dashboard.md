@@ -110,7 +110,7 @@ when no animation is active). Input never blocks rendering. All terminal state
 changes (alt screen, mouse, cursor) are undone in `finally` and on signals.
 
 Boundary rules from `CLAUDE.md` hold: `cli/` imports nothing from `src/` or
-`server/`; the catalog is generated, not imported.
+`packages/server/`; the catalog is generated, not imported.
 
 ## Map engine (`cli/src/tui/map/`)
 

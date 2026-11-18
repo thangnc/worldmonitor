@@ -9,7 +9,7 @@ import { __testing__ as healthTesting } from '../api/health.js';
 import {
   createDomainGateway,
   PUBLIC_NO_AUTH_RPC_PATHS,
-} from '../server/gateway.ts';
+} from '../packages/server/gateway.ts';
 
 const PATH = '/api/intelligence/v1/get-china-decision-signals';
 const CHINA_DATA_KEY = 'intelligence:china-decision-signals:v1';

@@ -879,7 +879,7 @@ describe('Seed script structure', () => {
 });
 
 describe('Handler cache-only (get-shipping-rates.ts)', () => {
-  const handlerSrc = readFileSync(resolve(root, 'server/worldmonitor/supply-chain/v1/get-shipping-rates.ts'), 'utf-8');
+  const handlerSrc = readFileSync(resolve(root, 'packages/server/worldmonitor/supply-chain/v1/get-shipping-rates.ts'), 'utf-8');
 
   it('does not import FRED constants or fetch functions', () => {
     assert.ok(!handlerSrc.includes('FRED_API_BASE'));

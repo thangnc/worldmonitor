@@ -14,7 +14,7 @@ import { injectJson, injectYaml } from '../scripts/openapi-inject-async-jobs.mjs
 // 202 Accepted job envelope with a Location header pointing at the
 // GetScenarioStatus poll endpoint. The runtime honors the contract via the
 // setSuccessStatusOverride gateway side-channel
-// (server/worldmonitor/scenario/v1/run-scenario.ts); this test keeps the
+// (packages/server/worldmonitor/scenario/v1/run-scenario.ts); this test keeps the
 // published spec in sync so agents (and the ora.ai / orank scanner, which
 // falls back to the spec for auth-gated routes — check `async-job-pattern`)
 // always see the documented pattern. A fresh `make generate` must re-run the
@@ -80,13 +80,13 @@ describe('OpenAPI async-job pattern contract (RunScenario 202)', () => {
   it('gateway runtime can honor a documented 202 (fail-closed source assertions)', () => {
     // The RunScenario handler is deferred (scripts/lib/sebuf-deferred-services.mjs);
     // the gateway keeps draining + applying a handler's 202 override (POST-200 only).
-    const gateway = readFileSync(resolve(root, 'server/gateway.ts'), 'utf8');
+    const gateway = readFileSync(resolve(root, 'packages/server/gateway.ts'), 'utf8');
     // The handler writes on the principal-stamped clone it was given, so the
     // drain must read that same object (gateway-side-channel-principal.test.ts
     // proves the runtime behaviour for an authenticated caller).
     assert.match(gateway, /drainSuccessStatusOverride\(requestForHandler\)/, 'gateway.ts must drain the status override from the request the handler received');
     // Location must be CORS-exposed or browser agents cannot read the poll URL.
-    const cors = readFileSync(resolve(root, 'server/cors.ts'), 'utf8');
+    const cors = readFileSync(resolve(root, 'packages/server/cors.ts'), 'utf8');
     assert.match(cors, /'Location',/, 'cors.ts EXPOSED_HEADERS must include Location');
   });
 

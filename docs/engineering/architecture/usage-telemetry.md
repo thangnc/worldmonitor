@@ -98,10 +98,10 @@ Code map:
 
 | Concern                                | File                                       |
 |----------------------------------------|--------------------------------------------|
-| Gateway emit points + identity accumulator | `server/gateway.ts`                    |
-| Identity resolver (pure)               | `server/_shared/usage-identity.ts`         |
-| Event shapes, builders, Axiom sink, breaker, ALS scope | `server/_shared/usage.ts`  |
-| Upstream-event emission from fetch helpers | `server/_shared/cached-fetch.ts`, `server/_shared/fetch-json.ts` |
+| Gateway emit points + identity accumulator | `packages/server/gateway.ts`                    |
+| Identity resolver (pure)               | `packages/server/_shared/usage-identity.ts`         |
+| Event shapes, builders, Axiom sink, breaker, ALS scope | `packages/server/_shared/usage.ts`  |
+| Upstream-event emission from fetch helpers | `packages/server/_shared/cached-fetch.ts`, `packages/server/_shared/fetch-json.ts` |
 
 Key invariants:
 
@@ -132,7 +132,7 @@ Two env vars control the pipeline. Both are independent of every other system.
 Vercel project setup:
 
 1. Axiom → create dataset **`wm_api_usage`** (the constant in
-   `server/_shared/usage.ts:18`; rename if you want a different name).
+   `packages/server/_shared/usage.ts:18`; rename if you want a different name).
 2. Axiom → Settings → API Tokens → create an **Ingest** token scoped to that
    dataset. Copy the `xaat-…` value.
 3. Vercel → Project → Settings → Environment Variables, add for the desired
@@ -223,7 +223,7 @@ Then in Axiom:
 
 Three suites cover the pipeline:
 
-1. **Identity unit tests** — `server/__tests__/usage-identity.test.ts` cover the
+1. **Identity unit tests** — `packages/server/__tests__/usage-identity.test.ts` cover the
    pure `buildUsageIdentity()` resolver across every `auth_kind` branch.
 2. **Gateway emit assertions** — `tests/usage-telemetry-emission.test.mts`
    stubs `globalThis.fetch` to capture the Axiom POST body and asserts the
@@ -240,7 +240,7 @@ Run them:
 npx tsx --test tests/usage-telemetry-emission.test.mts \
                 tests/premium-stock-gateway.test.mts \
                 tests/gateway-cdn-origin-policy.test.mts
-npx vitest run server/__tests__/usage-identity.test.ts
+npx vitest run packages/server/__tests__/usage-identity.test.ts
 ```
 
 ---
@@ -297,7 +297,7 @@ All queries assume dataset `wm_api_usage`. Adjust time windows as needed.
 ```
 
 A route dominated by `slow-browser` that *should* be CDN-cached is a hint to
-add an entry to `RPC_CACHE_TIER` in `server/gateway.ts`.
+add an entry to `RPC_CACHE_TIER` in `packages/server/gateway.ts`.
 
 ### Anonymous abuse hotspots
 
@@ -405,7 +405,7 @@ warns in Vercel logs to find the cause.
 ## Adding new telemetry fields
 
 1. Add the field to `RequestEvent` (or `UpstreamEvent`) in
-   `server/_shared/usage.ts`.
+   `packages/server/_shared/usage.ts`.
 2. Extend the corresponding builder (`buildRequestEvent` /
    `buildUpstreamEvent`) — only allowlisted primitives, no untyped objects.
 3. If the value comes from gateway state, set it on the `usage` accumulator

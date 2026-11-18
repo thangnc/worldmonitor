@@ -4,7 +4,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
-import { DIRECT_LLM_GATEWAY_QUOTA_PATHS } from '../server/_shared/direct-llm-quota.ts';
+import { DIRECT_LLM_GATEWAY_QUOTA_PATHS } from '../packages/server/_shared/direct-llm-quota.ts';
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
 
 // ---------------------------------------------------------------------------

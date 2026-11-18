@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { getUsCpiMonthly } from '../server/worldmonitor/economic/v1/get-us-cpi-monthly.ts';
-import { getUsTreasuryParYieldCurve } from '../server/worldmonitor/economic/v1/get-us-treasury-par-yield-curve.ts';
+import { getUsCpiMonthly } from '../packages/server/worldmonitor/economic/v1/get-us-cpi-monthly.ts';
+import { getUsTreasuryParYieldCurve } from '../packages/server/worldmonitor/economic/v1/get-us-treasury-par-yield-curve.ts';
 import {
   CPI_CANONICAL_KEY,
   CPI_DECADE_STARTS,
@@ -10,14 +10,14 @@ import {
   buildUsCpiMonths,
   mergeCpiShards,
   percentChange,
-} from '../server/worldmonitor/economic/v1/us-cpi-monthly.ts';
+} from '../packages/server/worldmonitor/economic/v1/us-cpi-monthly.ts';
 import {
   TREASURY_CANONICAL_KEY,
   TREASURY_LATEST_KEY,
   TREASURY_START_YEAR,
   YIELD_FIELDS,
   treasuryCurvesFromShards,
-} from '../server/worldmonitor/economic/v1/us-treasury-par-yield.ts';
+} from '../packages/server/worldmonitor/economic/v1/us-treasury-par-yield.ts';
 import {
   CPI_CANONICAL_KEY as SEEDED_CPI_KEY,
   CPI_DECADE_STARTS as SEEDED_DECADES,

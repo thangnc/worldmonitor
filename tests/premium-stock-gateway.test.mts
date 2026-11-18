@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it, before, after } from 'node:test';
 
-import { createDomainGateway } from '../server/gateway.ts';
+import { createDomainGateway } from '../packages/server/gateway.ts';
 import { issueSessionToken } from '../api/_session.js';
 import { createRedisFetch } from './helpers/fake-upstash-redis.mts';
 

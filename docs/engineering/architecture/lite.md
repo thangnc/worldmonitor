@@ -30,7 +30,7 @@ The owner's priority (2026-11-08) is **early indicators**: see army activity, co
 | Web bundler | Vite 8 (Rolldown) with `@preact/preset-vite` (2026-11-18). Not Turbopack: it is Next.js-only and needs React. |
 | "For me only" | An access gate in front of the owner's domain. |
 | Hosting | The owner's managed stack (see [Platform map](#platform-map)). The Docker compose stack stays a secondary option. Revisited last in the refactor (Phase 4): the owner pays for Vercel Pro and wants free tiers elsewhere, with an Oracle Cloud Always Free VPS replacing anything Render or Cloudflare would charge for. |
-| AI models | External APIs allowed, through the existing chain in `server/_shared/llm.ts`. Keys and per-call cost are an operating concern. Local Ollama stays optional. |
+| AI models | External APIs allowed, through the existing chain in `packages/server/_shared/llm.ts`. Keys and per-call cost are an operating concern. Local Ollama stays optional. |
 | Conflict data | No ACLED (2026-11-07): API access is hard to obtain. UCDP (`seed-ucdp-events`, `UCDP_ACCESS_TOKEN`) supplies the map events and each country's conflict floor. GDELT country events (`seed-gdelt-bulk-materializer`, no key) supply the realtime conflict and unrest signal; `get-risk-scores.ts` scores them whenever ACLED returns no events. UCDP alone cannot do this, because it is an annual release. Health reports ACLED as `not_configured`, which is not a failure, and the `[CII] ACLED returned 0 events` log line is expected. |
 | Lite map | MapLibre on OpenFreeMap vector tiles, solid land (2026-11-07): free, no key, no usage limits, and already the dashboard's fallback basemap. The style (`src/lite/map/style.ts`) draws only land, water, country borders and place names, colored from the Lite `@theme` tokens; markers, the popup a marker click opens, zoom buttons and the OpenStreetMap credit are Tailwind-styled HTML. No popup is open until a marker is clicked. A card shows every line in full, never clamped; past 340 px it scrolls under an overlay scrollbar (2026-11-10). On every Lite map the marks carry no name beside them and the legend stays closed behind a "Legend" button, so nothing covers the map until the user clicks (owner's decision, 2026-11-08); the map body has a top border under the card header. MapLibre loads only when a screen with a map opens (Geopolitics, Finance or Technology). If OpenFreeMap is down, the map shows the background with markers still placed. Data shading (the reported-violence country fill, GPS-interference hexagons, DDoS shading) is a MapLibre fill layer coloured from the theme tokens (owner's decision, 2026-11-08); every marker follows the map marker grammar below; the country shapes come from `/data/countries.geojson`. Markers, cards, controls and credits stay Preact. |
 | Conflict map design | The owner's design (2026-11-08). UCDP locations are background aggregates (faint red circles) sized by deaths, clustered by zoom (`supercluster`) with the toll printed inside; a click zooms a cluster in or opens a location's event card. Curated hotspots are diamonds, coloured by the dashboard's live escalation score (`src/lite/data/escalation.ts` over `packages/shared/analysis-hotspot-escalation.ts`: news in the last 2 h, CII, unrest, earthquake and military-flight convergence within 150 km, flights within 200 km; no vessels or session history). All curated hotspots are drawn, as on the dashboard, as 16 px judgement diamonds; from 3/5 (elevated) they are amber (red at 5/5) and drawn on top, and below it they are grey diamonds under the UCDP circles, labelled watch or stable in their card; the name is in the card, not beside the diamond. Cards open on click beside the marker with a leader line. The time range 6h, 24h and 7d (default 7d; 30d dropped 2026-11-10, see [Screen design](#screen-design)) sits on the map. It filters the digest-driven parts of the screen and the UCDP events, all counted back from now (owner's choice, for consistency across the screen). UCDP dates events by day, so an event counts when any part of its day falls inside the range. UCDP is a delayed release (GED Candidate, monthly, up to a month behind), so short ranges are often empty; the map's subtitle then names UCDP's newest date. The indicator designs supersede the range and UCDP parts of this row: see Indicator screens below; the code follows in build step 2. A point with two or more UCDP events gets a summary card (date span, violence types, actor pairs, sources), and UCDP's `XXX` codes for actors it cannot identify read "Unidentified group (UCDP XXX100)". |
@@ -91,7 +91,7 @@ Material capability, policy and business changes, not product marketing. Refresh
 | AI/tech event feed | `ai`, `tech` | Not grouped into events |
 | Model and product tracker | — | New panel and sources needed |
 | Policy and governance | `policy` (AI Policy & Regulation news), `ai-regulation`, `src/config/ai-regulations.ts` | Both missing from `full`. `full` has `trade-policy`, a different panel |
-| Research radar | research service (`server/worldmonitor/research/v1/`: arXiv, Hacker News, trending repos) | Data exists; no panel on `full` |
+| Research radar | research service (`packages/server/worldmonitor/research/v1/`: arXiv, Hacker News, trending repos) | Data exists; no panel on `full` |
 | Infrastructure and business | `hardware`, `tech-readiness`, layer `datacenters`, `src/config/ai-datacenters.ts` | `hardware` missing from `full` |
 
 ### Interaction rules
@@ -170,7 +170,7 @@ A slow feed shows the date its data covers ("data to 3 Nov", "week to 7 Nov"), n
 | Indicator | Feed | Default trigger | Label |
 |---|---|---|---|
 | Internet and power outages | `seed-internet-outages` (Cloudflare Radar; key `CLOUDFLARE_API_TOKEN`) | A new country or network outage. The card shows its type, scope and stated cause (power cut, cable cut, government shutdown), not a percentage drop: Cloudflare's outage notices and traffic anomalies carry none | Reported (Cloudflare) |
-| Cloud and AI service outages | `infra:service-statuses:v1` from `server/worldmonitor/infrastructure/v1/list-service-statuses.ts` (public status pages of AWS, Azure, Google Cloud, Cloudflare, GitHub, OpenAI, Anthropic and others; no key). `seed-service-statuses` warms the upstream production URL, so the owner's deployment warms its own endpoint | A watched provider reports a partial or major outage | Official (provider status page) |
+| Cloud and AI service outages | `infra:service-statuses:v1` from `packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts` (public status pages of AWS, Azure, Google Cloud, Cloudflare, GitHub, OpenAI, Anthropic and others; no key). `seed-service-statuses` warms the upstream production URL, so the owner's deployment warms its own endpoint | A watched provider reports a partial or major outage | Official (provider status page) |
 | Exploited vulnerabilities | `seed-cve-reference` (CISA KEV subset of NVD; key `NVD_API_KEY` optional) | A new known-exploited CVE, or one naming a watchlist vendor | Official (CISA) |
 | Attack infrastructure | `seed-cyber-threats` (abuse.ch Feodo Tracker and URLhaus, AlienVault OTX, AbuseIPDB, C2IntelFeeds; keys `URLHAUS_AUTH_KEY`, `OTX_API_KEY`, `ABUSEIPDB_API_KEY`) | A spike against its 7-day average. Needs the count history in [Baselines](#baselines) | Reported (threat feeds) |
 | Model and product releases | None yet ([gap 5](#gaps-to-build)) | — | — |
@@ -408,7 +408,7 @@ The owner's front page: a sidebar, the cross-domain Briefing at `/lite` (home), 
 
 The table describes the screens as built. The target screens are in [Screen design](#screen-design); each build step updates its rows.
 
-**Corroboration.** Every Lite status, tag and pill comes from `assessCorroboration` in `server/_shared/corroboration.ts`, the rule the full dashboard's news and insights badges use, applied to each digest item (`corroborationOf` in `src/lite/data/transforms.ts`). It counts publisher families from the digest's origin-aware `corroborationCount`, so one newsroom's feeds and reprints count once:
+**Corroboration.** Every Lite status, tag and pill comes from `assessCorroboration` in `packages/server/_shared/corroboration.ts`, the rule the full dashboard's news and insights badges use, applied to each digest item (`corroborationOf` in `src/lite/data/transforms.ts`). It counts publisher families from the digest's origin-aware `corroborationCount`, so one newsroom's feeds and reprints count once:
 
 - **Corroborated**: two or more publishers.
 - **Single publisher**: one.
@@ -457,12 +457,12 @@ Goal: turn many reports into a few evidence-linked events, keep uncertainty visi
 | Story similarity | Yes | `packages/shared/story-identity.js` (server), `packages/shared/news-clustering-core.js` (client and MCP), `scripts/lib/brief-dedup.mjs` (digest embeddings) |
 | Syndication and publisher families | Yes | `packages/shared/syndication.js`, `packages/shared/publisher-families.js` |
 | Source tier and credibility | Yes | `packages/shared/source-tiers.json`, `packages/shared/news-credibility.js`, `packages/shared/source-provenance.ts` |
-| Corroboration | Yes | `server/_shared/corroboration.ts` |
-| Impact and importance | Yes (several) | `computeImportanceScore` in `server/worldmonitor/news/v1/list-feed-digest.ts`, `scoreImportance` in `scripts/_clustering.mjs`, CII, hotspot escalation |
+| Corroboration | Yes | `packages/server/_shared/corroboration.ts` |
+| Impact and importance | Yes (several) | `computeImportanceScore` in `packages/server/worldmonitor/news/v1/list-feed-digest.ts`, `scoreImportance` in `scripts/_clustering.mjs`, CII, hotspot escalation |
 | Momentum | Partial | `src/services/velocity.ts`, story lifecycle |
 | Trend and anomaly | Yes | `packages/shared/keyword-spike-core.js`, temporal-baseline z-scores |
 | Grounded briefs with citations and abstention | Yes | country brief, `scripts/_insights-brief.mjs`, `packages/shared/brief-llm-core.js`, `packages/shared/brief-claim-rules.js` |
-| LLM chain | Yes | `server/_shared/llm.ts` |
+| LLM chain | Yes | `packages/server/_shared/llm.ts` |
 
 The three similarity definitions are separate on purpose (`packages/shared/news-clustering-core.js` header). Do not merge them without a product decision.
 

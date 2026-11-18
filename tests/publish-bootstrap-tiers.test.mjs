@@ -427,7 +427,7 @@ describe('publisher deployment boundaries', () => {
     assert.match(source, /from '\.\.\/packages\/shared\/bootstrap-tier-keys\.js'/);
     assert.match(source, /from '\.\.\/packages\/shared\/canada-alerts-cutover\.js'/);
     assert.match(source, /from '\.\.\/packages\/shared\/bootstrap-tier-envelope\.js'/);
-    assert.doesNotMatch(source, /from ['"]\.\.\/(?:api|src|server|workers)\//);
+    assert.doesNotMatch(source, /from ['"]\.\.\/(?:api|src|server|packages\/server|workers)\//);
   });
 
   it('publisher and Worker share one envelope schema version', async () => {

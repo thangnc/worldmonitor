@@ -1,7 +1,7 @@
 /**
  * A loopback page must not redirect /api/ to a remote API origin.
  *
- * `api/_cors.js` and `server/cors.ts` both drop bare `localhost` / `127.0.0.1`
+ * `api/_cors.js` and `packages/server/cors.ts` both drop bare `localhost` / `127.0.0.1`
  * from the allow-list when NODE_ENV is production — deliberately, with a
  * comment saying so. So a browser on http://127.0.0.1:<port> that sends its
  * /api/ traffic to https://api.worldmonitor.app gets 403 on every call and

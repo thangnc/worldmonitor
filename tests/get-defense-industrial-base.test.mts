@@ -5,7 +5,7 @@ import {
   buildDefenseIndustrialResponse,
   toDefenseIndustrialMetric,
 } from '../packages/shared/defense-industrial-response.ts';
-import { validateGeneratedRequest } from '../server/request-validator.ts';
+import { validateGeneratedRequest } from '../packages/server/request-validator.ts';
 import { isPublicSharedRpcRequest } from '../src/shared/public-rpc-cache.ts';
 
 describe('get-defense-industrial-base response mapping', () => {

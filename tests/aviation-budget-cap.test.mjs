@@ -2,7 +2,7 @@
  * Tests for the AviationStack monthly call budget — the hard ceiling that keeps
  * total paid usage under the plan limit.
  *
- *   reserveAviationStackCalls()  server/worldmonitor/aviation/v1/_avstack-budget.ts
+ *   reserveAviationStackCalls()  packages/server/worldmonitor/aviation/v1/_avstack-budget.ts
  *   seeder backstop              scripts/seed-aviation.mjs
  *
  * Behavioural tests mock the Upstash pipeline so the shared counter is
@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 import {
   aviationStackBudgetCycle,
   avstackBudgetKey as serverAvstackBudgetKey,
-} from '../server/worldmonitor/aviation/v1/_avstack-budget.ts';
+} from '../packages/server/worldmonitor/aviation/v1/_avstack-budget.ts';
 import { avstackBudgetKey as seederAvstackBudgetKey } from '../scripts/seed-aviation.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -39,7 +39,7 @@ describe('aviation budget: reserveAviationStackCalls enforces ceilings', () => {
     process.env.UPSTASH_REDIS_REST_TOKEN = 'test-token';
     delete process.env.LOCAL_API_MODE;
     ({ reserveAviationStackCalls } = await import(
-      '../server/worldmonitor/aviation/v1/_avstack-budget.ts'
+      '../packages/server/worldmonitor/aviation/v1/_avstack-budget.ts'
     ));
   });
 
@@ -215,7 +215,7 @@ describe('aviation budget: call sites are wired to the cap', () => {
     // account does not have, so the cap never fired. These must stay under the
     // real plan, and the request ceiling must stay well below the hard one or
     // panel traffic starves the curated seeder.
-    const src = read('server/worldmonitor/aviation/v1/_avstack-budget.ts');
+    const src = read('packages/server/worldmonitor/aviation/v1/_avstack-budget.ts');
     const hardCap = Number(/AVIATIONSTACK_MONTHLY_BUDGET', ([\d_]+)\)/.exec(src)?.[1].replace(/_/g, ''));
     const requestCap = Number(/AVIATIONSTACK_REQUEST_BUDGET', ([\d_]+)\)/.exec(src)?.[1].replace(/_/g, ''));
     const seederDefault = Number(

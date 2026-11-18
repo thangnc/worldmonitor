@@ -13,7 +13,7 @@ import { join } from 'node:path';
 
 import { HS4_CODES, HS4_LABELS } from '../scripts/shared/comtrade';
 import { recentPeriod } from '../scripts/shared/comtrade-period.mjs';
-import { lazyFetchBilateralHs4, UPSTREAM_GAP_MS } from '../server/worldmonitor/supply-chain/v1/_bilateral-hs4-lazy.js';
+import { lazyFetchBilateralHs4, UPSTREAM_GAP_MS } from '../packages/server/worldmonitor/supply-chain/v1/_bilateral-hs4-lazy.js';
 
 const ORIGINAL_FETCH = globalThis.fetch;
 let fetchCalls: string[] = [];

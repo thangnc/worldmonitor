@@ -27,7 +27,7 @@ import {
   crudeImportOriginSection,
   fetchCrudeImportOriginRows,
 } from '../scripts/seed-oil-trade-series.mjs';
-import { GULF_PARTNER_CODES } from '../server/worldmonitor/intelligence/v1/_shock-compute.ts';
+import { GULF_PARTNER_CODES } from '../packages/server/worldmonitor/intelligence/v1/_shock-compute.ts';
 import { PRE_CRISIS_WINDOW } from '../packages/shared/hormuz-crisis.js';
 
 const NOW = Date.parse('2026-10-18T12:00:00Z');

@@ -49,8 +49,8 @@ import {
   STRATEGIC_RISK_SCALE_FACTOR,
   STRATEGIC_RISK_SCALE_FLOOR,
   STRATEGIC_RISK_TOP_N,
-} from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
-import { TIER1_COUNTRIES as SERVER_TIER1_COUNTRIES } from '../server/worldmonitor/intelligence/v1/_shared.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
+import { TIER1_COUNTRIES as SERVER_TIER1_COUNTRIES } from '../packages/server/worldmonitor/intelligence/v1/_shared.ts';
 import {
   BASELINE_RISK,
   CII_REALTIME_REQUIRED_SIGNAL_FAMILY_COUNT,
@@ -72,7 +72,7 @@ import {
   normalizeRiskScoreAdvisoryDisclosure,
   normalizeCountryName,
   selectCiiTrendPriorSnapshot,
-} from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
 import { CII_CLIMATE_ZONE_COUNTRIES } from '../packages/shared/cii-climate-zones.ts';
 import {
   CII_BASELINE_RISK as SHARED_BASELINE_RISK,
@@ -1533,6 +1533,7 @@ describe('CII scoring', () => {
     const handlerPath = resolve(
       fileURLToPath(new URL('.', import.meta.url)),
       '..',
+      'packages',
       'server',
       'worldmonitor',
       'intelligence',
@@ -1784,7 +1785,7 @@ describe('CII scoring', () => {
       `No CII protocol snapshot for ${CII_FORMULA_VERSION}. Add a new snapshot hash when bumping CII_FORMULA_VERSION.`,
     );
 
-    const getRiskScoresSource = readRepoFile('server/worldmonitor/intelligence/v1/get-risk-scores.ts');
+    const getRiskScoresSource = readRepoFile('packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts');
     const climateZoneSource = readRepoFile('packages/shared/cii-climate-zones.ts');
     const scoreFormulaLiterals = extractScoreFormulaLiterals(getRiskScoresSource);
     const scoreHelperInputs = extractScoreHelperInputSnapshot(getRiskScoresSource, climateZoneSource);
@@ -2184,7 +2185,7 @@ describe('CII scoring', () => {
   it('handler marks stale-cache and cold-cache fallback responses as degraded', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const source = readFileSync(
-      resolve(root, 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
+      resolve(root, 'packages', 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
       'utf8',
     );
 
@@ -2203,7 +2204,7 @@ describe('CII scoring', () => {
   it('handler preserves live cached payloads if advisory backfill rebuild fails', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const source = readFileSync(
-      resolve(root, 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
+      resolve(root, 'packages', 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
       'utf8',
     );
 
@@ -2370,7 +2371,7 @@ describe('CII scoring', () => {
   it('methodology doc discloses advisory fallback and CII attribution caveats', () => {
     const methodologyDoc = readRepoFile('docs/engineering/methodology/cii-risk-scores.md');
     const overviewDoc = readRepoFile('docs/engineering/methodology/country-instability-index.md');
-    const riskScoresSource = readRepoFile('server/worldmonitor/intelligence/v1/get-risk-scores.ts');
+    const riskScoresSource = readRepoFile('packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts');
     const fallbackBlock = riskScoresSource.match(/const ADVISORY_LEVELS_FALLBACK[\s\S]*?\};/)?.[0] ?? '';
     assert.ok(fallbackBlock, 'get-risk-scores.ts must keep the advisory fallback table inspectable.');
 
@@ -2584,7 +2585,7 @@ describe('CII scoring', () => {
   it('risk-score Redis payload keys are derived from the CII formula version', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const source = readFileSync(
-      resolve(root, 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
+      resolve(root, 'packages', 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
       'utf8',
     );
     assert.match(
@@ -2624,14 +2625,14 @@ describe('CII scoring', () => {
         expectedKeys: [expectedLiveKey, expectedStaleKey, expectedTrendPrefix],
       },
       {
-        relPath: 'server/_shared/cache-keys.ts',
+        relPath: 'packages/server/_shared/cache-keys.ts',
         expectedKeys: [expectedLiveKey, expectedStaleKey, expectedTrendPrefix],
       },
       { relPath: 'packages/shared/bootstrap-tier-keys.js', expectedKeys: [expectedStaleKey] },
       { relPath: 'api/bootstrap.js', expectedRefs: ['BOOTSTRAP_CACHE_KEYS'] },
       { relPath: 'api/health.js', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale', 'CII_RISK_SCORE_CACHE_KEYS.live'] },
-      { relPath: 'server/worldmonitor/intelligence/v1/chat-analyst-context.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
-      { relPath: 'server/worldmonitor/intelligence/v1/get-country-risk.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
+      { relPath: 'packages/server/worldmonitor/intelligence/v1/chat-analyst-context.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
+      { relPath: 'packages/server/worldmonitor/intelligence/v1/get-country-risk.ts', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'scripts/seed-cross-source-signals.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'scripts/seed-forecasts.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },
       { relPath: 'scripts/regional-snapshot/balance-vector.mjs', expectedRefs: ['CII_RISK_SCORE_CACHE_KEYS.stale'] },

@@ -39,6 +39,7 @@ const LEGACY_COUNTRY_SNAPSHOT_PATH = path.join(
 );
 const RESILIENCE_SCORER_PATH = path.join(
   REPO_ROOT,
+  'packages',
   'server',
   'worldmonitor',
   'resilience',
@@ -191,7 +192,7 @@ async function loadResilienceMethodologyMetadata() {
 let resilienceCacheKeysPromise;
 function loadResilienceCacheKeys() {
   resilienceCacheKeysPromise ||= fs.readFile(
-    path.join(REPO_ROOT, 'server', 'worldmonitor', 'resilience', 'v1', '_shared.ts'),
+    path.join(REPO_ROOT, 'packages', 'server', 'worldmonitor', 'resilience', 'v1', '_shared.ts'),
     'utf8',
   ).then((sourceText) => {
     function exportedString(name) {

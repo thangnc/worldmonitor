@@ -1,5 +1,5 @@
 /**
- * PARITY: server/_shared/notify-fields.ts (Edge, consumed by api/notify.ts)
+ * PARITY: packages/server/_shared/notify-fields.ts (Edge, consumed by api/notify.ts)
  * and scripts/shared/notify-fields.cjs (Railway relay, consumed by
  * scripts/notification-relay.cjs) must stay behaviour-equivalent.
  *
@@ -19,7 +19,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const cjs = require('../scripts/shared/notify-fields.cjs');
-const ts = await import('../server/_shared/notify-fields.ts');
+const ts = await import('../packages/server/_shared/notify-fields.ts');
 
 // DERIVED from the modules, never hand-listed. A hand-written name list is a
 // third copy that drifts from the two it is meant to pin: add a sanitizer to

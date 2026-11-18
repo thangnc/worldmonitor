@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizeSanctionsName, screenSanctions } from '../server/_shared/sanctions-screen.ts';
+import { normalizeSanctionsName, screenSanctions } from '../packages/server/_shared/sanctions-screen.ts';
 
 const index = [
   { id: 'SDN:1', name: 'Café Maritime Holdings, LLC', et: 'entity', cc: ['RU'], pr: ['SDN'],

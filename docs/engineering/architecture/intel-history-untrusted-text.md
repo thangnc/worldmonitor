@@ -102,7 +102,7 @@ A consuming agent that ignores the marking is still injectable. Provenance
 marking reduces the risk; it is not a boundary. We accept that, for the same
 reason we accept it on the news tools: the alternative — mutating an
 intelligence archive on a bypassable blocklist heuristic — costs the product's
-core property and does not close the hole either. `server/_shared/llm-sanitize.js`
+core property and does not close the hole either. `packages/server/_shared/llm-sanitize.js`
 says the same thing about itself in its own header.
 
 What makes the durable case *different from* the news case, and therefore

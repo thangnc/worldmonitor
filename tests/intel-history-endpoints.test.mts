@@ -17,9 +17,9 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
-import { getIntelTimeline } from '../server/worldmonitor/intelligence/v1/get-intel-timeline';
-import { getSimilarEvents } from '../server/worldmonitor/intelligence/v1/get-similar-events';
-import { searchIntelHistory } from '../server/worldmonitor/intelligence/v1/search-intel-history';
+import { getIntelTimeline } from '../packages/server/worldmonitor/intelligence/v1/get-intel-timeline';
+import { getSimilarEvents } from '../packages/server/worldmonitor/intelligence/v1/get-similar-events';
+import { searchIntelHistory } from '../packages/server/worldmonitor/intelligence/v1/search-intel-history';
 import { validationFailure } from './helpers/validation-failure.mts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -127,9 +127,9 @@ const recordProtoSrc = read('packages/contracts/proto/worldmonitor/intelligence/
 const searchProtoSrc = read('packages/contracts/proto/worldmonitor/intelligence/v1/search_intel_history.proto');
 const timelineProtoSrc = read('packages/contracts/proto/worldmonitor/intelligence/v1/get_intel_timeline.proto');
 const similarProtoSrc = read('packages/contracts/proto/worldmonitor/intelligence/v1/get_similar_events.proto');
-const handlerIndexSrc = read('server/worldmonitor/intelligence/v1/handler.ts');
-const gatewaySrc = read('server/gateway.ts');
-const rateLimitSrc = read('server/_shared/rate-limit.ts');
+const handlerIndexSrc = read('packages/server/worldmonitor/intelligence/v1/handler.ts');
+const gatewaySrc = read('packages/server/gateway.ts');
+const rateLimitSrc = read('packages/server/_shared/rate-limit.ts');
 const openApiJson = JSON.parse(read('packages/contracts/openapi/IntelligenceService.openapi.json')) as {
   paths: Record<string, Record<string, unknown>>;
 };

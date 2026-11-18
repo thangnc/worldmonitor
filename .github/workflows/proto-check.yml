@@ -49,34 +49,34 @@ env:
     scripts/shared/geography.js
     scripts/shared/giving-published-estimate-claims.json
     scripts/shared/iso2-to-region.json
-    server/_shared/api-key-rate-limit.ts
-    server/_shared/bounded-jmespath.ts
-    server/_shared/bounded-json.ts
-    server/_shared/cache-contract.ts
-    server/_shared/client-ip.ts
-    server/_shared/country-history-access.ts
-    server/_shared/deprecation-policy.ts
-    server/_shared/direct-llm-quota.ts
-    server/_shared/high-usage-alarm.ts
-    server/_shared/idempotency.ts
-    server/_shared/internal-auth.ts
-    server/_shared/rate-limit.ts
-    server/_shared/redis.ts
-    server/_shared/response-headers.ts
-    server/_shared/response-projection.ts
-    server/_shared/seed-envelope.ts
-    server/_shared/server-sub-request-dispatch.ts
-    server/_shared/sub-request-admission.ts
-    server/_shared/usage-identity.ts
-    server/_shared/usage.ts
-    server/cors.ts
-    server/error-mapper.ts
-    server/gateway.ts
-    server/request-validator.ts
-    server/router.ts
-    server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts
-    server/worldmonitor/consumer-prices/v1/_selection.ts
-    server/worldmonitor/supply-chain/v1/scenario-templates.ts
+    packages/server/_shared/api-key-rate-limit.ts
+    packages/server/_shared/bounded-jmespath.ts
+    packages/server/_shared/bounded-json.ts
+    packages/server/_shared/cache-contract.ts
+    packages/server/_shared/client-ip.ts
+    packages/server/_shared/country-history-access.ts
+    packages/server/_shared/deprecation-policy.ts
+    packages/server/_shared/direct-llm-quota.ts
+    packages/server/_shared/high-usage-alarm.ts
+    packages/server/_shared/idempotency.ts
+    packages/server/_shared/internal-auth.ts
+    packages/server/_shared/rate-limit.ts
+    packages/server/_shared/redis.ts
+    packages/server/_shared/response-headers.ts
+    packages/server/_shared/response-projection.ts
+    packages/server/_shared/seed-envelope.ts
+    packages/server/_shared/server-sub-request-dispatch.ts
+    packages/server/_shared/sub-request-admission.ts
+    packages/server/_shared/usage-identity.ts
+    packages/server/_shared/usage.ts
+    packages/server/cors.ts
+    packages/server/error-mapper.ts
+    packages/server/gateway.ts
+    packages/server/request-validator.ts
+    packages/server/router.ts
+    packages/server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts
+    packages/server/worldmonitor/consumer-prices/v1/_selection.ts
+    packages/server/worldmonitor/supply-chain/v1/scenario-templates.ts
     packages/shared/aircraft-emergencies.ts
     packages/shared/attribution-rider.ts
     packages/shared/compare-and-delete-script.cjs

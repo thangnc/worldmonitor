@@ -23,7 +23,7 @@ import { describe, it } from 'node:test';
 import {
   scoreFoodWater,
   type ResilienceSeedReader,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 const TEST_ISO2 = 'XX';
 

@@ -453,10 +453,10 @@ async function fetchMirrorRows(spec, nowMs, keyIndex) {
 // ── Crude import origin (importer-declared) ─────────────────────────────────
 
 // UN M49 codes of the exporters loading inside the Strait of Hormuz; the same
-// set as GULF_PARTNER_CODES in server/worldmonitor/intelligence/v1/_shock-compute.ts.
+// set as GULF_PARTNER_CODES in packages/server/worldmonitor/intelligence/v1/_shock-compute.ts.
 export const CRUDE_ORIGIN_GULF_PARTNERS = [682, 784, 368, 414, 364, 634, 48];
 // Exporters with a Hormuz bypass route (SA, AE, IQ): HORMUZ_BYPASS_BY_EXPORTER in
-// server/worldmonitor/intelligence/v1/_hormuz-bypass.ts. Their values are also
+// packages/server/worldmonitor/intelligence/v1/_hormuz-bypass.ts. Their values are also
 // stored per exporter so the shock model can apply recovery by supplier.
 export const CRUDE_ORIGIN_BYPASS_PARTNERS = [682, 784, 368];
 const BYPASS_PARTNER_ISO2 = { 682: 'SA', 784: 'AE', 368: 'IQ' };

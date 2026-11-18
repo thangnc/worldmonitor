@@ -1,5 +1,5 @@
-// Types for scripts/shared/wildfire-fires-summary.mjs so server/*.ts consumers
-// stay covered by `npm run typecheck:api` (tsconfig.api.json includes server/).
+// Types for scripts/shared/wildfire-fires-summary.mjs so packages/server/*.ts consumers
+// stay covered by `npm run typecheck:api` (tsconfig.api.json includes packages/server/).
 
 export declare const WILDFIRE_FIRES_SUMMARY_KEY: 'wildfire:fires-summary:v1';
 export declare const WILDFIRE_FIRES_SUMMARY_META_KEY: 'seed-meta:wildfire:fires-summary';

@@ -20,9 +20,9 @@ import {
   listStablecoinMarkets,
   UNRESOLVED_REASONS,
   DATA_STATUSES,
-} from '../server/worldmonitor/market/v1/list-stablecoin-markets.ts';
-import { __clearLocalUnavailableBackoffForTests } from '../server/_shared/redis.ts';
-import { sha256Hex } from '../server/_shared/hash.ts';
+} from '../packages/server/worldmonitor/market/v1/list-stablecoin-markets.ts';
+import { __clearLocalUnavailableBackoffForTests } from '../packages/server/_shared/redis.ts';
+import { sha256Hex } from '../packages/server/_shared/hash.ts';
 
 const REDIS_URL = 'https://redis.example.test';
 const SEED_KEY = 'market:stablecoins:v1';

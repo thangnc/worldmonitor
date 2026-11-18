@@ -11,11 +11,11 @@ import { fileURLToPath } from 'node:url';
 import { setImmediate as nextTurn } from 'node:timers/promises';
 
 import { timingSafeIncludes } from '../api/_crypto.js';
-import { peekIdempotency } from '../server/_shared/idempotency.ts';
+import { peekIdempotency } from '../packages/server/_shared/idempotency.ts';
 import {
   _resetTrackedAircraftCacheForTests,
   getTrackedAircraftIcao24s,
-} from '../server/worldmonitor/military/v1/_tracked-aircraft.ts';
+} from '../packages/server/worldmonitor/military/v1/_tracked-aircraft.ts';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel: string) => readFileSync(resolve(repoRoot, rel), 'utf8');
@@ -64,7 +64,7 @@ describe('constant-time comparisons hash their inputs in one wave', () => {
   });
 });
 
-describe('server/_shared/idempotency.ts hashes body and key together', () => {
+describe('packages/server/_shared/idempotency.ts hashes body and key together', () => {
   const savedUrl = process.env.UPSTASH_REDIS_REST_URL;
   const savedToken = process.env.UPSTASH_REDIS_REST_TOKEN;
   afterEach(() => {
@@ -141,19 +141,19 @@ function functionContaining(source: string, marker: string): string {
 
 describe('request handlers', () => {
   it('classify-event hashes the title alongside the routing lookup', () => {
-    const source = read('server/worldmonitor/intelligence/v1/classify-event.ts');
+    const source = read('packages/server/worldmonitor/intelligence/v1/classify-event.ts');
     assert.doesNotMatch(source, /const aiRouting = await resolveAiRouting\(ctx\.request\);\s*\n\s*const cacheKey = `\$\{await buildClassifyCacheKey/);
     assert.match(source, /Promise\.all\(\[\s*resolveAiRouting\(ctx\.request\),\s*buildClassifyCacheKey\(title\)/);
   });
 
   it('get-risk-scores reads its auxiliary fallbacks together', () => {
-    const body = functionContaining(read('server/worldmonitor/intelligence/v1/get-risk-scores.ts'), 'async function fetchAuxiliarySources');
+    const body = functionContaining(read('packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts'), 'async function fetchAuxiliarySources');
     assert.doesNotMatch(body, /\(await readRiskInputs\(\[\{ key: 'wildfire:fires:v1'/, 'the fires fallback must not wait for the displacement fallback');
     assert.doesNotMatch(body, /const borderSnapshots = await readRiskInputs\(/, 'the border reads must not wait for the fallbacks');
   });
 
   it('get-country-energy-profile reads the regional feeds with the seeds', () => {
-    const source = read('server/worldmonitor/intelligence/v1/get-country-energy-profile.ts');
+    const source = read('packages/server/worldmonitor/intelligence/v1/get-country-energy-profile.ts');
     assert.doesNotMatch(source, /const regionalEnergyFeeds = await readRegionalEnergyFeeds\(/);
     assert.match(source, /readRegionalEnergyFeeds\(code, getRawJson\),?\s*\]\)/);
   });

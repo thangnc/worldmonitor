@@ -44,7 +44,7 @@ const REQUIRED_REGISTRATIONS = Object.freeze([
   ['packages/shared/decision-signal-provenance-families.ts', ...CHINA_DECISION_PARITY_MANIFEST.map(({ provenanceFamily }) => `${provenanceFamily}: Object.freeze({`)],
   ['packages/contracts/proto/worldmonitor/intelligence/v1/get_china_decision_signals.proto', 'message GetChinaDecisionSignalsResponse'],
   ['packages/contracts/proto/worldmonitor/intelligence/v1/service.proto', 'GetChinaDecisionSignals'],
-  ['server/gateway.ts', `'${ROUTE}': 'fast'`, `'${ROUTE}',`],
+  ['packages/server/gateway.ts', `'${ROUTE}': 'fast'`, `'${ROUTE}',`],
   ['packages/shared/bootstrap-tier-keys.js', `chinaDecisionSignals: '${CANONICAL_KEY}'`],
   ['api/_bootstrap-tier-keys.js', `chinaDecisionSignals: '${CANONICAL_KEY}'`],
   ['api/bootstrap.js', 'chinaDecisionSignals: {', "s-maxage=900"],
@@ -130,7 +130,7 @@ export const CHINA_DECISION_STRUCTURAL_CHECKS = Object.freeze([
   }),
   Object.freeze({
     id: 'gateway-cache-tier',
-    file: 'server/gateway.ts',
+    file: 'packages/server/gateway.ts',
     intent: `RPC_CACHE_TIER serves ${ROUTE} at the '${ROUTE_CACHE_TIER}' tier`,
     verify(source) {
       const body = extractDelimitedBlock(source, 'const RPC_CACHE_TIER');
@@ -145,7 +145,7 @@ export const CHINA_DECISION_STRUCTURAL_CHECKS = Object.freeze([
   }),
   Object.freeze({
     id: 'gateway-public-no-auth',
-    file: 'server/gateway.ts',
+    file: 'packages/server/gateway.ts',
     intent: `PUBLIC_NO_AUTH_RPC_PATHS keeps ${ROUTE} reachable anonymously`,
     verify(source) {
       const body = extractDelimitedBlock(source, 'export const PUBLIC_NO_AUTH_RPC_PATHS', '[', ']');

@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { listNavigationalWarnings } from '../server/worldmonitor/maritime/v1/list-navigational-warnings.ts';
-import { CHOKEPOINTS, getChokepointStatus } from '../server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts';
+import { listNavigationalWarnings } from '../packages/server/worldmonitor/maritime/v1/list-navigational-warnings.ts';
+import { CHOKEPOINTS, getChokepointStatus } from '../packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts';
 
 const originalFetch = globalThis.fetch;
 const originalDateNow = Date.now;
@@ -71,8 +71,8 @@ describe('chokepoint source availability', () => {
   it('uses append-only proto fields and the private NGA cache key', async () => {
     const maritimeProto = await readFile('packages/contracts/proto/worldmonitor/maritime/v1/list_navigational_warnings.proto', 'utf8');
     const supplyChainProto = await readFile('packages/contracts/proto/worldmonitor/supply_chain/v1/supply_chain_data.proto', 'utf8');
-    const maritimeHandler = await readFile('server/worldmonitor/maritime/v1/list-navigational-warnings.ts', 'utf8');
-    const cableHealthHandler = await readFile('server/worldmonitor/infrastructure/v1/get-cable-health.ts', 'utf8');
+    const maritimeHandler = await readFile('packages/server/worldmonitor/maritime/v1/list-navigational-warnings.ts', 'utf8');
+    const cableHealthHandler = await readFile('packages/server/worldmonitor/infrastructure/v1/get-cable-health.ts', 'utf8');
 
     assert.match(maritimeProto, /bool data_available = 3;/);
     assert.match(supplyChainProto, /bool navigational_warnings_available = 17;/);

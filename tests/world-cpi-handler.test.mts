@@ -1,8 +1,8 @@
 import { strict as assert } from 'node:assert';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { getWorldCpiMonthly } from '../server/worldmonitor/economic/v1/get-world-cpi-monthly';
-import { WORLD_CPI_CANONICAL_KEYS, WORLD_CPI_LATEST_KEYS } from '../server/worldmonitor/economic/v1/world-cpi-monthly';
+import { getWorldCpiMonthly } from '../packages/server/worldmonitor/economic/v1/get-world-cpi-monthly';
+import { WORLD_CPI_CANONICAL_KEYS, WORLD_CPI_LATEST_KEYS } from '../packages/server/worldmonitor/economic/v1/world-cpi-monthly';
 
 // Mirrors the US CPI handler test: capture fetch, capture the Redis env, and
 // serve Upstash REST `{result}` envelopes. The handler reads through

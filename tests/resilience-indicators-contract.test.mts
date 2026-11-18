@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { INDICATOR_REGISTRY } from '../server/worldmonitor/resilience/v1/_indicator-registry.ts';
+import { INDICATOR_REGISTRY } from '../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts';
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -79,7 +79,7 @@ describe('resilience indicator RPC contract', () => {
 
   it('registers the premium gate and slow cache tier', () => {
     assert.ok(PREMIUM_RPC_PATHS.has(ROUTE));
-    const gateway = read('server/gateway.ts');
+    const gateway = read('packages/server/gateway.ts');
     assert.match(gateway, /'\/api\/resilience\/v1\/get-resilience-indicators': 'slow'/);
   });
 });

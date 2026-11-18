@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 
-import { normalizePhysicalDivergenceSnapshot } from '../server/_shared/physical-divergence-snapshot.ts';
+import { normalizePhysicalDivergenceSnapshot } from '../packages/server/_shared/physical-divergence-snapshot.ts';
 import {
   PHYSICAL_DIVERGENCE_CONTRACT,
   buildPhysicalStressComposite,

@@ -4,7 +4,7 @@ export interface UpstashJsonReadResult {
 }
 
 /**
- * Deployment key prefix — mirror of server/_shared/redis.ts::getKeyPrefix.
+ * Deployment key prefix — mirror of packages/server/_shared/redis.ts::getKeyPrefix.
  * '' in production (and in any runtime without VERCEL_ENV, e.g. the Railway
  * digest service importing this module). Computed per call (never memoized),
  * so tests may mutate VERCEL_ENV between calls.

@@ -53,7 +53,7 @@ function isEnabledEnv(name, defaultValue) {
 }
 
 function isResiliencePillarCombineEnabled() {
-  // Mirrors server/worldmonitor/resilience/v1/_shared.ts exactly: only an
+  // Mirrors packages/server/worldmonitor/resilience/v1/_shared.ts exactly: only an
   // explicit normalized `false` selects the rollback formula. Unset and all
   // other values keep the production-default pillar formula active.
   return process.env.RESILIENCE_PILLAR_COMBINE_ENABLED?.trim().toLowerCase() !== 'false';
@@ -286,7 +286,7 @@ function fenceHealthMutations(commands, token) {
 // Middle East strike feed (conflict:iran-events:v1, produced by ais-relay from
 // Telegram + GDELT). Default OFF everywhere; IRAN_EVENTS_ENABLED=true enables
 // the producer and every reader. Mirrors the backend *_ENABLED env idiom
-// (server/worldmonitor/resilience/v1/_shared.ts).
+// (packages/server/worldmonitor/resilience/v1/_shared.ts).
 const IRAN_EVENTS_ENABLED = (process.env.IRAN_EVENTS_ENABLED ?? 'false').toLowerCase() === 'true';
 
 const BOOTSTRAP_KEYS = {
@@ -2304,7 +2304,7 @@ const SEED_META = {
     minRecordCount: 180,
     minPoolCounts: { population: 150, food: 80, energy: 120, demographics: 150, technology: 110, defense: 30 },
     // These minimums are byte-identical to SCORECARD_PUBLICATION_FLOORS in
-    // server/worldmonitor/scorecard/v1/_snapshot.ts, so the producer refuses to
+    // packages/server/worldmonitor/scorecard/v1/_snapshot.ts, so the producer refuses to
     // publish any cohort that would trip the shortfall check — health can only
     // ever see a passing cohort or a stale one, and COVERAGE_PARTIAL is
     // unreachable here. This margin makes the remaining headroom observable
@@ -2822,7 +2822,7 @@ const ON_DEMAND_KEYS = new Set([
   // absent — which is the alarm a future operator needs before flipping
   // `RESILIENCE_ENERGY_V2_ENABLED=true`. The scorer fails closed via
   // ResilienceConfigurationError if the flag flips before the seeds
-  // populate (server/worldmonitor/resilience/v1/_dimension-scorers.ts
+  // populate (packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts
   // #scoreEnergy). Do NOT add these labels back to ON_DEMAND_KEYS
   // without revisiting that plan.
   'displacementPrev', // covered by cascade onto current-year displacement; empty most of the year

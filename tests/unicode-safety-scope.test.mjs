@@ -30,7 +30,7 @@ describe('unicode safety scan scope', () => {
   it('pins the scanned roots', () => {
     assert.deepEqual(SCAN_ROOTS, [
       'src',
-      'server',
+      'packages/server',
       'api',
       'scripts',
       'tests',
@@ -59,7 +59,7 @@ describe('unicode safety scan scope', () => {
     // later blanket-excluded, exactly one of these flips.
     for (const path of [
       'src/services/i18n.ts',
-      'server/handler.js',
+      'packages/server/handler.js',
       'api/product-catalog.js',
       'scripts/translate-locales.mjs',
       'tests/locale-staleness.test.mjs',

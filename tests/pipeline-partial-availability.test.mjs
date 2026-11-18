@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { listPipelines } from '../server/worldmonitor/supply-chain/v1/list-pipelines.ts';
+import { listPipelines } from '../packages/server/worldmonitor/supply-chain/v1/list-pipelines.ts';
 
 test('pipeline availability accounts for each requested registry', async (t) => {
   const env = { ...process.env };

@@ -131,7 +131,7 @@ This pattern is enforced project-wide across all panel subclasses. In E2E tests,
 
 ## API & Data Pipeline
 
-> **CORS** — all API endpoints enforce an origin allowlist. See `api/_cors.js` and `server/cors.ts` for the allowed origins, implementation details, and how to add CORS to new endpoints.
+> **CORS** — all API endpoints enforce an origin allowlist. See `api/_cors.js` and `packages/server/cors.ts` for the allowed origins, implementation details, and how to add CORS to new endpoints.
 
 ### Proto-First API Contracts
 
@@ -282,7 +282,7 @@ Seeds use `cachedFetchJson` with in-flight promise coalescing — if a seed run 
 
 ### Edge Function Architecture
 
-World Monitor uses Vercel Edge Functions as a lightweight API layer, split into two generations. Legacy endpoints in `api/*.js` each handle a single data source concern — proxying, caching, or transforming external APIs. The newer proto-first endpoints use **per-domain thin entry points**, each importing only its own handler module. This replaced the original monolithic gateway that loaded every domain on each cold start. Each domain's function tree-shakes to include only its dependencies, reducing cold-start time by ~85% (sub-100ms for most endpoints vs. 500ms+ with the monolithic handler). A shared `server/gateway.ts` provides common routing logic. Both generations coexist, with new features built proto-first. This architecture avoids a monolithic backend while keeping API keys server-side:
+World Monitor uses Vercel Edge Functions as a lightweight API layer, split into two generations. Legacy endpoints in `api/*.js` each handle a single data source concern — proxying, caching, or transforming external APIs. The newer proto-first endpoints use **per-domain thin entry points**, each importing only its own handler module. This replaced the original monolithic gateway that loaded every domain on each cold start. Each domain's function tree-shakes to include only its dependencies, reducing cold-start time by ~85% (sub-100ms for most endpoints vs. 500ms+ with the monolithic handler). A shared `packages/server/gateway.ts` provides common routing logic. Both generations coexist, with new features built proto-first. This architecture avoids a monolithic backend while keeping API keys server-side:
 
 - **RSS Proxy** — domain-allowlisted proxy for the registered feed catalog, preventing CORS issues and hiding origin servers. The Edge proxy and Railway relay both keep redirects manual and re-check the RSS domain allowlist before every hop. Feeds from domains that block Vercel IPs are automatically routed through the Railway relay.
 - **AI Pipeline** — Ollama and OpenRouter summarization edge functions with Redis deduplication, so identical headlines across concurrent users only trigger one LLM call. The classify-event endpoint pauses its queue on 500 errors to avoid wasting API quota.
@@ -302,7 +302,7 @@ All edge functions include circuit breaker logic and return cached stale data wh
 
 The original monolithic edge gateway (`api/[domain]/v1/[rpc].ts`) imported every service domain handler into a single function. When any RPC was called, the edge runtime loaded the entire handler graph — initializing Redis clients, parsing configuration, and importing utility modules for every domain even though only 1 was needed.
 
-This was split into per-domain thin entry points — one per service domain — each importing only its own handler module. The shared gateway (`server/gateway.ts`) provides common routing logic, but each domain's edge function tree-shakes to include only its dependencies.
+This was split into per-domain thin entry points — one per service domain — each importing only its own handler module. The shared gateway (`packages/server/gateway.ts`) provides common routing logic, but each domain's edge function tree-shakes to include only its dependencies.
 
 **Impact**: Cold-start time dropped by ~85% — a market quote request no longer loads the cyber threat intelligence parser, the OREF alert handler, or the climate anomaly detector. On Vercel's edge runtime, this translates to sub-100ms cold starts for most endpoints, compared to 500ms+ with the monolithic handler.
 
@@ -501,7 +501,7 @@ Cache keys are versioned (`opensky:v2:lamin=...`, `macro-signals:v2:default`) so
 
 **Shared caching layer** — all sebuf handler implementations share a unified Upstash Redis caching module (`_upstash-cache.js`) with a consistent API: `getCachedOrFetch(cacheKey, ttlSeconds, fetchFn)`. This eliminates per-handler caching boilerplate and ensures every RPC endpoint benefits from the three-tier strategy. Cache keys include request-varying parameters (e.g., requested symbols, country codes, bounding boxes) to prevent cache contamination across callers with different inputs. On desktop, the same module runs in the sidecar with an in-memory + persistent file backend when Redis is unavailable.
 
-**In-flight promise deduplication** — the `cachedFetchJson` function in `server/_shared/redis.ts` maintains an in-memory `Map<string, Promise>` of active upstream requests. When a cache miss occurs, the first caller's fetch creates and registers a Promise in the map. All concurrent callers for the same cache key await that single Promise rather than independently hitting the upstream API. This eliminates the "thundering herd" problem where multiple edge function instances simultaneously race to refill an expired cache entry — a scenario that previously caused 50+ concurrent upstream requests during the ~15-second refill window for popular endpoints.
+**In-flight promise deduplication** — the `cachedFetchJson` function in `packages/server/_shared/redis.ts` maintains an in-memory `Map<string, Promise>` of active upstream requests. When a cache miss occurs, the first caller's fetch creates and registers a Promise in the map. All concurrent callers for the same cache key await that single Promise rather than independently hitting the upstream API. This eliminates the "thundering herd" problem where multiple edge function instances simultaneously race to refill an expired cache entry — a scenario that previously caused 50+ concurrent upstream requests during the ~15-second refill window for popular endpoints.
 
 **Negative caching** — when an upstream API returns an error, the system caches a sentinel value (`__WM_NEG__`) for 120 seconds rather than leaving the cache empty. This prevents a failure cascade where hundreds of concurrent requests all independently discover the cache is empty and simultaneously hammer the downed API. The negative sentinel is transparent to consumers — `cachedFetchJson` returns `null` for negative-cached keys, and panels fall back to stale data or show an appropriate empty state. Longer negative TTLs are used for specific APIs: UCDP uses 5-minute backoff, Polymarket queue rejections use 30-second backoff.
 

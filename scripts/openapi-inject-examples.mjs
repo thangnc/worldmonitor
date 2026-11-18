@@ -89,13 +89,13 @@ const CHOKEPOINT_EXAMPLE_ID = (() => {
 // extract its ids from source text. The `id: '...'` shape only appears on the
 // template literals (the interface uses `id: string;`, no quotes).
 const SCENARIO_EXAMPLE_ID = (() => {
-  const src = readRepoText('server/worldmonitor/supply-chain/v1/scenario-templates.ts');
+  const src = readRepoText('packages/server/worldmonitor/supply-chain/v1/scenario-templates.ts');
   const ids = [...src.matchAll(/\bid:\s*['"`]([a-z0-9-]+)['"`]/g)].map((m) => m[1]);
   return ids.includes('hormuz-tanker-blockade') ? 'hormuz-tanker-blockade' : (ids[0] ?? 'hormuz-tanker-blockade');
 })();
 
 const SCENARIO_RESULT_AFFECTED_CHOKEPOINT_IDS = (() => {
-  const src = readRepoText('server/worldmonitor/supply-chain/v1/scenario-templates.ts');
+  const src = readRepoText('packages/server/worldmonitor/supply-chain/v1/scenario-templates.ts');
   const idMatch = src.match(new RegExp(`\\bid:\\s*['"\`]${SCENARIO_EXAMPLE_ID}['"\`]`));
   const start = idMatch ? src.lastIndexOf('{', idMatch.index) : -1;
   const end = start >= 0 ? src.indexOf('\n  },', start) : -1;
@@ -138,13 +138,13 @@ const BASELINE_TYPE_EXAMPLE_ID = (() => {
 })();
 
 const CONSUMER_PRICE_BASKET_EXAMPLE_ID = (() => {
-  const src = readRepoText('server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts');
+  const src = readRepoText('packages/server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts');
   const match = src.match(/\bDEFAULT_BASKET\s*=\s*['"`]([^'"`]+)['"`]/);
   return match?.[1] ?? 'essentials-ae';
 })();
 
 const CONSUMER_PRICE_RANGE_EXAMPLE_ID = (() => {
-  const src = readRepoText('server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts');
+  const src = readRepoText('packages/server/worldmonitor/consumer-prices/v1/get-consumer-price-basket-series.ts');
   const match = src.match(/VALID_RANGES\s*=\s*new Set\(\[([^\]]+)\]\)/);
   const ranges = match ? [...match[1].matchAll(/['"`]([^'"`]+)['"`]/g)].map((m) => m[1]) : [];
   return ranges.includes('7d') ? '7d' : (ranges[0] ?? '7d');
@@ -608,7 +608,7 @@ function resolveRef(schema, spec) {
 }
 
 // Honeypot fields are hidden anti-bot inputs: the handlers silently discard any
-// non-empty value (server/worldmonitor/leads/v1/{register-interest,submit-contact}.ts),
+// non-empty value (packages/server/worldmonitor/leads/v1/{register-interest,submit-contact}.ts),
 // so a populated example is a fake-success trap — a developer copying the sample
 // gets a 200 but nothing is registered/emailed, and the value contradicts the
 // field's own "real submissions leave it empty" description. They're detected by

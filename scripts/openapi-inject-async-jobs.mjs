@@ -4,7 +4,7 @@
  * generated OpenAPI specs.
  *
  * RunScenario enqueues a background job and returns immediately; the runtime
- * (server/worldmonitor/scenario/v1/run-scenario.ts via the
+ * (packages/server/worldmonitor/scenario/v1/run-scenario.ts via the
  * setSuccessStatusOverride gateway side-channel) answers a successful enqueue
  * with 202 Accepted plus a Location header pointing at the GetScenarioStatus
  * poll endpoint — restoring the legacy pre-sebuf contract. The sebuf

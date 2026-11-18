@@ -6,7 +6,7 @@ import {
   isCurrentResilienceIntervalPayload,
   rankingCacheTagMatches,
   stampRankingCacheTag,
-} from '../server/worldmonitor/resilience/v1/_shared.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
 
 const originalEducationFlag = process.env.RESILIENCE_EDUCATION_ENABLED;
 const originalPillarFlag = process.env.RESILIENCE_PILLAR_COMBINE_ENABLED;

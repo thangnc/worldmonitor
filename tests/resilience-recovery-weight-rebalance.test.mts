@@ -7,7 +7,7 @@ import {
   RESILIENCE_DIMENSION_WEIGHTS,
   RESILIENCE_RETIRED_DIMENSIONS,
   type ResilienceDimensionId,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 // PR 2 §3.4 recovery-domain weight rebalance. The plan pins the two
 // new dims (liquidReserveAdequacy, sovereignFiscalBuffer) at ~0.10

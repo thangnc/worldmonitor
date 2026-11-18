@@ -11,7 +11,7 @@ const MIN_RETAINED_ENTRY_RATIO = 0.8;
 
 const TARGET_FILE = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../server/_shared/airline-codes.ts',
+  '../packages/server/_shared/airline-codes.ts',
 );
 
 const START_MARKER = '// --- BEGIN GENERATED AIRLINES ---';

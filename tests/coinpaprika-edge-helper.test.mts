@@ -1,7 +1,7 @@
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { fetchCryptoMarkets } from '../server/worldmonitor/market/v1/_shared.ts';
+import { fetchCryptoMarkets } from '../packages/server/worldmonitor/market/v1/_shared.ts';
 
 const originalFetch = globalThis.fetch;
 const originalWarn = console.warn;

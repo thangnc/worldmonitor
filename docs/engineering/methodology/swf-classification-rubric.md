@@ -282,7 +282,7 @@ Out of scope for a manifest PR. A rubric revision requires:
 ## References
 
 - Manifest: `scripts/shared/swf-classification-manifest.yaml`
-- Scorer: `server/worldmonitor/resilience/v1/_dimension-scorers.ts`
+- Scorer: `packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts`
   line 1654 (`scoreSovereignFiscalBuffer`)
 - Saturating transform: `score = 100 × (1 − exp(−effectiveMonths / 12))`
 - Linaburg-Maduell Transparency Index methodology:

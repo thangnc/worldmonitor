@@ -36,7 +36,7 @@ function requireSeedRefreshKey() {
   throw new Error('WORLDMONITOR_SEED_REFRESH_KEY is required for resilience ranking refresh');
 }
 
-// Bumped v13 → v14 in lockstep with server/worldmonitor/resilience/v1/
+// Bumped v13 → v14 in lockstep with packages/server/worldmonitor/resilience/v1/
 // _shared.ts for plan 2026-04-25-004 Phase 2 (Ship 2) — adds the new
 // `financialSystemExposure` dim to the headline score; v13 entries lack
 // the new dim's contribution so caching them post-deploy would surface

@@ -8,11 +8,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import * as serverRegistry from '../server/_shared/bypass-corridors.ts';
+import * as serverRegistry from '../packages/server/_shared/bypass-corridors.ts';
 import * as browserRegistry from '../src/config/bypass-corridors.ts';
-import { pickBestBypass } from '../server/worldmonitor/supply-chain/v1/_multi-sector-shock.ts';
-import { computeLane } from '../server/worldmonitor/supply-chain/v1/get-route-explorer-lane.ts';
-import { BYPASS_CORRIDOR_GEOMETRY_BY_ID } from '../server/worldmonitor/supply-chain/v1/_route-explorer-static-tables.ts';
+import { pickBestBypass } from '../packages/server/worldmonitor/supply-chain/v1/_multi-sector-shock.ts';
+import { computeLane } from '../packages/server/worldmonitor/supply-chain/v1/get-route-explorer-lane.ts';
+import { BYPASS_CORRIDOR_GEOMETRY_BY_ID } from '../packages/server/worldmonitor/supply-chain/v1/_route-explorer-static-tables.ts';
 
 const hormuz = (registry: typeof serverRegistry) => registry.BYPASS_CORRIDORS_BY_CHOKEPOINT.hormuz_strait ?? [];
 

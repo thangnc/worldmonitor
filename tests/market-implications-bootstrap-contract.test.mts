@@ -6,7 +6,7 @@ import intelligence from '../api/intelligence/v1/[rpc].ts';
 import bootstrap from '../api/bootstrap.js';
 import { issueSessionToken } from '../api/_session.js';
 import { publishBootstrapTier } from '../scripts/publish-bootstrap-tiers.mjs';
-import { listMarketImplications } from '../server/worldmonitor/intelligence/v1/list-market-implications.ts';
+import { listMarketImplications } from '../packages/server/worldmonitor/intelligence/v1/list-market-implications.ts';
 const PATH = 'https://api.worldmonitor.app/api/infrastructure/v1/get-bootstrap-data';
 const SEED = 'intelligence:market-implications:v1';
 const fixture = { cards: [{ ticker: 'SYNTH', title: 'premium-fixture-only', risk_caveat: 'test risk' }], generatedAt: '2026-09-11T00:00:00Z' };

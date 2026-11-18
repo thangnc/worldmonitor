@@ -44,7 +44,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 OUT_DIR = ROOT / 'public' / 'assets' / 'brief-fonts'
 URL_PREFIX = '/assets/brief-fonts/'
-MODULE = ROOT / 'server' / '_shared' / 'brief-fonts.generated.js'
+MODULE = ROOT / 'packages' / 'server' / '_shared' / 'brief-fonts.generated.js'
 MANIFEST = HERE / 'manifest.json'
 SNAPSHOT = HERE / 'google-fonts-snapshot.json'
 CACHE = ROOT / 'node_modules' / '.cache' / 'brief-fonts'
@@ -54,7 +54,7 @@ GOOGLE_CSS = ('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wg
               '&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap')
 
 # One User-Agent per group of browsers Google serves different font data or formats to. The
-# server picks the group with briefFontPlatform() in server/_shared/brief-font-platform.js.
+# server picks the group with briefFontPlatform() in packages/server/_shared/brief-font-platform.js.
 PLATFORMS = {
     'apple-woff2': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
     'apple-woff': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',

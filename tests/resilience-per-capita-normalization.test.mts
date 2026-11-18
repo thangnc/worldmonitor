@@ -14,7 +14,7 @@ import { describe, it } from 'node:test';
 import {
   scoreSocialCohesion,
   scoreBorderSecurity,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers';
 
 // Mirror of the production reader contract: returns a Map-keyed seed lookup.
 function makeReader(seed: Record<string, unknown>) {

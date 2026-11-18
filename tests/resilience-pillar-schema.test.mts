@@ -14,14 +14,14 @@ import { describe, it } from 'node:test';
 import {
   RESILIENCE_DOMAIN_ORDER,
   type ResilienceDomainId,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import {
   PILLAR_DOMAINS,
   PILLAR_ORDER,
   PILLAR_WEIGHTS,
   buildPillarList,
   type ResiliencePillarId,
-} from '../server/worldmonitor/resilience/v1/_pillar-membership.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_pillar-membership.ts';
 import type { ResilienceDomain } from '../packages/contracts/generated/server/worldmonitor/resilience/v1/service_server.ts';
 
 const ALL_DOMAIN_IDS = new Set<ResilienceDomainId>(RESILIENCE_DOMAIN_ORDER);

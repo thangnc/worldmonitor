@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parseCountryBriefSources, renderEvidenceGroundedCountryBrief } from '../server/worldmonitor/intelligence/v1/get-country-intel-brief.ts';
+import { parseCountryBriefSources, renderEvidenceGroundedCountryBrief } from '../packages/server/worldmonitor/intelligence/v1/get-country-intel-brief.ts';
 
 describe('country assessment energy grounding', () => {
   const sources = [

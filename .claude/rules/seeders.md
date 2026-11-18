@@ -4,7 +4,7 @@ paths:
   - "scripts/_seed-utils.mjs"
   - "scripts/_bundle-runner.mjs"
   - "scripts/ais-relay.cjs"
-  - "server/_shared/**"
+  - "packages/server/_shared/**"
 ---
 
 # Railway seeders and the Redis cache

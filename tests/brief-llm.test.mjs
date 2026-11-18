@@ -29,7 +29,7 @@ import {
   generateStoryDescription,
   hashBriefStory,
 } from '../scripts/lib/brief-llm.mjs';
-import { assertBriefEnvelope } from '../server/_shared/brief-render.js';
+import { assertBriefEnvelope } from '../packages/server/_shared/brief-render.js';
 import { composeBriefFromDigestStories, digestStoryToSynthesisShape } from '../scripts/lib/brief-compose.mjs';
 import {
   WHY_MATTERS_V1_MIN_CHARS,
@@ -365,7 +365,7 @@ describe('generateWhyMatters', () => {
     // Regression guard: the Railway fallback path must apply sanitizeForPrompt
     // before buildWhyMattersPrompt. Without it, hostile headlines / sources
     // reach the LLM verbatim. Assertions here match what sanitizeForPrompt
-    // actually strips (see server/_shared/llm-sanitize.js INJECTION_PATTERNS):
+    // actually strips (see packages/server/_shared/llm-sanitize.js INJECTION_PATTERNS):
     //   - explicit instruction-override phrases ("ignore previous instructions")
     //   - role-prefixed override lines (`### Assistant:` at line start)
     //   - model delimiter tokens (`<|im_start|>`)

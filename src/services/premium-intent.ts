@@ -12,7 +12,7 @@
  *
  * `/api/news/v1/summarize-article` is exactly that route. The gateway decides
  * per request, from the body (`shouldReserveGatewayDirectLlmQuota` in
- * server/gateway.ts):
+ * packages/server/gateway.ts):
  *
  *   - `mode: 'translate'` — free, and REQUIRES the anonymous wms_ cookie
  *     (verified against prod: no cookie ⇒ 401 "API key required").

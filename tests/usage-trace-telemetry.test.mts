@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { createDomainGateway } from '../server/gateway.ts';
-import { deriveSentryTraceId } from '../server/_shared/usage.ts';
+import { createDomainGateway } from '../packages/server/gateway.ts';
+import { deriveSentryTraceId } from '../packages/server/_shared/usage.ts';
 
 test('trace header preserves absent, empty, valid and boundary values', () => {
   const trace = '0123456789abcdef0123456789abcdef-0123456789abcdef-1';

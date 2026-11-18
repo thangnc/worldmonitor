@@ -10,7 +10,7 @@
  *
  * That knowledge was a comment, and a comment does not fail CI. #6428 added a
  * shared module using the attribute form and wired it into
- * server/worldmonitor/news/v1/list-feed-digest.ts — a change that typechecks,
+ * packages/server/worldmonitor/news/v1/list-feed-digest.ts — a change that typechecks,
  * passes every local esbuild and vite build, and would only break at deploy.
  * This test walks the real import graph from each api/ entrypoint so the next
  * one fails here instead.

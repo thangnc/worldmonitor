@@ -5,7 +5,7 @@ import test from 'node:test';
 import { createCountryResolvers } from '../scripts/_country-resolver.mjs';
 import { PORTWATCH_CONTENT_FRESHNESS_CADENCE_MINUTES } from '../scripts/_portwatch-content-freshness.mjs';
 import { __testing__ } from '../api/health.js';
-import { getCountryPortActivity } from '../server/worldmonitor/intelligence/v1/get-country-port-activity';
+import { getCountryPortActivity } from '../packages/server/worldmonitor/intelligence/v1/get-country-port-activity';
 import { installRedis } from './helpers/fake-upstash-redis.mts';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));

@@ -262,7 +262,7 @@ test('every custom Error subclass sets this.name explicitly', async () => {
   const offenders = [];
   let checked = 0;
   const declaration = /class\s+(\w+Error)\s+extends\s+Error\b/;
-  for (const dir of ['api', 'server', 'packages/shared']) {
+  for (const dir of ['api', 'packages/server', 'packages/shared']) {
     for (const file of sourceFiles(join(repoRoot, dir))) {
       const source = readFileSync(file, 'utf-8');
       if (!declaration.test(source)) continue;

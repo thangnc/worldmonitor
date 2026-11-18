@@ -3,7 +3,7 @@
  *
  * Every feed is declared once in packages/shared/news-catalog.json; the browser catalog
  * (src/config/feeds.ts) and the server digest catalog
- * (server/worldmonitor/news/v1/_feeds.ts) are views over it. The views can
+ * (packages/server/worldmonitor/news/v1/_feeds.ts) are views over it. The views can
  * still disagree through a feed's `browser` overrides and through placements
  * that exist on one side only. These checks keep each such difference
  * deliberate: a feed NAME placed on both sides must agree on Google News vs

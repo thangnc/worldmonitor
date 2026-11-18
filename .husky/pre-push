@@ -62,13 +62,13 @@ run() {
   "$@" || { echo "pre-push: FAILED: $*"; exit 1; }
 }
 
-if changed '^(src/|packages/shared/|packages/contracts/generated/|tests/|lite\.html$|vite\.|tsconfig|package\.json$|packages/(contracts|shared)/package\.json$)'; then
+if changed '^(src/|packages/shared/|packages/server/|packages/contracts/generated/|tests/|lite\.html$|vite\.|tsconfig|package\.json$|packages/(contracts|shared)/package\.json$)'; then
   run npm run --silent typecheck
 fi
-if changed '^(api/|server/|packages/shared/|packages/contracts/generated/|middleware\.ts$|tsconfig|package\.json$)'; then
+if changed '^(api/|packages/server/|packages/shared/|packages/contracts/generated/|middleware\.ts$|tsconfig|package\.json$)'; then
   run npm run --silent typecheck:api
 fi
-if changed '^(api/|server/|packages/shared/|packages/contracts/generated/|scripts/check-edge-function-bundles\.mjs$)'; then
+if changed '^(api/|packages/server/|packages/shared/|packages/contracts/generated/|scripts/check-edge-function-bundles\.mjs$)'; then
   run node scripts/check-edge-function-bundles.mjs --caller=prepush
 fi
 if changed '^(src/|packages/shared/)'; then

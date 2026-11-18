@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { PORTWATCH_CONTENT_FRESHNESS_BUDGET_MINUTES } from '../scripts/_portwatch-content-freshness.mjs';
 import { CHINA_COVERAGE_ENTRIES } from '../scripts/china-coverage-manifest.mjs';
-import { buildChinaCorridorSourceBundle } from '../server/worldmonitor/supply-chain/v1/china-corridor-source-adapters.ts';
+import { buildChinaCorridorSourceBundle } from '../packages/server/worldmonitor/supply-chain/v1/china-corridor-source-adapters.ts';
 
 const ASSESSED_AT = '2026-07-25T12:00:00.000Z';
 const FRESH_META = { fetchedAt: Date.parse('2026-07-25T11:30:00.000Z') };

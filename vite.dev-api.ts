@@ -8,7 +8,7 @@
 import type { Plugin } from 'vite';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
-import { validateGeneratedRequest } from './server/request-validator';
+import { validateGeneratedRequest } from './packages/server/request-validator';
 
 function liteDevRoutePlugin(): Plugin {
   return {
@@ -49,40 +49,40 @@ function sebufApiPlugin(): Plugin {
   // The RPC services the Lite UI calls (refactor Phase 1c removed the rest).
   async function buildRouter() {
     const [routerMod, corsMod, errorMod] = await Promise.all([
-      import('./server/router'),
-      import('./server/cors'),
-      import('./server/error-mapper'),
+      import('./packages/server/router'),
+      import('./packages/server/cors'),
+      import('./packages/server/error-mapper'),
     ]);
     const serverOptions = {
       onError: errorMod.mapErrorToResponse,
       validateRequest: validateGeneratedRequest,
     };
     const services = await Promise.all([
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/seismology/v1/service_server'), import('./server/worldmonitor/seismology/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/seismology/v1/service_server'), import('./packages/server/worldmonitor/seismology/v1/handler')])
         .then(([server, handler]) => server.createSeismologyServiceRoutes(handler.seismologyHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/research/v1/service_server'), import('./server/worldmonitor/research/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/research/v1/service_server'), import('./packages/server/worldmonitor/research/v1/handler')])
         .then(([server, handler]) => server.createResearchServiceRoutes(handler.researchHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/unrest/v1/service_server'), import('./server/worldmonitor/unrest/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/unrest/v1/service_server'), import('./packages/server/worldmonitor/unrest/v1/handler')])
         .then(([server, handler]) => server.createUnrestServiceRoutes(handler.unrestHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/conflict/v1/service_server'), import('./server/worldmonitor/conflict/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/conflict/v1/service_server'), import('./packages/server/worldmonitor/conflict/v1/handler')])
         .then(([server, handler]) => server.createConflictServiceRoutes(handler.conflictHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/cyber/v1/service_server'), import('./server/worldmonitor/cyber/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/cyber/v1/service_server'), import('./packages/server/worldmonitor/cyber/v1/handler')])
         .then(([server, handler]) => server.createCyberServiceRoutes(handler.cyberHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/economic/v1/service_server'), import('./server/worldmonitor/economic/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/economic/v1/service_server'), import('./packages/server/worldmonitor/economic/v1/handler')])
         .then(([server, handler]) => server.createEconomicServiceRoutes(handler.economicHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server'), import('./server/worldmonitor/infrastructure/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/infrastructure/v1/service_server'), import('./packages/server/worldmonitor/infrastructure/v1/handler')])
         .then(([server, handler]) => server.createInfrastructureServiceRoutes(handler.infrastructureHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/market/v1/service_server'), import('./server/worldmonitor/market/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/market/v1/service_server'), import('./packages/server/worldmonitor/market/v1/handler')])
         .then(([server, handler]) => server.createMarketServiceRoutes(handler.marketHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/news/v1/service_server'), import('./server/worldmonitor/news/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/news/v1/service_server'), import('./packages/server/worldmonitor/news/v1/handler')])
         .then(([server, handler]) => server.createNewsServiceRoutes(handler.newsHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server'), import('./server/worldmonitor/intelligence/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/intelligence/v1/service_server'), import('./packages/server/worldmonitor/intelligence/v1/handler')])
         .then(([server, handler]) => server.createIntelligenceServiceRoutes(handler.intelligenceHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/military/v1/service_server'), import('./server/worldmonitor/military/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/military/v1/service_server'), import('./packages/server/worldmonitor/military/v1/handler')])
         .then(([server, handler]) => server.createMilitaryServiceRoutes(handler.militaryHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server'), import('./server/worldmonitor/supply-chain/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server'), import('./packages/server/worldmonitor/supply-chain/v1/handler')])
         .then(([server, handler]) => server.createSupplyChainServiceRoutes(handler.supplyChainHandler, serverOptions)),
-      Promise.all([import('./packages/contracts/generated/server/worldmonitor/sanctions/v1/service_server'), import('./server/worldmonitor/sanctions/v1/handler')])
+      Promise.all([import('./packages/contracts/generated/server/worldmonitor/sanctions/v1/service_server'), import('./packages/server/worldmonitor/sanctions/v1/handler')])
         .then(([server, handler]) => server.createSanctionsServiceRoutes(handler.sanctionsHandler, serverOptions)),
     ]);
     const allRoutes = services.flat();
@@ -94,7 +94,7 @@ function sebufApiPlugin(): Plugin {
   return {
     name: 'sebuf-api',
     configureServer(server) {
-      // Invalidate cached router on HMR updates to server/ files
+      // Invalidate cached router on HMR updates to packages/server/ files
       server.watcher.on('change', (file) => {
         if (file.includes('/server/') || file.includes('/packages/contracts/generated/server/')) {
           cachedRouter = null;

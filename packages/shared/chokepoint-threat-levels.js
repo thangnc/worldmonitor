@@ -5,7 +5,7 @@
  * `shared/` but not `server/` (see Dockerfile.relay). The relay previously
  * carried a hand-maintained copy of this table.
  *
- * `CHOKEPOINTS` in server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts
+ * `CHOKEPOINTS` in packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts
  * still declares the same levels alongside their prose descriptions; the two
  * are held together by an executable parity test rather than a source scan.
  *

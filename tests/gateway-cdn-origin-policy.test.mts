@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, before, describe, it } from 'node:test';
 
-import { createDomainGateway } from '../server/gateway.ts';
-import { __resetRateLimitForTest } from '../server/_shared/rate-limit';
+import { createDomainGateway } from '../packages/server/gateway.ts';
+import { __resetRateLimitForTest } from '../packages/server/_shared/rate-limit';
 import { issueSessionToken } from '../api/_session.js';
 
 const originalKeys = process.env.WORLDMONITOR_VALID_KEYS;
@@ -191,7 +191,7 @@ describe('gateway CDN origin policy', () => {
   // Vercel's filesystem router serves these through api/**/[rpc].ts and echoes the
   // matched segment back as ?rpc=<lastPathSegment>. Production therefore sees a query
   // the hand-built URLs in these tests never had — which silently 401'd every public
-  // RPC (#5285). server/_shared/sub-request-admission.ts strips the same echo before hashing.
+  // RPC (#5285). packages/server/_shared/sub-request-admission.ts strips the same echo before hashing.
   for (const [path, rpc] of [
     ['/api/news/v1/list-feed-digest?variant=full&lang=en&public=1', 'list-feed-digest'],
     ['/api/displacement/v1/get-displacement-summary?flow_limit=50&public=1', 'get-displacement-summary'],

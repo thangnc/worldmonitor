@@ -4,9 +4,9 @@
 // desk changes with it. Run under tsx (npm scripts do) so the TypeScript
 // modules load directly from the repo.
 //
-//   coverage      server/_shared/corroboration.ts      assessCorroboration, publisherRoster
+//   coverage      packages/server/_shared/corroboration.ts    assessCorroboration, publisherRoster
 //   families      packages/shared/publisher-families.js         MIN_CORROBORATING_PUBLISHERS
-//   source tier   server/_shared/source-tiers.ts       getSourceTier, declaredSourceTier, TIER_MEANING
+//   source tier   packages/server/_shared/source-tiers.ts     getSourceTier, declaredSourceTier, TIER_MEANING
 //   provenance    packages/shared/source-provenance.ts          getSourcePropagandaRisk, getSourceProvenanceState
 //   credibility   packages/shared/news-credibility.js           computeCredibilityScore
 //   figures       packages/shared/brief-llm-core.js             extractNumericFacts, validateNoHallucinatedFacts
@@ -15,8 +15,8 @@
 //   wording       src/locales/en.json                  components.corroboration.*
 
 import { readFileSync } from 'node:fs';
-import { assessCorroboration, publisherRoster, toCorroborationJson } from '../../../server/_shared/corroboration.ts';
-import { declaredSourceTier, getSourceTier, TIER_MEANING } from '../../../server/_shared/source-tiers.ts';
+import { assessCorroboration, publisherRoster, toCorroborationJson } from '../../../packages/server/_shared/corroboration.ts';
+import { declaredSourceTier, getSourceTier, TIER_MEANING } from '../../../packages/server/_shared/source-tiers.ts';
 import { getSourcePropagandaRisk, getSourceProvenanceState } from '../../../packages/shared/source-provenance.ts';
 import { computeCredibilityScore } from '../../../packages/shared/news-credibility.js';
 import { MIN_CORROBORATING_PUBLISHERS } from '../../../packages/shared/publisher-families.js';

@@ -12,7 +12,7 @@ import {
   readChinaCorridorDirectionalHistory,
   selectPriorChinaCorridorDirectionalSnapshot,
   type ChinaCorridorDirectionalSnapshot,
-} from '../server/worldmonitor/economic/v1/china-corridor-breadth-history';
+} from '../packages/server/worldmonitor/economic/v1/china-corridor-breadth-history';
 
 function snapshot(index: number): ChinaCorridorDirectionalSnapshot {
   return {

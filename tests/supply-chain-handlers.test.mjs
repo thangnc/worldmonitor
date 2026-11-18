@@ -11,13 +11,13 @@ import {
   THREAT_LEVEL,
   warningComponent,
   aisComponent,
-} from '../server/worldmonitor/supply-chain/v1/_scoring.mjs';
+} from '../packages/server/worldmonitor/supply-chain/v1/_scoring.mjs';
 import {
   resolveChokepointId,
   isThreatConfigFresh,
   buildChokepointSeedMeta,
   THREAT_CONFIG_LAST_REVIEWED,
-} from '../server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts';
+} from '../packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts';
 
 describe('Chokepoint scoring', () => {
   it('computes disruption score as threat + warnings + ais, capped at 100', () => {

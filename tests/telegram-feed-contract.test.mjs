@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 // The api/telegram-feed edge route was deleted in the Lite refactor (Phase 1c);
 // the intelligence RPC's listTelegramFeed is the remaining reader.
-import { listTelegramFeed } from '../server/worldmonitor/intelligence/v1/list-telegram-feed.ts';
+import { listTelegramFeed } from '../packages/server/worldmonitor/intelligence/v1/list-telegram-feed.ts';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };

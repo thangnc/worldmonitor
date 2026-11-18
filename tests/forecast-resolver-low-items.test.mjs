@@ -12,7 +12,7 @@ import { attachResolutionSpecs } from '../scripts/_forecast-resolution.mjs';
 import { extractMetricValue, parseMetricKey, resolveHardSpec, shapeResolutionFeeds } from '../scripts/_forecast-resolution-eval.mjs';
 import { RECEIPT_VOID_REASON_LABELS, buildPublicReceipts } from '../scripts/_forecast-scorecard.mjs';
 import { buildHistoryForecastEntry, detectSupplyChainScenarios, loadCountryCodes, normalizeChokepoints, resolveCountryName } from '../scripts/seed-forecasts.mjs';
-import { scoreToStatus } from '../server/worldmonitor/supply-chain/v1/_scoring.mjs';
+import { scoreToStatus } from '../packages/server/worldmonitor/supply-chain/v1/_scoring.mjs';
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -162,9 +162,9 @@ describe('a war-zone chokepoint is not YES by construction (#9033)', () => {
   });
 
   it('still emits every other route at the red boundary of 50', async () => {
-    const { CANONICAL_CHOKEPOINTS } = await import('../server/worldmonitor/supply-chain/v1/_chokepoint-ids.ts');
+    const { CANONICAL_CHOKEPOINTS } = await import('../packages/server/worldmonitor/supply-chain/v1/_chokepoint-ids.ts');
     const { CHOKEPOINT_THREAT_LEVELS } = await import('../packages/shared/chokepoint-threat-levels.js');
-    const { THREAT_LEVEL } = await import('../server/worldmonitor/supply-chain/v1/_scoring.mjs');
+    const { THREAT_LEVEL } = await import('../packages/server/worldmonitor/supply-chain/v1/_scoring.mjs');
     const mismatches = [];
     for (const cp of CANONICAL_CHOKEPOINTS) {
       const base = THREAT_LEVEL[CHOKEPOINT_THREAT_LEVELS[cp.id]] ?? 0;

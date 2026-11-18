@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest.ts';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest.ts';
 import {
   ACCEPTANCE,
   assessCandidate,
@@ -115,7 +115,7 @@ describe('#7081 frozen evidence — provenance and integrity', () => {
 
 describe('#7081 finding 1 — the documented rule was unreachable', () => {
   const writerSrc = readFileSync(
-    resolve(__dirname, '..', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
+    resolve(__dirname, '..', 'packages', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
     'utf-8',
   );
 
@@ -264,7 +264,7 @@ describe('#7081 finding 3 — fading is not observable at this call site', () =>
 
   it('the handler passes a track whose lastSeen is the current cycle clock', () => {
     const src = readFileSync(
-      resolve(__dirname, '..', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
+      resolve(__dirname, '..', 'packages', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
       'utf-8',
     );
     const mergedStart = src.indexOf('const merged: StoryTrack = {');
@@ -360,7 +360,7 @@ describe('#7081 no-go contract — the feed digest must not emit FADING', () => 
 
   it('the phase deriver carries no score input at all', () => {
     const src = readFileSync(
-      resolve(__dirname, '..', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
+      resolve(__dirname, '..', 'packages', 'server', 'worldmonitor', 'news', 'v1', 'list-feed-digest.ts'),
       'utf-8',
     );
     const start = src.indexOf('function derivePhase(');

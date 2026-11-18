@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { load as loadYaml } from 'js-yaml';
-import { getFredSeries } from '../server/worldmonitor/economic/v1/get-fred-series';
-import { ALLOWED_FRED_SERIES } from '../server/worldmonitor/economic/v1/_fred-shared';
+import { getFredSeries } from '../packages/server/worldmonitor/economic/v1/get-fred-series';
+import { ALLOWED_FRED_SERIES } from '../packages/server/worldmonitor/economic/v1/_fred-shared';
 import { ValidationError } from '../packages/contracts/generated/server/worldmonitor/economic/v1/service_server';
 
 const SUPPORTED = [...ALLOWED_FRED_SERIES].sort();

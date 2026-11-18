@@ -235,7 +235,7 @@ Three of the four graded components read that severance as **strength**:
 **A band retune alone cannot fix this, and the arithmetic is worth stating so nobody re-litigates it.** With the band leg at 0 and the redundancy leg at 0, Russia still holds `0.35 × 80` (debt) + `0.20 × 100` (FATF) = **48** — more than double the < 20 activation anchor. The signal has to enter the construct as its own input.
 
 ```
-FIN_SYS_EXPOSURE_COMPREHENSIVE_EMBARGO  (server/worldmonitor/resilience/v1/_dimension-scorers.ts)
+FIN_SYS_EXPOSURE_COMPREHENSIVE_EMBARGO  (packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts)
   RU  EO 14024 + G7 reserve immobilisation + SWIFT exclusion of major banks (2022–)
   BY  EO 14038 + EU Reg. 765/2006 as amended; SWIFT exclusion (2022–)
   IR  31 CFR 560 Iranian Transactions and Sanctions Regulations (comprehensive)
@@ -414,8 +414,8 @@ Keep `tradeSanctions` as a retired/compat dimension at coverage=0; add `tradePol
 ## References
 
 - Phase 1 (rename + drop OFAC): [`known-limitations.md § tradeSanctions → tradePolicy`](./known-limitations.md#tradesanctions-%E2%86%92-tradepolicy-ofac-domicile-component-dropped-ship-1-2026-04-25)
-- Scorer: `server/worldmonitor/resilience/v1/_dimension-scorers.ts` (`scoreFinancialSystemExposure`)
-- Indicator registry: `server/worldmonitor/resilience/v1/_indicator-registry.ts` (4 entries with dimension `financialSystemExposure`)
+- Scorer: `packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts` (`scoreFinancialSystemExposure`)
+- Indicator registry: `packages/server/worldmonitor/resilience/v1/_indicator-registry.ts` (4 entries with dimension `financialSystemExposure`)
 - Seeders: `scripts/seed-{wb-external-debt,bis-lbs,fatf-listing}.mjs`
 - Tests: `tests/resilience-financial-system-exposure.test.mts`, `tests/seed-{wb-external-debt,bis-lbs,fatf-listing}.test.mjs`
 - Bundle: `scripts/seed-bundle-macro.mjs` (Option A per Codex R1 #5)

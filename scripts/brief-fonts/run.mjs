@@ -4,7 +4,7 @@
 // 1. renders the sample briefs in fixtures.mjs and lays them out in Chromium at several widths,
 //    recording which face (family, weight, style) draws each text run and on which page,
 // 2. runs subset_brief_fonts.py (via `uv run`, which installs its pinned Python deps) to rewrite
-//    public/assets/brief-fonts/, server/_shared/brief-fonts.generated.js and manifest.json.
+//    public/assets/brief-fonts/, packages/server/_shared/brief-fonts.generated.js and manifest.json.
 //
 // Needs Playwright's Chromium (`npx playwright install chromium`) and uv (https://docs.astral.sh/uv/).
 // Flags: --skip-google-parity (offline; don't commit its output).

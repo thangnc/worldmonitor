@@ -9,8 +9,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest';
-import { VARIANT_FEEDS } from '../server/worldmonitor/news/v1/_feeds';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
+import { VARIANT_FEEDS } from '../packages/server/worldmonitor/news/v1/_feeds';
 import catalog from '../packages/shared/news-catalog.json' with { type: 'json' };
 import { publisherFamilyFor, PUBLISHER_FAMILY_DOMAIN_TABLE } from '../packages/shared/publisher-families.js';
 

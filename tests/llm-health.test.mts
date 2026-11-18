@@ -10,7 +10,7 @@ import {
   recordModelFailure,
   recordModelSuccess,
   warmHealthCache,
-} from '../server/_shared/llm-health.ts';
+} from '../packages/server/_shared/llm-health.ts';
 
 const { MODEL_FAILURE_THRESHOLD, MODEL_QUARANTINE_MS } = __testing__;
 

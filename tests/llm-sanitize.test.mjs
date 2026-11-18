@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { sanitizeForPrompt, sanitizeForPromptLine, sanitizeHeadlines, sanitizeHeadline, sanitizeHeadlinesLight } from '../server/_shared/llm-sanitize.js';
+import { sanitizeForPrompt, sanitizeForPromptLine, sanitizeHeadlines, sanitizeHeadline, sanitizeHeadlinesLight } from '../packages/server/_shared/llm-sanitize.js';
 
 // ── Basic passthrough ────────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ describe('sanitizeForPrompt – XML role tags', () => {
   });
 
   it('keeps unterminated role-tag runs linear', () => {
-    const sanitizerUrl = new URL('../server/_shared/llm-sanitize.js', import.meta.url).href;
+    const sanitizerUrl = new URL('../packages/server/_shared/llm-sanitize.js', import.meta.url).href;
     const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
       import assert from 'node:assert/strict';
       import { sanitizeForPrompt, sanitizeHeadline } from ${JSON.stringify(sanitizerUrl)};
@@ -122,7 +122,7 @@ describe('sanitizeForPrompt – XML role tags', () => {
 
 describe('sanitizeForPrompt – role markers', () => {
   it('finishes whitespace-heavy role-marker misses without blocking', () => {
-    const sanitizerUrl = new URL('../server/_shared/llm-sanitize.js', import.meta.url).href;
+    const sanitizerUrl = new URL('../packages/server/_shared/llm-sanitize.js', import.meta.url).href;
     const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
       import assert from 'node:assert/strict';
       import { sanitizeForPrompt } from ${JSON.stringify(sanitizerUrl)};

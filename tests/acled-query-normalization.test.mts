@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test, { type TestContext } from 'node:test';
-import { fetchAcledCached } from '../server/_shared/acled.ts';
-import { getAcledFetchWindows } from '../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
-import { resolveAcledEventWindow } from '../server/worldmonitor/conflict/v1/list-acled-events.ts';
+import { fetchAcledCached } from '../packages/server/_shared/acled.ts';
+import { getAcledFetchWindows } from '../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+import { resolveAcledEventWindow } from '../packages/server/worldmonitor/conflict/v1/list-acled-events.ts';
 import { createRedisFetch } from './helpers/fake-upstash-redis.mts';
 
 const NOW = Date.UTC(2026, 2, 15, 12);

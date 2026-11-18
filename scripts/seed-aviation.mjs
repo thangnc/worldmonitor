@@ -845,7 +845,7 @@ const ICAO_NOTAM_URL = 'https://dataservices.icao.int/api/notams-realtime-list';
 const NOTAM_CLOSURE_QCODES = new Set(['FA', 'AH', 'AL', 'AW', 'AC', 'AM']);
 // Restrictions: NOTAM Q-codes RA (restricted area) and RO (overfly prohibited)
 // + restricted code45s and text patterns. Mirrors NOTAM_RESTRICTION_QCODES +
-// the restriction-text regex in server/worldmonitor/aviation/v1/_shared.ts:29,
+// the restriction-text regex in packages/server/worldmonitor/aviation/v1/_shared.ts:29,
 // :440-444 — keep in lockstep so seeded NOTAM data matches the live RPC's
 // classifier.
 const NOTAM_RESTRICTION_QCODES = new Set(['RA', 'RO']);
@@ -1078,7 +1078,7 @@ async function dispatchNotamNotifications(closedIcaos, reasons, sourceByIcao = {
 
 // ─── Page-load bootstrap aggregate ───────────────────────────────────────────
 // Mirror of the alerts-array assembly in
-// server/worldmonitor/aviation/v1/list-airport-delays.ts (FAA + intl + NOTAM
+// packages/server/worldmonitor/aviation/v1/list-airport-delays.ts (FAA + intl + NOTAM
 // merge + Normal-operations filler from AIRPORTS). Keep the two builders in
 // lockstep — when the RPC's NOTAM merge / filler shape / enum mapping changes,
 // update both. Enum-string forms here match SEVERITY_MAP/DELAY_TYPE_MAP/REGION_MAP
@@ -1548,7 +1548,7 @@ export async function intlIsFresh() {
 }
 
 // Billing-cycle AviationStack budget backstop. Mirrors
-// reserveAviationStackCalls() in server/worldmonitor/aviation/v1/_avstack-budget.ts
+// reserveAviationStackCalls() in packages/server/worldmonitor/aviation/v1/_avstack-budget.ts
 // — SAME Redis key + env names so the seeder and the request-time RPCs share
 // one counter and one hard ceiling. Keep the two in lockstep. 'seed' kind
 // reserves against the full AVIATIONSTACK_MONTHLY_BUDGET; request-time stops
@@ -1579,7 +1579,7 @@ function cycleResetDay() {
  * anniversary day (the 25th on this account), so a `<YYYY-MM>` key kept the cap
  * refusing calls into a fresh allowance and zeroing itself mid-cycle.
  *
- * The server-side reserver in server/worldmonitor/aviation/v1/_avstack-budget.ts
+ * The server-side reserver in packages/server/worldmonitor/aviation/v1/_avstack-budget.ts
  * builds the SAME key; if the two ever drift, the shared ceiling splits into two
  * independent counters and silently doubles AviationStack spend. Exported so
  * that agreement can be asserted by comparing the two functions' output rather

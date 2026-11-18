@@ -434,16 +434,16 @@ function quotedLiterals(block) {
 }
 
 export function readPublicNoAuthPaths() {
-  const src = readFileSync(resolve(root, 'server/gateway.ts'), 'utf8');
+  const src = readFileSync(resolve(root, 'packages/server/gateway.ts'), 'utf8');
   const block = src.match(/PUBLIC_NO_AUTH_RPC_PATHS\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/);
-  if (!block) throw new Error('could not locate PUBLIC_NO_AUTH_RPC_PATHS in server/gateway.ts');
+  if (!block) throw new Error('could not locate PUBLIC_NO_AUTH_RPC_PATHS in packages/server/gateway.ts');
   const paths = quotedLiterals(block[1]);
   if (paths.length === 0) throw new Error('PUBLIC_NO_AUTH_RPC_PATHS parsed as empty — refusing to run');
   return new Set(paths);
 }
 
 // FROZEN published auth contract. The runtime tier table (ENDPOINT_ENTITLEMENTS
-// in server/_shared/entitlement-check.ts) and the billing-verification states
+// in packages/server/_shared/entitlement-check.ts) and the billing-verification states
 // were deleted with Clerk and Convex: the gateway now serves every
 // PREMIUM_RPC_PATHS route to an operator key only. These literals keep the
 // committed packages/contracts/openapi output byte-identical until the OpenAPI auth contract is
@@ -548,10 +548,10 @@ export function readRetryableBillingCodes() {
  * on a parse miss — an empty Set means "no route is exempt", which is a valid state.
  */
 export function readIdempotencyExemptPaths() {
-  const src = readFileSync(resolve(root, 'server/_shared/idempotency.ts'), 'utf8');
+  const src = readFileSync(resolve(root, 'packages/server/_shared/idempotency.ts'), 'utf8');
   const block = src.match(/IDEMPOTENCY_EXEMPT_RPC_PATHS\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/);
   if (!block) {
-    throw new Error('could not locate IDEMPOTENCY_EXEMPT_RPC_PATHS in server/_shared/idempotency.ts');
+    throw new Error('could not locate IDEMPOTENCY_EXEMPT_RPC_PATHS in packages/server/_shared/idempotency.ts');
   }
   return new Set(quotedLiterals(block[1]));
 }
@@ -1042,7 +1042,7 @@ export const PUBLIC_FORBIDDEN_GATES = new Map([
     },
   }],
   ['/api/leads/v1/register-interest', {
-    // The handler (server/worldmonitor/leads/v1/register-interest.ts) fails
+    // The handler (packages/server/worldmonitor/leads/v1/register-interest.ts) fails
     // closed with two distinct 403s: browser callers that fail the Cloudflare
     // Turnstile check get 403 Bot verification failed; desktop-source callers
     // whose shared-secret HMAC bypass is missing/invalid get 403 Desktop
@@ -1064,7 +1064,7 @@ export const PUBLIC_FORBIDDEN_GATES = new Map([
 // ── Operator review key (#9192) ──────────────────────────────────────────────
 // Routes the gateway lets through without an API key (they are in
 // PUBLIC_NO_AUTH_RPC_PATHS) whose handler then requires X-Trust-Review-Key to
-// match TRUST_REVIEW_SECRET (isTrustReviewer, server/_shared/error-reports.ts)
+// match TRUST_REVIEW_SECRET (isTrustReviewer, packages/server/_shared/error-reports.ts)
 // and answers 401 `{ message: 'Unauthorized' }` without it. A WorldMonitor API
 // key alone authorizes neither, so the spec declares the review key instead of
 // `security: []`.

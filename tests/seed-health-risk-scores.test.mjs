@@ -75,7 +75,7 @@ test('seed-health CII risk score freshness mirrors api/health riskScores', () =>
 
 test('relay CII warm-ping delegates risk-score health count to the RPC handler', () => {
   const relay = readRepoFile('scripts/ais-relay.cjs');
-  const handler = readRepoFile('server/worldmonitor/intelligence/v1/get-risk-scores.ts');
+  const handler = readRepoFile('packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts');
   const warmPing = extractSourceRange(
     relay,
     'async function seedCiiWarmPing()',

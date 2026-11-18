@@ -169,6 +169,12 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/_shared/acled-auth.ts"
+        },
+        {
+          "path": "packages/server/_shared/acled.ts"
+        },
+        {
           "path": "scripts/seed-conflict-intel.mjs"
         },
         {
@@ -176,12 +182,6 @@
         },
         {
           "path": "scripts/shared/acled-oauth.mjs"
-        },
-        {
-          "path": "server/_shared/acled-auth.ts"
-        },
-        {
-          "path": "server/_shared/acled.ts"
         }
       ]
     },
@@ -507,7 +507,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "server/_shared/llm-anthropic.ts"
+          "path": "packages/server/_shared/llm-anthropic.ts"
         }
       ]
     },
@@ -541,6 +541,9 @@
           "path": "api/_usage-telemetry.js"
         },
         {
+          "path": "packages/server/_shared/usage.ts"
+        },
+        {
           "path": "scripts/deploy-error-canary.mjs"
         },
         {
@@ -548,9 +551,6 @@
         },
         {
           "path": "scripts/seed-forecasts.mjs"
-        },
-        {
-          "path": "server/_shared/usage.ts"
         }
       ]
     },
@@ -644,13 +644,13 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/worldmonitor/market/v1/_shared.ts"
+        },
+        {
           "path": "scripts/_seed-utils.mjs"
         },
         {
           "path": "scripts/ais-relay.cjs"
-        },
-        {
-          "path": "server/worldmonitor/market/v1/_shared.ts"
         }
       ]
     },
@@ -772,6 +772,9 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/worldmonitor/market/v1/stock-news-search.ts"
+        },
+        {
           "path": "scripts/ais-relay.cjs"
         },
         {
@@ -782,9 +785,6 @@
         },
         {
           "path": "scripts/seed-grocery-basket.mjs"
-        },
-        {
-          "path": "server/worldmonitor/market/v1/stock-news-search.ts"
         }
       ]
     },
@@ -1040,7 +1040,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/military/v1/get-wingbits-live-flight.ts"
+          "path": "packages/server/worldmonitor/military/v1/get-wingbits-live-flight.ts"
         }
       ]
     },
@@ -1156,10 +1156,10 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "scripts/ais-relay.cjs"
+          "path": "packages/server/worldmonitor/market/v1/stock-news-search.ts"
         },
         {
-          "path": "server/worldmonitor/market/v1/stock-news-search.ts"
+          "path": "scripts/ais-relay.cjs"
         }
       ]
     },
@@ -1404,6 +1404,15 @@
       "status": "reviewed",
       "references": [
         {
+          "path": "packages/server/worldmonitor/economic/v1/list-world-bank-indicators.ts"
+        },
+        {
+          "path": "packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts"
+        },
+        {
+          "path": "packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
+        },
+        {
           "path": "scripts/_defense-industrial-source.mjs"
         },
         {
@@ -1444,15 +1453,6 @@
         },
         {
           "path": "scripts/seed-wb-indicators.mjs"
-        },
-        {
-          "path": "server/worldmonitor/economic/v1/list-world-bank-indicators.ts"
-        },
-        {
-          "path": "server/worldmonitor/resilience/v1/_dimension-scorers.ts"
-        },
-        {
-          "path": "server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
         }
       ]
     },
@@ -1847,7 +1847,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -1977,7 +1977,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -2277,7 +2277,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "server/_shared/turnstile.ts"
+          "path": "packages/server/_shared/turnstile.ts"
         }
       ]
     },
@@ -2523,6 +2523,9 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/worldmonitor/supply-chain/v1/_bilateral-hs4-lazy.ts"
+        },
+        {
           "path": "scripts/seed-comtrade-bilateral-hs4.mjs"
         },
         {
@@ -2539,9 +2542,6 @@
         },
         {
           "path": "scripts/seed-trade-flows.mjs"
-        },
-        {
-          "path": "server/worldmonitor/supply-chain/v1/_bilateral-hs4-lazy.ts"
         }
       ]
     },
@@ -2555,7 +2555,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -2648,10 +2648,10 @@
       "status": "excluded",
       "references": [
         {
-          "path": "scripts/build-open-data-chokepoints.mjs"
+          "path": "packages/server/worldmonitor/displacement/v1/cross-border-data.ts"
         },
         {
-          "path": "server/worldmonitor/displacement/v1/cross-border-data.ts"
+          "path": "scripts/build-open-data-chokepoints.mjs"
         }
       ]
     },
@@ -2724,13 +2724,13 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/worldmonitor/military/v1/_wingbits-aircraft-details.ts"
+        },
+        {
           "path": "scripts/ais-relay.cjs"
         },
         {
           "path": "scripts/seed-military-flights.mjs"
-        },
-        {
-          "path": "server/worldmonitor/military/v1/_wingbits-aircraft-details.ts"
         }
       ]
     },
@@ -2934,7 +2934,7 @@
       "status": "reviewed",
       "references": [
         {
-          "path": "server/_shared/sec-edgar.ts"
+          "path": "packages/server/_shared/sec-edgar.ts"
         }
       ]
     },
@@ -3019,10 +3019,10 @@
       "status": "reviewed",
       "references": [
         {
-          "path": "scripts/seed-cross-border-arrivals.mjs"
+          "path": "packages/server/worldmonitor/displacement/v1/cross-border-data.ts"
         },
         {
-          "path": "server/worldmonitor/displacement/v1/cross-border-data.ts"
+          "path": "scripts/seed-cross-border-arrivals.mjs"
         }
       ]
     },
@@ -3177,13 +3177,13 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/worldmonitor/research/v1/list-tech-events.ts"
+        },
+        {
           "path": "scripts/ais-relay.cjs"
         },
         {
           "path": "scripts/seed-research.mjs"
-        },
-        {
-          "path": "server/worldmonitor/research/v1/list-tech-events.ts"
         }
       ]
     },
@@ -3285,7 +3285,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -3471,6 +3471,9 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
+        },
+        {
           "path": "packages/shared/news-catalog.json"
         },
         {
@@ -3484,9 +3487,6 @@
         },
         {
           "path": "scripts/seed-resilience-static.mjs"
-        },
-        {
-          "path": "server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
         }
       ]
     },
@@ -3528,7 +3528,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/military/v1/get-wingbits-live-flight.ts"
+          "path": "packages/server/worldmonitor/military/v1/get-wingbits-live-flight.ts"
         }
       ]
     },
@@ -3584,7 +3584,7 @@
       "status": "reviewed",
       "references": [
         {
-          "path": "server/_shared/sec-edgar.ts"
+          "path": "packages/server/_shared/sec-edgar.ts"
         }
       ]
     },
@@ -3685,10 +3685,10 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "scripts/seed-sovereign-wealth.mjs"
+          "path": "packages/server/worldmonitor/intelligence/v1/get-country-facts.ts"
         },
         {
-          "path": "server/worldmonitor/intelligence/v1/get-country-facts.ts"
+          "path": "scripts/seed-sovereign-wealth.mjs"
         }
       ]
     },
@@ -4046,7 +4046,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/_shared/fact-checks.ts"
+          "path": "packages/server/_shared/fact-checks.ts"
         }
       ]
     },
@@ -4429,6 +4429,15 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/worldmonitor/intelligence/v1/_company-shared.ts"
+        },
+        {
+          "path": "packages/server/worldmonitor/market/v1/_quote-provider.ts"
+        },
+        {
+          "path": "packages/server/worldmonitor/market/v1/get-insider-transactions.ts"
+        },
+        {
           "path": "scripts/ais-relay.cjs"
         },
         {
@@ -4439,15 +4448,6 @@
         },
         {
           "path": "scripts/shared/market-quote-provider.mjs"
-        },
-        {
-          "path": "server/worldmonitor/intelligence/v1/_company-shared.ts"
-        },
-        {
-          "path": "server/worldmonitor/market/v1/_quote-provider.ts"
-        },
-        {
-          "path": "server/worldmonitor/market/v1/get-insider-transactions.ts"
         }
       ]
     },
@@ -5022,7 +5022,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -5589,7 +5589,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -5846,7 +5846,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -6073,10 +6073,10 @@
       "status": "excluded",
       "references": [
         {
-          "path": "scripts/ais-relay.cjs"
+          "path": "packages/server/worldmonitor/research/v1/list-tech-events.ts"
         },
         {
-          "path": "server/worldmonitor/research/v1/list-tech-events.ts"
+          "path": "scripts/ais-relay.cjs"
         },
         {
           "path": "src/config/desktop-runtime.ts"
@@ -6482,10 +6482,10 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/get-cable-health.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/get-cable-health.ts"
         },
         {
-          "path": "server/worldmonitor/maritime/v1/list-navigational-warnings.ts"
+          "path": "packages/server/worldmonitor/maritime/v1/list-navigational-warnings.ts"
         }
       ]
     },
@@ -6648,16 +6648,16 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/worldmonitor/intelligence/v1/_country-coverage-feeds.ts"
+        },
+        {
+          "path": "packages/server/worldmonitor/market/v1/stock-news-search.ts"
+        },
+        {
           "path": "packages/shared/news-catalog.json"
         },
         {
           "path": "scripts/source-catalog-identity.mjs"
-        },
-        {
-          "path": "server/worldmonitor/intelligence/v1/_country-coverage-feeds.ts"
-        },
-        {
-          "path": "server/worldmonitor/market/v1/stock-news-search.ts"
         }
       ],
       "role": "transport"
@@ -6852,7 +6852,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/reverse-geocode.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/reverse-geocode.ts"
         }
       ]
     },
@@ -7208,13 +7208,13 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/worldmonitor/military/v1/list-military-flights.ts"
+        },
+        {
           "path": "scripts/ais-relay.cjs"
         },
         {
           "path": "scripts/seed-military-flights.mjs"
-        },
-        {
-          "path": "server/worldmonitor/military/v1/list-military-flights.ts"
         }
       ]
     },
@@ -7279,13 +7279,13 @@
       "status": "reviewed",
       "references": [
         {
+          "path": "packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts"
+        },
+        {
+          "path": "packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
+        },
+        {
           "path": "scripts/seed-low-carbon-generation.mjs"
-        },
-        {
-          "path": "server/worldmonitor/resilience/v1/_dimension-scorers.ts"
-        },
-        {
-          "path": "server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
         }
       ]
     },
@@ -7778,10 +7778,10 @@
       "status": "reviewed",
       "references": [
         {
-          "path": "scripts/freeze-resilience-ranking.mjs"
+          "path": "packages/server/worldmonitor/intelligence/v1/get-country-facts.ts"
         },
         {
-          "path": "server/worldmonitor/intelligence/v1/get-country-facts.ts"
+          "path": "scripts/freeze-resilience-ranking.mjs"
         }
       ]
     },
@@ -7794,6 +7794,15 @@
       "attribution": "Credit query1.finance.yahoo.com and link to the original upstream API/dataset.",
       "status": "terms-review",
       "references": [
+        {
+          "path": "packages/server/worldmonitor/market/v1/analyze-stock.ts"
+        },
+        {
+          "path": "packages/server/worldmonitor/market/v1/get-country-stock-index.ts"
+        },
+        {
+          "path": "packages/server/worldmonitor/market/v1/get-price-history.ts"
+        },
         {
           "path": "scripts/_seed-utils.mjs"
         },
@@ -7829,15 +7838,6 @@
         },
         {
           "path": "scripts/seed-market-quotes.mjs"
-        },
-        {
-          "path": "server/worldmonitor/market/v1/analyze-stock.ts"
-        },
-        {
-          "path": "server/worldmonitor/market/v1/get-country-stock-index.ts"
-        },
-        {
-          "path": "server/worldmonitor/market/v1/get-price-history.ts"
         }
       ]
     },
@@ -7851,7 +7851,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
+          "path": "packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
         }
       ]
     },
@@ -7888,7 +7888,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -8580,7 +8580,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/market/v1/stock-news-search.ts"
+          "path": "packages/server/worldmonitor/market/v1/stock-news-search.ts"
         }
       ]
     },
@@ -8777,7 +8777,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -8916,7 +8916,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -8930,7 +8930,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -8944,7 +8944,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -8958,7 +8958,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -8972,7 +8972,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -8986,7 +8986,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -9000,7 +9000,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -9014,7 +9014,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -9028,7 +9028,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -9042,7 +9042,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -9056,7 +9056,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -9070,7 +9070,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -9084,7 +9084,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -10024,7 +10024,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
+          "path": "packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
         }
       ]
     },
@@ -10456,6 +10456,15 @@
           "path": "api/seed-contract-probe.ts"
         },
         {
+          "path": "packages/server/_shared/brief-url.ts"
+        },
+        {
+          "path": "packages/server/_shared/notify-fields.ts"
+        },
+        {
+          "path": "packages/server/worldmonitor/infrastructure/v1/reverse-geocode.ts"
+        },
+        {
           "path": "scripts/_country-stock-index-moex.mjs"
         },
         {
@@ -10532,15 +10541,6 @@
         },
         {
           "path": "scripts/validate-seed-migration.mjs"
-        },
-        {
-          "path": "server/_shared/brief-url.ts"
-        },
-        {
-          "path": "server/_shared/notify-fields.ts"
-        },
-        {
-          "path": "server/worldmonitor/infrastructure/v1/reverse-geocode.ts"
         },
         {
           "path": "src/bootstrap/web-vitals-utils.ts"
@@ -10800,10 +10800,10 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "scripts/_shared-av.mjs"
+          "path": "packages/server/worldmonitor/market/v1/_quote-provider.ts"
         },
         {
-          "path": "server/worldmonitor/market/v1/_quote-provider.ts"
+          "path": "scripts/_shared-av.mjs"
         }
       ]
     },
@@ -11205,10 +11205,10 @@
       "status": "reviewed",
       "references": [
         {
-          "path": "scripts/lib/border-route-sources.mjs"
+          "path": "packages/server/worldmonitor/displacement/v1/cross-border-data.ts"
         },
         {
-          "path": "server/worldmonitor/displacement/v1/cross-border-data.ts"
+          "path": "scripts/lib/border-route-sources.mjs"
         }
       ]
     },
@@ -11390,7 +11390,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -11691,7 +11691,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -12064,10 +12064,10 @@
       "status": "reviewed",
       "references": [
         {
-          "path": "scripts/lib/border-route-sources.mjs"
+          "path": "packages/server/worldmonitor/displacement/v1/cross-border-data.ts"
         },
         {
-          "path": "server/worldmonitor/displacement/v1/cross-border-data.ts"
+          "path": "scripts/lib/border-route-sources.mjs"
         }
       ]
     },
@@ -12155,7 +12155,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -12279,6 +12279,9 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/worldmonitor/displacement/v1/cross-border-data.ts"
+        },
+        {
           "path": "packages/shared/news-catalog.json"
         },
         {
@@ -12289,9 +12292,6 @@
         },
         {
           "path": "scripts/seed-security-advisories.mjs"
-        },
-        {
-          "path": "server/worldmonitor/displacement/v1/cross-border-data.ts"
         }
       ]
     },
@@ -12758,10 +12758,10 @@
       "status": "reviewed",
       "references": [
         {
-          "path": "scripts/lib/border-route-sources.mjs"
+          "path": "packages/server/worldmonitor/displacement/v1/cross-border-data.ts"
         },
         {
-          "path": "server/worldmonitor/displacement/v1/cross-border-data.ts"
+          "path": "scripts/lib/border-route-sources.mjs"
         }
       ]
     },
@@ -12929,10 +12929,10 @@
       "status": "excluded",
       "references": [
         {
-          "path": "scripts/lib/border-route-sources.mjs"
+          "path": "packages/server/worldmonitor/displacement/v1/cross-border-data.ts"
         },
         {
-          "path": "server/worldmonitor/displacement/v1/cross-border-data.ts"
+          "path": "scripts/lib/border-route-sources.mjs"
         }
       ]
     },
@@ -12974,7 +12974,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -13048,7 +13048,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -13455,7 +13455,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -13782,7 +13782,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
+          "path": "packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
         }
       ]
     },
@@ -13973,6 +13973,9 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "packages/server/worldmonitor/research/v1/list-tech-events.ts"
+        },
+        {
           "path": "packages/shared/news-catalog.json"
         },
         {
@@ -13980,9 +13983,6 @@
         },
         {
           "path": "scripts/seed-research.mjs"
-        },
-        {
-          "path": "server/worldmonitor/research/v1/list-tech-events.ts"
         }
       ]
     },
@@ -14320,7 +14320,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -14484,7 +14484,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
+          "path": "packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
         }
       ]
     },
@@ -14502,6 +14502,12 @@
         },
         {
           "path": "api/not-found.ts"
+        },
+        {
+          "path": "packages/server/_shared/deprecation-policy.ts"
+        },
+        {
+          "path": "packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts"
         },
         {
           "path": "scripts/build-open-data-chokepoints.mjs"
@@ -14544,12 +14550,6 @@
         },
         {
           "path": "scripts/syndication-candidates.mjs"
-        },
-        {
-          "path": "server/_shared/deprecation-policy.ts"
-        },
-        {
-          "path": "server/worldmonitor/intelligence/v1/_country-brief-evidence.ts"
         }
       ]
     },
@@ -14684,7 +14684,7 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
+          "path": "packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts"
         }
       ]
     },
@@ -14698,13 +14698,13 @@
       "status": "reviewed",
       "references": [
         {
+          "path": "packages/server/worldmonitor/resilience/v1/_canada-national-overlay.ts"
+        },
+        {
+          "path": "packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
+        },
+        {
           "path": "scripts/lib/statcan-wds.mjs"
-        },
-        {
-          "path": "server/worldmonitor/resilience/v1/_canada-national-overlay.ts"
-        },
-        {
-          "path": "server/worldmonitor/resilience/v1/_indicator-source-policy.ts"
         }
       ]
     },

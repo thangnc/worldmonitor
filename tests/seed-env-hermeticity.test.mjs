@@ -159,7 +159,7 @@ function findHomeDirReferences(source) {
 // Every tree that can reach a seeder or run server-side. Wider than scripts/ on
 // purpose: a loader in api/ or cli/ leaks exactly the same credentials, and the
 // sweeps cost nothing to extend.
-const SCANNED_TREES = ['scripts', 'api', 'server', 'cli', 'middleware.ts'];
+const SCANNED_TREES = ['scripts', 'api', 'packages/server', 'cli', 'middleware.ts'];
 
 /**
  * Yields `[entry, source]` for every scannable file.

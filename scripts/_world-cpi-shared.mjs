@@ -12,7 +12,7 @@
 // shape for the Eurostat-comparable HICP series.
 //
 // Percent changes are computed at READ time
-// (server/worldmonitor/economic/v1/world-cpi-monthly.ts) because a
+// (packages/server/worldmonitor/economic/v1/world-cpi-monthly.ts) because a
 // period-over-period change spans window boundaries that only exist after the
 // merge across sources.
 //

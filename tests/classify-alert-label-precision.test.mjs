@@ -23,7 +23,7 @@ import { getLlmAttemptTimeoutMs, isDeepseekV4FlashModel } from '../scripts/_llm-
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const relaySrc = readFileSync(resolve(root, 'scripts/ais-relay.cjs'), 'utf8');
-const rpcSrc = readFileSync(resolve(root, 'server/worldmonitor/intelligence/v1/classify-event.ts'), 'utf8');
+const rpcSrc = readFileSync(resolve(root, 'packages/server/worldmonitor/intelligence/v1/classify-event.ts'), 'utf8');
 const fixture = JSON.parse(readFileSync(resolve(root, 'tests/fixtures/classify-judged-headlines.json'), 'utf8'));
 
 const labelsOf = (runName) => {

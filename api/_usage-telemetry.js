@@ -1,6 +1,6 @@
 // Edge-safe wm_api_usage emission for standalone API routes that do not pass
-// through server/gateway.ts. Keep this helper in api/: root-level .js Edge
-// functions cannot import server/_shared modules at runtime.
+// through packages/server/gateway.ts. Keep this helper in api/: root-level .js Edge
+// functions cannot import packages/server/_shared modules at runtime.
 
 import { getClientIp, hasCloudflareTransitProof, UNKNOWN_CLIENT_IP } from './_client-ip.js';
 

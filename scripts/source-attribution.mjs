@@ -47,7 +47,7 @@ const REFERENCE_DISPLAY_LIMIT = 4;
 const MANIFEST_KIND_RE = /^(?:structured|feed|operational-status)(?:\+(?:structured|feed|operational-status))*$/;
 const LOGICAL_KIND_RE = /^(?:candidate|structured|feed|operational-status)(?:\+(?:structured|feed|operational-status))*$/;
 
-const SOURCE_ROOTS = ['scripts', 'server', 'api', 'src'];
+const SOURCE_ROOTS = ['scripts', 'packages/server', 'api', 'src'];
 const STRUCTURED_CATALOG_FILES = new Set(['scripts/shared/regional-energy-feeds.json']);
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.js', '.mjs', '.ts', '.tsx']);
 const FEED_FILES = new Set([
@@ -58,7 +58,7 @@ const FEED_FILES = new Set([
   'src/config/live-video-sources.ts',
 ]);
 const PRESENTATION_ONLY_FILES = new Set(['src/config/live-video-sources.ts']);
-const STATUS_FILE = 'server/worldmonitor/infrastructure/v1/list-service-statuses.ts';
+const STATUS_FILE = 'packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts';
 
 // URL literals are intentionally parsed before classification.  This catches
 // both quoted URLs and template literals such as the CFTC dataset endpoint.
@@ -1135,7 +1135,7 @@ const DYNAMIC_HOSTS = [
   { host: 'www.swfinstitute.org', kind: 'structured', path: 'scripts/seed-sovereign-wealth.mjs' },
   { host: 'www.ifswf.org', kind: 'structured', path: 'scripts/seed-sovereign-wealth.mjs' },
   { host: 'www.visionofhumanity.org', kind: 'structured', path: 'scripts/seed-resilience-static.mjs' },
-  { host: 'earth-search.aws.element84.com', kind: 'structured', path: 'server/worldmonitor/imagery/v1/search-imagery.ts' },
+  { host: 'earth-search.aws.element84.com', kind: 'structured', path: 'packages/server/worldmonitor/imagery/v1/search-imagery.ts' },
 ];
 
 const EXCLUDED_HOSTS = new Set([
@@ -1157,7 +1157,7 @@ const EXCLUDED_HOSTS = new Set([
   't.me',
   'reddit.com',
   'openrouter.ai',
-  // AI model provider (server/_shared/llm-anthropic.ts), not an ingested dataset.
+  // AI model provider (packages/server/_shared/llm-anthropic.ts), not an ingested dataset.
   'api.anthropic.com',
   'api.typesafe.ai',
   'tts.baidu.com',
@@ -1297,7 +1297,7 @@ function isGeneratedSourcePath(rootDir, relativePath) {
   // docker/build-handlers.mjs emits a .js sibling next to each api/**/*.ts
   // handler. The TypeScript source is the authority; the bundle just repeats
   // its URLs (and any inlined deps). Restrict the sibling skip to api/:
-  // authored JS under scripts/, server/, or src/ stays in the inventory even
+  // authored JS under scripts/, packages/server/, or src/ stays in the inventory even
   // when a same-stem .ts/.tsx sibling exists.
   if (extname(base) !== '.js') return false;
   if (!relativePath.startsWith('api/')) return false;
@@ -1996,7 +1996,7 @@ export function renderAttributionSection(inventory, manifest) {
     '## Observed Source Inventory',
     '',
     BEGIN_MARKER,
-    `This generated inventory covers **${stats.activeHosts} active source hosts** representing **${stats.providerCount} active providers** (**${stats.structuredHosts} structured/API**, **${stats.feedHosts} feed**, and **${stats.operationalStatusHosts} operational-status** hosts). It is derived from source declarations in \`scripts/\`, \`server/\`, \`api/\`, and \`src/\`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.`,
+    `This generated inventory covers **${stats.activeHosts} active source hosts** representing **${stats.providerCount} active providers** (**${stats.structuredHosts} structured/API**, **${stats.feedHosts} feed**, and **${stats.operationalStatusHosts} operational-status** hosts). It is derived from source declarations in \`scripts/\`, \`packages/server/\`, \`api/\`, and \`src/\`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.`,
     '',
     '| Provider | Observed surface |',
     '| --- | --- |',

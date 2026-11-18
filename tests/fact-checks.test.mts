@@ -17,9 +17,9 @@ import {
   isStrongFactCheckMatch,
   selectFactChecks,
   type FactCheckApiClaim,
-} from '../server/_shared/fact-checks.ts';
-import { searchFactChecks } from '../server/worldmonitor/news/v1/search-fact-checks.ts';
-import { factCheckCacheKey, factCheckQuery } from '../server/_shared/fact-check-search.ts';
+} from '../packages/server/_shared/fact-checks.ts';
+import { searchFactChecks } from '../packages/server/worldmonitor/news/v1/search-fact-checks.ts';
+import { factCheckCacheKey, factCheckQuery } from '../packages/server/_shared/fact-check-search.ts';
 
 const CLAIM = 'Russia agreed to supply diesel fuel to the United States';
 
@@ -204,7 +204,7 @@ describe('uniform application (#9094)', () => {
   });
 
   it('has no per-person, per-party, per-topic or per-country rule in the matching code', () => {
-    const source = readFileSync(new URL('../server/_shared/fact-checks.ts', import.meta.url), 'utf8')
+    const source = readFileSync(new URL('../packages/server/_shared/fact-checks.ts', import.meta.url), 'utf8')
       .replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
     for (const subject of SUBJECTS) {
       assert.doesNotMatch(source, new RegExp(`\\b${subject}\\b`, 'i'), `fact-checks.ts names ${subject}`);

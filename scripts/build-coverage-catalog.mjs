@@ -13,7 +13,7 @@ export const COVERAGE_DATASET_FILE = 'coverage.json';
 // tooltip wins when one exists; news panels without either fall back to their
 // feed list.
 export const PANEL_DESCRIPTIONS_PATH = 'scripts/data/coverage-panel-descriptions.json';
-const SERVER_FEEDS_PATH = 'server/worldmonitor/news/v1/_feeds.ts';
+const SERVER_FEEDS_PATH = 'packages/server/worldmonitor/news/v1/_feeds.ts';
 export const COVERAGE_INPUT_PATHS = Object.freeze([
   'scripts/build-coverage-catalog.mjs',
   PANEL_DESCRIPTIONS_PATH,

@@ -9,7 +9,7 @@
 // and recomputed by the readers from the canonical key only while this key is
 // absent (deploy window, or an extra-key write that failed after publish).
 //
-// Shared by scripts/ and server/: keep it free of imports outside scripts/shared/.
+// Shared by scripts/ and packages/server/: keep it free of imports outside scripts/shared/.
 
 import { ciiCountryAt } from './cii-country-borders.mjs';
 

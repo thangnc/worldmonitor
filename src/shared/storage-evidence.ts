@@ -4,7 +4,7 @@
 // our opinion. `publicBadge` is a deterministic function of the raw evidence
 // bundle, versioned so consumers can pin a reader to a classifier version.
 //
-// Shared between the server handler (server/worldmonitor/supply-chain/v1/
+// Shared between the server handler (packages/server/worldmonitor/supply-chain/v1/
 // list-storage-facilities.ts — attaches the derived badge to the RPC
 // response) AND the client panel's bootstrap path
 // (src/components/StorageFacilityMapPanel.ts — runs the same deriver

@@ -243,7 +243,7 @@ function upsertDatasetRecord(target, iso2, datasetField, value) {
  *
  * Only the REQUEST id is prefixed. The stored key stays the bare code on
  * purpose: packages/shared/wgi-indicator-keys.json is also the payload contract that
- * server/.../\_dimension-scorers.ts reads back with
+ * packages/server/.../\_dimension-scorers.ts reads back with
  * `indicators[key]`, and every record already in Redis is keyed that way. This
  * seeder is annual with a 400-day TTL, so renaming the stored key would leave
  * the governance dimension reading nothing until the next re-seed.

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { matchesCountryText } from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import { matchesCountryText } from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 // Issue #3744: AMBIGUOUS_ALIASES previously skipped every alias for
 // countries whose only name collides with another token (Niger,

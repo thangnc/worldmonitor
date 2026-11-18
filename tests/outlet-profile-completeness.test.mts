@@ -12,7 +12,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { validateOutletProfiles } from '../scripts/lib/outlet-catalog.mjs';
-import { getOutletProfile } from '../server/_shared/outlet-profile.ts';
+import { getOutletProfile } from '../packages/server/_shared/outlet-profile.ts';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const profiles = JSON.parse(readFileSync(join(repoRoot, 'packages/shared/outlet-profile.json'), 'utf8'));

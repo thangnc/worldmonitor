@@ -10,7 +10,7 @@ import {
   projectChinaActivityNowcastWireResponse,
   resolveChinaActivityNowcastSnapshot,
   type ChinaActivityNowcastCache,
-} from '../server/worldmonitor/economic/v1/get-china-activity-nowcast';
+} from '../packages/server/worldmonitor/economic/v1/get-china-activity-nowcast';
 import {
   evaluateChinaActivityNowcast,
   parseChinaActivityNowcastWirePayload,
@@ -23,7 +23,7 @@ import type {
 } from '../packages/shared/china-corridor-control-towers';
 import type {
   ChinaCorridorDirectionalSnapshot,
-} from '../server/worldmonitor/economic/v1/china-corridor-breadth-history';
+} from '../packages/server/worldmonitor/economic/v1/china-corridor-breadth-history';
 import { NO2_ACTIVITY_KEY } from '../scripts/shared/no2-activity.mjs';
 import { no2ActivityDataset } from './helpers/no2-activity-fixture.mjs';
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { getIpGeo } from '../server/worldmonitor/infrastructure/v1/get-ip-geo.ts';
+import { getIpGeo } from '../packages/server/worldmonitor/infrastructure/v1/get-ip-geo.ts';
 
 function ctxWithProof(proof) {
   if (proof) process.env.CF_EDGE_PROOF_SECRET = 'edge-secret-xyz';

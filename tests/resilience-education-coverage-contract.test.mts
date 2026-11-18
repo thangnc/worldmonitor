@@ -8,7 +8,7 @@ import {
   parseRankableRecordCount,
 } from '../api/_rankable-coverage.js';
 import { ACTIVATION_MIN_COUNTRIES } from '../scripts/seed-education-attainment.mjs';
-import { EDUCATION_ACTIVATION_MIN_COUNTRIES } from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+import { EDUCATION_ACTIVATION_MIN_COUNTRIES } from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import sovereignStatus from '../scripts/shared/sovereign-status.json';
 
 const countryCodes = sovereignStatus.entries.map((entry) => entry.iso2);

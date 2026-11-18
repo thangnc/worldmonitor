@@ -24,7 +24,7 @@ const GENERATED_SERVER_ROOT = join(ROOT, 'packages', 'contracts', 'generated', '
 const OUTPUT = join(GENERATED_SERVER_ROOT, 'request_validation.ts');
 const CHECK_ONLY = process.argv.includes('--check');
 const RULE_PREFIX = '(buf.validate.field).';
-// Keep in sync with server/request-validator.ts DEFAULT_STRING_MAX_BYTES (#8402).
+// Keep in sync with packages/server/request-validator.ts DEFAULT_STRING_MAX_BYTES (#8402).
 const DEFAULT_STRING_MAX_BYTES = 64 * 1024;
 
 const SUPPORTED_RULES = new Set([

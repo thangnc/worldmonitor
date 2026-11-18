@@ -16,9 +16,9 @@ const MAX_SCAN_ITERATIONS = 5;
 // token revocation (or a replay-protection reset), so a leaked relay secret
 // must not be able to log every MCP client out.
 // `internal-mcp-replay:` holds the nonces that make a signed internal-MCP
-// request single-use (server/gateway.ts), so purging it re-opens the replay
+// request single-use (packages/server/gateway.ts), so purging it re-opens the replay
 // window. `webhook:` holds customers' shipping webhook subscriptions and their
-// signing secrets (server/worldmonitor/shipping/v2/webhook-shared.ts); that is
+// signing secrets (packages/server/worldmonitor/shipping/v2/webhook-shared.ts); that is
 // durable tenant data, not a cache.
 const BLOCKLIST_PREFIXES = [
   'rl:', '__', 'oauth:', 'mcp-grant:', 'wm:slack:oauth:', 'wm:discord:oauth:',

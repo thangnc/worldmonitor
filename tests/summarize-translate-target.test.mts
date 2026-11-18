@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, it } from 'node:test';
 import {
   __setTranslateBudgetLimiterForTests,
   summarizeArticle,
-} from '../server/worldmonitor/news/v1/summarize-article.ts';
+} from '../packages/server/worldmonitor/news/v1/summarize-article.ts';
 
 const ENV_KEYS = ['OPENROUTER_API_KEY', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'] as const;
 const originalEnv = new Map<string, string | undefined>();

@@ -96,7 +96,7 @@ measured scripts-root Railway package:
 
 Vercel Edge Functions cannot import that scripts-only tree. The
 `generate-scorecard-edge-mirrors.mjs` generator therefore emits concrete `.ts`
-mirrors under `server/worldmonitor/scorecard/v1/`, rewrites local `.mts`
+mirrors under `packages/server/worldmonitor/scorecard/v1/`, rewrites local `.mts`
 specifiers, and leaves the measured Railway placement unchanged. `make
 generate`, the no-write mirror check, and the Edge packaging test keep the
 manifest complete and the emitted modules byte-current with the canonical

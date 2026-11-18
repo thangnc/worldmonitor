@@ -45,7 +45,7 @@ import {
 } from '../src/lite/data/connectors.ts';
 import type { CompactHealth } from '../src/lite/data/sources.ts';
 import type { ResourceState } from '../src/lite/data/store.ts';
-import { SOURCE_TIERS } from '../server/_shared/source-tiers.ts';
+import { SOURCE_TIERS } from '../packages/server/_shared/source-tiers.ts';
 import { __testing__ as healthTesting } from '../api/health.js';
 import attributionManifest from '../packages/shared/source-attribution-manifest.json' with { type: 'json' };
 import { AGGREGATE_LABEL_MIN, AGGREGATE_MAX, AGGREGATE_MIN, WORLD_BOUNDS, aggregateDiameter, compactCount, markerBounds, placeCard } from '../src/lite/map/view.ts';

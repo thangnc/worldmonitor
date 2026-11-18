@@ -30,17 +30,17 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { CHROME_UA, loadEnvFile } from './_seed-utils.mjs';
-import { unwrapEnvelope } from '../server/_shared/seed-envelope.ts';
+import { unwrapEnvelope } from '../packages/server/_shared/seed-envelope.ts';
 import {
   scoreAllDimensions,
   RESILIENCE_DIMENSION_WEIGHTS,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 import {
   buildDimensionList,
   buildDomainList,
   penalizedPillarScore,
-} from '../server/worldmonitor/resilience/v1/_shared.ts';
-import { buildPillarList } from '../server/worldmonitor/resilience/v1/_pillar-membership.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_shared.ts';
+import { buildPillarList } from '../packages/server/worldmonitor/resilience/v1/_pillar-membership.ts';
 import {
   MATCHED_PAIRS,
   evaluateWholeIndexMatchedPairs,
@@ -636,7 +636,7 @@ async function extractionCoverageGate() {
     buildIndicatorExtractionPlan,
     EXTRACTION_RULES,
   } = await import('./compare-resilience-current-vs-proposed.mjs');
-  const { INDICATOR_REGISTRY } = await import('../server/worldmonitor/resilience/v1/_indicator-registry.ts');
+  const { INDICATOR_REGISTRY } = await import('../packages/server/worldmonitor/resilience/v1/_indicator-registry.ts');
   const plan = buildIndicatorExtractionPlan(INDICATOR_REGISTRY);
   const educationRule = EXTRACTION_RULES.femaleUpperSecondaryAttainment;
   const educationPayload = educationRule?.key ? await readKey(educationRule.key) : null;

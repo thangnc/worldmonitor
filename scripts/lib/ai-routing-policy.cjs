@@ -1,6 +1,6 @@
 'use strict';
 
-// Node twin of server/_shared/ai-routing-policy.ts for Railway jobs that put
+// Node twin of packages/server/_shared/ai-routing-policy.ts for Railway jobs that put
 // one user's data into an LLM prompt (AI alert impact, personalised digest
 // prose). The policy lives in Convex `aiRoutingPolicies`; the relay reads it
 // through `/relay/ai-routing-policy` with its delivery secret.

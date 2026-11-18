@@ -1,7 +1,7 @@
 /**
  * Tests for the U11 brief_thread_open telemetry plumbing.
  *
- * The magazine emits `brief-thread-open`: `server/_shared/brief-render.js`
+ * The magazine emits `brief-thread-open`: `packages/server/_shared/brief-render.js`
  * stamps every story source-link with `data-thread-open / data-country /
  * data-severity / data-followed`, and an inline script invokes
  * `window.umami?.track('brief-thread-open', { … })` on click. (The
@@ -15,7 +15,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderBriefMagazine } from '../server/_shared/brief-render.js';
+import { renderBriefMagazine } from '../packages/server/_shared/brief-render.js';
 import { BRIEF_ENVELOPE_VERSION } from '../packages/shared/brief-envelope.js';
 
 // ---------------------------------------------------------------------------

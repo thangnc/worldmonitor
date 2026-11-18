@@ -36,8 +36,8 @@ describe('supply-chain handlers: input-shape validation returns 400, not empty-2
     process.env.UPSTASH_REDIS_REST_URL = 'https://fake-upstash.example';
     process.env.UPSTASH_REDIS_REST_TOKEN = 'fake-token';
 
-    const gcpMod = await import('../server/worldmonitor/supply-chain/v1/get-country-products.ts');
-    const gmscMod = await import('../server/worldmonitor/supply-chain/v1/get-multi-sector-cost-shock.ts');
+    const gcpMod = await import('../packages/server/worldmonitor/supply-chain/v1/get-country-products.ts');
+    const gmscMod = await import('../packages/server/worldmonitor/supply-chain/v1/get-multi-sector-cost-shock.ts');
     getCountryProducts = gcpMod.getCountryProducts;
     getMultiSectorCostShock = gmscMod.getMultiSectorCostShock;
     const gen = await import('../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server.ts');

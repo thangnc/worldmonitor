@@ -76,7 +76,7 @@ describe('simulation-queue parity (#3734 U3)', () => {
       enqueueSimulationTask: typeof enqueueSimulationTaskMjs;
     };
     enqueueSimulationTaskMjs = mjs.enqueueSimulationTask;
-    const ts = await import('../server/_shared/simulation-queue.ts');
+    const ts = await import('../packages/server/_shared/simulation-queue.ts');
     enqueueSimulationTaskForServer = ts.enqueueSimulationTaskForServer;
   });
 

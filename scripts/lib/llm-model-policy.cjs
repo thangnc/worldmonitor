@@ -36,7 +36,7 @@ const OPENROUTER_FREE_PRIMARY_MODEL = 'google/gemma-4-26b-a4b-it:free';
 // NVIDIA logs free-endpoint prompts and its API Trial Terms cover trial and
 // evaluation use. Accepted for a best-effort outage leg; the addendum in that
 // doc records the decision. Text users type (chat-analyst, deduct-situation)
-// skips this leg: see USER_TEXT_EXCLUDED_PROVIDERS in server/_shared/llm.ts.
+// skips this leg: see USER_TEXT_EXCLUDED_PROVIDERS in packages/server/_shared/llm.ts.
 // Keep any new user-text path off it the same way.
 //
 // tests/openrouter-free-models-live.test.mjs, run daily by

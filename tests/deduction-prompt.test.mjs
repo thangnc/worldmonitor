@@ -7,7 +7,7 @@ import {
   inferProviderLabel,
   postProcessDeductionOutput,
   splitDeductionContext,
-} from '../server/worldmonitor/intelligence/v1/deduction-prompt.ts';
+} from '../packages/server/worldmonitor/intelligence/v1/deduction-prompt.ts';
 
 describe('inferDeductionMode', () => {
   it('selects brief mode for short convergence assessments', () => {

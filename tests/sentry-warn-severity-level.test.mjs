@@ -86,7 +86,7 @@ describe('warn-severity Sentry captures', () => {
   it('pass level: warning alongside the severity: warn tag', () => {
     const offenders = [];
     let calls = 0;
-    for (const dir of ['api', 'server']) {
+    for (const dir of ['api', 'packages/server']) {
       for (const file of sourceFiles(join(ROOT, dir))) {
         const result = warnCapturesMissingLevel(file, readFileSync(file, 'utf8'));
         calls += result.calls;
@@ -96,7 +96,7 @@ describe('warn-severity Sentry captures', () => {
     // The warn-tagged captures this was written for left with the brief and
     // MCP routes (Lite refactor Phase 1c); the scan must still reach the
     // remaining server captures so a future warn tag is checked.
-    assert.ok(calls > 0, 'expected the scan to reach captureSilentError calls in api/ and server/');
+    assert.ok(calls > 0, 'expected the scan to reach captureSilentError calls in api/ and packages/server/');
     assert.deepEqual(offenders, []);
   });
 });

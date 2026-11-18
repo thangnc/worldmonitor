@@ -1,6 +1,6 @@
 // The news catalog: every RSS feed and intel source WorldMonitor lists is
 // declared once in news-catalog.json. The browser catalog (src/config/feeds.ts)
-// and the server catalog (server/worldmonitor/news/v1/_feeds.ts) are views
+// and the server catalog (packages/server/worldmonitor/news/v1/_feeds.ts) are views
 // built here, so a feed cannot exist for one surface without the other
 // knowing. Scripts that must not execute app code read the JSON directly.
 //

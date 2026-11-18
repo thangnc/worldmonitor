@@ -232,11 +232,11 @@ intervals, change attribution, external expert review).
 - **13 dimensions across 5 weighted domains**, final aggregation is a
   domain-weighted average. Domain weights today: economic 0.22, infrastructure
   0.20, energy 0.15, social-governance 0.25, health-food 0.18.
-  Source: `server/worldmonitor/resilience/v1/_dimension-scorers.ts`,
-  `server/worldmonitor/resilience/v1/_shared.ts:~200`.
+  Source: `packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts`,
+  `packages/server/worldmonitor/resilience/v1/_shared.ts:~200`.
 - **RPC handlers:** `GetResilienceScore(countryCode)` and
   `GetResilienceRanking()` under
-  `server/worldmonitor/resilience/v1/{get-resilience-score.ts, get-resilience-ranking.ts, handler.ts}`.
+  `packages/server/worldmonitor/resilience/v1/{get-resilience-score.ts, get-resilience-ranking.ts, handler.ts}`.
 - **Cache keys** (all in `_shared.ts`): `resilience:score:v7:<cc>` (6h),
   `resilience:ranking:v8` (6h, written only when all countries scored),
   `resilience:history:v4:<cc>` (daily sorted set, 30-day retention),
@@ -254,7 +254,7 @@ intervals, change attribution, external expert review).
   `scripts/validate-resilience-sensitivity.mjs`. Phase 2's benchmark suite
   extends these, it does not replace them.
 - **Statistical utilities** (reusable, pure functions) in
-  `server/_shared/resilience-stats.ts`: `minMaxNormalize`, `cronbachAlpha`,
+  `packages/server/_shared/resilience-stats.ts`: `minMaxNormalize`, `cronbachAlpha`,
   `detectTrend`, `detectChangepoints` (CUSUM), `exponentialSmoothing`,
   `nrcForecast`.
 - **Confidence surfaces today** (schema): `coverage`, `observedWeight`,
@@ -288,13 +288,13 @@ intervals, change attribution, external expert review).
 
 - **New RPCs:** define message in `proto/worldmonitor/<domain>/`, add RPC with
   `(sebuf.http.config)` annotation, `make generate`, create handler in
-  `server/worldmonitor/<domain>/`, wire in domain's `handler.ts`, use
+  `packages/server/worldmonitor/<domain>/`, wire in domain's `handler.ts`, use
   `cachedFetchJson()` with request-varying params in the cache key.
 - **4-file bootstrap wiring** for any new globally-bootstrapped RPC:
-  `server/_shared/cache-keys.ts`, `api/bootstrap.js`, `api/health.js`
-  (`SEED_META` registry, not `SEED_DOMAINS`), `server/_shared/gateway.ts`.
+  `packages/server/_shared/cache-keys.ts`, `api/bootstrap.js`, `api/health.js`
+  (`SEED_META` registry, not `SEED_DOMAINS`), `packages/server/_shared/gateway.ts`.
 - **Edge functions** (`api/*.js`) are self-contained JS only; cannot import
-  from `src/` or `server/`. Enforced by `tests/edge-functions.test.mjs` +
+  from `src/` or `packages/server/`. Enforced by `tests/edge-functions.test.mjs` +
   pre-push esbuild check.
 - **World coverage is non-negotiable**, no country subsets, no
   `MAJOR_REPORTERS`-style allowlists (repo memory: "world_coverage_never_subset").
@@ -629,9 +629,9 @@ methodology page and reproduce any country score from the Redis cache keys.
   doc linter (checks every dimension in registry has a subsection in the
   mdx), `data_version` round-trip, imputation-class plumbing.
 - **T1.9** Bootstrap + health wiring: if T1.2 introduces new cache keys,
-  update `server/_shared/cache-keys.ts`, `api/bootstrap.js`, `api/health.js`
+  update `packages/server/_shared/cache-keys.ts`, `api/bootstrap.js`, `api/health.js`
   `SEED_META` (memory: `health_js_registry_names`), and
-  `server/_shared/gateway.ts` per the 4-file checklist.
+  `packages/server/_shared/gateway.ts` per the 4-file checklist.
   T1.9 shipped in PR #2965 as a cache-key / health-registry sync test
   + Phase 1 scorecard close-out. No cache-key bumps were needed in
   Phase 1 because every schema addition was additive with default
@@ -1164,14 +1164,14 @@ are complete.
 
 ### Internal references
 
-- `server/worldmonitor/resilience/v1/_dimension-scorers.ts`, 13 dimension
+- `packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts`, 13 dimension
   scorers, ~1073 lines.
-- `server/worldmonitor/resilience/v1/_shared.ts`, aggregation, confidence,
+- `packages/server/worldmonitor/resilience/v1/_shared.ts`, aggregation, confidence,
   cache keys (~line 200 onwards).
-- `server/worldmonitor/resilience/v1/get-resilience-score.ts`
-- `server/worldmonitor/resilience/v1/get-resilience-ranking.ts`
-- `server/worldmonitor/resilience/v1/handler.ts`
-- `server/_shared/resilience-stats.ts`, statistical utilities (Cronbach,
+- `packages/server/worldmonitor/resilience/v1/get-resilience-score.ts`
+- `packages/server/worldmonitor/resilience/v1/get-resilience-ranking.ts`
+- `packages/server/worldmonitor/resilience/v1/handler.ts`
+- `packages/server/_shared/resilience-stats.ts`, statistical utilities (Cronbach,
   CUSUM, forecast).
 - `scripts/seed-resilience-static.mjs`, 11 slots, ~920 lines.
 - `scripts/_resilience-intervals.mjs`, shared interval helpers.

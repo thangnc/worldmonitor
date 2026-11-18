@@ -80,7 +80,7 @@ if (!path) {
 const apiKey = (process.env.OPENROUTER_API_KEY || '').trim();
 if (!apiKey) throw new Error('OPENROUTER_API_KEY is not set (try node --env-file=.env.local)');
 const relaySrc = readFileSync(resolve(root, 'scripts/ais-relay.cjs'), 'utf8');
-const rpcSrc = readFileSync(resolve(root, 'server/worldmonitor/intelligence/v1/classify-event.ts'), 'utf8');
+const rpcSrc = readFileSync(resolve(root, 'packages/server/worldmonitor/intelligence/v1/classify-event.ts'), 'utf8');
 const prompt = path === 'relay' ? extractRelayPrompt(relaySrc) : extractRpcPrompt(rpcSrc);
 const model = arg('model') || (path === 'relay' ? extractRelayOpenRouterModel(relaySrc) : extractRpcOpenRouterModel(rpcSrc));
 const usage = { usd: 0, failedRequests: 0 };

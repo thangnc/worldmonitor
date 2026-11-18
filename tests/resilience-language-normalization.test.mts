@@ -6,11 +6,11 @@ import {
   LANGUAGE_TIERS,
   getLanguageCoverageFactor,
   type LanguageCoverageTier,
-} from '../server/worldmonitor/resilience/v1/_language-coverage.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_language-coverage.ts';
 import {
   scoreInformationCognitive,
   type ResilienceSeedReader,
-} from '../server/worldmonitor/resilience/v1/_dimension-scorers.ts';
+} from '../packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts';
 
 describe('language coverage normalization (Phase 2 T2.9)', () => {
   it('primary tier countries return 1.0', () => {

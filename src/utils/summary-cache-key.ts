@@ -1,6 +1,6 @@
 // IMPORTANT: This module is the canonical cache-key builder shared by both
-// client (src/) and server (server/ via _shared.ts re-export). It imports
-// sha256Hex from src/utils/hash.ts — do NOT swap to server/_shared/hash.ts
+// client (src/) and server (packages/server/ via _shared.ts re-export). It imports
+// sha256Hex from src/utils/hash.ts — do NOT swap to packages/server/_shared/hash.ts
 // or client/server cache keys will silently diverge.
 import { sha256Hex } from './hash';
 
@@ -52,7 +52,7 @@ const DIGEST_HEX_CHARS = 32;
 const MAX_HEADLINE_LEN = 500;
 export const MAX_SUMMARY_HEADLINES = 5;
 const MAX_GEO_CONTEXT_LEN = 2000;
-// Canonical clip shared with server/worldmonitor/news/v1/summarize-article.ts
+// Canonical clip shared with packages/server/worldmonitor/news/v1/summarize-article.ts
 // (re-exported via its _shared.ts) so the prompt window and the cache-key
 // window cannot drift.
 export const MAX_BODY_LEN = 400;
@@ -122,7 +122,7 @@ async function digestIdentity(fields: readonly string[]): Promise<string> {
 
 /**
  * Canonical cache-key builder for SummarizeArticle results. Shared by both
- * client (src/services/summarization.ts) and server (server/worldmonitor/
+ * client (src/services/summarization.ts) and server (packages/server/worldmonitor/
  * news/v1/_shared.ts re-export as getCacheKey). Client and server MUST call
  * with identical inputs for the cache to align — sanitise any adversarial
  * text (bodies, geoContext) the same way on both sides before calling.

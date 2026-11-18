@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest.ts';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest.ts';
 import {
   STORY_PHASES,
   deriveCoreStoryPhase,

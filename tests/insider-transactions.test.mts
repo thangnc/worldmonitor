@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { getInsiderTransactions } from '../server/worldmonitor/market/v1/get-insider-transactions.ts';
+import { getInsiderTransactions } from '../packages/server/worldmonitor/market/v1/get-insider-transactions.ts';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };

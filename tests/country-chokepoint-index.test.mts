@@ -6,7 +6,7 @@ import {
   vulnerabilityIndex,
   type CountryProduct,
   type ExposureEntry,
-} from '../server/worldmonitor/supply-chain/v1/chokepoint-exposure-utils.js';
+} from '../packages/server/worldmonitor/supply-chain/v1/chokepoint-exposure-utils.js';
 
 function makeProduct(hs4: string, exporterIso2: string, share: number, value = 1_000_000): CountryProduct {
   return {

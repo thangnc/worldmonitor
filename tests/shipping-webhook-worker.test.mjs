@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { THREAT_LEVEL, aisComponent, warningComponent } from '../server/worldmonitor/supply-chain/v1/_scoring.mjs';
+import { THREAT_LEVEL, aisComponent, warningComponent } from '../packages/server/worldmonitor/supply-chain/v1/_scoring.mjs';
 
 import { fakeRedis } from './_lib/fake-webhook-redis.mjs';
 import {
@@ -158,7 +158,7 @@ describe('planTick state machine', () => {
   it('caps each score source at the points the scoring code gives it', () => {
     assert.equal(SCORE_SOURCE_MAX_POINTS.navigationalWarnings, warningComponent(1000));
     assert.equal(SCORE_SOURCE_MAX_POINTS.ais, aisComponent(3));
-    const status = readFileSync(new URL('../server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts', import.meta.url), 'utf8');
+    const status = readFileSync(new URL('../packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts', import.meta.url), 'utf8');
     assert.match(status, new RegExp(`anomaly\\.signal \\? ${SCORE_SOURCE_MAX_POINTS.transit} : 0`));
   });
 

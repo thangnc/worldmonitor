@@ -10,7 +10,7 @@ name: OpenRouter Free Models Live
 # 2026-08-28 and `minimax/minimax-m3:free` on 2026-09-24 (#8570). Each time
 # every call returned HTTP 404, so the chain walked primary 429 -> backup 404
 # -> nothing for seed-insights, seed-forecasts, ais-relay, lib/llm-chain, the
-# regional-snapshot brief and server/_shared/llm.ts. Mock-based tests cannot
+# regional-snapshot brief and packages/server/_shared/llm.ts. Mock-based tests cannot
 # see a delisting, so nothing noticed for an unknown span.
 #
 # No `npm ci`: the suite imports only the policy module plus node builtins.

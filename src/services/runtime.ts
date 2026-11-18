@@ -89,7 +89,7 @@ function isWorldMonitorWebHost(hostname: string): boolean {
 }
 
 // Loopback page origins the API deliberately refuses in production. Keep in
-// step with the bare-localhost entries in api/_cors.js and server/cors.ts.
+// step with the bare-localhost entries in api/_cors.js and packages/server/cors.ts.
 const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
 function isLoopbackHostname(hostname: string): boolean {
@@ -107,7 +107,7 @@ function hostnameOf(url: string): string {
 /**
  * A page on loopback may not send /api/ to a remote origin.
  *
- * `api/_cors.js` and `server/cors.ts` both drop bare localhost/127.0.0.1 from
+ * `api/_cors.js` and `packages/server/cors.ts` both drop bare localhost/127.0.0.1 from
  * the allow-list in production, so every such call returns 403 and the whole
  * dashboard renders unavailable. `VITE_WS_API_URL=https://api.worldmonitor.app`
  * in a developer's .env.local used to do exactly that to `npm run dev`, where

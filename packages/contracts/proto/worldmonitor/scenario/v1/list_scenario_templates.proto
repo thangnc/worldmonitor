@@ -4,7 +4,7 @@ package worldmonitor.scenario.v1;
 
 // ScenarioTemplate mirrors the catalog shape served by
 // GET /api/scenario/v1/list-scenario-templates. The authoritative template
-// registry lives in server/worldmonitor/supply-chain/v1/scenario-templates.ts.
+// registry lives in packages/server/worldmonitor/supply-chain/v1/scenario-templates.ts.
 message ScenarioTemplate {
   string id = 1;
   string name = 2;

@@ -7,7 +7,7 @@
 // logic. No I/O, no LLM calls, no network — fully testable.
 
 import { BRIEF_ENVELOPE_VERSION } from './brief-envelope.js';
-import { assertBriefEnvelope } from '../../server/_shared/brief-render.js';
+import { assertBriefEnvelope } from '../server/_shared/brief-render.js';
 import { isInstitutionalStaticPage } from './url-classifier.js';
 import { classifyEphemeralLiveCoverage } from './ephemeral-live-classifier.js';
 import diplomacyKeywordsData from './diplomacy-keywords.json' with { type: 'json' };

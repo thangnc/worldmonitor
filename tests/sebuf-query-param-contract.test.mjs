@@ -38,7 +38,7 @@ const OPENAPI_NOOP_PARAMS = [
 function fixture() {
   const root = createTempDir('wm-sebuf-query-');
   mkdirSync(join(root, 'packages/contracts/proto/worldmonitor/demo/v1'), { recursive: true });
-  mkdirSync(join(root, 'server/worldmonitor/demo/v1'), { recursive: true });
+  mkdirSync(join(root, 'packages/server/worldmonitor/demo/v1'), { recursive: true });
   return root;
 }
 
@@ -57,7 +57,7 @@ function writeProto(root, fieldSource) {
 }
 
 function writeHandler(root, body) {
-  writeFileSync(join(root, 'server/worldmonitor/demo/v1/list-things.ts'), body);
+  writeFileSync(join(root, 'packages/server/worldmonitor/demo/v1/list-things.ts'), body);
 }
 
 describe('sebuf query-param implementation contract', () => {

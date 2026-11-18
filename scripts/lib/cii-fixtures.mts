@@ -1,5 +1,5 @@
 // CII fixtures: captured production inputs for the scoring seam
-// (computeCiiScoreTable in server/worldmonitor/intelligence/v1/get-risk-scores.ts).
+// (computeCiiScoreTable in packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts).
 // Used by scripts/cii-capture-fixture.mts, scripts/cii-table-diff.mts and
 // tests/cii-invariants.test.mts. See docs/engineering/methodology/cii-change-brief.md.
 import { readdirSync, readFileSync } from 'node:fs';
@@ -17,9 +17,9 @@ import {
   strikeEventCountry,
   type CiiRawInputs,
   type CiiScoreTable,
-} from '../../server/worldmonitor/intelligence/v1/get-risk-scores.ts';
-import { CII_FORMULA_VERSION } from '../../server/worldmonitor/intelligence/v1/_risk-config.ts';
-import { TIER1_COUNTRIES } from '../../server/worldmonitor/intelligence/v1/_shared.ts';
+} from '../../packages/server/worldmonitor/intelligence/v1/get-risk-scores.ts';
+import { CII_FORMULA_VERSION } from '../../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
+import { TIER1_COUNTRIES } from '../../packages/server/worldmonitor/intelligence/v1/_shared.ts';
 
 export const CII_FIXTURE_SCHEMA = 'worldmonitor-cii-fixture/v1';
 export const CII_FIXTURE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../tests/fixtures/cii');

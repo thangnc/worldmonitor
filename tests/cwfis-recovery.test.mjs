@@ -292,7 +292,7 @@ async function seedProcess(initial, now, mode, activeFixture, bcFixture, kmlFixt
     const exit = process.exit;
     process.exit = async code => {
       if (code === 0) {
-        const { listFireDetections } = await import(new URL('../server/worldmonitor/wildfire/v1/list-fire-detections.ts', process.env.TEST_MODULE_URL));
+        const { listFireDetections } = await import(new URL('../packages/server/worldmonitor/wildfire/v1/list-fire-detections.ts', process.env.TEST_MODULE_URL));
         reader = await listFireDetections({}, {});
       }
       exit(code);

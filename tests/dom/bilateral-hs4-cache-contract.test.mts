@@ -6,7 +6,7 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 
 const redis = vi.hoisted(() => ({ store: new Map<string, unknown>(), ttl: new Map<string, number>(), errors: new Set<string>(), reads: [] as string[] }));
-vi.mock('../../server/_shared/redis', () => ({
+vi.mock('../../packages/server/_shared/redis', () => ({
   getCachedJson: async (key: string) => { redis.reads.push(key); return redis.store.get(key) ?? null; },
   readCachedJson: async (key: string) => {
     redis.reads.push(key);
@@ -22,10 +22,10 @@ vi.mock('../../server/_shared/redis', () => ({
   getLargeRawJson: async (key: string) => { redis.reads.push(key); return redis.store.get(key) ?? null; },
   logCacheReadError: () => {},
 }));
-vi.mock('../../server/_shared/premium-check', () => ({ isCallerPremium: async () => true }));
+vi.mock('../../packages/server/_shared/premium-check', () => ({ isCallerPremium: async () => true }));
 
-import { lazyFetchBilateralHs4, lazyFetchHeading } from '../../server/worldmonitor/supply-chain/v1/_bilateral-hs4-lazy';
-import { getCountryProducts } from '../../server/worldmonitor/supply-chain/v1/get-country-products';
+import { lazyFetchBilateralHs4, lazyFetchHeading } from '../../packages/server/worldmonitor/supply-chain/v1/_bilateral-hs4-lazy';
+import { getCountryProducts } from '../../packages/server/worldmonitor/supply-chain/v1/get-country-products';
 import { ValidationError } from '../../packages/contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 
 const SENTINEL = (iso2: string) => `comtrade:bilateral-hs4-lazy-sentinel:${iso2}:v1`;

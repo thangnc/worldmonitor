@@ -56,7 +56,7 @@ const {
 } = require('./lib/email-unsubscribe.cjs');
 const { sendResendEmail } = require('./lib/resend-send.cjs');
 import { readRawJsonFromUpstash, redisPipeline } from '../api/_upstash-json.js';
-import { classifyFeelGood } from '../server/_shared/feelgood-classifier.js';
+import { classifyFeelGood } from '../packages/server/_shared/feelgood-classifier.js';
 import { classifyEphemeralLiveCoverage } from '../packages/shared/ephemeral-live-classifier.js';
 import {
   deriveNotificationStoryPhase,
@@ -114,7 +114,7 @@ import {
   resolveNonDueSynthesisReuse,
   DEFAULT_NONDUE_SYNTHESIS_REUSE_MIN,
 } from './lib/brief-synthesis-reuse.mjs';
-import { assertBriefEnvelope } from '../server/_shared/brief-render.js';
+import { assertBriefEnvelope } from '../packages/server/_shared/brief-render.js';
 import { signBriefUrl, BriefUrlError } from './lib/brief-url-sign.mjs';
 import {
   deduplicateStories,
@@ -272,7 +272,7 @@ const BRIEF_WHY_MATTERS_ENDPOINT_URL =
 
 /**
  * Lowercase + collapse whitespace to mirror extractor-side gate in
- * server/worldmonitor/news/v1/list-feed-digest.ts
+ * packages/server/worldmonitor/news/v1/list-feed-digest.ts
  * (normalizeForDescriptionEquality). Duplicated (not imported) because
  * that module is .ts on a different loader path; a shared .mjs helper
  * would be a cleaner home if more surfaces adopt this check.

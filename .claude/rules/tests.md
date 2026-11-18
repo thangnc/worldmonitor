@@ -17,7 +17,7 @@ Source of truth: CLAUDE.md test-suite table, [CONTRIBUTING.md "Verify the change
 |---|---|---|
 | Data, contract, script | `tests/*.test.{mjs,mts}` | node:test (`npm run test:data`) |
 | DOM (happy-dom) | `tests/dom/` | vitest (`npm run test:dom`) |
-| Server, correlation engine | `server/__tests__/`, `src/services/correlation-engine/` | vitest (`npm run test:server`) |
+| Server, correlation engine | `packages/server/__tests__/`, `src/services/correlation-engine/` | vitest (`npm run test:server`) |
 | `api/` node suites, sidecar | next to the code | `npm run test:sidecar` |
 | Browser | `.claude/skills/verify-worldmonitor/steps/` | Playwright drive through the `verify-worldmonitor` skill (no `e2e/` suite) |
 

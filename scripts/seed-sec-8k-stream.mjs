@@ -29,7 +29,7 @@ export const MIN_STREAM_EVENTS = 50;
 const SEC_USER_AGENT = 'WorldMonitor/2.0 (monitor@worldmonitor.app)';
 
 // Material 8-K item codes — must equal the high+medium materiality codes in
-// server/_shared/sec-edgar.ts MATERIAL_8K_ITEMS (asserted by
+// packages/server/_shared/sec-edgar.ts MATERIAL_8K_ITEMS (asserted by
 // tests/sec-corporate-intel.test.mts). Kept inline because nixpacks seed
 // bundles cannot import outside scripts/.
 export const MATERIAL_ITEM_CODES = new Set([

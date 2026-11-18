@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { FORECAST_EVIDENCE_KEEP_LINK_SCRIPT, FORECAST_EVIDENCE_MAX_LOOKBACK_MS } from '../scripts/_forecast-evidence-archive.mjs';
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
 
 const nowMs = 1_750_000_000_000;
 const coverage = {

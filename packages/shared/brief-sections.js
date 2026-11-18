@@ -1,5 +1,5 @@
 // The country brief's sections: the server renders these headings into the
-// brief text (server/worldmonitor/intelligence/v1/get-country-intel-brief.ts)
+// brief text (packages/server/worldmonitor/intelligence/v1/get-country-intel-brief.ts)
 // and the freeze and corpus parse them back out (scripts/crawlable-developments.mjs).
 // One table, so the two sides cannot drift.
 

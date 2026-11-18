@@ -10,7 +10,7 @@ import { isPublicSharedRpcRequest } from '../src/shared/public-rpc-cache.ts';
 //
 // `PUBLIC_SHARED_RPC_PATHS` reads like a caching concern — a small allowlist of
 // caller-invariant shapes that get a shared CDN entry instead of a per-caller
-// one. It is not. server/gateway.ts computes
+// one. It is not. packages/server/gateway.ts computes
 //
 //   requiresOperatorKey = isPremiumRpc && !isPublicNoAuthRpc && ...
 //
@@ -66,7 +66,7 @@ describe('public shared RPC shapes never bypass a tier gate', () => {
             `${path} is in PREMIUM_RPC_PATHS but ALSO matches a`,
             `public shared-RPC shape (${search || '<no query>'}).`,
             ``,
-            `server/gateway.ts skips the premium gate entirely when`,
+            `packages/server/gateway.ts skips the premium gate entirely when`,
             `isPublicSharedRpcRequest() is true, so this route is served to`,
             `anonymous callers and the premium gate is dead code for it.`,
             ``,

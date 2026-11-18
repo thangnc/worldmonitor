@@ -97,7 +97,7 @@ At this point, `npx tsc --noEmit` will **fail** because the handler doesn't impl
 
 ### 4. Implement the handler
 
-Create `server/worldmonitor/seismology/v1/get-earthquake-details.ts`:
+Create `packages/server/worldmonitor/seismology/v1/get-earthquake-details.ts`:
 
 ```typescript
 import type {
@@ -137,7 +137,7 @@ export const getEarthquakeDetails: SeismologyServiceHandler['getEarthquakeDetail
 
 ### 5. Wire it into the handler re-export
 
-Edit `server/worldmonitor/seismology/v1/handler.ts`:
+Edit `packages/server/worldmonitor/seismology/v1/handler.ts`:
 
 ```typescript
 import type { SeismologyServiceHandler } from '../../../../packages/contracts/generated/server/worldmonitor/seismology/v1/service_server';
@@ -266,12 +266,12 @@ make check   # lint + generate in one step
 Create the handler directory and files:
 
 ```
-server/worldmonitor/weather/v1/
+packages/server/worldmonitor/weather/v1/
 ├── handler.ts                     # thin re-export
 └── list-weather-stations.ts       # RPC implementation
 ```
 
-`server/worldmonitor/weather/v1/list-weather-stations.ts`:
+`packages/server/worldmonitor/weather/v1/list-weather-stations.ts`:
 ```typescript
 import type {
   WeatherServiceHandler,
@@ -289,7 +289,7 @@ export const listWeatherStations: WeatherServiceHandler['listWeatherStations'] =
 };
 ```
 
-`server/worldmonitor/weather/v1/handler.ts`:
+`packages/server/worldmonitor/weather/v1/handler.ts`:
 ```typescript
 import type { WeatherServiceHandler } from '../../../../packages/contracts/generated/server/worldmonitor/weather/v1/service_server';
 
@@ -307,9 +307,9 @@ Create `api/weather/v1/[rpc].ts` as the thin Edge entry point for this service:
 ```typescript
 export const config = { runtime: 'edge' };
 
-import { createDomainGateway, serverOptions } from '../../../server/gateway';
+import { createDomainGateway, serverOptions } from '../../../packages/server/gateway';
 import { createWeatherServiceRoutes } from '../../../packages/contracts/generated/server/worldmonitor/weather/v1/service_server';
-import { weatherHandler } from '../../../server/worldmonitor/weather/v1/handler';
+import { weatherHandler } from '../../../packages/server/worldmonitor/weather/v1/handler';
 
 export default createDomainGateway(
   createWeatherServiceRoutes(weatherHandler, serverOptions),

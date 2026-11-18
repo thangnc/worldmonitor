@@ -1,7 +1,7 @@
 // Tests for the M9 (fail-closed posture + audible Redis errors) and M16
 // (drop spoofable x-forwarded-for fallback) fixes from issue #3531.
 //
-// Both `server/_shared/rate-limit.ts` and `api/_rate-limit.js` mirror the
+// Both `packages/server/_shared/rate-limit.ts` and `api/_rate-limit.js` mirror the
 // same getClientIp + degraded-response behaviour; this file exercises the
 // canonical TypeScript module. The api/ mirror is covered by inspection
 // of the shared constants (RATE_LIMIT_DEGRADED_HEADERS) and an additional
@@ -25,7 +25,7 @@ import {
   getClientIp,
   rateLimitErrorLevel,
   rateLimitFingerprintStage,
-} from '../server/_shared/rate-limit.ts';
+} from '../packages/server/_shared/rate-limit.ts';
 // @ts-expect-error — JS module, no declaration file
 import { rateLimitErrorLevel as apiRateLimitErrorLevel, rateLimitFingerprintStage as apiRateLimitFingerprintStage } from '../api/_rate-limit.js';
 // @ts-expect-error — JS module, no declaration file
@@ -47,7 +47,7 @@ function makeRequest(headers: Record<string, string> = {}): Request {
 }
 
 async function importFreshRateLimitModule() {
-  return import(`../server/_shared/rate-limit.ts?test=${Date.now()}-${Math.random()}`);
+  return import(`../packages/server/_shared/rate-limit.ts?test=${Date.now()}-${Math.random()}`);
 }
 
 describe('rate-limit getClientIp (#3531 — drop spoofable x-forwarded-for)', () => {
@@ -384,7 +384,7 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
 
     process.env.WORLDMONITOR_VALID_KEYS = 'reverse-geocode-gateway-test-key';
     __resetRateLimitForTest();
-    const { createDomainGateway } = await import('../server/gateway.ts');
+    const { createDomainGateway } = await import('../packages/server/gateway.ts');
     let handlerCalls = 0;
     const gateway = createDomainGateway([{
       method: 'GET',
@@ -416,9 +416,9 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
     process.env.WM_SESSION_SECRET = 'synthetic-crypto-session-secret-at-least-32-bytes';
     __resetRateLimitForTest();
     const { issueSessionToken } = await import('../api/_session.js');
-    const { createDomainGateway } = await import('../server/gateway.ts');
+    const { createDomainGateway } = await import('../packages/server/gateway.ts');
     const { createMarketServiceRoutes } = await import('../packages/contracts/generated/server/worldmonitor/market/v1/service_server.ts');
-    const { marketHandler } = await import('../server/worldmonitor/market/v1/handler.ts');
+    const { marketHandler } = await import('../packages/server/worldmonitor/market/v1/handler.ts');
     const token = (await issueSessionToken()).token;
     const calls: string[] = [];
     globalThis.fetch = (async (input) => {
@@ -441,9 +441,9 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
     process.env.WM_SESSION_SECRET = 'synthetic-crypto-cap-secret-at-least-32-bytes';
     __resetRateLimitForTest();
     const { issueSessionToken } = await import('../api/_session.js');
-    const { createDomainGateway } = await import('../server/gateway.ts');
+    const { createDomainGateway } = await import('../packages/server/gateway.ts');
     const { createMarketServiceRoutes } = await import('../packages/contracts/generated/server/worldmonitor/market/v1/service_server.ts');
-    const { marketHandler } = await import('../server/worldmonitor/market/v1/handler.ts');
+    const { marketHandler } = await import('../packages/server/worldmonitor/market/v1/handler.ts');
     let providerCalls = 0;
     let admissions = 0;
     globalThis.fetch = (async (input, init) => {
@@ -602,9 +602,9 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
 
   it('server rate-limit degraded logs are also sent through Sentry capture', async () => {
     const fs = await import('node:fs');
-    const src = fs.readFileSync(new URL('../server/_shared/rate-limit.ts', import.meta.url), 'utf8');
+    const src = fs.readFileSync(new URL('../packages/server/_shared/rate-limit.ts', import.meta.url), 'utf8');
 
-    assert.match(src, /import\s+\{\s*captureSilentError\s+\}\s+from\s+['"]\.\.\/\.\.\/api\/_sentry-edge\.js['"]/);
+    assert.match(src, /import\s+\{\s*captureSilentError\s+\}\s+from\s+['"]\.\.\/\.\.\/\.\.\/api\/_sentry-edge\.js['"]/);
     assert.match(src, /captureSilentError\(err,\s*\{/);
     assert.match(src, /surface:\s*'api'\s*\|\s*'server'\s*=\s*'server'/);
     assert.match(src, /tags:\s*\{\s*surface,\s*component:\s*'rate-limit'/);
@@ -666,7 +666,7 @@ describe('rate-limit fail-open / fail-closed posture (#3531 M9)', () => {
 describe('scoped rate-limit degraded call-site policy (#3531)', () => {
   const SCOPED_RATE_LIMIT_CALLERS = [
     {
-      path: 'server/worldmonitor/infrastructure/v1/reverse-geocode.ts',
+      path: 'packages/server/worldmonitor/infrastructure/v1/reverse-geocode.ts',
       expected: /if\s*\(\s*providerLimit\.degraded\s*\)\s*\{/,
       reason: 'the provider-wide Nominatim bucket must fail closed before upstream work',
     },
@@ -676,7 +676,7 @@ describe('scoped rate-limit degraded call-site policy (#3531)', () => {
     const fs = await import('node:fs');
     const cp = await import('node:child_process');
     const repo = new URL('..', import.meta.url);
-    const output = cp.execFileSync('git', ['grep', '-lE', 'checkScopedRateLimit\\(|PROVIDER_RATE_LIMIT_IDENTIFIER', '--', 'server', 'api'], {
+    const output = cp.execFileSync('git', ['grep', '-lE', 'checkScopedRateLimit\\(|PROVIDER_RATE_LIMIT_IDENTIFIER', '--', 'packages/server', 'api'], {
       cwd: repo,
       encoding: 'utf8',
     });
@@ -684,7 +684,7 @@ describe('scoped rate-limit degraded call-site policy (#3531)', () => {
       .trim()
       .split('\n')
       .filter(Boolean)
-      .filter(path => path !== 'server/_shared/rate-limit.ts')
+      .filter(path => path !== 'packages/server/_shared/rate-limit.ts')
       .sort();
 
     assert.deepEqual(
@@ -816,7 +816,7 @@ describe('rate-limit constants', () => {
 describe('rateLimitFingerprintStage — Sentry grouping for a degraded limiter (#6454)', () => {
   // Both copies must agree; api/_rate-limit.js is the byte-mirror of the .ts one.
   const IMPLS: Array<[string, (stage: string) => string]> = [
-    ['server/_shared/rate-limit.ts', rateLimitFingerprintStage],
+    ['packages/server/_shared/rate-limit.ts', rateLimitFingerprintStage],
     ['api/_rate-limit.js', apiRateLimitFingerprintStage],
   ];
 
@@ -877,7 +877,7 @@ describe('rateLimitFingerprintStage — Sentry grouping for a degraded limiter (
 describe('rateLimitErrorLevel — Sentry severity for a degraded limiter (WORLDMONITOR-VM)', () => {
   // Both copies must agree; api/_rate-limit.js is the byte-mirror of the .ts one.
   const IMPLS: Array<[string, (stage: string, msg: string) => string]> = [
-    ['server/_shared/rate-limit.ts', rateLimitErrorLevel],
+    ['packages/server/_shared/rate-limit.ts', rateLimitErrorLevel],
     ['api/_rate-limit.js', apiRateLimitErrorLevel],
   ];
 

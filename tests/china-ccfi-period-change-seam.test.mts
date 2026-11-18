@@ -5,8 +5,8 @@ import {
   accumulateHistory,
   parseSseIndexResponse,
 } from '../scripts/seed-supply-chain-trade.mjs';
-import { buildChinaCorridorSourceBundle } from '../server/worldmonitor/supply-chain/v1/china-corridor-source-adapters.ts';
-import { buildChinaActivityNowcastInputs } from '../server/worldmonitor/economic/v1/get-china-activity-nowcast';
+import { buildChinaCorridorSourceBundle } from '../packages/server/worldmonitor/supply-chain/v1/china-corridor-source-adapters.ts';
+import { buildChinaActivityNowcastInputs } from '../packages/server/worldmonitor/economic/v1/get-china-activity-nowcast';
 import type {
   ChinaCorridorControlTowerResponse,
   CorridorSourceSignal,

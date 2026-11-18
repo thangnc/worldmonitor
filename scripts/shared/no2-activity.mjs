@@ -1,6 +1,6 @@
 // The reviewed Sentinel-5P NO2 activity contract shared by the Railway seeder
 // (scripts/seed-no2-activity.mjs) and every reader, starting with the China
-// activity nowcast (server/worldmonitor/economic/v1/get-china-activity-nowcast.ts).
+// activity nowcast (packages/server/worldmonitor/economic/v1/get-china-activity-nowcast.ts).
 // The region registry is generated (scripts/generate-no2-regions.mjs); the
 // method constants, the holiday calendars, and the dataset validator live
 // here so a reader cannot drift from the producer: a dataset is an activity

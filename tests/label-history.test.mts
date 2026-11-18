@@ -22,10 +22,10 @@ import {
   parseLabelChange,
   recordLabelChanges,
   storyLabel,
-} from '../server/_shared/label-history.ts';
-import { __testing__ } from '../server/worldmonitor/news/v1/list-feed-digest';
-import { listLabelChanges } from '../server/worldmonitor/news/v1/list-label-changes.ts';
-import { REDIS_PIPELINE_TIMEOUT_MS } from '../server/_shared/redis';
+} from '../packages/server/_shared/label-history.ts';
+import { __testing__ } from '../packages/server/worldmonitor/news/v1/list-feed-digest';
+import { listLabelChanges } from '../packages/server/worldmonitor/news/v1/list-label-changes.ts';
+import { REDIS_PIPELINE_TIMEOUT_MS } from '../packages/server/_shared/redis';
 
 const HASH_A = 'a'.repeat(64);
 const HASH_B = 'b'.repeat(64);

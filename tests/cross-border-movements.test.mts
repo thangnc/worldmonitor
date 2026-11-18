@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
-import { projectCrossBorderSnapshots, CROSS_BORDER_SOURCES, CROSS_BORDER_SOURCE_MOVEMENT_LIMIT } from '../server/worldmonitor/displacement/v1/cross-border-data.ts';
+import { projectCrossBorderSnapshots, CROSS_BORDER_SOURCES, CROSS_BORDER_SOURCE_MOVEMENT_LIMIT } from '../packages/server/worldmonitor/displacement/v1/cross-border-data.ts';
 const NOW = Date.parse('2026-10-19T00:00:00Z');
 const envelope = (data: unknown, fetchedAt = NOW - 60_000) => ({ _seed: { fetchedAt }, data });
 const uk = { routes: [{ id: 'english-channel', name: 'English Channel', kind: 'arrival', measure: 'daily', countryCode: 'GB', asOf: '2026-10-18', period: 'day', latestCount: 0, last7Days: 0, last30Days: 3000, surge: false, latitude: 51, longitude: 1 }] };

@@ -189,7 +189,7 @@ message TransitSummary {
   // Field comments below are published OpenAPI descriptions and the served
   // bundle sits at its scanner byte cap (tests/openapi-json-dedup.test.mjs),
   // so they stay terse. This detached block is not emitted. The contracts
-  // are explained in server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts.
+  // are explained in packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts.
 
   // False when PortWatch returned no history this cycle; wow_change_pct,
   // history and official_*/baseline_* are then zero-state fill.

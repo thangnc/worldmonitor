@@ -13,7 +13,7 @@ import {
   signBriefToken,
   signBriefUrl,
   verifyBriefToken,
-} from '../server/_shared/brief-url.ts';
+} from '../packages/server/_shared/brief-url.ts';
 
 const SECRET = 'primary-secret-for-tests-0123456789';
 const PREV_SECRET = 'rotated-out-legacy-secret-abcdefghij';

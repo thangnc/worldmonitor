@@ -5,7 +5,7 @@
 // Metro-area unemployment rates (LAUMT*) are dropped; no FRED equivalent exists.
 //
 // The canonical `bls:series:v1` envelope is the only key this seeder publishes:
-// server/worldmonitor/economic/v1/get-bls-series.ts selects a series from it and
+// packages/server/worldmonitor/economic/v1/get-bls-series.ts selects a series from it and
 // api/health.js watches it. The per-series `bls:series:<id>` extra keys were
 // dropped in #8424 — their seed-meta override was the data key itself, so every
 // run erased the series it had just written, unwatched by health.
@@ -106,7 +106,7 @@ async function fetchAllSeries() {
 }
 
 // The shape the RPC will serve, kept deliberately identical to
-// isServableSeries in server/worldmonitor/economic/v1/get-bls-series.ts. The
+// isServableSeries in packages/server/worldmonitor/economic/v1/get-bls-series.ts. The
 // reader refuses an entry narrower than this, so the producer must refuse to
 // publish one: otherwise the seed passes validation, health reads fresh, and
 // every request for that series 503s until the next run.

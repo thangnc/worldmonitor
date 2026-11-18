@@ -1,8 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { getDefenseIndustrialBaseWithReader } from '../server/worldmonitor/military/v1/get-defense-industrial-base.ts';
-import { drainResponseHeaders } from '../server/_shared/response-headers.ts';
+import { getDefenseIndustrialBaseWithReader } from '../packages/server/worldmonitor/military/v1/get-defense-industrial-base.ts';
+import { drainResponseHeaders } from '../packages/server/_shared/response-headers.ts';
 
 function context() {
   return { request: new Request('https://worldmonitor.app/api/military/v1/get-defense-industrial-base') } as never;
