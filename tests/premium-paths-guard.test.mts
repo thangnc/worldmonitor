@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
 import { DIRECT_LLM_GATEWAY_QUOTA_PATHS } from '../server/_shared/direct-llm-quota.ts';
-import { TIER_GATED_PATHS } from '../server/_shared/entitlement-check.ts';
 import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
 
 // ---------------------------------------------------------------------------
@@ -204,38 +203,6 @@ describe('premium-paths guard — browser direct-LLM routes cannot trigger wm-se
       );
     });
   }
-
-  it('every tier-gated endpoint is also in PREMIUM_RPC_PATHS', () => {
-    // src/services/premium-fetch.ts documents this as true "at the time of
-    // writing" and relies on it — `isPremiumRpcTarget` checks PREMIUM_RPC_PATHS
-    // alone and claims that "one check covers both". Nothing enforced it.
-    //
-    // The gateway sets `forceKey: isTierGated && !sessionUserId`
-    // (server/gateway.ts), and forceKey rejects a perfectly valid anonymous
-    // wms_ token with 401 "Pro authentication required" (api/_api-key.js). So a
-    // route added to ENDPOINT_ENTITLEMENTS but not to PREMIUM_RPC_PATHS 401s
-    // every anonymous browser call while the interceptor still treats that 401
-    // as a dead cookie — the exact fresh-mint-then-401 loop behind #5674 and
-    // #5251, arriving via a one-line map edit in a different directory.
-    const missing = [...TIER_GATED_PATHS].filter((route) => !PREMIUM_RPC_PATHS.has(route));
-    assert.deepEqual(
-      missing,
-      [],
-      [
-        `These endpoints are tier-gated in ENDPOINT_ENTITLEMENTS`,
-        `(server/_shared/entitlement-check.ts) but missing from PREMIUM_RPC_PATHS`,
-        `(src/shared/premium-paths.ts):`,
-        ...missing.map((r) => `  - ${r}`),
-        ``,
-        `The gateway forces an API key on tier-gated routes, so an anonymous`,
-        `browser gets 401 no matter how fresh its session cookie is. The`,
-        `wm-session interceptor then mints, replays, 401s again, and suppresses`,
-        `ALL anonymous API calls for 15 minutes (#5674).`,
-        ``,
-        `Add each route to PREMIUM_RPC_PATHS.`,
-      ].join('\n'),
-    );
-  });
 
   it('every direct-LLM bypass remains real and intentionally non-premium', () => {
     for (const route of Object.keys(DIRECT_LLM_PREMIUM_BYPASS_ALLOWLIST)) {

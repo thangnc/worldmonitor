@@ -1,5 +1,6 @@
 /**
- * Premium RPC paths that require either an API key or a Pro session.
+ * Premium RPC paths. The gateway (server/gateway.ts) serves them only to an
+ * operator key (WORLDMONITOR_VALID_KEYS); an anonymous wms_ session gets 401.
  *
  * Single source of truth consumed by both the server gateway (auth enforcement)
  * and the web client runtime (token injection).
@@ -19,12 +20,11 @@ export const PREMIUM_RPC_PATHS = new Set<string>([
   '/api/market/v1/get-physical-premiums',
   '/api/market/v1/get-physical-divergence-index',
   // /api/intelligence/v1/classify-event: LLM-backed classifier. Keep in the
-  // premium path set so browser Pro callers attach the Clerk Bearer and
-  // anonymous wms_ sessions cannot mint cache-miss LLM spend.
+  // premium path set so anonymous wms_ sessions cannot mint cache-miss LLM spend.
   '/api/intelligence/v1/classify-event',
   '/api/intelligence/v1/deduct-situation',
-  // Browser calls must attach Clerk auth and bypass wm-session recovery:
-  // anonymous 401s here are expected Pro denials, not dead session cookies.
+  // Browser calls bypass wm-session recovery: anonymous 401s here are
+  // expected Pro denials, not dead session cookies.
   '/api/intelligence/v1/get-country-intel-brief',
   // Country coverage (#7526) is an agent surface, not a panel dependency — the
   // browser builds its own timeline client-side and never calls this. Each call
@@ -44,9 +44,8 @@ export const PREMIUM_RPC_PATHS = new Set<string>([
   '/api/intelligence/v1/get-regional-snapshot',
   '/api/intelligence/v1/get-regime-history',
   '/api/intelligence/v1/get-regional-brief',
-  // Historical intelligence memory (#5694). Read-only over the Convex history
-  // store; the two semantic routes also spend one embeddings call per cache
-  // miss, which is why they carry fail-closed rate policies as well.
+  // Historical intelligence memory (#5694). The Convex history store is gone,
+  // so these answer upstreamUnavailable; they stay gated and rate-limited.
   '/api/intelligence/v1/search-intel-history',
   '/api/intelligence/v1/get-intel-timeline',
   '/api/intelligence/v1/get-similar-events',
@@ -72,9 +71,7 @@ export const PREMIUM_RPC_PATHS = new Set<string>([
   '/api/supply-chain/v1/get-country-vulnerabilities',
   '/api/supply-chain/v1/get-chokepoint-dependencies',
   '/api/supply-chain/v1/list-vulnerability-rankings',
-  // Global procurement is a Pro product surface. Keep this in the shared
-  // registry so premiumFetch attaches the Clerk bearer and the gateway enforces
-  // the same route as the entitlement map.
+  // Global procurement is a Pro product surface.
   '/api/economic/v1/list-global-tenders',
   // Outlet-perspective grouping is a Pro MCP tool; the REST route matches it.
   '/api/news/v1/list-media-perspective',
@@ -90,19 +87,6 @@ export const PREMIUM_RPC_PATHS = new Set<string>([
   '/api/forecast/v1/trigger-simulation',
   '/api/v2/shipping/route-intelligence',
   '/api/v2/shipping/webhooks',
-  // /api/mcp-proxy: Pro-gated outbound MCP proxy (PR #3768, issue #3723).
-  // Path-gated here so premiumFetch attaches the Clerk Bearer for normal
-  // web Pro users; the server gate in api/mcp-proxy.ts uses isCallerPremium
-  // which validates enterprise key, wm_ user key, or Bearer JWT.
-  '/api/mcp-proxy',
-  // /api/chat-analyst: Pro-gated streaming SSE endpoint for WM Analyst panel.
-  // ChatAnalystPanel.send() calls premiumFetch('/api/chat-analyst', ...) and
-  // the server uses isCallerPremium; without this entry premiumFetch never
-  // attaches the Clerk Bearer for browser Pro users → every send returned
-  // 403 "Pro subscription required" despite a valid subscription. Symptom
-  // stayed hidden until PR #3797 fixed the unlock-wipe so users could
-  // actually type and click Send.
-  '/api/chat-analyst',
   // Single-aircraft Wingbits enrichment is a caller-controlled paid-provider
   // lookup. Keep the batch sibling outside this registry because the map uses
   // that route as its existing anonymous, rate-limited enrichment path; it
@@ -117,9 +101,7 @@ export const PREMIUM_RPC_PATHS = new Set<string>([
   // The three AviationStack-METERED routes. Each cache miss buys a paid
   // upstream call and get-carrier-ops buys one PER AIRPORT, so anonymous access
   // was a standing invitation: one scripted client took ~1,000 calls/day, ~43%
-  // of spend, in August 2026. Registered here for the same reason /api/chat-
-  // analyst is — without the entry premiumFetch never attaches the Clerk Bearer
-  // and browser Pro users get 403 on a subscription they are paying for.
+  // of spend, in August 2026.
   // The seeder-backed aviation routes (list-airport-delays,
   // get-airport-ops-summary) stay OFF this list on purpose: they serve
   // aviation:delays:intl:v3, already bought by cron, so gating them would cost

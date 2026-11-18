@@ -1,14 +1,11 @@
 /**
- * Runtime contract and successful-read cache for the intelligence-history RPCs.
- * buf.validate annotations describe the public surface, but the Edge gateway
- * does not install a validator, so handlers must enforce the same constraints.
+ * Runtime request contract for the intelligence-history RPCs. buf.validate
+ * annotations describe the public surface; handlers enforce the same rules.
  */
 
 import { ValidationError } from '../../src/generated/server/worldmonitor/intelligence/v1/service_server';
-import { cachedFetchJsonWithMeta } from './redis';
 
 const HISTORY_DOMAINS = new Set(['conflict', 'military', 'energy']);
-const SUCCESS_CACHE_TTL_SECONDS = 30 * 60;
 
 export interface ValidatedHistoryScope {
   domain: string;
@@ -55,48 +52,4 @@ export function validateHistoryText(value: unknown, name: string, min: number, m
     invalid(name, `${name} must be between ${min} and ${max} characters`);
   }
   return value;
-}
-
-async function opaqueCacheKey(kind: string, normalizedInputs: Record<string, unknown>): Promise<string> {
-  const canonical = JSON.stringify(normalizedInputs);
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical));
-  const hash = Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
-  return `intel-history:read:v1:${kind}:${hash}`;
-}
-
-class UpstreamUnavailable extends Error {}
-
-/**
- * Cache only successful history reads. Failed upstream responses intentionally
- * throw through cachedFetchJsonWithMeta with cacheFetcherErrors disabled, so neither a
- * Redis negative sentinel nor a raw semantic-text cache key is ever created.
- */
-export async function cacheSuccessfulHistoryRead<T extends object>(
-  kind: string,
-  normalizedInputs: Record<string, unknown>,
-  read: () => Promise<T | null>,
-): Promise<T | null> {
-  const key = await opaqueCacheKey(kind, normalizedInputs);
-  try {
-    const result = await cachedFetchJsonWithMeta<T>(
-      key,
-      SUCCESS_CACHE_TTL_SECONDS,
-      async () => {
-        const result = await read();
-        if (result === null) throw new UpstreamUnavailable();
-        return result;
-      },
-      0,
-      {
-        cacheFetcherErrors: false,
-        timeoutMs: 12_000,
-        isCallerLocalError: (error) => error instanceof ValidationError,
-      },
-    );
-    return result.data;
-  } catch (error) {
-    if (error instanceof ValidationError) throw error;
-    if (error instanceof UpstreamUnavailable || error instanceof Error) return null;
-    return null;
-  }
 }

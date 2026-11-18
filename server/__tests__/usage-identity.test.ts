@@ -13,29 +13,14 @@ import { buildUsageIdentity, type UsageIdentityInput } from '../_shared/usage-id
 
 function baseInput(overrides: Partial<UsageIdentityInput> = {}): UsageIdentityInput {
   return {
-    sessionUserId: null,
-    isUserApiKey: false,
     enterpriseApiKey: null,
     widgetKey: null,
-    clerkOrgId: null,
-    userApiKeyCustomerRef: null,
     tier: null,
-    planKey: null,
     ...overrides,
   };
 }
 
 describe('buildUsageIdentity — plan_key attribution (#4572)', () => {
-  test('user_api_key carries the resolved planKey', () => {
-    const ident = buildUsageIdentity(baseInput({
-      isUserApiKey: true,
-      sessionUserId: 'u',
-      tier: 2,
-      planKey: 'api_business',
-    }));
-    expect(ident.plan_key).toBe('api_business');
-  });
-
   test('enterprise_api_key defaults plan_key to "enterprise" when none supplied', () => {
     const ident = buildUsageIdentity(baseInput({ enterpriseApiKey: 'wm_ent_x', tier: 3 }));
     expect(ident.auth_kind).toBe('enterprise_api_key');
@@ -48,48 +33,14 @@ describe('buildUsageIdentity — plan_key attribution (#4572)', () => {
 });
 
 describe('buildUsageIdentity — auth_kind branches', () => {
-  test('user_api_key takes precedence over every other signal', () => {
+  test('enterprise_api_key takes precedence over a widget key', () => {
     const ident = buildUsageIdentity(baseInput({
-      isUserApiKey: true,
-      sessionUserId: 'user_123',
-      userApiKeyCustomerRef: 'customer_abc',
-      enterpriseApiKey: 'should-be-ignored',
+      enterpriseApiKey: 'wm_ent_x',
       widgetKey: 'should-be-ignored',
-      tier: 2,
+      tier: 3,
     }));
-    expect(ident.auth_kind).toBe('user_api_key');
-    expect(ident.principal_id).toBe('user_123');
-    expect(ident.customer_id).toBe('customer_abc');
-    expect(ident.tier).toBe(2);
-  });
-
-  test('user_api_key falls back to sessionUserId for customer_id when no explicit ref', () => {
-    const ident = buildUsageIdentity(baseInput({
-      isUserApiKey: true,
-      sessionUserId: 'user_123',
-      tier: 1,
-    }));
-    expect(ident.customer_id).toBe('user_123');
-  });
-
-  test('clerk_jwt: customer_id prefers org over user when org is present', () => {
-    const ident = buildUsageIdentity(baseInput({
-      sessionUserId: 'user_123',
-      clerkOrgId: 'org_acme',
-      tier: 1,
-    }));
-    expect(ident.auth_kind).toBe('clerk_jwt');
-    expect(ident.principal_id).toBe('user_123');
-    expect(ident.customer_id).toBe('org_acme');
-    expect(ident.tier).toBe(1);
-  });
-
-  test('clerk_jwt: customer_id falls back to user when no org', () => {
-    const ident = buildUsageIdentity(baseInput({
-      sessionUserId: 'user_123',
-    }));
-    expect(ident.customer_id).toBe('user_123');
-    expect(ident.tier).toBe(0);
+    expect(ident.auth_kind).toBe('enterprise_api_key');
+    expect(ident.tier).toBe(3);
   });
 
   test('enterprise_api_key: principal_id is hashed, not raw', () => {
@@ -133,18 +84,18 @@ describe('buildUsageIdentity — auth_kind branches', () => {
 
 describe('buildUsageIdentity — tier handling', () => {
   test('null tier coerces to 0 for non-anon kinds', () => {
-    const ident = buildUsageIdentity(baseInput({ sessionUserId: 'u', tier: null }));
+    const ident = buildUsageIdentity(baseInput({ enterpriseApiKey: 'k', tier: null }));
     expect(ident.tier).toBe(0);
   });
 
   test('zero tier is preserved (not promoted)', () => {
-    const ident = buildUsageIdentity(baseInput({ sessionUserId: 'u', tier: 0 }));
+    const ident = buildUsageIdentity(baseInput({ enterpriseApiKey: 'k', tier: 0 }));
     expect(ident.tier).toBe(0);
   });
 
   test('integer tiers pass through unchanged', () => {
     for (const t of [0, 1, 2, 3]) {
-      const ident = buildUsageIdentity(baseInput({ sessionUserId: 'u', tier: t }));
+      const ident = buildUsageIdentity(baseInput({ enterpriseApiKey: 'k', tier: t }));
       expect(ident.tier).toBe(t);
     }
   });

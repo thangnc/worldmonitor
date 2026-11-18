@@ -1,11 +1,38 @@
 import { runRedisPipeline } from './redis.js';
-import { canonicalGatewayQueryString, sha256Hex } from './mcp-internal-hmac.js';
+import { sha256Hex } from './hash';
 
 export const SUB_REQUEST_MARKER_HEADER = 'x-wm-sub-request';
 const ADMISSION_TTL_SECONDS = 30;
 const ADMISSION_PREFIX = 'sub-request-admission:v1:';
 
 export type SubRequestAdmissionResult = 'admitted' | 'invalid' | 'unavailable';
+
+export { sha256Hex };
+
+// Sorted, percent-encoded query string, so a reordered query at any hop
+// (CDN, proxy, browser) yields the same digest.
+function canonicalQueryString(url: URL): string {
+  const entries = [...url.searchParams];
+  entries.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  return entries
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&');
+}
+
+/** Canonical query after the gateway router adds its exact rpc path echo. */
+export function canonicalGatewayQueryString(input: URL): string {
+  const url = new URL(input);
+  const pathSegments = url.pathname.split('/').filter(Boolean);
+  const lastSegment = pathSegments[pathSegments.length - 1] ?? '';
+  const rpcParams = url.searchParams.getAll('rpc');
+  if (rpcParams.some((value) => value === lastSegment)) {
+    url.searchParams.delete('rpc');
+    for (const value of rpcParams) {
+      if (value !== lastSegment) url.searchParams.append('rpc', value);
+    }
+  }
+  return canonicalQueryString(url);
+}
 
 // Bind admission to GET and credentials. Store only digests: credentials and
 // trusted principal identifiers must never enter the Redis value or key.

@@ -150,20 +150,13 @@ describe('credential-bearing headers force a private tier (#8400)', () => {
     const read = (rel: string) => readFileSync(resolve(repoRoot, rel), 'utf8');
 
     // Every headers.get('X-…') a sibling auth path treats as a credential.
-    // Route-scoped verifications are deliberately NOT credentials here (see
-    // the CREDENTIAL_BEARING_HEADERS comment): the internal-MCP HMAC trio
-    // (mcp-internal-hmac.ts, consumed by the pre-check and stripped before
-    // handlers) never acts as a bearer on an auth path.
-    // Inbound-only plumbing (Vary echo, CORS allowlist membership, the
-    // per-process verified-marker nonce, relay-to-upstream relay headers the
-    // client never sends) is likewise excluded.
+    // Inbound-only plumbing (Vary echo, CORS allowlist membership,
+    // relay-to-upstream relay headers the client never sends) is excluded.
+    // server/_shared/premium-check.ts resolves credentials through
+    // validateApiKey, so the api/_api-key.js rows cover it.
     const credentialReads: Array<{ file: string; header: string }> = [
       { file: 'api/_api-key.js', header: 'X-WorldMonitor-Key' },
       { file: 'api/_api-key.js', header: 'X-Api-Key' },
-      { file: 'server/_shared/embed-key.ts', header: 'X-WorldMonitor-Key' },
-      { file: 'server/_shared/embed-key.ts', header: 'X-Api-Key' },
-      { file: 'server/_shared/premium-check.ts', header: 'X-WorldMonitor-Key' },
-      { file: 'server/_shared/premium-check.ts', header: 'X-Api-Key' },
     ];
 
     // Auth paths that resolve the same credentials through the shared

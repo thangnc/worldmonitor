@@ -69,7 +69,6 @@ WORKDIR /app
 COPY --from=builder /app/docker/local-api/local-api-server.mjs ./local-api-server.mjs
 COPY --from=builder /app/docker/local-api/package.json ./package.json
 COPY --from=builder /app/shared/llm-health-providers.js ./shared/llm-health-providers.js
-COPY --from=builder /app/shared/desktop-key-access.js ./shared/desktop-key-access.js
 COPY --from=builder /app/shared/selfhost-relay-paths.js ./shared/selfhost-relay-paths.js
 ENV LOCAL_API_RESOURCE_DIR=/app
 

@@ -1,7 +1,6 @@
 import { strict as assert } from 'node:assert';
 import test, { mock } from 'node:test';
 import handler from './bootstrap.js';
-import { DESKTOP_KEY_LIMIT_ERROR } from '../shared/desktop-key-access.js';
 import { issueSessionToken } from './_session.js';
 import {
   assertPublicBootstrapCorsHeaders,
@@ -9,7 +8,9 @@ import {
 } from '../tests/helpers/public-bootstrap-contract.mjs';
 
 const ENTERPRISE_KEY = 'enterprise-bootstrap-test-key';
-const USER_KEY = 'wm_0123456789abcdef0123456789abcdef01234567';
+// A canonical-shaped former user API key. The user-key table is gone, so it is
+// just an unknown key: 401 "Invalid API key" with no Redis or upstream call.
+const FORMER_USER_KEY = 'wm_0123456789abcdef0123456789abcdef01234567';
 
 function snapshotEnv(names) {
   const values = new Map();
@@ -23,16 +24,12 @@ function snapshotEnv(names) {
 }
 
 async function withMockedBootstrapAuth({
-  entitlement,
-  userKeyResponse = 'valid',
   rateLimitResults,
   rateLimitStatus,
   bootstrapPipelineStatus,
   bootstrapPipelineBody,
 }, fn) {
   const restoreEnv = snapshotEnv([
-    'CONVEX_SITE_URL',
-    'CONVEX_SERVER_SHARED_SECRET',
     'UPSTASH_REDIS_REST_URL',
     'UPSTASH_REDIS_REST_TOKEN',
     'WM_SESSION_SECRET',
@@ -41,8 +38,6 @@ async function withMockedBootstrapAuth({
   const originalFetch = globalThis.fetch;
   const calls = [];
 
-  process.env.CONVEX_SITE_URL = 'https://convex.test';
-  process.env.CONVEX_SERVER_SHARED_SECRET = 'shared-secret';
   process.env.UPSTASH_REDIS_REST_URL = 'https://upstash.test';
   process.env.UPSTASH_REDIS_REST_TOKEN = 'redis-token';
   process.env.WM_SESSION_SECRET = 'test-secret-for-bootstrap-auth-cache-matrix';
@@ -96,33 +91,6 @@ async function withMockedBootstrapAuth({
       });
     }
 
-    if (url.endsWith('/api/internal-validate-api-key')) {
-      if (userKeyResponse === 'valid') {
-        // Convex validateKeyByHash wire shape: `id`, not `keyId`; the validator maps it.
-        return new Response(JSON.stringify({ id: 'key_1', userId: 'user_api_owner', name: 'pipeline', keyKind: 'api' }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      if (userKeyResponse === 'revoked') {
-        return new Response(JSON.stringify(null), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      return new Response(JSON.stringify({ error: 'boom' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (url.endsWith('/api/internal-entitlements')) {
-      return new Response(JSON.stringify(entitlement), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
     return originalFetch(input, init);
   };
 
@@ -133,34 +101,6 @@ async function withMockedBootstrapAuth({
     restoreEnv();
   }
 }
-
-const activeApiEntitlement = () => ({
-  planKey: 'api_starter',
-  validUntil: Date.now() + 86_400_000,
-  features: {
-    tier: 2,
-    apiAccess: true,
-    apiRateLimit: 600,
-    maxDashboards: 10,
-    prioritySupport: false,
-    exportFormats: [],
-    mcpAccess: false,
-  },
-});
-
-const proOnlyEntitlement = () => ({
-  planKey: 'pro_monthly',
-  validUntil: Date.now() + 86_400_000,
-  features: {
-    tier: 1,
-    apiAccess: false,
-    apiRateLimit: 60,
-    maxDashboards: 10,
-    prioritySupport: false,
-    exportFormats: [],
-    mcpAccess: false,
-  },
-});
 
 function makeBootstrapRequest(headers = {}) {
   return new Request('https://api.worldmonitor.app/api/bootstrap?keys=marketQuotes', {
@@ -227,7 +167,7 @@ function assertNonSharedCacheHeaders(resp) {
 }
 
 test('no-Origin enterprise key keeps bootstrap shape but is not shared-cacheable', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': ENTERPRISE_KEY }));
 
     assert.equal(resp.status, 200);
@@ -238,7 +178,7 @@ test('no-Origin enterprise key keeps bootstrap shape but is not shared-cacheable
 });
 
 test('allowed-Origin enterprise key keeps bootstrap shape but is not shared-cacheable', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const resp = await handler(makeBootstrapRequestWithAllowedOrigin({ 'X-WorldMonitor-Key': ENTERPRISE_KEY }));
 
     assert.equal(resp.status, 200);
@@ -249,7 +189,7 @@ test('allowed-Origin enterprise key keeps bootstrap shape but is not shared-cach
 });
 
 test('weather-only bootstrap with enterprise key uses key auth cache posture', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const resp = await handler(makeWeatherBootstrapRequest({ 'X-WorldMonitor-Key': ENTERPRISE_KEY }));
 
     assert.equal(resp.status, 200);
@@ -258,42 +198,29 @@ test('weather-only bootstrap with enterprise key uses key auth cache posture', a
   });
 });
 
-test('no-Origin valid wm_ user key in X-WorldMonitor-Key returns bootstrap data without shared cache headers', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async (calls) => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
+for (const [label, headers] of [
+  ['X-WorldMonitor-Key', { 'X-WorldMonitor-Key': FORMER_USER_KEY }],
+  ['X-Api-Key', { 'X-Api-Key': FORMER_USER_KEY }],
+  ['malformed', { 'X-WorldMonitor-Key': 'wm_notcanonical' }],
+]) {
+  test(`a wm_ user key (${label}) is an invalid key: non-cacheable 401 with no Redis call`, async () => {
+    await withMockedBootstrapAuth({}, async (calls) => {
+      for (const request of [makeBootstrapRequest(headers), makeWeatherBootstrapRequest(headers)]) {
+        const resp = await handler(request);
+        const body = await resp.json();
 
-    assert.equal(resp.status, 200);
-    assert.deepEqual(Object.keys(await resp.json()).sort(), ['data', 'missing']);
-    assertNonSharedCacheHeaders(resp);
-    assert.ok(calls.some((call) => call.url.endsWith('/api/internal-validate-api-key')));
-    assert.ok(calls.some((call) => call.url.endsWith('/api/internal-entitlements')));
+        assert.equal(resp.status, 401);
+        assert.equal(resp.headers.get('cache-control'), 'no-store');
+        assert.equal(body.error, 'Invalid API key');
+        assert.doesNotMatch(JSON.stringify(body), /gateway validation|Convex|keyHash/i);
+      }
+      assert.equal(calls.length, 0);
+    });
   });
-});
-
-test('weather-only bootstrap with wm_ user key validates user auth before returning data', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async (calls) => {
-    const resp = await handler(makeWeatherBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
-
-    assert.equal(resp.status, 200);
-    assert.deepEqual(Object.keys(await resp.json()).sort(), ['data', 'missing']);
-    assertNonSharedCacheHeaders(resp);
-    assert.ok(calls.some((call) => call.url.endsWith('/api/internal-validate-api-key')));
-    assert.ok(calls.some((call) => call.url.endsWith('/api/internal-entitlements')));
-  });
-});
-
-test('allowed-Origin valid wm_ user key returns bootstrap data without shared cache headers', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
-    const resp = await handler(makeBootstrapRequestWithAllowedOrigin({ 'X-WorldMonitor-Key': USER_KEY }));
-
-    assert.equal(resp.status, 200);
-    assert.deepEqual(Object.keys(await resp.json()).sort(), ['data', 'missing']);
-    assertNonSharedCacheHeaders(resp);
-  });
-});
+}
 
 test('session-authenticated bootstrap returns data without shared cache headers', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const { token } = await issueSessionToken();
     const resp = await handler(makeBootstrapRequestWithAllowedOrigin({ Cookie: `wm-session=${token}` }));
 
@@ -304,7 +231,7 @@ test('session-authenticated bootstrap returns data without shared cache headers'
 });
 
 test('session-authenticated weather-only bootstrap is not shared-cacheable', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const { token } = await issueSessionToken();
     const resp = await handler(makeWeatherBootstrapRequest({ Cookie: `wm-session=${token}` }));
 
@@ -314,163 +241,19 @@ test('session-authenticated weather-only bootstrap is not shared-cacheable', asy
   });
 });
 
-test('weather-only bootstrap with malformed wm_ header is rejected instead of anonymous bypass', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async (calls) => {
-    const resp = await handler(makeWeatherBootstrapRequest({ 'X-WorldMonitor-Key': 'wm_notcanonical' }));
+test('wm_ credential in the tester cookie never leaks a gateway sentinel', async () => {
+  await withMockedBootstrapAuth({}, async () => {
+    const resp = await handler(makeBootstrapRequest({ Cookie: `__Host-wm-pro-key=${FORMER_USER_KEY}` }));
     const body = await resp.json();
 
     assert.equal(resp.status, 401);
     assert.equal(resp.headers.get('cache-control'), 'no-store');
-    assert.equal(body.error, 'Invalid API key');
-    assert.equal(calls.length, 0);
-  });
-});
-
-test('no-Origin valid wm_ user key in X-Api-Key alias returns bootstrap data', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-Api-Key': USER_KEY }));
-
-    assert.equal(resp.status, 200);
-    assert.deepEqual(Object.keys(await resp.json()).sort(), ['data', 'missing']);
-    assertNonSharedCacheHeaders(resp);
-  });
-});
-
-test('revoked wm_ user key returns generic non-cacheable 401 without leaking gateway sentinel', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement(), userKeyResponse: 'revoked' }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
-    const body = await resp.json();
-
-    assert.equal(resp.status, 401);
-    assert.equal(resp.headers.get('cache-control'), 'no-store');
-    assert.notEqual(body.error, 'User API key requires gateway validation');
-    assert.doesNotMatch(JSON.stringify(body), /gateway validation|Convex|keyHash/i);
-  });
-});
-
-test('billing-verification lapse on a wm_ user key exposes a machine-readable code', async () => {
-  await withMockedBootstrapAuth({
-    entitlement: {
-      planKey: 'free',
-      validUntil: 0,
-      features: { apiAccess: false },
-      billingStatus: 'subscription_lapsed',
-    },
-  }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
-    const body = await resp.json();
-
-    assert.equal(resp.status, 403);
-    assert.equal(resp.headers.get('x-billing-verification'), 'subscription_lapsed');
-    assert.equal(resp.headers.get('cache-control'), 'no-store');
-    assert.equal(body.error, 'API access subscription lapsed');
-    assert.equal(body.code, 'subscription_lapsed');
-  });
-});
-
-test('retryable billing verification on a wm_ user key keeps Retry-After and code on the wire', async () => {
-  await withMockedBootstrapAuth({
-    entitlement: {
-      planKey: 'free',
-      validUntil: 0,
-      features: { apiAccess: false },
-      billingStatus: 'renewal_verification_pending',
-      retryAfterSeconds: 19,
-    },
-  }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
-    const body = await resp.json();
-
-    assert.equal(resp.status, 503);
-    assert.equal(resp.headers.get('retry-after'), '19');
-    assert.equal(body.code, 'renewal_verification_pending');
-  });
-});
-
-test('current API access keeps wm_ bootstrap usable while a stronger renewal is pending', async () => {
-  await withMockedBootstrapAuth({
-    entitlement: {
-      ...activeApiEntitlement(),
-      billingStatus: 'renewal_verification_pending',
-      retryAfterSeconds: 19,
-    },
-  }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
-
-    assert.equal(resp.status, 200);
-    assert.deepEqual(Object.keys(await resp.json()).sort(), ['data', 'missing']);
-    assertNonSharedCacheHeaders(resp);
-  });
-});
-
-test('malformed wm_ user key is rejected before Redis or Convex validation', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async (calls) => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': 'wm_notcanonical' }));
-    const body = await resp.json();
-
-    assert.equal(resp.status, 401);
-    assert.equal(resp.headers.get('cache-control'), 'no-store');
-    assert.equal(body.error, 'Invalid API key');
-    assert.equal(calls.length, 0);
-  });
-});
-
-test('rate-limit Redis outage returns non-cacheable 503 before Convex validation', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement(), rateLimitStatus: 500 }, async (calls) => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
-    const body = await resp.json();
-
-    assert.equal(resp.status, 503);
-    assert.equal(resp.headers.get('cache-control'), 'no-store');
-    assert.equal(resp.headers.get('x-ratelimit-mode'), 'degraded');
-    assert.equal(body.error, 'Rate-limit service temporarily unavailable');
-    assert.equal(calls.some((call) => call.url.endsWith('/api/internal-validate-api-key')), false);
-    assert.equal(calls.some((call) => call.url.endsWith('/api/internal-entitlements')), false);
-  });
-});
-
-test('over-limit wm_ user key returns non-cacheable 429 before Convex validation', async () => {
-  await withMockedBootstrapAuth({
-    entitlement: activeApiEntitlement(),
-    rateLimitResults: [{ result: 601 }, { result: 0 }, { result: 12 }],
-  }, async (calls) => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
-    const body = await resp.json();
-
-    assert.equal(resp.status, 429);
-    assert.equal(resp.headers.get('cache-control'), 'no-store');
-    assert.equal(resp.headers.get('retry-after'), '12');
-    assert.equal(body.error, 'Too many requests');
-    assert.equal(calls.some((call) => call.url.endsWith('/api/internal-validate-api-key')), false);
-    assert.equal(calls.some((call) => call.url.endsWith('/api/internal-entitlements')), false);
-  });
-});
-
-test('wm_ credential outside the supported header fallback never leaks the gateway sentinel', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
-    const resp = await handler(makeBootstrapRequest({ Cookie: `__Host-wm-pro-key=${USER_KEY}` }));
-    const body = await resp.json();
-
-    assert.equal(resp.status, 401);
-    assert.equal(resp.headers.get('cache-control'), 'no-store');
-    assert.notEqual(body.error, 'User API key requires gateway validation');
     assert.doesNotMatch(JSON.stringify(body), /gateway validation/i);
   });
 });
 
-test('valid wm_ user key without current API access returns non-cacheable 403', async () => {
-  await withMockedBootstrapAuth({ entitlement: proOnlyEntitlement() }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
-    const body = await resp.json();
-
-    assert.equal(resp.status, 403);
-    assert.equal(resp.headers.get('cache-control'), 'no-store');
-    assert.doesNotMatch(JSON.stringify(body), /Convex|keyHash/i);
-  });
-});
-
 test('missing credentials remain a non-cacheable 401', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const resp = await handler(makeBootstrapRequest());
 
     assert.equal(resp.status, 401);
@@ -478,28 +261,12 @@ test('missing credentials remain a non-cacheable 401', async () => {
   });
 });
 
-test('Convex validation outage returns a retryable non-cacheable 503, not a misleading 401', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement(), userKeyResponse: 'error' }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
-    const body = await resp.json();
-
-    assert.equal(resp.status, 503);
-    assert.equal(resp.headers.get('cache-control'), 'no-store');
-    assert.equal(resp.headers.get('retry-after'), '5');
-    assert.equal(resp.headers.get('x-validation-mode'), 'degraded');
-    assert.equal(body.error, 'Service temporarily unavailable');
-    // A transient outage must not leak as "Invalid API key" or expose internals.
-    assert.notEqual(body.error, 'Invalid API key');
-    assert.doesNotMatch(JSON.stringify(body), /gateway validation|Convex|keyHash/i);
-  });
-});
-
 test('key-auth response with an empty cache batch stays no-store (never shared-cacheable)', async () => {
   // The mocked GET pipeline returns no data, so getCachedJsonBatch yields an
   // all-missing bundle. Under key auth that empty 200 must be no-store and emit
   // no CDN cache headers, or a CDN could cache an authenticated empty response.
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
+  await withMockedBootstrapAuth({}, async () => {
+    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': ENTERPRISE_KEY }));
     const body = await resp.json();
 
     assert.equal(resp.status, 200);
@@ -517,7 +284,7 @@ test('anonymous weather-only bootstrap serves the public payload but never enter
   // and the edge disagreed about the same URL. The anonymous payload and its
   // ACAO:* posture are unchanged; only the shared-cache shield moves to the
   // explicitly-marked `&public=1` URL.
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const resp = await handler(makeWeatherBootstrapRequest());
 
     assert.equal(resp.status, 200);
@@ -529,7 +296,7 @@ test('anonymous weather-only bootstrap serves the public payload but never enter
 });
 
 test('explicit public weather bootstrap is CDN-cacheable', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async (calls) => {
+  await withMockedBootstrapAuth({}, async (calls) => {
     const resp = await handler(makePublicWeatherBootstrapRequest());
 
     assert.equal(resp.status, 200);
@@ -559,7 +326,7 @@ test('explicit public weather bootstrap ignores attached credentials by design',
   // `?tier=fast&public=1`: a CDN hit precedes handler auth, so a credential-
   // dependent answer here could never be honored. Callers that need their key
   // validated use the bare URL, which is no-store and always reaches the origin.
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async (calls) => {
+  await withMockedBootstrapAuth({}, async (calls) => {
     const resp = await handler(makePublicWeatherBootstrapRequest({ 'X-WorldMonitor-Key': 'wm_notcanonical' }));
 
     assert.equal(resp.status, 200);
@@ -569,14 +336,14 @@ test('explicit public weather bootstrap ignores attached credentials by design',
   });
 });
 
-test('explicit public weather bootstrap answers a VALID entitled key identically', async () => {
+test('explicit public weather bootstrap answers a VALID operator key identically', async () => {
   // "One response contract for every caller" is the property that makes this URL
   // safe to cache at all — a CDN hit precedes auth, so if an entitled caller
   // could ever get something different here, the cache would hand that
   // difference to everyone. The invalid-key case above is only half the proof;
   // this is the half that would actually leak if the short-circuit regressed.
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async (calls) => {
-    const resp = await handler(makePublicWeatherBootstrapRequest({ 'X-WorldMonitor-Key': USER_KEY }));
+  await withMockedBootstrapAuth({}, async (calls) => {
+    const resp = await handler(makePublicWeatherBootstrapRequest({ 'X-WorldMonitor-Key': ENTERPRISE_KEY }));
 
     assert.equal(resp.status, 200);
     assertPublicCorsHeaders(resp);
@@ -591,7 +358,7 @@ test('explicit public weather bootstrap answers a session cookie identically', a
   // from src/services/weather.ts. It must still be the shared public response —
   // otherwise a signed-in browser could mint a session-flavoured entry at the
   // shared cache key.
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const { token } = await issueSessionToken();
     const resp = await handler(makePublicWeatherBootstrapRequest({ Cookie: `wm-session=${token}` }));
 
@@ -606,7 +373,7 @@ test('disallowed-Origin rejection is never cacheable on a public URL', async () 
   // On a `&public=1` URL — shared by every caller — a cacheable 403 minted by one
   // disallowed origin is a rejection a shared cache can replay to legitimate
   // callers. Assert both URL shapes.
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     for (const req of [
       makePublicWeatherBootstrapRequest({ Origin: 'https://evil.example' }),
       makeWeatherBootstrapRequest({ Origin: 'https://evil.example' }),
@@ -623,7 +390,7 @@ test('disallowed-Origin rejection is never cacheable on a public URL', async () 
 test('HEAD on the public weather URL is not the public path', async () => {
   // Mirrors the tier rule: the marked public URLs are GET-only, so a HEAD falls
   // through to credentialed validation rather than minting a cacheable entry.
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const resp = await handler(
       new Request('https://api.worldmonitor.app/api/bootstrap?keys=weatherAlerts&public=1', { method: 'HEAD' }),
     );
@@ -638,7 +405,7 @@ test('explicit public fast-tier bootstrap is CDN-cacheable — restores the #524
   // successful tier reads returned no-store and every boot re-read the full
   // registry from Upstash. A credential-less tier read serves the shared public
   // seed payload and MUST carry the CDN shared-cache shield.
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async (calls) => {
+  await withMockedBootstrapAuth({}, async (calls) => {
     const resp = await handler(makePublicTierBootstrapRequest('fast'));
 
     assert.equal(resp.status, 200);
@@ -658,7 +425,7 @@ test('explicit public fast-tier bootstrap is CDN-cacheable — restores the #524
 test('HEAD tier bootstrap is not the public path (no unshielded Redis read)', async () => {
   // A HEAD read must not qualify for the cacheable public-tier path, or it would
   // run the full registry Redis pipeline to build a body it cannot return.
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async (calls) => {
+  await withMockedBootstrapAuth({}, async (calls) => {
     const resp = await handler(
       new Request('https://api.worldmonitor.app/api/bootstrap?tier=fast&public=1', { method: 'HEAD' }),
     );
@@ -671,7 +438,7 @@ test('HEAD tier bootstrap is not the public path (no unshielded Redis read)', as
 });
 
 test('explicit public slow-tier bootstrap is CDN-cacheable with the slow TTL', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const resp = await handler(makePublicTierBootstrapRequest('slow'));
 
     assert.equal(resp.status, 200);
@@ -681,7 +448,7 @@ test('explicit public slow-tier bootstrap is CDN-cacheable with the slow TTL', a
 });
 
 test('legacy anonymous tier URL remains credentialed and non-cacheable', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const resp = await handler(makeTierBootstrapRequest('fast'));
 
     assert.equal(resp.status, 401);
@@ -691,7 +458,7 @@ test('legacy anonymous tier URL remains credentialed and non-cacheable', async (
 });
 
 test('explicit public tier URL keeps public semantics even when credentials are attached', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async (calls) => {
+  await withMockedBootstrapAuth({}, async (calls) => {
     const resp = await handler(makePublicTierBootstrapRequest('fast', {
       'X-WorldMonitor-Key': ENTERPRISE_KEY,
     }));
@@ -705,7 +472,6 @@ test('explicit public tier URL keeps public semantics even when credentials are 
 
 test('public tier Redis outage returns retryable 503 without a CDN cache header', async () => {
   await withMockedBootstrapAuth({
-    entitlement: activeApiEntitlement(),
     bootstrapPipelineStatus: 500,
   }, async () => {
     const resp = await handler(makePublicTierBootstrapRequest('fast'));
@@ -727,7 +493,6 @@ for (const [label, bootstrapPipelineBody] of [
 ]) {
   test(`public tier Redis ${label} returns retryable 503 without a CDN cache header`, async () => {
     await withMockedBootstrapAuth({
-      entitlement: activeApiEntitlement(),
       bootstrapPipelineBody,
     }, async () => {
       const resp = await handler(makePublicTierBootstrapRequest('fast'));
@@ -743,7 +508,7 @@ for (const [label, bootstrapPipelineBody] of [
 test('session-cookie legacy tier bootstrap stays no-store', async () => {
   // The legacy tier URL remains credentialed and cannot share the explicit
   // public=1 cache entry.
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const { token } = await issueSessionToken();
     const resp = await handler(makeTierBootstrapRequest('fast', { Cookie: `wm-session=${token}` }));
 
@@ -753,7 +518,7 @@ test('session-cookie legacy tier bootstrap stays no-store', async () => {
 });
 
 test('enterprise-key legacy tier bootstrap stays no-store (key auth is never shared-cacheable)', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const resp = await handler(makeTierBootstrapRequest('fast', { 'X-WorldMonitor-Key': ENTERPRISE_KEY }));
 
     assert.equal(resp.status, 200);
@@ -764,7 +529,7 @@ test('enterprise-key legacy tier bootstrap stays no-store (key auth is never sha
 test('tier bootstrap with extra params is not treated as the public path', async () => {
   // Only the two fixed tier shapes qualify; an arbitrary extra param must fall
   // back to key auth (401 here) so we never widen the cacheable key space.
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const resp = await handler(
       new Request('https://api.worldmonitor.app/api/bootstrap?tier=fast&public=1&keys=marketQuotes', { method: 'GET' }),
     );
@@ -775,7 +540,7 @@ test('tier bootstrap with extra params is not treated as the public path', async
 });
 
 test('unknown tier value does not qualify for the public path', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     const resp = await handler(makePublicTierBootstrapRequest('bogus'));
 
     assert.equal(resp.status, 401);
@@ -805,7 +570,6 @@ function presentOnDemandPipelineBody(value = { records: [] }) {
 
 test('public on-demand key URL is CDN-shielded and anonymous', async () => {
   await withMockedBootstrapAuth({
-    entitlement: activeApiEntitlement(),
     bootstrapPipelineBody: presentOnDemandPipelineBody(),
   }, async () => {
     const resp = await handler(makePublicOnDemandRequest('cyberThreats'));
@@ -843,7 +607,6 @@ test('public on-demand URL keeps ONE contract even when credentials are attached
   // A CDN hit precedes handler auth, so the response must not vary by caller —
   // same invariant the tier URLs carry (#5250).
   await withMockedBootstrapAuth({
-    entitlement: activeApiEntitlement(),
     bootstrapPipelineBody: presentOnDemandPipelineBody(),
   }, async () => {
     const resp = await handler(makePublicOnDemandRequest('cyberThreats', { Cookie: 'wm-session=whatever' }));
@@ -926,7 +689,7 @@ test('public on-demand URL does not widen into a CDN-amplification vector', asyn
 });
 
 test('protected tester cookie names keep implicit weather bootstrap off the public cache path', async () => {
-  await withMockedBootstrapAuth({ entitlement: activeApiEntitlement() }, async () => {
+  await withMockedBootstrapAuth({}, async () => {
     for (const name of ['__Host-wm-pro-key', '__Host-wm-widget-key']) {
       const response = await handler(makeWeatherBootstrapRequest({ Cookie: `${name}=invalid-key` }));
       assert.equal(response.status, 401, name);
@@ -1000,334 +763,3 @@ for (const [key, field] of Object.entries({ imfMacro: 'inflationPct', imfGrowth:
     });
   });
 }
-
-// ── Desktop keys (plan 2026-10-25-001 U4) ───────────────────────────────────
-// A desktop key, or a downgraded owner's api key within `maxDesktopKeys`, is
-// served what a signed-in Pro session gets, under one per-owner daily ceiling
-// plus a per-minute burst bucket (KTD4–KTD6). The Redis fake below is
-// stateful so the counter can be observed across requests and keys.
-
-const DESKTOP_KEY = 'wm_fedcba9876543210fedcba9876543210fedcba98';
-const DESKTOP_KEY_2 = 'wm_0123456789abcdef0123456789abcdef01234568';
-const DOWNGRADED_KEYS = [
-  'wm_1111111111111111111111111111111111111111',
-  'wm_2222222222222222222222222222222222222222',
-  'wm_3333333333333333333333333333333333333333',
-];
-
-async function sha256HexForTest(value) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-// Every desktop scenario runs on a frozen clock (midday UTC, mid-minute) so the
-// day and minute counter names the test computes and the ones the meter
-// computes cannot straddle a UTC-midnight or minute boundary mid-run. Inputs
-// that mean "now" are derived from the same instant, never from the real clock.
-const FROZEN_NOW = Date.UTC(2026, 9, 25, 12, 0, 30);
-
-function utcDateForTest(now = new Date(FROZEN_NOW)) {
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
-}
-const desktopDayKey = (userId) => `rl:desktopkey:day:${userId}:${utcDateForTest()}`;
-const desktopMinuteKey = (userId) => `rl:desktopkey:min:${userId}:${Math.floor(FROZEN_NOW / 60_000)}`;
-
-const proDesktopEntitlement = (overrides = {}) => ({
-  planKey: 'pro_monthly',
-  validUntil: FROZEN_NOW + 86_400_000,
-  features: {
-    tier: 1,
-    apiAccess: false,
-    apiRateLimit: 60,
-    maxDashboards: 10,
-    prioritySupport: false,
-    exportFormats: [],
-    mcpAccess: true,
-    desktopKeyAccess: true,
-    maxDesktopKeys: 2,
-    planLimits: { desktopKeyRequestsPerDay: 7_500, desktopKeyBurstPerMinute: 120 },
-  },
-  ...overrides,
-});
-
-const apiStarterEntitlement = () => ({
-  ...activeApiEntitlement(),
-  validUntil: FROZEN_NOW + 86_400_000,
-  features: {
-    ...activeApiEntitlement().features,
-    desktopKeyAccess: false,
-    maxDesktopKeys: 0,
-    planLimits: { desktopKeyRequestsPerDay: 0, desktopKeyBurstPerMinute: 0 },
-  },
-});
-
-async function withDesktopBootstrapAuth({ keys, entitlements, seed = {}, failDesktopCounter = false }, fn) {
-  mock.timers.enable({ apis: ['Date'], now: FROZEN_NOW });
-  const restoreEnv = snapshotEnv([
-    'CONVEX_SITE_URL',
-    'CONVEX_SERVER_SHARED_SECRET',
-    'UPSTASH_REDIS_REST_URL',
-    'UPSTASH_REDIS_REST_TOKEN',
-    'WM_SESSION_SECRET',
-    'WORLDMONITOR_VALID_KEYS',
-    'VERCEL_ENV',
-  ]);
-  const originalFetch = globalThis.fetch;
-  process.env.CONVEX_SITE_URL = 'https://convex.test';
-  process.env.CONVEX_SERVER_SHARED_SECRET = 'shared-secret';
-  process.env.UPSTASH_REDIS_REST_URL = 'https://upstash.test';
-  process.env.UPSTASH_REDIS_REST_TOKEN = 'redis-token';
-  process.env.WM_SESSION_SECRET = 'test-secret-for-bootstrap-desktop-keys';
-  process.env.WORLDMONITOR_VALID_KEYS = ENTERPRISE_KEY;
-  delete process.env.VERCEL_ENV;
-
-  const rowsByHash = new Map();
-  for (const [key, row] of Object.entries(keys)) rowsByHash.set(await sha256HexForTest(key), row);
-  const redis = new Map([
-    [MARKET_QUOTES_REDIS_KEY, JSON.stringify(SEEDED_MARKET_QUOTES)],
-    ...Object.entries(seed).map(([k, v]) => [k, String(v)]),
-  ]);
-
-  const run = (command) => {
-    const [verb, key, ...args] = command;
-    switch (String(verb).toUpperCase()) {
-      case 'GET': return { result: redis.get(key) ?? null };
-      case 'SET': redis.set(key, String(args[0])); return { result: 'OK' };
-      case 'DEL': return { result: redis.delete(key) ? 1 : 0 };
-      case 'INCR': { const next = Number(redis.get(key) ?? 0) + 1; redis.set(key, String(next)); return { result: next }; }
-      case 'DECR': { const next = Number(redis.get(key) ?? 0) - 1; redis.set(key, String(next)); return { result: next }; }
-      case 'EXPIRE': return { result: redis.has(key) ? 1 : 0 };
-      case 'TTL': return { result: 60 };
-      default: return { result: null };
-    }
-  };
-
-  globalThis.fetch = async (input, init) => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-    if (new URL(url).hostname === 'upstash.test') {
-      const commands = JSON.parse(String(init?.body || '[]'));
-      if (failDesktopCounter && commands.some((c) => String(c[1] ?? '').startsWith('rl:desktopkey:'))) {
-        return new Response(JSON.stringify({ error: 'redis unavailable' }), { status: 503 });
-      }
-      return new Response(JSON.stringify(commands.map(run)), { status: 200, headers: { 'Content-Type': 'application/json' } });
-    }
-    if (url.endsWith('/api/internal-validate-api-key')) {
-      const { keyHash } = JSON.parse(String(init?.body || '{}'));
-      return new Response(JSON.stringify(rowsByHash.get(keyHash) ?? null), { status: 200, headers: { 'Content-Type': 'application/json' } });
-    }
-    if (url.endsWith('/api/internal-entitlements')) {
-      const { userId } = JSON.parse(String(init?.body || '{}'));
-      const value = entitlements[userId];
-      if (value && value.__status) return new Response('{}', { status: value.__status });
-      return new Response(JSON.stringify(value ?? null), { status: 200, headers: { 'Content-Type': 'application/json' } });
-    }
-    return originalFetch(input, init);
-  };
-
-  try {
-    return await fn({ redis, rowsByHash, entitlements });
-  } finally {
-    globalThis.fetch = originalFetch;
-    restoreEnv();
-    mock.timers.reset();
-  }
-}
-
-// Convex validateKeyByHash always reports `activeKeyRank` (desktop rows cannot
-// predate it); rank 0 is the owner's oldest key unless a scenario says otherwise.
-const desktopRow = (userId, overrides = {}) => ({ id: `key_${userId}`, userId, name: 'laptop', keyKind: 'desktop', activeKeyRank: 0, ...overrides });
-
-// The seeded bootstrap payload every desktop scenario is served. `marketQuotes`
-// is the key makeBootstrapRequest asks for; its Redis name comes from the
-// shared registry (shared/bootstrap-tier-keys.js).
-const MARKET_QUOTES_REDIS_KEY = 'market:stocks-bootstrap:v1';
-const SEEDED_MARKET_QUOTES = { quotes: [{ symbol: 'SPY', price: 512.34, changePct: 0.42 }], updatedAt: '2026-10-25T12:00:00.000Z' };
-
-test('AE1 (bootstrap): a desktop key is served the bootstrap payload a signed-in Pro session gets', async () => {
-  await withDesktopBootstrapAuth({
-    keys: { [DESKTOP_KEY]: desktopRow('pro_owner') },
-    entitlements: { pro_owner: proDesktopEntitlement() },
-  }, async ({ redis }) => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }));
-    assert.equal(resp.status, 200, await resp.clone().text());
-    const body = await resp.json();
-    assert.deepEqual(Object.keys(body).sort(), ['data', 'missing']);
-    assert.deepEqual(body.data.marketQuotes, SEEDED_MARKET_QUOTES, 'the seeded payload is served, not an empty body');
-    assert.equal(body.missing.includes('marketQuotes'), false);
-    assertNonSharedCacheHeaders(resp);
-    assert.equal(redis.get(desktopDayKey('pro_owner')), '1', 'the owner daily counter is charged once');
-  });
-});
-
-test('AE5 (bootstrap): an owner past the daily ceiling gets 429 with Retry-After at the next UTC midnight', async () => {
-  await withDesktopBootstrapAuth({
-    keys: { [DESKTOP_KEY]: desktopRow('pro_owner') },
-    entitlements: { pro_owner: proDesktopEntitlement() },
-    seed: { [desktopDayKey('pro_owner')]: 7_500 },
-  }, async ({ redis }) => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }));
-    assert.equal(resp.status, 429);
-    const body = await resp.json();
-    assert.equal(body.limit_type, 'daily');
-    assert.equal(body.limit, 7_500);
-    const retryAfter = Number(resp.headers.get('retry-after'));
-    const now = new Date();
-    const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
-    const expected = Math.ceil((midnight - now.getTime()) / 1000);
-    assert.ok(Math.abs(retryAfter - expected) <= 2, `Retry-After ${retryAfter} vs ${expected}`);
-    assert.equal(resp.headers.get('cache-control'), 'no-store');
-    assert.equal(redis.get(desktopDayKey('pro_owner')), '7500', 'a rejected request is not charged');
-  });
-});
-
-test('AE5 (bootstrap): two desktop keys of one owner share the counter', async () => {
-  await withDesktopBootstrapAuth({
-    keys: { [DESKTOP_KEY]: desktopRow('pro_owner'), [DESKTOP_KEY_2]: desktopRow('pro_owner', { id: 'key_2', activeKeyRank: 1 }) },
-    entitlements: { pro_owner: proDesktopEntitlement() },
-  }, async ({ redis }) => {
-    assert.equal((await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }))).status, 200);
-    assert.equal((await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY_2 }))).status, 200);
-    assert.equal(redis.get(desktopDayKey('pro_owner')), '2');
-  });
-});
-
-test('burst (bootstrap): the per-minute bucket rejects over the limit without spending the day', async () => {
-  await withDesktopBootstrapAuth({
-    keys: { [DESKTOP_KEY]: desktopRow('pro_owner') },
-    entitlements: { pro_owner: proDesktopEntitlement() },
-    seed: { [desktopMinuteKey('pro_owner')]: 120 },
-  }, async ({ redis }) => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }));
-    assert.equal(resp.status, 429);
-    const body = await resp.json();
-    assert.equal(body.limit_type, 'per_minute');
-    const retryAfter = Number(resp.headers.get('retry-after'));
-    assert.ok(retryAfter >= 1 && retryAfter <= 60);
-    assert.equal(redis.get(desktopDayKey('pro_owner')) ?? '0', '0');
-  });
-});
-
-test('Redis counter error (bootstrap): the rate-limit-degraded 503 with Retry-After', async () => {
-  await withDesktopBootstrapAuth({
-    keys: { [DESKTOP_KEY]: desktopRow('pro_owner') },
-    entitlements: { pro_owner: proDesktopEntitlement() },
-    failDesktopCounter: true,
-  }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }));
-    assert.equal(resp.status, 503);
-    assert.equal(resp.headers.get('x-ratelimit-mode'), 'degraded');
-    assert.equal(resp.headers.get('retry-after'), '5');
-    assert.equal(resp.headers.get('cache-control'), 'no-store');
-  });
-});
-
-test('AE4 (bootstrap): a lapsed owner gets the billing denial; renewal restores the same key', async () => {
-  await withDesktopBootstrapAuth({
-    keys: { [DESKTOP_KEY]: desktopRow('pro_owner') },
-    entitlements: {
-      pro_owner: proDesktopEntitlement({ validUntil: FROZEN_NOW - 1_000, billingStatus: 'subscription_lapsed' }),
-    },
-  }, async ({ redis, entitlements }) => {
-    const denied = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }));
-    assert.equal(denied.status, 403);
-    assert.deepEqual(await denied.json(), { error: 'Subscription lapsed', code: 'subscription_lapsed' });
-    assert.equal(denied.headers.get('x-billing-verification'), 'subscription_lapsed');
-    assert.equal(denied.headers.get('cache-control'), 'no-store');
-
-    entitlements.pro_owner = proDesktopEntitlement();
-    redis.delete('entitlements:test:pro_owner');
-    const restored = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }));
-    assert.equal(restored.status, 200);
-  });
-});
-
-test('AE6 (bootstrap): a downgraded owner keeps the two oldest api keys; the third is denied', async () => {
-  const keys = {};
-  DOWNGRADED_KEYS.forEach((key, rank) => {
-    keys[key] = { id: `key_${rank}`, userId: 'downgraded', name: `server-${rank}`, keyKind: 'api', activeKeyRank: rank };
-  });
-  await withDesktopBootstrapAuth({
-    keys,
-    entitlements: { downgraded: proDesktopEntitlement() },
-  }, async ({ redis }) => {
-    for (const key of DOWNGRADED_KEYS.slice(0, 2)) {
-      const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': key }));
-      assert.equal(resp.status, 200, await resp.clone().text());
-    }
-    const third = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DOWNGRADED_KEYS[2] }));
-    assert.equal(third.status, 403);
-    assert.match((await third.json()).error, /desktop key limit/i);
-    assert.equal(third.headers.get('cache-control'), 'no-store');
-    assert.equal(redis.get(desktopDayKey('downgraded')), '2', 'desktop meter charged for the admitted keys only');
-  });
-});
-
-test('R5 (bootstrap): a Pro owner with three desktop keys — ranks 0 and 1 served, rank 2 gets the one-sentence 403', async () => {
-  const keys = {};
-  DOWNGRADED_KEYS.forEach((key, rank) => {
-    keys[key] = desktopRow('shrunk', { id: `desk_${rank}`, name: `desk-${rank}`, activeKeyRank: rank });
-  });
-  await withDesktopBootstrapAuth({ keys, entitlements: { shrunk: proDesktopEntitlement() } }, async ({ redis }) => {
-    for (const key of DOWNGRADED_KEYS.slice(0, 2)) {
-      const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': key }));
-      assert.equal(resp.status, 200, await resp.clone().text());
-    }
-    const third = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DOWNGRADED_KEYS[2] }));
-    assert.equal(third.status, 403);
-    assert.deepEqual(await third.json(), { error: DESKTOP_KEY_LIMIT_ERROR });
-    assert.equal(third.headers.get('cache-control'), 'no-store');
-    assert.equal(redis.get(desktopDayKey('shrunk')), '2', 'the denied key is not metered');
-  });
-});
-
-test('R5 (bootstrap): a desktop key whose rank is unknown fails closed with the Pro-required 403', async () => {
-  const { activeKeyRank: _omit, ...rankless } = desktopRow('shrunk');
-  await withDesktopBootstrapAuth({ keys: { [DESKTOP_KEY]: rankless }, entitlements: { shrunk: proDesktopEntitlement() } }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }));
-    assert.equal(resp.status, 403);
-    assert.deepEqual(await resp.json(), { error: 'Pro subscription required' });
-  });
-});
-
-test('R5 (bootstrap): an API-plan owner\'s desktop keys are served regardless of rank (0 slots to rank against)', async () => {
-  await withDesktopBootstrapAuth({
-    keys: { [DESKTOP_KEY]: desktopRow('upgraded', { activeKeyRank: 7 }) },
-    entitlements: { upgraded: apiStarterEntitlement() },
-  }, async () => {
-    assert.equal((await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }))).status, 200);
-  });
-});
-
-test('AE7 (bootstrap): an API-plan owner\'s desktop key keeps Pro bootstrap access under the catalog ceiling', async () => {
-  await withDesktopBootstrapAuth({
-    keys: { [DESKTOP_KEY]: desktopRow('upgraded') },
-    entitlements: { upgraded: apiStarterEntitlement() },
-  }, async ({ redis }) => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }));
-    assert.equal(resp.status, 200, await resp.clone().text());
-    assert.equal(redis.get(desktopDayKey('upgraded')), '1');
-  });
-});
-
-test('desktop key (bootstrap): a free owner is denied with the Pro-required 403', async () => {
-  await withDesktopBootstrapAuth({
-    keys: { [DESKTOP_KEY]: desktopRow('free_owner') },
-    entitlements: { free_owner: { planKey: 'free', validUntil: 0, features: { tier: 0, apiAccess: false, desktopKeyAccess: false } } },
-  }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }));
-    assert.equal(resp.status, 403);
-    assert.equal((await resp.json()).error, 'Pro subscription required');
-  });
-});
-
-test('desktop key (bootstrap): an entitlement outage is the retryable 503', async () => {
-  await withDesktopBootstrapAuth({
-    keys: { [DESKTOP_KEY]: desktopRow('pro_owner') },
-    entitlements: { pro_owner: { __status: 503 } },
-  }, async () => {
-    const resp = await handler(makeBootstrapRequest({ 'X-WorldMonitor-Key': DESKTOP_KEY }));
-    assert.equal(resp.status, 503);
-    assert.equal(resp.headers.get('retry-after'), '5');
-    assert.equal((await resp.json()).code, 'entitlement_verification_unavailable');
-  });
-});

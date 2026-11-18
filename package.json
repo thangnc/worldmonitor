@@ -113,7 +113,7 @@
     "legal:pdfs:check": "node scripts/build-legal-pdfs.mjs --check",
     "build": "npm run security:vite-env-secrets -- --strict-local && npm run build:openapi && tsc && vite build && npm run check:source-maps",
     "build:full": "npm run build",
-    "test:sidecar": "node --test docker/local-api/local-api-server.test.mjs docker/local-api/youtube-embed-message.test.mjs api/_cors.test.mjs api/_session.test.mjs api/_api-key.test.mjs api/_user-api-key.test.mjs api/_rate-limit.test.mjs api/_sentry-common.test.mjs api/bootstrap-auth.test.mjs api/bootstrap-cors.test.mjs api/health-cors.test.mjs api/og-story.test.mjs api/story.test.mjs api/wm-session.test.mjs scripts/ais-relay-rss.test.cjs scripts/ais-relay-ingestion.test.cjs scripts/ais-relay-entity-decode.test.cjs scripts/ais-relay-seed-fetchedat.test.cjs scripts/ais-relay-ais-gaps.test.cjs scripts/ais-relay-opensky-shared-cooldown.test.cjs api/loaders-xml-wms-regression.test.mjs"
+    "test:sidecar": "node --test docker/local-api/local-api-server.test.mjs docker/local-api/youtube-embed-message.test.mjs api/_cors.test.mjs api/_session.test.mjs api/_api-key.test.mjs api/_rate-limit.test.mjs api/_sentry-common.test.mjs api/bootstrap-auth.test.mjs api/bootstrap-cors.test.mjs api/health-cors.test.mjs api/og-story.test.mjs api/story.test.mjs api/wm-session.test.mjs scripts/ais-relay-rss.test.cjs scripts/ais-relay-ingestion.test.cjs scripts/ais-relay-entity-decode.test.cjs scripts/ais-relay-seed-fetchedat.test.cjs scripts/ais-relay-ais-gaps.test.cjs scripts/ais-relay-opensky-shared-cooldown.test.cjs api/loaders-xml-wms-regression.test.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

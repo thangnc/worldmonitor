@@ -2,9 +2,8 @@
  * Paths a self-hosted (docker mode) sidecar relays to the World Monitor cloud
  * with a browser user's own desktop key (plan 2026-11-04-001, KTD6).
  *
- * This is PREMIUM_RPC_PATHS (src/shared/premium-paths.ts) minus the API-only
- * set (server/_shared/api-only-paths.ts): REST v2, MCP and OAuth stay closed
- * to desktop keys. The Docker runtime image ships neither src/ nor server/,
+ * This is PREMIUM_RPC_PATHS (src/shared/premium-paths.ts) minus REST v2
+ * (`/api/v2/`), which stays closed to desktop keys. The Docker runtime image ships neither src/ nor server/,
  * so the sidecar reads this mirror instead.
  * tests/selfhost-relay-paths-parity.test.mts fails when either source set
  * changes without this file.
@@ -59,8 +58,6 @@ const RELAY_PATHS = new Set([
   '/api/scenario/v1/run-scenario',
   '/api/scenario/v1/get-scenario-status',
   '/api/forecast/v1/trigger-simulation',
-  '/api/mcp-proxy',
-  '/api/chat-analyst',
   '/api/military/v1/get-aircraft-details',
   '/api/military/v1/get-defense-industrial-base',
   '/api/aviation/v1/list-airport-flights',

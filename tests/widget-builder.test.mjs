@@ -1622,51 +1622,6 @@ describe('widget-agent relay — SSE event protocol', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// 8. Widget-agent URL helper
-// ---------------------------------------------------------------------------
-describe('proxy routing — widgetAgentUrl', () => {
-  const proxy = src('src/utils/proxy.ts');
-
-  it('widgetAgentUrl() exists in proxy.ts', () => {
-    assert.ok(
-      proxy.includes('widgetAgentUrl'),
-      'widgetAgentUrl() must be defined in src/utils/proxy.ts',
-    );
-  });
-
-  it('widgetAgentUrl returns /widget-agent in dev (for Vite proxy)', () => {
-    assert.ok(
-      proxy.includes("'/widget-agent'") || proxy.includes('"/widget-agent"'),
-      'widgetAgentUrl must return /widget-agent in dev mode',
-    );
-  });
-
-  it('widgetAgentUrl targets proxy.worldmonitor.app (not toRuntimeUrl)', () => {
-    // The URL may be in a constant above the function; search the whole file
-    assert.ok(
-      proxy.includes('proxy.worldmonitor.app'),
-      'Must target proxy.worldmonitor.app directly (sidecar destroys SSE via arrayBuffer)',
-    );
-    // Verify the function itself does not use toRuntimeUrl
-    const fnIdx = proxy.indexOf('function widgetAgentUrl');
-    assert.ok(fnIdx !== -1, 'widgetAgentUrl function not found');
-    const fnBody = proxy.slice(fnIdx, fnIdx + 400);
-    assert.ok(
-      !fnBody.includes('toRuntimeUrl'),
-      'widgetAgentUrl must NOT use toRuntimeUrl — sidecar buffers via arrayBuffer, destroying SSE',
-    );
-  });
-
-  it('widgetAgentHealthUrl() exists and targets /widget-agent/health', () => {
-    assert.ok(proxy.includes('widgetAgentHealthUrl'), 'widgetAgentHealthUrl() must be defined');
-    assert.ok(proxy.includes('/widget-agent/health'), 'widgetAgentHealthUrl() must target /widget-agent/health');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// 11. PRO widget — relay
-// ---------------------------------------------------------------------------
 describe('PRO widget — relay auth and configuration', () => {
   const relay = src('scripts/ais-relay.cjs');
 
@@ -2191,17 +2146,6 @@ window.dispatchEvent(new Event('click'));
 });
 
 // ---------------------------------------------------------------------------
-// entitlement-check — cache-write failure must NOT collapse to "no entitlement"
-// ---------------------------------------------------------------------------
-//
-// getEntitlements() returns null on three different failure modes — Convex
-// said no, Convex unreachable, and (the trap this test guards) cache-write
-// failed AFTER Convex confirmed the entitlement. Once Convex returns a valid
-// entitlement, an Upstash hiccup or any error inside setCachedJson must NOT
-// turn that yes into a null-meaning-no — that would 403 paying customers on
-// every call path this file gates, including the widget-agent fallback PR
-// #3505 just added.
-// ---------------------------------------------------------------------------
 // widget-agent relay — error classifier (no more opaque "Agent error")
 // ---------------------------------------------------------------------------
 //
@@ -2366,57 +2310,6 @@ describe('widget-agent relay — error classifier', () => {
     assert.ok(
       /catch\s*\(\s*err[^)]*\)[\s\S]*?toolCallCount/.test(region),
       'Catch payload must still reference toolCallCount, otherwise this test is guarding nothing',
-    );
-  });
-});
-
-describe('entitlement-check — cache-write failure does not collapse confirmed entitlement', () => {
-  const src_ = src('server/_shared/entitlement-check.ts');
-
-  it('setCachedJson call is wrapped in its own try/catch', () => {
-    // Find the success-path block: `if (result) { … setCachedJson(…) … return result }`
-    const successIdx = src_.indexOf('if (result) {');
-    assert.ok(successIdx !== -1, 'success-path "if (result)" branch not found');
-    const region = src_.slice(successIdx, successIdx + 1500);
-
-    const setIdx = region.indexOf('setCachedJson(');
-    assert.ok(setIdx !== -1, 'setCachedJson call missing from success path');
-
-    // Walk backward from setCachedJson to find the nearest enclosing `try {`
-    // BEFORE the outer catch. The outer try is at the top of the function,
-    // far away — we want a LOCAL try/catch around the cache write so the
-    // safety property is explicit at the call site.
-    const beforeSet = region.slice(0, setIdx);
-    const lastTry = beforeSet.lastIndexOf('try {');
-    const lastCatch = beforeSet.lastIndexOf('catch');
-    assert.ok(
-      lastTry !== -1 && lastTry > lastCatch,
-      'setCachedJson must be inside a LOCAL try/catch within the success branch — relying on setCachedJson to swallow its own errors is fragile',
-    );
-
-    // The success-path return must come AFTER the try/catch, not inside the catch.
-    const returnIdx = region.indexOf('return result', setIdx);
-    assert.ok(
-      returnIdx !== -1,
-      '`return result` must follow the cache-write try/catch so a swallowed cache error still returns the confirmed entitlement',
-    );
-  });
-
-  it('cache-write catch logs but does not return null or throw', () => {
-    const successIdx = src_.indexOf('if (result) {');
-    const region = src_.slice(successIdx, successIdx + 1500);
-    // The catch block for cache write must NOT contain `return null` — that
-    // would re-introduce the bug. It also must not rethrow.
-    const cacheCatchMatch = region.match(/catch\s*\(\s*cacheErr[^)]*\)\s*\{([^}]*)\}/);
-    assert.ok(cacheCatchMatch, 'cache-write catch block must be named distinctly (e.g. cacheErr) so future readers see the intent');
-    const cacheCatchBody = cacheCatchMatch[1];
-    assert.ok(
-      !/return\s+null/.test(cacheCatchBody),
-      'cache-write catch must NOT return null — a confirmed entitlement must survive cache-write failure',
-    );
-    assert.ok(
-      !/throw\b/.test(cacheCatchBody),
-      'cache-write catch must NOT rethrow — that would bubble to the outer catch and collapse to null',
     );
   });
 });

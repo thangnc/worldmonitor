@@ -17,9 +17,10 @@ import { describe, it } from 'node:test';
 // forgets the scope re-opens the bug, and re-opening it means a paying customer's
 // own scraper can starve their dashboard again.
 //
-// This is a source pin because driving a real API-key request through
-// `createDomainGateway` needs key validation, entitlement resolution and Redis;
-// the behaviour it guards is already proven against the limiter itself.
+// No credential the gateway accepts today carries a user principal (Clerk and
+// user API keys are gone), so the gateway names no principal at all and both
+// limiters key on the caller's IP. The pin stays so a principal that comes
+// back has to come back scoped.
 
 const GATEWAY_SOURCE = readFileSync(
   new URL('../server/gateway.ts', import.meta.url),
@@ -31,11 +32,6 @@ describe('gateway rate-limit principal scoping (WORLDMONITOR-12A)', () => {
     const principals = GATEWAY_SOURCE.match(/\bprincipalUserId:/g) ?? [];
     const scopes = GATEWAY_SOURCE.match(/\bprincipalScope:/g) ?? [];
 
-    assert.ok(
-      principals.length > 0,
-      'sanity: gateway.ts must still pass a principal to the limiter — if this '
-      + 'fails the regex has drifted, not the behaviour',
-    );
     assert.equal(
       scopes.length,
       principals.length,
@@ -46,26 +42,8 @@ describe('gateway rate-limit principal scoping (WORLDMONITOR-12A)', () => {
     );
   });
 
-  it('stamps the handler-facing principal with the same credential-derived scope', () => {
-    // The batch fan-out charges the caller's budget from this stamp, so a
-    // hardcoded scope here would silently move an API-key caller's sub-requests
-    // into the session bucket — the same starvation, one layer down.
-    assert.match(
-      GATEWAY_SOURCE,
-      /withTrustedRateLimitPrincipal\([\s\S]{0,120}?isUserApiKey\s*\?\s*'api_key'\s*:\s*'session'/,
-      'the trusted principal handed to handlers must carry the credential-derived scope',
-    );
-  });
-
-  it('derives the scope from the credential, not from a constant', () => {
-    // A hardcoded 'session' everywhere would satisfy the count check above while
-    // restoring the original bug, so pin that the scope is actually branched on
-    // the API-key signal.
-    assert.match(
-      GATEWAY_SOURCE,
-      /principalScope:\s*isUserApiKey\s*\?\s*'api_key'\s*:\s*'session'/,
-      'principalScope must be derived from isUserApiKey so API-key traffic lands '
-      + 'in its own namespace',
-    );
+  it('names no user principal while no credential carries one', () => {
+    assert.doesNotMatch(GATEWAY_SOURCE, /\bprincipalUserId:/);
+    assert.doesNotMatch(GATEWAY_SOURCE, /withTrustedRateLimitPrincipal\(/);
   });
 });

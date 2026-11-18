@@ -1,53 +1,26 @@
 import { getKeyPrefix } from './redis.js';
-import { PRO_DAILY_QUOTA_TTL_SECONDS, secondsUntilUtcMidnight } from './pro-mcp-token.js';
 
-// Dashboard/API LLM work is a separate budget from MCP calls. The old value of
-// 50 was copied from the MCP allowance and caused normal dashboard hydration to
-// exhaust a Pro user's spend budget almost immediately.
 export const DIRECT_LLM_DAILY_QUOTA_LIMIT = 500;
 export const DIRECT_LLM_REDIS_UNAVAILABLE_RETRY_AFTER_SECONDS = 30;
 
 /**
- * Daily direct-LLM allowance for a caller whose PAID entitlement could not be
- * confirmed: no Convex row at all, a free-tier row, a lapsed row, or a
- * verification outage (`getEntitlements` never throws — it answers with a
- * tier-0 `verificationUnavailable` marker, which must not read as "free to
- * spend").
- *
- * This is deliberately the ceiling main enforced for EVERY non-enterprise
- * caller before the plan-scoped split, so raising the paid default from 50 to
- * 500 cannot raise what an unconfirmed caller is able to spend. It is a safety
- * floor, not a product allowance — the catalog sells free plans
- * `dashboardAiCallsPerDay: 0`, and the tier-gated AI routes still deny those
- * callers before the handler runs. Keeping it non-zero is what stops an
- * entitlement-service outage from 429-ing paying customers.
+ * Daily direct-LLM allowance for a caller with no operator key: today only the
+ * Docker self-host country brief, metered per client IP.
  */
 export const DIRECT_LLM_UNVERIFIED_DAILY_QUOTA_LIMIT = 50;
 
-export type DirectLlmEntitlementShape = {
-  features?: {
-    tier?: number;
-    planLimits?: {
-      // `SHARED_API_BUDGET` is a real catalog value for `mcpCallsPerDay` on the
-      // API tiers; this shape is structurally matched against entitlement rows
-      // that carry it, so narrowing it to `number | null` would reject them.
-      mcpCallsPerDay?: number | null | 'shared-api-budget';
-      dashboardAiCallsPerDay?: number | null;
-    };
-  };
-  validUntil?: number;
-  /** Synthesized when a lookup was attempted but could not be completed. */
-  verificationUnavailable?: boolean;
-};
+// One copy of the daily-meter clock: the operator-key meter's TTL (48 h covers
+// the UTC-midnight rollover) and its Retry-After helper.
+import {
+  API_DAILY_TTL_SECONDS as PRO_DAILY_QUOTA_TTL_SECONDS,
+  secondsUntilUtcMidnight,
+} from './api-key-rate-limit';
+
+export { PRO_DAILY_QUOTA_TTL_SECONDS, secondsUntilUtcMidnight };
 
 /**
- * Resolve the dashboard-AI allowance from a catalog-backed entitlement row.
- * A member missing from an otherwise-confirmed PAID row is a legacy row that
- * predates the dimension, so it inherits the Pro default; explicit null means
- * unlimited and zero remains a real zero allowance.
- *
- * Callers must not hand unconfirmed rows to this function — route them through
- * `resolveActiveDirectLlmLimit`, which is what decides "is this caller paid".
+ * Resolve a daily limit: `null` is unlimited, a non-negative number is that
+ * limit, anything else falls back to the default.
  */
 export function resolveDirectLlmDailyLimit(planDailyLimit?: number | null): number | null {
   if (planDailyLimit === null) return null;
@@ -55,41 +28,6 @@ export function resolveDirectLlmDailyLimit(planDailyLimit?: number | null): numb
     return planDailyLimit;
   }
   return DIRECT_LLM_DAILY_QUOTA_LIMIT;
-}
-
-export function directLlmDailyLimitFromEntitlements(
-  entitlements: DirectLlmEntitlementShape | null | undefined,
-): number | null | undefined {
-  return entitlements?.features?.planLimits?.dashboardAiCallsPerDay;
-}
-
-/** A row that currently proves paid access — not merely present. */
-function isActivePaidEntitlement(ent: DirectLlmEntitlementShape | null | undefined): boolean {
-  if (!ent || ent.verificationUnavailable) return false;
-  const tier = ent.features?.tier;
-  if (typeof tier !== 'number' || tier < 1) return false;
-  return typeof ent.validUntil === 'number' && ent.validUntil >= Date.now();
-}
-
-/**
- * THE decision point for "what daily direct-LLM budget does this caller get".
- *
- * Both enforcement surfaces — `server/gateway.ts`, `api/chat-analyst.ts`, and
- * `api/widget-agent.ts` (the self-metered edge proxies) — INCR the same
- * `llm:direct-usage:<userId>:<date>` key, so they must agree. One counter
- * enforced against two different caps is the class of bug this centralizes
- * away: it tells a Pro Business customer "limit 500" on one surface while
- * another surface serves them 2,500 against the very same counter.
- *
- * - Confirmed active paid row -> that plan's catalog allowance (null = unlimited).
- * - Anything else (free, lapsed, absent, unverifiable) ->
- *   `DIRECT_LLM_UNVERIFIED_DAILY_QUOTA_LIMIT`, never the paid default.
- */
-export function resolveActiveDirectLlmLimit(
-  ent: DirectLlmEntitlementShape | null | undefined,
-): number | null {
-  if (!isActivePaidEntitlement(ent)) return DIRECT_LLM_UNVERIFIED_DAILY_QUOTA_LIMIT;
-  return resolveDirectLlmDailyLimit(directLlmDailyLimitFromEntitlements(ent));
 }
 
 export const DIRECT_LLM_GATEWAY_QUOTA_PATHS = new Set<string>([

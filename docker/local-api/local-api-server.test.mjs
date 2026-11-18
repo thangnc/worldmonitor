@@ -26,16 +26,6 @@ test('ships the shared LLM health provider registry in the Docker image (#7126)'
   assert.match(dockerfile, /^ENV LOCAL_API_RESOURCE_DIR=\/app$/m);
 });
 
-// api/_user-api-key.js imports ../shared/desktop-key-access.js, so every route
-// that validates a user API key needs it shipped next to api/ (#9906).
-test('ships the shared desktop key access module in the Docker image (#9906)', () => {
-  const dockerfile = readFileSync(new URL('../../Dockerfile', import.meta.url), 'utf8');
-  assert.match(
-    dockerfile,
-    /COPY --from=builder \/app\/shared\/desktop-key-access\.js \.\/shared\/desktop-key-access\.js/,
-  );
-});
-
 // Served locally, these answer 5xx or an empty 200 (notification-suppressions);
 // the cloud holds their state. Before #9906 a failed Upstash import hid that.
 // reverse-geocode answers 503 locally: its Nominatim limiter fails closed
@@ -237,14 +227,14 @@ test('a signed-out desktop still reaches the cloud keyless when minting fails', 
   });
 });
 
-test('a forwarded Pro bearer reaches the cloud with one cached anonymous session', async () => {
+test('a legacy forwarded bearer is dropped; the cloud sees one cached anonymous session', async () => {
   await withCloudAuthSidecar(async ({ remote, url }) => {
     const headers = { 'X-WorldMonitor-User-Authorization': 'Bearer clerk-jwt' };
     assert.equal((await authFetch(url, { headers })).status, 200);
     assert.equal((await authFetch(url, { headers })).status, 200);
     assert.deepEqual(remote.mints, [{ method: 'POST', origin: 'https://worldmonitor.app', userAgent: 'WorldMonitor-Desktop/9.8.7 (sidecar)' }]);
     for (const call of remote.calls) {
-      assert.equal(call.headers.authorization, 'Bearer clerk-jwt');
+      assert.equal(call.headers.authorization, undefined);
       assert.equal(call.headers['x-worldmonitor-key'], 'wms_minted_1');
       assert.equal(call.headers['x-worldmonitor-user-authorization'], undefined);
     }
@@ -289,7 +279,7 @@ test('a configured product key wins over the minted session', async () => {
     assert.equal((await authFetch(url, { headers })).status, 200);
     assert.equal(remote.mints.length, 0);
     assert.equal(remote.calls[0].headers['x-worldmonitor-key'], 'desktop-product-key');
-    assert.equal(remote.calls[0].headers.authorization, 'Bearer clerk-jwt');
+    assert.equal(remote.calls[0].headers.authorization, undefined);
   });
 });
 
@@ -1471,194 +1461,6 @@ test('preserves caller Authorization while hiding the sidecar transport token', 
   }
 });
 
-test('bounds self-hosted register-interest input before the Convex bridge', async (t) => {
-  const originalConvex = process.env.CONVEX_URL;
-  const originalSite = process.env.CONVEX_SITE_URL;
-  const originalSecret = process.env.CONVEX_SERVER_SHARED_SECRET;
-  const originalFetch = globalThis.fetch;
-  process.env.CONVEX_URL = 'https://self-hosted.convex.cloud';
-  process.env.CONVEX_SITE_URL = 'http://self-hosted.convex.site';
-  process.env.CONVEX_SERVER_SHARED_SECRET = 'convex-test-secret';
-  let bridgeCalls = 0;
-  globalThis.fetch = async () => {
-    bridgeCalls++;
-    return Response.json({ status: 'registered' });
-  };
-  const localApi = await setupApiDir({});
-  const app = await createLocalApiServer({
-    port: 0,
-    apiDir: localApi.apiDir,
-    logger: { log() {}, warn() {}, error() {} },
-  });
-  const { port } = await app.start();
-  const base = `http://127.0.0.1:${port}`;
-  t.after(async () => {
-    await app.close();
-    await localApi.cleanup();
-    globalThis.fetch = originalFetch;
-    if (originalConvex === undefined) delete process.env.CONVEX_URL;
-    else process.env.CONVEX_URL = originalConvex;
-    if (originalSite === undefined) delete process.env.CONVEX_SITE_URL;
-    else process.env.CONVEX_SITE_URL = originalSite;
-    if (originalSecret === undefined) delete process.env.CONVEX_SERVER_SHARED_SECRET;
-    else process.env.CONVEX_SERVER_SHARED_SECRET = originalSecret;
-  });
-
-  await t.test('rejects a null registration payload', async () => {
-    const response = await postJsonViaHttp(`${base}/api/register-interest`, null);
-    assert.equal(response.status, 400);
-    assert.equal(bridgeCalls, 0);
-  });
-
-  for (const [email, status] of [
-    ['a'.repeat(242) + '@example.com', 200],
-    ['first.last+tag@sub.example.com', 200],
-    ['a'.repeat(243) + '@example.com', 400],
-    ['a@.example.com', 400],
-    ['a@example..com', 400],
-    ['a@example.com.', 400],
-    ['a@' + '.'.repeat(8000) + '@', 400],
-    [42, 400],
-  ]) {
-    await t.test(`email ${String(email).slice(0, 40)} (${String(email).length} characters)`, async () => {
-      const before = bridgeCalls;
-      const response = await postJsonViaHttp(`${base}/api/register-interest`, { email });
-      assert.equal(response.status, status);
-      assert.equal(bridgeCalls - before, status === 200 ? 1 : 0);
-    });
-  }
-
-  const limit = 16 * 1024;
-  const payload = { email: 'valid@example.com', padding: '' };
-  const overhead = Buffer.byteLength(JSON.stringify(payload));
-  for (const bytes of [limit, limit + 1]) {
-    await t.test(`registration body of ${bytes} bytes`, async () => {
-      const before = bridgeCalls;
-      const response = await postJsonViaHttp(`${base}/api/register-interest`, {
-        ...payload, padding: 'x'.repeat(bytes - overhead),
-      });
-      assert.equal(response.status, bytes <= limit ? 200 : 413);
-      assert.equal(bridgeCalls - before, bytes <= limit ? 1 : 0);
-    });
-  }
-  await t.test('counts UTF-8 body bytes rather than characters', async () => {
-    const before = bridgeCalls;
-    const response = await postJsonViaHttp(`${base}/api/register-interest`, {
-      ...payload, padding: 'é'.repeat(limit / 2),
-    });
-    assert.equal(response.status, 413);
-    assert.equal(bridgeCalls, before);
-  });
-
-  for (const declaredLength of [true, false]) {
-    await t.test(`rejects ${declaredLength ? 'declared' : 'chunked'} overflow before upload ends`, async () => {
-      const before = bridgeCalls;
-      const response = await new Promise((resolve, reject) => {
-        const req = httpRequest(`${base}/api/register-interest`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${TEST_LOCAL_API_TOKEN}`,
-            ...(declaredLength ? { 'Content-Length': String(limit + 1) } : {}),
-          },
-        }, (res) => {
-          res.resume();
-          res.on('end', () => {
-            resolve(res.statusCode);
-            req.destroy();
-          });
-        });
-        req.on('error', reject);
-        req.setTimeout(3000, () => req.destroy(new Error('rejection waited for upload completion')));
-        req.flushHeaders();
-        if (!declaredLength) {
-          req.write('x'.repeat(limit));
-          req.write('x');
-        }
-      });
-      assert.equal(response, 413);
-      assert.equal(bridgeCalls, before);
-      assert.equal((await getJsonViaHttp(`${base}/api/local-status`)).status, 200);
-    });
-  }
-  await t.test('rejects overlong email even without a configured bridge secret', async () => {
-    delete process.env.CONVEX_SERVER_SHARED_SECRET;
-    const before = bridgeCalls;
-    const response = await postJsonViaHttp(`${base}/api/register-interest`, {
-      email: 'a'.repeat(243) + '@example.com',
-    });
-    assert.equal(response.status, 400);
-    assert.equal(bridgeCalls, before);
-  });
-});
-
-for (const registrationStatus of ['registered', 'already_registered']) {
-  test(`uses the authenticated Convex bridge for self-hosted register-interest (${registrationStatus})`, async () => {
-    const originalConvex = process.env.CONVEX_URL;
-    const originalSite = process.env.CONVEX_SITE_URL;
-    const originalSecret = process.env.CONVEX_SERVER_SHARED_SECRET;
-    const originalFetch = globalThis.fetch;
-    process.env.CONVEX_URL = 'https://self-hosted.convex.cloud';
-    process.env.CONVEX_SITE_URL = 'http://self-hosted.convex.site';
-    process.env.CONVEX_SERVER_SHARED_SECRET = 'convex-test-secret';
-
-    let captured;
-    globalThis.fetch = async (url, init) => {
-      captured = { url, init };
-      return new Response(JSON.stringify({
-        status: registrationStatus,
-        position: 7,
-        emailSuppressed: true,
-        referralCode: 'secret-referral-code',
-        referralCount: 9,
-      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-    };
-
-    const localApi = await setupApiDir({});
-    const app = await createLocalApiServer({
-      port: 0,
-      apiDir: localApi.apiDir,
-      remoteBase: 'https://worldmonitor.app',
-      logger: { log() { }, warn() { }, error() { } },
-    });
-    const { port } = await app.start();
-
-    try {
-      const response = await postJsonViaHttp(`http://127.0.0.1:${port}/api/register-interest`, {
-        email: 'self-hosted@example.com',
-        source: 'desktop-settings',
-        appVersion: '2.8.0',
-        referredBy: 'REF123',
-      });
-      assert.equal(response.status, 200);
-      assert.deepEqual(response.json, {
-        status: 'registered',
-        referralCode: '',
-        referralCount: 0,
-        position: 0,
-        emailSuppressed: false,
-      });
-      assert.equal(captured.url, 'http://self-hosted.convex.site/api/internal-register-interest');
-      assert.equal(captured.init.headers['x-convex-shared-secret'], 'convex-test-secret');
-      assert.equal(captured.init.headers['User-Agent'], 'worldmonitor-sidecar/1.0');
-      assert.deepEqual(JSON.parse(captured.init.body), {
-        email: 'self-hosted@example.com',
-        source: 'desktop-settings',
-        appVersion: '2.8.0',
-        referredBy: 'REF123',
-      });
-    } finally {
-      await app.close();
-      await localApi.cleanup();
-      globalThis.fetch = originalFetch;
-      if (originalConvex === undefined) delete process.env.CONVEX_URL;
-      else process.env.CONVEX_URL = originalConvex;
-      if (originalSite === undefined) delete process.env.CONVEX_SITE_URL;
-      else process.env.CONVEX_SITE_URL = originalSite;
-      if (originalSecret === undefined) delete process.env.CONVEX_SERVER_SHARED_SECRET;
-      else process.env.CONVEX_SERVER_SHARED_SECRET = originalSecret;
-    }
-  });
-}
 
 test('does not forward the sidecar transport token through Docker cloud proxy routes', async () => {
   const originalConvex = process.env.CONVEX_URL;
@@ -5082,7 +4884,7 @@ test('relay: SSE streams incrementally and outlives the relay deadline', async (
       const req = httpRequest({
         hostname: '127.0.0.1',
         port,
-        path: '/api/chat-analyst',
+        path: '/api/intelligence/v1/deduct-situation',
         method: 'POST',
         headers: {
           'X-WorldMonitor-Local-Token': TEST_LOCAL_API_TOKEN,

@@ -13,28 +13,29 @@ vi.mock("../_shared/rate-limit", async (importOriginal) => {
   };
 });
 
-const checkEntitlementDetailed = vi.fn().mockResolvedValue({ response: null, entitlements: null });
-const getEntitlements = vi.fn().mockResolvedValue(null);
-vi.mock("../_shared/entitlement-check", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../_shared/entitlement-check")>();
-  return {
-    ...actual,
-    checkEntitlementDetailed: (...a: unknown[]) => checkEntitlementDetailed(...a),
-    getEntitlements: (...a: unknown[]) => getEntitlements(...a),
-  };
-});
-
-const resolveClerkSession = vi.fn();
-vi.mock("../_shared/auth-session", () => ({
-  resolveClerkSession: (...a: unknown[]) => resolveClerkSession(...a),
-}));
-
 const validateApiKey = vi.fn();
 vi.mock("../../api/_api-key.js", async (importOriginal) => ({
   ...await importOriginal<Record<string, unknown>>(),
-  USER_API_KEY_GATEWAY_VALIDATION_ERROR: "User API key requires gateway validation",
   validateApiKey: (...a: unknown[]) => validateApiKey(...a),
 }));
+
+// The operator key every "allowed" scenario presents. The default
+// validateApiKey stub below mirrors api/_api-key.js: an operator key is
+// `enterprise`, a wms_ session is `session` unless forceKey (premium routes)
+// rejects it, and no credential is "API key required".
+const OP = "operator-test-key";
+const OP_HEADERS = { "X-WorldMonitor-Key": OP };
+function emulateValidateApiKey(request: Request, options: { forceKey?: boolean } = {}) {
+  const key = request.headers.get("X-WorldMonitor-Key") || request.headers.get("X-Api-Key") || "";
+  if (key === OP) return { valid: true, required: true, kind: "enterprise", credential: OP };
+  if (key.startsWith("wms_")) {
+    return options.forceKey
+      ? { valid: false, required: true, error: "Pro authentication required" }
+      : { valid: true, required: false, kind: "session" };
+  }
+  if (key) return { valid: false, required: true, error: "Invalid API key" };
+  return { valid: false, required: true, error: "API key required" };
+}
 
 const reserveDirectLlmQuota = vi.fn();
 vi.mock("../_shared/direct-llm-quota", async (importOriginal) => {
@@ -56,7 +57,10 @@ vi.mock("../_shared/usage", async (importOriginal) => {
 
 import { createDomainGateway } from "../gateway";
 import { OPERATOR_KEY_DAILY_CEILINGS, operatorKeyQuotaPrincipal } from "../_shared/high-usage-alarm";
-import { getRequiredTier } from "../_shared/entitlement-check";
+
+const OP_PRINCIPAL = await operatorKeyQuotaPrincipal(OP);
+const OP_LIMIT = OPERATOR_KEY_DAILY_CEILINGS.directLlmCalls;
+import { PREMIUM_RPC_PATHS } from "../../src/shared/premium-paths";
 import { createIntelligenceServiceRoutes } from "../../src/generated/server/worldmonitor/intelligence/v1/service_server";
 import { intelligenceHandler } from "../worldmonitor/intelligence/v1/handler";
 import {
@@ -199,14 +203,8 @@ function lastTelemetryReason(): string | undefined {
 beforeEach(() => {
   checkEndpointRateLimit.mockReset().mockResolvedValue(null);
   checkRateLimit.mockReset().mockResolvedValue(null);
-  checkEntitlementDetailed.mockReset().mockResolvedValue({ response: null, entitlements: null });
-  getEntitlements.mockReset().mockResolvedValue(null);
-  resolveClerkSession.mockReset().mockResolvedValue(null);
-  validateApiKey.mockReset().mockResolvedValue({
-    valid: false,
-    required: true,
-    error: "API key required",
-  });
+  validateApiKey.mockReset().mockImplementation(async (request: Request, options?: { forceKey?: boolean }) =>
+    emulateValidateApiKey(request, options));
   reserveDirectLlmQuota.mockReset().mockResolvedValue({
     ok: true,
     newCount: 1,
@@ -237,22 +235,11 @@ describe("gateway direct LLM quota", () => {
     expect(reserveDirectLlmQuota).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
   });
   describe.each([CLASSIFY_PATH, COUNTRY_BRIEF_PATH, ANALYZE_PATH])("GET compatibility quota: %s", (path) => {
-    beforeEach(() => {
-      const entitlements = {
-        planKey: "pro",
-        features: { tier: 1, planLimits: { dashboardAiCallsPerDay: 50 } },
-        validUntil: Date.now() + 60_000,
-      };
-      resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-      checkEntitlementDetailed.mockResolvedValue({ response: null, entitlements });
-      getEntitlements.mockResolvedValue(entitlements);
-    });
-
     function request(method: string, body = JSON.stringify({ title: "Novel headline" })) {
       return req(method === "POST" ? path : `${path}?title=Novel%20headline`, {
         method,
         headers: {
-          Authorization: "Bearer pro", "Content-Type": "application/json",
+          "X-WorldMonitor-Key": OP, "Content-Type": "application/json",
           ...(method === "POST" ? { "Content-Length": String(new TextEncoder().encode(body).length) } : {}),
         },
         ...(method === "POST" ? { body } : {}),
@@ -265,7 +252,7 @@ describe("gateway direct LLM quota", () => {
       const res = await createDomainGateway([{ method: "GET", path, handler }])(request(method), { waitUntil: () => {} });
       expect(res.status).toBe(429);
       expect(reserveDirectLlmQuota).toHaveBeenCalledTimes(1);
-      expect(reserveDirectLlmQuota).toHaveBeenCalledWith(expect.objectContaining({ userId: "user_pro", limit: 50 }));
+      expect(reserveDirectLlmQuota).toHaveBeenCalledWith(expect.objectContaining({ userId: OP_PRINCIPAL, limit: OP_LIMIT }));
       expect(handler).not.toHaveBeenCalled();
     });
 
@@ -280,7 +267,7 @@ describe("gateway direct LLM quota", () => {
       expect(res.status).toBe(200);
       expect(handler).toHaveBeenCalledTimes(1);
       expect(reserveDirectLlmQuota).toHaveBeenCalledTimes(1);
-      expect(reserveDirectLlmQuota).toHaveBeenCalledWith(expect.objectContaining({ userId: "user_pro", limit: 50 }));
+      expect(reserveDirectLlmQuota).toHaveBeenCalledWith(expect.objectContaining({ userId: OP_PRINCIPAL, limit: OP_LIMIT }));
     });
 
     if (path === CLASSIFY_PATH) {
@@ -314,20 +301,6 @@ describe("gateway direct LLM quota", () => {
       });
     }
 
-    test.each(["GET", "POST"])("unlimited enterprise %s skips daily reservation", async (method) => {
-      const entitlements = {
-        planKey: "enterprise", features: { tier: 2, planLimits: { dashboardAiCallsPerDay: null } },
-        validUntil: Date.now() + 60_000,
-      };
-      checkEntitlementDetailed.mockResolvedValue({ response: null, entitlements });
-      getEntitlements.mockResolvedValue(entitlements);
-      const handler = vi.fn().mockResolvedValue(json({ ok: true }));
-      const res = await createDomainGateway([{ method: "GET", path, handler }])(request(method), { waitUntil: () => {} });
-      expect(res.status).toBe(200);
-      expect(handler).toHaveBeenCalledTimes(1);
-      expect(reserveDirectLlmQuota).not.toHaveBeenCalled();
-    });
-
     test.each([null, "1048576"])("ineligible POST content length %s never dispatches or charges", async (length) => {
       const post = request("POST");
       if (length === null) post.headers.delete("Content-Length");
@@ -357,44 +330,33 @@ describe("gateway direct LLM quota", () => {
     });
   });
 
-  test("country brief is declared as a tier-1 Pro endpoint", () => {
-    expect(getRequiredTier(COUNTRY_BRIEF_PATH)).toBe(1);
+  test("country brief is a premium route", () => {
+    expect(PREMIUM_RPC_PATHS.has(COUNTRY_BRIEF_PATH)).toBe(true);
   });
 
-  test("free bearer country brief is rejected before quota or handler spend", async () => {
+  test("anonymous session country brief is rejected before quota or handler spend", async () => {
     const calls = { classify: 0, deduct: 0, country: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_free", orgId: null, role: "free" });
-    checkEntitlementDetailed.mockResolvedValue({
-      response: json({ error: "Upgrade required", requiredTier: 1, currentTier: 0 }, 403),
-      entitlements: null,
-    });
 
     const res = await makeGateway(calls)(
       req(`${COUNTRY_BRIEF_PATH}?country_code=US`, {
-        headers: { Authorization: "Bearer free" },
+        headers: { "X-WorldMonitor-Key": "wms_anonymous" },
       }),
       { waitUntil: () => {} },
     );
 
-    expect(res.status).toBe(403);
-    expect(checkEntitlementDetailed).toHaveBeenCalledWith(
-      "user_free",
-      COUNTRY_BRIEF_PATH,
-      expect.any(Object),
-      { clerkRole: "free" },
-    );
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "Pro authentication required" });
     expect(calls.country).toBe(0);
     expect(reserveDirectLlmQuota).not.toHaveBeenCalled();
   });
 
-  test("Pro bearer HEAD country brief reserves the same GET quota and suppresses the body", async () => {
+  test("operator key HEAD country brief reserves the same GET quota and suppresses the body", async () => {
     const calls = { classify: 0, deduct: 0, country: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
 
     const res = await makeGateway(calls)(
       req(`${COUNTRY_BRIEF_PATH}?country_code=US`, {
         method: "HEAD",
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       { waitUntil: () => {} },
     );
@@ -403,17 +365,16 @@ describe("gateway direct LLM quota", () => {
     expect(await res.text()).toBe("");
     expect(calls.country).toBe(1);
     expect(reserveDirectLlmQuota).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user_pro" }),
+      expect.objectContaining({ userId: OP_PRINCIPAL }),
     );
   });
 
-  test("Pro bearer country brief reserves quota and reaches the handler", async () => {
+  test("operator key country brief reserves quota and reaches the handler", async () => {
     const calls = { classify: 0, deduct: 0, country: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
 
     const res = await makeGateway(calls)(
       req(`${COUNTRY_BRIEF_PATH}?country_code=US`, {
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       { waitUntil: () => {} },
     );
@@ -421,48 +382,12 @@ describe("gateway direct LLM quota", () => {
     expect(res.status).toBe(200);
     expect(calls.country).toBe(1);
     expect(reserveDirectLlmQuota).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user_pro" }),
-    );
-  });
-
-  test("Pro Business entitlement uses its dashboard-AI allowance", async () => {
-    const calls = { classify: 0, deduct: 0, country: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_business", orgId: null, role: "free" });
-    checkEntitlementDetailed.mockResolvedValue({
-      response: null,
-      entitlements: {
-        planKey: "pro_business_monthly",
-        features: {
-          tier: 1,
-          planLimits: {
-            mcpCallsPerDay: 250,
-            dashboardAiCallsPerDay: 2_500,
-          },
-        },
-        validUntil: Date.now() + 60_000,
-      },
-    });
-
-    const res = await makeGateway(calls)(
-      req(`${COUNTRY_BRIEF_PATH}?country_code=US`, {
-        headers: { Authorization: "Bearer business" },
-      }),
-      { waitUntil: () => {} },
-    );
-
-    expect(res.status).toBe(200);
-    expect(reserveDirectLlmQuota).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user_business", limit: 2_500 }),
+      expect.objectContaining({ userId: OP_PRINCIPAL }),
     );
   });
 
   test("anonymous wms-only classify-event is blocked before handler spend", async () => {
     const calls = { classify: 0, deduct: 0, cache: 0 };
-    validateApiKey.mockResolvedValue({ valid: true, required: false, kind: "session" });
-    checkEntitlementDetailed.mockResolvedValue({
-      response: json({ error: "Authentication required" }, 403),
-      entitlements: null,
-    });
 
     const res = await makeGateway(calls)(
       req(`${CLASSIFY_PATH}?title=Novel%20headline`, {
@@ -471,7 +396,7 @@ describe("gateway direct LLM quota", () => {
       { waitUntil: () => {} },
     );
 
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
     expect(calls.classify).toBe(0);
     expect(reserveDirectLlmQuota).not.toHaveBeenCalled();
   });
@@ -489,15 +414,13 @@ describe("gateway direct LLM quota", () => {
     expect(reserveDirectLlmQuota).not.toHaveBeenCalled();
   });
 
-  test("Pro bearer HEAD classify-event reserves the same GET quota before the handler", async () => {
+  test("operator key HEAD classify-event reserves the same GET quota before the handler", async () => {
     const calls = { classify: 0, deduct: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
 
     const res = await makeGateway(calls)(
       req(`${CLASSIFY_PATH}?title=Novel%20headline`, {
         method: "HEAD",
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       { waitUntil: () => {} },
     );
@@ -506,18 +429,16 @@ describe("gateway direct LLM quota", () => {
     expect(await res.text()).toBe("");
     expect(calls.classify).toBe(1);
     expect(reserveDirectLlmQuota).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user_pro" }),
+      expect.objectContaining({ userId: OP_PRINCIPAL }),
     );
   });
 
-  test("Pro bearer classify-event reserves direct LLM quota before the handler", async () => {
+  test("operator key classify-event reserves direct LLM quota before the handler", async () => {
     const calls = { classify: 0, deduct: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
 
     const res = await makeGateway(calls)(
       req(`${CLASSIFY_PATH}?title=Novel%20headline`, {
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       { waitUntil: () => {} },
     );
@@ -528,10 +449,9 @@ describe("gateway direct LLM quota", () => {
       expect.any(Request),
       CLASSIFY_PATH,
       expect.any(Object),
-      { principalUserId: "user_pro", principalScope: "session" },
     );
     expect(reserveDirectLlmQuota).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user_pro" }),
+      expect.objectContaining({ userId: OP_PRINCIPAL }),
     );
   });
 
@@ -539,7 +459,6 @@ describe("gateway direct LLM quota", () => {
     // Operator keys used to bypass this reservation entirely (unbounded spend
     // on a leaked key). They now share widget-agent's wm:<sha256> bucket.
     const calls = { classify: 0, deduct: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue(null);
     validateApiKey.mockResolvedValue({
       valid: true, required: true, kind: "enterprise", credential: "operator-test-key",
     });
@@ -561,7 +480,6 @@ describe("gateway direct LLM quota", () => {
 
   test("operator key is refused once its direct-LLM ceiling is spent", async () => {
     const calls = { classify: 0, deduct: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue(null);
     validateApiKey.mockResolvedValue({
       valid: true, required: true, kind: "enterprise", credential: "operator-test-key",
     });
@@ -580,14 +498,12 @@ describe("gateway direct LLM quota", () => {
     expect(calls.classify).toBe(0);
   });
 
-  test("Pro bearer analyze-stock uses a principal-scoped endpoint bucket", async () => {
+  test("operator key analyze-stock uses the IP endpoint bucket", async () => {
     const calls = { analyze: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
 
     const res = await makeAnalyzeGateway(calls)(
       req(`${ANALYZE_PATH}?symbol=AAPL`, {
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       { waitUntil: () => {} },
     );
@@ -598,19 +514,16 @@ describe("gateway direct LLM quota", () => {
       expect.any(Request),
       ANALYZE_PATH,
       expect.any(Object),
-      { principalUserId: "user_pro", principalScope: "session" },
     );
     expect(checkRateLimit).not.toHaveBeenCalled();
   });
 
-  test("Pro bearer backtest-stock does not reserve the direct-LLM daily counter", async () => {
+  test("operator key backtest-stock does not reserve the direct-LLM daily counter", async () => {
     const calls = { backtest: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
 
     const res = await makeBacktestGateway(calls)(
       req(`${BACKTEST_PATH}?symbol=AAPL`, {
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       { waitUntil: () => {} },
     );
@@ -621,47 +534,18 @@ describe("gateway direct LLM quota", () => {
       expect.any(Request),
       BACKTEST_PATH,
       expect.any(Object),
-      { principalUserId: "user_pro", principalScope: "session" },
     );
     expect(reserveDirectLlmQuota).not.toHaveBeenCalled();
   });
 
-  test("active Pro freshness bearer uses a principal-scoped global fallback bucket", async () => {
-    const calls = { quotes: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
-    getEntitlements.mockResolvedValue({
-      planKey: "pro_monthly",
-      features: { tier: 1 },
-      validUntil: Date.now() + 60_000,
-    });
-
-    const res = await makeMarketQuotesGateway(calls)(
-      req(`${GLOBAL_LIMITED_PATH}?ids=bitcoin`, {
-        headers: { Authorization: "Bearer pro" },
-      }),
-      { waitUntil: () => {} },
-    );
-
-    expect(res.status).toBe(200);
-    expect(calls.quotes).toBe(1);
-    expect(checkRateLimit).toHaveBeenCalledWith(
-      expect.any(Request),
-      expect.any(Object),
-      { principalUserId: "user_pro", principalScope: "session" },
-    );
-  });
-
   test("endpoint limiter 429s emit a distinct telemetry reason", async () => {
     const calls = { classify: 0, deduct: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
     checkEndpointRateLimit.mockResolvedValue(json({ error: "Too many requests" }, 429));
     const recorder = makeRecordingCtx();
 
     const res = await makeGateway(calls)(
       req(`${CLASSIFY_PATH}?title=Novel%20headline`, {
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       recorder.ctx,
     );
@@ -674,8 +558,6 @@ describe("gateway direct LLM quota", () => {
 
   test("endpoint limiter degradation keeps the degraded telemetry reason", async () => {
     const calls = { classify: 0, deduct: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
     checkEndpointRateLimit.mockResolvedValue(new Response(
       JSON.stringify({ error: "Rate limiting temporarily unavailable" }),
       { status: 503, headers: { "X-RateLimit-Mode": "degraded" } },
@@ -684,7 +566,7 @@ describe("gateway direct LLM quota", () => {
 
     const res = await makeGateway(calls)(
       req(`${CLASSIFY_PATH}?title=Novel%20headline`, {
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       recorder.ctx,
     );
@@ -697,14 +579,12 @@ describe("gateway direct LLM quota", () => {
 
   test("global limiter 429s emit a distinct telemetry reason", async () => {
     const calls = { quotes: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
     checkRateLimit.mockResolvedValue(json({ error: "Too many requests" }, 429));
     const recorder = makeRecordingCtx();
 
     const res = await makeMarketQuotesGateway(calls)(
       req(`${GLOBAL_LIMITED_PATH}?ids=bitcoin`, {
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       recorder.ctx,
     );
@@ -717,8 +597,6 @@ describe("gateway direct LLM quota", () => {
 
   test("global limiter degradation keeps the degraded telemetry reason", async () => {
     const calls = { quotes: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
     checkRateLimit.mockResolvedValue(new Response(
       JSON.stringify({ error: "Rate limiting temporarily unavailable" }),
       { status: 503, headers: { "X-RateLimit-Mode": "degraded" } },
@@ -727,7 +605,7 @@ describe("gateway direct LLM quota", () => {
 
     const res = await makeMarketQuotesGateway(calls)(
       req(`${GLOBAL_LIMITED_PATH}?ids=bitcoin`, {
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       recorder.ctx,
     );
@@ -740,8 +618,6 @@ describe("gateway direct LLM quota", () => {
 
   test("direct LLM quota 429s emit a distinct telemetry reason", async () => {
     const calls = { classify: 0, deduct: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
     reserveDirectLlmQuota.mockResolvedValue({
       ok: false,
       reason: "cap-exceeded",
@@ -752,7 +628,7 @@ describe("gateway direct LLM quota", () => {
 
     const res = await makeGateway(calls)(
       req(`${CLASSIFY_PATH}?title=Novel%20headline`, {
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       recorder.ctx,
     );
@@ -765,8 +641,6 @@ describe("gateway direct LLM quota", () => {
 
   test("direct LLM quota degradation keeps the degraded telemetry reason", async () => {
     const calls = { classify: 0, deduct: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
     reserveDirectLlmQuota.mockResolvedValue({
       ok: false,
       reason: "redis-unavailable",
@@ -776,7 +650,7 @@ describe("gateway direct LLM quota", () => {
 
     const res = await makeGateway(calls)(
       req(`${CLASSIFY_PATH}?title=Novel%20headline`, {
-        headers: { Authorization: "Bearer pro" },
+        headers: OP_HEADERS,
       }),
       recorder.ctx,
     );
@@ -789,8 +663,6 @@ describe("gateway direct LLM quota", () => {
 
   test("direct LLM quota exhaustion returns 429 with Retry-After and skips handler", async () => {
     const calls = { classify: 0, deduct: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    validateApiKey.mockResolvedValue({ valid: false, required: true, error: "API key required" });
     reserveDirectLlmQuota.mockResolvedValue({
       ok: false,
       reason: "cap-exceeded",
@@ -801,7 +673,7 @@ describe("gateway direct LLM quota", () => {
     const res = await makeGateway(calls)(
       req(DEDUCT_PATH, {
         method: "POST",
-        headers: { Authorization: "Bearer pro", "Content-Type": "application/json" },
+        headers: { "X-WorldMonitor-Key": OP, "Content-Type": "application/json" },
         body: JSON.stringify({ query: "Will tensions escalate?" }),
       }),
       { waitUntil: () => {} },
@@ -830,111 +702,21 @@ describe("gateway direct LLM quota", () => {
   });
 });
 
-// #6105 review: `deduct-situation` and `summarize-article` carry NO
-// ENDPOINT_ENTITLEMENTS tier gate, and deduct-situation's handler spends
-// provider budget for anyone who reaches it. These pin the limit that each
-// caller class is actually reserved against, so raising the PAID default can
-// never again raise what an unconfirmed caller can spend.
-describe("direct LLM limit resolution by caller class", () => {
-  const ACTIVE = () => Date.now() + 60_000;
-  const LAPSED = () => Date.now() - 60_000;
-
-  function entitlement(
-    tier: number,
-    dashboardAiCallsPerDay: number | null | undefined,
-    validUntil: number,
-    extra: Record<string, unknown> = {},
-  ) {
-    return {
-      planKey: "test",
-      features: {
-        tier,
-        ...(dashboardAiCallsPerDay === undefined
-          ? {}
-          : { planLimits: { dashboardAiCallsPerDay } }),
-      },
-      validUntil,
-      ...extra,
-    };
-  }
-
-  async function reserveDeductAs(entitlements: unknown) {
+// Without an operator key there is no principal to meter, so a direct-LLM
+// route answers 401 before any reservation, even on a route a session reaches.
+describe("direct LLM quota without an operator key", () => {
+  test("an anonymous session never reserves or reaches deduct-situation", async () => {
     const calls = { classify: 0, deduct: 0, cache: 0 };
-    resolveClerkSession.mockResolvedValue({ userId: "user_x", orgId: null, role: "free" });
-    getEntitlements.mockResolvedValue(entitlements);
     const res = await makeGateway(calls)(
       req(DEDUCT_PATH, {
         method: "POST",
-        headers: { Authorization: "Bearer x", "Content-Type": "application/json" },
+        headers: { "X-WorldMonitor-Key": "wms_anonymous", "Content-Type": "application/json" },
         body: JSON.stringify({ query: "Will tensions escalate?" }),
       }),
       { waitUntil: () => {} },
     );
-    return { res, calls };
-  }
-
-  test("signed-in FREE tier is capped at the unverified floor, not the paid default", async () => {
-    const { res } = await reserveDeductAs(entitlement(0, 0, ACTIVE()));
-
-    expect(res.status).toBe(200);
-    expect(reserveDirectLlmQuota).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user_x", limit: 50 }),
-    );
-  });
-
-  test("LAPSED Pro Business does not keep its paid allowance", async () => {
-    const { res } = await reserveDeductAs(entitlement(1, 2_500, LAPSED()));
-
-    expect(res.status).toBe(200);
-    expect(reserveDirectLlmQuota).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 50 }),
-    );
-  });
-
-  test("an entitlement-verification outage does not grant the paid default", async () => {
-    // getEntitlements never throws; it answers with a truthy tier-0 marker.
-    const { res } = await reserveDeductAs(
-      entitlement(0, undefined, 0, { verificationUnavailable: true }),
-    );
-
-    expect(res.status).toBe(200);
-    expect(reserveDirectLlmQuota).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 50 }),
-    );
-  });
-
-  test("a missing entitlement row falls back to the unverified floor", async () => {
-    const { res } = await reserveDeductAs(null);
-
-    expect(res.status).toBe(200);
-    expect(reserveDirectLlmQuota).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 50 }),
-    );
-  });
-
-  test("ACTIVE Pro Business receives its catalog allowance on an ungated path", async () => {
-    const { res } = await reserveDeductAs(entitlement(1, 2_500, ACTIVE()));
-
-    expect(res.status).toBe(200);
-    expect(reserveDirectLlmQuota).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 2_500 }),
-    );
-  });
-
-  test("an active PAID row missing the dimension inherits the Pro default", async () => {
-    const { res } = await reserveDeductAs(entitlement(1, undefined, ACTIVE()));
-
-    expect(res.status).toBe(200);
-    expect(reserveDirectLlmQuota).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 500 }),
-    );
-  });
-
-  test("an active Enterprise row is unlimited and skips the reservation", async () => {
-    const { res, calls } = await reserveDeductAs(entitlement(3, null, ACTIVE()));
-
-    expect(res.status).toBe(200);
-    expect(calls.deduct).toBe(1);
+    expect(res.status).toBe(401);
+    expect(calls.deduct).toBe(0);
     expect(reserveDirectLlmQuota).not.toHaveBeenCalled();
   });
 });
@@ -948,23 +730,12 @@ describe("direct LLM limit resolution by caller class", () => {
 describe("direct LLM quota release on unserved requests", () => {
   const rollback = vi.fn();
 
-  function proSession() {
-    const entitlements = {
-      planKey: "pro",
-      features: { tier: 1, planLimits: { dashboardAiCallsPerDay: 50 } },
-      validUntil: Date.now() + 60_000,
-    };
-    resolveClerkSession.mockResolvedValue({ userId: "user_pro", orgId: null, role: "pro" });
-    checkEntitlementDetailed.mockResolvedValue({ response: null, entitlements });
-    getEntitlements.mockResolvedValue(entitlements);
-  }
-
   function deductRequest(query: string) {
     const body = JSON.stringify({ query });
     return req(DEDUCT_PATH, {
       method: "POST",
       headers: {
-        Authorization: "Bearer pro",
+        ...OP_HEADERS,
         "Content-Type": "application/json",
         "Content-Length": String(new TextEncoder().encode(body).length),
       },
@@ -974,7 +745,7 @@ describe("direct LLM quota release on unserved requests", () => {
 
   function classifyRequest() {
     return req(`${CLASSIFY_PATH}?title=Novel%20headline`, {
-      headers: { Authorization: "Bearer pro" },
+      headers: OP_HEADERS,
     });
   }
 
@@ -985,7 +756,6 @@ describe("direct LLM quota release on unserved requests", () => {
   beforeEach(() => {
     rollback.mockReset().mockResolvedValue(undefined);
     reserveDirectLlmQuota.mockResolvedValue({ ok: true, newCount: 1, rollback });
-    proSession();
   });
 
   test("a served 200 keeps the reservation", async () => {
@@ -1057,7 +827,7 @@ describe("direct LLM quota release on unserved requests", () => {
   ])("a failed projection (%s) keeps completed model work charged", async (_name, expression, error) => {
     const gateway = createDomainGateway(createIntelligenceServiceRoutes(intelligenceHandler));
     const res = await gateway(
-      req(`${CLASSIFY_PATH}?title=Novel%20headline&jmespath=${encodeURIComponent(expression)}`, { headers: { Authorization: "Bearer pro" } }),
+      req(`${CLASSIFY_PATH}?title=Novel%20headline&jmespath=${encodeURIComponent(expression)}`, { headers: OP_HEADERS }),
       { waitUntil: () => {} },
     );
 
@@ -1071,7 +841,7 @@ describe("direct LLM quota release on unserved requests", () => {
   test("an oversized projection keeps completed handler work charged", async () => {
     const completedWork = vi.fn(async () => json({ answer: "x".repeat(256 * 1024) }));
     const res = await stubGateway(completedWork)(
-      req(`${CLASSIFY_PATH}?title=Novel%20headline&jmespath=answer`, { headers: { Authorization: "Bearer pro" } }),
+      req(`${CLASSIFY_PATH}?title=Novel%20headline&jmespath=answer`, { headers: OP_HEADERS }),
       { waitUntil: () => {} },
     );
 
@@ -1084,7 +854,7 @@ describe("direct LLM quota release on unserved requests", () => {
 
   test("a successful jmespath projection keeps the reservation", async () => {
     const res = await stubGateway(async () => json({ classification: { category: "conflict" } }))(
-      req(`${CLASSIFY_PATH}?title=Novel%20headline&jmespath=classification.category`, { headers: { Authorization: "Bearer pro" } }),
+      req(`${CLASSIFY_PATH}?title=Novel%20headline&jmespath=classification.category`, { headers: OP_HEADERS }),
       { waitUntil: () => {} },
     );
 
@@ -1093,22 +863,19 @@ describe("direct LLM quota release on unserved requests", () => {
   });
 
   test("the unserved marker is drained even when nothing was reserved", async () => {
-    const entitlements = {
-      planKey: "enterprise",
-      features: { tier: 2, planLimits: { dashboardAiCallsPerDay: null } },
-      validUntil: Date.now() + 60_000,
-    };
-    checkEntitlementDetailed.mockResolvedValue({ response: null, entitlements });
-    getEntitlements.mockResolvedValue(entitlements);
-    // The handler receives a principal-stamped clone, so the marker lives on
-    // that object; asserting against the caller's request would pass vacuously.
+    // A route outside the quota paths reserves nothing; assert on the request
+    // object the handler received, where the marker lives.
     let handledRequest: Request | undefined;
 
-    const res = await stubGateway(async (handled) => {
-      handledRequest = handled;
-      markUnservedLlmResponse(handled);
-      return json({ classification: undefined });
-    })(classifyRequest(), { waitUntil: () => {} });
+    const res = await createDomainGateway([{
+      method: "GET",
+      path: CACHE_PATH,
+      handler: async (handled) => {
+        handledRequest = handled;
+        markUnservedLlmResponse(handled);
+        return json({ classification: undefined });
+      },
+    }])(req(`${CACHE_PATH}?cache_key=summary:v1:test`, { headers: OP_HEADERS }), { waitUntil: () => {} });
 
     expect(res.status).toBe(200);
     expect(reserveDirectLlmQuota).not.toHaveBeenCalled();
@@ -1162,7 +929,7 @@ describe("direct LLM quota release on unserved requests", () => {
 
   test("real classification releases the reservation for a blank title", async () => {
     const gateway = createDomainGateway(createIntelligenceServiceRoutes(intelligenceHandler));
-    const res = await gateway(req(`${CLASSIFY_PATH}?title=`, { headers: { Authorization: "Bearer pro" } }), { waitUntil: () => {} });
+    const res = await gateway(req(`${CLASSIFY_PATH}?title=`, { headers: OP_HEADERS }), { waitUntil: () => {} });
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({});

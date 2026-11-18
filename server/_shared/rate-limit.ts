@@ -287,19 +287,10 @@ export interface RateLimitOptions {
    */
   principalUserId?: string;
   /**
-   * Which credential the caller presented. A user's API key and their browser
-   * session resolve to the SAME Clerk user id, so without this they share one
-   * per-minute bucket and programmatic traffic starves the interactive session
-   * behind the same account (WORLDMONITOR-12A: a scraper on an api_starter key
-   * spent 598 of 600, leaving that customer's own dashboard 2 successes and 22
-   * × 429). Defaults to `session`, which keeps the established `user:` key so
-   * in-flight buckets are not reset.
-   *
-   * This separates namespaces; it does not exempt anyone. Each scope is still
-   * capped at the same per-minute limit, so the aggregate a single account can
-   * spend across both credentials doubles by design — programmatic use is
-   * metered by the plan's own `apiRateLimit` + daily allowance, which is the
-   * meter that should bound it.
+   * Which credential the caller presented. Separates the `user:` and
+   * `apikey-user:` namespaces so programmatic traffic cannot starve an
+   * interactive session behind the same principal (WORLDMONITOR-12A).
+   * Defaults to `session`. This separates namespaces; it does not exempt anyone.
    */
   principalScope?: PrincipalRateLimitScope;
 }
@@ -323,6 +314,14 @@ export type EndpointRateLimitOptions = RateLimitOptions;
  * and it strips inbound client copies at handler entry.
  */
 export const TRUSTED_RATE_LIMIT_PRINCIPAL_HEADER = 'x-wm-rl-principal';
+
+/**
+ * Gateway-internal user-id marker. No credential the gateway accepts today
+ * carries a user id, so the gateway never sets it; it still strips inbound
+ * client copies so a handler that reads it (backtest-stock-quota) can never
+ * see a forged value.
+ */
+export const TRUSTED_USER_ID_HEADER = 'x-user-id';
 
 /** Opaque single-use admission, authenticated by consumeSubRequestAdmission. */
 export { SUB_REQUEST_MARKER_HEADER } from './sub-request-admission.js';
@@ -771,9 +770,8 @@ export const ENDPOINT_RATE_POLICIES: Record<string, EndpointRatePolicy> = {
   '/api/leads/v1/register-interest': { limit: 5, window: '1 h' },
   // #9093 reader error reports: anonymous writes to the review queue.
   '/api/news/v1/submit-error-report': { limit: 5, window: '1 h' },
-  // #8721 agent feedback: coarse outer guard only. The real model is the five
-  // buckets in admitFeedbackReport (server/_shared/agent-feedback.ts), which
-  // the MCP report_issue tool shares.
+  // #8721 agent feedback: the route left in refactor Phase 1c; the policy stays
+  // until Phase 2 removes its proto.
   '/api/feedback/v1/submit-report': { limit: 20, window: '1 h' },
   // #9093 /trust page read: public and CDN-cached, bounded per IP.
   '/api/news/v1/list-label-changes': { limit: 60, window: '60 s' },
