@@ -39,8 +39,8 @@
 const GENERIC_FIRST_PARTY_HOSTS = ['worldmonitor.app', 'www.worldmonitor.app'];
 
 // Paths Cloudflare serves on the apex and must NEVER be rewritten to www.
-// Mirrors ARCHITECTURE.md §2 and the APEX_SERVED list in
-// tests/agent-corpus-canonical-host.test.mjs. Dropping /mcp* breaks every
+// Mirrors ARCHITECTURE.md §2 and APEX_SERVED_PATHS in
+// scripts/notification-relay.cjs (tests/brief-web-push.test.mjs). Dropping /mcp* breaks every
 // apex-URL MCP client; dropping /oauth/* turns a registration POST into a GET
 // and kills it with 405 (#4938). Matched against the parsed pathname, not the
 // raw target, so /oauth/../dashboard classifies by where it actually lands.

@@ -31,7 +31,7 @@ import wholeIndexFixture from './fixtures/resilience-whole-index-pairs-2026-08-1
 // the baseline is intentionally regenerated with `npm run
 // freeze:resilience-cri-golden`. Full rationale and the regeneration flows
 // (including the in-PR --allow-non-main path):
-// docs/methodology/country-resilience-index/golden-baseline.md
+// docs/engineering/methodology/country-resilience-index/golden-baseline.md
 //
 // The frozen input (fixture + synthetic tech-readiness override), the frozen
 // clock, the pinned env flags, the stable country order, and the serialization

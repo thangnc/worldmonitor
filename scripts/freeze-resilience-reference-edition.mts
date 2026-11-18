@@ -47,6 +47,7 @@ const DEFAULT_DIMENSIONS: ResilienceDimensionId[] = [
 const OUT_DIR = path.join(
   REPO_ROOT,
   'docs',
+  'engineering',
   'methodology',
   'country-resilience-index',
   'reference-edition',

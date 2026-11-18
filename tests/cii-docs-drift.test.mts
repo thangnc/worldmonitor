@@ -17,14 +17,11 @@ import {
 } from '../server/worldmonitor/intelligence/v1/_risk-config.ts';
 import { CII_COUNTRY_WEIGHTS } from '../shared/cii-weights.ts';
 
-it('current public and translated CII claims use the published formula version', () => {
+it('current and translated CII claims use the published formula version', () => {
   const paths = [
     'README.md', 'README.ru.md', 'README.ja-JP.md', 'README.zh-CN.md',
-    'public/ai-search.md', 'public/llms.txt', 'public/llms-full.txt',
-    'public/home.md', 'public/agent-view.json', 'docs/engineering/product/PRESS_KIT.md',
-    'docs/health-endpoints.mdx', 'docs/zh/health-endpoints.mdx',
-    'docs/zh/algorithms.mdx', 'docs/zh/overview.mdx', 'docs/zh/features.mdx',
-    'docs/zh/country-instability-index.mdx', 'docs/zh/strategic-risk.mdx',
+    'docs/engineering/product/PRESS_KIT.md',
+    'docs/engineering/architecture/health-endpoints.md',
   ];
   for (const path of paths) {
     const body = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -141,106 +138,8 @@ describe('CII docs drift guards', () => {
     );
   });
 
-  it('strategic risk doc publishes current server severity bands and roll-up', () => {
-    const doc = readFileSync(resolve(root, 'docs', 'strategic-risk.mdx'), 'utf8');
-    const serverSource = readFileSync(
-      resolve(root, 'server', 'worldmonitor', 'intelligence', 'v1', 'get-risk-scores.ts'),
-      'utf8',
-    );
-    const scoreSection = markdownSection(doc, '### Server Score and Browser Fallback (0-100)');
-    const riskLevels = markdownSection(doc, '### Risk Levels');
-    const trendSection = markdownSection(doc, '### Trend Detection');
-    const pizzintSection = markdownSection(doc, '### DEFCON-Style Alerting');
-    const gdeltSection = markdownSection(doc, '### World Monitor Tension Pairs');
-    const multipliersSection = markdownSection(doc, '### Event Significance Multipliers');
-
-    assert.match(
-      scoreSection,
-      /weights = \[1\.00, 0\.85, 0\.70, 0\.55, 0\.40\][\s\S]*\* 0\.70 \+ 15/,
-      'strategic-risk doc must publish the server top-5 weights, scale factor, and floor',
-    );
-    assert.match(
-      scoreSection,
-      /local\s+fallback/i,
-      'strategic-risk doc must label the additive overview as browser/local fallback',
-    );
-    assert.match(riskLevels, /Panel-visible display labels/i);
-    assert.match(riskLevels, /Server\/on-wire enum labels/i);
-    for (const { range, enumValue } of parseStrategicRiskServerBands(serverSource)) {
-      assert.match(
-        riskLevels,
-        new RegExp(`\\|\\s*${range}\\s*\\|\\s*\`${enumValue}\`\\s*\\|`),
-        `strategic-risk doc must publish server API band ${range} ${enumValue}`,
-      );
-    }
-    assert.doesNotMatch(
-      riskLevels,
-      /Trend Icon|Escalating|De-escalating/,
-      'strategic-risk risk-level table must not imply score bands determine trend labels',
-    );
-    assert.match(
-      trendSection,
-      /server-published global `StrategicRisk` headline[\s\S]{0,140}sets `trend` to stable/i,
-      'strategic-risk doc must disclose the current server StrategicRisk trend contract',
-    );
-    assert.match(
-      trendSection,
-      /browser fallback computes its own[\s\S]{0,120}panel trend/i,
-      'strategic-risk doc must separate browser fallback trend from the server contract',
-    );
-    assert.match(pizzintSection, /\|\s*\*\*DEFCON 1\*\*\s*\|\s*≥85%\s*\|\s*Maximum Activity\s*\|/);
-    assert.match(pizzintSection, /\|\s*\*\*DEFCON 2\*\*\s*\|\s*70% – 84%\s*\|\s*High Activity\s*\|/);
-    assert.match(pizzintSection, /\|\s*\*\*DEFCON 3\*\*\s*\|\s*50% – 69%\s*\|\s*Elevated Activity\s*\|/);
-    assert.match(pizzintSection, /\|\s*\*\*DEFCON 4\*\*\s*\|\s*25% – 49%\s*\|\s*Above Normal\s*\|/);
-    assert.match(pizzintSection, /\|\s*\*\*DEFCON 5\*\*\s*\|\s*&lt;25%\s*\|\s*Normal Activity\s*\|/);
-    assert.doesNotMatch(
-      pizzintSection,
-      /≥90%|≥75%|COCKED PISTOL|FAST PACE|ROUND HOUSE|DOUBLE TAKE|FADE OUT/,
-      'strategic-risk PizzINT table must not retain stale relay thresholds or labels',
-    );
-    assert.match(
-      gdeltSection,
-      /\|\s*Pair\s*\|\s*Monitored Relationship\s*\|/,
-      'strategic-risk GDELT section must keep the expected pair table',
-    );
-    for (const pair of [
-      'USA ↔ Russia',
-      'Russia ↔ Ukraine',
-      'USA ↔ China',
-      'China ↔ Taiwan',
-      'USA ↔ Iran',
-      'Israel ↔ Iran',
-      'Iran ↔ GCC',
-      'Saudi Arabia ↔ Yemen',
-    ]) {
-      assert.match(gdeltSection, new RegExp(`\\|\\s*${pair}\\s*\\|`));
-    }
-    assert.doesNotMatch(
-      gdeltSection,
-      /USA ↔ Venezuela/,
-      'strategic-risk tension table must omit unsupported or low-volume pairs',
-    );
-    assert.match(gdeltSection, /World Monitor tension scores computed independently from GDELT event exports/);
-    assert.equal(CII_COUNTRY_WEIGHTS.US.eventMultiplier, 0.3);
-    assert.match(
-      multipliersSection,
-      /\|\s*0\.3x\s*\|\s*US\s*\|/,
-      'strategic-risk doc must publish the US event multiplier separately from the 0.5-0.8x bucket',
-    );
-    assert.doesNotMatch(
-      multipliersSection,
-      /\|\s*0\.5-0\.8x\s*\|[^|\n]*\bUS\b/,
-      'strategic-risk doc must not list US in the 0.5-0.8x multiplier bucket',
-    );
-    assert.doesNotMatch(
-      riskLevels,
-      /70\/50\/30|50-69|30-49|\*\*Moderate\*\*/,
-      'strategic-risk risk-level tables must not retain old 70/50/30 display semantics',
-    );
-  });
-
   it('CII methodology doc keeps Strategic Risk positional-decay rationale aligned with the top-N cap', () => {
-    const doc = readFileSync(resolve(root, 'docs/methodology/cii-risk-scores.mdx'), 'utf8');
+    const doc = readFileSync(resolve(root, 'docs/engineering/methodology/cii-risk-scores.md'), 'utf8');
     const config = readFileSync(resolve(root, 'server/worldmonitor/intelligence/v1/_risk-config.ts'), 'utf8');
     const section = markdownSection(doc, '## 3. Strategic Risk roll-up');
     const nextOneBasedPosition = STRATEGIC_RISK_TOP_N + 1;
@@ -301,10 +200,9 @@ describe('CII docs drift guards', () => {
     assert.doesNotMatch(section, /Outside target\./);
   });
 
-  it('CII public docs publish UCDP newest-release behavior and classifier thresholds', () => {
-    const methodologyDoc = readFileSync(resolve(root, 'docs/methodology/cii-risk-scores.mdx'), 'utf8');
-    const countryDoc = readFileSync(resolve(root, 'docs/country-instability-index.mdx'), 'utf8');
-    const algorithmsDoc = readFileSync(resolve(root, 'docs', 'algorithms.mdx'), 'utf8');
+  it('CII docs publish UCDP newest-release behavior and classifier thresholds', () => {
+    const methodologyDoc = readFileSync(resolve(root, 'docs/engineering/methodology/cii-risk-scores.md'), 'utf8');
+    const countryDoc = readFileSync(resolve(root, 'docs/engineering/methodology/country-instability-index.md'), 'utf8');
     assert.match(
       countryDoc,
       /^## Boosts And Floors$/m,
@@ -339,7 +237,6 @@ describe('CII docs drift guards', () => {
     );
     for (const surface of [
       { label: 'country-instability-index doc', text: countryFloors },
-      { label: 'algorithms doc', text: algorithmsDoc },
     ]) {
       assert.match(
         surface.text,
@@ -354,49 +251,10 @@ describe('CII docs drift guards', () => {
     }
   });
 
-  it('algorithms doc separates authoritative Strategic Risk from local fallback', () => {
-    const doc = readFileSync(resolve(root, 'docs', 'algorithms.mdx'), 'utf8');
-    const section = markdownSection(doc, '### Strategic Risk Score Algorithm');
-
-    assert.match(
-      section,
-      /authoritative `StrategicRisk\[0\]` score is the server roll-up of the top(?: five|-5) CII `combinedScore` values with weights `\[1\.00, 0\.85, 0\.70, 0\.55, 0\.40\]`, scale factor `0\.70`, floor `15`/i,
-      'algorithms doc must identify the server roll-up as authoritative Strategic Risk',
-    );
-    assert.match(
-      section,
-      /server severity bands High >= 70, Medium 40-69, Low < 40/i,
-      'algorithms doc must publish current server Strategic Risk severity bands',
-    );
-    assert.match(
-      section,
-      /Browser\/local fallback composite formula[\s\S]*`ciiRiskScore` — Local fallback only:[\s\S]*`\[0\.40, 0\.25, 0\.20, 0\.10, 0\.05\]`/,
-      'algorithms doc may describe old additive weights only as local fallback',
-    );
-    assert.doesNotMatch(
-      section,
-      /`ciiRiskScore` — Top 5 countries by CII score, weighted `\[0\.40, 0\.25, 0\.20, 0\.10, 0\.05\]`/,
-      'algorithms doc must not present the old fallback CII weights as canonical',
-    );
-    assert.doesNotMatch(
-      section,
-      /Critical\/Elevated\/Moderate|70\/50\/30/,
-      'algorithms Strategic Risk section must not reintroduce old four-band risk semantics',
-    );
-  });
-
-  it('public and developer surfaces do not retain stale CII, CRI, or platform-count claims', () => {
-    const publicHome = readFileSync(resolve(root, 'public', 'home.md'), 'utf8');
-    const agentViewText = readFileSync(resolve(root, 'public', 'agent-view.json'), 'utf8');
-    const agentView = JSON.parse(agentViewText) as { capabilities?: unknown };
-
+  it('product copy does not retain stale CII, CRI, or platform-count claims', () => {
     const surfaces = [
-      { label: 'public/llms.txt', text: readFileSync(resolve(root, 'public', 'llms.txt'), 'utf8') },
-      { label: 'public/llms-full.txt', text: readFileSync(resolve(root, 'public', 'llms-full.txt'), 'utf8') },
       { label: 'docs/engineering/product/PRESS_KIT.md', text: readFileSync(resolve(root, 'docs/engineering/product/PRESS_KIT.md'), 'utf8') },
       { label: 'docs/engineering/product/COMMUNITY-PROMOTION-GUIDE.md', text: readFileSync(resolve(root, 'docs/engineering/product/COMMUNITY-PROMOTION-GUIDE.md'), 'utf8') },
-      { label: 'public/home.md', text: publicHome },
-      { label: 'public/agent-view.json', text: agentViewText },
     ];
 
     for (const surface of surfaces) {
@@ -417,29 +275,9 @@ describe('CII docs drift guards', () => {
       );
     }
 
-    const llmsBrief = surfaces[0]!.text;
-    const llmsFull = surfaces[1]!.text;
-    const pressKit = surfaces[2]!.text;
-    const communityGuide = surfaces[3]!.text;
+    const pressKit = surfaces[0]!.text;
+    const communityGuide = surfaces[1]!.text;
 
-    // inventory-contract: public-fixed-algorithm-claims; classification: exact; reason: CII v14 has a versioned fixed country universe
-    assert.match(llmsBrief, /CII v14[\s\S]{0,80}31 Tier-1 countries/i);
-    // inventory-contract: public-fixed-algorithm-claims; classification: exact; reason: CRI uses a closed public rankable universe
-    assert.match(llmsBrief, /CRI[\s\S]{0,120}196-country public rankable universe/i);
-    assert.match(llmsBrief, /specialized variants/i);
-    assert.match(llmsBrief, /shared map-layer catalog/i);
-    assert.match(llmsBrief, /curated RSS feeds/i);
-    assert.match(llmsBrief, /Multilingual UI with RTL support/i);
-    // inventory-contract: public-fixed-algorithm-claims; classification: exact; reason: CII v14 has a versioned fixed country universe
-    assert.match(llmsFull, /Country Instability Index \(CII v14\)[\s\S]{0,240}31 Tier-1 countries/i);
-    // inventory-contract: public-fixed-algorithm-claims; classification: exact; reason: the CII event formula is a fixed behavioral contract
-    assert.match(llmsFull, /eventScore = unrest \* 0\.25 \+ conflict \* 0\.30 \+ security \* 0\.20 \+ information \* 0\.25/i);
-    // inventory-contract: public-fixed-algorithm-claims; classification: exact; reason: CRI uses a closed public rankable universe
-    assert.match(llmsFull, /Country Resilience Index \(CRI\)[\s\S]{0,160}196-country public rankable universe/i);
-    assert.match(llmsFull, /specialized variants/i);
-    assert.match(llmsFull, /shared map-layer catalog/i);
-    assert.match(llmsFull, /\*\*RSS feeds\*\* across categories/i);
-    assert.match(llmsFull, /Localization follows the runtime locale registry/i);
     // inventory-contract: public-fixed-algorithm-claims; classification: exact; reason: CII v14 has a versioned fixed country universe
     assert.match(pressKit, /server-authoritative CII v14[\s\S]{0,120}31 Tier-1 countries/i);
     // inventory-contract: public-fixed-algorithm-claims; classification: exact; reason: CRI uses a closed public rankable universe
@@ -449,37 +287,14 @@ describe('CII docs drift guards', () => {
     assert.match(pressKit, /curated RSS feeds/i);
     assert.match(pressKit, /Locale support follows the runtime registry/i);
     assert.match(communityGuide, /specialized views/i);
-    // inventory-contract: public-fixed-algorithm-claims; classification: exact; reason: both public algorithm universes are fixed contracts
-    assert.match(
-      publicHome,
-      /^- CII v14 for 31 Tier-1 countries, resilience scores for the 196-country public rankable universe, and global live conflict tracking$/m,
-    );
-    assert.ok(Array.isArray(agentView.capabilities), 'public/agent-view.json capabilities must be an array');
-    // inventory-contract: public-fixed-algorithm-claims; classification: exact; reason: CII v14 has a versioned fixed country universe
-    assert.ok(
-      agentView.capabilities.includes('global live conflict events and CII v14 scores for 31 Tier-1 countries'),
-      'public/agent-view.json must publish the current CII coverage',
-    );
-    // inventory-contract: public-fixed-algorithm-claims; classification: exact; reason: CRI uses a closed public rankable universe
-    assert.ok(
-      agentView.capabilities.includes(
-        'country resilience scores across the 196-country public rankable universe, with domain/pillar breakdown',
-      ),
-      'public/agent-view.json must distinguish the 196-country CRI universe from CII coverage',
-    );
     assert.doesNotMatch(
-      `${publicHome}\n${agentViewText}`,
-      /\b(?:CII(?: v\d+)?|Country Instability Index|country instability\/risk scores)\b[^\n]{0,100}(?:\(\s*196 countries\s*\)|\b(?:for|across|covers?)\s+(?:all\s+)?196 countries\b)/i,
-      'public surfaces must not attribute the 196-country CRI universe to CII',
-    );
-    assert.doesNotMatch(
-      `${llmsFull}\n${communityGuide}\n${readFileSync(resolve(root, 'CLAUDE.md'), 'utf8')}`,
+      `${communityGuide}\n${readFileSync(resolve(root, 'CLAUDE.md'), 'utf8')}`,
       /Tri-Variant Build System|Three Variant Dashboards|three specialized variants|tri-variant architecture|three specialized views/i,
     );
   });
 
   it('the CII version claim names a version after the current formula, and the change protocols point at the brief', () => {
-    const claim = JSON.parse(readFileSync(resolve(root, 'docs/methodology/cii-next.json'), 'utf8')) as {
+    const claim = JSON.parse(readFileSync(resolve(root, 'docs/engineering/methodology/cii-next.json'), 'utf8')) as {
       next?: unknown; claimedBy?: unknown; claimedAt?: unknown;
     };
     assert.match(String(claim.next), /^v\d+$/, 'cii-next.json `next` must be a version such as v15');
@@ -491,11 +306,11 @@ describe('CII docs drift guards', () => {
     assert.ok(claim.claimedBy === null || (typeof claim.claimedBy === 'string' && claim.claimedBy.length > 0));
     if (claim.claimedBy !== null) assert.ok(Number.isFinite(Date.parse(String(claim.claimedAt))), 'a claim needs an ISO claimedAt');
 
-    const brief = readFileSync(resolve(root, 'docs/methodology/cii-change-brief.md'), 'utf8');
+    const brief = readFileSync(resolve(root, 'docs/engineering/methodology/cii-change-brief.md'), 'utf8');
     for (const path of [
       'tests/fixtures/cii/', 'scripts/cii-table-diff.mts', 'scripts/cii-capture-fixture.mts',
-      'tests/cii-invariants.test.mts', 'tests/cii-fixtures.test.mts', 'docs/methodology/cii-next.json',
-      'docs/methodology/cii-input-register.md',
+      'tests/cii-invariants.test.mts', 'tests/cii-fixtures.test.mts', 'docs/engineering/methodology/cii-next.json',
+      'docs/engineering/methodology/cii-input-register.md',
     ]) {
       assert.ok(brief.includes(path), `the brief must name ${path}`);
       assert.ok(path.endsWith('/') || readFileSync(resolve(root, path)).length > 0, `${path} must exist`);
@@ -504,7 +319,7 @@ describe('CII docs drift guards', () => {
       assert.match(brief, new RegExp(`^\\| ${id} \\|`, 'm'), `the brief's property table must list ${id}`);
     }
     for (const path of ['server/worldmonitor/intelligence/v1/_risk-config.ts', 'server/worldmonitor/intelligence/v1/get-risk-scores.ts']) {
-      assert.ok(readFileSync(resolve(root, path), 'utf8').includes('docs/methodology/cii-change-brief.md'), `${path} change protocol must point at the brief`);
+      assert.ok(readFileSync(resolve(root, path), 'utf8').includes('docs/engineering/methodology/cii-change-brief.md'), `${path} change protocol must point at the brief`);
     }
   });
 });

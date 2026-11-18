@@ -78,7 +78,7 @@ server-authoritative methodology and guarded by an expanded CII drift test.
 
 | Area | Source of truth | Documentation | Guard rails | Result |
 | --- | --- | --- | --- | --- |
-| CII scorer | `server/worldmonitor/intelligence/v1/get-risk-scores.ts`, `shared/cii-weights.ts`, `server/worldmonitor/intelligence/v1/_risk-config.ts` | `docs/methodology/cii-risk-scores.mdx`, `docs/country-instability-index.mdx`, `docs/algorithms.mdx` | `tests/cii-docs-drift.test.mts`, `tests/cii-scoring.test.mts`, `tests/frontend-cii-source-of-truth.test.mts` | Aligned |
+| CII scorer | `server/worldmonitor/intelligence/v1/get-risk-scores.ts`, `shared/cii-weights.ts`, `server/worldmonitor/intelligence/v1/_risk-config.ts` | `docs/engineering/methodology/cii-risk-scores.md`, `docs/engineering/methodology/country-instability-index.md`, `docs/algorithms.mdx` | `tests/cii-docs-drift.test.mts`, `tests/cii-scoring.test.mts`, `tests/frontend-cii-source-of-truth.test.mts` | Aligned |
 | CII provenance and fallback | Cached risk-score handler, seed metadata, advisory fallback logic | CII methodology page and API docs describe server authority, advisory fallback, movement windows, and `methodology_version` | `tests/cached-risk-scores.test.mts`, `tests/seed-health-risk-scores.test.mjs` | Aligned |
 | CII public summaries | LLM and press surfaces, README, homepage SEO copy | `public/llms.txt`, `public/llms-full.txt`, `docs/engineering/product/PRESS_KIT.md`, `README.md`, `index.html` | Expanded CII docs-drift test blocks stale CII and product-count claims | Fixed in this audit |
 | Strategic Risk rollup | Frontend Strategic Risk panel and server CII response contract | `docs/strategic-risk.mdx` and CII methodology describe top-country server rollup semantics | CII drift/source-of-truth tests | Aligned |
@@ -159,7 +159,7 @@ Updated files:
 - `public/llms-full.txt`
 - `docs/engineering/product/PRESS_KIT.md`
 - `docs/engineering/product/COMMUNITY-PROMOTION-GUIDE.md`
-- `docs/architecture.mdx`
+- `docs/engineering/architecture/design-philosophy.md`
 - `docs/ai-intelligence.mdx`
 - `docs/Docs_To_Review/ARCHITECTURE.md`
 - `docs/engineering/archive/legacy/DATA_MODEL.md`
@@ -244,7 +244,7 @@ npx markdownlint-cli2 \
   README.md \
   docs/engineering/product/PRESS_KIT.md \
   docs/engineering/product/COMMUNITY-PROMOTION-GUIDE.md \
-  docs/architecture.mdx \
+  docs/engineering/architecture/design-philosophy.md \
   docs/ai-intelligence.mdx \
   docs/Docs_To_Review/ARCHITECTURE.md \
   docs/engineering/archive/legacy/DATA_MODEL.md \

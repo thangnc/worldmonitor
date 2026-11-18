@@ -2538,7 +2538,7 @@ const SEED_META = {
     // was red on two unrelated tests), so seed-bundle-macro ran an image without
     // the script and the probe could not be registered then. The service was
     // deployed to a green head on 2026-08-11 and this entry cites its first real
-    // publish. See docs/methodology/education-flag-flip-runbook.md.
+    // publish. See docs/engineering/methodology/education-flag-flip-runbook.md.
     cutover: {
       mode: 'preseed',
       fromKey: null,

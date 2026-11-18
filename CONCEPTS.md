@@ -473,12 +473,6 @@ The load-bearing rule: credential class never determines plan family, so any rul
 
 The MCP transport this server implements over HTTP: JSON-RPC 2.0 requests via `POST`, with optional Server-Sent Events when the client advertises `Accept: text/event-stream`. Its `405` on a standalone stream-open is not an error but a contract — MCP SDK clients read it as the graceful "no standalone stream" signal and complete the handshake. Anything that converts that `405` into a `200` (including a CDN replaying a cached discovery response) breaks the handshake.
 
-### Agent Discovery File
-
-One of the published plain-text or Markdown documents an assistant reads to learn what the site offers without crawling it: the short LLM briefing at `/llms.txt`, its full corpus at `/llms-full.txt`, the Markdown homepage served to agent user agents, and the AI-search answer page. They are the *content* half of agent discovery — the MCP Server Card says how to call the product; these say what it publishes.
-
-The load-bearing rule: each file is partly hand-authored and partly generated, and every generated section has exactly one producing script, which splices it into the hand-authored text at a stable anchor and can re-derive it byte-for-byte for a staleness check. A page family that only a registry knows about must be listed by that script, never typed in by hand — otherwise it is crawlable but invisible to assistants. See also: MCP Server Card, Discovery Read vs. Transport Operation.
-
 ### Client Callback Allowlist
 
 The closed set of redirect addresses an MCP client may register for its OAuth sign-in: any plain-http address on the local host name or the IPv4 loopback address, plus the published callbacks of named hosted clients, each matched exactly as that client sends it.

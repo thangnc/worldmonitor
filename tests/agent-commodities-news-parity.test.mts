@@ -33,22 +33,4 @@ describe('commodities news agent parity (#5889)', () => {
     }
   });
 
-  it('keeps the published MCP server card discoverable for category filtering', () => {
-    const card = JSON.parse(readFileSync(
-      join(ROOT, 'public/.well-known/mcp/server-card.json'),
-      'utf8',
-    ));
-    const tools = new Map((card.tools ?? []).map((tool) => [tool.name, tool.description]));
-    for (const name of ['extract_entities', 'get_news_clusters']) {
-      const description = tools.get(name) ?? '';
-      assert.match(description, /category/,
-        `${name} server-card description must advertise category filtering`);
-      assert.match(description, /commodities/,
-        `${name} server-card description must advertise commodities filtering`);
-      assert.match(description, /variant/,
-        `${name} server-card description must advertise variant selection`);
-      assert.match(description, /tech/,
-        `${name} server-card description must advertise Tech digest access`);
-    }
-  });
 });

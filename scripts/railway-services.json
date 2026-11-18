@@ -103,7 +103,6 @@
       "scripts/shared/ucdp-candidate.cjs",
       "scripts/shared/yahoo-closed-session.cjs",
       "scripts/source-attribution.mjs",
-      "public/.well-known/mcp/server-card.json",
       "shared/compare-and-delete-script.cjs",
       "shared/source-attribution-manifest.json",
       "shared/news-catalog.json",

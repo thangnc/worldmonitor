@@ -468,15 +468,6 @@ describe('family-counted activation gate (#9034)', () => {
   const deltaStatistic = { delta: (sample) => sample.reduce((sum, row) => sum + (row.calibrated - row.y) ** 2 - (row.raw - row.y) ** 2, 0) / sample.length };
   const width = ([lo, hi]) => hi - lo;
 
-  it('keeps the preregistered minimums, now counted in families', () => {
-    assert.deepEqual([ACTIVATION_MIN_FORWARD_FAMILIES, ACTIVATION_MIN_FORWARD_DOMAIN_FAMILIES], [60, 30]);
-    const docs = readFileSync(new URL('../docs/panels/forecast.mdx', import.meta.url), 'utf8');
-    const zhDocs = readFileSync(new URL('../docs/zh/panels/forecast.mdx', import.meta.url), 'utf8');
-    assert.match(docs, new RegExp(`at least ${ACTIVATION_MIN_FORWARD_FAMILIES} distinct forecast families \\(\`ACTIVATION_MIN_FORWARD_FAMILIES\`\\)`));
-    assert.match(docs, new RegExp(`at least ${ACTIVATION_MIN_FORWARD_DOMAIN_FAMILIES} families in every domain`));
-    assert.match(zhDocs, new RegExp(`至少 ${ACTIVATION_MIN_FORWARD_FAMILIES} 个不同预测家族.*至少 ${ACTIVATION_MIN_FORWARD_DOMAIN_FAMILIES} 个家族`));
-  });
-
   it('a few recurring families cannot meet the minimums however many windows they resolve', () => {
     const gate = gateFor(forwardFamilies(3, 70));
     assert.equal(gate.forwardCount, 70);

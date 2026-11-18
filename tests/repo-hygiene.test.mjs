@@ -30,17 +30,3 @@ test('archival backlog and playground artifacts are not tracked in the repo root
     `Archive-only material belongs under docs/engineering/archive or docs/engineering/archive/dev-artifacts, not the repo root:\n${trackedRootArchiveMaterial.join('\n')}`,
   );
 });
-
-test('archival backlog and playground artifacts are excluded from Mintlify publishing', () => {
-  const mintignore = readFileSync(new URL('../docs/.mintignore', import.meta.url), 'utf8')
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line && !line.startsWith('#'));
-
-  // docs/engineering/ holds the archive (old plans and todos that Mintlify
-  // parses as MDX) and dev-artifacts (internal HTML playgrounds).
-  assert.ok(
-    mintignore.includes('engineering/'),
-    'docs/engineering holds internal archives and playgrounds that Mintlify must not publish',
-  );
-});

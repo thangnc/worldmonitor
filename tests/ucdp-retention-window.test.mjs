@@ -64,15 +64,14 @@ describe('UCDP retained window is intentionally smaller than CII classification 
 
   it('documents the relay reader page cap separately from Redis writer retention', () => {
     const relay = readRepoFile('scripts/ais-relay.cjs');
-    const methodology = readRepoFile('docs/methodology/cii-risk-scores.mdx');
-    const changelog = readRepoFile('docs/changelog.mdx');
+    const methodology = readRepoFile('docs/engineering/methodology/cii-risk-scores.md');
 
     assert.match(
       relay,
       /const UCDP_RELAY_MAX_PAGES = 12;/,
       'public relay UCDP reader page cap changed; update docs deliberately',
     );
-    for (const doc of [methodology, changelog]) {
+    for (const doc of [methodology]) {
       assert.match(doc, /newest six UCDP pages/);
       assert.match(doc, /2,000 mapped events/);
       assert.match(doc, /365-day/);

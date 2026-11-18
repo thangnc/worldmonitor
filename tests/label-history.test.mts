@@ -460,22 +460,6 @@ describe('ListLabelChanges', () => {
   });
 });
 
-describe('scanner bundle exclusion (#9093)', () => {
-  it('leaves listed operations out of the scanner JSON, keeping them in the YAML specs', async () => {
-    const { SCANNER_BUNDLE_EXCLUDED_OPERATIONS, excludeScannerBundleOperations } = await import('../scripts/build-openapi-json.mjs');
-    const { readFileSync } = await import('node:fs');
-    const yaml = readFileSync(new URL('../docs/api/worldmonitor.openapi.yaml', import.meta.url), 'utf8');
-    assert.ok('/api/news/v1/list-label-changes' in SCANNER_BUNDLE_EXCLUDED_OPERATIONS);
-    for (const [path, reason] of Object.entries(SCANNER_BUNDLE_EXCLUDED_OPERATIONS)) {
-      assert.ok(String(reason).length > 20, `${path} names why it is excluded`);
-      assert.ok(yaml.includes(`${path}:`), `${path} stays documented in the YAML bundle`);
-    }
-    const spec = { paths: { '/api/news/v1/list-label-changes': { get: {} }, '/api/news/v1/list-feed-digest': { get: {} } } };
-    assert.deepEqual(excludeScannerBundleOperations(spec), { excluded: 1 });
-    assert.deepEqual(Object.keys(spec.paths), ['/api/news/v1/list-feed-digest']);
-  });
-});
-
 describe("today's label counts (#9093 /trust)", () => {
   it('counts every state, and serves only recent, consistent counts', () => {
     const counts = countLabels(['corroborated', 'corroborated', 'single-publisher', 'tier4-only', 'unknown'], NOW);

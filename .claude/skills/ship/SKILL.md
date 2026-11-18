@@ -30,10 +30,9 @@ Fork facts that override the upstream wording:
    - Browser code (`src/`): `npm run typecheck`, `npm run lint`, `npm run lint:boundaries`, and the focused suites (`ls tests/ | grep <subject>`).
    - `api/`, `server/`, `scripts/seed-*`, `src/services/`: also `npm run typecheck:api`, and run the `edge-contract-reviewer` agent on the diff. Include what it found.
    - `.github/workflows/`: `actionlint` on the changed workflow and `npm run docs:check`.
-   - `CLAUDE.md` or `.claude/`: the tests that read them (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/agent-page.test.mjs`, `tests/sentry-triage-skill.test.mjs`) and `npm run docs:check`.
+   - `CLAUDE.md` or `.claude/`: the tests that read them (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/sentry-triage-skill.test.mjs`) and `npm run docs:check`.
    - `src/lite/`, `lite.html`, the Lite routes: `tests/lite-ui.test.mts`, `tests/lite-profile.test.mts`, `npx vitest run --config vitest.dom.config.mts tests/dom/lite-ui.test.mts`, and `npm run build:full` (its `bundle:check` budget too).
    - A suite that also fails on a clean `origin/main` is a baseline failure, not this change's. Prove it with a detached worktree of `origin/main` before saying so.
-   - A build rewrites `src/config/docs-page-dates.generated.ts` and `public/sitemap*.xml`. Restore them with `git checkout --` afterwards.
 3. **UI evidence.** When the change adds or alters UI:
    - Drive it with the `verify-worldmonitor` skill. For `/lite`, use `steps/lite-ui.mjs`.
    - Capture desktop (1440) and phone (390) screenshots, and label any test data.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Regenerates every committed derived file (product facts, docs stats, llms,
-// AI search, catalogs, locales, legal digests, …) whose freshness check
+// Regenerates every committed derived file (catalogs, the engineering
+// indexes, source attribution, bootstrap tier keys, …) whose freshness check
 // fails. Stale derived files were over half of CI test failures, and fixing
 // one meant finding which of these generators the failing test wanted.
 //
@@ -8,15 +8,12 @@
 //   npm run generate:check    # exit 1 and list the stale steps
 //
 // Each step runs its own --check first and writes only when that fails, so
-// generators that stamp today's date or rebuild PDFs do not churn files that
+// generators that stamp today's date do not churn files that
 // are already current. Generators read each other's outputs, so passes repeat
 // until every check is green.
 //
 // Not covered: `make generate` (proto + OpenAPI; the pre-push hook runs it)
 // and app translations (scripts/translate-locales.mjs needs ANTHROPIC_API_KEY).
-// Frozen until 1c, because their generators read the deleted crawlable corpus:
-// api/_country-corpus-slugs.generated.js (its one reader, api/story.js, goes in
-// 1c) and the resilience coverage counts in the public docs.
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,14 +26,10 @@ const MAX_PASSES = 3;
 // [name, command, write flag]. Every command also accepts --check.
 export const STEPS = [
   ['browser news catalog', [...TSX, 'scripts/generate-browser-news-catalog.mjs']],
-  ['agent skills index', [NODE, 'scripts/build-agent-skills-index.mjs']],
   ['engineering index', [NODE, 'scripts/generate-engineering-index.mjs']],
   ['source attribution', [NODE, 'scripts/source-attribution.mjs'], '--write'],
   ['bootstrap tier keys', [NODE, 'scripts/sync-bootstrap-tier-keys.mjs']],
   ['live video channels', [...TSX, 'scripts/sync-live-video-refresh-channels.mjs']],
-  ['sandbox fixtures', [NODE, 'scripts/generate-sandbox-fixtures.mjs']],
-  ['legal digests', [NODE, 'scripts/legal-digests.mjs']],
-  ['legal PDFs', [NODE, 'scripts/build-legal-pdfs.mjs']],
   ['story phase fading study', [NODE, 'scripts/study-story-phase-fading.mjs']],
 ];
 

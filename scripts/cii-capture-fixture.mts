@@ -7,7 +7,7 @@
 // (scripts/lib/cii-fixtures.mts), proves the trim leaves every term
 // unchanged, and records the current formula's output. When the stored table
 // was computed from the inputs read here, the fixture also proves the seam
-// reproduces production; see docs/methodology/cii-change-brief.md.
+// reproduces production; see docs/engineering/methodology/cii-change-brief.md.
 //
 //   WM_SEED_ENV_FILE=/path/to/.env.local node --import tsx scripts/cii-capture-fixture.mts [--iran-events-enabled=false]
 import { writeFileSync } from 'node:fs';

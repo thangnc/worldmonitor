@@ -136,18 +136,4 @@ describe('China Stock Connect production registration (#6155)', () => {
     assert.match(read('api/health.js'), /chinaStockConnect:\s*'market:china:stock-connect:v1'/);
   });
 
-  it('records terms for every new endpoint, as the existing exchange entries do', () => {
-    const documented = read('docs/china-data-coverage.mdx');
-    const documentedZh = read('docs/zh/china-data-coverage.mdx');
-    for (const contract of Object.values(STOCK_CONNECT_SOURCE_CONTRACTS)) {
-      assert.match(contract.termsUrl, /^https:\/\/(?:www\.sse\.com\.cn|www\.szse\.cn)\//u);
-    }
-    for (const page of [documented, documentedZh]) {
-      assert.ok(page.includes('market.china-stock-connect'));
-      assert.ok(page.includes('https://www.sse.com.cn/home/legal/'));
-      assert.ok(page.includes('https://www.szse.cn/application/laws/'));
-      // The one claim a reader must not take away from this source.
-      assert.ok(page.includes('2024-08-16'));
-    }
-  });
 });

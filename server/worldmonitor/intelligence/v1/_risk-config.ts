@@ -8,13 +8,13 @@
 // index, peer-reviewed paper, or external risk product. Treat them as
 // opinionated, not empirical.
 //
-// Change protocol: read docs/methodology/cii-change-brief.md first. It sets
+// Change protocol: read docs/engineering/methodology/cii-change-brief.md first. It sets
 // the construct, the forbidden moves, the required properties
 // (tests/cii-invariants.test.mts) and the evidence a CII change must show
 // (scripts/cii-table-diff.mts on tests/fixtures/cii/). Then:
-//   0. Claim the version in docs/methodology/cii-next.json.
+//   0. Claim the version in docs/engineering/methodology/cii-next.json.
 //   1. Bump CII_FORMULA_VERSION below.
-//   2. Update docs/methodology/cii-risk-scores.mdx (the public methodology
+//   2. Update docs/engineering/methodology/cii-risk-scores.md (the public methodology
 //      note) in the same commit. Tests assert the doc lists every coefficient
 //      and every CURATED_COUNTRIES code.
 //   3. Note the change in docs/changelog.mdx and CHANGELOG.md under the
@@ -151,7 +151,7 @@ export const CII_GDELT_LEVEL_PROTEST_SATURATION = 0.08;
  *    on average) matches its confirmed Oct 16-18 tally (5-10 a day).
  *
  * P enters the composite twice, calibrated on replayed Sep 18 - Oct 19 2026
- * exports and the live feed (docs/methodology/cii-risk-scores.mdx):
+ * exports and the live feed (docs/engineering/methodology/cii-risk-scores.md):
  *  - a floor, like the advisory and UCDP floors:
  *      P < FLOOR_MIN_PRESSURE ? 0 : min(FLOOR_CAP, FLOOR_BASE + FLOOR_PER_DOUBLING * log2(P / FLOOR_MIN_PRESSURE))
  *  - a boost on the blended score, so a country already above every floor

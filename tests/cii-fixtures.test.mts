@@ -1,6 +1,6 @@
 // The committed CII fixtures (tests/fixtures/cii/) as a regression snapshot
 // and as the proof that the scoring seam reproduces production. See
-// docs/methodology/cii-change-brief.md.
+// docs/engineering/methodology/cii-change-brief.md.
 import assert from 'node:assert/strict';
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';

@@ -30,7 +30,7 @@ function toIso2(entry) {
 loadEnvFile(import.meta.url);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const VALIDATION_DIR = join(__dirname, '..', 'docs', 'methodology', 'country-resilience-index', 'validation');
+const VALIDATION_DIR = join(__dirname, '..', 'docs', 'engineering', 'methodology', 'country-resilience-index', 'validation');
 
 const RESILIENCE_SCORE_CACHE_PREFIX = 'resilience:score:v29:';
 const RESILIENCE_RANKING_CACHE_KEY = 'resilience:ranking:v29';

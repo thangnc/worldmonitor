@@ -31,7 +31,7 @@ Error: source-attribution: invalid manifest (missing manifest entry for safe-htm
     at computeStats (scripts/docs-stats.mjs)
 ```
 
-`scripts/source-attribution.mjs` scans `src/` for every host literal and requires each one to have an entry in `shared/source-attribution-manifest.json`, so the published attribution page (`docs/source-attribution.mdx`) can account for every upstream the client might talk to. A sentinel that is never fetched still counts as a host. The pre-push gate does not run `docs-stats`, so this is CI-only.
+`scripts/source-attribution.mjs` scans `src/` for every host literal and requires each one to have an entry in `shared/source-attribution-manifest.json`, so the published attribution page (`docs/engineering/architecture/source-attribution.md`) can account for every upstream the client might talk to. A sentinel that is never fetched still counts as a host. The pre-push gate does not run `docs-stats`, so this is CI-only.
 
 ## Guidance
 
@@ -44,7 +44,7 @@ Error: source-attribution: invalid manifest (missing manifest entry for safe-htm
    node scripts/docs-stats.mjs --check           # what CI runs
    ```
 
-3. Commit the three outputs together with the source change: `shared/source-attribution-manifest.json`, `docs/source-attribution.mdx`, and `docs/generated/stats.json` when it changed.
+3. Commit the three outputs together with the source change: `shared/source-attribution-manifest.json`, `docs/engineering/architecture/source-attribution.md`, and `docs/generated/stats.json` when it changed.
 4. When the literal is a real upstream rather than a sentinel, `--write` still records the reference, but a human must fill in the provider, license and status fields the validator demands; see the existing entries for the shape.
 
 ```ts

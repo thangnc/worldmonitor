@@ -96,7 +96,7 @@ test('production reads preserve the WB debt envelope required by the fail-closed
 
 test('the committed production acceptance artifact is internally consistent', () => {
   const artifact = JSON.parse(readFileSync(
-    new URL('../docs/snapshots/resilience-financial-system-exposure-acceptance-2026-08-13.json', import.meta.url),
+    new URL('../docs/engineering/methodology/country-resilience-index/snapshots/resilience-financial-system-exposure-acceptance-2026-08-13.json', import.meta.url),
     'utf8',
   ));
 

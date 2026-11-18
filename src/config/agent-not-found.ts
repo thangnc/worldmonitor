@@ -2,10 +2,11 @@
  * Origin 404s for unknown HTML-site paths.
  *
  * Agents (curl, SDKs, Accept: text/markdown, missing Accept) get a real
- * HTTP 404 with heading-led markdown pointing at llms.txt / sitemap / docs
- * (ora.ai / orank `agent-friendly-404`). Browsers that send Accept: text/html
- * get a human HTML 404 — #6955 served the agent body to everyone and replaced
- * public/404.html with markdown.
+ * HTTP 404 with heading-led markdown pointing at the Lite UI. Browsers that
+ * send Accept: text/html get a human HTML 404 — #6955 served the agent body to
+ * everyone and replaced public/404.html with markdown. The deployment is
+ * private (refactor 1c-3): there is no public llms.txt, sitemap or docs site to
+ * point at.
  *
  * Do not wire the agent body through a vercel.json rewrite: Vercel rewrites
  * preserve the destination body but surface HTTP 200 for a successful proxy,
@@ -14,21 +15,13 @@
  */
 
 import { LITE_SCREEN_PATHS } from './lite-route';
-import { indexableLandingPassthroughPrefixes } from '../../shared/indexable-landing-locales';
 import { stripTrailingSlashes } from '../../shared/strip-trailing-slashes.js';
 
 export const AGENT_NOT_FOUND_STATUS = 404 as const;
 export const AGENT_NOT_FOUND_CONTENT_TYPE = 'text/markdown; charset=utf-8';
 export const HUMAN_NOT_FOUND_CONTENT_TYPE = 'text/html; charset=utf-8';
 
-export const AGENT_NOT_FOUND_INDEXES = {
-  llmsTxt: 'https://www.worldmonitor.app/llms.txt',
-  sitemap: 'https://www.worldmonitor.app/sitemap.xml',
-  docs: 'https://www.worldmonitor.app/docs/documentation',
-} as const;
-
-export const HUMAN_NOT_FOUND_DASHBOARD = '/dashboard';
-export const HUMAN_NOT_FOUND_SUPPORT = '/docs/support';
+export const HUMAN_NOT_FOUND_DASHBOARD = LITE_SCREEN_PATHS.briefing;
 
 export interface NotFoundSection {
   readonly href: string;
@@ -45,34 +38,28 @@ export interface NotFoundSection {
  */
 export const HUMAN_NOT_FOUND_SECTIONS: readonly NotFoundSection[] = [
   {
-    href: '/countries/',
-    label: 'Countries',
-    description: 'Risk briefs and live signals, country by country.',
-    aliases: ['countries', 'country'],
+    href: LITE_SCREEN_PATHS.geopolitics,
+    label: 'Geopolitics',
+    description: 'Conflicts, military activity and violence, with the news around them.',
+    aliases: ['geopolitics', 'conflicts', 'conflict', 'military'],
   },
   {
-    href: '/crises/',
-    label: 'Crises',
-    description: 'Trackers for active conflicts and emergencies.',
-    aliases: ['crises', 'crisis', 'conflicts'],
+    href: LITE_SCREEN_PATHS.finance,
+    label: 'Finance',
+    description: 'Macro releases, bond moves, markets and crypto.',
+    aliases: ['finance', 'markets', 'market', 'crypto'],
   },
   {
-    href: '/chokepoints/',
-    label: 'Chokepoints',
-    description: 'Status of the straits and canals that trade depends on.',
-    aliases: ['chokepoints', 'chokepoint', 'straits'],
+    href: LITE_SCREEN_PATHS.tech,
+    label: 'Technology',
+    description: 'Releases, outages, hacking and AI.',
+    aliases: ['tech', 'technology', 'ai'],
   },
   {
-    href: '/compare/',
-    label: 'Compare',
-    description: 'How World Monitor compares with other monitors.',
-    aliases: ['compare', 'comparison', 'comparisons', 'alternatives'],
-  },
-  {
-    href: '/docs/documentation',
-    label: 'Documentation',
-    description: 'Methods, data sources, the API and MCP.',
-    aliases: ['docs', 'doc', 'documentation'],
+    href: LITE_SCREEN_PATHS.sources,
+    label: 'Sources',
+    description: 'What each feed last delivered, and when.',
+    aliases: ['sources', 'source'],
   },
 ];
 
@@ -130,59 +117,16 @@ export function suggestNotFoundSection(path: string): NotFoundSection | null {
 // silently 404.
 export const AGENT_NOT_FOUND_PASSTHROUGH_PREFIXES = [
   '/CLERK-ROUTER',
-  '/a2a',
-  '/about',
-  '/accuracy',
-  '/agent',
-  '/api-reference',
-  '/ask',
-  '/changelog',
-  '/chokepoints',
-  '/compare',
-  '/contact',
-  '/country-instability-index',
-  '/countries',
-  '/crises',
   '/dashboard',
-  '/data-processing-agreement',
-  '/dpa',
   '/data',
-  '/developers',
-  '/docs',
-  '/embed',
-  '/end-user-license-agreement',
-  '/eula',
-  '/favico',
-  '/help',
-  '/legal',
-  '/map-styles',
-  '/mcp',
-  '/mcp-grant',
-  '/monitor-the-situation',
   '/desktop-sign-in',
-  '/oauth',
-  '/privacy',
-  '/privacy-policy',
-  '/reference',
-  '/research',
-  '/research-assets',
-  '/sandbox',
+  '/favico',
+  '/map-styles',
   '/settings',
-  '/sources',
   '/stocks',
   '/story',
-  '/support',
-  '/terms',
-  '/terms-of-service',
   '/textures',
-  '/tos',
-  '/tools',
-  '/trust',
-  '/use-cases',
   '/verify',
-  '/welcome',
-  ...indexableLandingPassthroughPrefixes(),
-  '/zh',
   '/.well-known',
 ] as const;
 
@@ -275,11 +219,7 @@ export function buildAgentNotFoundMarkdown(path: string): string {
     '',
     `\`${safePath}\` is not a page on World Monitor.`,
     '',
-    'Use these indexes instead of guessing URLs:',
-    '',
-    `- [llms.txt](${AGENT_NOT_FOUND_INDEXES.llmsTxt}) — agent briefing`,
-    `- [sitemap.xml](${AGENT_NOT_FOUND_INDEXES.sitemap}) — crawlable URL list`,
-    `- [Documentation](${AGENT_NOT_FOUND_INDEXES.docs}) — docs index`,
+    `World Monitor is a private dashboard. Its pages live under [${LITE_SCREEN_PATHS.briefing}](${LITE_SCREEN_PATHS.briefing}).`,
     '',
   ].join('\n');
 }
@@ -297,13 +237,13 @@ export function buildHumanNotFoundHtml(path?: string): string {
     ? `<code>${sanitizePathForHtml(path)}</code> doesn’t match a page. The link may be mistyped, or the page may have moved.`
     : 'The link may be mistyped, or the page may have moved.';
   // The likely destination is the one action worth a button. Without one, the
-  // live dashboard is the product's front door.
+  // Briefing is the front door.
   const actions = suggestion
     ? [
       `    <a class="cta" href="${suggestion.href}">Go to ${suggestion.label} <span aria-hidden="true">→</span></a>`,
-      `    <a class="secondary" href="${HUMAN_NOT_FOUND_DASHBOARD}">or open the live dashboard</a>`,
+      `    <a class="secondary" href="${HUMAN_NOT_FOUND_DASHBOARD}">or open the Briefing</a>`,
     ]
-    : [`    <a class="cta" href="${HUMAN_NOT_FOUND_DASHBOARD}">Open the live dashboard <span aria-hidden="true">→</span></a>`];
+    : [`    <a class="cta" href="${HUMAN_NOT_FOUND_DASHBOARD}">Open the Briefing <span aria-hidden="true">→</span></a>`];
   const cards = HUMAN_NOT_FOUND_SECTIONS.map((section) => [
     `        <a class="card" href="${section.href}">`,
     `          <strong>${section.label}</strong>`,
@@ -316,7 +256,7 @@ export function buildHumanNotFoundHtml(path?: string): string {
     '<head>',
     '  <meta charset="UTF-8">',
     '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
-    '  <meta name="robots" content="noindex">',
+    '  <meta name="robots" content="noindex, nofollow">',
     '  <title>Page not found — World Monitor</title>',
     '  <style>',
     '    :root { color-scheme: dark; --bg: #050807; --panel: #0c1210; --text: #eef8f0; --muted: #a8b8ad; --line: #1b2b22; --accent: #4ade80; }',
@@ -325,7 +265,7 @@ export function buildHumanNotFoundHtml(path?: string): string {
     '    a { color: var(--accent); text-decoration: none; }',
     '    a:hover { text-decoration: underline; }',
     '    a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }',
-    '    header, main, footer { max-width: 960px; margin: 0 auto; padding: 0 20px; }',
+    '    header, main { max-width: 960px; margin: 0 auto; padding: 0 20px; }',
     '    header { padding-top: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }',
     '    nav { display: flex; gap: 4px 18px; flex-wrap: wrap; font-size: 14px; }',
     '    nav a { display: inline-flex; align-items: center; min-height: 44px; }',
@@ -345,8 +285,6 @@ export function buildHumanNotFoundHtml(path?: string): string {
     '    .card:hover { border-color: var(--accent); text-decoration: none; }',
     '    .card strong { color: var(--text); font-size: 16px; }',
     '    .card span { color: var(--muted); font-size: 14px; }',
-    '    footer { border-top: 1px solid var(--line); padding-top: 20px; padding-bottom: 28px; color: var(--muted); font-size: 14px; }',
-    '    footer p { margin: 0; }',
     '    @media (max-width: 420px) { nav { gap: 0 11px; font-size: 13px; } }',
     '    @media (prefers-reduced-motion: reduce) { .card { transition: none; } }',
     '  </style>',
@@ -354,11 +292,8 @@ export function buildHumanNotFoundHtml(path?: string): string {
     '<body>',
     '  <header>',
     '    <nav aria-label="Primary">',
-    '      <a class="home" href="/">World Monitor</a>',
-    `      <a href="${HUMAN_NOT_FOUND_DASHBOARD}">Dashboard</a>`,
-    '      <a href="/countries/">Countries</a>',
-    '      <a href="/crises/">Crises</a>',
-    '      <a href="/docs/documentation">Docs</a>',
+    `      <a class="home" href="${HUMAN_NOT_FOUND_DASHBOARD}">World Monitor</a>`,
+    ...HUMAN_NOT_FOUND_SECTIONS.map((section) => `      <a href="${section.href}">${section.label}</a>`),
     '    </nav>',
     '  </header>',
     '  <main>',
@@ -373,10 +308,7 @@ export function buildHumanNotFoundHtml(path?: string): string {
     ...cards.map((card) => card.replace(/^ {4}/gm, '')),
     '    </div>',
     '  </main>',
-    '  <footer>',
-    `    <p>Followed a World Monitor link here? <a href="${HUMAN_NOT_FOUND_SUPPORT}">Tell us where it was</a> so we can fix it.</p>`,
-    '  </footer>',
-    '</body>',
+      '</body>',
     '</html>',
     '',
   ].join('\n');

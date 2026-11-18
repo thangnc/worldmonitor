@@ -1463,20 +1463,6 @@ describe('extraction gate enforcement (#7067)', () => {
     assert.equal(counts.withheld.military, 1);
   });
 
-  it('the forecast docs state the switch, its default and the pending-judge bar in both languages', () => {
-    const en = readFileSync(resolve(here, '../docs/panels/forecast.mdx'), 'utf8');
-    const zh = readFileSync(resolve(here, '../docs/zh/panels/forecast.mdx'), 'utf8');
-    assert.match(en, /Enforcement is off\. The switch is the constant `EXTRACTION_GATE_ENFORCED`/);
-    assert.ok(en.includes(`fewer than ${EXTRACTION_GATE_MAX_PENDING_JUDGE} pending entries (\`EXTRACTION_GATE_MAX_PENDING_JUDGE\`)`));
-    assert.match(zh, /强制执行处于关闭状态。开关是 `scripts\/_forecast-resolution\.mjs` 中的常量 `EXTRACTION_GATE_ENFORCED`/);
-    assert.ok(zh.includes(`少于 ${EXTRACTION_GATE_MAX_PENDING_JUDGE} 条（\`EXTRACTION_GATE_MAX_PENDING_JUDGE\`）`));
-    assert.ok(en.includes(`(\`EXTRACTION_GATE_MIN_SCORED_WITHIN_SLA_RATE\`, ${EXTRACTION_GATE_MIN_SCORED_WITHIN_SLA_RATE})`));
-    assert.ok(zh.includes(`（\`EXTRACTION_GATE_MIN_SCORED_WITHIN_SLA_RATE\`，${EXTRACTION_GATE_MIN_SCORED_WITHIN_SLA_RATE}）`));
-    const hours = EXTRACTION_GATE_SCORECARD_MAX_AGE_MS / (60 * 60 * 1000);
-    assert.ok(en.includes(`at most ${hours} hours old (\`EXTRACTION_GATE_SCORECARD_MAX_AGE_MS\``));
-    assert.ok(zh.includes(`不超过 ${hours} 小时（\`EXTRACTION_GATE_SCORECARD_MAX_AGE_MS\``));
-  });
-
   it('withholds generic questions even while downgrades wait on the lane', () => {
     const { byId } = gate(decide(null));
     assert.equal(byId['fc-mil'].resolution.kind, 'unscored');

@@ -670,11 +670,6 @@ describe('scoped rate-limit degraded call-site policy (#3531)', () => {
       expected: /if\s*\(\s*providerLimit\.degraded\s*\)\s*\{/,
       reason: 'the provider-wide Nominatim bucket must fail closed before upstream work',
     },
-    {
-      path: 'api/skills/fetch-agentskills.ts',
-      expected: /Redis-degraded scoped limits intentionally stay availability-first/,
-      reason: 'agent-skills import proxy fetches one public host behind a fixed allowlist and is called by the settings importer - degradation is logged and stays availability-first',
-    },
   ];
 
   it('keeps every checkScopedRateLimit caller audited for degraded handling', async () => {

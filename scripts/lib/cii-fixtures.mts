@@ -1,7 +1,7 @@
 // CII fixtures: captured production inputs for the scoring seam
 // (computeCiiScoreTable in server/worldmonitor/intelligence/v1/get-risk-scores.ts).
 // Used by scripts/cii-capture-fixture.mts, scripts/cii-table-diff.mts and
-// tests/cii-invariants.test.mts. See docs/methodology/cii-change-brief.md.
+// tests/cii-invariants.test.mts. See docs/engineering/methodology/cii-change-brief.md.
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

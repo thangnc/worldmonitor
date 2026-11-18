@@ -12,8 +12,6 @@ Claude Code is the only supported coding agent for this repository. This file is
 | `.claude/hooks/` + `.claude/settings.json` | Block hand edits to `src/generated/`, `docs/api/`, the generated `docs/engineering/*/INDEX.md` files, and `package-lock.json`; Biome-lint each edited JS/TS file. |
 | `CLAUDE.local.md`, `.claude/settings.local.json` | Personal overrides. Git ignores them. |
 
-`skills/` at the repo root is different: it holds published product recipes for API and MCP consumers.
-
 Deeper references: [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIBUTING.md), [CONCEPTS.md](CONCEPTS.md).
 
 ## Product direction: World Monitor Lite profile
@@ -73,9 +71,9 @@ npm run test:server              # server/__tests__, correlation engine (vitest)
 npm run test:sidecar             # api/ node suites + the Docker Node API server (docker/local-api/)
 
 make generate                    # regenerate src/generated/ + docs/api/ from proto/
-npm run generate                 # regenerate committed derived files (catalogs, source attribution, legal digests, indexes)
+npm run generate                 # regenerate committed derived files (catalogs, source attribution, indexes)
 npm run seed:lite:watch          # keep the Lite seeders fresh in local Redis (seed:lite once, seed:lite:status read-only)
-npm run docs:check               # required after CI workflow changes
+npm run docs:check               # required after CI workflow changes: CI/CD table, sebuf version, /api/health examples
 ```
 
 Running a single test:
@@ -86,7 +84,7 @@ npx vitest run --config vitest.dom.config.mts tests/dom/<file>
 npx vitest run --config vitest.config.mts <path>
 ```
 
-Production build: `npm run build` (the Lite UI into `dist/`; `build:full` is an alias Vercel used). The pre-push hook (`.husky/pre-push`) runs the identity and secret-dump gates, then only the checks the branch's changes touch: tsc for src and API, the edge-bundle check, import boundaries, markdown/MDX lint, `docs:check`, and `make generate` drift.
+Production build: `npm run build` (the Lite UI into `dist/`; `build:full` is an alias Vercel used). The pre-push hook (`.husky/pre-push`) runs the identity and secret-dump gates, then only the checks the branch's changes touch: tsc for src and API, the edge-bundle check, import boundaries, markdown lint, `docs:check`, and `make generate` drift.
 
 ## Include UI evidence in pull requests
 
@@ -100,16 +98,16 @@ Production build: `npm run build` (the Lite UI into `dist/`; `build:full` is an 
 | Change | Code and guidance | Required verification |
 |---|---|---|
 | Browser behavior | `src/lite/`, and the `src/services/`, `src/config/` and `src/utils/` modules it imports; [Lite spec](docs/engineering/architecture/lite.md) | Focused behavior check, `npm run typecheck`, `npm run lint:boundaries` |
-| API and handlers | `api/`, `server/`; [endpoint guide](docs/adding-endpoints.mdx) | Focused handler check, `npm run typecheck:api`; `npm run test:sidecar` owns the `api/` node suites; `edge-contract-reviewer` subagent before the PR |
-| Data workers and cache | `scripts/`, `server/_shared/`; [health contracts](docs/health-endpoints.mdx) | Producer and reader checks with fixtures; separately record live freshness evidence when required |
+| API and handlers | `api/`, `server/`; [endpoint guide](docs/engineering/architecture/adding-endpoints.md) | Focused handler check, `npm run typecheck:api`; `npm run test:sidecar` owns the `api/` node suites; `edge-contract-reviewer` subagent before the PR |
+| Data workers and cache | `scripts/`, `server/_shared/`; [health contracts](docs/engineering/architecture/health-endpoints.md) | Producer and reader checks with fixtures; separately record live freshness evidence when required |
 | Proto and generated clients | `proto/`, `src/generated/`; [code generation](CONTRIBUTING.md#working-with-sebuf-rpc-framework) | `make generate` requires buf + sebuf v0.11.1 plugins; verify generated diff |
 | Docker Node API server | `docker/local-api/`, `docker/build-handlers.mjs` | `npm run test:sidecar` |
 | CI workflows | `.github/workflows/`; [CI/CD table](ARCHITECTURE.md#11-cicd) | Add or update each workflow's table entry. Run `npm run docs:check` and validate the changed workflow before pushing. The pre-push hook enforces the documentation check for workflow changes |
-| Committed derived files (catalogs, source attribution, legal digests, indexes) | `scripts/generate-derived.mjs`; [derived files](CONTRIBUTING.md#derived-files) | `npm run generate`, then commit what it rewrote |
+| Committed derived files (catalogs, source attribution, indexes) | `scripts/generate-derived.mjs`; [derived files](CONTRIBUTING.md#derived-files) | `npm run generate`, then commit what it rewrote |
 | Tests and documentation | `tests/`, `docs/`; [verification guide](CONTRIBUTING.md#verify-the-changed-path) | Relevant existing test or docs check, `git diff --check` |
-| Claude Code setup | `CLAUDE.md`, `.claude/` | Check that every path, symbol, and command it names exists; run the tests that read it (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/agent-page.test.mjs`, `tests/sentry-triage-skill.test.mjs`, `tests/engineering-docs.test.mjs`) and `npm run docs:check` |
+| Claude Code setup | `CLAUDE.md`, `.claude/` | Check that every path, symbol, and command it names exists; run the tests that read it (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/sentry-triage-skill.test.mjs`, `tests/engineering-docs.test.mjs`) and `npm run docs:check` |
 
-For public documents and API collections, use `https://www.worldmonitor.app` for website and documentation links. Keep MCP and OAuth endpoint identities on the apex host. Run `node --test tests/agent-corpus-canonical-host.test.mjs` after changing published URLs.
+The deployment is private (refactor 1c-3): it publishes no documentation site, agent corpus (`llms.txt`, markdown twins, `.well-known` cards) or SEO output, and `public/robots.txt` disallows all crawling. Do not add public pages; engineering documentation goes in `docs/engineering/`.
 
 ## Landmarks
 
@@ -149,7 +147,7 @@ Find a suite by subject with `ls tests/ | grep <subject>` before searching the t
 
 **`shared/` vs `src/shared/`.** The top-level `shared/` holds logic that both the browser and the server must apply the same way (e.g. country headline matching, threat classification). Keep a single copy; do not reimplement it on one side.
 
-**Other surfaces.** `docs/` (Mintlify public site, removed with the public outputs in refactor 1c; engineering records live in `docs/engineering/`, mapped by [its README](docs/engineering/README.md)) and `skills/` (published product recipes, distinct from the `.claude/skills/` engineering skills; also removed in 1c). The SDKs, CLI, MCP server and agent-client plugins were removed in refactor Phase 1c.
+**Other surfaces.** `docs/` holds only `docs/engineering/` (engineering records, mapped by [its README](docs/engineering/README.md)) and `docs/api/` (OpenAPI generated by `make generate`). The Mintlify public site, the published `skills/` recipes, the SDKs, CLI, MCP server, agent-client plugins and the public agent and SEO outputs were removed in refactor Phase 1c.
 
 ## Critical boundaries
 
@@ -170,7 +168,7 @@ The browser import direction is `types -> config -> services -> lite`, and `src/
 - For Sentry events, invoke the `sentry-triage` skill. Its default is read-only triage.
 - To deliver a change from a worktree, the user runs `/ship`. It verifies, commits signed, pushes `<type>/<slug>`, opens the PR on `thangnc/worldmonitor`, and watches CI. It never merges or deploys on its own.
 - After changing `api/`, `server/`, `scripts/seed-*`, or `src/services/`, run the `edge-contract-reviewer` subagent on the diff before opening a PR.
-- Before changing an area, check the [engineering knowledge base](docs/engineering/README.md). Grep [solutions/INDEX.md](docs/engineering/solutions/INDEX.md) for the area, symbol, or symptom: it lists every lesson by the area where the fix lives. [plans/INDEX.md](docs/engineering/plans/INDEX.md) shows which plans shipped. Use [CONCEPTS.md](CONCEPTS.md) for shared terms and [design philosophy](docs/architecture.mdx) for design decisions.
+- Before changing an area, check the [engineering knowledge base](docs/engineering/README.md). Grep [solutions/INDEX.md](docs/engineering/solutions/INDEX.md) for the area, symbol, or symptom: it lists every lesson by the area where the fix lives. [plans/INDEX.md](docs/engineering/plans/INDEX.md) shows which plans shipped. Use [CONCEPTS.md](CONCEPTS.md) for shared terms and [design philosophy](docs/engineering/architecture/design-philosophy.md) for design decisions.
 - When a session teaches a durable repo convention or exposes a trap, record it with the `learn` skill (`/learn`): a lesson in `docs/engineering/solutions/`, a line in the matching `.claude/rules/` file, or a term in CONCEPTS.md. Personal memory is not enough.
 
 Run the smallest meaningful proof first. Preserve useful regression coverage. Run heavy checks sequentially. Report failures honestly. Keep locally verified, PR ready, merged, deployed, observed in production, and acceptance complete as separate claims.

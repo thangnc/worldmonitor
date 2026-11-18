@@ -265,15 +265,10 @@
       "host": "agentskills.io",
       "provider": "agentskills.io",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Provider terms for this upstream API/dataset; verify before redistribution",
       "attribution": "Credit agentskills.io and link to the original upstream API/dataset.",
-      "status": "terms-review",
-      "references": [
-        {
-          "path": "api/skills/fetch-agentskills.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "agsi.gie.eu",
@@ -4762,9 +4757,6 @@
       "status": "excluded",
       "references": [
         {
-          "path": "api/download.js"
-        },
-        {
           "path": "api/health.js"
         },
         {
@@ -7561,9 +7553,6 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "scripts/build-chokepoint-transit-snapshot.mjs"
-        },
-        {
           "path": "scripts/seed-oil-trade-series.mjs"
         }
       ]
@@ -8399,15 +8388,10 @@
       "host": "schemas.agentskills.io",
       "provider": "schemas.agentskills.io",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/build-agent-skills-index.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "scmp.com",
@@ -8674,9 +8658,6 @@
       "attribution": "Credit services9.arcgis.com and link to the original upstream API/dataset.",
       "status": "terms-review",
       "references": [
-        {
-          "path": "scripts/build-chokepoint-transit-snapshot.mjs"
-        },
         {
           "path": "scripts/seed-oil-trade-series.mjs"
         },
@@ -10478,25 +10459,13 @@
       "status": "excluded",
       "references": [
         {
-          "path": "api/_agent-metadata.ts"
-        },
-        {
-          "path": "api/og-story.js"
-        },
-        {
           "path": "api/seed-contract-probe.ts"
-        },
-        {
-          "path": "api/story.js"
         },
         {
           "path": "scripts/_country-stock-index-moex.mjs"
         },
         {
           "path": "scripts/_upstash-rest.mjs"
-        },
-        {
-          "path": "scripts/build-agent-skills-index.mjs"
         },
         {
           "path": "scripts/capture-mcp-fixture.mjs"
@@ -10611,15 +10580,10 @@
       "host": "worldmonitor.mintlify.dev",
       "provider": "worldmonitor.mintlify.dev",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "src/config/docs-locale-seo.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "wublockchain.com",
@@ -14546,16 +14510,7 @@
           "path": "api/not-found.ts"
         },
         {
-          "path": "api/story.js"
-        },
-        {
-          "path": "scripts/build-agent-skills-index.mjs"
-        },
-        {
           "path": "scripts/build-open-data-chokepoints.mjs"
-        },
-        {
-          "path": "scripts/build-openapi-json.mjs"
         },
         {
           "path": "scripts/build-un-m49-regions.mjs"
@@ -14571,12 +14526,6 @@
         },
         {
           "path": "scripts/freeze-resilience-ranking.mjs"
-        },
-        {
-          "path": "scripts/generate-sandbox-fixtures.mjs"
-        },
-        {
-          "path": "scripts/github-stars-snapshot.mjs"
         },
         {
           "path": "scripts/lib/email-unsubscribe.cjs"
@@ -14603,19 +14552,10 @@
           "path": "scripts/syndication-candidates.mjs"
         },
         {
-          "path": "scripts/verify-agent-readiness.mjs"
-        },
-        {
           "path": "server/_shared/deprecation-policy.ts"
         },
         {
           "path": "server/worldmonitor/intelligence/v1/_country-brief-evidence.ts"
-        },
-        {
-          "path": "src/config/docs-locale-seo.ts"
-        },
-        {
-          "path": "src/config/schema-graph-ids.ts"
         }
       ]
     },

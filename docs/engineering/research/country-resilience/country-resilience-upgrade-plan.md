@@ -103,7 +103,7 @@ citation-grade index and a live operational monitor as one object"*.)
   of the scorer code + retrieval date + URL + SHA of every third-party file
   used.
 - Reproducibility script under
-  `docs/methodology/country-resilience-index/reference-edition/2026/recompute.mts`
+  `docs/engineering/methodology/country-resilience-index/reference-edition/2026/recompute.mts`
   that regenerates the sampled published score-cache values from the manifest.
 - Published as signed JSON + CSV + methodology PDF.
 - **This is what external citations point at.**
@@ -508,7 +508,7 @@ values in this repo.
   a review flag because it can mean the index adds little new information.
 - Wrong-sign or below-minimum correlation fails the generation run. Meaningful
   divergences are investigated and annotated in
-  `docs/methodology/country-resilience-index/benchmark-outliers.md`.
+  `docs/engineering/methodology/country-resilience-index/benchmark-outliers.md`.
 - The outlier commentary is **part of the product**: analysts trust indices
   that explain their disagreements, not ones that hide them.
 - The benchmark **does not** publish a single pass/fail number. Each of the
@@ -553,7 +553,7 @@ top-50 country by more than 5 rank positions.
 
 All three scripts run as Railway cron jobs (weekly, bundled if service count
 is a concern, memory: `railway_seed_bundle_pattern`) and publish results to
-`docs/methodology/country-resilience-index/validation/*.json`, committed and
+`docs/engineering/methodology/country-resilience-index/validation/*.json`, committed and
 version-controlled so history is auditable.
 
 ### Explanatory product (Phase 3)
@@ -681,7 +681,7 @@ sensitivity suite, new indicators live.
   retired from public artifacts.
   Output: Spearman + Pearson, outlier list, stored as
   `resilience:benchmark:external:v1` and committed JSON under
-  `docs/methodology/country-resilience-index/validation/`.
+  `docs/engineering/methodology/country-resilience-index/validation/`.
 - **T2.5** Outcome backtest script
   `scripts/backtest-resilience-outcomes.mjs`. Define event set,
   hold-out 2024-2025, compute AUC, target 0.75 with a 0.03 gate width.
@@ -799,7 +799,7 @@ tools.
   cycle.
 - **T3.11** First cut of the **2026 Reference Edition** shipped as a signed
   JSON + CSV + PDF bundle under
-  `docs/methodology/country-resilience-index/reference-edition/2026/` with a
+  `docs/engineering/methodology/country-resilience-index/reference-edition/2026/` with a
   reproducibility script and country-sliced snapshot manifest.
 
 **Phase 3 acceptance:**
@@ -1075,7 +1075,7 @@ gap: *"the licensing section is too loose"*.)
 2. **Attribution templates** for every comparator-touching artifact
    (benchmark JSON, outlier commentary, methodology page). Enforced by a
    linter that checks for attribution headers on any file under
-   `docs/methodology/country-resilience-index/validation/`.
+   `docs/engineering/methodology/country-resilience-index/validation/`.
 3. **License headers** on every file in that directory declaring the
    upstream comparator license.
 4. **FSI carve-out**: public artifacts redact FSI values. Internal
@@ -1143,9 +1143,9 @@ are complete.
 
 - `docs/methodology/country-resilience-index.mdx`, the canonical methodology
   page, promoted from current draft in Phase 1.
-- `docs/methodology/country-resilience-index/benchmark-outliers.md`, outlier
+- `docs/engineering/methodology/country-resilience-index/benchmark-outliers.md`, outlier
   commentary, updated per cross-index run.
-- `docs/methodology/country-resilience-index/validation/`, JSON artifacts
+- `docs/engineering/methodology/country-resilience-index/validation/`, JSON artifacts
   from weekly Railway cron, committed so the history is auditable.
 - `docs/api/ResilienceService.openapi.yaml`, schema v2.0, with v1.0 fields
   marked deprecated during the transition window.
@@ -1181,7 +1181,7 @@ are complete.
 - `src/components/ResilienceWidget.ts` + `src/components/resilience-widget-utils.ts`
 - `docs/api/ResilienceService.openapi.yaml`
 - `docs/methodology/resilience-index.md`, current draft (to be promoted).
-- `docs/country-instability-index.mdx`, CII reference template.
+- `docs/engineering/methodology/country-instability-index.md`, CII reference template.
 - `docs/plans/2026-03-29-feat-country-resilience-score-plan.md`, v1 plan.
 - `docs/plans/2026-04-07-002-fix-resilience-v3-phase1-coverage-correctness-plan.md`
 - `docs/plans/2026-04-09-001-fix-resilience-overall-score-formula-plan.md`

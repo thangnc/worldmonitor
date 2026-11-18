@@ -183,21 +183,8 @@ describe('digest wiring (source-textual)', () => {
   });
 });
 
-describe('API and methodology surfaces', () => {
-  const credDoc = readSrc('docs/methodology/news-credibility.mdx');
-  const digestDoc = readSrc('docs/methodology/news-digest-and-briefing.mdx');
+describe('API surface', () => {
   const openApiYaml = readSrc('docs/api/NewsService.openapi.yaml');
-
-  it('methodology page documents weights, high-risk cap, and distinctness', () => {
-    assert.match(credDoc, /Propaganda risk \| `0\.50`/);
-    assert.match(credDoc, /Source tier \| `0\.30`/);
-    assert.match(credDoc, /Independent corroboration \| `0\.20`/);
-    assert.match(credDoc, /capped at `40`/);
-    assert.match(credDoc, /substituted for newsworthiness/);
-    assert.match(digestDoc, /## Credibility Score/);
-    assert.match(digestDoc, /Propaganda risk \| `0\.50`/);
-    assert.match(digestDoc, /capped at `40`/);
-  });
 
   it('OpenAPI NewsItem.credibilityScore is distinct from importanceScore', () => {
     assert.match(openApiYaml, /credibilityScore:\n\s+type: integer/s);

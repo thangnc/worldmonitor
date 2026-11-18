@@ -42,7 +42,7 @@ afterEach(() => {
 });
 
 function requestWith(headers) {
-  return new Request('https://worldmonitor.app/api/skills/fetch-agentskills', { headers });
+  return new Request('https://worldmonitor.app/api/infrastructure/v1/reverse-geocode', { headers });
 }
 
 describe('unproven Cloudflare client IP (#8402)', () => {
@@ -103,43 +103,6 @@ describe('IP-scoped endpoint rate limits reject unproven CF client IP (#8402)', 
     assert.equal(await checkRateLimit(request, {}, { principalUserId: 'user_test', failClosed: false }), null);
   });
 
-  for (const [path, module] of [
-    ['/api/skills/fetch-agentskills', '../api/skills/fetch-agentskills.ts'],
-  ]) {
-    it(`rejects unproven CF headers through the real ${path} handler`, async () => {
-      process.env.CF_EDGE_PROOF_SECRET = 'edge-secret-xyz';
-      let fetches = 0;
-      globalThis.fetch = async () => {
-        fetches += 1;
-        throw new Error('This rejection must not call Redis or an upstream');
-      };
-      const { default: handler } = await import(module);
-      const response = await handler(new Request(`https://worldmonitor.app${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '203.0.113.7' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 7, method: 'tools/list' }),
-      }));
-      assert.equal(response.status, 403);
-      assert.equal(fetches, 0);
-      assert.equal(response.headers.get('X-RateLimit-Mode'), 'edge-proof');
-    });
-  }
-
-  it('keeps standalone direct-origin and proven Cloudflare requests usable', async () => {
-    process.env.CF_EDGE_PROOF_SECRET = 'edge-secret-xyz';
-    const { default: handler } = await import('../api/skills/fetch-agentskills.ts');
-    for (const proofHeaders of [
-      {},
-      { 'cf-connecting-ip': '203.0.113.7', 'x-wm-edge-proof': 'edge-secret-xyz' },
-    ]) {
-      const response = await handler(new Request('https://worldmonitor.app/api/skills/fetch-agentskills', {
-        method: 'POST', headers: proofHeaders, body: '{}',
-      }));
-      assert.equal(response.status, 400);
-      assert.equal((await response.json()).error, 'Provide url or id');
-    }
-  });
-
   it('returns 403 instead of trusting a forged cf-connecting-ip', async () => {
     process.env.CF_EDGE_PROOF_SECRET = 'edge-secret-xyz';
     // Intentionally omit Upstash env: the edge-proof gate must fire before the
@@ -147,7 +110,7 @@ describe('IP-scoped endpoint rate limits reject unproven CF client IP (#8402)', 
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
 
-    const pathname = '/api/skills/fetch-agentskills';
+    const pathname = '/api/infrastructure/v1/reverse-geocode';
     assert.ok(pathname in ENDPOINT_RATE_POLICIES, 'fixture path must carry an endpoint policy');
 
     const response = await checkEndpointRateLimit(
@@ -180,7 +143,7 @@ describe('IP-scoped endpoint rate limits reject unproven CF client IP (#8402)', 
         'cf-connecting-ip': '203.0.113.7',
         'x-real-ip': '198.51.100.9',
       }),
-      '/api/skills/fetch-agentskills',
+      '/api/infrastructure/v1/reverse-geocode',
       {},
       { principalUserId: 'user_test_principal' },
     );

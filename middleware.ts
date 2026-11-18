@@ -1,40 +1,10 @@
 import { isKnownPublicPagePath, originNotFoundResponse } from './src/config/agent-not-found';
-import {
-  DOCS_PUBLIC_ORIGIN,
-  DOCS_UPSTREAM_ORIGIN,
-  DOCS_UPSTREAM_TIMEOUT_MS,
-  isDocsFullDocumentRequest,
-  isDocsHtmlDocumentPath,
-  rewriteDocsLocaleHtml,
-  shouldTransformDocsUpstreamHtml,
-} from './src/config/docs-locale-seo';
-import { getRootlessDocsDestination } from './src/config/docs-root-redirects';
 import { shouldRedirectToLite } from './src/config/lite-route';
 import agentRequestPolicy from './shared/agent-request-policy.json';
-
-function userAgentTokenPattern(tokens: readonly string[]): RegExp {
-  return new RegExp(`(?:^|[^a-z0-9-])(?:${tokens.join('|')})(?:$|[^a-z0-9-])`, 'i');
-}
-
-// AI crawlers and assistant fetchers allowed to read `/api/**/*.md` twins past
-// the bot gate. The shared agent list plus the tokens it does not carry; that
-// list also drives the Cloudflare firewall expressions, so it is not widened
-// here. Every other client meets the same gate as the twin's direct route.
-const MARKDOWN_TWIN_CRAWLER_UA = userAgentTokenPattern([
-  ...agentRequestPolicy.userAgents,
-  'anthropic-ai',
-  'Claude-User',
-  'CCBot',
-  'OAI-SearchBot',
-]);
 
 const BOT_UA =
   /bot|crawl|spider|slurp|archiver|wget|curl\/|python-requests|scrapy|httpclient|go-http|java\/|libwww|perl|ruby|php\/|ahrefsbot|semrushbot|mj12bot|dotbot|baiduspider|yandexbot|sogou|bytespider|petalbot|gptbot|claudebot|ccbot/i;
 
-const SOCIAL_PREVIEW_UA =
-  /twitterbot|facebookexternalhit|linkedinbot|slackbot|telegrambot|whatsapp|discordbot|redditbot/i;
-
-const SOCIAL_PREVIEW_PATHS = new Set(['/api/story', '/api/og-story']);
 const LEGACY_DASHBOARD_ROOT_QUERY_KEYS = ['lat', 'lon', 'zoom', 'view', 'timeRange', 'layers', 'c', 'country', 'chokepoint'] as const;
 const UNBOUNDED_DASHBOARD_ROOT_QUERY_KEYS = ['lat', 'lon', 'zoom'] as const;
 
@@ -46,31 +16,11 @@ const UNBOUNDED_DASHBOARD_ROOT_QUERY_KEYS = ['lat', 'lon', 'zoom'] as const;
 //   UptimeRobot + ops curl. Was blocked by the curl/bot UA regex before this
 //   exception landed (Vercel log 2026-04-15: "Middleware 403 Forbidden" on
 //   /api/seed-contract-probe).
-// - /api/llms.txt: static, intentionally-public agent-discovery document
-//   (the section-level llms.txt for the developer/API surface, served from
-//   public/api/llms.txt). It MUST bypass the bot gate — AI crawlers (ClaudeBot,
-//   GPTBot, PerplexityBot, CCBot, …) are the entire audience for an llms.txt,
-//   yet every one of those UAs matches BOT_UA and would otherwise 403.
-// - /api/download.md: curated static markdown twin of GET /api/download.
-//   Kept on the exact allowlist so a future glob refactor cannot drop the
-//   sampled URL. Other GET/HEAD /api/**/*.md twins pass only for AI crawlers
-//   or when their sibling is on this list (isMarkdownTwinBypass() below); a
-//   twin renders its sibling, so a generic script gets the sibling's 403.
 const PUBLIC_API_PATHS = new Set([
   '/api/version',
   '/api/health',
   '/api/seed-contract-probe',
-  '/api/llms.txt',
-  '/api/download.md',
 ]);
-
-function isMarkdownTwinBypass(pathname: string, method: string, ua: string): boolean {
-  if (method !== 'GET' && method !== 'HEAD') return false;
-  if (!pathname.startsWith('/api/') || !pathname.endsWith('.md')) return false;
-  if (pathname.includes('..') || pathname.includes('//')) return false;
-  if (pathname.length <= '/api/.md'.length) return false;
-  return PUBLIC_API_PATHS.has(pathname.slice(0, -3)) || MARKDOWN_TWIN_CRAWLER_UA.test(ua);
-}
 
 const SOCIAL_IMAGE_UA =
   /Slack-ImgProxy|Slackbot|twitterbot|facebookexternalhit|linkedinbot|telegrambot|whatsapp|discordbot|redditbot/i;
@@ -112,8 +62,8 @@ const INDEX_NOISE_QUERY_KEYS = new Set([
  *    for every one of them, so a crawler loses nothing by going straight there.
  *    Note this collapse reaches www only: Vercel applies vercel.json
  *    `redirects` before middleware, and the variant hosts have their own
- *    `/` -> `/dashboard` host redirect, so on those hosts robots.variant.txt
- *    is what keeps a crawler off the space (probed against production).
+ *    `/` -> `/dashboard` host redirect; robots.txt now disallows every
+ *    path on every host.
  * Bounded root entity links also move to `/dashboard`, retaining their state
  * in the same hop as attribution cleanup.
  *
@@ -175,7 +125,6 @@ export default function middleware(request: Request) {
   const url = new URL(request.url);
   const ua = request.headers.get('user-agent') ?? '';
   const path = url.pathname;
-  const host = (request.headers.get('host') ?? url.hostname).toLowerCase().replace(/\.+$/, '').replace(/:\d+$/, '');
 
   // Bots indexing ?ref= / utm_* dashboard URLs as distinct pages (#7380), and
   // map-state deep links as an unbounded redirect space (#7660). Humans still
@@ -239,20 +188,6 @@ export default function middleware(request: Request) {
   }
 
   if (request.method === 'GET' || request.method === 'HEAD') {
-    const docsDestination = getRootlessDocsDestination(path);
-    if (docsDestination) {
-      const canonicalUrl = new URL(docsDestination);
-      canonicalUrl.search = url.search;
-      return Response.redirect(canonicalUrl.toString(), 308);
-    }
-
-    // Mintlify rewrite cannot set zh-Hans <html lang> or reciprocal hreflang
-    // for /docs/zh/* (issue #7378). Proxy full-document HTML only — leave RSC
-    // flights and static assets on the direct Mintlify rewrite.
-    if (isDocsHtmlDocumentPath(path) && isDocsFullDocumentRequest(request)) {
-      return proxyDocsLocaleHtml(request, url, host);
-    }
-
     // Real HTTP 404 for unknown pages. Agents get markdown (orank
     // `agent-friendly-404`); browsers that send Accept: text/html get HTML.
     // A rewrite to a static file would 200. Files with extensions skip this
@@ -284,13 +219,8 @@ export default function middleware(request: Request) {
     }
   }
 
-  // Allow social preview bots on exact OG routes only
-  if (SOCIAL_PREVIEW_UA.test(ua) && SOCIAL_PREVIEW_PATHS.has(path)) {
-    return;
-  }
-
   // Public endpoints bypass all bot filtering
-  if (PUBLIC_API_PATHS.has(path) || isMarkdownTwinBypass(path, request.method, ua)) {
+  if (PUBLIC_API_PATHS.has(path)) {
     return;
   }
 
@@ -319,77 +249,6 @@ export default function middleware(request: Request) {
       },
     });
   }
-}
-
-function docsResponseHeaders(upstream: Response, host: string): Headers {
-  const headers = new Headers(upstream.headers);
-  if (host !== new URL(DOCS_PUBLIC_ORIGIN).hostname) {
-    const robots = headers.get('x-robots-tag');
-    headers.set('x-robots-tag', robots ? `noindex, ${robots}` : 'noindex');
-  }
-  const varyParts = new Set(
-    (headers.get('vary') ?? '').split(',').map((part) => part.trim().toLowerCase()).filter(Boolean),
-  );
-  for (const name of ['host', 'accept', 'rsc', 'next-router-state-tree', 'next-router-prefetch']) {
-    varyParts.add(name);
-  }
-  headers.set('vary', [...varyParts].join(', '));
-  return headers;
-}
-
-async function proxyDocsLocaleHtml(request: Request, url: URL, host: string): Promise<Response> {
-  const upstreamUrl = `${DOCS_UPSTREAM_ORIGIN}${url.pathname}${url.search}`;
-  const forwardHeaders = new Headers();
-  for (const name of ['accept', 'accept-language', 'user-agent', 'if-none-match', 'if-modified-since']) {
-    const value = request.headers.get(name);
-    if (value) forwardHeaders.set(name, value);
-  }
-  if (!forwardHeaders.has('user-agent')) {
-    forwardHeaders.set('user-agent', 'WorldMonitorDocsLocaleProxy/1.0');
-  }
-
-  let upstream: Response;
-  let html: string;
-  try {
-    upstream = await fetch(upstreamUrl, {
-      method: request.method,
-      headers: forwardHeaders,
-      redirect: 'manual',
-      signal: AbortSignal.timeout(DOCS_UPSTREAM_TIMEOUT_MS),
-    });
-
-    const contentType = upstream.headers.get('content-type');
-    if (upstream.status !== 304 && (
-      upstream.status !== 200 || !shouldTransformDocsUpstreamHtml(url.pathname, contentType)
-    )) {
-      return upstream;
-    }
-    if (upstream.status === 304 || request.method === 'HEAD') {
-      return new Response(null, {
-        status: upstream.status,
-        statusText: upstream.statusText,
-        headers: docsResponseHeaders(upstream, host),
-      });
-    }
-
-    html = await upstream.text();
-  } catch {
-    return new Response('Docs upstream unavailable', { status: 502 });
-  }
-
-  const rewritten = rewriteDocsLocaleHtml(html, url.pathname);
-  const headers = docsResponseHeaders(upstream, host);
-  // Fetch already decoded the body; hop-by-hop / recomputed framing must not
-  // be forwarded onto the rewritten string response (Mintlify serves br).
-  for (const name of ['content-encoding', 'content-length', 'transfer-encoding', 'connection']) {
-    headers.delete(name);
-  }
-  headers.set('x-wm-docs-locale-seo', '1');
-  return new Response(rewritten, {
-    status: upstream.status,
-    statusText: upstream.statusText,
-    headers,
-  });
 }
 
 export const config = {

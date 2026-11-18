@@ -45,7 +45,7 @@ name: China Decision Parity Live Probe
 #   - push to main touching the audit script, its source-structure helpers, or
 #     this workflow: validates edits on merge.
 #   - workflow_dispatch, optionally against a staging base URL: this is the
-#     "after staging is deployed" step in docs/china-decision-signals.mdx.
+#     "after staging is deployed" step of a China decision-signal change.
 # NOT pull_request: the target is a deployment, not PR code — a PR run could
 # neither exercise its own changes nor fail for reasons the PR caused. The
 # static half already runs on every PR via `npm run test:data`.

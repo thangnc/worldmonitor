@@ -35,7 +35,7 @@ const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
  */
 function makeFixtureCheckout() {
   const dir = mkdtempSync(join(tmpdir(), 'source-attribution-'));
-  for (const root of ['scripts', 'server', 'api', 'src', 'shared', 'docs']) {
+  for (const root of ['scripts', 'server', 'api', 'src', 'shared', 'docs/engineering/architecture']) {
     mkdirSync(join(dir, root), { recursive: true });
   }
   writeFileSync(
@@ -45,14 +45,14 @@ function makeFixtureCheckout() {
   const inventory = scanUpstreamHosts(dir);
   const manifest = buildManifest(inventory, { entries: [], logicalEntries: [] });
   const manifestPath = join(dir, 'shared/source-attribution-manifest.json');
-  const docsPath = join(dir, 'docs/source-attribution.mdx');
+  const docsPath = join(dir, 'docs/engineering/architecture/source-attribution.md');
   const writeManifest = (value) => {
     const serialized = `${JSON.stringify(value, null, 2)}\n`;
     writeFileSync(manifestPath, serialized);
   };
   const writeDocs = (value) => writeFileSync(
     docsPath,
-    `---\ntitle: "Source Attribution"\n---\n\n${renderAttributionSection(inventory, value)}\n`,
+    `# Source Attribution\n\n${renderAttributionSection(inventory, value)}\n`,
   );
   writeManifest(manifest);
   writeDocs(manifest);
@@ -79,10 +79,10 @@ test('source inventory has complete metadata and matches the generated catalog',
   const manifest = loadManifest(rootDir);
   assert.deepEqual(validateManifest(inventory, manifest), []);
 
-  const docs = readFileSync(join(rootDir, 'docs/source-attribution.mdx'), 'utf8');
+  const docs = readFileSync(join(rootDir, 'docs/engineering/architecture/source-attribution.md'), 'utf8');
   const generated = renderAttributionSection(inventory, manifest);
   const actual = matchGeneratedAttributionSection(docs);
-  assert.equal(actual, generated, 'docs/source-attribution.mdx must contain exactly the generated attribution section');
+  assert.equal(actual, generated, 'docs/engineering/architecture/source-attribution.md must contain exactly the generated attribution section');
   assert.match(generated, /\| Provider \| Observed surface \|/);
   for (const forbidden of [
     /\blicen[cs]\w*/i,
@@ -90,22 +90,7 @@ test('source inventory has complete metadata and matches the generated catalog',
     /\bredistribut\w*/i,
     /\bcommercial(?:-|\s+)use\b/i,
   ]) {
-    assert.doesNotMatch(docs, forbidden, `public source attribution docs must omit ${forbidden}`);
-  }
-
-  // Mintlify parses these pages as MDX v3, which rejects `<!--` with
-  // "Unexpected character `!` (U+0021) before name" and fails the whole
-  // deployment. Nothing repo-side catches that, so pin it here.
-  const dataSourcesDocs = readFileSync(join(rootDir, 'docs/data-sources.mdx'), 'utf8');
-  for (const [path, text] of [
-    ['docs/source-attribution.mdx', docs],
-    ['docs/data-sources.mdx', dataSourcesDocs],
-  ]) {
-    assert.equal(
-      text.includes('<!--'),
-      false,
-      `${path} must not contain HTML comments — MDX v3 rejects them; use {/* ... */}`,
-    );
+    assert.doesNotMatch(docs, forbidden, `source attribution docs must omit ${forbidden}`);
   }
 
   const stats = sourceAttributionStats(inventory, manifest);
@@ -1308,9 +1293,9 @@ test('the check gate goes red on manifest, docs, and logical-entry drift', () =>
       );
     }, /source-attribution-manifest\.json is out of date/],
     ['an edited docs table', (f) => {
-      const docsPath = join(f.dir, 'docs/source-attribution.mdx');
+      const docsPath = join(f.dir, 'docs/engineering/architecture/source-attribution.md');
       writeFileSync(docsPath, readFileSync(docsPath, 'utf8').replace('fixture.example', 'fixture.tampered'));
-    }, /source-attribution\.mdx is out of date/],
+    }, /source-attribution\.md is out of date/],
     ['a missing manifest', (f) => rmSync(f.manifestPath), /source-attribution-manifest\.json is missing/],
   ]) {
     const fixture = makeFixtureCheckout();

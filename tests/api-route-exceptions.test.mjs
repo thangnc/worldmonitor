@@ -22,69 +22,10 @@ const ANCHORED_REASON_TERMS = ['tauri', 'sidecar', 'desktop updater'];
 
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 
-const ROUTE_EXPECTATIONS = [
-  {
-    path: 'api/story.js',
-    reasonTerms: ['story', 'html', 'text/html'],
-    sourceTerms: ['story', 'text/html'],
-  },
-  {
-    path: 'api/md-twin.ts',
-    reasonTerms: ['markdown', 'text/markdown'],
-    sourceTerms: ['markdown', 'text/markdown'],
-  },
-];
-
-function assertRouteSpecificException(entry, { path, reasonTerms, sourceTerms }) {
-  assert.equal(entry.path, path);
-  assert.equal(entry.category, 'non-json');
-  for (const term of reasonTerms) {
-    assert.ok(
-      entry.reason.toLowerCase().includes(term),
-      `${path} reason must mention ${term}`,
-    );
-  }
-  const source = readFileSync(resolve(repoRoot, entry.path), 'utf8').toLowerCase();
-  for (const term of sourceTerms) {
-    assert.ok(source.includes(term), `${path} source must mention ${term}`);
-  }
-}
-
 describe('api-route-exceptions manifest', () => {
   it('has a non-empty exceptions array', () => {
     assert.ok(Array.isArray(manifest.exceptions));
     assert.ok(manifest.exceptions.length > 0);
-  });
-
-  for (const expectation of ROUTE_EXPECTATIONS) {
-    it(`${expectation.path} retains its route-specific non-JSON rationale`, () => {
-      const entry = manifest.exceptions.find(({ path }) => path === expectation.path);
-      assert.ok(entry, `missing exception for ${expectation.path}`);
-      assertRouteSpecificException(entry, expectation);
-    });
-  }
-
-  it('rejects category and rationale regressions for route-specific exceptions', () => {
-    const story = manifest.exceptions.find(({ path }) => path === 'api/story.js');
-    const mdTwin = manifest.exceptions.find(({ path }) => path === 'api/md-twin.ts');
-
-    assert.ok(story);
-    assert.ok(mdTwin);
-    assert.throws(() => {
-      assertRouteSpecificException(
-        { ...story, category: 'upstream-proxy' },
-        ROUTE_EXPECTATIONS[0],
-      );
-    });
-    assert.throws(() => {
-      assertRouteSpecificException(
-        {
-          ...mdTwin,
-          reason: 'Agent page proxy returns the sibling page as application/json.',
-        },
-        ROUTE_EXPECTATIONS[1],
-      );
-    });
   });
 
   for (const [idx, entry] of manifest.exceptions.entries()) {

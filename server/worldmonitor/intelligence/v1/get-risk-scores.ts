@@ -70,18 +70,18 @@ import { CII_CLIMATE_ZONE_COUNTRIES } from '../../../../shared/cii-climate-zones
 // ========================================================================
 // Country risk baselines and multipliers
 // ------------------------------------------------------------------------
-// Editorial values — see docs/methodology/cii-risk-scores.mdx for the
+// Editorial values — see docs/engineering/methodology/cii-risk-scores.md for the
 // published table and the rationale. The authoritative coefficient table
 // lives in shared/cii-weights.ts so browser-side scoring and server-side
 // scoring cannot drift.
 //
 // Before any change that can move a score, read
-// docs/methodology/cii-change-brief.md: claim the version in
-// docs/methodology/cii-next.json, run tests/cii-invariants.test.mts and post
+// docs/engineering/methodology/cii-change-brief.md: claim the version in
+// docs/engineering/methodology/cii-next.json, run tests/cii-invariants.test.mts and post
 // scripts/cii-table-diff.mts output for tests/fixtures/cii/.
 // Change protocol when editing coefficient values in shared/cii-weights.ts:
 //   1. Bump CII_FORMULA_VERSION in ./_risk-config.ts if server/API scores shift.
-//   2. Update docs/methodology/cii-risk-scores.mdx in the SAME commit.
+//   2. Update docs/engineering/methodology/cii-risk-scores.md in the SAME commit.
 //   3. Mention the change in CHANGELOG.md (public-facing section).
 // Climate-zone attribution has the same protocol when it changes server/API
 // scores; its canonical map documents that ownership in shared/cii-climate-zones.ts.
@@ -1795,7 +1795,7 @@ export function computeCIIScores(
       computedAt,
       // Disclosure fields (issue #3725) — make the editorial weights and
       // formula version visible on the wire so API clients can detect drift.
-      // See docs/methodology/cii-risk-scores.mdx.
+      // See docs/engineering/methodology/cii-risk-scores.md.
       eventMultiplier: multiplier,
       methodologyVersion: CII_FORMULA_VERSION,
       // Advisory levels can boost/floor CII scores. Keep the level and its
@@ -1818,7 +1818,7 @@ export function computeCIIScores(
 // buildCiiAuxiliarySources, then computeCIIScores), so the fixtures in
 // tests/fixtures/cii/, scripts/cii-table-diff.mts and
 // tests/cii-invariants.test.mts measure the deployed formula. See
-// docs/methodology/cii-change-brief.md before changing any score.
+// docs/engineering/methodology/cii-change-brief.md before changing any score.
 // ========================================================================
 
 export type CiiFloorName = keyof CiiCountryTerms['floors'];
@@ -1874,7 +1874,7 @@ export function computeCiiScoreTable(
 
 export function computeStrategicRisks(ciiScores: CiiScore[]): StrategicRisk[] {
   // Editorial roll-up: see ./_risk-config.ts and
-  // docs/methodology/cii-risk-scores.mdx for rationale and band derivation.
+  // docs/engineering/methodology/cii-risk-scores.md for rationale and band derivation.
   const topN = ciiScores.slice(0, STRATEGIC_RISK_TOP_N);
   const weights = topN.map((_, i) => 1 - i * STRATEGIC_RISK_POSITIONAL_DECAY);
   const totalWeight = weights.reduce((sum, w) => sum + w, 0);

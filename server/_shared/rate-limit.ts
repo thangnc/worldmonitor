@@ -119,7 +119,7 @@ const RATE_LIMIT_FINGERPRINT_SUFFIXES = new Set(['missing-config', 'timeout', 'e
  *
  * Stage strings deliberately embed the caller so the `stage` tag can answer
  * "which routes are affected": `checkEndpointRateLimit:/api/market/v1/list-market-quotes`,
- * `checkScopedRateLimit:/api/skills/fetch-agentskills`. That is right for a tag
+ * `checkScopedRateLimit:<route>`. That is right for a tag
  * and wrong for a fingerprint — Sentry groups by fingerprint, so the raw stage
  * mints one issue PER ROUTE for a single Redis slowdown. With 213 gateway
  * routes behind checkEndpointRateLimit, one incident can open 213 issues; the
@@ -795,16 +795,6 @@ export const ENDPOINT_RATE_POLICIES: Record<string, EndpointRatePolicy> = {
   // Indicator drill-down fans out across the full scorer source graph on a
   // cold per-country cache miss. Match the MCP minute ceiling and fail closed.
   '/api/resilience/v1/get-resilience-indicators': { limit: 60, window: '60 s' },
-  // Agent-skills import proxy (`api/skills/fetch-agentskills.ts`, registered
-  // as `migration-pending` in api/api-route-exceptions.json). Fetches one
-  // skill definition from a fixed three-host allowlist on agentskills.io.
-  // Anonymous by design (the settings importer calls it same-origin before
-  // the user has done anything privileged), so the per-IP minute limit is the
-  // whole abuse defence; 30/min is the provider-proxy budget above, and the
-  // handler also caches the fetched payload so repeat imports never leave our
-  // edge. Enforced in-handler via `checkScopedRateLimit`, same pattern as
-  // /api/docs-mcp. (#6234)
-  '/api/skills/fetch-agentskills': { limit: 30, window: '60 s' },
   // Gateway reverse-geocode RPC (#6432): the second Nominatim caller. Same
   // provider, same shared 0.001-degree grid cache, same egress IPs — must carry
   // the same 60/min budget as the legacy edge route, and it now does. Both are
@@ -1234,8 +1224,8 @@ export async function checkScopedRateLimit(scope: string, limit: number, window:
 
 /**
  * Builds the standard 429 for an availability-first in-handler `checkScopedRateLimit`
- * caller (a top-level edge function that enforces its own budget, e.g.
- * api/skills/fetch-agentskills.ts). Hand-rolling the response drops the IETF
+ * caller (a top-level edge function that enforces its own budget).
+ * Hand-rolling the response drops the IETF
  * RateLimit-* fields that api/_cors.js exposes cross-origin specifically so
  * agents can self-throttle, which is how the same 429 condition ends up with
  * two different header shapes across sibling routes. Takes the Duration rather

@@ -2131,7 +2131,7 @@ describe('CII scoring', () => {
     }
     // STRATEGIC_RISK_SCALE_FACTOR sanity (used in the doc).
     assert.equal(STRATEGIC_RISK_SCALE_FACTOR, 0.7,
-      `STRATEGIC_RISK_SCALE_FACTOR is documented as 0.7 — bump CII_FORMULA_VERSION and update docs/methodology/cii-risk-scores.mdx if changing.`);
+      `STRATEGIC_RISK_SCALE_FACTOR is documented as 0.7 — bump CII_FORMULA_VERSION and update docs/engineering/methodology/cii-risk-scores.md if changing.`);
   });
 
   it('region filter normalizes ISO2 input and omits global strategic risk', () => {
@@ -2259,13 +2259,14 @@ describe('CII scoring', () => {
 
   // ===== Methodology doc drift guard (issue #3725) =====
 
-  it('docs/methodology/cii-risk-scores.mdx lists every CURATED_COUNTRIES code', () => {
+  it('docs/engineering/methodology/cii-risk-scores.md lists every CURATED_COUNTRIES code', () => {
     const docPath = resolve(
       fileURLToPath(new URL('.', import.meta.url)),
       '..',
       'docs',
+      'engineering',
       'methodology',
-      'cii-risk-scores.mdx',
+      'cii-risk-scores.md',
     );
     const doc = readFileSync(docPath, 'utf8');
     const missing: string[] = [];
@@ -2274,7 +2275,7 @@ describe('CII scoring', () => {
       if (!new RegExp(`\\|\\s${code}\\s\\|`).test(doc)) missing.push(code);
     }
     assert.equal(missing.length, 0,
-      `docs/methodology/cii-risk-scores.mdx is missing rows for: ${missing.join(', ')}. Update the methodology doc and bump CII_FORMULA_VERSION.`);
+      `docs/engineering/methodology/cii-risk-scores.md is missing rows for: ${missing.join(', ')}. Update the methodology doc and bump CII_FORMULA_VERSION.`);
   });
 
   it('methodology doc baseline/multiplier columns match BASELINE_RISK and EVENT_MULTIPLIER exactly (numeric drift guard)', () => {
@@ -2291,8 +2292,9 @@ describe('CII scoring', () => {
       fileURLToPath(new URL('.', import.meta.url)),
       '..',
       'docs',
+      'engineering',
       'methodology',
-      'cii-risk-scores.mdx',
+      'cii-risk-scores.md',
     );
     const doc = readFileSync(docPath, 'utf8');
     // Parse the per-country table. Rows look like:
@@ -2330,7 +2332,7 @@ describe('CII scoring', () => {
       }
     }
     assert.equal(drifts.length, 0,
-      `methodology doc drift:\n  ${drifts.join('\n  ')}\nBump CII_FORMULA_VERSION and reconcile docs/methodology/cii-risk-scores.mdx with server BASELINE_RISK / EVENT_MULTIPLIER.`);
+      `methodology doc drift:\n  ${drifts.join('\n  ')}\nBump CII_FORMULA_VERSION and reconcile docs/engineering/methodology/cii-risk-scores.md with server BASELINE_RISK / EVENT_MULTIPLIER.`);
   });
 
   it('every TIER1_COUNTRIES code is listed in the methodology doc (server tables stay in sync)', () => {
@@ -2338,8 +2340,9 @@ describe('CII scoring', () => {
       fileURLToPath(new URL('.', import.meta.url)),
       '..',
       'docs',
+      'engineering',
       'methodology',
-      'cii-risk-scores.mdx',
+      'cii-risk-scores.md',
     );
     const doc = readFileSync(docPath, 'utf8');
     const missing: string[] = [];
@@ -2347,7 +2350,7 @@ describe('CII scoring', () => {
       if (!new RegExp(`\\|\\s${code}\\s\\|`).test(doc)) missing.push(code);
     }
     assert.equal(missing.length, 0,
-      `docs/methodology/cii-risk-scores.mdx is missing rows for TIER1 codes: ${missing.join(', ')}.`);
+      `docs/engineering/methodology/cii-risk-scores.md is missing rows for TIER1 codes: ${missing.join(', ')}.`);
   });
 
   it('methodology doc references the current CII_FORMULA_VERSION', () => {
@@ -2355,8 +2358,9 @@ describe('CII scoring', () => {
       fileURLToPath(new URL('.', import.meta.url)),
       '..',
       'docs',
+      'engineering',
       'methodology',
-      'cii-risk-scores.mdx',
+      'cii-risk-scores.md',
     );
     const doc = readFileSync(docPath, 'utf8');
     assert.ok(doc.includes(`**${CII_FORMULA_VERSION}**`) || doc.includes(`'${CII_FORMULA_VERSION}'`) || doc.includes(`"${CII_FORMULA_VERSION}"`),
@@ -2364,9 +2368,8 @@ describe('CII scoring', () => {
   });
 
   it('methodology doc discloses advisory fallback and CII attribution caveats', () => {
-    const methodologyDoc = readRepoFile('docs/methodology/cii-risk-scores.mdx');
-    const overviewDoc = readRepoFile('docs/country-instability-index.mdx');
-    const dataSourcesDoc = readRepoFile('docs/data-sources.mdx');
+    const methodologyDoc = readRepoFile('docs/engineering/methodology/cii-risk-scores.md');
+    const overviewDoc = readRepoFile('docs/engineering/methodology/country-instability-index.md');
     const riskScoresSource = readRepoFile('server/worldmonitor/intelligence/v1/get-risk-scores.ts');
     const fallbackBlock = riskScoresSource.match(/const ADVISORY_LEVELS_FALLBACK[\s\S]*?\};/)?.[0] ?? '';
     assert.ok(fallbackBlock, 'get-risk-scores.ts must keep the advisory fallback table inspectable.');
@@ -2382,7 +2385,7 @@ describe('CII scoring', () => {
       assert.match(
         methodologyDoc,
         new RegExp(`^\\| \`${code}\` \\| [^|]+ \\| ${label} \\|`, 'm'),
-        `cii-risk-scores.mdx must disclose fallback advisory level for ${code}.`,
+        `cii-risk-scores.md must disclose fallback advisory level for ${code}.`,
       );
     }
 
@@ -2390,16 +2393,6 @@ describe('CII scoring', () => {
       methodologyDoc,
       /live security-advisory feed[\s\S]{0,160}fallback/i,
       'methodology doc must state that live advisory data wins before fallback.',
-    );
-    assert.match(
-      dataSourcesDoc,
-      /Live advisory feed values override the fallback/i,
-      'data-sources doc must state that CII advisory fallback does not override live feed values.',
-    );
-    assert.doesNotMatch(
-      dataSourcesDoc,
-      /consensus bonus/i,
-      'data-sources doc must not preserve the retired server-side consensus bonus claim.',
     );
     assert.match(
       methodologyDoc,
@@ -2431,10 +2424,9 @@ describe('CII scoring', () => {
     );
   });
 
-  it('public CII docs reference the current RPC route and backend-authoritative v3 conflict curve', () => {
+  it('the CII methodology references the current RPC route', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-    const methodologyDoc = readFileSync(resolve(root, 'docs', 'methodology', 'cii-risk-scores.mdx'), 'utf8');
-    const algorithmsDoc = readFileSync(resolve(root, 'docs', 'algorithms.mdx'), 'utf8');
+    const methodologyDoc = readFileSync(resolve(root, 'docs/engineering/methodology/cii-risk-scores.md'), 'utf8');
 
     assert.ok(
       methodologyDoc.includes('GET /api/intelligence/v1/get-risk-scores'),
@@ -2445,59 +2437,12 @@ describe('CII scoring', () => {
       /GET \/api\/intelligence\/risk-scores/,
       'methodology doc must not reference the retired pre-RPC CII route',
     );
-    assert.match(
-      algorithmsDoc,
-      /Authoritative CII scores come from the server-side `GET \/api\/intelligence\/v1\/get-risk-scores` RPC/,
-      'algorithms doc must identify the server RPC as the authoritative CII source',
-    );
-    assert.match(
-      algorithmsDoc,
-      /fallback\/local renderer path after cached backend scores/,
-      'algorithms doc must describe frontend scoring as fallback/local rendering after cached backend scores',
-    );
-    assert.match(
-      algorithmsDoc,
-      /min\(70, log1p\(rawActivity\) \/ log1p\(4000\) \* 70\)/,
-      'algorithms doc must publish the v3 conflict activity cap=70 curve',
-    );
-    assert.doesNotMatch(
-      algorithmsDoc,
-      /server-side score .* uses the same formulas as the frontend/i,
-      'algorithms doc must not overclaim server/frontend formula parity',
-    );
-    assert.doesNotMatch(
-      algorithmsDoc,
-      /Weighted ACLED events .* capped at 50/i,
-      'algorithms doc must not describe the server-authoritative v3 conflict activity cap as 50',
-    );
   });
 
-  it('public docs separate server Strategic Risk headline from panel additive context', () => {
+  it('the CII methodology publishes advisory provenance values', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-    const algorithmsDoc = readFileSync(resolve(root, 'docs', 'algorithms.mdx'), 'utf8');
-    const strategicRiskDoc = readFileSync(resolve(root, 'docs', 'strategic-risk.mdx'), 'utf8');
-    const methodologyDoc = readFileSync(resolve(root, 'docs', 'methodology', 'cii-risk-scores.mdx'), 'utf8');
+    const methodologyDoc = readFileSync(resolve(root, 'docs/engineering/methodology/cii-risk-scores.md'), 'utf8');
 
-    for (const [label, doc] of [
-      ['docs/algorithms.mdx', algorithmsDoc],
-      ['docs/strategic-risk.mdx', strategicRiskDoc],
-    ] as const) {
-      assert.match(
-        doc,
-        /server(?:-published|-side)? Strategic Risk headline|displayed\/server headline/i,
-        `${label} must name the server/displayed headline Strategic Risk score`,
-      );
-      assert.match(
-        doc,
-        /top 5 CII|top-5 CII/i,
-        `${label} must say the server headline comes from the top-5 CII roll-up`,
-      );
-      assert.match(
-        doc,
-        /panel(?:-local)? context|panel context/i,
-        `${label} must distinguish additive panel context from the server headline`,
-      );
-    }
     assert.match(
       methodologyDoc,
       /advisory_provenance[\s\S]*live[\s\S]*fallback[\s\S]*absent/,
@@ -2509,7 +2454,6 @@ describe('CII scoring', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const changelogs = [
       ['CHANGELOG.md', readFileSync(resolve(root, 'CHANGELOG.md'), 'utf8')],
-      ['docs/changelog.mdx', readFileSync(resolve(root, 'docs', 'changelog.mdx'), 'utf8')],
     ] as const;
 
     for (const [label, changelog] of changelogs) {
@@ -2532,7 +2476,6 @@ describe('CII scoring', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const changelogs = [
       ['CHANGELOG.md', readFileSync(resolve(root, 'CHANGELOG.md'), 'utf8')],
-      ['docs/changelog.mdx', readFileSync(resolve(root, 'docs', 'changelog.mdx'), 'utf8')],
     ] as const;
 
     for (const [label, changelog] of changelogs) {
@@ -2582,15 +2525,11 @@ describe('CII scoring', () => {
     }
   });
 
-  it('current public CII docs do not reintroduce pre-v3 stale claims', () => {
+  it('current CII docs do not reintroduce pre-v3 stale claims', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
     const publicDocPaths = [
-      'docs/country-instability-index.mdx',
-      'docs/strategic-risk.mdx',
-      'docs/algorithms.mdx',
-      'docs/overview.mdx',
-      'docs/features.mdx',
-      'docs/methodology/cii-risk-scores.mdx',
+      'docs/engineering/methodology/country-instability-index.md',
+      'docs/engineering/methodology/cii-risk-scores.md',
       'docs/engineering/archive/legacy/DOCUMENTATION.md',
       'docs/engineering/product/COMMUNITY-PROMOTION-GUIDE.md',
     ];
@@ -2634,7 +2573,7 @@ describe('CII scoring', () => {
 
   it('methodology doc publishes the current conflict curve coefficients', () => {
     const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-    const doc = readFileSync(resolve(root, 'docs', 'methodology', 'cii-risk-scores.mdx'), 'utf8');
+    const doc = readFileSync(resolve(root, 'docs/engineering/methodology/cii-risk-scores.md'), 'utf8');
 
     assert.ok(
       doc.includes(`cap = ${CII_CONFLICT_ACTIVITY_CAP}`) && doc.includes(`pivot = ${CII_CONFLICT_ACTIVITY_PIVOT}`),

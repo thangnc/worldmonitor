@@ -16,7 +16,7 @@ import { RESILIENCE_FIXTURES } from './helpers/resilience-fixtures.mts';
 // must not disturb the NO > US > YE country ordering on the committed
 // fixture. Plan §6 sets a ≥0.85 Spearman rank-correlation gate against
 // the live post-PR-0 ranking; that check runs post-merge against real
-// seed data (snapshot committed as docs/snapshots/resilience-ranking-
+// seed data (snapshot committed as docs/engineering/methodology/country-resilience-index/snapshots/resilience-ranking-
 // live-post-pr2-<date>.json). This file is the pre-merge proxy — with
 // only 3 fixture countries, strict ordering preservation is the
 // strongest signal we can compute without live data.

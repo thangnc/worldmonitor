@@ -5,7 +5,7 @@ paths:
 
 # Proto and sebuf codegen
 
-Source of truth: [CONTRIBUTING.md "Working with Sebuf"](../../CONTRIBUTING.md#working-with-sebuf-rpc-framework), the "Proto conventions" section of [docs/adding-endpoints.mdx](../../docs/adding-endpoints.mdx).
+Source of truth: [CONTRIBUTING.md "Working with Sebuf"](../../CONTRIBUTING.md#working-with-sebuf-rpc-framework), the "Proto conventions" section of [docs/engineering/architecture/adding-endpoints.md](../../docs/engineering/architecture/adding-endpoints.md).
 
 ## Rules
 

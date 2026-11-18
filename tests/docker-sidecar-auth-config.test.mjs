@@ -165,7 +165,6 @@ test('shipped nginx configurations separate native management from Docker data A
         .replaceAll('${API_UPSTREAM}', `http://127.0.0.1:${upstream.address().port}`)
         .replaceAll('/usr/share/nginx/html', tempDir)
         .replaceAll('/etc/nginx/security_headers.conf', resolve(root, 'docker/nginx-security-headers.conf'))
-        .replaceAll('/etc/nginx/embed_security_headers.conf', resolve(root, 'docker/nginx-embed-security-headers.conf'))
         .replaceAll('/etc/nginx/oauth_authorize_security_headers.conf', resolve(root, 'docker/nginx-oauth-authorize-security-headers.conf'))
         .replaceAll('/etc/nginx/youtube_embed_security_headers.conf', resolve(root, 'docker/nginx-youtube-embed-security-headers.conf'))
         .replaceAll('/dev/stderr', join(tempDir, 'logs/error.log'))
