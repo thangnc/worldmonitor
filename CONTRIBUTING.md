@@ -48,11 +48,11 @@ The web app is the Lite UI (`src/lite/`, served at `/lite`). Refactor Phase 1d r
 | Directory | Purpose |
 |---|---|
 | `src/components/` | UI components |
-| `src/services/` | Data fetching modules — sebuf client wrappers, AI, signal analysis |
-| `src/config/` | Static data and route config (geo, military, ports, Lite routes) |
+| `packages/client/services/` | Data fetching modules — sebuf client wrappers, AI, signal analysis |
+| `packages/client/config/` | Static data and route config (geo, military, ports, Lite routes) |
 | `packages/contracts/generated/` | Auto-generated sebuf client + server stubs, workspace package `@wm/contracts` (**do not edit by hand**) |
-| `src/types/` | TypeScript type definitions |
-| `src/locales/` | i18n JSON files |
+| `packages/client/types/` | TypeScript type definitions |
+| `packages/client/locales/` | i18n JSON files |
 | `src/workers/` | Web Workers for analysis |
 | `packages/server/` | Sebuf handler implementations |
 | `api/` | Vercel Edge Functions (sebuf gateway + legacy endpoints) |
@@ -435,11 +435,11 @@ This repository is developed with [Claude Code](https://claude.com/claude-code),
 
 ### File Organization
 
-- Static layer/geo data and route config go in `src/config/`
+- Static layer/geo data and route config go in `packages/client/config/`
 - Sebuf handler implementations go in `packages/server/worldmonitor/{domain}/v1/`
 - Edge function gateway and legacy endpoints go in `api/`
 - UI components (panels, map, modals) go in `src/components/`
-- Service modules (data fetching, client wrappers) go in `src/services/`
+- Service modules (data fetching, client wrappers) go in `packages/client/services/`
 - Proto definitions go in `packages/contracts/proto/worldmonitor/{domain}/v1/`
 
 ## Working with Sebuf (RPC Framework)
@@ -455,14 +455,14 @@ Sebuf is the project's custom Proto-first HTTP RPC framework — a lightweight a
    - Browser code imports them as `@wm/contracts/generated/...`; `api/`, `packages/server/` and `packages/shared/` use relative paths into `packages/contracts/generated/`
 3. **Handlers** in `packages/server/worldmonitor/{domain}/v1/handler.ts` implement the service interface
 4. **Gateway** in `api/[domain]/v1/[rpc].ts` registers all handlers and routes requests
-5. **Clients** in `src/services/{domain}/index.ts` wrap the generated client for app use
+5. **Clients** in `packages/client/services/{domain}/index.ts` wrap the generated client for app use
 
 ### Adding a New RPC Method
 
 1. Add the method to the `.proto` service definition
 2. Run `make generate` to regenerate client/server stubs
 3. Implement the handler method in the domain's `handler.ts`
-4. The client stub is auto-generated — use it from `src/services/{domain}/`
+4. The client stub is auto-generated — use it from `packages/client/services/{domain}/`
 
 Use `make lint` to lint proto files and `make breaking` to check for breaking changes against main.
 
@@ -527,7 +527,7 @@ To add a new data layer to the map:
 3. **Generate stubs** — run `make generate`
 4. **Implement the handler** in `packages/server/worldmonitor/{domain}/v1/`
 5. **Register the handler** in `api/[domain]/v1/[rpc].ts` and `vite.config.ts` (for local dev)
-6. **Create the service module** in `src/services/{domain}/` wrapping the generated client
+6. **Create the service module** in `packages/client/services/{domain}/` wrapping the generated client
 7. **Add the layer config** and implement the map renderer following existing layer patterns
 8. **Add to layer toggles** — make it toggleable in the UI
 9. **Document the source** — add it to the [data sources docs](https://www.worldmonitor.app/docs/data-sources)
@@ -543,7 +543,7 @@ For endpoints that deal with non-JSON payloads (XML feeds, binary data, HTML emb
 
 ### Source attribution ledger
 
-Any new outbound host that appears in a URL literal under `scripts/`, `packages/server/`, `api/`, or `src/` is discovered by `scripts/source-attribution.mjs` and needs a curated row in `packages/shared/source-attribution-manifest.json`. This catches contributions that only add data — a feed URL, an MCP preset in `src/services/mcp-store.ts` — with no obvious link to the ledger:
+Any new outbound host that appears in a URL literal under `scripts/`, `packages/server/`, `api/`, `src/`, or `packages/client/` is discovered by `scripts/source-attribution.mjs` and needs a curated row in `packages/shared/source-attribution-manifest.json`. This catches contributions that only add data — a feed URL, an MCP preset in `src/services/mcp-store.ts` — with no obvious link to the ledger:
 
 ```bash
 npm run sources:check     # fails with "missing manifest entry for <host>"

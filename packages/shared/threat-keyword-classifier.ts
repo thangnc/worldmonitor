@@ -14,16 +14,16 @@
  * `window`, or any browser global, so the server bundles it as-is.
  */
 
-/** Mirrors `ThreatLevel` in src/types — see the assertion in src/services/threat-classifier.ts. */
+/** Mirrors `ThreatLevel` in packages/client/types — see the assertion in src/services/threat-classifier.ts. */
 export type ThreatLevel = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
-/** Mirrors `EventCategory` in src/types — see the assertion in src/services/threat-classifier.ts. */
+/** Mirrors `EventCategory` in packages/client/types — see the assertion in src/services/threat-classifier.ts. */
 export type EventCategory =
   | 'conflict' | 'protest' | 'disaster' | 'diplomatic' | 'economic'
   | 'terrorism' | 'cyber' | 'health' | 'environmental' | 'military'
   | 'crime' | 'infrastructure' | 'tech' | 'general';
 
-/** Mirrors `ThreatClassification` in src/types — see the assertion in src/services/threat-classifier.ts. */
+/** Mirrors `ThreatClassification` in packages/client/types — see the assertion in src/services/threat-classifier.ts. */
 export interface ThreatClassification {
   level: ThreatLevel;
   category: EventCategory;

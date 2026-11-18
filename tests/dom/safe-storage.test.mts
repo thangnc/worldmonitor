@@ -8,7 +8,7 @@ import {
   safeStorageRemoveChecked,
   safeStorageSet,
   safeStorageSetChecked,
-} from '@/utils/safe-storage';
+} from '@wm/client/utils/safe-storage';
 
 /** Android WebView with DOM storage disabled: the property itself is null. */
 function stubNullStorage(): void {

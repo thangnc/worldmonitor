@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
 import { DIRECT_LLM_GATEWAY_QUOTA_PATHS } from '../packages/server/_shared/direct-llm-quota.ts';
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 
 // ---------------------------------------------------------------------------
 // Why this test exists
@@ -63,7 +63,7 @@ const DIRECT_LLM_PREMIUM_BYPASS_ALLOWLIST: Record<string, string> = {
     'wms_ cookie, so the path cannot join PREMIUM_RPC_PATHS. Spend-bearing ' +
     'summarize calls opt into premiumFetch with forcePremium instead of gating ' +
     'the whole path, and session recovery is bypassed per-request via the ' +
-    'premium-intent marker (src/services/premium-intent.ts).',
+    'premium-intent marker (packages/client/services/premium-intent.ts).',
 };
 
 // ---------------------------------------------------------------------------
@@ -152,7 +152,7 @@ describe('premium-paths guard — every premium-gated direct-edge endpoint is co
           ``,
           `If a browser caller uses premiumFetch (or wraps a generated client`,
           `in premiumFetch), add ${JSON.stringify(route)} to`,
-          `src/shared/premium-paths.ts so the Clerk Bearer is attached.`,
+          `packages/client/shared/premium-paths.ts so the Clerk Bearer is attached.`,
           `Otherwise every Pro user without a tester key will see 403.`,
           ``,
           `If the browser caller deliberately bypasses premiumFetch (plain`,

@@ -11,7 +11,7 @@
  * country-intel) which was fixed manually because there was no enforcement.
  *
  * How it works:
- *   1. Dynamic `import()` of PREMIUM_RPC_PATHS from src/shared/premium-paths.ts
+ *   1. Dynamic `import()` of PREMIUM_RPC_PATHS from packages/client/shared/premium-paths.ts
  *      (via tsx, same pattern as enforce-rate-limit-policies.mjs) → set of
  *      premium HTTP paths. Live import means reformatting the source literal
  *      can never desync the lint from the runtime (#3287 follow-up).
@@ -36,9 +36,10 @@ import ts from 'typescript';
 import { isMainModule } from './lib/main-module.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const PREMIUM_PATHS_SRC = join(ROOT, 'src/shared/premium-paths.ts');
+const PREMIUM_PATHS_SRC = join(ROOT, 'packages/client/shared/premium-paths.ts');
 const GEN_CLIENT_DIR = join(ROOT, 'packages/contracts/generated/client');
-const SRC_DIR = join(ROOT, 'src');
+// Browser source: the Lite UI (src/) and the modules it builds on (packages/client/).
+const SRC_DIRS = [join(ROOT, 'src'), join(ROOT, 'packages/client')];
 const PREMIUM_FETCH_SRC = join(ROOT, 'src/services/premium-fetch.ts');
 
 /**
@@ -251,7 +252,7 @@ function loadClientClassMap() {
 
 function collectSourceFiles() {
   const out = [];
-  walk(SRC_DIR, (file) => {
+  for (const dir of SRC_DIRS) walk(dir, (file) => {
     if (file.startsWith(GEN_CLIENT_DIR)) return;
     if (!/\.(ts|tsx)$/.test(file)) return;
     if (file.endsWith('.d.ts')) return;
@@ -472,9 +473,9 @@ async function main() {
       console.error('');
     }
     console.error('Each ServiceClient that calls a method whose path is in');
-    console.error('src/shared/premium-paths.ts PREMIUM_RPC_PATHS must be constructed with');
+    console.error('packages/client/shared/premium-paths.ts PREMIUM_RPC_PATHS must be constructed with');
     console.error('  { fetch: premiumFetch }');
-    console.error('imported from @/services/premium-fetch.\n');
+    console.error('(a fetch wrapper that sends the caller\'s credentials).\n');
     console.error('Why: globalThis.fetch sends no auth header, so signed-in browser pros');
     console.error('without a WORLDMONITOR_API_KEY get a 401 the generated client swallows');
     console.error('into the empty fallback. premiumFetch injects WM key / Clerk bearer when');
@@ -491,7 +492,7 @@ async function main() {
   }
 
   console.log(
-    `\u2713 premium-fetch parity clean: ${clientClassMap.size} ServiceClient classes scanned, ${premiumPaths.size} premium paths checked, ${files.length} src/ files analyzed.`,
+    `\u2713 premium-fetch parity clean: ${clientClassMap.size} ServiceClient classes scanned, ${premiumPaths.size} premium paths checked, ${files.length} src/ and packages/client/ files analyzed.`,
   );
 }
 

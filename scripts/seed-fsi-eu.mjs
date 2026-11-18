@@ -37,7 +37,7 @@ const FSI_EU_TTL = 259200;
 //    without false-positiving.
 //
 // CANONICAL source of the 14-day threshold. The server RPC + panel mirror it
-// via src/shared/ciss-staleness.ts (the seeder is plain .mjs and cannot be
+// via packages/server/_shared/ciss-staleness.ts (the seeder is plain .mjs and cannot be
 // imported by TS code); tests/ciss-stale-threshold-consistency.test.mjs
 // asserts the two never drift.
 //

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, it } from 'node:test';
 import { createServer, type ViteDevServer } from 'vite';
-import { CACHE_VERSION } from '../src/utils/summary-cache-key.ts';
+import { CACHE_VERSION } from '../packages/client/utils/summary-cache-key.ts';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };

@@ -3,11 +3,8 @@
   "compilerOptions": {
     "types": ["vite/client", "webmcp-types"],
     "incremental": true,
-    "tsBuildInfoFile": "node_modules/.cache/tsconfig.tsbuildinfo",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "tsBuildInfoFile": "node_modules/.cache/tsconfig.tsbuildinfo"
   },
-  "include": ["src", "packages/shared/indexable-landing-locales.ts", "packages/shared/pwa-precache.ts"],
+  "include": ["src", "packages/client", "packages/shared/indexable-landing-locales.ts", "packages/shared/pwa-precache.ts"],
   "exclude": ["src/workers/ml.worker.ts"]
 }

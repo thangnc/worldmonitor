@@ -75,7 +75,7 @@ so refresh timers stay coarse: fast tier 60 s, slow tier 300 s, on-demand
 keys 120 s, digest 120 s, flights and vessels 60 s only while their view is
 open.
 
-Live streams come from the `src/config/live-video-sources.ts` catalog (HLS
+Live streams come from the `packages/client/config/live-video-sources.ts` catalog (HLS
 first, then YouTube) snapshotted into the CLI by `scripts/sync-tui-catalog.mjs`;
 `youtube.com/channel/UC...` entries resolve through `liveVideoResolved` and
 fall back to the channel's `/live` URL, which `yt-dlp` understands.
@@ -101,7 +101,7 @@ cli/src/tui/
   video.mjs             mpv / yt-dlp / browser fallback, http(s)-only link opener
   web.mjs               `worldmonitor web`: local dev server in a checkout, else hosted
   prefs.mjs             XDG prefs (theme, animations, last view)
-scripts/sync-tui-catalog.mjs   generates data/catalog.generated.json from src/config and public/data
+scripts/sync-tui-catalog.mjs   generates data/catalog.generated.json from packages/client/config and public/data
 ```
 
 Engine rules: every frame renders into a `Screen` cell buffer; only changed

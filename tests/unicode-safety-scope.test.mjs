@@ -30,6 +30,7 @@ describe('unicode safety scan scope', () => {
   it('pins the scanned roots', () => {
     assert.deepEqual(SCAN_ROOTS, [
       'src',
+      'packages/client',
       'packages/server',
       'api',
       'scripts',
@@ -105,8 +106,8 @@ describe('unicode safety locale allowance', () => {
 
   it('allows the joiners Persian and Devanagari require', () => {
     const persian = 'MCP ' + ZWNJ + ' SDK';
-    assert.deepEqual(scanText('src/locales/fa.json', persian), []);
-    assert.deepEqual(scanText('src/locales/hi.json', 'a' + ZWJ + 'b'), []);
+    assert.deepEqual(scanText('packages/client/locales/fa.json', persian), []);
+    assert.deepEqual(scanText('packages/client/locales/hi.json', 'a' + ZWJ + 'b'), []);
   });
 
   it('still rejects bidi controls inside locale data', () => {
@@ -114,13 +115,13 @@ describe('unicode safety locale allowance', () => {
     // reverses a rendered digit run, so "$39.99" can display as something else
     // while the JSON a reviewer reads looks correct.
     const spoofed = '$39.99' + RLO + '/mo';
-    const found = scanText('src/locales/fa.json', spoofed);
+    const found = scanText('packages/client/locales/fa.json', spoofed);
     assert.equal(found.length, 1);
     assert.equal(found[0].kind, 'bidi-control');
   });
 
   it('still rejects other invisible characters inside locale data', () => {
-    const found = scanText('src/locales/fa.json', 'price' + ZWSP + 'tag');
+    const found = scanText('packages/client/locales/fa.json', 'price' + ZWSP + 'tag');
     assert.equal(found.length, 1);
     assert.equal(found[0].kind, 'zero-width');
   });

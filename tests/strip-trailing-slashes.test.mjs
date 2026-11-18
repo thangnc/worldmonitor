@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { isKnownPublicPagePath, suggestNotFoundSection } from '../src/config/agent-not-found.ts';
-import { isPublicSharedRpcRequest } from '../src/shared/public-rpc-cache.ts';
+import { isKnownPublicPagePath, suggestNotFoundSection } from '../packages/server/_shared/agent-not-found.ts';
+import { isPublicSharedRpcRequest } from '../packages/client/shared/public-rpc-cache.ts';
 import { stripTrailingSlashes } from '../packages/shared/strip-trailing-slashes.js';
 
 const SLASH_RUN = 14_000;

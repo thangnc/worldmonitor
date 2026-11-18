@@ -107,7 +107,7 @@ This public reference documents current deployed behavior. Internal planning and
 ## File index (quick reference)
 
 ```
-src/services/
+packages/client/services/
 ├── clerk.ts                  # Clerk init + token cache
 ├── auth-state.ts             # Central auth session
 ├── billing.ts                # Subscription watch + openBillingPortal

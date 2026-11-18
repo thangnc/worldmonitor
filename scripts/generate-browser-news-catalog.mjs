@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Writes the browser's slice of packages/shared/news-catalog.json to
-// src/config/news-catalog.browser.generated.ts. The browser bundle imports
+// packages/client/config/news-catalog.browser.generated.ts. The browser bundle imports
 // the slice so it ships only what the browser serves (no server-only fields,
 // notes or server placements). It is a TS module rather than JSON because Vite
 // inlines large JSON as an escaped JSON.parse string, which costs ~5 KB here.
@@ -22,7 +22,7 @@ import { NEWS_CATALOG, buildDigestWarmCells, buildNewsPoolLayout, projectBrowser
 import { getOutletProfile } from '../packages/server/_shared/outlet-profile.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const BROWSER_CATALOG_PATH = 'src/config/news-catalog.browser.generated.ts';
+export const BROWSER_CATALOG_PATH = 'packages/client/config/news-catalog.browser.generated.ts';
 export const DIGEST_EDITIONS_PATH = 'scripts/shared/news-digest-editions.json';
 export const DIGEST_WARM_CELLS_PATH = 'scripts/shared/news-digest-warm-cells.json';
 export const NEWS_POOL_LAYOUT_PATH = 'packages/shared/news-pool-layout.generated.ts';

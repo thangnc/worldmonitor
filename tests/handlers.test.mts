@@ -42,7 +42,7 @@ import type { USNIFleetReport } from '../packages/contracts/generated/server/wor
 // ---------------------------------------------------------------------------
 import { deduplicateHeadlines } from '../packages/server/worldmonitor/news/v1/dedup.mjs';
 import { buildArticlePrompts, hashString, selectUniqueHeadlinePairs } from '../packages/server/worldmonitor/news/v1/_shared.ts';
-import { MAX_BODY_LEN, buildSummaryCacheKey } from '../src/utils/summary-cache-key.ts';
+import { MAX_BODY_LEN, buildSummaryCacheKey } from '../packages/client/utils/summary-cache-key.ts';
 
 // ---------------------------------------------------------------------------
 // Infrastructure / cable health helpers

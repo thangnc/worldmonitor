@@ -27,7 +27,7 @@ import { filterRevokedUrls } from '../../../_shared/digest-revocations';
 import { markNoCacheResponse } from '../../../_shared/response-headers';
 import { readRevokedUrlSet } from './_lastgood-store';
 import { INTEL_SOURCES, SERVER_EDITIONS, VARIANT_FEEDS, isServerFeedReachableForLanguage, type ServerFeed } from './_feeds';
-import { NEWS_LANGUAGES } from '../../../../../src/shared/public-rpc-cache';
+import { NEWS_LANGUAGES } from '../../../../client/shared/public-rpc-cache';
 import { FUTURE_DATE_TOLERANCE_MS, resolveMaxAgeMs, rssFeedCacheKey } from './_rss-cache';
 import { healthyRow, scoredRowItem } from './list-news-pool';
 

@@ -107,7 +107,7 @@ describe('stripComments', () => {
   it('lexes every scanned source file cleanly', () => {
     // The assertion that would have caught this class at the source: if any
     // real file fails to lex, both gates are scanning less than they claim.
-    const files = collectTsFiles(join(REPO_ROOT, 'src'), { readdirSync, lstatSync, join });
+    const files = ['src', 'packages/client'].flatMap((dir) => collectTsFiles(join(REPO_ROOT, dir), { readdirSync, lstatSync, join }));
     const bad = files
       .map((abs) => [abs, lexSource(readFileSync(abs, 'utf8'))] as const)
       .filter(([, r]) => !r.ok)

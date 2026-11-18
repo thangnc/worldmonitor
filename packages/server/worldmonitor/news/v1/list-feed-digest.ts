@@ -132,7 +132,7 @@ import {
 import { getRelayBaseUrl, getRelayHeaders } from '../../../_shared/relay';
 import diplomacyKeywordsData from '../../../../shared/diplomacy-keywords.json';
 import { normalizeFeedDateZone } from '../../../../shared/feed-date-zone.js';
-import { NEWS_LANGUAGES } from '../../../../../src/shared/public-rpc-cache';
+import { NEWS_LANGUAGES } from '../../../../client/shared/public-rpc-cache';
 // #6428: entity corroboration must count publishers, not feed labels.
 import {
   MIN_CORROBORATING_PUBLISHERS,

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 
-import { publicRpcFetch } from '../src/services/public-rpc-fetch.ts';
-import { isPublicSharedRpcRequest } from '../src/shared/public-rpc-cache.ts';
+import { publicRpcFetch } from '../packages/client/services/public-rpc-fetch.ts';
+import { isPublicSharedRpcRequest } from '../packages/client/shared/public-rpc-cache.ts';
 
 const originalFetch = globalThis.fetch;
 

@@ -8,7 +8,7 @@ vi.mock("../_shared/redis", () => ({
 }));
 
 import { getSummarizeArticleCache } from "../worldmonitor/news/v1/get-summarize-article-cache";
-import { CACHE_VERSION } from "../../../src/utils/summary-cache-key";
+import { CACHE_VERSION } from "../../client/utils/summary-cache-key";
 
 const originalFetch = globalThis.fetch;
 

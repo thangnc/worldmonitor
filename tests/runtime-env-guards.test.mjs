@@ -10,13 +10,13 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const runtimeSrc = readFileSync(resolve(__dirname, '../src/services/runtime.ts'), 'utf-8');
+const runtimeSrc = readFileSync(resolve(__dirname, '../packages/client/services/runtime.ts'), 'utf-8');
 // #5911 split the desktop detector (and its VITE_DESKTOP_RUNTIME read) into a
-// dependency-free leaf, and #5912 moved that leaf to src/config/ so config
-// modules can import it (src/services/desktop-runtime.ts only re-exports it).
+// dependency-free leaf, and #5912 moved that leaf to packages/client/config/ so config
+// modules can import it (packages/client/services/desktop-runtime.ts only re-exports it).
 // The allow-list invariant follows the implementation: both halves are
 // asserted, so the split cannot be used to smuggle in a whole-env snapshot.
-const desktopRuntimeSrc = readFileSync(resolve(__dirname, '../src/config/desktop-runtime.ts'), 'utf-8');
+const desktopRuntimeSrc = readFileSync(resolve(__dirname, '../packages/client/config/desktop-runtime.ts'), 'utf-8');
 
 describe('runtime env guards', () => {
   it('reads only explicit import.meta.env properties through a guarded ENV wrapper', () => {
@@ -72,7 +72,7 @@ describe('runtime env guards', () => {
   });
 
   it('runtime-config.ts does not dynamically read the Vite env object for secrets', () => {
-    const runtimeConfigSrc = readFileSync(resolve(__dirname, '../src/services/runtime-config.ts'), 'utf-8');
+    const runtimeConfigSrc = readFileSync(resolve(__dirname, '../packages/client/services/runtime-config.ts'), 'utf-8');
     assert.doesNotMatch(
       runtimeConfigSrc,
       /\.env\?\.\[[^\]]+\]/,

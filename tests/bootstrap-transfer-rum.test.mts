@@ -6,7 +6,7 @@ import {
   readBootstrapEncodedBodySize,
   selectBootstrapTransferRumTier,
   utf8TextBytes,
-} from '../src/bootstrap/bootstrap-transfer-rum.ts';
+} from '../packages/client/bootstrap/bootstrap-transfer-rum.ts';
 
 describe('bootstrap transfer RUM', () => {
   it('builds the exact complete metric and tag payload without an identifier', () => {

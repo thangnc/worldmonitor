@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { CalendarDays, Radio } from 'lucide-preact';
-import { INTEL_HOTSPOTS } from '@/config/geo';
+import { INTEL_HOTSPOTS } from '@wm/client/config/geo';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { BarStrip, StackedBar } from '../components/charts';
 import { LayersPopover, type LayerGroup } from '../components/LayersPopover';

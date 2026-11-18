@@ -1,7 +1,7 @@
 import './lite.css';
 import { render } from 'preact';
-import { installWebApiRedirect } from '@/services/runtime';
-import { ensureWmSession, installWmSessionFetchInterceptor } from '@/services/wm-session';
+import { installWebApiRedirect } from '@wm/client/services/runtime';
+import { ensureWmSession, installWmSessionFetchInterceptor } from '@wm/client/services/wm-session';
 import { App } from './App';
 import { startBootstrap } from './data/sources';
 import { initPageScroll } from './components/scroll';

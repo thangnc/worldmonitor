@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Box, Check, CheckCheck, CloudOff, Cpu, Landmark, Quote, Scale, Server, ShieldAlert, Sparkles, Waypoints, type LucideIcon } from 'lucide-preact';
-import { getLatestActions, getUpcomingDeadlines } from '@/config/ai-regulations';
+import { getLatestActions, getUpcomingDeadlines } from '@wm/client/config/ai-regulations';
 import { Topbar, matchesSearch } from '../components/Topbar';
 import { Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
 import { HealthDots, IndicatorFeed } from '../components/indicator';
@@ -425,7 +425,7 @@ function Policy() {
   const actions = getLatestActions(4);
   const next = getUpcomingDeadlines()[0];
   return (
-    <Panel title="Policy & governance" sub="curated" right={<span class="font-mono text-[10px] text-dim" title="From src/config/ai-regulations.ts, a hand-maintained list.">STATIC LIST</span>} testId="policy">
+    <Panel title="Policy & governance" sub="curated" right={<span class="font-mono text-[10px] text-dim" title="From packages/client/config/ai-regulations.ts, a hand-maintained list.">STATIC LIST</span>} testId="policy">
       {actions.map((a) => {
         const status = ACTION_STATUS[a.type] ?? { label: a.type, tone: 'muted' as Tone };
         return (

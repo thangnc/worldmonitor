@@ -1,10 +1,10 @@
 /**
  * Server-side chokepoint ID utilities.
- * Canonical data lives in src/config/chokepoint-registry.ts.
+ * Canonical data lives in packages/client/config/chokepoint-registry.ts.
  * This file re-exports a server-compatible view and provides name-to-ID
  * lookup helpers used by the relay/PortWatch ingestion pipeline.
  */
-import { CHOKEPOINT_REGISTRY, type ChokepointRegistryEntry } from '../../../../../src/config/chokepoint-registry';
+import { CHOKEPOINT_REGISTRY, type ChokepointRegistryEntry } from '../../../../client/config/chokepoint-registry';
 
 export interface CanonicalChokepoint {
   id: string;

@@ -12,23 +12,23 @@ import {
   setCurrentClient,
   withScope,
 } from '@sentry/browser';
-import { isDebugBearRumScriptFrame } from '../src/bootstrap/debugbear-rum.ts';
-import { isIosLikeUserAgent } from '../src/bootstrap/platform-ua.ts';
+import { isDebugBearRumScriptFrame } from '../packages/client/bootstrap/debugbear-rum.ts';
+import { isIosLikeUserAgent } from '../packages/client/bootstrap/platform-ua.ts';
 import { isolateNonProductionSentryEvent } from '../packages/shared/sentry-build-metadata.ts';
 import { scrubSentryCredentials } from '../packages/shared/sensitive-url-params.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Extract the beforeSend function body from src/bootstrap/sentry-init.ts.
+// Extract the beforeSend function body from packages/client/bootstrap/sentry-init.ts.
 // Sentry.init({...}) was moved out of main.ts when init was deferred off the
 // critical path (#3994 / PR-4005); the beforeSend closure now lives inside
 // the dynamically imported build factory in sentry-init.ts. We parse it as a
 // standalone function to avoid importing Sentry/App bootstrap.
-const mainSrc = readFileSync(resolve(__dirname, '../src/bootstrap/sentry-init.ts'), 'utf-8');
+const mainSrc = readFileSync(resolve(__dirname, '../packages/client/bootstrap/sentry-init.ts'), 'utf-8');
 
 // Extract everything between `beforeSend(event) {` and the matching closing `},`
 const bsStart = mainSrc.indexOf('beforeSend(event) {');
-assert.ok(bsStart !== -1, 'beforeSend must exist in src/bootstrap/sentry-init.ts');
+assert.ok(bsStart !== -1, 'beforeSend must exist in packages/client/bootstrap/sentry-init.ts');
 let braceDepth = 0;
 let bsEnd = -1;
 for (let i = bsStart + 'beforeSend(event) '.length; i < mainSrc.length; i++) {
@@ -48,7 +48,7 @@ const fnBody = mainSrc.slice(bsStart + 'beforeSend(event) '.length, bsEnd)
 // Extract the THIRD_PARTY_FETCH_HOST_ALLOWLIST Set so the test harness can evaluate
 // beforeSend with the same allowlist the real module has.
 const tpMatch = mainSrc.match(/const THIRD_PARTY_FETCH_HOST_ALLOWLIST = new Set\(\[[^\]]*\]\);/);
-assert.ok(tpMatch, 'THIRD_PARTY_FETCH_HOST_ALLOWLIST must be defined in src/bootstrap/sentry-init.ts');
+assert.ok(tpMatch, 'THIRD_PARTY_FETCH_HOST_ALLOWLIST must be defined in packages/client/bootstrap/sentry-init.ts');
 
 // Build a callable version. Input: a Sentry-shaped event object. Returns event or null.
 // eslint-disable-next-line no-new-func
@@ -60,7 +60,7 @@ const rawBeforeSend = new Function(
 
 // User-Agent strings, because beforeSend's platform gates read `navigator.userAgent`
 // — NOT `event.contexts.os`, which the browser SDK never populates (see
-// src/bootstrap/platform-ua.ts). `navigator` is passed as a Function parameter so it
+// packages/client/bootstrap/platform-ua.ts). `navigator` is passed as a Function parameter so it
 // shadows Node's global and each test can state the platform explicitly.
 /**
  * A first-party checkout report's tag block, as the removed dashboard checkout
@@ -90,7 +90,7 @@ function beforeSend(event, navigatorStub = DESKTOP_NAVIGATOR, environment = 'pro
 // regex/string literals and `//` comments — all valid inside a JS array literal,
 // so it eval's directly. Closing token is the deferred builder's `\n    ],`.
 const ieStart = mainSrc.indexOf('ignoreErrors: [');
-assert.ok(ieStart !== -1, 'ignoreErrors array must exist in src/bootstrap/sentry-init.ts');
+assert.ok(ieStart !== -1, 'ignoreErrors array must exist in packages/client/bootstrap/sentry-init.ts');
 const ieEnd = mainSrc.indexOf('\n    ],', ieStart);
 assert.ok(ieEnd > ieStart, 'Failed to find ignoreErrors closing bracket');
 const ieBody = mainSrc.slice(ieStart + 'ignoreErrors: ['.length, ieEnd);
@@ -203,7 +203,7 @@ describe('ignoreErrors filters', () => {
   // message-only entry is safe only while no script we ship declares the name.
   it('keeps the licence true: nativeIframe is absent from our own source', () => {
     const offenders = [];
-    for (const rel of ['../src', '../api']) {
+    for (const rel of ['../src', '../packages/client', '../api']) {
       for (const file of walkTsFiles(resolve(__dirname, rel))) {
         if (/sentry-init\.ts$/.test(file)) continue;
         if (/\bnativeIframe\b/.test(readFileSync(file, 'utf-8'))) offenders.push(file);
@@ -890,7 +890,7 @@ describe('zero-frame async-rejection patterns (timeout / DOMException / OOM / DO
   // silently disarm this entire block with nothing going red.
   it('keeps the licence true: `kind` is never set on a global Sentry scope', () => {
     const offenders = [];
-    for (const rel of ['../src']) {
+    for (const rel of ['../src', '../packages/client']) {
       for (const file of walkTsFiles(resolve(__dirname, rel))) {
         const text = readFileSync(file, 'utf-8');
         // A scope-level setter, or an init-time scope, anywhere near `kind`.
@@ -908,8 +908,8 @@ describe('zero-frame async-rejection patterns (timeout / DOMException / OOM / DO
   it('the kind-census scan actually reaches our source', () => {
     // A source scan that matches nothing is indistinguishable from one that is
     // silently broken (wrong path, wrong extension filter).
-    const files = walkTsFiles(resolve(__dirname, '../src'));
-    assert.ok(files.length > 100, `sanity: expected to scan src/, got ${files.length} files`);
+    const files = ['../src', '../packages/client'].flatMap((rel) => walkTsFiles(resolve(__dirname, rel)));
+    assert.ok(files.length > 100, `sanity: expected to scan src/ and packages/client/, got ${files.length} files`);
     const kindSetters = files.filter((f) => /tags:\s*\{[^}]*\bkind:/.test(readFileSync(f, 'utf-8')));
     assert.ok(
       kindSetters.length >= 1,
@@ -1465,7 +1465,7 @@ describe('existing beforeSend filters', () => {
 
   it('suppresses Firefox "NetworkError ... (data.debugbear.com)" — embedded RUM beacon, zero frames (WORLDMONITOR-RP)', () => {
     // Firefox's host-suffixed phrasing for a failed fetch. The DebugBear RUM
-    // script (src/bootstrap/debugbear-rum.ts) POSTs field metrics to
+    // script (packages/client/bootstrap/debugbear-rum.ts) POSTs field metrics to
     // data.debugbear.com; a dropped beacon surfaces via onunhandledrejection
     // with no captured frames. Routed through the same host allowlist as the
     // Chrome `Failed to fetch (<host>)` shape, so an allowlisted host is
@@ -1614,7 +1614,7 @@ describe('existing beforeSend filters', () => {
     const event = makeEvent(
       "Failed to construct 'Request': The `duplex` member must be specified for a request with a streaming body",
       'TypeError',
-      [firstPartyFrame('src/services/runtime.ts', 'patchedFetch')],
+      [firstPartyFrame('packages/client/services/runtime.ts', 'patchedFetch')],
     );
     assert.ok(beforeSend(event) !== null, 'first-party runtime regression must still surface');
   });
@@ -1738,10 +1738,10 @@ describe('existing beforeSend filters', () => {
   });
 
   it('does NOT suppress ".isHidden" crashes with first-party frames (SmartPollContext regression)', () => {
-    // src/services/runtime.ts owns SmartPollContext.isHidden. A real regression
+    // packages/client/services/runtime.ts owns SmartPollContext.isHidden. A real regression
     // there would carry a first-party frame — must surface.
     const event = makeEvent("Cannot read properties of undefined (reading 'isHidden')", 'TypeError', [
-      firstPartyFrame('src/services/runtime.ts', 'SmartPoller.tick'),
+      firstPartyFrame('packages/client/services/runtime.ts', 'SmartPoller.tick'),
     ]);
     assert.ok(beforeSend(event) !== null, 'first-party SmartPollContext.isHidden regression must reach Sentry');
   });
@@ -2460,7 +2460,7 @@ describe('beforeSend — Firefox bare-primitive throw (WORLDMONITOR-106)', () =>
     // The source-level invariant the suppression rests on, asserted here so it
     // cannot silently stop being true.
     const offenders = [];
-    for (const rel of ['../src', '../packages/shared', '../api']) {
+    for (const rel of ['../src', '../packages/client', '../packages/shared', '../api']) {
       for (const file of walk(resolve(__dirname, rel))) {
         const code = stripComments(readFileSync(file, 'utf-8'));
         if (BARE_PRIMITIVE_THROW.test(code)) offenders.push(file);
@@ -2485,11 +2485,11 @@ describe('beforeSend — Firefox bare-primitive throw (WORLDMONITOR-106)', () =>
   it('the scan reaches real files, and comment-stripping is what keeps it green', () => {
     // Two ways the invariant could pass vacuously, both closed here: a walk that
     // returns nothing, and a scan that would fail if it did NOT strip comments.
-    const files = ['../src', '../packages/shared', '../api'].flatMap(rel => walk(resolve(__dirname, rel)));
+    const files = ['../src', '../packages/client', '../packages/shared', '../api'].flatMap(rel => walk(resolve(__dirname, rel)));
     assert.ok(files.length > 100, `walk must reach the real tree, got ${files.length} files`);
     assert.ok(files.some(f => f.endsWith('bootstrap/sentry-init.ts')), 'walk must include sentry-init.ts');
 
-    const raw = readFileSync(resolve(__dirname, '../src/bootstrap/sentry-init.ts'), 'utf-8');
+    const raw = readFileSync(resolve(__dirname, '../packages/client/bootstrap/sentry-init.ts'), 'utf-8');
     assert.ok(BARE_PRIMITIVE_THROW.test(raw),
       'the policy comment is expected to contain the banned statement — if it stops doing so, '
       + 'this control no longer proves comment-stripping is load-bearing');
@@ -2669,7 +2669,7 @@ describe('ignoreErrors — Android WebView Java bridge (WORLDMONITOR-117, -YN)',
   // suppression is only safe while our own bundle cannot mint the sentence.
   it('keeps the licence true: no `Error invoking` call site in our own source', () => {
     const offenders = [];
-    for (const rel of ['../src', '../api']) {
+    for (const rel of ['../src', '../packages/client', '../api']) {
       for (const file of walkTsFiles(resolve(__dirname, rel))) {
         // sentry-init.ts and sentry-filter-policy.ts hold the suppressors
         // themselves; every other textual hit would be a real call site.
@@ -2684,8 +2684,8 @@ describe('ignoreErrors — Android WebView Java bridge (WORLDMONITOR-117, -YN)',
   it('the licence scan actually reaches our source', () => {
     // A source scan that matches nothing is indistinguishable from one that is
     // silently broken (wrong path, wrong extension filter).
-    const files = walkTsFiles(resolve(__dirname, '../src'));
-    assert.ok(files.length > 100, `sanity: expected to scan src/, got ${files.length} files`);
+    const files = ['../src', '../packages/client'].flatMap((rel) => walkTsFiles(resolve(__dirname, rel)));
+    assert.ok(files.length > 100, `sanity: expected to scan src/ and packages/client/, got ${files.length} files`);
     assert.ok(files.some((f) => f.endsWith('sentry-init.ts')), 'scan must reach sentry-init.ts');
   });
 });
@@ -2724,7 +2724,7 @@ describe('ignoreErrors — UC Browser bridge global (WORLDMONITOR-10W)', () => {
   // The source-level invariant the message-only suppression rests on.
   it('keeps the licence true: __BrowserJSBridgeObj is absent from our own source', () => {
     const offenders = [];
-    for (const rel of ['../src', '../api']) {
+    for (const rel of ['../src', '../packages/client', '../api']) {
       for (const file of walkTsFiles(resolve(__dirname, rel))) {
         if (/sentry-init\.ts$|sentry-filter-policy\.ts$/.test(file)) continue;
         if (/__BrowserJSBridgeObj/.test(readFileSync(file, 'utf-8'))) offenders.push(file);
@@ -2810,7 +2810,7 @@ describe('beforeSend — MapLibre 6 Object.hasOwn on pre-15.4 WebKit / old Chrom
     // api/ and the server-only shared/ leaves (e.g. packages/shared/story-phase.js, used
     // by api/og-story) run under Node, where Object.hasOwn is universal and
     // nothing they throw reaches this beforeSend.
-    const roots = ['src'].map((d) => resolve(__dirname, '..', d));
+    const roots = ['src', 'packages/client'].map((d) => resolve(__dirname, '..', d));
     const offenders = [];
     const walk = (dir) => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {

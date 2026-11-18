@@ -602,8 +602,8 @@ function dirHasFiles(rel) {
 function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
   const makefile = read('Makefile');
 
-  // ---- Map layers (src/config/map-layer-definitions.ts) ----
-  const mld = read('src/config/map-layer-definitions.ts');
+  // ---- Map layers (packages/client/config/map-layer-definitions.ts) ----
+  const mld = read('packages/client/config/map-layer-definitions.ts');
   const { keys: layerKeys } = parseLayerRegistry(mld);
   const layerDefinitions = layerKeys.length;
 
@@ -621,10 +621,10 @@ function computeStats({ sourceAttribution: suppliedAttribution } = {}) {
     .filter((f) => f.endsWith('.ts') && !f.endsWith('.d.ts'))
     .reduce((n, f) => n + (read(f).match(/class\s+\w+\s+extends\s+Panel\b/g) || []).length, 0);
 
-  // ---- User-facing locales (src/locales/*.json, excluding shell fragments) ----
+  // ---- User-facing locales (packages/client/locales/*.json, excluding shell fragments) ----
   // The Lite UI ships English only, as the en.shell.json fragment; a locale
   // with only a shell fragment still counts as a supported interface language.
-  const localeCodes = [...new Set(filesIn('src/locales')
+  const localeCodes = [...new Set(filesIn('packages/client/locales')
     .filter((f) => f.endsWith('.json'))
     .map((f) => f.replace(/(?:\.shell)?\.json$/, '')))]
     .sort();

@@ -1,5 +1,5 @@
 // Regression coverage for the URL-matcher inside the wm-session fetch
-// interceptor (src/services/wm-session.ts).
+// interceptor (packages/client/services/wm-session.ts).
 //
 // Bug history:
 //   PR #3541 / #3557 (merged 2026-05-02) introduced the interceptor and
@@ -35,7 +35,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-import { isApiCallTarget } from '../src/services/wm-session.ts';
+import { isApiCallTarget } from '../packages/client/services/wm-session.ts';
 
 const CANONICAL_ORIGIN = 'https://api.worldmonitor.app';
 
@@ -173,7 +173,7 @@ describe('wm-session.ts must not regress to getApiBaseUrl (static-import guard)'
     const __filename = fileURLToPath(import.meta.url);
     const repoRoot = path.resolve(path.dirname(__filename), '..');
     const source = readFileSync(
-      path.join(repoRoot, 'src/services/wm-session.ts'),
+      path.join(repoRoot, 'packages/client/services/wm-session.ts'),
       'utf8',
     );
 

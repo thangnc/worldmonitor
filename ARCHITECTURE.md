@@ -101,7 +101,7 @@ All panels extend the `Panel` base class (109 classes across `src/components`). 
 - **Loaded news selection**: `MapContainer.onNewsClicked()` caches and forwards the callback to each renderer's `setOnNewsClick()`. The callback receives `Pick<NewsLocationMarker, 'article' | 'title'>`: optional original loaded article `{link, title, source}` and the displayed marker title. Existing markers without article metadata remain valid. The plugin uses this loaded identity to publish its latest interaction with current view context; it does not track popup visibility or fetch more data on selection.
 - **GlobeMap**: 3D interactive globe via globe.gl. Single merged `htmlElementsData` array with `_kind` discriminator. Earth texture, atmosphere shader, auto-rotate after idle.
 
-Layer definitions live in `src/config/map-layer-definitions.ts`, each specifying renderer support (flat/globe), premium status, variant filtering, and i18n keys.
+Layer definitions live in `packages/client/config/map-layer-definitions.ts`, each specifying renderer support (flat/globe), premium status, variant filtering, and i18n keys.
 
 ### State Management
 
@@ -242,7 +242,7 @@ The market backup bundle also persists 14 days of timestamped hourly Yahoo close
 
 `api/health.js` checks every bootstrap and standalone key. For each key it reads `seed-meta:<key>` and compares `fetchedAt` against `maxStaleMin`. Cascade groups handle fallback chains (e.g., theater-posture: live, stale, backup). Returns per-key status: OK, STALE, WARN, EMPTY.
 
-**Source files**: `api/bootstrap.js`, `api/health.js`, `scripts/_seed-utils.mjs`, `scripts/seed-*.mjs`, `scripts/ais-relay.cjs`, `src/services/bootstrap.ts`, `src/app/refresh-scheduler.ts`
+**Source files**: `api/bootstrap.js`, `api/health.js`, `scripts/_seed-utils.mjs`, `scripts/seed-*.mjs`, `scripts/ais-relay.cjs`, `packages/client/services/bootstrap.ts`, `src/app/refresh-scheduler.ts`
 
 ---
 
@@ -262,11 +262,11 @@ Tauri 2.x (Rust) manages the app lifecycle, system tray, and IPC commands:
 
 ### Fetch Patching
 
-`installRuntimeFetchPatch()` in `src/services/runtime.ts` replaces `window.fetch` on the desktop renderer. All `/api/*` requests route to the sidecar with `Authorization: Bearer <token>` (5-min TTL from Tauri IPC). If the sidecar fails, requests fall back to the cloud API.
+`installRuntimeFetchPatch()` in `packages/client/services/runtime.ts` replaces `window.fetch` on the desktop renderer. All `/api/*` requests route to the sidecar with `Authorization: Bearer <token>` (5-min TTL from Tauri IPC). If the sidecar fails, requests fall back to the cloud API.
 
 Seed-owned scorecard RPC paths are always cloud-preferred on desktop. The sidecar does not carry the Railway-published scorecard cohort, so routing these paths locally would create a false unavailable state instead of using the authenticated cloud API.
 
-**Source files**: `src-tauri/src/main.rs`, `docker/local-api/local-api-server.mjs`, `src/services/runtime.ts`, `src/services/tauri-bridge.ts`
+**Source files**: `src-tauri/src/main.rs`, `docker/local-api/local-api-server.mjs`, `packages/client/services/runtime.ts`, `packages/client/services/tauri-bridge.ts`
 
 ---
 
@@ -421,6 +421,14 @@ gates.
 ├── docker/                 Dockerfile + nginx config for Railway
 ├── docs/                   Engineering records (docs/engineering/)
 ├── packages/
+│   ├── client/             @wm/client: browser modules the Lite UI builds on (the Edge code reaches a few by relative path)
+│   │   ├── bootstrap/      Deferred Sentry and RUM
+│   │   ├── config/         Static geo, market, military and Lite route config
+│   │   ├── locales/        i18n strings (en)
+│   │   ├── services/       Runtime, bootstrap hydration, RPC clients, session
+│   │   ├── shared/         Premium and public RPC path lists (the gateway reads them too)
+│   │   ├── types/          TypeScript type definitions
+│   │   └── utils/          Safe storage, circuit breaker, cache keys
 │   ├── contracts/          @wm/contracts: proto/ (sebuf service definitions), generated/ (client/server stubs, DO NOT EDIT), openapi/ (generated specs)
 │   ├── server/             @wm/server: server-side code bundled into the Edge Functions (api/ imports it by relative path)
 │   │   ├── __tests__/      vitest suites (npm run test:server)
@@ -433,19 +441,12 @@ gates.
 ├── scripts/                Seed scripts, build helpers, relay service
 ├── src/                    Browser SPA (TypeScript)
 │   ├── app/                App orchestration managers
-│   ├── bootstrap/          Startup/recovery (chunk reload, deferred Sentry, SW update)
 │   ├── components/         Panel subclasses + map components
-│   ├── config/             Variant, panel, layer, market configurations
 │   ├── data/               Static JSON datasets (conservation, renewable, happiness)
 │   ├── e2e/                Map test harnesses (consumed by Playwright specs)
 │   ├── embed/              Embeddable widget loader
-│   ├── locales/            i18n translation files
-│   ├── services/           Business logic organized by domain
-│   ├── shared/             Cross-cutting helpers (premium paths, registries, staleness)
 │   ├── shims/              Runtime shims (child-process for sidecar)
 │   ├── styles/             Global CSS (layers, themes, panel styles)
-│   ├── types/              TypeScript type definitions
-│   ├── utils/              Shared utilities (circuit-breaker, theme, URL state)
 │   └── workers/            Web Workers (analysis, ML, vector DB)
 ├── src-tauri/              Tauri desktop shell (Rust)
 │   └── sidecar/            Node.js sidecar API server

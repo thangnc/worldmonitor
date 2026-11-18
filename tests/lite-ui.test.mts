@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import {
   LITE_SCREEN_PATHS,
   parseLiteScreen,
-} from '../src/config/lite-route.ts';
+} from '../packages/client/config/lite-route.ts';
 import {
   corroborationOf,
   decodeEntities,
@@ -30,7 +30,7 @@ import { actorName, eventDates, eventSpan, formatCoordinates, ucdpBackgroundLabe
 import { CONVERGENCE_RADIUS_KM, MILITARY_RADIUS_KM, escalationLevel, scoreHotspots } from '../src/lite/data/escalation.ts';
 import { computeEscalationScore } from '../packages/shared/analysis-hotspot-escalation.ts';
 import { TIME_RANGE_HOURS, inTimeRange } from '../src/lite/data/transforms.ts';
-import type { Hotspot } from '../src/types/index.ts';
+import type { Hotspot } from '../packages/client/types/index.ts';
 import type { UcdpViolenceEvent } from '../packages/contracts/generated/client/worldmonitor/conflict/v1/service_client.ts';
 import { OPENFREEMAP_TILEJSON, buildLiteMapStyle } from '../src/lite/map/style.ts';
 import {

@@ -12,7 +12,7 @@ import ts from 'typescript';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
-const srcDir = join(root, 'src');
+const browserDirs = [join(root, 'src'), join(root, 'packages', 'client')];
 
 function walkTsFiles(dir) {
   const files = [];
@@ -75,7 +75,7 @@ function collectUnsafeWindowOpenCalls(file) {
 // Lite refactor (Phase 1c). Every _blank call site now needs the features.
 describe('window.open reverse-tabnabbing guard', () => {
   it('requires noopener,noreferrer for _blank browser windows', () => {
-    const unsafe = walkTsFiles(srcDir).flatMap(collectUnsafeWindowOpenCalls);
+    const unsafe = browserDirs.flatMap(walkTsFiles).flatMap(collectUnsafeWindowOpenCalls);
     assert.deepEqual(
       unsafe,
       [],

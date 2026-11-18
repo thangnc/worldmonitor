@@ -230,8 +230,8 @@ test('this test file does not import the seeder module', () => {
 });
 
 test('canadaAlerts is a distinct MapLayers key from weather and canadaRoads', () => {
-  const types = readFileSync(join(root, 'src/types/index.ts'), 'utf8');
-  const layers = readFileSync(join(root, 'src/config/map-layer-definitions.ts'), 'utf8');
+  const types = readFileSync(join(root, 'packages/client/types/index.ts'), 'utf8');
+  const layers = readFileSync(join(root, 'packages/client/config/map-layer-definitions.ts'), 'utf8');
   assert.match(types, /canadaAlerts:\s*boolean/);
   assert.doesNotMatch(types, /albertaAea\?: boolean/);
   assert.match(layers, /canadaAlerts:\s+def\('canadaAlerts'/);

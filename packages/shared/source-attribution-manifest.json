@@ -11,7 +11,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/services/runtime.ts"
+          "path": "packages/client/services/runtime.ts"
         }
       ]
     },
@@ -39,7 +39,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -137,7 +137,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -333,7 +333,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -347,7 +347,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -1466,6 +1466,9 @@
       "status": "excluded",
       "references": [
         {
+          "path": "packages/client/services/runtime.ts"
+        },
+        {
           "path": "packages/shared/news-catalog.json"
         },
         {
@@ -1521,9 +1524,6 @@
         },
         {
           "path": "scripts/verify-import-hhi-coverage.mjs"
-        },
-        {
-          "path": "src/services/runtime.ts"
         }
       ]
     },
@@ -1796,7 +1796,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -2005,10 +2005,10 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "packages/shared/news-catalog.json"
+          "path": "packages/client/config/live-video-sources.ts"
         },
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/shared/news-catalog.json"
         }
       ]
     },
@@ -2161,7 +2161,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -2198,7 +2198,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -2212,7 +2212,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/bootstrap/debugbear-rum.ts"
+          "path": "packages/client/bootstrap/debugbear-rum.ts"
         }
       ]
     },
@@ -2804,7 +2804,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -3392,7 +3392,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -3406,7 +3406,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -3742,7 +3742,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -3882,7 +3882,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5176,7 +5176,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5319,7 +5319,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5669,7 +5669,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5832,7 +5832,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5860,7 +5860,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5874,7 +5874,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5888,7 +5888,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5902,7 +5902,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5925,7 +5925,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5939,7 +5939,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5953,7 +5953,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5981,7 +5981,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -5995,7 +5995,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -6009,7 +6009,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -6073,16 +6073,16 @@
       "status": "excluded",
       "references": [
         {
+          "path": "packages/client/config/desktop-runtime.ts"
+        },
+        {
+          "path": "packages/client/services/wm-session.ts"
+        },
+        {
           "path": "packages/server/worldmonitor/research/v1/list-tech-events.ts"
         },
         {
           "path": "scripts/ais-relay.cjs"
-        },
-        {
-          "path": "src/config/desktop-runtime.ts"
-        },
-        {
-          "path": "src/services/wm-session.ts"
         }
       ]
     },
@@ -6166,7 +6166,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/services/country-geometry.ts"
+          "path": "packages/client/services/country-geometry.ts"
         }
       ]
     },
@@ -6208,7 +6208,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -6527,7 +6527,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -6597,7 +6597,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -6824,7 +6824,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -6908,7 +6908,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -7237,7 +7237,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -7654,10 +7654,10 @@
       "status": "excluded",
       "references": [
         {
-          "path": "scripts/seed-security-advisories.mjs"
+          "path": "packages/client/utils/proxy.ts"
         },
         {
-          "path": "src/utils/proxy.ts"
+          "path": "scripts/seed-security-advisories.mjs"
         }
       ]
     },
@@ -8202,7 +8202,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -8230,7 +8230,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -8244,7 +8244,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -8258,7 +8258,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -8314,7 +8314,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -8763,7 +8763,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -9152,7 +9152,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -9217,7 +9217,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -9914,7 +9914,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -9928,7 +9928,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -10240,7 +10240,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },
@@ -10456,6 +10456,15 @@
           "path": "api/seed-contract-probe.ts"
         },
         {
+          "path": "packages/client/bootstrap/web-vitals-utils.ts"
+        },
+        {
+          "path": "packages/client/config/web-origin.ts"
+        },
+        {
+          "path": "packages/client/services/runtime.ts"
+        },
+        {
           "path": "packages/server/_shared/brief-url.ts"
         },
         {
@@ -10541,15 +10550,6 @@
         },
         {
           "path": "scripts/validate-seed-migration.mjs"
-        },
-        {
-          "path": "src/bootstrap/web-vitals-utils.ts"
-        },
-        {
-          "path": "src/config/web-origin.ts"
-        },
-        {
-          "path": "src/services/runtime.ts"
         }
       ]
     },
@@ -10566,7 +10566,7 @@
           "path": "api/_md-url-twin.ts"
         },
         {
-          "path": "src/shared/public-rpc-cache.ts"
+          "path": "packages/client/shared/public-rpc-cache.ts"
         }
       ]
     },
@@ -14619,13 +14619,13 @@
       "status": "excluded",
       "references": [
         {
+          "path": "packages/client/config/live-video-sources.ts"
+        },
+        {
           "path": "scripts/check-live-video-sources.mjs"
         },
         {
           "path": "scripts/lib/live-video-channel-live.mjs"
-        },
-        {
-          "path": "src/config/live-video-sources.ts"
         }
       ]
     },
@@ -14853,7 +14853,7 @@
       "status": "excluded",
       "references": [
         {
-          "path": "src/config/live-video-sources.ts"
+          "path": "packages/client/config/live-video-sources.ts"
         }
       ]
     },

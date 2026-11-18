@@ -1,5 +1,5 @@
 // Hand-authored crawlable copy for /chokepoints/* pages. Kept out of the
-// browser bundle (the registry in src/config/ stays numeric). Every analysis
+// browser bundle (the registry in packages/client/config/ stays numeric). Every analysis
 // paragraph is waterway-specific so the 13 pages do not share the pre-rewrite
 // template skeleton (#7461). EIA oil figures are derived from the committed
 // 2023 World Oil Transit Chokepoints table shared with
@@ -38,7 +38,7 @@ export const CHOKEPOINT_SCORE_CONTEXT_ONLY = Object.freeze([
 // Committed observation dates for Dataset temporalCoverage and <time datetime>
 // stamps. Docker corpus builds exclude `.git`, so gitFileLastmod() is null
 // there; these dates keep Hormuz-class pages dated without repository history.
-// Bump when the corresponding src/config file's data actually changes.
+// Bump when the corresponding packages/client/config file's data actually changes.
 export const CHOKEPOINT_REGISTRY_OBSERVED_AT = '2026-04-09';
 export const TRADE_ROUTES_OBSERVED_AT = '2026-03-14';
 

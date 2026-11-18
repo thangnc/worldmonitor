@@ -47,7 +47,7 @@ function isMilitaryCallsign(callsign) {
 // ---------------------------------------------------------------------------
 // Extract client-side hex ranges from military.ts
 // ---------------------------------------------------------------------------
-const clientSrc = readFileSync(join(root, 'src/config/military.ts'), 'utf-8');
+const clientSrc = readFileSync(join(root, 'packages/client/config/military.ts'), 'utf-8');
 const seederSrc = readFileSync(join(root, 'scripts/seed-military-flights.mjs'), 'utf-8');
 
 function extractHexRanges(src) {

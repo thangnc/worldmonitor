@@ -14,7 +14,7 @@
 // Schema + evidence model documented in docs/methodology/storage.mdx.
 // Public badge (operational | reduced | offline | disputed) is DERIVED at
 // read-time server-side from the evidence bundle — identical pattern as
-// pipelines. See src/shared/storage-evidence.ts (upcoming, Day 10).
+// pipelines. See packages/server/_shared/storage-evidence.ts (upcoming, Day 10).
 
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

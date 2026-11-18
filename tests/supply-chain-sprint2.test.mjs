@@ -12,7 +12,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 
 // ========================================================================
 // 1. _insurance-tier.ts pure function
@@ -60,7 +60,7 @@ describe('threatLevelToInsurancePremiumBps', () => {
 import {
   BYPASS_CORRIDORS,
   BYPASS_CORRIDORS_BY_CHOKEPOINT,
-} from '../src/config/bypass-corridors.ts';
+} from '../packages/client/config/bypass-corridors.ts';
 
 describe('BYPASS_CORRIDORS data integrity', () => {
   it('has at least 20 corridor entries', () => {

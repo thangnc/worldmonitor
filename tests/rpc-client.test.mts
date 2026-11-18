@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { getRpcErrorStatusCode } from '../src/services/rpc-client';
+import { getRpcErrorStatusCode } from '../packages/client/services/rpc-client';
 
 test('getRpcErrorStatusCode returns numeric statusCode from object errors', () => {
   assert.equal(getRpcErrorStatusCode({ statusCode: 404 }), 404);

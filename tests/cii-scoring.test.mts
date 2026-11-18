@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import ts from 'typescript';
 
-import { CURATED_COUNTRIES, TIER1_COUNTRIES } from '../src/config/countries.ts';
+import { CURATED_COUNTRIES, TIER1_COUNTRIES } from '../packages/server/_shared/countries.ts';
 import {
   CII_CONFLICT_ACTIVITY_CAP,
   CII_CONFLICT_ACTIVITY_PIVOT,

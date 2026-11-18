@@ -16,7 +16,7 @@ const CACHE_TTL_MS = 60_000; // re-probe every 60s
 
 /**
  * Consecutive provider-side model rejections before a model is quarantined.
- * Mirrors `DEFAULT_MAX_FAILURES` in `src/utils/circuit-breaker.ts`. One
+ * Mirrors `DEFAULT_MAX_FAILURES` in `packages/client/utils/circuit-breaker.ts`. One
  * rejection is deliberately not enough: an HTTP 400 can also be a malformed
  * request, and reading that as a dead model would pull a working model out of
  * the chain.

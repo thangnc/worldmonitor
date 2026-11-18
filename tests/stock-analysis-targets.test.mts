@@ -6,8 +6,8 @@ import {
   isAnalyzableSymbol,
   STOCK_ANALYSIS_FREE_LIMIT,
   STOCK_ANALYSIS_PRO_LIMIT,
-} from '../src/services/stock-analysis-targets.ts';
-import { resolveEffectiveMarketWatchlist } from '../src/services/market-watchlist.ts';
+} from '../packages/server/_shared/stock-analysis-targets.ts';
+import { resolveEffectiveMarketWatchlist } from '../packages/client/services/market-watchlist.ts';
 
 const DEFAULTS = [
   { symbol: 'AAPL', name: 'Apple', display: 'AAPL' },

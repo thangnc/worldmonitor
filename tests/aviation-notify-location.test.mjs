@@ -1,7 +1,7 @@
 // #6626 — aviation_closure / notam_closure must carry lat/lon/city so
 // proximity alerting can treat an airport as a declared site.
 //
-// Expected coordinates are literals from src/config/airports.ts (the registry
+// Expected coordinates are literals from packages/server/_shared/airports.ts (the registry
 // the issue names), not recomputed from the helper under test.
 
 import assert from 'node:assert/strict';
@@ -18,7 +18,7 @@ const aviationSrc = readFileSync(
   'utf8',
 );
 const configSrc = readFileSync(
-  fileURLToPath(new URL('../src/config/airports.ts', import.meta.url)),
+  fileURLToPath(new URL('../packages/server/_shared/airports.ts', import.meta.url)),
   'utf8',
 );
 
@@ -101,7 +101,7 @@ describe('#6626 — the airport registry can locate every closure it can publish
 
   // This is the guard that would have caught the shipped gap: 27 NOTAM airports
   // (JFK, LAX, ATL, Beirut, Damascus, Baghdad, Tehran, Bandar Abbas, Gaborone…)
-  // carried no coordinates and depended on a src/config/airports.ts read that
+  // carried no coordinates and depended on a packages/server/_shared/airports.ts read that
   // throws ENOENT in the scripts-rooted Railway container.
   it('resolves coordinates for every notam_closure-reachable airport', () => {
     const unlocated = notamRows
@@ -117,7 +117,7 @@ describe('#6626 — the airport registry can locate every closure it can publish
     assert.deepEqual(unlocated, [], `aviation_closure would publish unlocated: ${unlocated.join(', ')}`);
   });
 
-  it('holds the seeder registry in coordinate parity with src/config/airports.ts', () => {
+  it('holds the seeder registry in coordinate parity with packages/server/_shared/airports.ts', () => {
     // Both files exist in a checkout and in CI, so drift fails here rather than
     // degrading silently at runtime where only one of them ships.
     const configByIcao = new Map();
@@ -139,7 +139,7 @@ describe('#6626 — the airport registry can locate every closure it can publish
     assert.deepEqual(drift, [], `registry drift: ${drift.join(' | ')}`);
   });
 
-  it('lists every src/config/airports.ts airport, so production NOTAM checks reach it', () => {
+  it('lists every packages/server/_shared/airports.ts airport, so production NOTAM checks reach it', () => {
     // The Railway container ships scripts/ only: an airport missing here gets
     // no closure check and no NOTAM coverage, and shows "Coverage unavailable".
     const seederIcaoByIata = new Map(AIRPORTS.map((a) => [a.iata, a.icao]));
@@ -240,7 +240,7 @@ describe('#6626 — both closure publishers thread the site fields', () => {
   });
 
   it('does not reach outside scripts/ on the notify path', () => {
-    // src/config/airports.ts is absent from the scripts-rooted Railway
+    // packages/server/_shared/airports.ts is absent from the scripts-rooted Railway
     // container; the notify path must never depend on reading it.
     const helperSrc = readFileSync(
       fileURLToPath(new URL('../scripts/lib/airport-notify-location.mjs', import.meta.url)),

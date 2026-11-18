@@ -6,7 +6,7 @@ import {
   getCircuitBreakerCooldownInfo,
   isCircuitBreakerOnCooldown,
   removeCircuitBreaker,
-} from '../src/utils/circuit-breaker.ts';
+} from '../packages/client/utils/circuit-breaker.ts';
 
 // #4571 U1 / #3242 characterization.
 //

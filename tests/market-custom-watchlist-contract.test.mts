@@ -35,7 +35,7 @@ import {
   mergeWatchlistSymbols,
   normalizeWatchlistEntries,
   type MarketSymbolMeta,
-} from '../src/services/market-watchlist.ts';
+} from '../packages/client/services/market-watchlist.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const STOCK_CONFIG = JSON.parse(readFileSync(resolve(root, 'packages/shared/stocks.json'), 'utf8')) as {

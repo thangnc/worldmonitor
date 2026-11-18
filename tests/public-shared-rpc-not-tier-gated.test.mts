@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
-import { isPublicSharedRpcRequest } from '../src/shared/public-rpc-cache.ts';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
+import { isPublicSharedRpcRequest } from '../packages/client/shared/public-rpc-cache.ts';
 
 // ---------------------------------------------------------------------------
 // Why this test exists
@@ -71,7 +71,7 @@ describe('public shared RPC shapes never bypass a tier gate', () => {
             `anonymous callers and the premium gate is dead code for it.`,
             ``,
             `Pick one: remove the path from PUBLIC_SHARED_RPC_PATHS`,
-            `(src/shared/public-rpc-cache.ts), or drop it from PREMIUM_RPC_PATHS and`,
+            `(packages/client/shared/public-rpc-cache.ts), or drop it from PREMIUM_RPC_PATHS and`,
             `document that the data is deliberately free.`,
           ].join('\n'),
         );

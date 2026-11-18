@@ -24,7 +24,7 @@ import {
 } from '../scripts/check-live-video-sources.mjs';
 import { resolveChannelsLive } from '../scripts/lib/live-video-channel-live.mjs';
 import { extractLiveVideoSurfaces } from '../scripts/lib/live-video-surfaces.mjs';
-import { LIVE_VIDEO_TIMING, parseSourceEntry } from '../src/services/live-video/model.ts';
+import { LIVE_VIDEO_TIMING, parseSourceEntry } from '../packages/client/services/live-video/model.ts';
 
 const parsed = (entry) => parseSourceEntry(entry);
 

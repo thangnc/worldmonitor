@@ -47,7 +47,7 @@ const REFERENCE_DISPLAY_LIMIT = 4;
 const MANIFEST_KIND_RE = /^(?:structured|feed|operational-status)(?:\+(?:structured|feed|operational-status))*$/;
 const LOGICAL_KIND_RE = /^(?:candidate|structured|feed|operational-status)(?:\+(?:structured|feed|operational-status))*$/;
 
-const SOURCE_ROOTS = ['scripts', 'packages/server', 'api', 'src'];
+const SOURCE_ROOTS = ['scripts', 'packages/server', 'api', 'src', 'packages/client'];
 const STRUCTURED_CATALOG_FILES = new Set(['scripts/shared/regional-energy-feeds.json']);
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.js', '.mjs', '.ts', '.tsx']);
 const FEED_FILES = new Set([
@@ -55,9 +55,9 @@ const FEED_FILES = new Set([
   // The live video catalog lists the broadcaster HLS streams Live News plays.
   // They are observed for completeness, but their playback transport is
   // excluded from the data provider count below.
-  'src/config/live-video-sources.ts',
+  'packages/client/config/live-video-sources.ts',
 ]);
-const PRESENTATION_ONLY_FILES = new Set(['src/config/live-video-sources.ts']);
+const PRESENTATION_ONLY_FILES = new Set(['packages/client/config/live-video-sources.ts']);
 const STATUS_FILE = 'packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts';
 
 // URL literals are intentionally parsed before classification.  This catches

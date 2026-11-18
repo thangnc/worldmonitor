@@ -23,7 +23,7 @@ vi.mock("../_shared/api-key-rate-limit", async (importActual) => ({
 }));
 
 import { createDomainGateway, PUBLIC_NO_AUTH_RPC_PATHS } from "../gateway";
-import { PREMIUM_RPC_PATHS } from "../../../src/shared/premium-paths";
+import { PREMIUM_RPC_PATHS } from "../../client/shared/premium-paths";
 import { issueSessionToken } from "../../../api/_session.js";
 
 const PREMIUM_PATH = "/api/supply-chain/v1/get-country-products";

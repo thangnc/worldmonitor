@@ -4,8 +4,8 @@
 // launch (#5829); FRED, EIA, WTO and shipping-rate panels stayed empty the same way.
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/services/runtime', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@/services/runtime')>(),
+vi.mock('@wm/client/services/runtime', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@wm/client/services/runtime')>(),
   isDesktopRuntime: () => true,
 }));
 
@@ -15,12 +15,12 @@ const CLOUD_ROUTED = ['economicFred', 'internetOutages', 'energyEia', 'wtoTrade'
 
 describe('desktop features served from the cloud seed cache', () => {
   it('are available without a local key', async () => {
-    const { isFeatureAvailable } = await import('@/services/runtime-config');
+    const { isFeatureAvailable } = await import('@wm/client/services/runtime-config');
     for (const feature of CLOUD_ROUTED) expect(isFeatureAvailable(feature), feature).toBe(true);
   });
 
   it('keep the key gate where the key is still needed', async () => {
-    const { isFeatureAvailable } = await import('@/services/runtime-config');
+    const { isFeatureAvailable } = await import('@wm/client/services/runtime-config');
     // Wingbits runs locally and calls the vendor with the user's key.
     expect(isFeatureAvailable('wingbitsEnrichment')).toBe(false);
   });

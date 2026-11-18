@@ -14,7 +14,7 @@ import type {
 import type { GetHyperliquidFlowResponse, ListEtfFlowsResponse } from '@wm/contracts/generated/client/worldmonitor/market/v1/service_client';
 import type { GetShippingRatesResponse, ShippingIndex } from '@wm/contracts/generated/client/worldmonitor/supply_chain/v1/service_client';
 import type { ListMaterialEventsResponse, MaterialEvent } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
-import { MARKET_SYMBOLS } from '@/config/markets';
+import { MARKET_SYMBOLS } from '@wm/client/config/markets';
 import { MINUS, signed, usdCompact } from '../format';
 import { feedState, withReading, type FeedState, type Indicator } from './indicators';
 import { DRIVERS, LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';

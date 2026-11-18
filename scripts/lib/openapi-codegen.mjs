@@ -496,9 +496,9 @@ export function readEndpointEntitlements() {
 }
 
 export function readPremiumRpcPaths() {
-  const src = readFileSync(resolve(root, 'src/shared/premium-paths.ts'), 'utf8');
+  const src = readFileSync(resolve(root, 'packages/client/shared/premium-paths.ts'), 'utf8');
   const block = src.match(/PREMIUM_RPC_PATHS\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/);
-  if (!block) throw new Error('could not locate PREMIUM_RPC_PATHS in src/shared/premium-paths.ts');
+  if (!block) throw new Error('could not locate PREMIUM_RPC_PATHS in packages/client/shared/premium-paths.ts');
   return quotedLiterals(block[1]);
 }
 

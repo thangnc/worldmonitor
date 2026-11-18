@@ -30,7 +30,7 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 
-import { ensureHydrated } from '../src/services/bootstrap.ts';
+import { ensureHydrated } from '../packages/client/services/bootstrap.ts';
 import { bootstrapTierKeyNames } from '../packages/shared/bootstrap-tier-keys.js';
 
 const ON_DEMAND = new Set(bootstrapTierKeyNames('on-demand'));

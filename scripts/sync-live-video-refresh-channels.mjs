@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Writes scripts/shared/live-video-refresh-channels.generated.json: every YouTube channel a live video catalog slot
 // lists (canaries excluded), for the seed-live-video-resolved Railway cron. That service is packaged from scripts/
-// alone and runs plain Node, so it cannot read src/config/live-video-sources.ts; this file is its copy of the list.
+// alone and runs plain Node, so it cannot read packages/client/config/live-video-sources.ts; this file is its copy of the list.
 // Run with: npm run sync:live-video-channels (writes) or npm run sync:live-video-channels:check (CI gate).
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -13,7 +13,7 @@ import { isMainModule } from './lib/main-module.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const REFRESH_CHANNELS_FILE = resolve(root, 'scripts/shared/live-video-refresh-channels.generated.json');
-const GENERATED_FROM = 'src/config/live-video-sources.ts';
+const GENERATED_FROM = 'packages/client/config/live-video-sources.ts';
 
 /** The generated file's exact text for `catalog`. */
 export function renderRefreshChannels(catalog = DEFAULT_CATALOG) {

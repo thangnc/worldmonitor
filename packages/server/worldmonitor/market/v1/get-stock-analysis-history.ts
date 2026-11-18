@@ -4,7 +4,7 @@ import {
   type GetStockAnalysisHistoryResponse,
   type MarketServiceHandler,
 } from '../../../../contracts/generated/server/worldmonitor/market/v1/service_server';
-import { STOCK_ANALYSIS_PRO_LIMIT } from '../../../../../src/services/stock-analysis-targets';
+import { STOCK_ANALYSIS_PRO_LIMIT } from '../../../_shared/stock-analysis-targets';
 import { parseStringArray } from './_shared';
 import { getStoredStockAnalysisHistory } from './premium-stock-store';
 

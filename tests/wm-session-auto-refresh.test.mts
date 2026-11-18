@@ -26,7 +26,7 @@
 import assert from 'node:assert/strict';
 import { describe, it, before, beforeEach, after } from 'node:test';
 
-import { withPremiumIntent } from '../src/services/premium-intent.ts';
+import { withPremiumIntent } from '../packages/client/services/premium-intent.ts';
 
 // ---------------------------------------------------------------------------
 // Stub browser globals BEFORE the wm-session module is imported. The module
@@ -116,11 +116,11 @@ const stubLocalStorage: Storage = {
 // Now import the module and install the interceptor exactly once.
 // ---------------------------------------------------------------------------
 
-let mod: typeof import('../src/services/wm-session.ts');
+let mod: typeof import('../packages/client/services/wm-session.ts');
 let wrappedFetch: typeof fetch;
 
 before(async () => {
-  mod = await import('../src/services/wm-session.ts');
+  mod = await import('../packages/client/services/wm-session.ts');
   mod.installWmSessionFetchInterceptor();
   // After install, globalThis.fetch is the wrapper.
   wrappedFetch = (globalThis as unknown as { fetch: typeof fetch }).fetch;

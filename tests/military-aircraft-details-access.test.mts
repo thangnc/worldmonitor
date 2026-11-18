@@ -9,7 +9,7 @@ import {
   ENDPOINT_RATE_POLICIES,
   FAIL_CLOSED_ENDPOINT_RATE_POLICY_REQUIRED,
 } from '../packages/server/_shared/rate-limit.ts';
-import { PREMIUM_RPC_PATHS } from '../src/shared/premium-paths.ts';
+import { PREMIUM_RPC_PATHS } from '../packages/client/shared/premium-paths.ts';
 import { GENERATED_MESSAGE_RULES } from '../packages/contracts/generated/server/request_validation.ts';
 import { validationFailure } from './helpers/validation-failure.mts';
 

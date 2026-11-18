@@ -251,7 +251,7 @@ describe('Fix 3: hasReasoningPreamble', () => {
 // ========================================================================
 
 describe('Fix 4: cache version bump', () => {
-  const src = readSrc('src/utils/summary-cache-key.ts');
+  const src = readSrc('packages/client/utils/summary-cache-key.ts');
 
   it('CACHE_VERSION retires both collidable and divergent translation entries', () => {
     // Bumped v9 → v10 on 2026-09-02 (GHSA-9gp4-366w-pcq3): identity moved off

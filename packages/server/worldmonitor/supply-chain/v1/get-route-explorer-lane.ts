@@ -38,8 +38,8 @@ import { BYPASS_CORRIDORS_BY_CHOKEPOINT, corridorServesOrigin } from '../../../_
 import type { BypassCorridor, CargoType } from '../../../_shared/bypass-corridors';
 import { TIER_RANK } from './_insurance-tier';
 import COUNTRY_PORT_CLUSTERS from '../../../../../scripts/shared/country-port-clusters.json';
-import { TRADE_ROUTES } from '../../../../../src/config/trade-routes';
-import { buildLane } from '../../../../../src/config/trade-route-lanes';
+import { TRADE_ROUTES } from '../../../../client/config/trade-routes';
+import { buildLane } from '../../../_shared/trade-route-lanes';
 import {
   TRANSIT_DAYS_BY_ROUTE_ID,
   TRANSIT_DAYS_FALLBACK,

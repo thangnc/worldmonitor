@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createLazyRpcClientConstructor, MarketServiceClient } from '../src/services/generated-rpc-clients';
+import { createLazyRpcClientConstructor, MarketServiceClient } from '../packages/client/services/generated-rpc-clients';
 
 test('lazy generated RPC client constructor preserves generated method behavior', async () => {
   const calls: Array<{ url: string; init?: RequestInit }> = [];

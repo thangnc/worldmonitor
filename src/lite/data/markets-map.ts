@@ -7,9 +7,9 @@
  */
 import type { ChokepointInfo } from '@wm/contracts/generated/client/worldmonitor/supply_chain/v1/service_client';
 import type { CountrySanctionsPressure } from '@wm/contracts/generated/client/worldmonitor/sanctions/v1/service_client';
-import { CENTRAL_BANKS, FINANCIAL_CENTERS, STOCK_EXCHANGES, type FinancialCenter } from '@/config/finance-geo';
-import { TRADE_ROUTES, resolveTradeRouteSegments } from '@/config/trade-routes';
-import { STRATEGIC_WATERWAYS } from '@/config/geo';
+import { CENTRAL_BANKS, FINANCIAL_CENTERS, STOCK_EXCHANGES, type FinancialCenter } from '@wm/client/config/finance-geo';
+import { TRADE_ROUTES, resolveTradeRouteSegments } from '@wm/client/config/trade-routes';
+import { STRATEGIC_WATERWAYS } from '@wm/client/config/geo';
 import { signed } from '../format';
 import { countryName } from './conflict';
 import type { BondMove } from './finance-macro-indicators';
@@ -35,7 +35,7 @@ function place(list: ReadonlyArray<{ id: string; lat: number; lon: number }>, id
   return { lat: hit.lat, lon: hit.lon };
 }
 
-/** Where each Finance signal is issued. Coordinates come from src/config/finance-geo.ts. */
+/** Where each Finance signal is issued. Coordinates come from packages/client/config/finance-geo.ts. */
 export const ISSUERS: Readonly<Record<string, Issuer>> = {
   fed: { id: 'fed', short: 'Fed', name: 'Federal Reserve · US Treasury · BLS', ...place(CENTRAL_BANKS, 'fed') },
   ecb: { id: 'ecb', short: 'ECB', name: 'European Central Bank · Bund', ...place(CENTRAL_BANKS, 'ecb') },
@@ -265,7 +265,7 @@ export function newSanctionCountries(countries: readonly CountrySanctionsPressur
   return new Map(countries.filter((c) => c.newEntryCount > 0 && c.countryCode).map((c) => [c.countryCode.toUpperCase(), c]));
 }
 
-/** ISO 3166-1 alpha-2 of a countries.geojson feature (same keys as src/services/country-geometry.ts). */
+/** ISO 3166-1 alpha-2 of a countries.geojson feature (same keys as packages/client/services/country-geometry.ts). */
 export function featureIso2(properties: Record<string, unknown> | null | undefined): string | null {
   const raw = properties?.['ISO3166-1-Alpha-2'] ?? properties?.ISO_A2 ?? properties?.iso_a2;
   return typeof raw === 'string' && /^[A-Z]{2}$/i.test(raw) ? raw.toUpperCase() : null;

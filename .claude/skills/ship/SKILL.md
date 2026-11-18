@@ -27,8 +27,8 @@ Fork facts that override the upstream wording:
    - Look for an existing PR for that branch: `gh pr list --repo thangnc/worldmonitor --head <type>/<slug> --state open`. If one exists, ship to it (steps 5 and 7) and never open a second one.
    - `git fetch origin main`, then `git merge-base --is-ancestor origin/main HEAD`. If `main` moved, merge it in (`git merge origin/main`, which is signed) and rerun the affected checks.
 2. **Verify, and report the real output.** Pick the checks from the change → check map for the paths in `git diff --name-only origin/main...HEAD` plus the working tree. At minimum:
-   - Browser code (`src/`): `npm run typecheck`, `npm run lint`, `npm run lint:boundaries`, and the focused suites (`ls tests/ | grep <subject>`).
-   - `api/`, `packages/server/`, `scripts/seed-*`, `src/services/`: also `npm run typecheck:api`, and run the `edge-contract-reviewer` agent on the diff. Include what it found.
+   - Browser code (`src/`, `packages/client/`): `npm run typecheck`, `npm run lint`, `npm run lint:boundaries`, and the focused suites (`ls tests/ | grep <subject>`).
+   - `api/`, `packages/server/`, `scripts/seed-*`, `packages/client/services/`: also `npm run typecheck:api`, and run the `edge-contract-reviewer` agent on the diff. Include what it found.
    - `.github/workflows/`: `actionlint` on the changed workflow and `npm run docs:check`.
    - `CLAUDE.md` or `.claude/`: the tests that read them (`tests/proto-codegen-workflow.test.mts`, `tests/cii-docs-drift.test.mts`, `tests/sentry-triage-skill.test.mjs`) and `npm run docs:check`.
    - `src/lite/`, `lite.html`, the Lite routes (`vercel.json`, `middleware.ts`, `docker/nginx.conf*`, `vite.dev-api.ts`): `tests/lite-ui.test.mts`, `tests/deploy-config.test.mjs`, `npx vitest run --config vitest.dom.config.mts tests/dom/lite-ui.test.mts`, and `npm run build`.

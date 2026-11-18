@@ -134,7 +134,7 @@ function normalizeCountryName(text) {
   return null;
 }
 
-// ── Military vessel classifier (mirror src/config/military.ts + military-vessels.ts) ──
+// ── Military vessel classifier (mirror packages/client/config/military.ts + military-vessels.ts) ──
 
 const MILITARY_VESSEL_PATTERNS = [
   { mmsiPrefix: '3699', country: 'USA' },

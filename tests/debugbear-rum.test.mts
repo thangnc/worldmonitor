@@ -8,8 +8,8 @@ import {
   reportBootstrapTransferRum,
   resetDebugBearRumForTesting,
   shouldEnableDebugBearRum,
-} from '../src/bootstrap/debugbear-rum.ts';
-import { resetDeviceTierForTesting } from '../src/utils/device-tier.ts';
+} from '../packages/client/bootstrap/debugbear-rum.ts';
+import { resetDeviceTierForTesting } from '../packages/client/utils/device-tier.ts';
 
 interface FakeDebugBearScript {
   async: boolean;

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Checks whether live-video entries (YouTube videos, channels, HLS streams) are live right now,
-// using the classifier the dashboard uses (src/services/live-video/model.ts).
+// using the classifier the dashboard uses (packages/client/services/live-video/model.ts).
 // Run with: npm run live-video:check -- <entry> [name=<entry> ...]
 
 import { writeFileSync } from 'node:fs';
@@ -9,8 +9,8 @@ import { CHANNEL_PAGE_TIMEOUT_MS, fetchChannelLivePage, resolveChannelsLive } fr
 import { refreshChannels } from './lib/live-video-refresh.mjs';
 import { readLiveVideoSurfaces } from './lib/live-video-surfaces.mjs';
 import { isMainModule } from './lib/main-module.mjs';
-import { AUDIT_CANARIES, LIVE_NEWS_SOURCES, WEBCAM_GRID_PRIORITY, WEBCAM_SOURCES } from '../src/config/live-video-sources.ts';
-import { classifyAttempt, LIVE_VIDEO_TIMING, parseSourceEntry } from '../src/services/live-video/model.ts';
+import { AUDIT_CANARIES, LIVE_NEWS_SOURCES, WEBCAM_GRID_PRIORITY, WEBCAM_SOURCES } from '../packages/client/config/live-video-sources.ts';
+import { classifyAttempt, LIVE_VIDEO_TIMING, parseSourceEntry } from '../packages/client/services/live-video/model.ts';
 
 const PROBE_ORIGIN = 'https://www.worldmonitor.app';
 const PROBE_URL = `${PROBE_ORIGIN}/__live_video_probe__`;
@@ -30,7 +30,7 @@ export { CHANNEL_PAGE_TIMEOUT_MS };
 const RESOLVE_CONCURRENCY = 4;
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
 const INDENT = ' '.repeat(12);
-const CATALOG_FILE = 'src/config/live-video-sources.ts';
+const CATALOG_FILE = 'packages/client/config/live-video-sources.ts';
 export const DEFAULT_CATALOG = { webcams: WEBCAM_SOURCES, gridPriority: WEBCAM_GRID_PRIORITY, news: LIVE_NEWS_SOURCES, canaries: AUDIT_CANARIES };
 const PROXY_ENV = 'LIVE_VIDEO_AUDIT_PROXY_URL';
 const BATCH_SIZE_ENV = 'LIVE_VIDEO_BATCH_SIZE';

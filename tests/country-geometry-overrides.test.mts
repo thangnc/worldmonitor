@@ -34,7 +34,7 @@ function restoreGlobals(): void {
 }
 
 async function loadFreshCountryGeometryModule() {
-  return import(`../src/services/country-geometry.ts?test=${Date.now()}-${Math.random()}`);
+  return import(`../packages/client/services/country-geometry.ts?test=${Date.now()}-${Math.random()}`);
 }
 
 function makeFeatureCollection(maxCoord: number) {

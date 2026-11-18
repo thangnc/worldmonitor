@@ -23,7 +23,7 @@ import { captureSilentError } from '../../../../../api/_sentry-edge.js';
 // shared with the seeder side so the GDELT seendate parser has one home
 // (#5856 review). esbuild inlines it for the edge bundle.
 import { gdeltSeenDateToMs } from '../../../../../scripts/_conflict-gdelt.mjs';
-import { tokenizeForMatch, findMatchingKeywords } from '../../../../../src/utils/keyword-match';
+import { tokenizeForMatch, findMatchingKeywords } from '../../../../client/utils/keyword-match';
 // The seeded commodity set and its display names. Same import as
 // packages/server/worldmonitor/market/v1/list-commodity-quotes.ts; every consumer of
 // this module runs under tsx, vitest or the edge bundler, which all resolve a

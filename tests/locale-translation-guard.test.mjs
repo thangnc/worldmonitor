@@ -72,7 +72,7 @@ describe('translation validation', () => {
   });
 
   describe('host-qualified paths without a scheme', () => {
-    // src/locales/en.json ships this verbatim. The slash follows the "p" of
+    // packages/client/locales/en.json ships this verbatim. The slash follows the "p" of
     // ".app", so a rule that only requires a non-alphanumeric before the slash
     // stops seeing it — and there is no scheme, so the https arm never fires
     // either. The guard then accepts a translation that deletes the URL outright,

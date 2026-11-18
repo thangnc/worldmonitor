@@ -220,7 +220,7 @@ function isStoragePrototypeCall(node) {
  * threat (an own-property override of `localStorage`) that exists nowhere in
  * this repo. It now uses the shared helper.
  */
-export const GUARD_EXEMPT_FILES = new Set(['src/utils/safe-storage.ts']);
+export const GUARD_EXEMPT_FILES = new Set(['packages/client/utils/safe-storage.ts']);
 
 /**
  * Every `<file> :: <idiom> xN` triple outside the helper, as of #7833.
@@ -236,7 +236,7 @@ export const GUARD_EXEMPT_FILES = new Set(['src/utils/safe-storage.ts']);
  *
  * This list is a ratchet, not a permission slip:
  *   - a NEW pair, or a HIGHER count, fails the guard — route the access
- *     through `@/utils/safe-storage` instead;
+ *     through `@wm/client/utils/safe-storage` instead;
  *   - a pair that shrank or vanished MUST be updated here, so the inventory
  *     can never quietly outlive the drift it records.
  *
@@ -266,16 +266,18 @@ export const GUARD_EXEMPT_FILES = new Set(['src/utils/safe-storage.ts']);
  * registry; do not duplicate those shrinking counts in this comment.
  */
 export const LEGACY_RAW_LOCAL_STORAGE = [
-  'src/services/market-watchlist.ts :: localStorage.<member> x6',
-  'src/services/persistent-cache.ts :: localStorage.<member> x3',
-  'src/services/runtime-config.ts :: localStorage.<member> x2',
-  'src/utils/panel-storage.ts :: localStorage.<member> x3',
+  'packages/client/services/market-watchlist.ts :: localStorage.<member> x6',
+  'packages/client/services/persistent-cache.ts :: localStorage.<member> x3',
+  'packages/client/services/runtime-config.ts :: localStorage.<member> x2',
+  'packages/client/utils/panel-storage.ts :: localStorage.<member> x3',
 ];
 
 /**
  * Floor for the scanned population, derived from the file count at #7833 and
  * lowered when refactor PR 2.1 moved the 79 generated clients out of src/ into
- * packages/contracts (93 files remain). A moved directory or a changed
+ * packages/contracts (93 files remain). Refactor PR 2.4 moved the browser
+ * modules into packages/client (scanned with src/) and nine server-only modules
+ * into packages/server (84 files remain). A moved directory or a changed
  * extension filter would otherwise shrink the scan toward zero and let every
  * assertion pass vacuously — the silent failure mode this guard exists to
  * prevent.
@@ -323,7 +325,8 @@ export function rawStorageUsesIn(source) {
 
 /** Scan the tree and return everything the assertions and the CLI both need. */
 export function scanRepo(root = REPO_ROOT) {
-  const allFiles = collectTsFiles(path.join(root, 'src'), { readdirSync, lstatSync, join: path.join });
+  const allFiles = ['src', 'packages/client'].flatMap((dir) =>
+    collectTsFiles(path.join(root, dir), { readdirSync, lstatSync, join: path.join }));
   const scanned = allFiles.filter(
     (abs) => !GUARD_EXEMPT_FILES.has(path.relative(root, abs)),
   );

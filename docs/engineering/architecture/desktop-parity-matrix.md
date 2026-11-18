@@ -23,7 +23,7 @@ Classifications: `parity` · `intentional difference` · `blocked` · `n/a`.
 | --- | --- | --- |
 | Repo version | 2.11.3 (package.json = tauri.conf.json = Cargo.toml; `npm run version:check` green) | `scripts/sync-desktop-version.mjs` |
 | Newest published desktop release | v2.5.23, built from `e51058e17` (2026-03-01); no `-tech` tag has ever been published | GitHub releases; `gh run list` |
-| Release delta | ~5 months of `main` unreleased; the unified map-layer catalog (`src/config/map-layer-definitions.ts`, #943) postdates the release entirely | `git show e51058e17` — file absent |
+| Release delta | ~5 months of `main` unreleased; the unified map-layer catalog (`packages/client/config/map-layer-definitions.ts`, #943) postdates the release entirely | `git show e51058e17` — file absent |
 | Shipped-build capability loss | **Fixed by #5905**: all Tauri build steps now declare the desktop-required client `VITE_*` set (Clerk/Convex/cyber + relay/basemap parity keys; web-push VAPID remains intentionally excluded on Tauri), a two-way completeness gate (`scripts/check-desktop-build-env.mjs`, `npm run desktop:check-env`) blocks regressions, and tag-push or published manual releases hard-fail on empty client secrets. Capabilities activate once the repo secrets are provisioned (ops step in the #5905 PR). Historical state: only `VITE_VARIANT`, `VITE_DESKTOP_RUNTIME`, `VITE_WS_API_URL`, `CONVEX_URL` were passed — sign-in, subscription entitlements, web push, and the Cyber Threats layer were silently disabled in every CI-built release | `.github/workflows/build-desktop.yml` build-leg env blocks; `scripts/check-desktop-build-env.mjs` |
 | PR CI before #5902 gates | `src-tauri/` (non-sidecar) changes ran **zero** PR CI; `version:check` self-excluded from src-tauri-only diffs; sidecar handler bundling ran only at release time; the inline Rust tests had never run in CI | `test.yml` / `lint-code.yml` change filters |
 | PR CI after #5902 gates | `desktop-config` + `desktop-rust` jobs gate desktop-coupled paths; twice-weekly installed-app canary (`Desktop Canary (Linux)`) asserts launch, sidecar readiness, rendered content | this repo, Test workflow |
@@ -51,7 +51,7 @@ Three compounding causes, none of them SPA desktop-gating:
    at boot `App.ts:901-903`, toggle hidden `App.ts:1770-1771`).
 3. **Internet Outages: keyring capability gating** — on desktop,
    `isFeatureAvailable('internetOutages')` requires a valid
-   `CLOUDFLARE_API_TOKEN` in the OS keyring (`src/services/runtime-config.ts:431-444`);
+   `CLOUDFLARE_API_TOKEN` in the OS keyring (`packages/client/services/runtime-config.ts:431-444`);
    without it the toggle is hidden (`App.ts:1767-1769`) with no explanatory UI.
    Intentional gating presenting as a missing feature (feeds #1942).
 
@@ -64,14 +64,14 @@ current code does in a current desktop build — not the stale v2.5.23 binary.
 
 | Capability | Desktop behavior vs web | Classification | Evidence |
 | --- | --- | --- | --- |
-| API routing | All `/api/*` calls proxied through the Rust `proxy_local_api_request` command to a bundled Node sidecar on `127.0.0.1:46123` (port-file discovery, default 46123); web uses direct fetch | intentional difference (richer: local-first) | `src/services/runtime.ts:115-126,346-413`; `src-tauri/src/main.rs:25` |
-| Cloud fallback | Carries the strongest credential available: a signed-in Pro session forwards its bearer, a desktop key or API key in the keyring is sent as `X-WorldMonitor-Key`, and a signed-out desktop uses an anonymous session (public routes only); web N/A | intentional difference — signed-out desktop sees what a signed-out browser sees | `src/services/runtime.ts:299-304,367-378` |
+| API routing | All `/api/*` calls proxied through the Rust `proxy_local_api_request` command to a bundled Node sidecar on `127.0.0.1:46123` (port-file discovery, default 46123); web uses direct fetch | intentional difference (richer: local-first) | `packages/client/services/runtime.ts:115-126,346-413`; `src-tauri/src/main.rs:25` |
+| Cloud fallback | Carries the strongest credential available: a signed-in Pro session forwards its bearer, a desktop key or API key in the keyring is sent as `X-WorldMonitor-Key`, and a signed-out desktop uses an anonymous session (public routes only); web N/A | intentional difference — signed-out desktop sees what a signed-out browser sees | `packages/client/services/runtime.ts:299-304,367-378` |
 | Sidecar route surface | 60 routes: 34 sebuf `{domain}/v1/[rpc].js` (esbuild-bundled at release) + 26 raw `.js`; `.ts`-only routes (87 files) are cloud-only | mixed — see gaps | `docker/local-api/local-api-server.mjs:531-557`; `scripts/build-sidecar-handlers.mjs` |
 | Seed-backed RPC data | **Fixed by #8154 (#5906)**: the sidecar has no Redis credentials, so every RPC route whose handler only reads seed-owned Redis (144 of 238 generated routes, in 31 of 37 route families) is cloud-preferred whether or not `WS_RELAY_URL` is set — 14 whole-family prefixes plus exact entries. Handlers that call an upstream themselves still run locally. A contract test derives the set from the generated route tables and fails when a seed-only route is uncovered, an exact entry is not a real route, or an entry's handler goes live. Historical state: hardcoded `cloudPreferred` covered only market/economic/infrastructure/news/research (5 of 34 domains) + `/api/bootstrap`, and the other domains served empty 200s that never tripped the `!ok` fallback | intentional difference — seed-backed data is served from the cloud | `local-api-server.mjs:838-987`; `tests/sidecar-cloud-preferred-seed-only.test.mjs`; `packages/server/_shared/redis.ts:81-93` |
-| `api/v2/shipping` family | **Declared cloud-only**: `scripts/build-sidecar-handlers.mjs` lists it in `CLOUD_ONLY_ROUTE_FAMILIES` and fails the build on any undeclared `api/v{N}/{domain}` family; the sidecar routes `/api/v2/shipping/` to the cloud on purpose (`cloudOnlyRouteFamilyPrefixes`) instead of via the 404 fallback. `tests/sidecar-desktop-path-decisions.test.mjs` requires every `packages/server/worldmonitor/` family to be either bundled or declared | intentional difference — cloud-only by design (#5907) | `scripts/build-sidecar-handlers.mjs`; `docker/local-api/local-api-server.mjs`; `src/shared/premium-paths.ts` |
+| `api/v2/shipping` family | **Declared cloud-only**: `scripts/build-sidecar-handlers.mjs` lists it in `CLOUD_ONLY_ROUTE_FAMILIES` and fails the build on any undeclared `api/v{N}/{domain}` family; the sidecar routes `/api/v2/shipping/` to the cloud on purpose (`cloudOnlyRouteFamilyPrefixes`) instead of via the 404 fallback. `tests/sidecar-desktop-path-decisions.test.mjs` requires every `packages/server/worldmonitor/` family to be either bundled or declared | intentional difference — cloud-only by design (#5907) | `scripts/build-sidecar-handlers.mjs`; `docker/local-api/local-api-server.mjs`; `packages/client/shared/premium-paths.ts` |
 | Non-`[rpc]` sibling routes (`scenario/v1/run`…, `supply-chain/v1/country-products`…) | Mis-routed to the local `[rpc].js` bracket match, recovered via cloud fallback — works but wastes a local round-trip | blocked (minor) → #5906 | `local-api-server.mjs:483-529,1764-1767` |
-| Bootstrap timing | Longer budgets (fast tier 5s vs 1.2s; slow 8s vs 3s); boot awaits sidecar readiness poll (3s) | intentional difference | `src/services/bootstrap.ts:427,333`; `src/App.ts:1189,1377-1381` |
-| Widget agent (SSE) | Bypasses sidecar entirely → Railway relay direct (sidecar buffering breaks SSE) | intentional difference | `src/utils/proxy.ts:16-32` |
+| Bootstrap timing | Longer budgets (fast tier 5s vs 1.2s; slow 8s vs 3s); boot awaits sidecar readiness poll (3s) | intentional difference | `packages/client/services/bootstrap.ts:427,333`; `src/App.ts:1189,1377-1381` |
+| Widget agent (SSE) | Bypasses sidecar entirely → Railway relay direct (sidecar buffering breaks SSE) | intentional difference | `packages/client/utils/proxy.ts:16-32` |
 | Geolocation | Skips `/api/geo`; timezone inference instead | intentional difference | `src/utils/user-location.ts:84-93` |
 | Anonymous `wms_` HMAC session | Web-only | intentional difference | `src/App.ts:1389-1394` |
 
@@ -79,13 +79,13 @@ current code does in a current desktop build — not the stale v2.5.23 binary.
 
 | Capability | Desktop behavior vs web | Classification | Evidence |
 | --- | --- | --- | --- |
-| Map layer catalog | Identical shared registry; no desktop gating of `outages`/`cyberThreats` entries (see #5829 diagnosis for why they still don't show) | parity in code; blocked in shipped builds | `src/config/map-layer-definitions.ts:80-81` |
+| Map layer catalog | Identical shared registry; no desktop gating of `outages`/`cyberThreats` entries (see #5829 diagnosis for why they still don't show) | parity in code; blocked in shipped builds | `packages/client/config/map-layer-definitions.ts:80-81` |
 | Desktop-locked panels | `forecast`, `oref-sirens`, `telegram-intel` locked; `cii`, `strategic-risk`, `gdelt-intel`, `supply-chain` downgraded to enhanced | intentional difference (documented here as the fallback statement) | `src/config/panels.ts:32-36,64,118-119` |
 | Layers not loaded on desktop | AIS, Iran attacks, GPS jamming (premium/relay-dependent); military flights uses direct OpenSky w/ 15-min cache instead of proto RPC | intentional difference | `src/app/data-loader.ts:1050,1055,3138`; `src/services/military-flights.ts:63-72` |
 | Variant selection | Web: hostname. Desktop: `localStorage` override with in-app switching (reload in place), falling back to build-time `VITE_VARIANT` | intentional difference | `src/config/variant.ts:20-38`; `src/app/event-handlers.ts:1594-1598` |
 | Variant switcher scope | **Fixed by #5908**: the supported model is one published binary that switches all six variants in-app, so no variant needs its own artifact. `SITE_VARIANTS` is the single source of truth, and `/api/download` accepts exactly that set (plus the `world` alias), pinned by `tests/desktop-one-binary-model.test.mjs`. Historical state: the switcher accepted commodity/energy while the updater knew only full/tech/finance and packaging stopped at full/tech | parity | `src/config/variant.ts:7`; `api/download.js:26-34`; `tests/desktop-one-binary-model.test.mjs` |
 | Runtime-config panel | Force-enabled on desktop boot; hidden on web | intentional difference | `src/App.ts:881-892`; `src/settings-window.ts:63` |
-| Runtime detection | **Closed**: every client call site now derives desktop from `isDesktopRuntime()` in `src/config/desktop-runtime.ts` (config, so `variant.ts` and `basemap.ts` can import it; `src/services/desktop-runtime.ts` re-exports it); only the detector and `tauri-bridge.ts` (which needs `invoke`, not a boolean) may read the bridge globals by name. `tests/desktop-runtime-single-detector.test.mjs` scans `src/` for regressions; `tests/dom/desktop-runtime-variant-convergence.test.mts` proves `SITE_VARIANT` honours the stored variant on a bridge-less Tauri origin | #5912 | `src/config/desktop-runtime.ts`; `src/config/variant.ts` |
+| Runtime detection | **Closed**: every client call site now derives desktop from `isDesktopRuntime()` in `packages/client/config/desktop-runtime.ts` (config, so `variant.ts` and `basemap.ts` can import it; `packages/client/services/desktop-runtime.ts` re-exports it); only the detector and `tauri-bridge.ts` (which needs `invoke`, not a boolean) may read the bridge globals by name. `tests/desktop-runtime-single-detector.test.mjs` scans `src/` for regressions; `tests/dom/desktop-runtime-variant-convergence.test.mts` proves `SITE_VARIANT` honours the stored variant on a bridge-less Tauri origin | #5912 | `packages/client/config/desktop-runtime.ts`; `src/config/variant.ts` |
 
 ### Auth, billing, entitlements
 
@@ -103,9 +103,9 @@ current code does in a current desktop build — not the stale v2.5.23 binary.
 
 | Capability | Desktop behavior vs web | Classification | Evidence |
 | --- | --- | --- | --- |
-| Secret storage | OS keyring via consolidated `secrets-vault` JSON entry (one prompt), 29 allowlisted keys, plaintext never returns to renderer; web: no-op | intentional difference (desktop richer) | `src-tauri/src/main.rs:38-68,110-161`; `src/services/runtime-config.ts:456-460,528-548` |
+| Secret storage | OS keyring via consolidated `secrets-vault` JSON entry (one prompt), 29 allowlisted keys, plaintext never returns to renderer; web: no-op | intentional difference (desktop richer) | `src-tauri/src/main.rs:38-68,110-161`; `packages/client/services/runtime-config.ts:456-460,528-548` |
 | Linux keyring | **blocked** — #802/#1905 (see blockers) | blocked | `main.rs:110-161` silent `if let Ok` |
-| Feature availability | Desktop requires every declared secret valid locally (25 runtime features); web defers to server | intentional difference | `src/services/runtime-config.ts:431-444` |
+| Feature availability | Desktop requires every declared secret valid locally (25 runtime features); web defers to server | intentional difference | `packages/client/services/runtime-config.ts:431-444` |
 | Dedicated settings window | Desktop-only `settings.html` window with cross-window `wm-secrets-updated` sync | intentional difference | `src/settings-main.ts`; `runtime-config.ts:394,474` |
 | Local LLM / Ollama | Desktop-first: ML worker always on, Insights hardcodes cloud+browser models | intentional difference | `src/App.ts:1323-1324`; `src/components/InsightsPanel.ts:352` |
 | Cloud prefs sync | Fully disabled on desktop | intentional difference — local settings stay local | `src/utils/cloud-prefs-sync.ts:185-187` |
@@ -126,7 +126,7 @@ current code does in a current desktop build — not the stale v2.5.23 binary.
 | Web push / service worker | Intentionally desktop-excluded (Tauri check) and doubly so via missing `VITE_VAPID_PUBLIC_KEY` | intentional difference — fallback: in-app alerts | `src/services/push-notifications.ts:42`; `src/main.ts:496` |
 | Breaking-news alerts | Run on desktop; posted via raw XHR to bypass the fetch interceptor | parity | `src/services/breaking-news-alerts.ts:214-228` |
 | Stale-bundle check | Web-only (desktop has the updater instead) | intentional difference | `src/main.ts:405` |
-| Persistent cache | Tauri file storage instead of IndexedDB, with browser fallback; 1 KiB key / 5 MiB value bounds enforced in Rust | intentional difference | `src/services/persistent-cache.ts:123-219`; `src-tauri/src/cache_bounds.rs` |
+| Persistent cache | Tauri file storage instead of IndexedDB, with browser fallback; 1 KiB key / 5 MiB value bounds enforced in Rust | intentional difference | `packages/client/services/persistent-cache.ts:123-219`; `src-tauri/src/cache_bounds.rs` |
 
 ## Release/packaging drift register
 

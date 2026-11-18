@@ -11,7 +11,7 @@ import type {
 } from '../../../../contracts/generated/server/worldmonitor/wildfire/v1/service_server';
 
 import { getCachedJson } from '../../../_shared/redis';
-import { resolveFireDetectionTotalCount } from '../../../../../src/services/wildfires/payload';
+import { resolveFireDetectionTotalCount } from '../../../_shared/wildfire-payload';
 import { limitFireDetectionsForDashboard } from '../../../../../api/_wildfire-dashboard.js';
 export { WILDFIRE_DASHBOARD_DETECTION_LIMIT, limitFireDetectionsForDashboard } from '../../../../../api/_wildfire-dashboard.js';
 

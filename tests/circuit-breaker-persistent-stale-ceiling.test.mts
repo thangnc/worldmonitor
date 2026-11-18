@@ -34,7 +34,7 @@ function deferred<T>() {
 
 describe('CircuitBreaker — persistentStaleCeilingMs behavior', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('default persistentStaleCeiling is 24h (backwards compatible)', async () => {
@@ -85,7 +85,7 @@ describe('CircuitBreaker — persistentStaleCeilingMs behavior', () => {
 
 describe('CircuitBreaker — persistentStaleCeilingMs edge cases', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('persistentStaleCeilingMs of 0 effectively disables persistent hydration', async () => {
@@ -241,7 +241,7 @@ describe('CircuitBreaker — persistentStaleCeilingMs edge cases', () => {
 
 describe('CircuitBreaker — multiple breakers with different ceilings', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('two breakers with different ceilings do not share state', async () => {
@@ -365,7 +365,7 @@ describe('CircuitBreaker — multiple breakers with different ceilings', () => {
 
 describe('CircuitBreaker — persistentStaleCeilingMs with cacheTtlMs=0', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('cacheTtlMs=0 disables persistence even if persistentStaleCeilingMs is set', async () => {
@@ -396,7 +396,7 @@ describe('CircuitBreaker — persistentStaleCeilingMs with cacheTtlMs=0', () => 
   });
 
   it('static: cacheTtlMs=0 sets persistEnabled=false in constructor', () => {
-    const src = readSrc('src/utils/circuit-breaker.ts');
+    const src = readSrc('packages/client/utils/circuit-breaker.ts');
 
     // The constructor should have: this.cacheTtlMs === 0 ? false : ...
     assert.match(
@@ -413,7 +413,7 @@ describe('CircuitBreaker — persistentStaleCeilingMs with cacheTtlMs=0', () => 
 
 describe('CircuitBreaker — persistentStaleCeilingMs with persistCache=false', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('persistCache=false means ceiling is irrelevant (no hydration attempted)', async () => {
@@ -463,7 +463,7 @@ describe('CircuitBreaker — persistentStaleCeilingMs with persistCache=false', 
   });
 
   it('static: execute only calls hydratePersistentCache when persistEnabled is true', () => {
-    const src = readSrc('src/utils/circuit-breaker.ts');
+    const src = readSrc('packages/client/utils/circuit-breaker.ts');
 
     // The execute method should check this.persistEnabled before calling hydrate
     assert.match(
@@ -480,7 +480,7 @@ describe('CircuitBreaker — persistentStaleCeilingMs with persistCache=false', 
 
 describe('CircuitBreaker — exotic values for persistentStaleCeilingMs', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('NaN persistentStaleCeilingMs does not throw (breaker still works)', async () => {
@@ -580,7 +580,7 @@ describe('CircuitBreaker — exotic values for persistentStaleCeilingMs', () => 
 
 describe('CircuitBreaker — concurrent execute with persistentStaleCeilingMs', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('concurrent execute() calls do not corrupt cache or throw', async () => {
@@ -625,7 +625,7 @@ describe('CircuitBreaker — concurrent execute with persistentStaleCeilingMs', 
 
 describe('CircuitBreaker — same name, different ceiling (registry behavior)', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('creating a breaker with the same name replaces it in the registry', async () => {
@@ -671,7 +671,7 @@ describe('CircuitBreaker — same name, different ceiling (registry behavior)', 
 
 describe('CircuitBreaker — shouldCache eviction of invalid cached data', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('evicts cached data that fails shouldCache and fetches fresh', async () => {
@@ -761,7 +761,7 @@ describe('CircuitBreaker — shouldCache eviction of invalid cached data', () =>
 
 describe('CircuitBreaker — awaited stale refresh opt-in', () => {
   const CIRCUIT_BREAKER_URL = pathToFileURL(
-    resolve(root, 'src/utils/circuit-breaker.ts'),
+    resolve(root, 'packages/client/utils/circuit-breaker.ts'),
   ).href;
 
   it('waits for a stale refresh and falls back with cached mode when it fails', async () => {

@@ -31,8 +31,8 @@ before(async () => {
   const result = await build({
     stdin: {
       contents: [
-        "export { primeBootstrapFastTier, primedBootstrapTierBudgetUsedMs } from './src/services/bootstrap-prefetch.ts';",
-        "export { fetchBootstrapData, getBootstrapHydrationState, __testing__ as bootstrapTesting } from './src/services/bootstrap.ts';",
+        "export { primeBootstrapFastTier, primedBootstrapTierBudgetUsedMs } from './packages/client/services/bootstrap-prefetch.ts';",
+        "export { fetchBootstrapData, getBootstrapHydrationState, __testing__ as bootstrapTesting } from './packages/client/services/bootstrap.ts';",
       ].join('\n'),
       loader: 'ts',
       resolveDir: root,

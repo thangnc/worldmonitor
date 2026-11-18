@@ -32,7 +32,7 @@ The deployment is private, so 1c-3 removed everything it published for people an
 Most features are a pipeline, and only the UI leaves with the dashboard. Before porting, trace the chain at the tag:
 
 1. **UI**: the panel or layer component (tables below). It is vanilla DOM code, so a Lite widget is rewritten in Preact, not copied.
-2. **Browser service**: the `src/services/*` module the component imports. Port only what the widget needs into the client package.
+2. **Browser service**: the `packages/client/services/*` module the component imports. Port only what the widget needs into the client package.
 3. **RPC**: the generated client method the service calls, defined in `packages/contracts/proto/`. Contracts and handlers (`packages/server/worldmonitor/<domain>/v1/`) stay in the repository.
 4. **Redis key and producer**: the handler's key in `api/health.js` (`BOOTSTRAP_KEYS`, `STANDALONE_KEYS`, `SEED_META`), and the seeder or relay loop that writes it. Producers stay in the repository; a port adds the producer to the Lite seeder allowlist and its key to the health subset.
 5. **Licence**: check the upstream host in `packages/shared/source-attribution-manifest.json` against the spec's source policy.
@@ -51,7 +51,7 @@ Features the owner has asked about, with the chain traced at the tag.
 
 ## Inventory at the tag
 
-Generated from `src/config/panels.ts`, `src/config/lite-profile.ts`, `src/config/map-layer-definitions.ts` and `src/app/panel-layout.ts` at the tag. "In Lite profile" means the panel or layer was in the flag-on dashboard layout (`LITE_PANEL_ORDER`, `LITE_CROSS_VARIANT_PANELS`, `LITE_MAP_LAYERS`), not that the Lite UI shows it. A blank component cell means the panel is built inline: grep its ID in `src/app/panel-layout.ts` at the tag.
+Generated from `src/config/panels.ts`, `src/config/lite-profile.ts`, `packages/client/config/map-layer-definitions.ts` and `src/app/panel-layout.ts` at the tag. "In Lite profile" means the panel or layer was in the flag-on dashboard layout (`LITE_PANEL_ORDER`, `LITE_CROSS_VARIANT_PANELS`, `LITE_MAP_LAYERS`), not that the Lite UI shows it. A blank component cell means the panel is built inline: grep its ID in `src/app/panel-layout.ts` at the tag.
 
 ### Panels (164)
 

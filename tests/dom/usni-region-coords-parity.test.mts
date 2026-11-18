@@ -2,9 +2,9 @@ import { createRequire } from 'node:module';
 
 import { describe, expect, it } from 'vitest';
 
-import { USNI_REGION_COORDINATES, getUSNIRegionCoords } from '@/config/military';
+import { USNI_REGION_COORDINATES, getUSNIRegionCoords } from '@wm/client/config/military';
 
-// Lives under tests/dom because src/config/military.ts reads import.meta.env at
+// Lives under tests/dom because packages/client/config/military.ts reads import.meta.env at
 // module scope, which only the Vite pipeline provides; the tsx node:test runner
 // cannot import it. The parser is plain CommonJS and loads from either side.
 const require = createRequire(import.meta.url);

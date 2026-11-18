@@ -15,7 +15,7 @@ import {
   type LiveVideoSource,
   type ParsedSource,
   type SettledVerdict,
-} from '../src/services/live-video/model.ts';
+} from '../packages/client/services/live-video/model.ts';
 
 const JERUSALEM = 'https://www.youtube.com/watch?v=zp6LNSoq000';
 const KYIV_RECORDING = '-Q7FuPINDjA';

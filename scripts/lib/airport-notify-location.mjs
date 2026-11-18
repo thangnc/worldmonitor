@@ -9,7 +9,7 @@
 //
 // Lives under scripts/ on purpose: the Railway seed crons build from a
 // scripts-rooted Nixpacks source, so anything this path needs at runtime must
-// sit inside scripts/. Reaching out to src/config/*.ts from here throws ENOENT
+// sit inside scripts/. Reaching out to packages/client/config/*.ts from here throws ENOENT
 // in the container (see the AIRPORTS registry comment in seed-aviation.mjs).
 
 /**

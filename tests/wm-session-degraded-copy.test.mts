@@ -16,7 +16,7 @@ import { describe, it } from 'node:test';
 import {
   WM_SESSION_DEGRADED_FALLBACK_COPY,
   describeWmSessionDegradation,
-} from '../src/services/wm-session-copy.ts';
+} from '../packages/client/services/wm-session-copy.ts';
 
 const ALL_REASONS = ['mint_failed', 'retry_401', 'cookie_not_persisted'] as const;
 

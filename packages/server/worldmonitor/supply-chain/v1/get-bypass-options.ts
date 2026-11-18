@@ -7,7 +7,7 @@ import type {
 } from '../../../../contracts/generated/server/worldmonitor/supply_chain/v1/service_server';
 
 import { isCallerPremium } from '../../../_shared/premium-check';
-import { BYPASS_CORRIDORS_BY_CHOKEPOINT } from '../../../../../src/config/bypass-corridors';
+import { BYPASS_CORRIDORS_BY_CHOKEPOINT } from '../../../../client/config/bypass-corridors';
 import { getCachedJson } from '../../../_shared/redis';
 import { CHOKEPOINT_STATUS_KEY } from '../../../_shared/cache-keys';
 import { TIER_RANK } from './_insurance-tier';
