@@ -110,7 +110,7 @@
     "gen:openapi:async-jobs": "node scripts/openapi-inject-async-jobs.mjs",
     "gen:openapi:china-decision-signals": "node scripts/openapi-inject-china-decision-signals.mjs",
     "build:agent-skills": "node scripts/build-agent-skills-index.mjs",
-    "build": "npm run security:vite-env-secrets -- --strict-local && tsc && vite build && npm run check:source-maps",
+    "build": "npm run security:vite-env-secrets -- --strict-local && npm run build:openapi && npm run build:pro && tsc && vite build && npm run check:source-maps",
     "build:sidecar-sebuf": "node scripts/build-sidecar-sebuf.mjs",
     "build:desktop": "npm run security:vite-env-secrets -- --strict-local && node scripts/generate-third-party-notices.mjs && node scripts/build-sidecar-sebuf.mjs && node scripts/build-sidecar-handlers.mjs && tsc && vite build",
     "build:full": "npm run build",

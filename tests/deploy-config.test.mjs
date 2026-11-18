@@ -487,7 +487,8 @@ describe('crawlable content corpus deployment contracts', () => {
     // vercel.json overrides the dashboard's Build Command, which is where this
     // used to live -- invisible to the repo and changeable without a diff.
     // The Lite UI is the only web app: the deploy build is the secrets check,
-    // the browser typecheck, the Lite Vite build and the source-map gate.
+    // the OpenAPI copy and the /pro build (both still served until refactor
+    // Phase 1b), the browser typecheck, the Lite Vite build and the source-map gate.
     // build:full stays as an alias so older callers build the same thing.
     assert.equal(
       vercelConfig.buildCommand,
@@ -496,7 +497,7 @@ describe('crawlable content corpus deployment contracts', () => {
     );
     assert.equal(
       packageJson.scripts.build,
-      'npm run security:vite-env-secrets -- --strict-local && tsc && vite build && npm run check:source-maps',
+      'npm run security:vite-env-secrets -- --strict-local && npm run build:openapi && npm run build:pro && tsc && vite build && npm run check:source-maps',
     );
     assert.equal(packageJson.scripts['build:full'], 'npm run build');
     assert.equal(packageJson.scripts.prebuild, undefined, 'the deploy build must not run hidden prebuild generators');
@@ -3490,13 +3491,14 @@ describe('agent readiness: api-catalog + openapi build', () => {
 
   it('runs no npm prebuild hooks: the build scripts are the whole build', () => {
     // The Lite build dropped the variant builds and their prebuild hooks
-    // (product facts, OpenAPI copy, agent-skills index). The generated inputs
-    // are refreshed by their own scripts (product:facts, build:openapi), not by
-    // a hook that fires on every build.
+    // (product facts, agent-skills index). The build chains build:openapi
+    // explicitly (a copy of the committed spec into public/), never the frozen
+    // product-facts generator, and nothing fires as a hidden hook.
     assert.deepEqual(Object.keys(pkg.scripts).filter((name) => name.startsWith('prebuild')), []);
     for (const name of ['build', 'build:full', 'build:desktop']) {
-      assert.doesNotMatch(pkg.scripts[name], /npm run (?:product:facts|build:openapi)\b/, `${name} must not chain a generator`);
+      assert.doesNotMatch(pkg.scripts[name], /npm run product:facts\b/, `${name} must not chain the frozen product-facts generator`);
     }
+    assert.match(pkg.scripts.build, /npm run build:openapi && npm run build:pro && /);
   });
 
   it('does not regenerate committed product config before build:pro', () => {
