@@ -21,7 +21,7 @@ Thank you for your interest in contributing to World Monitor! This project thriv
 
 ## Architecture Overview
 
-World Monitor is a real-time OSINT dashboard built with **Vanilla TypeScript** (no UI framework), **MapLibre GL + deck.gl** for map rendering, and a custom Proto-first RPC framework called **Sebuf** for all API communication.
+World Monitor Lite is an unofficial fork of World Monitor ([README](README.md)): one **Preact + Tailwind** web app at `/lite` with **MapLibre GL** maps, Vercel Edge API handlers, Redis filled by seeders and a relay, and a Proto-first RPC framework called **Sebuf** for all API communication.
 
 ### Key Technologies
 
@@ -31,12 +31,12 @@ World Monitor is a real-time OSINT dashboard built with **Vanilla TypeScript** (
 | **Vite** | Build tool and dev server |
 | **Sebuf** | Proto-first HTTP RPC framework for typed API contracts |
 | **Protobuf / Buf** | Service and message definitions across domains |
-| **MapLibre GL** | Base map rendering (tiles, globe mode, camera) |
-| **deck.gl** | WebGL overlay layers (scatterplot, geojson, arcs, heatmaps) |
-| **d3** | Charts, sparklines, and data visualization |
+| **Preact + Tailwind** | The Lite UI (`apps/web/src/lite/`) |
+| **MapLibre GL** | Map rendering on OpenFreeMap tiles, with markers drawn as Preact elements |
 | **Vercel Edge Functions** | Serverless API gateway |
-| **Convex** | Billing, entitlements, user state, forms, and intelligence history |
-| **Playwright** | End-to-end and visual regression testing |
+| **Upstash Redis** | The store every screen reads, filled by the seeders and the AIS relay |
+| **Turborepo** | Cached `typecheck` and `build` across the npm workspaces |
+| **Playwright** | Browser checks through the `verify-worldmonitor` skill |
 
 ### One app, no variants
 
@@ -51,15 +51,14 @@ The web app is the Lite UI (`apps/web/src/lite/`, served at `/lite`). Refactor P
 | `packages/client/config/` | Static data and route config (geo, military, ports, Lite routes) |
 | `packages/contracts/generated/` | Auto-generated sebuf client + server stubs, workspace package `@wm/contracts` (**do not edit by hand**) |
 | `packages/client/types/` | TypeScript type definitions |
-| `packages/client/locales/` | i18n JSON files |
+| `packages/client/locales/` | UI strings (English) |
 | `packages/server/` | Sebuf handler implementations |
 | `api/` | Vercel Edge Functions (sebuf gateway + legacy endpoints) |
 | `packages/contracts/proto/` | Protobuf service and message definitions |
 | `data/` | Static JSON datasets |
 | `packages/contracts/openapi/` | Generated OpenAPI specs (**do not edit by hand**) |
 | `docs/` | Engineering records |
-| `e2e/` | Playwright end-to-end tests |
-| `scripts/` | Build and packaging scripts |
+| `scripts/` | Seeders, the AIS relay, and repository tooling |
 
 ## Getting Started
 
@@ -149,7 +148,7 @@ Use Node.js 24 from `.nvmrc`; preflight and the main CI workflows require it. Th
 
 For full functionality, copy `.env.example` to `.env.local` and fill in the API keys you need. The app runs without any API keys — external data sources will simply be unavailable.
 
-See the [API dependencies docs](https://www.worldmonitor.app/docs/getting-started#api-dependencies) for the full list.
+`.env.example` lists each variable with the source or feature that reads it.
 
 ### Worktrees and preflight
 
