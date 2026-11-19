@@ -33,7 +33,7 @@ The two runners are not interchangeable. A vitest file run under node:test fails
 - A test double must not be richer than the real library it replaces.
 - Pin fixtures and clocks. Do not depend on live upstreams, rolling captures, or today's date.
 - Do not delete or weaken a check without evidence that its protection is obsolete, redundant, or ineffective.
-- A worktree under `.claude/worktrees/` resolves missing packages through the main checkout's `node_modules`. After removing packages, check imports against `package-lock.json` instead of trusting a local pass ([lesson](../../docs/engineering/solutions/test-failures/worktree-resolves-removed-packages-through-the-main-checkout.md)).
+- A worktree under `.claude/worktrees/` resolves missing packages through the main checkout's `node_modules`. After removing packages, resolve every bare import from its own file and flag any that resolve outside the worktree (packages hoisted only through a removed one vanish too), instead of trusting a local pass ([lesson](../../docs/engineering/solutions/test-failures/worktree-resolves-removed-packages-through-the-main-checkout.md)).
 
 ## Run
 

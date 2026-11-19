@@ -11,6 +11,7 @@
     "es5-ext": false,
     "esbuild": true,
     "fsevents": false,
+    "protobufjs": false,
     "utf-8-validate": false
   },
   "type": "module",
@@ -100,7 +101,7 @@
     "test:server:watch": "vitest --config vitest.config.mts",
     "build": "npm run build -w @wm/web",
     "build:full": "npm run build",
-    "test:sidecar": "node --test docker/local-api/local-api-server.test.mjs docker/local-api/youtube-embed-message.test.mjs api/_cors.test.mjs api/_session.test.mjs api/_api-key.test.mjs api/_rate-limit.test.mjs api/_sentry-common.test.mjs api/bootstrap-auth.test.mjs api/bootstrap-cors.test.mjs api/health-cors.test.mjs api/wm-session.test.mjs scripts/ais-relay-rss.test.cjs scripts/ais-relay-ingestion.test.cjs scripts/ais-relay-entity-decode.test.cjs scripts/ais-relay-seed-fetchedat.test.cjs scripts/ais-relay-ais-gaps.test.cjs scripts/ais-relay-opensky-shared-cooldown.test.cjs api/loaders-xml-wms-regression.test.mjs"
+    "test:sidecar": "node --test docker/local-api/local-api-server.test.mjs docker/local-api/youtube-embed-message.test.mjs api/_cors.test.mjs api/_session.test.mjs api/_api-key.test.mjs api/_rate-limit.test.mjs api/_sentry-common.test.mjs api/bootstrap-auth.test.mjs api/bootstrap-cors.test.mjs api/health-cors.test.mjs api/wm-session.test.mjs scripts/ais-relay-rss.test.cjs scripts/ais-relay-ingestion.test.cjs scripts/ais-relay-entity-decode.test.cjs scripts/ais-relay-seed-fetchedat.test.cjs scripts/ais-relay-ais-gaps.test.cjs scripts/ais-relay-opensky-shared-cooldown.test.cjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.7",
@@ -126,6 +127,8 @@
     "js-yaml": "^4.3.2",
     "markdownlint-cli2": "^0.21.0",
     "pdfjs-dist": "6.2.108",
+    "protobufjs": "^7.6.5",
+    "semver": "^7.8.5",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
     "turbo": "2.11.10",
@@ -154,6 +157,7 @@
     "overlayscrollbars": "^2.17.0",
     "papaparse": "^5.5.3",
     "preact": "^10.25.4",
+    "sax": "^1.6.0",
     "stream-json": "file:vendor/stream-json",
     "supercluster": "^8.0.1",
     "telegram": "^2.26.22",
