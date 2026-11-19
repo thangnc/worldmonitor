@@ -389,7 +389,6 @@ describe('baseline entry validation', () => {
 
   it('tracks a baseline entry for each audited lockfile', () => {
     assert.deepEqual(Object.keys(BASELINE_ADVISORIES_BY_LOCKFILE).sort(), [
-      'consumer-prices-core/package-lock.json',
       'docker/runtime-package-lock.json',
       'package-lock.json',
       'scripts/package-lock.json',
@@ -467,7 +466,6 @@ describe('security audit baseline', () => {
     // GHSA-5p4m-2wfm-xmqj: 3.x is fixed in 3.15.1, 4.x in 4.3.1. Both land
     // inside the existing semver ranges, so a lockfile refresh is the whole fix.
     const rootLock = readRepoJson('package-lock.json');
-    const cpcLock = readRepoJson('consumer-prices-core/package-lock.json');
 
     // Every js-yaml copy in the root tree, whichever major it resolves to.
     const rootEntries = Object.entries(rootLock.packages)
@@ -478,29 +476,10 @@ describe('security audit baseline', () => {
       assert.ok(atLeast(entry.version, patched), `root ${path} ${entry.version} is below the patched ${patched}`);
     }
 
-    for (const [label, entry] of [
-      ['consumer-prices-core', cpcLock.packages['node_modules/js-yaml']],
-    ]) {
-      assert.ok(entry, `${label} js-yaml must be present`);
-      assert.ok(atLeast(entry.version, '4.3.1'), `${label} js-yaml ${entry.version} is below the patched 4.3.1`);
-    }
-
     // The helper must reject the lexicographic trap it exists to avoid.
     assert.equal(atLeast('3.9.0', '3.15.1'), false);
     assert.equal(atLeast('3.15.1', '3.15.1'), true);
     assert.equal(atLeast('4.3.0', '4.3.1'), false);
-  });
-
-  it('keeps consumer-prices-core on the Fastify v5 audit fix', () => {
-    const packageJson = readRepoJson('consumer-prices-core/package.json');
-    const lockfile = readRepoJson('consumer-prices-core/package-lock.json');
-
-    assert.match(packageJson.dependencies.fastify, /^\^5\./);
-    assert.match(packageJson.dependencies['@fastify/cors'], /^\^11\./);
-    assert.match(packageJson.dependencies['js-yaml'], /^\^4\.(?:[2-9]|\d{2,})\./);
-    assert.match(lockfile.packages['node_modules/fastify']?.version, /^5\./);
-    assert.match(lockfile.packages['node_modules/@fastify/cors']?.version, /^11\./);
-    assert.deepEqual(baselineEntriesFor('consumer-prices-core/package-lock.json'), []);
   });
 
   it('keeps one audit-patched esbuild, which Vite accepts as its optional peer', () => {
@@ -632,7 +611,7 @@ describe('npm audit failure reporting', () => {
 });
 
 
-describe('Dependabot image-size and fast-uri remediation', () => {
+describe('Dependabot image-size remediation', () => {
   for (const lockPath of ['package-lock.json']) {
     it(`excludes vulnerable image-size copies from ${lockPath}`, () => {
       const entries = Object.entries(readRepoJson(lockPath).packages)
@@ -646,13 +625,5 @@ describe('Dependabot image-size and fast-uri remediation', () => {
     assert.equal(paths.some((path) => path.endsWith('/texture-compressor')), false);
   });
 
-  it('excludes vulnerable fast-uri copies from the Umami runtime lockfile', () => {
-    const lock = readFileSync(new URL('../docker/umami/runtime/pnpm-lock.yaml', import.meta.url), 'utf8');
-    const versions = [...lock.matchAll(/^  fast-uri@([^:]+):/gm)].map((match) => match[1]);
-    assert.ok(versions.length > 0, 'the Ajv consumer must remain covered');
-    for (const version of versions) {
-      assert.ok(atLeast(version, '3.1.7'), `Umami fast-uri@${version} is vulnerable`);
-    }
-  });
 });
 

@@ -1,6 +1,7 @@
 ---
 title: A worktree resolves removed packages through the main checkout's node_modules, so a local pass hides a CI MODULE_NOT_FOUND
 date: 2026-11-18
+last_updated: 2026-11-19
 area: tests
 problem_type: test_failure
 tags:
@@ -16,6 +17,7 @@ module: test-harness
 symptoms:
   - "Error: Cannot find module 'metro/private/Assets'"
   - "Error: Cannot find module 'jayson'"
+  - "Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'protobufjs' imported from scripts/generate-request-validation.mjs"
   - A test passes in a .claude/worktrees/ checkout and fails in CI right after a PR removed packages from package-lock.json
 root_cause: Node resolves a bare specifier by walking up parent directories, and .claude/worktrees/<name>/ sits inside the main checkout, whose node_modules still holds the removed packages.
 ---
@@ -52,13 +54,21 @@ After removing dependencies, check imports against the lockfiles instead of trus
 
 In #64 that scan also found `scripts/audit-dodo-catalog.cjs`, which `require()`d the removed `dodopayments` package and read the deleted `convex/config/productCatalog.ts`.
 
+Count only **top-level** lockfile entries (`node_modules/<name>`), not nested ones. Better still, resolve every bare import from its own file with `createRequire(file).resolve(...)` and flag any path outside the worktree. Lite-only cleanup PR 5 (#148) removed 33 unused root packages. Its first scan checked only the removed names and passed locally. CI then failed three ways:
+
+- packages that had been hoisted only because a removed package depended on them: `@loaders.gl/xml` and `@loaders.gl/wms` (from deck.gl), `protobufjs` (from onnxruntime-web, used by `make generate` through `scripts/generate-request-validation.mjs`) and `semver`;
+- `semver` still appeared in the lockfile, but only nested under other packages, so a name-only lockfile check missed it;
+- `sax` was hoisted the same way, and a Lite seeder imports it. CI's unit job installs `scripts/` dependencies, so CI stayed green, but `npm run seed:lite` from a root-only install would have broken.
+
+The fix declared each still-used package directly and deleted the test that only served deck.gl's loaders.
+
 ## Why This Works
 
 The lockfile is what CI installs (`npm ci`), so it is the only accurate list of resolvable packages. Local resolution in a nested worktree adds the main checkout's `node_modules` as an extra, invisible fallback.
 
 ## Prevention
 
-- After a change that removes packages, run the lockfile scan before pushing. When the change is large, also push early and let CI confirm.
+- After a change that removes packages, run the resolve-from-file scan before pushing; a package that only arrived through a removed one disappears with it. When the change is large, also push early and let CI confirm.
 - Read a locally passing test that loads a removed package as a warning, not as proof.
 - Rule line: `.claude/rules/tests.md`.
 

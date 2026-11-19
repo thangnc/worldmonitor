@@ -435,7 +435,7 @@ Alerts, Watchlists, Scoring rules, Settings and each domain screen's primary act
 
 Do not add a datastore before its gate is met:
 
-- **Supabase Postgres** when the build needs any of: an event store with timelines, history longer than Redis TTLs, alert rules or delivery state, or a replacement for `intelHistory` (pgvector). Template: `consumer-prices-core/` (`pg`, migrations, `raw_payload_json`, `raw_hash`).
+- **Supabase Postgres** when the build needs any of: an event store with timelines, history longer than Redis TTLs, alert rules or delivery state, or a replacement for `intelHistory` (pgvector). Template: the removed `consumer-prices-core/` service (`pg`, migrations, `raw_payload_json`, `raw_hash`), in git history before the 2026-11 Lite-only cleanup.
 - **R2 raw archive** when audit or replay of upstream payloads is required. Store the body, fetch time, canonical URL, source and content hash.
 
 ### Operations

@@ -307,13 +307,6 @@ describe('#7081 finding 3 — fading is not observable at this call site', () =>
       activeHighSeverityFalsePositives: ACCEPTANCE.maxActiveHighSeverityFalsePositives + 1,
     }).verdict, 'reject');
   });
-
-  it('the seeder, which CAN see silence, already has a working fading rule', () => {
-    const seeder = readFileSync(
-      resolve(__dirname, '..', 'scripts', 'seed-digest-notifications.mjs'), 'utf-8');
-    assert.match(seeder, /deriveNotificationStoryPhase/,
-      'the notification seeder derives fading via packages/shared/story-phase.js');
-  });
 });
 
 describe('#7081 no-go contract — the feed digest must not emit FADING', () => {

@@ -17,9 +17,8 @@
 //   2. Update docs/engineering/methodology/cii-risk-scores.md (the public methodology
 //      note) in the same commit. Tests assert the doc lists every coefficient
 //      and every CURATED_COUNTRIES code.
-//   3. Note the change in docs/changelog.mdx and CHANGELOG.md under the
-//      public-facing section so downstream users of the proto API see why score
-//      values or movement semantics may shift between deploys.
+//   3. Say in the PR why score values or movement semantics shift (the public
+//      changelogs left with upstream's release process in 2026-11).
 //
 // Last reviewed: 2026-10-21 (v14 drops the cyber boost, whose feeds place attacker
 // infrastructure rather than victims, and scores only foreign military flights and

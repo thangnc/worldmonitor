@@ -1120,16 +1120,6 @@ export function createDomainGateway(
     const isCountryHistoryRpc = pathname === '/api/intelligence/v1/get-country-history';
     const isPublicNoAuthRpc = PUBLIC_NO_AUTH_RPC_PATHS.has(pathname)
       || isPublicSharedRpcRequest(request.url, request.method);
-    // The sidecar verifies its native transport token before dispatch. Local
-    // Ollama translation needs neither cloud identity nor a Redis spend budget.
-    let isSidecarOllamaTranslation = false;
-    if (process.env.LOCAL_API_MODE === 'tauri-sidecar'
-      && request.method === 'POST' && pathname === '/api/news/v1/summarize-article') {
-      try {
-        const body = await request.clone().json() as { provider?: unknown; mode?: unknown };
-        isSidecarOllamaTranslation = body.provider === 'ollama' && body.mode === 'translate';
-      } catch { /* malformed requests retain the normal authentication path */ }
-    }
     // Both are route-scoped credential checks that read only the request, and
     // either can short-circuit to `false` without touching the other. This is
     // the per-request dispatch path, so resolve them together.
@@ -1164,8 +1154,7 @@ export function createDomainGateway(
       && !seedRefreshVerified && !relayWarmPingVerified
       && !isDockerSelfHostCountryBrief;
     const skipsCredentialCheck = isPublicNoAuthRpc
-      || seedRefreshVerified || relayWarmPingVerified
-      || isSidecarOllamaTranslation;
+      || seedRefreshVerified || relayWarmPingVerified;
 
     let keyCheck: { valid: boolean; required: boolean; error?: string; kind?: 'enterprise' | 'session'; credential?: string } = skipsCredentialCheck
       ? { valid: true, required: false }
@@ -1344,14 +1333,7 @@ export function createDomainGateway(
     }
     const isServerSubRequest = subRequestAdmission === 'admitted';
 
-    // These local provider lookups use the sidecar cache without Upstash.
-    // Keep these exceptions exact-path; cloud requests retain the provider cap.
-    const isSidecarProviderLookup = process.env.LOCAL_API_MODE === 'tauri-sidecar'
-      && (pathname === '/api/aviation/v1/track-aircraft'
-        || pathname === '/api/military/v1/get-wingbits-live-flight'
-        || pathname === '/api/imagery/v1/search-imagery'
-        || pathname === '/api/webcam/v1/get-webcam-image');
-    const endpointRlResponse = isServerSubRequest || isSidecarProviderLookup || isSidecarOllamaTranslation
+    const endpointRlResponse = isServerSubRequest
       ? null
       : await checkEndpointRateLimit(request, pathname, corsHeaders);
     if (endpointRlResponse) {

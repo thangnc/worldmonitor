@@ -2,11 +2,11 @@
 
 > **Inventory ownership**: map layers, services, protos, locales, CI workflows, and freshness sources are defined by their registries. `npm run docs:check` verifies registry and fixed-contract documentation; generated snapshots are refreshed with `npm run docs:stats`.
 >
-> **Ownership rule**: When deployment topology, API surface, desktop runtime, or bootstrap keys change, this document must be updated in the same PR.
+> **Ownership rule**: When deployment topology, API surface, or bootstrap keys change, this document must be updated in the same PR.
 
 > **Design philosophy**: For the "why" behind architectural decisions, intelligence tradecraft, and algorithmic choices, see [Design Philosophy](docs/engineering/architecture/design-philosophy.md).
 
-World Monitor is a real-time global intelligence dashboard built as a TypeScript single-page application. It aggregates data from dozens of external sources covering geopolitics, military activity, financial markets, cyber threats, climate events, maritime tracking, and aviation into a unified operational picture rendered through an interactive map and a grid of specialized panels.
+World Monitor Lite is a real-time intelligence dashboard for three domains: geopolitics and conflicts, finance and crypto, and technology and AI. It is an unofficial fork of World Monitor (see README.md). Seeders and a relay collect data from external sources into Redis; Edge API handlers serve it; one Preact single-page app (`/lite`) renders it as a cross-domain Briefing, three domain screens with MapLibre maps, and a Sources screen.
 
 ---
 
@@ -14,21 +14,18 @@ World Monitor is a real-time global intelligence dashboard built as a TypeScript
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│                        Browser / Desktop                        │
-│  ┌──────────┐  ┌──────────┐  ┌───────────┐  ┌─────────────┐  │
-│  │ DeckGLMap│  │ GlobeMap │  │  Panels    │  │  Workers     │  │
-│  │(deck.gl) │  │(globe.gl)│  │(Panel base)│  │(ML, analysis)│  │
-│  └────┐─────┘  └────┐─────┘  └─────┐─────┘  └─────────────┘  │
-│       └──────────────┴─────────────┘                           │
-│                         │ fetch /api/*                          │
-└─────────────────────────┴───────────────────────────────────┘
+│                            Browser                             │
+│  Lite UI (/lite): Briefing · Geopolitics · Finance · Tech ·    │
+│  Sources. Preact + Tailwind, MapLibre maps, resource store     │
+│                          fetch /api/*                          │
+└─────────────────────────┬──────────────────────────────────────┘
                           │
            ┌──────────────┼──────────────┐
            │              │              │
     ┌──────▼──────┐ ┌─────▼─────┐ ┌─────▼──────┐
-    │   Vercel    │ │  Railway  │ │   Tauri    │
-    │ Edge Funcs  │ │ AIS Relay │ │  Sidecar   │
-    │ + Middleware│ │ + Seeds   │ │ (Node.js)  │
+    │   Vercel    │ │  Railway  │ │ Docker API │
+    │ Edge Funcs  │ │ AIS Relay │ │ (Phase 4   │
+    │ + Middleware│ │ + Seeds   │ │  option)   │
     └──────┬──────┘ └─────┬─────┘ └─────┬──────┘
            │              │              │
            └──────────────┼──────────────┘
@@ -62,56 +59,40 @@ World Monitor is a real-time global intelligence dashboard built as a TypeScript
 | AIS Relay | Railway | WebSocket proxy (AIS stream), seed loops (market, aviation, GPSJAM, risk scores, UCDP, positive events), RSS proxy, OREF polling |
 | Macro Seed Bundle | Railway | Daily SGE physical-premium cohort, bounded histories, physical-divergence read model, health metadata, and transition cooldowns |
 | Resilience Seed Bundle | Railway | Resilience/static/food seeds plus the daily five-factor scorecard cohort and read-model publisher |
-| Consumer Prices | Railway | Containerized price scrapers (Playwright, per-country baskets) + Redis publisher for the consumer-prices dataset |
 | Redis | Upstash | Cache layer with stampede protection, seed-meta freshness tracking, rate limiting |
 | Container Image | GHCR | Multi-arch Docker image (nginx serving built SPA, proxies API to upstream) |
 
-**Source files**: `vercel.json`, `docker/Dockerfile`, `scripts/ais-relay.cjs`, `consumer-prices-core/Dockerfile`, `workers/api-cors-preflight/wrangler.toml`, `convex/schema.ts`, `src-tauri/tauri.conf.json`
+**Source files**: `vercel.json`, `docker/Dockerfile`, `scripts/ais-relay.cjs`, `workers/api-cors-preflight/wrangler.toml`, `convex/schema.ts`
 
 **Cloudflare zone config (dashboard-managed, NOT in this repo):** the apex `worldmonitor.app` → `www` 301 is a Cloudflare Dynamic Redirect rule ("apex to www (exclude agent-discoverable paths)") whose exemption list is load-bearing: `/.well-known/*`, `/robots.txt`, `/auth.md`, `/security.txt`, `/mcp`, `/mcp/*`, `/oauth/*`, and `/agent/auth` are served on the apex, never redirected. Dropping the `/mcp*` exemptions breaks every apex-URL MCP client; dropping `/oauth/*` re-breaks OAuth dynamic client registration — a redirected POST becomes a GET and dies with 405 (issue #4938); dropping `/auth.md` breaks the `agent_auth.skill` link, which readiness scanners require to equal `<issuer>/auth.md`. When editing the rule, mind expression precedence: `and` binds tighter than `or`, so a new exemption must be added as its own `or` term **inside** the `not (…)` group (appending `and not …` after the last term is a silent no-op). `mcp-live-smoke.yml` probes the MCP/OAuth members of this list (`/mcp`, `/.well-known/oauth-authorization-server`, its `agent_auth.skill` `/auth.md`, and the OAuth endpoints it declares) every 15 minutes and fails on the redirect fingerprint; the `robots.txt` / `security.txt` exemptions are crawler-facing and have no automated probe.
 
-**Cloudflare cache rules (zone-side, one of them generated here; the corpus, docs and agent files it claims are gone since refactor 1b and 1c-3, so the rule is a leftover for the owner to retire):** the zone's cache phase carries a blanket `Bypass cache - WWW documents` rule that makes every extensionless/HTML path on `www` ineligible for the edge cache. A cache rule outranks origin cache headers, so a correct `CDN-Cache-Control` on a document route buys nothing on its own — that is why the crawlable corpus answered `cf-cache-status: DYNAMIC` on every route for months while `tests/deploy-config.test.mjs` stayed green (issue #7659). Cloudflare evaluates matching cache rules in order and the last one to set a field wins, so eligibility is restored by *appending* a later rule, `WWW corpus HTML …`, which claims the `CONTENT_CORPUS_PREFIXES` families, since #7747 the blog, the Mintlify-proxied docs and the root agent text files (`EDGE_CACHED_FAMILIES` / `AGENT_TEXT_FILES`), and since #7804 the entry documents `/` and `/dashboard` (`ENTRY_DOCUMENTS`) — admitting an HTML document only for requests that want the HTML representation (no RSC headers, no markdown/plain media type in any `Accept` value, and on `/` none of the AI User-Agents `middleware.ts` routes to `/home.md`), because those URLs negotiate on request headers Cloudflare cannot key on; `.md`/`.txt`/`.xml` files are single-representation and exempt. The dashboard-managed `WWW entry HTML …` rule that used to cover `/` and `/dashboard` with no such guard sat one position earlier and, as the last matching writer, re-admitted every request the guard declined (#7804); it is listed in `RETIRED_CACHE_RULES`, reported by `--check` as drift wherever it sits, and deleted by `--apply` once the claim has landed. The rule is generated from that surface model by `scripts/cloudflare-cache-rule.mjs` (`--print` / `--check` / `--apply`) so it cannot drift from the vercel.json header rules it mirrors; `tests/cloudflare-cache-rule.test.mjs` pins its shape offline and `--check` compares it against the live zone.
+**Cloudflare cache rules (zone-side, upstream's zone):** upstream's `worldmonitor.app` zone carries cache rules for its crawlable corpus, blog, docs and agent files; the generator `scripts/cloudflare-cache-rule.mjs` and its test left with those surfaces (2026-11). This deployment has no Cloudflare zone yet (Phase 4). A future zone must not bypass the edge cache for the HTML documents whose `CDN-Cache-Control` `vercel.json` sets: a cache rule outranks origin cache headers.
 
 ---
 
 ## 3. Frontend Architecture
 
+The Lite UI (`apps/web/src/lite/`, the `@wm/web` workspace) is the only web app. Refactor Phase 1 removed the old vanilla-TypeScript dashboard (its panels, deck.gl and globe.gl maps, ML workers and i18n); [legacy features](docs/engineering/product/legacy-features.md) lists what left and how to bring it back. The canonical spec is [docs/engineering/architecture/lite.md](docs/engineering/architecture/lite.md).
+
 ### Entry and Initialization
 
-`src/main.ts` initializes Sentry error tracking, Vercel analytics, dynamic meta tags, runtime fetch patches (desktop sidecar redirection), theme application, and creates the `App` instance.
+`apps/web/lite.html` loads `apps/web/src/lite/main.tsx`. Before it renders `<App />`, it installs the web API redirect (`installWebApiRedirect`), the anonymous `wm-session` fetch interceptor and session (`ensureWmSession`), starts the bootstrap hydration from `/api/bootstrap` (`startBootstrap` in `data/sources.ts`), and sets up page scrolling.
 
-`App.init()` runs in 8 phases:
+### Screens and Routing
 
-1. **Storage + i18n**: IndexedDB, language detection, locale loading
-2. **ML Worker**: ONNX model prep (embeddings, sentiment, summarization)
-3. **Sidecar**: Wait for desktop sidecar readiness (desktop only)
-4. **Bootstrap**: Two-tier concurrent hydration from `/api/bootstrap` (fast 3s + slow 5s timeouts)
-5. **Layout**: PanelLayoutManager renders map and panels
-6. **UI**: SignalModal, IntelligenceGapBadge, BreakingNewsBanner, correlation engine
-7. **Data**: Parallel `loadAllData()` + viewport-conditional `primeVisiblePanelData()`
-8. **Refresh**: Variant-specific polling intervals via `startSmartPollLoop()`
+`router.ts` maps the path to one of five screens (`packages/client/config/lite-route.ts` names the paths): the cross-domain Briefing at `/lite`, the Geopolitics, Finance and Technology screens, and the read-only Sources screen. Shared chrome (`Topbar`, `Sidebar`) and building blocks (`components/ui.tsx`, `indicator.tsx`, `charts.tsx`, `TimeRange.tsx`, `scroll.tsx`) live in `components/`.
 
-### Component Model
+### Data Layer
 
-All panels extend the `Panel` base class (109 classes across `src/components`). Panels render via `setContent(html)` (debounced 150ms) and use event delegation on a stable `this.content` element. Panels support resizable row/col spans persisted to localStorage.
+`data/store.ts` is a small keyed resource store: one loader per data source, one shared result per key across all screens, refreshed every five minutes. Each resource is `loading`, `ready`, `empty` or `error`, and a widget renders a failed or empty source as its own state, never as sample data. `data/hooks.ts` exposes the resources (`useDigest`, `useRiskScores`, `useUcdpEvents`, `useMarketQuotes`, ...), and `data/sources.ts` loads them through the generated sebuf clients and `packages/client/services/`. Derived views (indicators, escalation, news linking) are pure functions in `data/`: indicators find their news through `linkNews` (`data/news-link.ts`), and hotspot escalation maps Lite data onto the shared core in `packages/shared/analysis-hotspot-escalation.ts` (`data/escalation.ts`).
 
-### Dual Map System
+### Maps
 
-- **DeckGLMap**: WebGL rendering via deck.gl + maplibre-gl. Supports ScatterplotLayer, GeoJsonLayer, PathLayer, IconLayer, PolygonLayer, ArcLayer, HeatmapLayer, H3HexagonLayer. PMTiles protocol for self-hosted basemap tiles. Supercluster for marker clustering.
-- **Loaded news selection**: `MapContainer.onNewsClicked()` caches and forwards the callback to each renderer's `setOnNewsClick()`. The callback receives `Pick<NewsLocationMarker, 'article' | 'title'>`: optional original loaded article `{link, title, source}` and the displayed marker title. Existing markers without article metadata remain valid. The plugin uses this loaded identity to publish its latest interaction with current view context; it does not track popup visibility or fetch more data on selection.
-- **GlobeMap**: 3D interactive globe via globe.gl. Single merged `htmlElementsData` array with `_kind` discriminator. Earth texture, atmosphere shader, auto-rotate after idle.
-
-Layer definitions live in `packages/client/config/map-layer-definitions.ts`, each specifying renderer support (flat/globe), premium status, variant filtering, and i18n keys.
+`map/LiteMap.tsx` draws MapLibre GL maps on OpenFreeMap tiles, styled from the `@theme` tokens in `lite.css` (`map/style.ts`). Every marker follows one grammar (`map/marks.tsx`: event, asset, aggregate or judgement, coloured by state) and is a Preact element, as are the cards, legend and layers popover. Context geometry and data shading may be MapLibre layers coloured from the same tokens. UCDP aggregates cluster with `supercluster`.
 
 ### State Management
 
-No external state library. `AppContext` is a central mutable object holding: map references, panel instances, panel/layer settings, all cached data (news, markets, predictions, clusters, intelligence caches), in-flight request tracking, and UI component references. URL state syncs bidirectionally via `src/utils/urlState.ts` (debounced 250ms).
-
-### Web Workers
-
-- **analysis.worker.ts**: News clustering (Jaccard similarity), cross-domain correlation detection
-- **ml.worker.ts**: ONNX inference via `@xenova/transformers` (MiniLM-L6 embeddings, sentiment, summarization, NER), in-worker vector store for headline memory
-- **vector-db.ts**: IndexedDB-backed vector store for semantic search
+No external state library. Screen state is local Preact state; shared data lives in the resource store; the current screen comes from the URL (`router.ts`).
 
 ### No variants
 
@@ -136,7 +117,7 @@ Edge functions are bundled per file: each deployed function may not pull in unre
 
 | File | Purpose |
 |------|---------|
-| `_cors.js` | Origin allowlist (worldmonitor.app, Vercel previews, tauri://localhost, localhost) |
+| `_cors.js` | Origin allowlist (worldmonitor.app, Vercel previews, localhost outside production) |
 | `_rate-limit.js` | Upstash sliding window rate limiting, IP extraction |
 | `_api-key.js` | Credential check: anonymous `wms_` session or operator key (`WORLDMONITOR_VALID_KEYS`, header or `__Host-wm-pro-key` cookie) |
 | `_relay.js` | Factory for proxying requests to Railway relay service |
@@ -246,27 +227,9 @@ The market backup bundle also persists 14 days of timestamped hourly Yahoo close
 
 ---
 
-## 7. Desktop Architecture
+## 7. Desktop Architecture (removed)
 
-### Tauri Shell
-
-Tauri 2.x (Rust) manages the app lifecycle, system tray, and IPC commands:
-
-- **Secret management**: Read/write platform keyring (macOS Keychain, Windows Credential Manager, Linux keyring)
-- **Sidecar control**: Spawn Node.js process, probe port, inject environment variables
-- **Window management**: Three trusted windows (main, settings, live-channels) with Edit menu for macOS clipboard shortcuts
-
-### Node.js Sidecar
-
-`docker/local-api/local-api-server.mjs` runs on a dynamic port. It dynamically loads Edge Function handler modules from `api/`, injects secrets from the keyring via environment variables, and monkey-patches `globalThis.fetch` to force IPv4 (Node.js tries IPv6 first, but many government APIs have broken IPv6).
-
-### Fetch Patching
-
-`installRuntimeFetchPatch()` in `packages/client/services/runtime.ts` replaces `window.fetch` on the desktop renderer. All `/api/*` requests route to the sidecar with `Authorization: Bearer <token>` (5-min TTL from Tauri IPC). If the sidecar fails, requests fall back to the cloud API.
-
-Seed-owned scorecard RPC paths are always cloud-preferred on desktop. The sidecar does not carry the Railway-published scorecard cohort, so routing these paths locally would create a false unavailable state instead of using the authenticated cloud API.
-
-**Source files**: `src-tauri/src/main.rs`, `docker/local-api/local-api-server.mjs`, `packages/client/services/runtime.ts`, `packages/client/services/tauri-bridge.ts`
+The Tauri desktop app left in refactor Phase 1b, and its runtime branches (the desktop fetch patch, the sidecar cache, the Tauri CORS origins, the `/desktop-sign-in` route and the `/api/version` updater probe) left in the 2026-11 Lite-only cleanup. The section number stays so links to later sections keep working. `docker/local-api/local-api-server.mjs`, the former sidecar, remains as the Docker Node API option for Phase 4; it still carries its desktop-key relay and Tauri paths until that decision.
 
 ---
 
@@ -276,16 +239,14 @@ Seed-owned scorecard RPC paths are always cloud-preferred on desktop. The sideca
 
 ```
 Browser ↔ Vercel Edge ↔ Upstream APIs
-Desktop ↔ Sidecar ↔ Cloud API / Upstream APIs
 ```
 
 ### Content Security Policy
 
-Three CSP sources that must stay in sync:
+Two CSP sources that must stay in sync:
 
-1. `index.html` `<meta>` tag (development, Tauri fallback)
+1. `index.html` `<meta>` tag (development)
 2. `vercel.json` HTTP header (production, overrides meta)
-3. `src-tauri/tauri.conf.json` (desktop)
 
 ### Authentication
 
@@ -299,11 +260,7 @@ API keys are required for non-browser origins. Trusted browser origins (producti
 
 Per-IP sliding window via Upstash with per-endpoint overrides for high-traffic paths.
 
-### Desktop Secret Storage
-
-Secrets are stored in the platform keyring (never plaintext), injected into the sidecar via Tauri IPC, and scoped to an allowlist of environment variable keys.
-
-**Source files**: `middleware.ts`, `vercel.json`, `index.html`, `src-tauri/tauri.conf.json`, `api/_api-key.js`, `packages/server/_shared/rate-limit.ts`
+**Source files**: `middleware.ts`, `vercel.json`, `index.html`, `api/_api-key.js`, `packages/server/_shared/rate-limit.ts`
 
 ---
 
@@ -333,7 +290,7 @@ Every RPC handler with shared cache MUST include request-varying parameters in t
 
 `CDN-Cache-Control` headers give Cloudflare edge (when enabled) longer TTLs than `Cache-Control`, since CF can revalidate via ETag without full payload transfer.
 
-The header only sets the TTL; it does not make a response cacheable. Cloudflare decides eligibility from its cache rules first, and HTML documents on `www` are bypassed by default (see the cache-rule note in §2). Adding `CDN-Cache-Control` to a new document route therefore has to be paired with a zone rule that re-admits it — by extending the surface model in `scripts/cloudflare-cache-rule.mjs` (`CONTENT_CORPUS_PREFIXES` for a new corpus family, `ENTRY_DOCUMENTS` for an exact-path entry document, `EDGE_CACHED_FAMILIES` / `AGENT_TEXT_FILES` otherwise) and re-running `scripts/cloudflare-cache-rule.mjs --apply`; `tests/cloudflare-cache-rule.test.mjs` fails when the two halves disagree.
+The header only sets the TTL; it does not make a response cacheable. Cloudflare decides eligibility from its cache rules first, and HTML documents on `www` are bypassed by default (see the cache-rule note in §2). Adding `CDN-Cache-Control` to a new document route therefore has to be paired with a zone rule that re-admits it.
 
 ### Seed Metadata
 
@@ -373,30 +330,20 @@ The repository has no deployment pipeline: the owner removed every deploy and pu
 
 | Workflow | Trigger | Checks |
 |----------|---------|--------|
-| `ci.yml` | PR, push to `main` and `refactor/lite-monorepo` | The pull-request gate since refactor Phase 1b, replacing the upstream `test.yml`, `typecheck.yml`, `lint-code.yml` and their deploy gate. No path filters: every job runs on every PR. `checks` runs the browser, API, contract-test and DOM-test typechecks (through the Turborepo cache, shared through Vercel Remote Cache when `TURBO_TOKEN`/`TURBO_TEAM` are set), Biome, import boundaries, Unicode safety, the API-contract, rate-limit, premium-fetch and `localStorage` guards, markdownlint, the Vite env secrets check, bootstrap tier keys, `docs:check` and `sources:check`. `unit` runs `test:data` (without built output) on three shards with a local Redis and the `scripts/` dependency tree. `build` runs the Vercel build command through `npx turbo run build`, the suites that read built output, the edge-function bundle check and `generate:check`. `dom` runs `test:dom`; `server` runs `test:server` and `test:sidecar`; `health-probe-cutovers` checks, with full history, that a new or repointed `api/health.js` probe carries cutover evidence against the base it merges onto. Four jobs keep the gates of services outside the Lite web app until 1c or Phase 2 decides their fate: `consumer-prices` and `zapier` run those packages' tests, `umami-postgres` builds the Umami images and exercises the migration and write path against Postgres 17, and `digest-image` builds the digest-notifications image |
+| `ci.yml` | PR, push to `main` and `refactor/lite-monorepo` | The pull-request gate since refactor Phase 1b, replacing the upstream `test.yml`, `typecheck.yml`, `lint-code.yml` and their deploy gate. No path filters: every job runs on every PR. `checks` runs the browser, API, contract-test and DOM-test typechecks (through the Turborepo cache, shared through Vercel Remote Cache when `TURBO_TOKEN`/`TURBO_TEAM` are set), Biome, import boundaries, Unicode safety, the API-contract, rate-limit, premium-fetch and `localStorage` guards, markdownlint, the Vite env secrets check, bootstrap tier keys, `docs:check` and `sources:check`. `unit` runs `test:data` (without built output) on three shards with a local Redis and the `scripts/` dependency tree. `build` runs the Vercel build command through `npx turbo run build`, the suites that read built output, the edge-function bundle check and `generate:check`. `dom` runs `test:dom`; `server` runs `test:server` and `test:sidecar`; `health-probe-cutovers` checks, with full history, that a new or repointed `api/health.js` probe carries cutover evidence against the base it merges onto. The upstream-only service gates (`consumer-prices`, `zapier`, `umami-postgres`, `digest-image`) left with those services in the Lite-only cleanup (2026-11) |
 | `proto-check.yml` | PR (proto changes) | Generated code matches committed output at the exact PR head (`internal-generate`; on internal branches `internal-auto-generate` commits any drift) and, in parallel, at the PR merge result (`internal-merge-freshness`). When a generated commit is pushed, the aggregate `proto-freshness` ignores the superseded head's merge verdict and the new commit gets its own run |
 | `feed-validation.yml` | PR (feed changes), daily cron | RSS feed reachability and validation |
 | `china-decision-parity-live.yml` | 6-hourly cron, push to main (audit paths), manual (optional staging URL) | Live half of the China decision-signal parity audit: probes the deployed composition RPC and the public `chinaDecisionSignals` bootstrap projection for the six-domain contract and a canonical snapshot under one hour old (#5643 — the probe existed but nothing invoked it, and `--require-live` keeps a lost `--url` from passing vacuously) |
 | `tps-open-data-live.yml` | Twice-daily cron, push to main (adapter/suite paths), manual | Live contract probe of the two official Toronto Police open-data sources (ArcGIS MCI + CKAN Calls); fails if fewer than 2 mandatory source probes execute (the suite was inert until this workflow set LIVE_TPS_OPEN_DATA_TESTS=1, and `node --test` exits 0 on an all-skip run) |
 | `openrouter-free-models-live.yml` | Daily cron, push to main (model policy/suite paths), manual | Checks that both OpenRouter free-chain models in `scripts/lib/llm-model-policy.cjs` are still usable for free: listed on `/models` at zero price, not within 14 days of `expiration_date`, and holding a zero-price endpoint outside `OPENROUTER_PROVIDER_ROUTING.ignore`; with the optional `OPENROUTER_API_KEY` secret it also sends one real completion per model. A delisted `:free` slug returns HTTP 404 on every call (#8570). Fails unless each live case passes by name |
-| `security-audit.yml` | PR, push to main, daily cron, manual | Audit-specific sparse checkouts for production npm lockfile audits, including the Zapier integration, plus RustSec Cargo.lock advisories; fixable Rust findings block, dated decisions/no-fix findings remain visible, and daily sweeps require database availability |
-| `codeql.yml` | Daily cron (03:23 UTC, all six languages), manual; not on PRs or pushes | Advanced CodeQL scans; init and analyze share one release pin and Dependabot update group. Skips only the generated `vendor/vercel-og/dist` bundle (`paths-ignore`). Findings reach Code scanning when the next daily scan after a change lands on main completes. Default-branch runs then delete all but the newest overlay-base cache per job and language. Requires the default-setup handover in CONTRIBUTING.md. On this fork the scheduled jobs are gated to `koala73/worldmonitor`, so it runs only on manual dispatch, and the owner turned off CodeQL default setup on 2026-11-07 with no replacement scan: code scanning is off |
-| `analytics-collector-monitor.yml` | 15-minute cron, manual | Probes the self-hosted Umami collector directly (heartbeat, tracker script, ingest route) and fails when events are being dropped — Railway reported a green deployment through the 4-day #5565 blackout, so deployment status is not trusted here |
+| `security-audit.yml` | PR, push to main, daily cron, manual | Audit-specific sparse checkouts for the production npm lockfile audits (root, `scripts/`, the Docker runtime and the two Cloudflare workers); dated decisions remain visible, and daily sweeps require database availability |
+| `codeql.yml` | Daily cron (03:23 UTC: Actions, JavaScript/TypeScript and Python), manual; not on PRs or pushes | Advanced CodeQL scans of the whole tree; init and analyze share one release pin and Dependabot update group. Findings reach Code scanning when the next daily scan after a change lands on main completes. Default-branch runs then delete all but the newest overlay-base cache per job and language. Requires the default-setup handover in CONTRIBUTING.md. On this fork the scheduled jobs are gated to `koala73/worldmonitor`, so it runs only on manual dispatch, and the owner turned off CodeQL default setup on 2026-11-07 with no replacement scan: code scanning is off |
 | `deploy-error-canary.yml` | Hourly cron, manual | Compares per-route API error rates over the last two hours with the preceding seven days in Axiom; fails on qualifying regressions, missing configuration, or invalid query results |
-| `umami-storage-monitor.yml` | 15-minute cron, manual | Reads the Umami Postgres Railway volume and the `umami-retention` deployment history without mutation, carries a bounded history between runs as an artifact, and fails on capacity or projected days-to-full thresholds, or when the retention runner's newest deployment that ran is `CRASHED` |
 | `sentry-resolve-pin-audit.yml` | Daily cron, manual | Read-only audit of resolved Sentry issues (#7838): fails when a resolution carries an `inRelease`, `inNextRelease` or `inCommit` pin instead of a plain resolve. The GitHub integration adds such a pin whenever a commit body says `Fixes WORLDMONITOR-XX`, and browser events all carry a static semver release, so a pinned issue can never reopen and reads resolved forever while the bug keeps firing. It reports only the short ID, permalink and pin value, never the resolver identity Sentry attaches alongside the pin |
 | `contributor-trust.yml` | PR | Gates untrusted first-time-contributor runs |
 | `issue-ui-evidence.yml` | Issue opened or edited | The bug report form refuses an empty screenshot field but cannot check that it holds an image, so this catches the rest: an issue from outside the maintainer set whose title or body says `UI` and carries no screenshot, recording or image link gets the `needs-screenshot` label and one comment asking for the image. The label clears on the edit that attaches one. Never closes or reopens an issue. Maintainer, collaborator and bot issues are exempt. The decision reads the issue's current state from the API, not the webhook snapshot; issue text reaches the script only through the payload file and that read |
 | `stacked-merge-guard.yml` | PR (including base edits), push to main | Required pre-merge check (#7006): fails when a PR's base is not `main` and that base branch's own PR is already merged, which is how a stacked child can show MERGED while `main` never receives the commits |
 | `orphaned-stacked-merge-monitor.yml` | PR closed and merged | Post-merge safety net for #7006: retargets open children of a merged parent, flags children GitHub closed when the parent branch was deleted and strands their open children, then fails when the merge commit is not an ancestor of `main`, opens an issue, and comments on the purple PR |
-
-The Railway `umami` runtime is built from `Dockerfile.umami`, which pins the
-upstream v3.2.0 release and applies the reviewed session-data upsert fix.
-The separate `umami-retention` cron uses `Dockerfile.umami-retention` and the
-bounded SQL contract. The old collector is drained to zero before the patched
-image runs its schema migration as a monitored one-off; schema verification,
-patched-runtime write acceptance, and retention are independent operational
-gates.
 
 **Source files**: `.github/workflows/`, `.husky/pre-push`. The workflow list is CI-checked against `.github/workflows/*.yml` by `npm run docs:check` — a new workflow file must be added to this table.
 
@@ -415,9 +362,7 @@ gates.
 │       ├── src/lite/       Preact + Tailwind screens, components, map and data adapters
 │       ├── vite.config.ts  The one Vite config (reads the root .env* and public/)
 │       └── vite.dev-api.ts Dev-server routes: sebuf RPCs, /api/health, /api/bootstrap, the /lite redirect
-├── consumer-prices-core/   Consumer-price collection service (Playwright scrapers, per-country baskets; Railway/Docker)
 ├── data/                   Static data (telegram channels, OREF threat translations, gamma irradiators)
-├── deploy/                 Deployment configs (nginx)
 ├── docker/                 Dockerfile + nginx config for Railway
 ├── docs/                   Engineering records (docs/engineering/)
 ├── packages/
@@ -439,8 +384,6 @@ gates.
 │   └── shared/             @wm/shared: logic and data the browser, server and seeders apply the same way (scripts/shared/ mirrors part of it)
 ├── public/                 Static assets served as-is (favicons, textures, map styles, data, robots.txt, 404.html)
 ├── scripts/                Seed scripts, build helpers, relay service
-├── src-tauri/              Tauri desktop shell (Rust)
-│   └── sidecar/            Node.js sidecar API server
 ├── tests/                  Unit/integration tests (node:test)
 └── workers/                Cloudflare Workers (edge CORS preflight for api.worldmonitor.app)
 ```

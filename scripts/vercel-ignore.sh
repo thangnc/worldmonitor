@@ -13,14 +13,11 @@ if [ "$VERCEL_GIT_COMMIT_REF" = "main" ] && [ -n "$VERCEL_GIT_PREVIOUS_SHA" ]; t
   fi
   git cat-file -e "$VERCEL_GIT_PREVIOUS_SHA" 2>/dev/null && {
     WEB_CHANGES=$(git diff --name-only "$VERCEL_GIT_PREVIOUS_SHA" HEAD -- \
-      'api/' 'public/' 'blog-site/' 'pro-test/' 'convex/' \
+      'api/' 'public/' \
       'apps/' 'packages/' 'turbo.json' 'tsconfig.base.json' \
-      'CHANGELOG.md' \
       'scripts/shared/prediction-country-language.json' \
-      'scripts/build-crawlable-corpus.mjs' 'scripts/unranked-country-inventory.mjs' 'scripts/build-use-cases.mjs' 'scripts/data/use-case-workflows.mjs' 'scripts/build-accuracy-page.mjs' 'scripts/build-situation-page.mjs' 'scripts/situation-page/' 'scripts/slugify.mjs' 'scripts/build-research-reports.mjs' 'scripts/build-comparison-pages.mjs' 'scripts/comparison-page-narratives.mjs' 'scripts/comparison-shortlist.mjs' \
-      'scripts/build-sitemap.mjs' 'scripts/discover-content-corpus-pages.mjs' \
-      'scripts/crawlable-live-tools.mjs' 'scripts/crawlable-sources-page.mjs' \
-      'scripts/country-related-links.mjs' 'scripts/data/country-centroids.json' 'scripts/related-reading.mjs' \
+      'scripts/slugify.mjs' \
+      'scripts/data/country-centroids.json' \
       'scripts/source-origin.mjs' 'scripts/source-origin.d.mts' \
       'scripts/generate-inventory-facts.mjs' \
       'scripts/docs-stats.mjs' 'scripts/source-attribution.mjs' 'scripts/vercel-ignore.sh' \
@@ -82,29 +79,9 @@ git diff --name-only "$COMPARE_SHA" HEAD -- \
   'tsconfig.base.json' \
   'api/' \
   'public/' \
-  'blog-site/' \
-  'pro-test/' \
-  'convex/' \
-  'CHANGELOG.md' \
   'scripts/shared/prediction-country-language.json' \
-  'scripts/build-crawlable-corpus.mjs' \
-  'scripts/unranked-country-inventory.mjs' \
-  'scripts/build-use-cases.mjs' 'scripts/data/use-case-workflows.mjs' \
-  'scripts/build-accuracy-page.mjs' \
-  'scripts/build-situation-page.mjs' \
-  'scripts/situation-page/' \
   'scripts/slugify.mjs' \
-  'scripts/build-comparison-pages.mjs' \
-  'scripts/comparison-page-narratives.mjs' \
-  'scripts/comparison-shortlist.mjs' \
-  'scripts/build-research-reports.mjs' \
-  'scripts/build-sitemap.mjs' \
-  'scripts/discover-content-corpus-pages.mjs' \
-  'scripts/crawlable-live-tools.mjs' \
-  'scripts/crawlable-sources-page.mjs' \
-  'scripts/country-related-links.mjs' \
   'scripts/data/country-centroids.json' \
-  'scripts/related-reading.mjs' \
   'scripts/source-origin.mjs' \
   'scripts/source-origin.d.mts' \
   'scripts/generate-inventory-facts.mjs' \

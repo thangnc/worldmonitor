@@ -18,7 +18,6 @@
 - [ ] News panels / RSS feeds
 - [ ] AI Insights / World Brief
 - [ ] Market Radar / Crypto
-- [ ] Desktop app (Tauri)
 - [ ] API endpoints (`/api/*`)
 - [ ] Config / Settings
 - [ ] Other: <!-- specify -->

@@ -226,11 +226,12 @@ const STORY_ALIAS_PUBLISH_SCRIPT = [
   'return 1',
 ].join('\n');
 
-// PINNED COPY of packages/shared/mcp-quota-reserve-script.mjs. The script atomically
-// reserves a Pro MCP daily-quota slot, rolls back only the rejecting request,
-// and — when the caller enables the clamp via ARGV[4] — clamps failed-rollback
+// The former Pro MCP daily-quota reserve script. Its source module
+// (packages/shared/mcp-quota-reserve-script.mjs) left with the MCP server; this
+// copy stays because PANEL_REQUEST_RESERVE_SCRIPT below is derived from it. It
+// atomically reserves a daily slot, rolls back only the rejecting request, and
+// — when the caller enables the clamp via ARGV[4] — clamps failed-rollback
 // residue without dropping below a higher successful same-day allowance.
-// Regenerate this block from the source array literal; do not hand-edit it.
 const MCP_QUOTA_RESERVE_SCRIPT = [
   'local ttl = tonumber(ARGV[2])',
   'local weight = tonumber(ARGV[3])',

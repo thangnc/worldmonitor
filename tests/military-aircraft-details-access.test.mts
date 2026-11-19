@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, it } from 'node:test';
 import { getAircraftDetails } from '../packages/server/worldmonitor/military/v1/get-aircraft-details.ts';
 import { getAircraftDetailsBatch } from '../packages/server/worldmonitor/military/v1/get-aircraft-details-batch.ts';
 import { _resetTrackedAircraftCacheForTests } from '../packages/server/worldmonitor/military/v1/_tracked-aircraft.ts';
-import { sidecarCacheSet } from '../packages/server/_shared/sidecar-cache.ts';
 import {
   ENDPOINT_RATE_POLICIES,
   FAIL_CLOSED_ENDPOINT_RATE_POLICY_REQUIRED,
@@ -170,14 +169,33 @@ describe('Wingbits aircraft-details access contract', () => {
 });
 
 describe('Wingbits aircraft-details batch input contract', () => {
+  // Every address under test is in the published flight snapshot, so the
+  // tracked-aircraft spend gate admits it and only the input contract decides.
+  // (These cases used to run on the desktop sidecar, which skipped the gate.)
+  const CONTRACT_REDIS = 'https://redis.contract';
+  function installContractFetch(urls: string[], wingbits: () => Response): void {
+    process.env.UPSTASH_REDIS_REST_URL = CONTRACT_REDIS;
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'test-token';
+    const snapshot = { flights: ['a835af', 'aa0001', 'bb0002'].map((hexCode) => ({ hexCode })) };
+    globalThis.fetch = async (input, init) => {
+      const url = String(input);
+      if (url === `${CONTRACT_REDIS}/get/${encodeURIComponent('military:flights:v1')}`) {
+        return Response.json({ result: JSON.stringify(snapshot) });
+      }
+      if (url === `${CONTRACT_REDIS}/pipeline`) {
+        const commands = JSON.parse(String(init?.body ?? '[]')) as unknown[];
+        return Response.json(commands.map(() => ({ result: null })));
+      }
+      if (url.startsWith(CONTRACT_REDIS)) return Response.json({ result: null });
+      urls.push(url);
+      return wingbits();
+    };
+  }
+
   it('never sends a malformed address to the paid provider', async () => {
     process.env.WINGBITS_API_KEY = 'test-wingbits-key';
-    process.env.LOCAL_API_MODE = 'tauri-sidecar';
     const urls: string[] = [];
-    globalThis.fetch = async (input) => {
-      urls.push(String(input));
-      return Response.json({ registration: 'N123WM' });
-    };
+    installContractFetch(urls, () => Response.json({ registration: 'N123WM' }));
 
     const response = await getAircraftDetailsBatch(ctx(), {
       icao24s: ['a835af', 'not-hex', 'zzzzzz', 'a835a', '../../status'],
@@ -192,12 +210,8 @@ describe('Wingbits aircraft-details batch input contract', () => {
 
   it('reports `requested` as a prefix length over the caller keys, not the survivors', async () => {
     process.env.WINGBITS_API_KEY = 'test-wingbits-key';
-    process.env.LOCAL_API_MODE = 'tauri-sidecar';
     const urls: string[] = [];
-    globalThis.fetch = async (input) => {
-      urls.push(String(input));
-      return new Response('null', { status: 404 });
-    };
+    installContractFetch(urls, () => new Response('null', { status: 404 }));
 
     // src/services/wingbits.ts negative-caches `batchKeys.slice(0, requested)`
     // over its OWN sorted keys, so `requested` is a prefix length, not a count
@@ -305,14 +319,6 @@ describe('Wingbits aircraft-details batch spend boundary', () => {
     assert.equal(response.requested, 0);
   });
 
-  it('keeps caller-configured enrichment on the authenticated desktop sidecar', async () => {
-    process.env.LOCAL_API_MODE = 'tauri-sidecar';
-    const urls: string[] = [];
-    installFetch(null, urls);
-    await getAircraftDetailsBatch(ctx(), { icao24s: ['ff0042'] });
-    assert.deepEqual(urls, ['https://customer-api.wingbits.com/v1/flights/details/ff0042']);
-  });
-
   // The shared `military:aircraft:v1:<icao24>` keys are also written by the
   // Pro-gated singular route, so a cache HIT is not proof that an address is
   // one the map can show. Pre-fix the snapshot check gated only misses: an
@@ -390,17 +396,4 @@ describe('Wingbits aircraft-details batch spend boundary', () => {
     assert.deepEqual(urls, [], 'served from the shared cache');
   });
 
-  it('serves any cached record on the authenticated desktop sidecar', async () => {
-    process.env.LOCAL_API_MODE = 'tauri-sidecar';
-    const urls: string[] = [];
-    installFetch({ flights: [{ hexCode: 'AA0001', lat: 1, lon: 2 }] }, urls);
-    // The single-user sidecar reads its own in-process cache, not Upstash.
-    sidecarCacheSet('military:aircraft:v1:cc0003', { details: { registration: 'REG-cc0003' }, configured: true }, 60);
-
-    const response = await getAircraftDetailsBatch(ctx(), { icao24s: ['cc0003'] });
-
-    assert.equal(response.results.cc0003?.registration, 'REG-cc0003');
-    assert.equal(response.requested, 1);
-    assert.deepEqual(urls, []);
-  });
 });

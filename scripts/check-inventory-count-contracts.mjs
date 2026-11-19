@@ -59,12 +59,6 @@ export const INVENTORY_CONTRACTS = Object.freeze([
   contract('feed-source-provenance', 'feed names and their provenance declarations', ['parity'], 'replace', 'Exact discovered feed-to-provenance parity replaces the name-count floor.', [
     surface('tests/source-provenance.test.mts', ['names', 'explicitUnknownDimensions']),
   ]),
-  contract('product-catalog-inventories', 'generated product IDs, tiers and bundle highlights', ['named-member', 'parity'], 'replace', 'Exact catalog-to-generated parity and named sellable products replace arbitrary floors.', [
-    surface('tests/product-catalog-freshness.test.mjs', ['generatedProductIds', 'tiersJson', 'bundleHighlights']),
-  ]),
-  contract('notification-country-registry', 'the shared country-name to ISO-2 registry', ['parity'], 'replace', 'Exact authoritative country coverage replaces the parser floor.', [
-    surface('tests/notification-relay-country-scope-5359.test.mjs', ['names']),
-  ]),
   contract('public-fixed-algorithm-claims', 'versioned CII country membership and the closed CRI public rankable universe', ['exact', 'named-member'], 'keep', 'Fixed algorithm universes remain exact while platform inventories on the same surfaces use semantic or named-set wording.', [
     surface('tests/cii-docs-drift.test.mts', ['pressKit', 'communityGuide']),
   ]),

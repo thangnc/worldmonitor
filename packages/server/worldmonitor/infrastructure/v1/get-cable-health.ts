@@ -425,16 +425,6 @@ async function repairSnapshot(snapshot: GetCableHealthResponse): Promise<void> {
   const deadline = snapshot.generatedAt + MAX_RETAINED_AGE_MS;
   const encoded = JSON.stringify(snapshot);
   const metadata = { fetchedAt: snapshot.generatedAt, recordCount: Object.keys(snapshot.cables).length };
-  if (process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    const { sidecarCacheGet, sidecarCacheSet } = await import('../../../_shared/sidecar-cache');
-    // No await between compare and writes in the single-process sidecar cache.
-    const remainingSeconds = Math.floor((deadline - Date.now()) / 1000);
-    if (remainingSeconds > 0 && JSON.stringify(sidecarCacheGet(CACHE_KEY)) === encoded) {
-      sidecarCacheSet(CACHE_KEY, snapshot, remainingSeconds);
-      sidecarCacheSet(META_KEY, metadata, 604800);
-    }
-    return;
-  }
   const results = await runRedisPipeline([[
     'EVAL', CABLE_HEALTH_REPAIR_SCRIPT, '2', CACHE_KEY, META_KEY,
     encoded, String(deadline), JSON.stringify(metadata),

@@ -19,7 +19,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { composeBriefFromDigestStories } from '../scripts/lib/brief-compose.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
@@ -36,10 +35,6 @@ const clusteringSrc = readFileSync(
   resolve(repoRoot, 'scripts/_clustering.mjs'),
   'utf-8',
 );
-const briefFilterSrc = readFileSync(
-  resolve(repoRoot, 'packages/shared/brief-filter.js'),
-  'utf-8',
-);
 
 // Shared source of truth: both sides load this JSON at runtime.
 // The test uses it as the oracle for tier lookups.
@@ -48,7 +43,7 @@ const sharedSourceTiers = JSON.parse(
 );
 
 // Canonical diplomacy/flashpoint keyword set. As of the centralization
-// PR, digest / clustering / brief-filter all consume this JSON directly,
+// PR, digest and clustering consume this JSON directly,
 // so the test uses it as the oracle instead of re-parsing each consumer's
 // (now-import-backed) literal. The relay (ais-relay.cjs) still inlines
 // its own copy — drift between the canonical JSON and the relay literal
@@ -134,7 +129,7 @@ function extractFunctionBody(src, fnSignature) {
 
 const digestSeverityScores = extractObjectLiteral(digestSrc, 'SEVERITY_SCORES');
 const digestScoreWeights = extractObjectLiteral(digestSrc, 'SCORE_WEIGHTS');
-// Centralized: digest, clustering, and brief-filter all consume the
+// Centralized: digest and clustering consume the
 // canonical JSON, so the test reads the JSON instead of re-parsing
 // each consumer's (now import-backed) declaration.
 const digestDiplomacyKeywords = sharedDiplomacyKeywords.diplomacyKeywords;
@@ -157,9 +152,6 @@ const relayEntityScorePerSource = extractNumericConst(relaySrc, 'RELAY_ENTITY_CO
 const clusteringDiplomacyKeywords = sharedDiplomacyKeywords.diplomacyKeywords;
 const clusteringFlashpointKeywords = sharedDiplomacyKeywords.flashpointKeywords;
 const clusteringDiplomacyPairs = sharedDiplomacyKeywords.diplomacyFlashpointPairs;
-const briefFilterDiplomacyKeywords = sharedDiplomacyKeywords.diplomacyKeywords;
-const briefFilterFlashpointKeywords = sharedDiplomacyKeywords.flashpointKeywords;
-const briefFilterDiplomacyPairs = sharedDiplomacyKeywords.diplomacyFlashpointPairs;
 
 // ── Reconstruct the scorers as pure functions for output comparison ─────────
 
@@ -321,17 +313,10 @@ describe('diplomacy / entity boost parity (digest ↔ relay)', () => {
     assert.deepEqual(clusteringDiplomacyPairs, digestDiplomacyPairs);
   });
 
-  it('keeps brief lead-coherence diplomacy constants aligned with digest scoring', () => {
-    assert.deepEqual(briefFilterDiplomacyKeywords, digestDiplomacyKeywords);
-    assert.deepEqual(briefFilterFlashpointKeywords, digestFlashpointKeywords);
-    assert.deepEqual(briefFilterDiplomacyPairs, digestDiplomacyPairs);
-  });
-
   it('does not include generic business deal as a diplomacy keyword', () => {
     assert.equal(digestDiplomacyKeywords.includes('deal'), false);
     assert.equal(relayDiplomacyKeywords.includes('deal'), false);
     assert.equal(clusteringDiplomacyKeywords.includes('deal'), false);
-    assert.equal(briefFilterDiplomacyKeywords.includes('deal'), false);
   });
 });
 
@@ -426,7 +411,7 @@ describe('computeImportanceScore parity (digest ↔ relay)', () => {
     assert.equal(appleDeal, baseline);
   });
 
-  it('scheduled digest regression: scored US-Iran deal stories outrank stale conflict and survive composeBriefFromDigestStories', () => {
+  it('scheduled digest regression: scored US-Iran deal stories outrank stale conflict', () => {
     const dealTitles = [
       ['Reuters', 'US and Iran close deal to ease Hormuz tensions'],
       ['AP News', 'Iran deal could calm oil markets after Hormuz alarm'],
@@ -475,23 +460,5 @@ describe('computeImportanceScore parity (digest ↔ relay)', () => {
     assert.match(ordered[0].title, /Iran|US-Iran/i);
     assert.ok(ordered[0].currentScore > staleConflict.currentScore);
 
-    const envelope = composeBriefFromDigestStories(
-      {
-        userId: 'user_test',
-        variant: 'full',
-        digestMode: 'daily',
-        sensitivity: 'high',
-        digestTimezone: 'UTC',
-        updatedAt: oneHourAgo,
-      },
-      ordered,
-      { clusters: ordered.length, multiSource: 5 },
-      { nowMs: Date.now() },
-    );
-    assert.ok(envelope, 'expected scheduled digest compose to keep at least one story');
-    assert.ok(
-      envelope.data.stories.some((story) => /iran/i.test(story.headline) && /deal/i.test(story.headline)),
-      'expected a US-Iran deal story to survive scheduled digest composition',
-    );
   });
 });

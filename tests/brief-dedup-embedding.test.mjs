@@ -1098,43 +1098,6 @@ describe('deduplicateStories — embeddingByHash keys match materialized rep', (
   });
 });
 
-describe('brief envelope cleanliness — no internal fields leak', () => {
-  it('composeBriefFromDigestStories output never serializes embedding / __ fields', async () => {
-    const { composeBriefFromDigestStories } = await import('../scripts/lib/brief-compose.mjs');
-
-    // Run the full flow: dedup → topic-group → compose.
-    const stories = [
-      story('Iran closes Strait of Hormuz', 92, 1, 'h0'),
-      story('Iran shuts Strait of Hormuz', 88, 1, 'h1'),
-      story('Myanmar coup leader elected', 80, 1, 'h2'),
-    ];
-    const vec = new Map([
-      [normalizeForEmbedding(stories[0].title), [1, 0, 0]],
-      [normalizeForEmbedding(stories[1].title), [0.95, Math.sqrt(1 - 0.95 * 0.95), 0]],
-      [normalizeForEmbedding(stories[2].title), [0, 0, 1]],
-    ]);
-    const embedder = stubEmbedder(vec);
-    const { reps, embeddingByHash } = await deduplicateStories(stories, {
-      env: { ...EMBED_MODE, DIGEST_DEDUP_TOPIC_GROUPING: '1' },
-      embedBatch: embedder.embedBatch,
-      redisPipeline: noopPipeline,
-    });
-    const cfg = readOrchestratorConfig({ ...EMBED_MODE, DIGEST_DEDUP_TOPIC_GROUPING: '1' });
-    const { reps: top } = groupTopicsPostDedup(reps, cfg, embeddingByHash);
-
-    const rule = {
-      userId: 'user_test',
-      sensitivity: 'all',
-      digestTimezone: 'UTC',
-    };
-    const envelope = composeBriefFromDigestStories(rule, top, {}, { nowMs: 1_700_000_000_000 });
-    const blob = JSON.stringify(envelope ?? {});
-    assert.ok(!blob.includes('"_embedding"'), 'no _embedding key');
-    assert.ok(!blob.includes('"__'), 'no __-prefixed key');
-    assert.ok(!blob.includes('embeddingByHash'), 'no embeddingByHash leakage');
-  });
-});
-
 describe('groupTopicsPostDedup — runs on sliced input, not pre-slice', () => {
   it('reflects slice(0, 30) input size in topicCount', () => {
     // 50 distinct singletons; slice to 30; each at an orthogonal basis so

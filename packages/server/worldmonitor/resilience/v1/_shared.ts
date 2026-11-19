@@ -1343,11 +1343,7 @@ export async function getCachedResilienceScores(countryCodes: string[]): Promise
     .filter(Boolean);
   if (normalized.length === 0) return new Map();
 
-  const results = process.env.LOCAL_API_MODE === 'tauri-sidecar'
-    ? await Promise.all(normalized.map(async (countryCode) => ({
-      result: await getCachedJson(scoreCacheKey(countryCode), true),
-    })))
-    : await runRedisPipeline(normalized.map((countryCode) => ['GET', scoreCacheKey(countryCode)]));
+  const results = await runRedisPipeline(normalized.map((countryCode) => ['GET', scoreCacheKey(countryCode)]));
   const scores = new Map<string, GetResilienceScoreResponse>();
   const current = currentCacheFormula();
   const currentEducationState = currentEducationCacheState();

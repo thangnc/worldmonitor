@@ -5,15 +5,10 @@
       "host": "127.0.0.1",
       "provider": "Local loopback transport",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: local development/desktop transport",
       "attribution": "Excluded from the provider count: local-only loopback URL.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "packages/client/services/runtime.ts"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "24.hu",
@@ -117,15 +112,10 @@
       "host": "abacus.worldmonitor.app",
       "provider": "abacus.worldmonitor.app",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/check-analytics-collector.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "abc-iview-mediapackagestreams-2.akamaized.net",
@@ -610,9 +600,6 @@
           "path": "scripts/_r2-storage.mjs"
         },
         {
-          "path": "scripts/cloudflare-cache-rule.mjs"
-        },
-        {
           "path": "scripts/seed-internet-outages.mjs"
         },
         {
@@ -862,9 +849,6 @@
       "attribution": "Credit api.github.com and link to the original upstream API/dataset.",
       "status": "terms-review",
       "references": [
-        {
-          "path": "api/_github-release.js"
-        },
         {
           "path": "scripts/resolve-railway-reconcile-control.mjs"
         },
@@ -1240,18 +1224,10 @@
       "host": "api.telegram.org",
       "provider": "api.telegram.org",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Provider terms for this upstream API/dataset; verify before redistribution",
       "attribution": "Credit api.telegram.org and link to the original upstream API/dataset.",
-      "status": "terms-review",
-      "references": [
-        {
-          "path": "scripts/notification-relay.cjs"
-        },
-        {
-          "path": "scripts/seed-digest-notifications.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "api.travelpayouts.com",
@@ -2646,9 +2622,6 @@
       "references": [
         {
           "path": "packages/server/worldmonitor/displacement/v1/cross-border-data.ts"
-        },
-        {
-          "path": "scripts/build-open-data-chokepoints.mjs"
         }
       ]
     },
@@ -3994,9 +3967,6 @@
       "attribution": "Excluded from the provider count: placeholder URL.",
       "status": "excluded",
       "references": [
-        {
-          "path": "scripts/mcp-live-smoke.mjs"
-        },
         {
           "path": "scripts/openapi-inject-examples.mjs"
         }
@@ -5958,15 +5928,10 @@
       "host": "live.dodopayments.com",
       "provider": "live.dodopayments.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/ais-relay.cjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "live.livetvstream.co.uk",
@@ -6069,9 +6034,6 @@
       "attribution": "Excluded from the provider count: local-only URL.",
       "status": "excluded",
       "references": [
-        {
-          "path": "packages/client/config/desktop-runtime.ts"
-        },
         {
           "path": "packages/client/services/wm-session.ts"
         },
@@ -7205,9 +7167,6 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "packages/server/worldmonitor/military/v1/list-military-flights.ts"
-        },
-        {
           "path": "scripts/ais-relay.cjs"
         },
         {
@@ -7979,15 +7938,10 @@
       "host": "registry.modelcontextprotocol.io",
       "provider": "registry.modelcontextprotocol.io",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/publish-mcp-registry.mjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "reliefweb.int",
@@ -9441,15 +9395,10 @@
       "host": "test.dodopayments.com",
       "provider": "test.dodopayments.com",
       "kind": "structured",
-      "observed": true,
+      "observed": false,
       "license": "Excluded: first-party, control-plane, UI, or rendering transport",
       "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
-      "references": [
-        {
-          "path": "scripts/ais-relay.cjs"
-        }
-      ]
+      "status": "excluded"
     },
     {
       "host": "th.usembassy.gov",
@@ -10459,9 +10408,6 @@
           "path": "packages/client/config/web-origin.ts"
         },
         {
-          "path": "packages/client/services/runtime.ts"
-        },
-        {
           "path": "packages/server/_shared/brief-url.ts"
         },
         {
@@ -10475,9 +10421,6 @@
         },
         {
           "path": "scripts/_upstash-rest.mjs"
-        },
-        {
-          "path": "scripts/capture-mcp-fixture.mjs"
         },
         {
           "path": "scripts/china-coverage-health.mjs"
@@ -10501,22 +10444,7 @@
           "path": "scripts/lib/company-monitoring-classifier-client.mjs"
         },
         {
-          "path": "scripts/lib/digest-email-html.mjs"
-        },
-        {
           "path": "scripts/lib/x-news-accounts.cjs"
-        },
-        {
-          "path": "scripts/mcp-live-smoke.mjs"
-        },
-        {
-          "path": "scripts/mcp-proxy-live-smoke.mjs"
-        },
-        {
-          "path": "scripts/publish-mcp-registry.mjs"
-        },
-        {
-          "path": "scripts/seed-digest-notifications.mjs"
         },
         {
           "path": "scripts/seed-five-factor-scorecard.mjs"
@@ -10538,9 +10466,6 @@
         },
         {
           "path": "scripts/seed-wb-indicators.mjs"
-        },
-        {
-          "path": "scripts/shared/notify-fields.cjs"
         },
         {
           "path": "scripts/shipping-webhook-worker.mjs"
@@ -14507,9 +14432,6 @@
           "path": "packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts"
         },
         {
-          "path": "scripts/build-open-data-chokepoints.mjs"
-        },
-        {
           "path": "scripts/build-un-m49-regions.mjs"
         },
         {
@@ -14525,22 +14447,13 @@
           "path": "scripts/freeze-resilience-ranking.mjs"
         },
         {
-          "path": "scripts/lib/email-unsubscribe.cjs"
-        },
-        {
           "path": "scripts/lib/internal-links.mjs"
-        },
-        {
-          "path": "scripts/mcp-proxy-live-smoke.mjs"
         },
         {
           "path": "scripts/measure-composited-layers.mjs"
         },
         {
           "path": "scripts/measure-dashboard-render-axis.mjs"
-        },
-        {
-          "path": "scripts/notification-relay.cjs"
         },
         {
           "path": "scripts/seed-no2-activity.mjs"

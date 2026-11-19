@@ -2,7 +2,6 @@ import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { getCachedJsonBatch } from '../packages/server/_shared/redis';
-import { sidecarCacheSet } from '../packages/server/_shared/sidecar-cache';
 import { getFredSeriesBatch } from '../packages/server/worldmonitor/economic/v1/get-fred-series-batch';
 import { runFredRatesSeed } from '../scripts/seed-fred-rates.mjs';
 
@@ -172,19 +171,4 @@ describe('getFredSeriesBatch', () => {
     assert.ok(errors.some((line) => line.includes('[REDIS-TIMEOUT] getCachedJsonBatch keys=1')));
   });
 
-  it('reads raw seed keys from the Tauri sidecar cache branch', async () => {
-    process.env.LOCAL_API_MODE = 'tauri-sidecar';
-    delete process.env.UPSTASH_REDIS_REST_URL;
-    delete process.env.UPSTASH_REDIS_REST_TOKEN;
-    sidecarCacheSet('economic:fred:v1:FEDFUNDS:0', { series: fredSeries('FEDFUNDS') }, 60);
-
-    const response = await getFredSeriesBatch(
-      {} as never,
-      { seriesIds: ['FEDFUNDS', 'CPIAUCSL'], limit: 2 },
-    );
-
-    assert.equal(response.requested, 2);
-    assert.equal(response.fetched, 1);
-    assert.deepEqual(Object.keys(response.results), ['FEDFUNDS']);
-  });
 });

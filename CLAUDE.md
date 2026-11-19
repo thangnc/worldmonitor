@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-WorldMonitor is a real-time global intelligence dashboard for geopolitics, military activity, markets, climate, cyber threats, maritime traffic, and aviation. The Lite web app (Preact) uses Vercel Edge APIs, data workers, and Upstash Redis. Tauri adds a desktop app and Node.js sidecar.
+World Monitor Lite is a real-time intelligence dashboard for geopolitics, finance and crypto, and technology and AI, built as an unofficial fork of World Monitor (see README.md for the fork and licence notice). The Lite web app (Preact) uses Vercel Edge APIs, data workers, and Upstash Redis.
 
 Claude Code is the only supported coding agent for this repository. This file is the canonical agent guide. It covers workflow rules, commands, the change → check map, test-suite ownership, landmarks, and import boundaries. The project's Claude Code setup lives in `.claude/`:
 

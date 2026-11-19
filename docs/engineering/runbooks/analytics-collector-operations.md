@@ -5,6 +5,8 @@ description: "Operational contracts for the self-hosted Umami collector, its wri
 
 # Analytics Collector Operations
 
+> Retired: the Umami service, its images, monitors and tests left this repository in the 2026-11 Lite-only cleanup. This runbook is kept as a record; the files it names are in git history.
+
 World Monitor sends product analytics to the separately deployed Railway
 `umami` service. Railway deployment status is not an application write-path
 health signal: a healthy deployment can still return HTTP 500 from `POST
@@ -13,7 +15,7 @@ health signal: a healthy deployment can still return HTTP 500 from `POST
 ## Write-path contract
 
 - The Umami service must run the WorldMonitor-managed image built by
-  [`Dockerfile.umami`](../../../Dockerfile.umami), or another immutable image proven
+  `Dockerfile.umami`, or another immutable image proven
   to contain both the composite `(session_id, data_key)` unique index and the
   `ON CONFLICT` upsert for `session_data`. A version label alone is
   insufficient; verify the deployed image digest and schema/index.
@@ -359,7 +361,7 @@ the next image change, not a tuning step.
 ## Retention contract
 
 **The horizon is 30 days.** It is declared once, at the top of
-[`scripts/umami-retention.sql`](../../../scripts/umami-retention.sql), and every
+`scripts/umami-retention.sql`, and every
 statement reads that declaration — the tables must never carry their own
 interval literal.
 
@@ -652,7 +654,7 @@ Volume usage is a *lagging* signal. In #6375 the runner exited non-zero on every
 tick for days while the volume took its time drifting into the warning band —
 and that warning is deliberately non-fatal, so nothing ever failed. The same
 workflow therefore also runs
-[`scripts/check-umami-retention-runner.mjs`](../../../scripts/check-umami-retention-runner.mjs),
+`scripts/check-umami-retention-runner.mjs`,
 which reads deployment records only — never Postgres — and fails when the newest
 `umami-retention` deployment **that actually ran** is `CRASHED`.
 

@@ -130,22 +130,6 @@ describe('gateway CDN origin policy', () => {
     assertNoSharedCacheHeaders(res);
   });
 
-  it('avoids shared CDN caching for enterprise-key Tauri GETs', async () => {
-    const origin = 'tauri://localhost';
-    process.env.WORLDMONITOR_VALID_KEYS = 'real-key-123';
-    const handler = createHandler();
-    const res = await handler(new Request('https://worldmonitor.app/api/market/v1/list-gulf-quotes', {
-      headers: {
-        Origin: origin,
-        'X-WorldMonitor-Key': 'real-key-123',
-      },
-    }));
-    assert.equal(res.status, 200);
-    assert.equal(res.headers.get('Access-Control-Allow-Origin'), origin);
-    assert.equal(res.headers.get('Vary'), 'Origin');
-    assertNoSharedCacheHeaders(res);
-  });
-
   it('preserves CDN caching for explicit anonymous public no-auth GETs', async () => {
     const origin = 'https://worldmonitor.app';
     const handler = createHandler();

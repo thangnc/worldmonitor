@@ -909,7 +909,7 @@ describe('zero-frame async-rejection patterns (timeout / DOMException / OOM / DO
     // A source scan that matches nothing is indistinguishable from one that is
     // silently broken (wrong path, wrong extension filter).
     const files = ['../apps/web/src', '../packages/client'].flatMap((rel) => walkTsFiles(resolve(__dirname, rel)));
-    assert.ok(files.length > 100, `sanity: expected to scan src/ and packages/client/, got ${files.length} files`);
+    assert.ok(files.length > 80, `sanity: expected to scan src/ and packages/client/, got ${files.length} files`);
     const kindSetters = files.filter((f) => /tags:\s*\{[^}]*\bkind:/.test(readFileSync(f, 'utf-8')));
     assert.ok(
       kindSetters.length >= 1,
@@ -2685,7 +2685,7 @@ describe('ignoreErrors — Android WebView Java bridge (WORLDMONITOR-117, -YN)',
     // A source scan that matches nothing is indistinguishable from one that is
     // silently broken (wrong path, wrong extension filter).
     const files = ['../apps/web/src', '../packages/client'].flatMap((rel) => walkTsFiles(resolve(__dirname, rel)));
-    assert.ok(files.length > 100, `sanity: expected to scan src/ and packages/client/, got ${files.length} files`);
+    assert.ok(files.length > 80, `sanity: expected to scan src/ and packages/client/, got ${files.length} files`);
     assert.ok(files.some((f) => f.endsWith('sentry-init.ts')), 'scan must reach sentry-init.ts');
   });
 });

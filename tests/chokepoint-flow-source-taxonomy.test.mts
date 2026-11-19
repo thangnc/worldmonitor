@@ -26,13 +26,11 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 
-// The sidecar cache is the handler's in-memory Redis seam. Set before importing
-// anything that reads it so the module graph never sees the real credentials.
-process.env.LOCAL_API_MODE = 'tauri-sidecar';
-delete process.env.UPSTASH_REDIS_REST_URL;
-delete process.env.UPSTASH_REDIS_REST_TOKEN;
-
-const { sidecarCacheSet } = await import('../packages/server/_shared/sidecar-cache.ts');
+// An in-memory Upstash REST fake is the handler's Redis. installRedis() also
+// replaces fetch, so every non-Redis call (NGA warnings, the relay) rejects —
+// the fast, deterministic degraded path. It used to be the desktop sidecar
+// cache, which left with the desktop app.
+const { installRedis } = await import('./helpers/fake-upstash-redis.mts');
 const { getChokepointStatus } = await import(
   '../packages/server/worldmonitor/supply-chain/v1/get-chokepoint-status.ts'
 );
@@ -153,36 +151,33 @@ describe('the chokepoint handler serves only declared FlowSource values (#6101)'
     // and a latency tax for assertions that are entirely about cached Redis
     // content. Both callers already catch and degrade, so a rejected fetch is
     // the fast, deterministic path. Mirrors tests/empty-200-degradation-handlers.test.mts.
-    globalThis.fetch = (async () => {
-      throw new Error('network disabled in chokepoint-flow-source-taxonomy test');
-    }) as typeof globalThis.fetch;
-
-    sidecarCacheSet('supply_chain:transit-summaries:v1', {
-      summaries: {
-        suez: {
-          todayTotal: 10, todayTanker: 5, todayCargo: 3, todayOther: 2, wowChangePct: 0,
-          history: [], riskLevel: 'low', incidentCount7d: 0, disruptionPct: 0,
-          riskSummary: '', riskReportAction: '', dataAvailable: true,
-        },
-      },
-    }, 300);
-
     const flow = (source: unknown, hazard: string | null = null) => ({
       currentMbd: 1, baselineMbd: 2, flowRatio: 0.5, disrupted: false,
       ...(source === undefined ? {} : { source }),
       hazardAlertLevel: hazard, hazardAlertName: hazard ? 'Cyclone Fixture' : null,
     });
 
-    // One invocation, one scenario per chokepoint id.
-    sidecarCacheSet('energy:chokepoint-flows:v1', {
-      suez: flow('portwatch-dwt'),
-      hormuz_strait: flow('portwatch-counts'),
-      malacca_strait: flow('portwatch-lidar'), // a value shipped after this deploy
-      panama: flow(''),
-      korea_strait: flow(undefined), // key absent entirely
-      dover_strait: flow(42), // seeder bug: not even a string
-      bab_el_mandeb: flow('portwatch-dwt', 'RED'), // a real GDACS alert, not the null coalesce
-    }, 300);
+    installRedis({
+      'supply_chain:transit-summaries:v1': {
+        summaries: {
+          suez: {
+            todayTotal: 10, todayTanker: 5, todayCargo: 3, todayOther: 2, wowChangePct: 0,
+            history: [], riskLevel: 'low', incidentCount7d: 0, disruptionPct: 0,
+            riskSummary: '', riskReportAction: '', dataAvailable: true,
+          },
+        },
+      },
+      // One invocation, one scenario per chokepoint id.
+      'energy:chokepoint-flows:v1': {
+        suez: flow('portwatch-dwt'),
+        hormuz_strait: flow('portwatch-counts'),
+        malacca_strait: flow('portwatch-lidar'), // a value shipped after this deploy
+        panama: flow(''),
+        korea_strait: flow(undefined), // key absent entirely
+        dover_strait: flow(42), // seeder bug: not even a string
+        bab_el_mandeb: flow('portwatch-dwt', 'RED'), // a real GDACS alert, not the null coalesce
+      },
+    });
 
     const response = await getChokepointStatus({} as never, {} as never);
     // Assert on the SERIALIZED response, not the in-process object: the wire is
@@ -255,7 +250,7 @@ describe('the chokepoint handler re-narrows a cached response (#6101)', () => {
   // get-bypass-options, both cost-shock handlers, get-route-explorer-lane and
   // the bootstrap tier. This drives the WARM path specifically.
   it('narrows an undeclared source that was already in the response cache', async () => {
-    sidecarCacheSet('supply_chain:chokepoints:v4', {
+    installRedis({ 'supply_chain:chokepoints:v4': {
       chokepoints: [{
         id: 'suez',
         name: 'Suez Canal',
@@ -267,7 +262,7 @@ describe('the chokepoint handler re-narrows a cached response (#6101)', () => {
       }],
       fetchedAt: new Date().toISOString(),
       upstreamUnavailable: false,
-    }, 300);
+    } });
 
     const response = await getChokepointStatus({} as never, {} as never);
     const wire = JSON.parse(JSON.stringify(response)) as typeof response;

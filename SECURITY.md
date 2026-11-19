@@ -12,11 +12,9 @@ Only the latest version on the `main` branch is actively maintained and receives
 
 **Please do NOT report security vulnerabilities through public GitHub issues.**
 
-If you discover a security vulnerability in World Monitor, please report it responsibly:
+This policy covers this repository, World Monitor Lite, an unofficial fork of [koala73/worldmonitor](https://github.com/koala73/worldmonitor). If you discover a vulnerability here, report it privately through [GitHub's private vulnerability reporting](https://github.com/thangnc/worldmonitor/security/advisories/new) on this repository.
 
-1. **GitHub Private Vulnerability Reporting**: Use [GitHub's private vulnerability reporting](https://github.com/koala73/worldmonitor/security/advisories/new) to submit your report directly through the repository.
-
-2. **Direct Contact**: Alternatively, reach out to the repository owner [@koala73](https://github.com/koala73) directly through GitHub.
+If the issue also affects the original project, report it to that project as well, through [its own security policy](https://github.com/koala73/worldmonitor/security/policy).
 
 ### What to Include
 
@@ -27,8 +25,8 @@ If you discover a security vulnerability in World Monitor, please report it resp
 
 ### Response Timeline
 
-- **Acknowledgment**: Within 48 hours of your report
-- **Initial Assessment**: Within 1 week
+- **Acknowledgment**: Within a week of your report (this fork has one maintainer)
+- **Initial Assessment**: Within two weeks
 - **Fix/Patch**: Depending on severity, critical issues will be prioritized
 
 ### What to Expect
@@ -40,16 +38,14 @@ If you discover a security vulnerability in World Monitor, please report it resp
 
 ## Security Considerations
 
-World Monitor is a client-side intelligence dashboard that aggregates publicly available data. Here are the key security areas:
+World Monitor Lite is a private intelligence dashboard that aggregates publicly available data. Here are the key security areas:
 
 ### API Keys & Secrets
 
 - **Web deployment**: API keys are stored server-side in Vercel Edge Functions
-- **Desktop runtime**: API keys are stored in the OS keychain (macOS Keychain / Windows Credential Manager) via a consolidated vault entry, never on disk in plaintext
 - No API keys should ever be committed to the repository
 - Environment variables (`.env.local`) are gitignored
 - The RSS proxy uses domain allowlisting to prevent SSRF. Both the Vercel Edge proxy and the Railway relay re-check the RSS allowlist on every redirect hop.
-- The Pro-gated MCP proxy accepts only HTTPS targets, resolves and rejects private/reserved A and AAAA answers immediately before each outbound request, and strips cloud-metadata headers. Vercel Edge `fetch` cannot pin its socket to the vetted address, so a narrow resolve-versus-connect DNS-rebinding window remains an accepted residual; closing it requires a Node-runtime/socket-pinning design (tracked in draft advisory [GHSA-887j-p88r-qmm9](https://github.com/koala73/worldmonitor/security/advisories/GHSA-887j-p88r-qmm9), access restricted until publication).
 
 ### Edge Functions & Sebuf Handlers
 
@@ -65,14 +61,6 @@ World Monitor is a client-side intelligence dashboard that aggregates publicly a
 - Map data layers use trusted, vetted data sources
 - Content Security Policy restricts script-src to `'self'` (no unsafe-inline/eval)
 
-### Desktop Runtime Security (Tauri)
-
-- **IPC origin validation**: Sensitive Tauri commands (secrets, cache, token) are gated to trusted windows only; external-origin windows (e.g., YouTube login) are blocked
-- **DevTools**: Disabled in production builds; gated behind an opt-in Cargo feature for development
-- **Sidecar authentication**: A per-session CSPRNG token (`LOCAL_API_TOKEN`) authenticates all renderer-to-sidecar requests, preventing other local processes from accessing the API
-- **Capability isolation**: The YouTube login window runs under a restricted capability with no access to secret or cache IPC commands
-- **Fetch patch trust boundary**: The global fetch interceptor injects the sidecar token with a 5-minute TTL; the renderer is the intended client — if renderer integrity is compromised, Tauri IPC provides strictly more access than the fetch patch
-
 ### Data Sources
 
 - World Monitor aggregates publicly available OSINT data
@@ -84,12 +72,11 @@ World Monitor is a client-side intelligence dashboard that aggregates publicly a
 
 The following are **in scope** for security reports:
 
-- Vulnerabilities in the World Monitor codebase
+- Vulnerabilities in this repository's code
 - Edge function security issues (SSRF, injection, auth bypass)
 - XSS or content injection through RSS feeds or external data
 - API key exposure or secret leakage
-- Tauri IPC command privilege escalation or capability bypass
-- Sidecar authentication bypass or token leakage
+- Docker Node API (`docker/local-api/`) authentication bypass or token leakage
 - Dependency vulnerabilities with a viable attack vector
 
 The following are **out of scope**:
@@ -97,7 +84,7 @@ The following are **out of scope**:
 - Vulnerabilities in third-party services we consume (report to the upstream provider)
 - Social engineering attacks
 - Denial of service attacks
-- Issues in forked copies of the repository
+- Issues that exist only in the original project or in other forks (report them there)
 - Security issues in user-provided environment configurations
 
 ## Best Practices for Contributors
@@ -110,4 +97,4 @@ The following are **out of scope**:
 
 ---
 
-Thank you for helping keep World Monitor and its users safe! 🔒
+Thank you for helping keep this project safe.

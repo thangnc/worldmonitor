@@ -1045,45 +1045,8 @@ export function hasEndpointRatePolicy(pathname: string): boolean {
   return pathname in ENDPOINT_RATE_POLICIES;
 }
 
-let nativeGoogleDatesAdmissions: number[] = [];
-let nativeGoogleFlightsAdmissions: number[] = [];
-let nativeAviationNewsAdmissions: number[] = [];
-
 export async function checkEndpointRateLimit(request: Request, pathname: string, corsHeaders: Record<string, string>, opts: EndpointRateLimitOptions = {}): Promise<Response | null> {
   if (!hasEndpointRatePolicy(pathname)) return null;
-  // Native transport authentication happens before this gateway. Use one
-  // bounded local budget with the in-process cache; cloud and Docker use Redis.
-  if ((pathname === '/api/aviation/v1/search-google-dates'
-    || pathname === '/api/aviation/v1/search-google-flights')
-    && process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    const policy = ENDPOINT_RATE_POLICIES[pathname]!;
-    const windowSeconds = durationToSeconds(policy.window);
-    const now = Date.now();
-    const admissions = pathname === '/api/aviation/v1/search-google-dates'
-      ? nativeGoogleDatesAdmissions
-      : nativeGoogleFlightsAdmissions;
-    const activeAdmissions = admissions.filter(time => time > now - windowSeconds * 1000);
-    if (activeAdmissions.length >= policy.limit) {
-      return tooManyRequestsResponse(policy.limit, activeAdmissions[0]! + windowSeconds * 1000, corsHeaders, windowSeconds);
-    }
-    activeAdmissions.push(now);
-    if (pathname === '/api/aviation/v1/search-google-dates') nativeGoogleDatesAdmissions = activeAdmissions;
-    else nativeGoogleFlightsAdmissions = activeAdmissions;
-    return null;
-  }
-  if (pathname === '/api/aviation/v1/list-aviation-news'
-    && process.env.LOCAL_API_MODE === 'tauri-sidecar') {
-    const policy = ENDPOINT_RATE_POLICIES[pathname]!;
-    const windowSeconds = durationToSeconds(policy.window);
-    const now = Date.now();
-    nativeAviationNewsAdmissions = nativeAviationNewsAdmissions.filter(time => time > now - windowSeconds * 1000);
-    if (nativeAviationNewsAdmissions.length >= policy.limit) {
-      return tooManyRequestsResponse(policy.limit, nativeAviationNewsAdmissions[0]! + windowSeconds * 1000, corsHeaders, windowSeconds);
-    }
-    nativeAviationNewsAdmissions.push(now);
-    return null;
-  }
-
   // IP-scoped endpoint budgets depend on a real client IP. A cf-connecting-ip
   // without x-wm-edge-proof is either a direct-origin spoof or a Transform Rule
   // miss — reject rather than share a Cloudflare PoP bucket (#8402). Principal-
@@ -1263,9 +1226,6 @@ export async function checkFailClosedScopedIpRateLimit(
 }
 
 export function __resetRateLimitForTest(): void {
-  nativeGoogleDatesAdmissions = [];
-  nativeGoogleFlightsAdmissions = [];
-  nativeAviationNewsAdmissions = [];
   ratelimit = null;
   endpointLimiters.clear();
   scopedLimiters.clear();

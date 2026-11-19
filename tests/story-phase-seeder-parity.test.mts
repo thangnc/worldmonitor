@@ -152,16 +152,6 @@ describe('#7154 intentional divergence — silence >24h is fading in notificatio
     assert.notEqual(phase, 'STORY_PHASE_FADING');
     assert.equal(PROTO_TO_CLIENT[phase as keyof typeof PROTO_TO_CLIENT], 'sustained');
   });
-
-  it('seeder source delegates to packages/shared/story-phase.js', () => {
-    const seeder = readFileSync(
-      resolve(__dirname, '..', 'scripts', 'seed-digest-notifications.mjs'),
-      'utf-8',
-    );
-    assert.match(seeder, /deriveNotificationStoryPhase/);
-    assert.doesNotMatch(seeder, /return 'unknown'/);
-    assert.doesNotMatch(seeder, /PHASE_COLOR\[s\.phase\] \?\? '#888'/);
-  });
 });
 
 describe('#7154 digest email renderer — closed phase badge set', () => {

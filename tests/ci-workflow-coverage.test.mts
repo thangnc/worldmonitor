@@ -34,7 +34,7 @@ describe('root dependency cache (#8710)', () => {
     const cache = action.runs.steps.find((step) => step.id === 'node-modules');
     assert.match(cache.uses, /^actions\/cache\/restore@[a-f0-9]{40}$/);
     assert.equal(cache.with.path, 'node_modules');
-    assert.equal(cache.with.key, "node-modules-v3-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('package-lock.json', '.npmrc', 'vendor/braces/**', 'vendor/stream-json/**', 'vendor/vercel-og/**') }}-${{ steps.install-inputs.outputs.hash }}");
+    assert.equal(cache.with.key, "node-modules-v3-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('package-lock.json', '.npmrc', 'vendor/braces/**', 'vendor/stream-json/**') }}-${{ steps.install-inputs.outputs.hash }}");
     assert.equal(cache.with['restore-keys'], undefined);
   });
 
@@ -203,11 +203,10 @@ const PR_GATE_WORKFLOWS = [
   'Proto Generation Check',
 ] as const;
 
-// The Lite gate's own jobs, then the gates of services outside the web app
-// (consumer-prices-core, Umami, digest image) that Phase 2 decides.
+// The Lite gate's own jobs. The upstream-only service gates (consumer-prices,
+// umami-postgres, digest-image) left with those services (2026-11).
 const CI_JOBS = [
   'checks', 'unit', 'build', 'dom', 'server', 'health-probe-cutovers',
-  'consumer-prices', 'umami-postgres', 'digest-image',
 ] as const;
 
 

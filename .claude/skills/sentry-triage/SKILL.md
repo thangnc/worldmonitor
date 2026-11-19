@@ -59,7 +59,7 @@ Canonical write-ups:
 - `docs/engineering/solutions/best-practices/sentry-noise-filtering-with-stack-gating-and-signature-matching.md`
 - `docs/engineering/solutions/logic-errors/name-shaped-trampoline-allowlist-cannot-match-a-nameless-frame.md`
 
-Policy lives in `packages/client/bootstrap/sentry-init.ts` and `packages/client/bootstrap/sentry-allow-urls.ts`. Marketing must stay in lockstep via `pro-test/src/sentry.ts` / `pro-test/src/sentry-allow-urls.ts`.
+Policy lives in `packages/client/bootstrap/sentry-init.ts` and `packages/client/bootstrap/sentry-allow-urls.ts`.
 
 ## Step 1 — Find the work
 
@@ -112,7 +112,7 @@ State one class before touching code or Sentry status:
 
 **Noise / already-fixed filter work**
 
-- Edit `packages/client/bootstrap/sentry-init.ts` or `packages/client/bootstrap/sentry-allow-urls.ts` (and the `pro-test` mirror when the marketing bundle shares the list).
+- Edit `packages/client/bootstrap/sentry-init.ts` or `packages/client/bootstrap/sentry-allow-urls.ts`.
 - Add the production-shaped fixture and the counter-fixture in `tests/sentry-beforesend.test.mjs` or `tests/sentry-allow-urls.test.mts`.
 - Run the smallest focused test first (`tsx --test tests/sentry-beforesend.test.mjs` or `tests/sentry-allow-urls.test.mts`). Do not claim a timed-out run passed.
 

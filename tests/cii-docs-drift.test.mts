@@ -17,9 +17,10 @@ import {
 } from '../packages/server/worldmonitor/intelligence/v1/_risk-config.ts';
 import { CII_COUNTRY_WEIGHTS } from '../packages/shared/cii-weights.ts';
 
-it('current and translated CII claims use the published formula version', () => {
+it('current CII claims use the published formula version', () => {
+  // The translated upstream READMEs left in 2026-11; this fork has no translations.
   const paths = [
-    'README.md', 'README.ru.md', 'README.ja-JP.md', 'README.zh-CN.md',
+    'README.md',
     'docs/engineering/product/PRESS_KIT.md',
     'docs/engineering/architecture/health-endpoints.md',
   ];

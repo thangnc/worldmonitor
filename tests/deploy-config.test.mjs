@@ -28,12 +28,11 @@ const dockerNginxSource = readFileSync(resolve(__dirname, '../docker/nginx.conf'
 const frontendDockerfileSource = readFileSync(resolve(__dirname, '../docker/Dockerfile'), 'utf-8');
 const dockerignoreSource = readFileSync(resolve(__dirname, '../.dockerignore'), 'utf-8');
 const vercelIgnoreSource = readFileSync(resolve(__dirname, '../scripts/vercel-ignore.sh'), 'utf-8');
-const SPA_HTML_CACHE_SOURCE = '/((?!api|assets|src|tmp|server|favico|map-styles|data|textures|sw\\.js|workbox-[a-f0-9]+\\.js|manifest\\.webmanifest|offline\\.html|robots\\.txt|\\.well-known|desktop-sign-in\\.html|desktop-sign-in).*)';
+const SPA_HTML_CACHE_SOURCE = '/((?!api|assets|src|tmp|server|favico|map-styles|data|textures|sw\\.js|workbox-[a-f0-9]+\\.js|manifest\\.webmanifest|robots\\.txt|\\.well-known).*)';
 const GLOBAL_SECURITY_HEADER_SOURCE = '/(.*)';
 const WEBMCP_PRODUCTION_HOST_PATTERN = '^(?:www|tech|finance|commodity|happy|energy)\\.worldmonitor\\.app$';
 const GLOBAL_CSP_INLINE_SCRIPT_HTML_FILES = [
   'apps/web/lite.html',
-  'public/offline.html',
 ];
 const GLOBAL_CSP_EXTERNAL_SCRIPT_HTML_FILES = [
   'apps/web/lite.html',
@@ -333,23 +332,10 @@ describe('vercel.json source matching', () => {
   });
 });
 
-describe('open data under /data/v1', () => {
-  it('revalidates versioned open data hourly instead of caching it as immutable', () => {
-    assert.equal(effectiveCacheControl('/data/v1/chokepoints/latest.json'), 'public, max-age=3600');
-  });
-
-  it('keeps open data readable cross-origin', () => {
-    assert.equal(effectiveHeader('/data/v1/chokepoints/latest.csv', 'Access-Control-Allow-Origin'), '*');
-  });
-
-  it('lets the CDN serve stale open data briefly while it revalidates', () => {
-    assert.equal(
-      effectiveHeader('/data/v1/chokepoints/latest.json', 'CDN-Cache-Control'),
-      'public, s-maxage=3600, stale-while-revalidate=600',
-    );
-  });
-
-  it('leaves unversioned /data assets immutable', () => {
+// The /data/v1 open-data files (chokepoint CSV/JSON) left with the public
+// open-data product in 2026-11; /data keeps the map's static geometry.
+describe('static data under /data', () => {
+  it('leaves /data assets immutable', () => {
     assert.equal(effectiveCacheControl('/data/countries-50m.json'), 'public, max-age=31536000, immutable');
   });
 
@@ -359,11 +345,9 @@ describe('open data under /data/v1', () => {
     return match[1];
   };
 
-  it('gives the self-hosted image the same hourly, cross-origin rule for /data/v1/', () => {
-    const block = nginxLocation('/data/v1/');
-    assert.match(block, /add_header Cache-Control "public, max-age=3600";/);
-    assert.match(block, /add_header Access-Control-Allow-Origin "\*" always;/);
+  it('gives the self-hosted image the same immutable rule for /data/', () => {
     assert.match(nginxLocation('/data/'), /add_header Cache-Control "public, max-age=31536000, immutable";/);
+    assert.doesNotMatch(dockerNginxSource, /location \/data\/v1\//);
   });
 });
 
@@ -1045,7 +1029,6 @@ describe('security header guardrails', () => {
       const html = readFileSync(resolve(__dirname, '..', file), 'utf-8');
       return getInlineScriptHashTokens(html);
     }))].sort();
-    assert.ok(committedHashTokens.length > 0, 'expected inline scripts in committed HTML');
     const untrusted = committedHashTokens.filter((token) => !scriptHashTokens.includes(token));
     assert.deepEqual(
       untrusted,
@@ -1064,7 +1047,8 @@ describe('security header guardrails', () => {
       return getInlineScriptHashTokens(html);
     }))].sort();
 
-    assert.ok(inlineHashTokens.length > 0, 'expected inline scripts under the global CSP');
+    // The offline page's Retry script was the last un-nonced inline script; it
+    // left with the PWA offline fallback (2026-11), so the exact set is empty.
     assert.deepEqual(
       scriptHashTokens,
       inlineHashTokens,
@@ -1083,10 +1067,6 @@ describe('security header guardrails', () => {
     assert.ok(
       tokens.includes(`'nonce-${STATIC_SCRIPT_NONCE}'`),
       'CSP script-src must include the static entry-script nonce used by parser-inserted HTML entries'
-    );
-    assert.ok(
-      tokens.some((token) => token.startsWith("'sha256-")),
-      'CSP script-src must include hashes for inline bootstrap scripts'
     );
     assert.deepEqual(
       tokens.filter((token) => /^https?:/.test(token) || token.includes('*.')),
@@ -1575,8 +1555,6 @@ describe('Lite deploy contracts', () => {
       git('commit', '-qm', 'base');
 
       for (const path of [
-        'scripts/unranked-country-inventory.mjs',
-        'scripts/data/use-case-workflows.mjs',
         'scripts/slugify.mjs',
         'scripts/source-origin.mjs',
         'scripts/source-origin.d.mts',

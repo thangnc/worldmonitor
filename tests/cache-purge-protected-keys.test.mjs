@@ -47,7 +47,7 @@ function purge(body) {
 
 describe('cache-purge protects auth state', () => {
   it('protects foreign preview auth state through explicit keys and wildcard scans during production execution', async () => {
-    const protectedKeys = ['oauth:token:abc', 'webhook:sub:x', 'internal-mcp-replay:x', 'desktop-auth:x', 'rl:x']
+    const protectedKeys = ['oauth:token:abc', 'webhook:sub:x', 'internal-mcp-replay:x', 'rl:x']
       .map(key => `preview:deadbeef:${key}`);
     const safe = 'preview:deadbeef:news:digest';
     const commands = [];
@@ -92,7 +92,6 @@ describe('cache-purge protects auth state', () => {
         'oauth:token:abc', 'oauth:refresh:def', 'oauth:client:c1', 'mcp-grant:n1',
         'wm:slack:oauth:s1', 'wm:discord:oauth:s2', 'rl:mcp:1',
         'internal-mcp-replay:v1:deadbeef', 'webhook:sub:wh_abc:v1', 'webhook:owner:0123:v1',
-        'desktop-auth:code:0123abcd',
         'news:digest:v1', 'entitlements:user_1',
       ],
     });

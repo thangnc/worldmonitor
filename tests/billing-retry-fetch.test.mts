@@ -289,17 +289,10 @@ describe('runtime fetch-patch wiring', () => {
     );
   });
 
-  it('covers both the web and desktop patches', () => {
-    // They are mutually exclusive at runtime (each returns early on the other's
-    // platform), so a wrapper on only one silently leaves that platform's Pro
-    // users with the pre-retry hard failure.
-    const desktop = runtimeSrc.indexOf('export function installRuntimeFetchPatch');
+  it('wraps the web fetch patch, the only installer since the desktop one left', () => {
     const web = runtimeSrc.indexOf('export function installWebApiRedirect');
-    assert.ok(desktop >= 0 && web >= 0, 'both installers still exist');
-
-    const desktopBody = runtimeSrc.slice(desktop, web);
-    const webBody = runtimeSrc.slice(web);
-    assert.match(desktopBody, /withBillingVerificationRetry\(/, 'desktop patch unwrapped');
-    assert.match(webBody, /withBillingVerificationRetry\(/, 'web patch unwrapped');
+    assert.ok(web >= 0, 'the web installer still exists');
+    assert.equal(runtimeSrc.indexOf('export function installRuntimeFetchPatch'), -1);
+    assert.match(runtimeSrc.slice(web), /withBillingVerificationRetry\(/, 'web patch unwrapped');
   });
 });
