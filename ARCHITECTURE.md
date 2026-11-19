@@ -2,11 +2,11 @@
 
 > **Inventory ownership**: map layers, services, protos, locales, CI workflows, and freshness sources are defined by their registries. `npm run docs:check` verifies registry and fixed-contract documentation; generated snapshots are refreshed with `npm run docs:stats`.
 >
-> **Ownership rule**: When deployment topology, API surface, desktop runtime, or bootstrap keys change, this document must be updated in the same PR.
+> **Ownership rule**: When deployment topology, API surface, or bootstrap keys change, this document must be updated in the same PR.
 
 > **Design philosophy**: For the "why" behind architectural decisions, intelligence tradecraft, and algorithmic choices, see [Design Philosophy](docs/engineering/architecture/design-philosophy.md).
 
-World Monitor is a real-time global intelligence dashboard built as a TypeScript single-page application. It aggregates data from dozens of external sources covering geopolitics, military activity, financial markets, cyber threats, climate events, maritime tracking, and aviation into a unified operational picture rendered through an interactive map and a grid of specialized panels.
+World Monitor Lite is a real-time intelligence dashboard for three domains: geopolitics and conflicts, finance and crypto, and technology and AI. It is an unofficial fork of World Monitor (see README.md). Seeders and a relay collect data from external sources into Redis; Edge API handlers serve it; one Preact single-page app (`/lite`) renders it as a cross-domain Briefing, three domain screens with MapLibre maps, and a Sources screen.
 
 ---
 
@@ -14,14 +14,11 @@ World Monitor is a real-time global intelligence dashboard built as a TypeScript
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│                             Browser                             │
-│  ┌──────────┐  ┌──────────┐  ┌───────────┐  ┌─────────────┐  │
-│  │ DeckGLMap│  │ GlobeMap │  │  Panels    │  │  Workers     │  │
-│  │(deck.gl) │  │(globe.gl)│  │(Panel base)│  │(ML, analysis)│  │
-│  └────┐─────┘  └────┐─────┘  └─────┐─────┘  └─────────────┘  │
-│       └──────────────┴─────────────┘                           │
-│                         │ fetch /api/*                          │
-└─────────────────────────┴───────────────────────────────────┘
+│                            Browser                             │
+│  Lite UI (/lite): Briefing · Geopolitics · Finance · Tech ·    │
+│  Sources. Preact + Tailwind, MapLibre maps, resource store     │
+│                          fetch /api/*                          │
+└─────────────────────────┬──────────────────────────────────────┘
                           │
            ┌──────────────┼──────────────┐
            │              │              │
@@ -75,41 +72,27 @@ World Monitor is a real-time global intelligence dashboard built as a TypeScript
 
 ## 3. Frontend Architecture
 
+The Lite UI (`apps/web/src/lite/`, the `@wm/web` workspace) is the only web app. Refactor Phase 1 removed the old vanilla-TypeScript dashboard (its panels, deck.gl and globe.gl maps, ML workers and i18n); [legacy features](docs/engineering/product/legacy-features.md) lists what left and how to bring it back. The canonical spec is [docs/engineering/architecture/lite.md](docs/engineering/architecture/lite.md).
+
 ### Entry and Initialization
 
-`src/main.ts` initializes Sentry error tracking, Vercel analytics, dynamic meta tags, the web API redirect, theme application, and creates the `App` instance.
+`apps/web/lite.html` loads `apps/web/src/lite/main.tsx`. Before it renders `<App />`, it installs the web API redirect (`installWebApiRedirect`), the anonymous `wm-session` fetch interceptor and session (`ensureWmSession`), starts the bootstrap hydration from `/api/bootstrap` (`startBootstrap` in `data/sources.ts`), and sets up page scrolling.
 
-`App.init()` runs in 8 phases:
+### Screens and Routing
 
-1. **Storage + i18n**: IndexedDB, language detection, locale loading
-2. **ML Worker**: ONNX model prep (embeddings, sentiment, summarization)
-3. **Bootstrap**: Two-tier concurrent hydration from `/api/bootstrap` (fast 3s + slow 5s timeouts)
-4. **Layout**: PanelLayoutManager renders map and panels
-5. **UI**: SignalModal, IntelligenceGapBadge, BreakingNewsBanner, correlation engine
-6. **Data**: Parallel `loadAllData()` + viewport-conditional `primeVisiblePanelData()`
-7. **Refresh**: Variant-specific polling intervals via `startSmartPollLoop()`
+`router.ts` maps the path to one of five screens (`packages/client/config/lite-route.ts` names the paths): the cross-domain Briefing at `/lite`, the Geopolitics, Finance and Technology screens, and the read-only Sources screen. Shared chrome (`Topbar`, `Sidebar`) and building blocks (`components/ui.tsx`, `indicator.tsx`, `charts.tsx`, `TimeRange.tsx`, `scroll.tsx`) live in `components/`.
 
-### Component Model
+### Data Layer
 
-All panels extend the `Panel` base class (109 classes across `src/components`). Panels render via `setContent(html)` (debounced 150ms) and use event delegation on a stable `this.content` element. Panels support resizable row/col spans persisted to localStorage.
+`data/store.ts` is a small keyed resource store: one loader per data source, one shared result per key across all screens, refreshed every five minutes. Each resource is `loading`, `ready`, `empty` or `error`, and a widget renders a failed or empty source as its own state, never as sample data. `data/hooks.ts` exposes the resources (`useDigest`, `useRiskScores`, `useUcdpEvents`, `useMarketQuotes`, ...), and `data/sources.ts` loads them through the generated sebuf clients and `packages/client/services/`. Derived views (indicators, escalation, news linking) are pure functions in `data/`: indicators find their news through `linkNews` (`data/news-link.ts`), and hotspot escalation maps Lite data onto the shared core in `packages/shared/analysis-hotspot-escalation.ts` (`data/escalation.ts`).
 
-### Dual Map System
+### Maps
 
-- **DeckGLMap**: WebGL rendering via deck.gl + maplibre-gl. Supports ScatterplotLayer, GeoJsonLayer, PathLayer, IconLayer, PolygonLayer, ArcLayer, HeatmapLayer, H3HexagonLayer. PMTiles protocol for self-hosted basemap tiles. Supercluster for marker clustering.
-- **Loaded news selection**: `MapContainer.onNewsClicked()` caches and forwards the callback to each renderer's `setOnNewsClick()`. The callback receives `Pick<NewsLocationMarker, 'article' | 'title'>`: optional original loaded article `{link, title, source}` and the displayed marker title. Existing markers without article metadata remain valid. The plugin uses this loaded identity to publish its latest interaction with current view context; it does not track popup visibility or fetch more data on selection.
-- **GlobeMap**: 3D interactive globe via globe.gl. Single merged `htmlElementsData` array with `_kind` discriminator. Earth texture, atmosphere shader, auto-rotate after idle.
-
-Layer definitions live in `packages/client/config/map-layer-definitions.ts`, each specifying renderer support (flat/globe), premium status, variant filtering, and i18n keys.
+`map/LiteMap.tsx` draws MapLibre GL maps on OpenFreeMap tiles, styled from the `@theme` tokens in `lite.css` (`map/style.ts`). Every marker follows one grammar (`map/marks.tsx`: event, asset, aggregate or judgement, coloured by state) and is a Preact element, as are the cards, legend and layers popover. Context geometry and data shading may be MapLibre layers coloured from the same tokens. UCDP aggregates cluster with `supercluster`.
 
 ### State Management
 
-No external state library. `AppContext` is a central mutable object holding: map references, panel instances, panel/layer settings, all cached data (news, markets, predictions, clusters, intelligence caches), in-flight request tracking, and UI component references. URL state syncs bidirectionally via `src/utils/urlState.ts` (debounced 250ms).
-
-### Web Workers
-
-- **analysis.worker.ts**: News clustering (Jaccard similarity), cross-domain correlation detection
-- **ml.worker.ts**: ONNX inference via `@xenova/transformers` (MiniLM-L6 embeddings, sentiment, summarization, NER), in-worker vector store for headline memory
-- **vector-db.ts**: IndexedDB-backed vector store for semantic search
+No external state library. Screen state is local Preact state; shared data lives in the resource store; the current screen comes from the URL (`router.ts`).
 
 ### No variants
 
