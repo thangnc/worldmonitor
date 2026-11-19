@@ -55,7 +55,6 @@ function npmLockVersions(path, name) {
 }
 
 const patchedLocks = [
-  ['sharp', '0.35.5', npmLockVersions, '../package-lock.json'],
   ['sharp', '0.35.5', npmLockVersions, '../workers/railway-reconcile-control/package-lock.json'],
   ['markdown-it', '14.3.3', npmLockVersions, '../package-lock.json'],
   ['@vitest/mocker', '4.1.12', npmLockVersions, '../package-lock.json'],
