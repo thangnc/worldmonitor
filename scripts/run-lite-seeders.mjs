@@ -72,6 +72,8 @@ export const LITE_SEED_SECTIONS = [
   { label: 'Macro-Forecasts', script: 'seed-macro-forecasts.mjs', seedMetaKey: 'economic:macro-forecasts', intervalMs: 60 * MIN, timeoutMs: 120_000 },
   // The Fed's FOMC statements and the ECB's monetary policy decisions for the central bank decision indicator (#130).
   { label: 'Central-Bank-Decisions', script: 'seed-central-bank-decisions.mjs', seedMetaKey: 'economic:central-bank-decisions', intervalMs: 30 * MIN, timeoutMs: 120_000 },
+  // The NY Fed's daily reverse repo take-up for the Fed liquidity indicator (#136); the balance sheet comes from FRED-Rates.
+  { label: 'Reverse-Repo', script: 'seed-reverse-repo.mjs', seedMetaKey: 'economic:reverse-repo', intervalMs: 3 * HOUR, timeoutMs: 60_000 },
   // OpenRouter's model list for the AI models indicator and the Tech model tracker (#126).
   { label: 'AI-Models', script: 'seed-ai-models.mjs', seedMetaKey: 'tech:ai-models', intervalMs: 6 * HOUR, timeoutMs: 120_000 },
   // EU and US AI and data rules for the AI regulation indicator and the Tech policy panel (#127).

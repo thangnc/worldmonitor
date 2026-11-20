@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **858 active source hosts** representing **838 active providers** (**374 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **859 active source hosts** representing **839 active providers** (**375 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -462,6 +462,7 @@ This generated inventory covers **858 active source hosts** representing **838 a
 | Manitoba 511 (www.manitoba511.ca) | structured — scripts/lib/provincial-511.mjs |
 | maps.worldmonitor.app (maps.worldmonitor.app) | structured — packages/client/services/country-geometry.ts |
 | mapservices.weather.noaa.gov (mapservices.weather.noaa.gov) | structured — scripts/seed-natural-events.mjs |
+| markets.newyorkfed.org (markets.newyorkfed.org) | structured — scripts/seed-reverse-repo.mjs |
 | marketwatch.com (marketwatch.com) | feed — packages/shared/news-catalog.json |
 | masterpl.hls.nhkworld.jp (masterpl.hls.nhkworld.jp) | feed — packages/client/config/live-video-sources.ts |
 | me.liveuamap.com (me.liveuamap.com) | Excluded / candidate — No current fetch observed |

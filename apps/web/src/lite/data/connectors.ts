@@ -138,7 +138,13 @@ export const CONNECTORS: readonly Connector[] = [
     id: 'credit-spreads', name: 'Credit spreads · ICE BofA via FRED', domain: 'fin', kind: 'Market data', method: 'API',
     producer: 'seed-fred-rates', healthKeys: ['fredRatesSeeder'], maxStaleMin: 180,
     hosts: [{ host: 'api.stlouisfed.org', licence: 'terms-review' }],
-    usedBy: ['Credit spreads · HY / IG indicator', 'Volatility · VIX indicator (FRED close when the quote is missing)'],
+    usedBy: ['Credit spreads · HY / IG indicator', 'Volatility · VIX indicator (FRED close when the quote is missing)', 'Fed balance sheet · H.4.1 indicator (WALCL)'],
+  },
+  {
+    id: 'reverse-repo', name: 'Fed reverse repo · NY Fed Markets API', domain: 'fin', kind: 'Official', method: 'API',
+    producer: 'seed-reverse-repo', healthKeys: ['reverseRepo'], maxStaleMin: 540,
+    hosts: [{ host: 'markets.newyorkfed.org', licence: 'terms-review' }],
+    usedBy: ['Fed reverse repo indicator'],
   },
   {
     id: 'rate-odds', name: 'Fed decision odds · Kalshi KXFED', domain: 'fin', kind: 'Market data (one venue)', method: 'API',

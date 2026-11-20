@@ -132,6 +132,13 @@ import {
   bdiFeed,
   creditSpreadFeed,
   decodeCreditSpreads,
+  BALANCE_SHEET_SERIES,
+  BALANCE_SHEET_WEEK_BN,
+  RRP_DAY_BN,
+  balanceSheetFeed,
+  decodeFedBalanceSheet,
+  decodeReverseRepo,
+  reverseRepoFeed,
   decodeMacroForecasts,
   etfFlowFeed,
   filingsFeed,
@@ -903,11 +910,79 @@ describe('Finance indicator rules, step 3', () => {
     assert.equal(creditSpreadFeed({ spreads: { status: 'error', data: null, at: AT, error: 'x' }, ...ctx }).kind, 'unavailable');
   });
 
+  it(`fires on the Fed balance sheet moving $${BALANCE_SHEET_WEEK_BN}bn in a week (#136)`, () => {
+    // WALCL: Wednesday levels in millions of US$, oldest first.
+    const weeks = (values: number[], last = '2026-11-04') => values.map((value, i) => ({
+      date: new Date(Date.parse(`${last}T00:00:00Z`) - (values.length - 1 - i) * 7 * 86_400_000).toISOString().slice(0, 10), value,
+    }));
+    const fired = balanceSheetFeed({ balance: ready(weeks([6_800_000, 6_790_000, 6_780_000, 6_770_000, 6_700_000])), ...ctx });
+    assert.equal(fired.kind, 'fired');
+    if (fired.kind === 'fired') {
+      assert.equal(fired.indicator.id, 'fed-balance-sheet');
+      assert.equal(fired.indicator.value, '$6.70tn');
+      assert.equal(fired.indicator.change, '−$70.0bn w/w');
+      assert.equal(fired.indicator.rule, 'balance sheet ±$50bn in a week');
+      assert.equal(fired.indicator.detail, 'shrank $70.0bn in the week to 4 Nov · −$100.0bn over 4 weeks');
+      assert.equal(fired.indicator.dataDate, 'week to 4 Nov');
+      assert.deepEqual(fired.indicator.trust, { level: 'official', source: 'Federal Reserve H.4.1 via FRED' });
+      // Released the next day at 16:30 New York time.
+      assert.equal(fired.indicator.at, newYorkTime('2026-11-05', 16, 30));
+    }
+    const quiet = balanceSheetFeed({ balance: ready(weeks([6_800_000, 6_790_000, 6_780_000, 6_770_000, 6_760_000])), ...ctx });
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, '$6.76tn, −$10.0bn in the week to 4 Nov (−$40.0bn over 4 weeks) · fires at ±$50bn a week');
+    // A release more than two weeks old is stale; no series is unavailable, naming the seeder.
+    assert.equal(balanceSheetFeed({ balance: ready(weeks([6_800_000, 6_700_000], '2026-10-14')), ...ctx }).kind, 'stale');
+    assert.equal(decodeFedBalanceSheet({}), null);
+    assert.deepEqual(decodeFedBalanceSheet({ [BALANCE_SHEET_SERIES]: { seriesId: BALANCE_SHEET_SERIES, title: '', units: '', frequency: '', observations: weeks([2, 1]).reverse() } })?.map((o) => o.value), [2, 1]);
+    const err = balanceSheetFeed({ balance: { status: 'error', data: null, at: AT, error: 'x' }, ...ctx });
+    assert.match(err.kind === 'unavailable' ? err.detail : '', /seed-fred-rates/);
+  });
+
+  it(`fires on reverse repo take-up moving $${RRP_DAY_BN}bn in a day, says when it is the month end, and reads what the seeder writes (#136)`, async () => {
+    const rrp = (days: Array<[string, number]>, o: Record<string, unknown> = {}) => ready(decodeReverseRepo({ fetchedAt: AT - H, days: days.map(([date, bn]) => ({ date, accepted: bn * 1e9 })), ...o })!);
+    const fired = reverseRepoFeed({ rrp: rrp([['2026-11-02', 230], ['2026-10-30', 400]]), ...ctx, news: [story('Reverse repo usage drops as month-end cash returns', newYorkTime('2026-11-02', 14, 0))] });
+    assert.equal(fired.kind, 'fired');
+    if (fired.kind === 'fired') {
+      assert.equal(fired.indicator.id, 'reverse-repo');
+      assert.equal(fired.indicator.value, '$230.0bn');
+      assert.equal(fired.indicator.change, '−$170.0bn d/d');
+      assert.equal(fired.indicator.rule, 'reverse repo ±$100bn in a day');
+      assert.equal(fired.indicator.detail, '−$170.0bn from $400.0bn on 30 Oct · around the month end');
+      assert.equal(fired.indicator.dataDate, 'operation 2 Nov');
+      assert.equal(fired.indicator.links.stories.length, 1);
+    }
+    const quiet = reverseRepoFeed({ rrp: rrp([['2026-11-06', 0.405], ['2026-11-05', 0.331]]), ...ctx });
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, '$0.41bn on 6 Nov, +$0.07bn from 5 Nov · fires at ±$100bn a day');
+    assert.equal(reverseRepoFeed({ rrp: rrp([['2026-11-06', 0.4], ['2026-11-05', 0.3]], { fetchedAt: AT - 7 * H }), ...ctx }).kind, 'stale');
+    const err = reverseRepoFeed({ rrp: { status: 'error', data: null, at: AT, error: 'x' }, ...ctx });
+    assert.match(err.kind === 'unavailable' ? err.detail : '', /seed-reverse-repo/);
+    assert.equal(decodeReverseRepo({ fetchedAt: AT, days: [{ date: 'x', accepted: 1 }] }), null);
+    // A month whose last business day is the 27th: its spike is labelled too.
+    const feb = reverseRepoFeed({ rrp: rrp([['2026-02-27', 300], ['2026-02-26', 100]]), ...ctx, now: Date.UTC(2026, 1, 27, 20) });
+    assert.match(feb.kind === 'fired' ? feb.indicator.detail ?? '' : '', /around the month end/);
+    // A story about the Reserve Bank of India's repo rate, or crypto liquidity, is not about the Fed.
+    const rbi = reverseRepoFeed({ rrp: rrp([['2026-11-02', 230], ['2026-10-30', 400]]), ...ctx, news: [story('RBI holds repo rate as liquidity tightens in crypto markets', newYorkTime('2026-11-02', 13, 0))] });
+    assert.equal(rbi.kind === 'fired' && rbi.indicator.links.stories.length, 0);
+
+    // Producer → reader: the seeder's daily sums, through JSON, fire the card.
+    const { dailyTakeUp } = await import('../scripts/seed-reverse-repo.mjs');
+    const days = dailyTakeUp({ repo: { operations: [
+      { operationDate: '2026-10-01', operationType: 'Reverse Repo', note: '', totalAmtAccepted: 230_100_000_000 },
+      { operationDate: '2026-09-30', operationType: 'Reverse Repo', note: '', totalAmtAccepted: 399_200_000_000 },
+    ] } });
+    const read = decodeReverseRepo(JSON.parse(JSON.stringify({ fetchedAt: AT - H, unit: 'USD', days })))!;
+    const card = reverseRepoFeed({ rrp: ready(read), ...ctx });
+    assert.equal(card.kind === 'fired' && card.indicator.change, '−$169.1bn d/d');
+  });
+
   it('lists every step-3 feed, each naming its seeder when its source failed', () => {
     const failed = { status: 'error', data: null, at: AT, error: 'x' } as const;
     const feeds = financeMacroFeeds({ calendar: failed, curves: failed, spreads: failed, bonds: failed, etf: failed, flow: failed, rates: failed, filings: failed, ...ctx });
     assert.deepEqual(feeds.map((f) => f.id), ['macro-print', 'treasury', 'credit-spreads', 'other-bonds', 'etf-flows', 'perp-positioning', 'freight-scfi', 'freight-bdi', 'sec-8k']);
     assert.ok(feeds.every((f) => f.kind === 'unavailable' && /seed-/.test(f.detail)));
+    // With the Fed liquidity sources (#136).
+    const all = financeMacroFeeds({ calendar: failed, curves: failed, spreads: failed, bonds: failed, etf: failed, flow: failed, rates: failed, filings: failed, balance: failed, rrp: failed, ...ctx });
+    assert.deepEqual(all.slice(-2).map((f) => [f.id, f.kind === 'unavailable' && f.detail.match(/seed-[a-z-]+/)?.[0]]), [['fed-balance-sheet', 'seed-fred-rates'], ['reverse-repo', 'seed-reverse-repo']]);
   });
 });
 

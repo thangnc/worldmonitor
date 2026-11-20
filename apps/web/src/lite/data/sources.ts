@@ -55,7 +55,7 @@ import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cy
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
 import { decodeAiLabNews, decodeAiModels, decodeAiRegulation, decodeBreaches, decodeChipRevenue, decodeHyperscalerCapex, decodeRecentKev, decodeThreatHistory, type AiLabNews, type AiModels, type AiRegulation, type Breaches, type ChipRevenue, type HyperscalerCapex, type RecentKev, type ThreatHistory } from './tech-indicators';
-import { CREDIT_SERIES, decodeCbDecisions, decodeCreditSpreads, decodeMacroForecasts, decodeRateOdds, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds } from './finance-macro-indicators';
+import { BALANCE_SHEET_SERIES, CREDIT_SERIES, decodeCbDecisions, decodeCreditSpreads, decodeFedBalanceSheet, decodeMacroForecasts, decodeRateOdds, decodeReverseRepo, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds, type ReverseRepo } from './finance-macro-indicators';
 import { VIX_FRED_SERIES } from './finance-indicators';
 import {
   ConflictServiceClient,
@@ -301,6 +301,18 @@ export async function loadTreasuryCurves(): Promise<UsTreasuryParYieldCurve[] | 
 export async function loadCreditSpreads(): Promise<CreditSpreads | null> {
   const resp = await economic.getFredSeriesBatch({ seriesIds: [CREDIT_SERIES.hy, CREDIT_SERIES.ig], limit: 30 });
   return decodeCreditSpreads(resp.results);
+}
+
+/** The Fed's weekly balance sheet, FRED WALCL (seed-fred-rates; #136). */
+export async function loadFedBalanceSheet(): Promise<FredObservation[] | null> {
+  const resp = await economic.getFredSeriesBatch({ seriesIds: [BALANCE_SHEET_SERIES], limit: 10 });
+  return decodeFedBalanceSheet(resp.results);
+}
+
+/** The NY Fed's reverse repo take-up of the last 30 business days (seed-reverse-repo, #136). */
+export async function loadReverseRepo(): Promise<ReverseRepo> {
+  await startBootstrap();
+  return required('reverseRepo', decodeReverseRepo(await ensureHydrated('reverseRepo')));
 }
 
 /** Kalshi's Fed decision odds for the next meetings, with FRED's current target (seed-rate-odds, #125). */

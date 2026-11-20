@@ -76,6 +76,7 @@ export const MACRO_RULES =
   `the odds of a move at the next Fed meeting change ≥ ${RATE_ODDS_MOVE_PTS} pts in a day, or its most likely outcome changes (Kalshi); ` +
   `a Fed or ECB rate decision published in the last ${CB_DECISION_WINDOW_HOURS} h; ` +
   `the high-yield spread widens ≥ ${HY_DAY_BP} bp in a day or ≥ ${HY_WEEK_BP} bp in 5 trading days, or the investment-grade spread widens ≥ ${IG_DAY_BP} bp in a day; ` +
+  'the Fed balance sheet changes ≥ $50bn in a week (H.4.1), or reverse repo take-up changes ≥ $100bn in a day (NY Fed); ' +
   `${ETF_SAME_WAY} or more spot bitcoin ETFs flow the same way; a Hyperliquid stress score ≥ ${PERP_STRESS}; ` +
   `SCFI ≥ ${FREIGHT_MOVE_PCT}% week on week or the Baltic Dry ≥ ${FREIGHT_MOVE_PCT}% in a day; ` +
   `an 8-K from a company in the default stock list, or any filer reporting item ${Object.keys(KEY_8K_ITEMS).join(', ')}.`;
@@ -410,6 +411,130 @@ export function creditSpreadFeed(input: { spreads: ResourceState<CreditSpreads> 
   const reading = hy || ig ? `HY ${level(hy)} bp ${move(hy?.day)} · IG ${level(ig)} bp ${move(ig?.day)}` : null;
   return withReading(quietDetail(feed, newest
     ? `${reading} · HY ${move(hy?.week)} over 5 days · data to ${dayMonth(ymdMs(newest))}${near ? ' · near the trigger' : ''}`
+    : null), reading);
+}
+
+// ---- Fed liquidity: balance sheet and reverse repo (#136) -------------------
+
+/** FRED's weekly Fed total assets (H.4.1, Wednesday level, millions of US$), published by seed-fred-rates. */
+export const BALANCE_SHEET_SERIES = 'WALCL';
+/** A weekly change in the Fed's balance sheet that fires, in billions of US$. */
+export const BALANCE_SHEET_WEEK_BN = 50;
+/** A day-on-day change in reverse repo take-up that fires, in billions of US$. */
+export const RRP_DAY_BN = 100;
+/** seed-reverse-repo runs every 3 h. */
+export const RRP_CADENCE_MIN = 180;
+/**
+ * Phrases about Fed and dollar funding only: a bare "liquidity" also matches crypto and single-stock stories, and
+ * "repo rate" is the Reserve Bank of India's policy rate.
+ */
+const LIQUIDITY_DRIVERS = [
+  'Fed balance sheet', "Fed's balance sheet", 'quantitative tightening', 'quantitative easing', 'reverse repo', 'overnight reverse repo',
+  'repo market', 'bank reserves', 'Fed liquidity', 'dollar liquidity', 'funding markets', 'Treasury General Account', 'SOFR',
+];
+
+/** WALCL observations, oldest first, or null when the series did not come back. */
+export function decodeFedBalanceSheet(results: Readonly<Record<string, FredSeries>> | null | undefined): FredObservation[] | null {
+  const obs = (results?.[BALANCE_SHEET_SERIES]?.observations ?? [])
+    .filter((o) => Number.isFinite(o.value) && /^\d{4}-\d{2}-\d{2}/.test(o.date))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  return obs.length ? obs : null;
+}
+
+/** "$6.74tn", "$586.9bn" or "$0.41bn" from billions. */
+const usdBnTn = (bn: number) => (Math.abs(bn) >= 1000 ? `$${(bn / 1000).toFixed(2)}tn` : `$${bn.toFixed(Math.abs(bn) < 1 ? 2 : 1)}bn`);
+/** "+$12.3bn" or "−$0.07bn": two decimals under $1bn. */
+const signedBn = (bn: number) => `${bn < 0 ? MINUS : '+'}$${Math.abs(bn).toFixed(Math.abs(bn) < 1 ? 2 : 1)}bn`;
+
+export function balanceSheetFeed(input: { balance: ResourceState<FredObservation[]> } & Ctx): FeedState {
+  const { balance, now } = input;
+  const data = balance.status === 'ready' ? balance.data : null;
+  const back = (n: number) => (data && data.length > n ? data[data.length - 1 - n] : undefined);
+  const latest = back(0);
+  const prev = back(1);
+  const month = back(4);
+  // WALCL is the Wednesday level; the H.4.1 release comes the next day at 16:30 New York time.
+  const at = latest ? Math.min(now, newYorkTime(new Date(ymdMs(latest.date) + DAY_MS).toISOString().slice(0, 10), 16, 30)) : now;
+  const week = latest && prev ? (latest.value - prev.value) / 1000 : null;
+  const fourWeeks = latest && month ? (latest.value - month.value) / 1000 : null;
+  const weekTo = latest ? `week to ${dayMonth(ymdMs(latest.date))}` : '';
+  const fires = week !== null && Math.abs(week) + 1e-9 >= BALANCE_SHEET_WEEK_BN;
+  const indicator: Indicator | null = latest && fires
+    ? {
+        id: 'fed-balance-sheet', domain: 'fin', name: 'Fed balance sheet · H.4.1',
+        value: usdBnTn(latest.value / 1000), change: `${signedBn(week!)} w/w`,
+        rule: `balance sheet ±$${BALANCE_SHEET_WEEK_BN}bn in a week`,
+        detail: [`${week! < 0 ? 'shrank' : 'grew'} ${signedBn(week!).slice(1)} in the ${weekTo}`, fourWeeks !== null ? `${signedBn(fourWeeks)} over 4 weeks` : null].filter(Boolean).join(' · '),
+        trust: { level: 'official', source: 'Federal Reserve H.4.1 via FRED' }, at, dataDate: weekTo,
+        links: link(input, { drivers: LIQUIDITY_DRIVERS }, at),
+      }
+    : null;
+  const feed = feedState({
+    id: 'fed-balance-sheet', name: 'Fed balance sheet · H.4.1', source: data ? balance : emptyOf(balance), seeder: 'seed-fred-rates',
+    cadenceMin: 7 * 1440, dataAt: latest ? at : null, fired: indicator, now,
+  });
+  const reading = latest ? `Fed ${usdBnTn(latest.value / 1000)}${week !== null ? ` ${signedBn(week)} w/w` : ''}` : null;
+  const near = week !== null && Math.abs(week) >= BALANCE_SHEET_WEEK_BN / 2;
+  return withReading(quietDetail(feed, latest
+    ? `${usdBnTn(latest.value / 1000)}${week !== null ? `, ${signedBn(week)} in the ${weekTo}` : ''}${fourWeeks !== null ? ` (${signedBn(fourWeeks)} over 4 weeks)` : ''} · fires at ±$${BALANCE_SHEET_WEEK_BN}bn a week${near ? ' · near the trigger' : ''}`
+    : null), reading);
+}
+
+export interface RrpDay {
+  /** Operation date, "2026-11-19". */
+  date: string;
+  /** Amount accepted, US$. */
+  accepted: number;
+}
+
+export interface ReverseRepo {
+  fetchedAt: number;
+  /** Newest first. */
+  days: RrpDay[];
+}
+
+/** The seeded payload (`economic:reverse-repo:v1`), or null when it is not one. */
+export function decodeReverseRepo(value: unknown): ReverseRepo | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.days)) return null;
+  const days: RrpDay[] = [];
+  for (const raw of v.days as Array<Record<string, unknown>>) {
+    if (typeof raw?.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw.date) || typeof raw.accepted !== 'number' || !Number.isFinite(raw.accepted)) continue;
+    days.push({ date: raw.date, accepted: raw.accepted });
+  }
+  days.sort((a, b) => b.date.localeCompare(a.date));
+  return days.length ? { fetchedAt: v.fetchedAt as number, days } : null;
+}
+
+export function reverseRepoFeed(input: { rrp: ResourceState<ReverseRepo> } & Ctx): FeedState {
+  const { rrp, now } = input;
+  const data = rrp.status === 'ready' ? rrp.data : null;
+  const [latest, prev] = data?.days ?? [];
+  // Results come out after the operation closes at 13:15 New York time.
+  const at = latest ? Math.min(now, newYorkTime(latest.date, 13, 30)) : now;
+  const day = latest && prev ? (latest.accepted - prev.accepted) / 1e9 : null;
+  const fires = day !== null && Math.abs(day) + 1e-9 >= RRP_DAY_BN;
+  // Most large moves are month and quarter ends: cash parked over the turn, then taken back out.
+  const turn = latest && prev && (latest.date.slice(0, 7) !== prev.date.slice(0, 7) || Number(latest.date.slice(8, 10)) >= 25);
+  const opDay = latest ? dayMonth(ymdMs(latest.date)) : '';
+  const indicator: Indicator | null = latest && prev && fires
+    ? {
+        id: 'reverse-repo', domain: 'fin', name: 'Fed reverse repo · NY Fed',
+        value: usdBnTn(latest.accepted / 1e9), change: `${signedBn(day!)} d/d`,
+        rule: `reverse repo ±$${RRP_DAY_BN}bn in a day`,
+        detail: [`${signedBn(day!)} from ${usdBnTn(prev.accepted / 1e9)} on ${dayMonth(ymdMs(prev.date))}`, turn ? 'around the month end' : null].filter(Boolean).join(' · '),
+        trust: { level: 'official', source: 'NY Fed reverse repo operations' }, at, dataDate: `operation ${opDay}`,
+        links: link(input, { drivers: LIQUIDITY_DRIVERS }, at),
+      }
+    : null;
+  const feed = feedState({
+    id: 'reverse-repo', name: 'Fed reverse repo · NY Fed', source: rrp, seeder: 'seed-reverse-repo',
+    cadenceMin: RRP_CADENCE_MIN, dataAt: data?.fetchedAt ?? null, fired: indicator, now,
+  });
+  const reading = latest ? `RRP ${usdBnTn(latest.accepted / 1e9)}${day !== null ? ` ${signedBn(day)}` : ''}` : null;
+  const near = day !== null && Math.abs(day) >= RRP_DAY_BN / 2;
+  return withReading(quietDetail(feed, latest
+    ? `${usdBnTn(latest.accepted / 1e9)} on ${opDay}${day !== null && prev ? `, ${signedBn(day)} from ${dayMonth(ymdMs(prev.date))}` : ''} · fires at ±$${RRP_DAY_BN}bn a day${near ? ' · near the trigger' : ''}`
     : null), reading);
 }
 
@@ -989,6 +1114,8 @@ export function financeMacroFeeds(input: {
   flow: ResourceState<GetHyperliquidFlowResponse>;
   rates: ResourceState<GetShippingRatesResponse>;
   filings: ResourceState<ListMaterialEventsResponse>;
+  balance?: ResourceState<FredObservation[]>;
+  rrp?: ResourceState<ReverseRepo>;
 } & Ctx): FeedState[] {
   return [
     macroFeed(input),
@@ -1000,5 +1127,7 @@ export function financeMacroFeeds(input: {
     scfiFeed(input),
     bdiFeed(input),
     filingsFeed(input),
+    ...(input.balance ? [balanceSheetFeed({ ...input, balance: input.balance })] : []),
+    ...(input.rrp ? [reverseRepoFeed({ ...input, rrp: input.rrp })] : []),
   ];
 }

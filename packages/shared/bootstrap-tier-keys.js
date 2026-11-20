@@ -65,6 +65,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   macroForecasts: 'economic:macro-forecasts:v1',
   // Lite Finance central bank decisions (#130): Fed and ECB rate decisions (seed-central-bank-decisions).
   cbDecisions: 'economic:central-bank-decisions:v1',
+  // Lite Finance reverse repo (#136): the NY Fed's daily take-up, 30 business days (seed-reverse-repo).
+  reverseRepo: 'economic:reverse-repo:v1',
   // Lite Tech AI models (#126): watched labs' recent models and price changes (seed-ai-models).
   aiModels: 'tech:ai-models:v1',
   // Lite Tech AI regulation (#127): EU and US AI and data rules (seed-ai-regulation).
@@ -238,6 +240,8 @@ const ON_DEMAND_KEY_NAMES = new Set([
   'macroForecasts',
   // Lite Finance: the Fed and ECB rate decisions of the last ~15 months (#130, a few KB), read only by /lite and /lite/finance.
   'cbDecisions',
+  // Lite Finance: the NY Fed's reverse repo take-up of the last 30 business days (#136, about 2 KB), read only by /lite and /lite/finance.
+  'reverseRepo',
   // Lite Tech: the watched AI labs' models of the last 90 days and price changes (#126, ~10 KB), read only by /lite and /lite/tech.
   'aiModels',
   // Lite Tech: a 60-day log of EU and US AI and data rules (#127, a few KB), read only by /lite and /lite/tech.

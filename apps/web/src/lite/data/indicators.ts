@@ -43,6 +43,7 @@ const TIER_BY_FEED: Readonly<Record<string, DecisionTier>> = {
   'macro-print': 'daily', 'btc-move': 'daily',
   'etf-flows': 'weekly', 'stablecoin-depeg': 'weekly', 'perp-positioning': 'weekly', 'btc-funding': 'weekly',
   'fear-greed': 'weekly', 'freight-scfi': 'weekly', 'freight-bdi': 'weekly', 'sec-8k': 'weekly',
+  'fed-balance-sheet': 'weekly', 'reverse-repo': 'weekly',
   // Technology
   'service-outage': 'daily', 'kev-new': 'daily', 'cyber-8k': 'daily', 'internet-outage': 'daily', breach: 'daily',
   'ai-models': 'weekly', 'open-models': 'weekly', 'lab-news': 'weekly', 'chip-revenue': 'weekly', 'hyperscaler-capex': 'weekly', 'ai-regulation': 'weekly',
