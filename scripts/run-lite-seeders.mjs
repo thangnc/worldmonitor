@@ -69,6 +69,7 @@ export const LITE_SEED_SECTIONS = [
   { label: 'Travel-Advisories', script: 'seed-travel-advisories.mjs', seedMetaKey: 'intelligence:travel-levels', intervalMs: 2 * HOUR, timeoutMs: 300_000 },
   // Kalshi Fed decision odds and FRED's current target for the Fed decision odds indicator (#125).
   { label: 'Rate-Odds', script: 'seed-rate-odds.mjs', seedMetaKey: 'economic:rate-odds', intervalMs: 60 * MIN, timeoutMs: 120_000 },
+  { label: 'Macro-Forecasts', script: 'seed-macro-forecasts.mjs', seedMetaKey: 'economic:macro-forecasts', intervalMs: 60 * MIN, timeoutMs: 120_000 },
   // OpenRouter's model list for the AI models indicator and the Tech model tracker (#126).
   { label: 'AI-Models', script: 'seed-ai-models.mjs', seedMetaKey: 'tech:ai-models', intervalMs: 6 * HOUR, timeoutMs: 120_000 },
   // EU and US AI and data rules for the AI regulation indicator and the Tech policy panel (#127).

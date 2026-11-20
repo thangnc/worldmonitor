@@ -38,6 +38,7 @@ import {
   useMilitaryFlights,
   useOtherBonds,
   useRateOdds,
+  useMacroForecasts,
   useRecentKev,
   useRiskScores,
   useSanctions,
@@ -172,6 +173,7 @@ export function useFinanceFeeds(): FeedState[] {
   const curves = useTreasuryCurves();
   const spreads = useCreditSpreads();
   const odds = useRateOdds();
+  const forecasts = useMacroForecasts();
   const bonds = useOtherBonds();
   const etf = useEtfFlows();
   const rates = useShippingRates();
@@ -183,10 +185,10 @@ export function useFinanceFeeds(): FeedState[] {
     return sortFeeds([
       ...financeFeeds({ crypto, flow, stables, fearGreed, news, now }),
       ...riskGaugeFeeds({ commodities, vixDaily, gold, news, now }),
-      ...financeMacroFeeds({ calendar, curves, spreads, bonds, etf, flow, rates, filings, news, now }),
+      ...financeMacroFeeds({ calendar, forecasts, curves, spreads, bonds, etf, flow, rates, filings, news, now }),
       rateOddsFeed({ odds, news, now }),
     ]);
-  }, [crypto, flow, stables, fearGreed, commodities, vixDaily, gold, calendar, curves, spreads, odds, bonds, etf, rates, filings, digest]);
+  }, [crypto, flow, stables, fearGreed, commodities, vixDaily, gold, calendar, forecasts, curves, spreads, odds, bonds, etf, rates, filings, digest]);
 }
 
 

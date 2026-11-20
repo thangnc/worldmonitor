@@ -414,8 +414,8 @@ This generated inventory covers **849 active source hosts** representing **829 a
 | jmespath.org (jmespath.org) | Excluded / candidate — No current fetch observed |
 | jsDelivr asset CDN (cdn.jsdelivr.net) | structured — scripts/ais-relay.cjs |
 | justice.gov (justice.gov) | feed — packages/shared/news-catalog.json |
-| Kalshi (api.elections.kalshi.com) | structured — scripts/_forecast-market-settlements.mjs, scripts/seed-prediction-markets.mjs, scripts/seed-rate-odds.mjs |
-| kalshi.com (kalshi.com) | structured — apps/web/src/lite/data/finance-macro-indicators.ts, scripts/_bet-templates-markets.mjs, scripts/seed-prediction-markets.mjs, scripts/seed-rate-odds.mjs |
+| Kalshi (api.elections.kalshi.com) | structured — scripts/_forecast-market-settlements.mjs, scripts/seed-macro-forecasts.mjs, scripts/seed-prediction-markets.mjs, scripts/seed-rate-odds.mjs |
+| kalshi.com (kalshi.com) | structured — apps/web/src/lite/data/finance-macro-indicators.ts, scripts/_bet-templates-markets.mjs, scripts/seed-macro-forecasts.mjs, scripts/seed-prediction-markets.mjs, +1 more |
 | kan11.media.kan.org.il (kan11.media.kan.org.il) | Excluded / candidate — No current fetch observed |
 | kancdn.medonecdn.net (kancdn.medonecdn.net) | feed — packages/client/config/live-video-sources.ts |
 | kathimerini.gr (kathimerini.gr) | feed — packages/shared/news-catalog.json |

@@ -147,6 +147,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['Fed decision odds indicator'],
   },
   {
+    id: 'macro-forecasts', name: 'CPI and payrolls forecasts · Kalshi', domain: 'fin', kind: 'Market data (Kalshi, implied forecast)', method: 'API',
+    producer: 'seed-macro-forecasts', healthKeys: ['macroForecasts'], maxStaleMin: 180,
+    hosts: [{ host: 'api.elections.kalshi.com', licence: 'terms-review' }],
+    usedBy: ['Macro prints · US indicator (forecast for CPI and payrolls)'],
+  },
+  {
     id: 'other-bonds', name: 'Bond curves · DE GB JP', domain: 'fin', kind: 'Official rates', method: 'API',
     producer: 'seed-bundle-yield-curves', healthKeys: ['yieldCurveDe', 'yieldCurveGb', 'yieldCurveJp'], maxStaleMin: 4460,
     hosts: [

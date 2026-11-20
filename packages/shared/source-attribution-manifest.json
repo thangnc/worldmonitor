@@ -745,6 +745,9 @@
           "path": "scripts/_forecast-market-settlements.mjs"
         },
         {
+          "path": "scripts/seed-macro-forecasts.mjs"
+        },
+        {
           "path": "scripts/seed-prediction-markets.mjs"
         },
         {
@@ -5648,6 +5651,9 @@
         },
         {
           "path": "scripts/_bet-templates-markets.mjs"
+        },
+        {
+          "path": "scripts/seed-macro-forecasts.mjs"
         },
         {
           "path": "scripts/seed-prediction-markets.mjs"
