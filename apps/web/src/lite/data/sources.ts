@@ -54,7 +54,7 @@ import type {
 import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cyber/v1/service_client';
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
-import { decodeAiModels, decodeAiRegulation, decodeRecentKev, decodeThreatHistory, type AiModels, type AiRegulation, type RecentKev, type ThreatHistory } from './tech-indicators';
+import { decodeAiModels, decodeAiRegulation, decodeBreaches, decodeRecentKev, decodeThreatHistory, type AiModels, type AiRegulation, type Breaches, type RecentKev, type ThreatHistory } from './tech-indicators';
 import { CREDIT_SERIES, decodeCbDecisions, decodeCreditSpreads, decodeMacroForecasts, decodeRateOdds, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds } from './finance-macro-indicators';
 import { VIX_FRED_SERIES } from './finance-indicators';
 import {
@@ -460,6 +460,12 @@ export async function loadRecentKev(): Promise<RecentKev> {
 export async function loadAiModels(): Promise<AiModels> {
   await startBootstrap();
   return required('aiModels', decodeAiModels(await ensureHydrated('aiModels')));
+}
+
+/** Have I Been Pwned's breaches listed in the last 30 days (seed-breaches, #131). */
+export async function loadBreaches(): Promise<Breaches> {
+  await startBootstrap();
+  return required('dataBreaches', decodeBreaches(await ensureHydrated('dataBreaches')));
 }
 
 /** EU and US AI and data rules of the last 60 days (seed-ai-regulation, #127). */

@@ -272,6 +272,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['AI regulation indicator', 'Policy & governance panel'],
   },
   {
+    id: 'breaches', name: 'Data breaches · Have I Been Pwned', domain: 'tech', kind: 'Reported (HIBP, CC BY 4.0)', method: 'API',
+    producer: 'seed-breaches', healthKeys: ['dataBreaches'], maxStaleMin: 540,
+    hosts: [{ host: 'haveibeenpwned.com', licence: 'terms-review' }],
+    usedBy: ['Data breach indicator'],
+  },
+  {
     id: 'digest-tech', name: 'News digest · tech', domain: 'tech', kind: 'News aggregate', method: 'RSS',
     producer: 'list-feed-digest', digest: 'tech', hosts: [],
     usedBy: ['Material developments', 'Watched topics'],

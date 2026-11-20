@@ -127,6 +127,13 @@ export const AI_MODELS_CADENCE_MIN = 360;
 export const AI_REG_NEW_DAYS = 7;
 /** seed-ai-regulation runs every 2 h. */
 export const AI_REG_CADENCE_MIN = 120;
+/** A breach fires when HIBP listed it this recently (#131). */
+export const BREACH_NEW_DAYS = 3;
+/** Accounts at which a newly listed breach fires whoever it hit. */
+export const BREACH_MIN_ACCOUNTS = 1_000_000;
+/** seed-breaches runs every 3 h. */
+export const BREACHES_CADENCE_MIN = 180;
+const BREACH_MAX_CARDS = 6;
 
 /** Providers whose partial or major outage fires (cloud and AI). */
 export const WATCHED_PROVIDERS: Readonly<Record<string, readonly string[]>> = {
@@ -148,7 +155,8 @@ export const TECH_RULES =
   `attack-infrastructure indicators at ${SPIKE_RATIO}× their ${SPIKE_BASELINE_DAYS}-day average or more; ` +
   `an 8-K reporting item ${CYBER_8K_ITEM} (material cybersecurity incident) in the last ${FILING_WINDOW_HOURS} h; ` +
   `a model from a watched AI lab (OpenAI, Anthropic, Google, Meta, Mistral, xAI, DeepSeek, Qwen) listed on OpenRouter in the last ${AI_NEW_DAYS} days, or a price change of ${AI_PRICE_PCT}% or more on one; ` +
-  `an EU act, implementing act or guidelines on AI or data, or a US final or proposed rule on AI, published in the last ${AI_REG_NEW_DAYS} days. ` +
+  `an EU act, implementing act or guidelines on AI or data, or a US final or proposed rule on AI, published in the last ${AI_REG_NEW_DAYS} days; ` +
+  `a breach listed by Have I Been Pwned in the last ${BREACH_NEW_DAYS} days with ${BREACH_MIN_ACCOUNTS.toLocaleString('en-US')} or more accounts, or at a domain of a vendor on the starter list. ` +
   'Linked news: tech digest stories from 12 h before to 1 h after (date-only feeds: from 12 h before the day).';
 
 /** Feed labels for the threat counts (seed-cyber-threats raw source names). */
@@ -455,6 +463,7 @@ export function techFeeds(input: {
   filings: ResourceState<ListMaterialEventsResponse>;
   models?: ResourceState<AiModels>;
   regulation?: ResourceState<AiRegulation>;
+  breaches?: ResourceState<Breaches>;
   news: readonly LiteItem[];
   now: number;
 }): FeedState[] {
@@ -467,6 +476,7 @@ export function techFeeds(input: {
     cyberFilingFeed(input.filings, news, now),
     ...(input.models ? aiModelFeeds(input.models, news, now) : []),
     ...(input.regulation ? aiRegulationFeeds(input.regulation, news, now) : []),
+    ...(input.breaches ? breachFeeds(input.breaches, news, now) : []),
   ]);
 }
 
@@ -723,4 +733,146 @@ export function aiRegulationFeeds(source: ResourceState<AiRegulation>, news: rea
     latest ? `latest ${latest.jurisdiction} ${latest.kind}, ${latest.dateKind === 'seen' ? 'first seen ' : ''}${regDay(latest.publishedAt)}` : `none in the ${data.logDays}-day log`,
     failed.length ? `not read on the last run: ${failed.join(', ')}` : null,
   ].filter(Boolean).join(' · ') }];
+}
+
+// ---- Data breaches (#131) -------------------------------------------------------
+
+export interface Breach {
+  /** HIBP's breach name, its id ("Careers360"). */
+  name: string;
+  title: string;
+  /** The breached site's domain, or '' (malware and combo lists have none). */
+  domain: string;
+  /** When it happened, YYYY-MM-DD, or ''. */
+  breachDate: string;
+  /** When HIBP listed it (ms). */
+  addedAt: number;
+  pwnCount: number;
+  dataClasses: string[];
+  verified: boolean;
+  fabricated: boolean;
+  sensitive: boolean;
+  spamList: boolean;
+  malware: boolean;
+  stealerLog: boolean;
+  url: string;
+}
+
+export interface Breaches {
+  fetchedAt: number;
+  /** Breaches in HIBP's catalogue. */
+  total: number;
+  keepDays: number;
+  /** Listed in the last `keepDays`, newest first. */
+  breaches: Breach[];
+}
+
+/** The seeded payload (`cyber:breaches:v1`), or null when it is not one. */
+export function decodeBreaches(value: unknown): Breaches | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Number.isFinite(v.total) || !Array.isArray(v.breaches)) return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const breaches: Breach[] = [];
+  for (const raw of v.breaches as Array<Record<string, unknown>>) {
+    const addedAt = raw?.addedAt;
+    const pwnCount = raw?.pwnCount;
+    if (!str(raw?.name) || typeof addedAt !== 'number' || !Number.isFinite(addedAt) || typeof pwnCount !== 'number' || !Number.isFinite(pwnCount)) continue;
+    breaches.push({
+      name: str(raw.name), title: str(raw.title) || str(raw.name), domain: str(raw.domain).toLowerCase(),
+      breachDate: /^\d{4}-\d{2}-\d{2}$/.test(str(raw.breachDate)) ? str(raw.breachDate) : '', addedAt, pwnCount,
+      dataClasses: Array.isArray(raw.dataClasses) ? (raw.dataClasses as unknown[]).filter((c): c is string => typeof c === 'string') : [],
+      verified: raw.verified === true, fabricated: raw.fabricated === true, sensitive: raw.sensitive === true,
+      spamList: raw.spamList === true, malware: raw.malware === true, stealerLog: raw.stealerLog === true,
+      url: str(raw.url).startsWith('https://haveibeenpwned.com/') ? str(raw.url) : '',
+    });
+  }
+  breaches.sort((a, b) => b.addedAt - a.addedAt);
+  return { fetchedAt: v.fetchedAt as number, total: v.total as number, keepDays: Number.isInteger(v.keepDays) ? (v.keepDays as number) : 30, breaches };
+}
+
+/** The starter-list vendor whose domain (or a parent of it) the breach names. */
+export function breachVendor(b: Pick<Breach, 'domain'>, watchlist: readonly WatchedVendor[] = STARTER_VENDOR_WATCHLIST): WatchedVendor | null {
+  const d = b.domain.toLowerCase();
+  if (!d) return null;
+  return watchlist.find((v) => v.domains.some((w) => d === w || d.endsWith(`.${w}`))) ?? null;
+}
+
+/** "3.6M", "850k", "1,204". */
+export function accountsText(n: number): string {
+  if (n >= 1_000_000) return `${Number((n / 1_000_000).toFixed(1))}M`;
+  if (n >= 10_000) return `${Math.round(n / 1000)}k`;
+  return n.toLocaleString('en-US');
+}
+
+const dayMonthYear = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const dayMonthOf = (ts: number) => new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const BREACH_WORDS = /\b(breach(es|ed)?|leak(s|ed)?|hack(s|ed|ers?)?|stolen|exposed|compromised|data theft|pwned|ransomware)\b/i;
+
+/** Does a breach fire: listed recently, a real breach, and big or at a watched vendor. */
+export function breachFires(b: Breach, now: number): boolean {
+  if (b.fabricated || b.spamList || b.addedAt > now + HOUR_MS || now - b.addedAt > BREACH_NEW_DAYS * DAY_MS) return false;
+  return b.pwnCount >= BREACH_MIN_ACCOUNTS || breachVendor(b) !== null;
+}
+
+export function breachIndicators(data: Breaches, news: readonly LiteItem[], now: number): Indicator[] {
+  return data.breaches
+    .filter((b) => breachFires(b, now))
+    .sort((a, b) => b.addedAt - a.addedAt)
+    .slice(0, BREACH_MAX_CARDS)
+    .map((b) => {
+      const vendor = breachVendor(b);
+      const at = Math.min(now, b.addedAt);
+      const site = b.domain ? b.domain.replace(/^www\./, '').split('.').slice(0, -1).join('.') : '';
+      const names = [b.title, b.name, site].filter((n, i, all) => n && n.length >= 3 && all.indexOf(n) === i);
+      const links = linkNews({ drivers: names }, news, at, LINK_WINDOW_HOURS.tech);
+      // A story links only when it names the breached site and talks about a breach or leak.
+      const named = (t: string) => names.some((n) => new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(t));
+      const stories = links.stories.filter((st) => { const t = `${st.item.title} ${st.item.snippet ?? ''}`; return named(t) && BREACH_WORDS.test(t); });
+      const flags = [
+        b.verified ? null : 'unverified',
+        b.malware ? 'malware log' : null,
+        b.stealerLog ? 'stealer log' : null,
+        b.sensitive ? 'sensitive (not searchable)' : null,
+      ].filter(Boolean);
+      return {
+        id: `breach:${b.name}`, domain: 'tech', name: `Data breach · ${b.title}`,
+        value: `${accountsText(b.pwnCount)} accounts`,
+        change: `${b.breachDate ? `breached ${dayMonthYear(b.breachDate)}` : 'breach date unknown'} · listed ${dayMonthOf(b.addedAt)}`,
+        rule: vendor && b.pwnCount < BREACH_MIN_ACCOUNTS
+          ? `listed ≤ ${BREACH_NEW_DAYS} days, ${vendor.name} (starter vendor list)`
+          : `listed ≤ ${BREACH_NEW_DAYS} days, ≥ ${accountsText(BREACH_MIN_ACCOUNTS)} accounts${vendor ? ` · ${vendor.name} (starter vendor list)` : ''}`,
+        detail: [
+          b.domain || null,
+          b.dataClasses.length ? (b.dataClasses.length > 4 ? `${b.dataClasses.slice(0, 4).join(', ')} +${b.dataClasses.length - 4} more` : b.dataClasses.join(', ')) : null,
+          flags.length ? flags.join(', ') : null,
+        ].filter(Boolean).join(' · '),
+        // CC BY 4.0: name HIBP and link to it; the full card links the breach's HIBP page.
+        trust: { level: 'reported', source: 'Have I Been Pwned (CC BY 4.0)', url: b.url || 'https://haveibeenpwned.com/' },
+        at, dataDate: `listed ${dayMonthOf(b.addedAt)}`, updatedAt: data.fetchedAt,
+        links: { ...links, stories },
+      } satisfies Indicator;
+    });
+}
+
+export function breachFeeds(source: ResourceState<Breaches>, news: readonly LiteItem[], now: number): FeedState[] {
+  const data = source.status === 'ready' ? source.data : null;
+  const base = feedState({
+    id: 'breach', name: 'Data breaches · HIBP', source, seeder: 'seed-breaches',
+    cadenceMin: BREACHES_CADENCE_MIN, dataAt: data?.fetchedAt ?? null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !data) return [base];
+  const fired = breachIndicators(data, news, now);
+  if (fired.length) return fired.map((indicator) => ({ kind: 'fired' as const, id: indicator.id, name: indicator.name, indicator }));
+  const recent = data.breaches.filter((b) => !b.fabricated && !b.spamList && b.addedAt <= now + HOUR_MS && now - b.addedAt <= BREACH_NEW_DAYS * DAY_MS);
+  const latest = data.breaches.find((b) => !b.fabricated && !b.spamList);
+  return [{
+    ...base,
+    detail: [
+      recent.length
+        ? `Live · ${recent.length} breach${recent.length === 1 ? '' : 'es'} listed in ${BREACH_NEW_DAYS} days, none with ${accountsText(BREACH_MIN_ACCOUNTS)}+ accounts or at a starter-list vendor`
+        : `Live · no breach listed in ${BREACH_NEW_DAYS} days`,
+      latest ? `latest ${latest.title}, ${accountsText(latest.pwnCount)} accounts, listed ${dayMonthOf(latest.addedAt)}` : null,
+      `${data.total.toLocaleString('en-US')} breaches in HIBP`,
+    ].filter(Boolean).join(' · '),
+  }];
 }

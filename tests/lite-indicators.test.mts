@@ -38,6 +38,12 @@ import {
   AI_REG_NEW_DAYS,
   aiRegulationFeeds,
   decodeAiRegulation,
+  BREACH_MIN_ACCOUNTS,
+  BREACH_NEW_DAYS,
+  accountsText,
+  breachFeeds,
+  breachVendor,
+  decodeBreaches,
   modelPriceText,
   type ExploitedVulnerability,
   type RecentKev,
@@ -1218,7 +1224,7 @@ describe('Technology & AI indicator rules', () => {
     assert.equal(watchedVendor(ivanti)?.name, 'Ivanti');
     assert.equal(watchedVendor(msByCpe)?.name, 'Microsoft');
     assert.equal(watchedVendor({ vendor: '', vendorProduct: 'palo_alto_networks:pan-os' })?.name, 'Palo Alto Networks');
-    assert.equal(watchedVendor({ vendor: 'Ivanti', vendorProduct: '' }, [{ name: 'Acme', aliases: ['acme'] }]), null);
+    assert.equal(watchedVendor({ vendor: 'Ivanti', vendorProduct: '' }, [{ name: 'Acme', aliases: ['acme'], domains: ['acme.com'] }]), null);
     const fired = find(feeds({ kev: [unwatched, ivanti, msByCpe] }), 'kev-new');
     assert.equal(fired?.kind, 'fired');
     if (fired?.kind !== 'fired') return;
@@ -2229,5 +2235,73 @@ describe('AI regulation (#127)', () => {
     const us = frItem({ document_number: '9', title: 'Artificial Intelligence Disclosures', type: 'Rule', abstract: '', publication_date: '2026-11-07', html_url: 'https://www.federalregister.gov/d/9', agencies: [{ name: 'Securities and Exchange Commission' }] });
     const read = decodeAiRegulation(JSON.parse(JSON.stringify({ fetchedAt: AT - H, logDays: 60, sources: [src()], items: mergeLog([eu, us], [], AT) })));
     assert.deepEqual(aiRegulationFeeds(ready(read!), [], AT).map((f) => f.id), ['ai-regulation:fr:9', 'ai-regulation:celex:32026R2601']);
+  });
+});
+
+describe('Data breaches (#131)', () => {
+  const breach = (name: string, addedAgoH: number, o: Record<string, unknown> = {}) => ({
+    name, title: name, domain: `${name.toLowerCase()}.com`, breachDate: '2026-11-01', addedAt: AT - addedAgoH * H, pwnCount: 3_609_421,
+    dataClasses: ['Academic records', 'Castes', 'Email addresses', 'Names', 'Phone numbers'], verified: true, fabricated: false, sensitive: false,
+    spamList: false, malware: false, stealerLog: false, url: `https://haveibeenpwned.com/Breach/${name}`, ...o,
+  });
+  const feed = (breaches: unknown[], o: Record<string, unknown> = {}) => decodeBreaches({ fetchedAt: AT - H, total: 1053, keepDays: 30, breaches, ...o })!;
+
+  it('decodes strictly and matches a starter-list vendor by domain or subdomain', () => {
+    assert.equal(decodeBreaches(null), null);
+    const d = feed([breach('Old', 48), breach('New', 2, { url: 'https://evil.example/x' }), { name: 'x' }]);
+    assert.deepEqual(d.breaches.map((b) => [b.name, b.url]), [['New', ''], ['Old', 'https://haveibeenpwned.com/Breach/Old']]);
+    assert.equal(breachVendor({ domain: 'trello.com' })?.name, 'Atlassian');
+    assert.equal(breachVendor({ domain: 'jira.atlassian.net' })?.name, 'Atlassian');
+    assert.equal(breachVendor({ domain: 'notatlassian.net' }), null, 'a suffix that is not a subdomain does not match');
+    assert.equal(breachVendor({ domain: '' }), null);
+    assert.deepEqual([accountsText(3_609_421), accountsText(850_537), accountsText(1_204)], ['3.6M', '851k', '1,204']);
+  });
+
+  it(`fires for a breach of ${BREACH_MIN_ACCOUNTS.toLocaleString('en-US')}+ accounts listed in ${BREACH_NEW_DAYS} days, with both dates and breach news`, () => {
+    const news = [
+      story('Careers360 data breach exposes 3.6 million students', AT - 2 * H),
+      story('Careers360 launches a new college predictor', AT - 2 * H),
+    ];
+    const feeds = breachFeeds(ready(feed([breach('Careers360', 2, { breachDate: '2026-11-14' }), breach('Small', 3, { pwnCount: 850_537 })])), news, AT);
+    assert.equal(feeds.length, 1);
+    const ind = feeds[0]!.kind === 'fired' ? feeds[0]!.indicator : null;
+    assert.equal(ind?.id, 'breach:Careers360');
+    assert.equal(ind?.name, 'Data breach · Careers360');
+    assert.equal(ind?.value, '3.6M accounts');
+    assert.equal(ind?.change, 'breached 14 Nov 2026 · listed 8 Nov');
+    assert.equal(ind?.rule, 'listed ≤ 3 days, ≥ 1M accounts');
+    assert.equal(ind?.detail, 'careers360.com · Academic records, Castes, Email addresses, Names +1 more');
+    assert.deepEqual(ind?.trust, { level: 'reported', source: 'Have I Been Pwned (CC BY 4.0)', url: 'https://haveibeenpwned.com/Breach/Careers360' });
+    assert.deepEqual(ind?.links.stories.map((st) => st.item.title), ['Careers360 data breach exposes 3.6 million students']);
+  });
+
+  it('fires for a small breach at a starter-list vendor, and never for a spam list or a fabricated one', () => {
+    const vendor = breachFeeds(ready(feed([breach('Trello', 5, { domain: 'trello.com', pwnCount: 120_000, verified: false })])), [], AT);
+    const ind = vendor[0]!.kind === 'fired' ? vendor[0]!.indicator : null;
+    assert.equal(ind?.rule, 'listed ≤ 3 days, Atlassian (starter vendor list)');
+    assert.match(ind?.detail ?? '', /· unverified$/);
+    // Without its own page (a rejected link), the card still links HIBP for the CC BY attribution.
+    const noPage = breachFeeds(ready(feed([breach('Big', 1, { url: 'https://evil.example/x' })])), [], AT);
+    assert.equal(noPage[0]!.kind === 'fired' && noPage[0]!.indicator.trust.url, 'https://haveibeenpwned.com/');
+    const skipped = breachFeeds(ready(feed([breach('Combo', 1, { spamList: true }), breach('Fake', 1, { fabricated: true })])), [], AT);
+    assert.equal(skipped[0]!.kind, 'quiet');
+    assert.equal(skipped[0]!.kind === 'quiet' && skipped[0]!.detail, 'Live · no breach listed in 3 days · 1,053 breaches in HIBP');
+  });
+
+  it('is quiet past three days or below the threshold, and reports stale and unavailable', () => {
+    const [quiet] = breachFeeds(ready(feed([breach('Small', 10, { pwnCount: 850_537 }), breach('Big', 80)])), [], AT);
+    assert.equal(quiet!.kind === 'quiet' && quiet!.detail, 'Live · 1 breach listed in 3 days, none with 1M+ accounts or at a starter-list vendor · latest Small, 851k accounts, listed 8 Nov · 1,053 breaches in HIBP');
+    assert.equal(breachFeeds(ready(feed([], { fetchedAt: AT - 7 * H })), [], AT)[0]!.kind, 'stale');
+    const err = breachFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
+    assert.match(err.kind === 'unavailable' ? err.detail : '', /seed-breaches/);
+  });
+
+  it('reads what the seeder writes (producer → reader), inside the Technology feeds', async () => {
+    const { toBreach } = await import('../scripts/seed-breaches.mjs');
+    const b = toBreach({ Name: 'YouHack', Title: 'YouHack', Domain: 'youhack.ru', BreachDate: '2013-05-29', AddedDate: new Date(AT - 20 * H).toISOString(), PwnCount: 7_160_849, DataClasses: ['Email addresses', 'IP addresses', 'Passwords'], IsVerified: true });
+    const read = decodeBreaches(JSON.parse(JSON.stringify({ fetchedAt: AT - H, total: 1053, keepDays: 30, breaches: [b] })))!;
+    const all = techFeeds({ outages: { status: 'loading', data: null, at: 0 }, services: { status: 'loading', data: null, at: 0 }, kev: { status: 'loading', data: null, at: 0 }, history: { status: 'loading', data: null, at: 0 }, filings: { status: 'loading', data: null, at: 0 }, breaches: ready(read), news: [], now: AT } as never);
+    const card = all.find((f) => f.id === 'breach:YouHack');
+    assert.equal(card?.kind === 'fired' && card.indicator.change, 'breached 29 May 2013 · listed 7 Nov');
   });
 });

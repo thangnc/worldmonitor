@@ -7,31 +7,35 @@
  * Names are matched case-insensitively against CISA KEV's `vendorProject`
  * ("Palo Alto Networks", "Microsoft"); the aliases cover the spellings KEV and
  * NVD's CPE vendor ("paloaltonetworks") use for the same company.
+ *
+ * The data-breach indicator (#131) matches `domains` against a breach's
+ * domain: the domain itself or any subdomain of it.
  */
 export interface WatchedVendor {
   name: string;
   aliases: readonly string[];
+  domains: readonly string[];
 }
 
 export const STARTER_VENDOR_WATCHLIST: readonly WatchedVendor[] = [
-  { name: 'Microsoft', aliases: ['microsoft'] },
-  { name: 'Apple', aliases: ['apple'] },
-  { name: 'Google', aliases: ['google', 'chromium'] },
-  { name: 'Cisco', aliases: ['cisco'] },
-  { name: 'Fortinet', aliases: ['fortinet'] },
-  { name: 'Palo Alto Networks', aliases: ['palo alto networks', 'paloaltonetworks'] },
-  { name: 'Ivanti', aliases: ['ivanti', 'pulse secure', 'pulsesecure'] },
-  { name: 'Citrix', aliases: ['citrix'] },
-  { name: 'VMware', aliases: ['vmware', 'broadcom'] },
-  { name: 'Oracle', aliases: ['oracle'] },
-  { name: 'Atlassian', aliases: ['atlassian'] },
-  { name: 'Adobe', aliases: ['adobe'] },
-  { name: 'SAP', aliases: ['sap'] },
-  { name: 'Linux', aliases: ['linux'] },
-  { name: 'Apache', aliases: ['apache'] },
-  { name: 'Mozilla', aliases: ['mozilla'] },
-  { name: 'SonicWall', aliases: ['sonicwall'] },
-  { name: 'Juniper', aliases: ['juniper', 'juniper networks'] },
-  { name: 'F5', aliases: ['f5', 'f5 networks'] },
-  { name: 'GitLab', aliases: ['gitlab'] },
+  { name: 'Microsoft', aliases: ['microsoft'], domains: ['microsoft.com', 'live.com', 'outlook.com', 'github.com', 'linkedin.com'] },
+  { name: 'Apple', aliases: ['apple'], domains: ['apple.com', 'icloud.com'] },
+  { name: 'Google', aliases: ['google', 'chromium'], domains: ['google.com', 'gmail.com', 'youtube.com'] },
+  { name: 'Cisco', aliases: ['cisco'], domains: ['cisco.com', 'webex.com'] },
+  { name: 'Fortinet', aliases: ['fortinet'], domains: ['fortinet.com'] },
+  { name: 'Palo Alto Networks', aliases: ['palo alto networks', 'paloaltonetworks'], domains: ['paloaltonetworks.com'] },
+  { name: 'Ivanti', aliases: ['ivanti', 'pulse secure', 'pulsesecure'], domains: ['ivanti.com', 'pulsesecure.net'] },
+  { name: 'Citrix', aliases: ['citrix'], domains: ['citrix.com', 'cloud.com'] },
+  { name: 'VMware', aliases: ['vmware', 'broadcom'], domains: ['vmware.com', 'broadcom.com'] },
+  { name: 'Oracle', aliases: ['oracle'], domains: ['oracle.com'] },
+  { name: 'Atlassian', aliases: ['atlassian'], domains: ['atlassian.com', 'atlassian.net', 'trello.com', 'bitbucket.org'] },
+  { name: 'Adobe', aliases: ['adobe'], domains: ['adobe.com'] },
+  { name: 'SAP', aliases: ['sap'], domains: ['sap.com'] },
+  { name: 'Linux', aliases: ['linux'], domains: ['kernel.org', 'linuxfoundation.org'] },
+  { name: 'Apache', aliases: ['apache'], domains: ['apache.org'] },
+  { name: 'Mozilla', aliases: ['mozilla'], domains: ['mozilla.org', 'mozilla.com'] },
+  { name: 'SonicWall', aliases: ['sonicwall'], domains: ['sonicwall.com'] },
+  { name: 'Juniper', aliases: ['juniper', 'juniper networks'], domains: ['juniper.net'] },
+  { name: 'F5', aliases: ['f5', 'f5 networks'], domains: ['f5.com'] },
+  { name: 'GitLab', aliases: ['gitlab'], domains: ['gitlab.com'] },
 ];

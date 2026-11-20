@@ -5006,6 +5006,23 @@
       ]
     },
     {
+      "host": "haveibeenpwned.com",
+      "provider": "haveibeenpwned.com",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit haveibeenpwned.com and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "apps/web/src/lite/data/tech-indicators.ts"
+        },
+        {
+          "path": "scripts/seed-breaches.mjs"
+        }
+      ]
+    },
+    {
       "host": "hdr.undp.org",
       "provider": "UNDP Human Development Report",
       "kind": "structured",

@@ -44,7 +44,7 @@ const TIER_BY_FEED: Readonly<Record<string, DecisionTier>> = {
   'etf-flows': 'weekly', 'stablecoin-depeg': 'weekly', 'perp-positioning': 'weekly', 'btc-funding': 'weekly',
   'fear-greed': 'weekly', 'freight-scfi': 'weekly', 'freight-bdi': 'weekly', 'sec-8k': 'weekly',
   // Technology
-  'service-outage': 'daily', 'kev-new': 'daily', 'cyber-8k': 'daily', 'internet-outage': 'daily',
+  'service-outage': 'daily', 'kev-new': 'daily', 'cyber-8k': 'daily', 'internet-outage': 'daily', breach: 'daily',
   'ai-models': 'weekly', 'ai-regulation': 'weekly',
 };
 
@@ -71,7 +71,8 @@ export interface Indicator {
   rule: string;
   /** One supporting line: "2s10s +41 bp · no sign flip", "Others normal: …". */
   detail?: string;
-  trust: { level: Trust; source: string };
+  /** `url`: the source's page for this item, linked from the full card when the licence asks for a link (https only). */
+  trust: { level: Trust; source: string; url?: string };
   /** When the rule fired: the time of the data it read. */
   at: number;
   /** Slow feeds name the period their data covers instead of a clock time. */
