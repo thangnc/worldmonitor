@@ -6,6 +6,7 @@ import type { NewsItem } from '../packages/contracts/generated/client/worldmonit
 import type {
   CryptoQuote,
   GetFearGreedIndexResponse,
+  GetGoldIntelligenceResponse,
   GetHyperliquidFlowResponse,
   ListStablecoinMarketsResponse,
 } from '../packages/contracts/generated/client/worldmonitor/market/v1/service_client.ts';
@@ -17,7 +18,7 @@ import { CENTRAL_BANKS } from '../packages/client/config/finance-geo.ts';
 import { STRATEGIC_WATERWAYS } from '../packages/client/config/geo.ts';
 import { TRADE_ROUTES } from '../packages/client/config/trade-routes.ts';
 import type { ChokepointInfo } from '../packages/contracts/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
-import { STABLECOIN_DEPEG_PCT, financeFeeds } from '../apps/web/src/lite/data/finance-indicators.ts';
+import { DXY_MOVE_PCT, STABLECOIN_DEPEG_PCT, VIX_JUMP_PCT, VIX_LEVEL, dollarIndex, financeFeeds, riskGaugeFeeds, vixReading } from '../apps/web/src/lite/data/finance-indicators.ts';
 import type { InternetOutage, ListInternetOutagesResponse, ListServiceStatusesResponse, ServiceStatus } from '../packages/contracts/generated/client/worldmonitor/infrastructure/v1/service_client.ts';
 import {
   KEV_NEW_DAYS,
@@ -300,6 +301,92 @@ describe('Finance indicator rules', () => {
     const quiet = list.find((f) => f.id === 'fear-greed');
     assert.equal(quiet?.kind, 'quiet');
     assert.match(quiet?.kind === 'quiet' ? quiet.detail : '', /Score 55 \(Neutral\)/);
+  });
+});
+
+describe('Finance indicator rules: VIX and the dollar index', () => {
+  const vixQuote = (price: number, change: number) => ({ symbol: '^VIX', name: 'VIX', display: 'VIX', price, change, sparkline: [] });
+  const brent = { symbol: 'BZ=F', name: 'Brent', display: 'BRENT', price: 80, change: 0.5, sparkline: [] };
+  const gold = (value: number, changePct: number) => ({
+    updatedAt: new Date(AT - 5 * 60_000).toISOString(), unavailable: false,
+    drivers: [{ symbol: 'DX-Y.NYB', label: 'DXY', value, changePct, correlation30d: -0.4 }, { symbol: '^TNX', label: 'US10Y', value: 4.4, changePct: 2, correlation30d: -0.2 }],
+  }) as unknown as GetGoldIntelligenceResponse;
+  const loading = { status: 'loading', data: null, at: 0 } as const;
+  const failed = { status: 'error', data: null, at: AT, error: 'x' } as const;
+  const gauges = (opts: { quotes?: ReturnType<typeof vixQuote>[]; fred?: { date: string; value: number }[]; dxy?: [number, number]; news?: LiteItem[] }) => {
+    const list = riskGaugeFeeds({
+      commodities: ready([brent, ...(opts.quotes ?? [vixQuote(16.2, 1.5)])]),
+      vixDaily: opts.fred ? ready(opts.fred) : loading,
+      gold: ready(gold(...(opts.dxy ?? [99.8, 0.2]))),
+      news: opts.news ?? [],
+      now: AT,
+    });
+    return { vix: list.find((f) => f.id === 'vix')!, dxy: list.find((f) => f.id === 'dollar-index')! };
+  };
+
+  it(`fires the VIX at ${VIX_LEVEL} or above, or up ${VIX_JUMP_PCT}% in a day, and stays quiet otherwise`, () => {
+    const quiet = gauges({}).vix;
+    assert.equal(quiet.kind, 'quiet');
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, `VIX 16.20 +1.5% · fires at ≥ ${VIX_LEVEL} or +${VIX_JUMP_PCT}%`);
+    const level = gauges({ quotes: [vixQuote(26.4, 4)] }).vix;
+    assert.equal(level.kind, 'fired');
+    if (level.kind === 'fired') {
+      assert.equal(level.indicator.value, '26.40');
+      assert.equal(level.indicator.change, '+4.0% today');
+      assert.equal(level.indicator.detail, `at or above ${VIX_LEVEL}`);
+      assert.deepEqual(level.indicator.trust, { level: 'market', source: 'Cboe via Yahoo' });
+    }
+    const jump = gauges({ quotes: [vixQuote(19, 21)] }).vix;
+    assert.equal(jump.kind === 'fired' && jump.indicator.detail, 'up 21.0% in a day');
+    // A fall, however large, does not fire.
+    assert.equal(gauges({ quotes: [vixQuote(18, -25)] }).vix.kind, 'quiet');
+    // Near the trigger: 20 or more, or up 10% or more.
+    const near = gauges({ quotes: [vixQuote(21, 2)] }).vix;
+    assert.equal(near.kind === 'quiet' && near.detail.endsWith('near the trigger'), true);
+  });
+
+  it('falls back to the FRED VIX close when the quote is missing, and names its date', () => {
+    const fred = [{ date: '2026-11-05', value: 20 }, { date: '2026-11-06', value: 25.5 }];
+    const reading = vixReading([brent], fred);
+    assert.equal(reading?.source, 'fred');
+    assert.equal(reading?.level, 25.5);
+    assert.equal(reading?.date, '2026-11-06');
+    assert.ok(Math.abs((reading?.changePct ?? 0) - 27.5) < 1e-9);
+    const feed = gauges({ quotes: [], fred }).vix;
+    assert.equal(feed.kind, 'fired');
+    if (feed.kind === 'fired') {
+      assert.equal(feed.indicator.trust.source, 'Cboe via FRED (VIXCLS)');
+      assert.equal(feed.indicator.dataDate, 'close 6 Nov');
+      assert.equal(feed.indicator.change, '+27.5% on the prior close');
+      assert.equal(feed.indicator.detail, `at or above ${VIX_LEVEL} · up 27.5% in a day`);
+    }
+    // No quote and the fallback still loading: loading, not a confident quiet.
+    assert.equal(gauges({ quotes: [] }).vix.kind, 'loading');
+    // No quote and an empty fallback: unavailable, naming the seeder.
+    const none = riskGaugeFeeds({ commodities: ready([brent]), vixDaily: { status: 'empty', data: null, at: AT }, gold: ready(gold(99, 0)), news: [], now: AT })[0]!;
+    assert.equal(none.kind, 'unavailable');
+    assert.match(none.kind === 'unavailable' ? none.detail : '', /seed-commodity-quotes/);
+    assert.equal(riskGaugeFeeds({ commodities: failed, vixDaily: loading, gold: failed, news: [], now: AT })[0]!.kind, 'unavailable');
+  });
+
+  it(`fires the dollar index on a ±${DXY_MOVE_PCT}% day and links dollar stories`, () => {
+    assert.deepEqual(dollarIndex(gold(101.2, -0.3)), { value: 101.2, changePct: -0.3 });
+    const quiet = gauges({ dxy: [99.8, 0.7] }).dxy;
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, `DXY 99.80 +0.70% · fires at ±${DXY_MOVE_PCT}% · near the trigger`);
+    const news = [story('Dollar jumps as Fed signals no cut', AT - H), story('Wheat harvest beats forecasts', AT - H)];
+    const up = gauges({ dxy: [101.4, 1.1], news }).dxy;
+    assert.equal(up.kind, 'fired');
+    if (up.kind === 'fired') {
+      assert.equal(up.indicator.value, '101.40');
+      assert.equal(up.indicator.change, '+1.10% today');
+      assert.match(up.indicator.detail ?? '', /Dollar stronger/);
+      assert.equal(up.indicator.links.stories.length, 1);
+    }
+    const down = gauges({ dxy: [97.9, -1.2] }).dxy;
+    assert.equal(down.kind === 'fired' && down.indicator.detail, 'Dollar weaker');
+    // No DXY driver in the gold data: unavailable, not quiet.
+    const noDriver = riskGaugeFeeds({ commodities: ready([brent]), vixDaily: loading, gold: ready({ updatedAt: '', unavailable: false, drivers: [] } as unknown as GetGoldIntelligenceResponse), news: [], now: AT })[1]!;
+    assert.equal(noDriver.kind, 'unavailable');
   });
 });
 
