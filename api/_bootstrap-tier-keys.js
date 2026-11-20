@@ -58,6 +58,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   federalRegister: 'policy:federal-register:v1',
   // Lite Geopolitics new restricted parties (#123): 7 days of BIS and State screening-list additions (seed-sanctions-pressure).
   cslAdditions: 'sanctions:csl-additions:v1',
+  // Lite Geopolitics EU sanctions (#129): new EU financial sanctions listings (seed-eu-sanctions).
+  euSanctions: 'sanctions:eu-additions:v1',
   // Lite Geopolitics travel advisories (#124): US and UK level changes (seed-travel-advisories).
   travelLevels: 'intelligence:travel-levels:v1',
   // Lite Finance Fed decision odds (#125): Kalshi KXFED outcome odds (seed-rate-odds).
@@ -221,6 +223,7 @@ const ON_DEMAND_KEY_NAMES = new Set([
   'federalRegister',
   // Lite Geopolitics: 7 days of BIS and State screening-list additions (#123), read only by /lite and /lite/geopolitics.
   'cslAdditions',
+  'euSanctions',
   // Lite Geopolitics: 14 days of US and UK travel advisory level changes (#124), read only by /lite and /lite/geopolitics.
   'travelLevels',
   // Lite Finance: Kalshi Fed decision odds for the next three meetings (#125, ~3 KB), read only by /lite and /lite/finance.

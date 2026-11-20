@@ -909,3 +909,150 @@ export function travelAdvisoryFeeds(source: ResourceState<TravelLevelsFeed>, hot
   if (base.kind !== 'quiet' || !source.data) return [base];
   return feeds(base, travelAdvisoryIndicators(source.data, hotspots, news, now), `Live · no tighter advice for a hotspot country in ${TRAVEL_WINDOW_HOURS} h · ${travelCoverageNote(source.data)}`);
 }
+
+// ---- New EU sanctions (#129) -------------------------------------------------
+
+/** A listing counts as new for this long after seed-eu-sanctions first saw it. */
+export const EU_SANCTIONS_WINDOW_HOURS = 24;
+/** seed-eu-sanctions runs every 6 h. */
+export const EU_SANCTIONS_CADENCE_MIN = 360;
+/** New listings in the window that fire for every country, not only hotspot countries. */
+export const EU_SANCTIONS_DAY_MIN = 5;
+const EU_SANCTIONS_MAX_CARDS = 6;
+const EU_SANCTIONS_WORDS = /\b(sanction(s|ed|ing)?|asset freeze|frozen|restrictive measures|blacklist(ed)?|designat(ed|es|ion|ions))\b/i;
+
+export interface EuListing {
+  /** When the seeder first saw the entity (ms). */
+  at: number;
+  id: string;
+  /** EU reference number, e.g. EU.1234.56. */
+  ref: string;
+  name: string;
+  /** person, entity or the list's own subject code. */
+  type: string;
+  /** Regime codes, e.g. RUS, IRN, BLR. */
+  programmes: string[];
+  countries: string[];
+  /** The earliest regulation's publication date (YYYY-MM-DD), or ''. */
+  listedOn: string;
+  regulation: string;
+  url: string;
+}
+
+export interface EuSanctionsFeed {
+  fetchedAt: number;
+  generatedAt: number | null;
+  entityCount: number;
+  /** When the seeder first read the list: nothing before it can show as new. */
+  baselineAt: number;
+  windowDays: number;
+  additions: EuListing[];
+}
+
+/** The seeded payload (`sanctions:eu-additions:v1`), or null when it is not one. No new listing is valid. */
+export function decodeEuSanctions(value: unknown): EuSanctionsFeed | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.additions) || !Number.isFinite(v.entityCount)) return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const strs = (x: unknown) => (Array.isArray(x) ? x.filter((s): s is string => typeof s === 'string') : []);
+  const num = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  const additions: EuListing[] = [];
+  for (const raw of v.additions as Array<Record<string, unknown>>) {
+    const at = num(raw?.at);
+    if (at === null || !str(raw.id) || !str(raw.name)) continue;
+    additions.push({
+      at, id: str(raw.id), ref: str(raw.ref), name: str(raw.name), type: str(raw.type), programmes: strs(raw.programmes),
+      countries: strs(raw.countries).map((c) => c.toUpperCase()).filter((c) => /^[A-Z]{2}$/.test(c)),
+      listedOn: /^\d{4}-\d{2}-\d{2}$/.test(str(raw.listedOn)) ? str(raw.listedOn) : '', regulation: str(raw.regulation),
+      url: str(raw.url).startsWith('https://eur-lex.europa.eu/') ? str(raw.url) : '',
+    });
+  }
+  additions.sort((a, b) => b.at - a.at || a.id.localeCompare(b.id));
+  return {
+    fetchedAt: v.fetchedAt as number, generatedAt: num(v.generatedAt), entityCount: v.entityCount as number,
+    baselineAt: num(v.baselineAt) ?? (v.fetchedAt as number), windowDays: Number.isInteger(v.windowDays) ? (v.windowDays as number) : 14, additions,
+  };
+}
+
+export interface EuCountryListings {
+  /** ISO2, or '' for listings with no country. */
+  code: string;
+  name: string;
+  listings: EuListing[];
+  /** Regimes, most listings first. */
+  programmes: string[];
+  hotspot: boolean;
+  at: number;
+}
+
+/**
+ * EU listings first seen in the last EU_SANCTIONS_WINDOW_HOURS, by country,
+ * for the countries that fire: any listing for a curated hotspot's country,
+ * or every country once EU_SANCTIONS_DAY_MIN or more listings arrived. A
+ * listing with several countries counts for each.
+ */
+export function newEuListings(data: EuSanctionsFeed, hotspots: readonly Place[], now: number): { groups: EuCountryListings[]; total: number } {
+  const hotspotCodes = hotspotByCountry(hotspots);
+  const recent = data.additions.filter((a) => a.at <= now + HOUR_MS && now - a.at <= EU_SANCTIONS_WINDOW_HOURS * HOUR_MS);
+  const byCountry = new Map<string, EuCountryListings>();
+  for (const a of recent) {
+    for (const code of a.countries.length ? a.countries : ['']) {
+      const group = byCountry.get(code) ?? { code, name: code ? countryName(code) : 'No country listed', listings: [], programmes: [], hotspot: hotspotCodes.has(code), at: 0 };
+      group.listings.push(a);
+      group.at = Math.max(group.at, Math.min(now, a.at));
+      byCountry.set(code, group);
+    }
+  }
+  for (const g of byCountry.values()) {
+    const counts = new Map<string, number>();
+    for (const a of g.listings) for (const p of a.programmes) counts.set(p, (counts.get(p) ?? 0) + 1);
+    g.programmes = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([p]) => p);
+  }
+  const busy = recent.length >= EU_SANCTIONS_DAY_MIN;
+  const groups = [...byCountry.values()]
+    .filter((g) => g.hotspot || busy)
+    .sort((a, b) => Number(b.hotspot) - Number(a.hotspot) || b.listings.length - a.listings.length || b.at - a.at);
+  return { groups, total: recent.length };
+}
+
+export function euSanctionsIndicators(data: EuSanctionsFeed, hotspots: readonly Place[], news: readonly LiteItem[], now: number): Indicator[] {
+  const { groups, total } = newEuListings(data, hotspots, now);
+  return groups.slice(0, EU_SANCTIONS_MAX_CARDS).map((g) => {
+    const n = g.listings.length;
+    const links = linkNews({ countries: g.code ? [{ code: g.code, name: g.name }] : undefined, drivers: ['EU sanctions', 'restrictive measures', 'asset freeze'] }, news, g.at, LINK_WINDOW_HOURS.geo);
+    // A story links only when it is about sanctions.
+    const stories = links.stories.filter((st) => EU_SANCTIONS_WORDS.test(`${st.item.title} ${st.item.snippet ?? ''}`));
+    const regulation = g.listings.find((a) => a.regulation)?.regulation;
+    return {
+      id: `eu-sanctions:${g.code || 'none'}`,
+      domain: 'geo',
+      name: `New EU sanctions · ${g.name}`,
+      value: `${n} listing${n === 1 ? '' : 's'}`,
+      change: g.programmes.length ? listMore(g.programmes, 3) : undefined,
+      rule: g.hotspot ? `new EU listing ≤ ${EU_SANCTIONS_WINDOW_HOURS} h, hotspot country` : `${EU_SANCTIONS_DAY_MIN}+ EU listings ≤ ${EU_SANCTIONS_WINDOW_HOURS} h (${total} today)`,
+      detail: [listMore(g.listings.map((a) => a.name), 3), regulation ? `under ${regulation}` : null].filter(Boolean).join(' · '),
+      trust: { level: 'official', source: 'European Commission (EU financial sanctions list)' },
+      at: g.at,
+      updatedAt: data.fetchedAt,
+      links: { ...links, stories },
+      ...(g.code ? { place: { countries: [g.code] } } : {}),
+    } satisfies Indicator;
+  });
+}
+
+export function euSanctionsFeeds(source: ResourceState<EuSanctionsFeed>, hotspots: readonly Place[], news: readonly LiteItem[], now: number): FeedState[] {
+  const base = feedState({
+    id: 'eu-sanctions', name: 'New sanctions · EU', source, seeder: 'seed-eu-sanctions',
+    cadenceMin: EU_SANCTIONS_CADENCE_MIN, dataAt: source.data?.fetchedAt ?? null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !source.data) return [base];
+  const d = source.data;
+  const { total } = newEuListings(d, hotspots, now);
+  const listed = `${d.entityCount.toLocaleString('en-US')} listed`;
+  const quiet = now - d.baselineAt < EU_SANCTIONS_WINDOW_HOURS * HOUR_MS
+    ? `Live · first read of the list ${dayMonth(d.baselineAt)}; new listings show from the next change · ${listed}`
+    : total
+      ? `Live · ${total} new EU listing${total === 1 ? '' : 's'} in ${EU_SANCTIONS_WINDOW_HOURS} h, none for a hotspot country · ${listed}`
+      : `Live · no new EU listing in ${EU_SANCTIONS_WINDOW_HOURS} h · ${listed}`;
+  return feeds(base, euSanctionsIndicators(d, hotspots, news, now), quiet);
+}

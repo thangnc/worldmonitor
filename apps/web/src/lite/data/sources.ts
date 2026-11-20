@@ -30,7 +30,7 @@ import { MILITARY_QUERY_REGIONS } from '@wm/client/config/military';
 import { isConflictCounts, type ConflictCounts } from './conflict';
 import { isGpsHighCells, type GpsHighCells } from './geo-layers';
 import { isDdosWindows, type DdosWindows } from './tech-map';
-import { decodeCslAdditions, decodeFederalRegister, decodeTravelLevels, isCrossStraitSnapshot, type CslAdditionsFeed, type EmbassyAlerts, type FederalRegisterFeed, type TravelLevelsFeed } from './geo-watch';
+import { decodeCslAdditions, decodeEuSanctions, decodeFederalRegister, decodeTravelLevels, isCrossStraitSnapshot, type CslAdditionsFeed, type EmbassyAlerts, type EuSanctionsFeed, type FederalRegisterFeed, type TravelLevelsFeed } from './geo-watch';
 import type { CrossStraitActivitySnapshot } from '@wm/client/types/cross-strait-activity';
 import type { ListUkmtoIncidentsResponse } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';
 import { readUkmtoSnapshot } from '@wm/shared/ukmto-incidents';
@@ -424,6 +424,12 @@ export async function loadThreatHistory(): Promise<ThreatHistory> {
 export async function loadFederalRegister(): Promise<FederalRegisterFeed> {
   await startBootstrap();
   return required('federalRegister', decodeFederalRegister(await ensureHydrated('federalRegister')));
+}
+
+/** New EU financial sanctions listings (seed-eu-sanctions, #129). */
+export async function loadEuSanctions(): Promise<EuSanctionsFeed> {
+  await startBootstrap();
+  return required('euSanctions', decodeEuSanctions(await ensureHydrated('euSanctions')));
 }
 
 /** BIS and State Department screening-list additions of the last 7 days (seed-sanctions-pressure's change history, #123). */

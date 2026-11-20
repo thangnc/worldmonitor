@@ -155,6 +155,10 @@ import {
   newRestrictedParties,
   restrictedPartyFeeds,
   decodeTravelLevels,
+  EU_SANCTIONS_DAY_MIN,
+  decodeEuSanctions,
+  euSanctionsFeeds,
+  newEuListings,
   travelAdvisoryFeeds,
   travelChangeFires,
   travelCoverageNote,
@@ -1821,6 +1825,56 @@ describe('New restricted parties (#123)', () => {
     const fired = restrictedPartyFeeds(ready(read!), [], AT)[0];
     assert.equal(fired?.kind === 'fired' && fired.indicator.id, 'restricted-parties:CN');
     assert.equal(fired?.kind === 'fired' && fired.indicator.dataDate, 'listed 7 Nov');
+  });
+});
+
+describe('EU sanctions (#129)', () => {
+  const moscow = { id: 'moscow', name: 'Moscow', lat: 55.75, lon: 37.62 };
+  const listing = (id: string, o: Record<string, unknown> = {}) => ({
+    at: AT - 2 * H, id, ref: `EU.${id}.12`, name: `Person ${id}`, type: 'person', programmes: ['RUS'], countries: ['RU'],
+    listedOn: '2026-11-07', regulation: '2026/2601', url: 'https://eur-lex.europa.eu/x', ...o,
+  });
+  const feed = (additions: unknown[], o: Record<string, unknown> = {}) => decodeEuSanctions({ fetchedAt: AT - H, generatedAt: AT - 3 * H, entityCount: 5123, baselineAt: AT - 10 * 86_400_000, windowDays: 14, additions, ...o })!;
+
+  it('decodes strictly', () => {
+    assert.equal(decodeEuSanctions(null), null);
+    assert.equal(decodeEuSanctions({ fetchedAt: AT, additions: [] }), null, 'no entity count');
+    const d = feed([listing('1', { countries: ['ru', 'XX1'], url: 'https://evil.example' }), { id: '2', at: AT }]);
+    assert.deepEqual(d.additions.map((a) => [a.id, a.countries, a.url]), [['1', ['RU'], '']]);
+  });
+
+  it('fires for a hotspot country on one listing, and for every country from five listings', () => {
+    const one = euSanctionsFeeds(ready(feed([listing('1'), listing('2', { countries: ['FR'] })])), [moscow], [], AT);
+    assert.deepEqual(one.map((f) => f.id), ['eu-sanctions:RU']);
+    const card = one[0]!;
+    assert.equal(card.kind === 'fired' && card.indicator.name, 'New EU sanctions · Russia');
+    assert.equal(card.kind === 'fired' && card.indicator.rule, 'new EU listing ≤ 24 h, hotspot country');
+    assert.equal(card.kind === 'fired' && card.indicator.detail, 'Person 1 · under 2026/2601');
+    assert.deepEqual(card.kind === 'fired' && card.indicator.place?.countries, ['RU']);
+    const busy = [listing('1'), ...['2', '3', '4', '5'].map((id) => listing(id, { countries: ['AE'], programmes: ['IRN'] }))];
+    const { groups, total } = newEuListings(feed(busy), [moscow], AT);
+    assert.equal(total, EU_SANCTIONS_DAY_MIN);
+    assert.deepEqual(groups.map((g) => [g.code, g.listings.length, g.hotspot]), [['RU', 1, true], ['AE', 4, false]]);
+    const ae = euSanctionsFeeds(ready(feed(busy)), [moscow], [], AT).find((f) => f.id === 'eu-sanctions:AE')!;
+    assert.equal(ae.kind === 'fired' && ae.indicator.rule, `${EU_SANCTIONS_DAY_MIN}+ EU listings ≤ 24 h (5 today)`);
+  });
+
+  it('stays quiet past the window or off the hotspots, says so, and notes a fresh baseline', () => {
+    const old = euSanctionsFeeds(ready(feed([listing('1', { at: AT - 30 * H })])), [moscow], [], AT)[0]!;
+    assert.equal(old.kind === 'quiet' && old.detail, 'Live · no new EU listing in 24 h · 5,123 listed');
+    const off = euSanctionsFeeds(ready(feed([listing('1', { countries: ['FR'] })])), [moscow], [], AT)[0]!;
+    assert.equal(off.kind === 'quiet' && off.detail, 'Live · 1 new EU listing in 24 h, none for a hotspot country · 5,123 listed');
+    const fresh = euSanctionsFeeds(ready(feed([], { baselineAt: AT - 2 * H })), [moscow], [], AT)[0]!;
+    assert.match(fresh.kind === 'quiet' ? fresh.detail : '', /first read of the list 8 Nov; new listings show from the next change/);
+    assert.equal(euSanctionsFeeds(ready(feed([], { fetchedAt: AT - 13 * H })), [moscow], [], AT)[0]!.kind, 'stale');
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { parseEuList } = await import('../scripts/seed-eu-sanctions.mjs');
+    const xml = `<export xmlns="http://eu.europa.ec/fpi/fsd/export" generationDate="2026-11-08T09:00:00+01:00"><sanctionEntity euReferenceNumber="EU.9.1" logicalId="9"><regulation publicationDate="2026-11-07" numberTitle="2026/2601" programme="RUS"/><subjectType code="enterprise" classificationCode="E"/><nameAlias wholeName="OOO Example" strong="true" nameLanguage=""/><citizenship countryIso2Code="RU"/></sanctionEntity></export>`;
+    const [e] = parseEuList(xml).entities;
+    const read = decodeEuSanctions(JSON.parse(JSON.stringify({ fetchedAt: AT - H, generatedAt: AT - 3 * H, entityCount: 5000, baselineAt: AT - 86_400_000 * 5, windowDays: 14, additions: [{ ...e, at: AT - H }] })));
+    assert.deepEqual(read?.additions.map((a) => [a.id, a.name, a.type, a.countries, a.programmes]), [['9', 'OOO Example', 'entity', ['RU'], ['RUS']]]);
   });
 });
 

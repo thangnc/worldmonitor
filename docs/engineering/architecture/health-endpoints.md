@@ -44,8 +44,8 @@ The top-level `status` describes user-visible platform availability, not perfect
   "status": "HEALTHY | WARNING | DEGRADED | UNHEALTHY | REDIS_DOWN | REFRESH_PENDING",
   "dataStatus": "OK | DEGRADED | CRITICAL",
   "summary": {
-    "total": 406,
-    "ok": 405,
+    "total": 407,
+    "ok": 406,
     "warn": 0,
     "containedWarn": 0,
     "onDemandWarn": 1,
