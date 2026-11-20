@@ -7896,6 +7896,9 @@
           "path": "scripts/generate-oref-locations.mjs"
         },
         {
+          "path": "scripts/seed-cve-reference.mjs"
+        },
+        {
           "path": "scripts/seed-cyber-threats.mjs"
         },
         {
@@ -11263,7 +11266,7 @@
     {
       "host": "www.cisa.gov",
       "provider": "www.cisa.gov",
-      "kind": "feed",
+      "kind": "feed+structured",
       "observed": true,
       "license": "Provider terms for this feed publisher; verify before redistribution",
       "attribution": "Credit www.cisa.gov and link to the original feed publisher.",
@@ -11271,6 +11274,9 @@
       "references": [
         {
           "path": "packages/shared/news-catalog.json"
+        },
+        {
+          "path": "scripts/seed-cve-reference.mjs"
         }
       ]
     },
