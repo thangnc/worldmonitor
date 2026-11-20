@@ -210,6 +210,7 @@ const EXCLUDED_BOOTSTRAP_KEYS = {
   cslAdditions: 'Lite indicator feed (BIS and State screening-list additions, #123); not reviewed for the widget catalog',
   travelLevels: 'Lite indicator feed (US and UK travel advisory level changes, #124); not reviewed for the widget catalog',
   rateOdds: 'Lite indicator feed (Kalshi Fed decision odds, #125); not reviewed for the widget catalog',
+  macroForecasts: 'Lite indicator input (Kalshi CPI and payrolls forecasts, #128); not reviewed for the widget catalog',
   aiModels: 'Lite indicator feed and model tracker (OpenRouter listing, #126); not reviewed for the widget catalog',
   aiRegulation: 'Lite indicator feed and policy panel (EU and US AI and data rules, #127); not reviewed for the widget catalog',
   ukmtoIncidents: 'Publisher claims requiring source attribution and freshness; use the UKMTO panel',

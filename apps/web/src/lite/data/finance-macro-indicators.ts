@@ -28,9 +28,16 @@ import { thresholdState } from './transforms';
 const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
 
-/** Macro: change from the prior print that fires (no forecast source exists). */
+/** Macro: change from the prior print that fires, the fallback when no market forecast exists. */
 export const MACRO_PCT_PT = 0.2;
 export const MACRO_PAYROLLS_K = 100;
+/** Macro: gap to the Kalshi market-implied forecast that fires (#128; spec open decision 2). */
+export const MACRO_FORECAST_PCT_PT = 0.1;
+export const MACRO_FORECAST_PAYROLLS_K = 50;
+/** A forecast counts only when its last snapshot was taken this close before the release. */
+export const MACRO_FORECAST_MAX_AGE_HOURS = 24;
+/** The next release's forecast is shown only from a read this recent (3× the hourly cadence). */
+export const MACRO_FORECAST_NEXT_MAX_AGE_HOURS = 3;
 /** A release counts for this long after its date. */
 export const MACRO_RECENT_DAYS = 3;
 /** Treasury and other 10-year moves that fire, in basis points per day. */
@@ -59,7 +66,8 @@ export const KEY_8K_ITEMS: Readonly<Record<string, string>> = {
 };
 
 export const MACRO_RULES =
-  `US CPI or PCE m/m ≥ ${MACRO_PCT_PT} pt from the prior print, or payrolls ≥ ${MACRO_PAYROLLS_K}k from the prior print (no forecast source yet); ` +
+  `US CPI m/m ≥ ${MACRO_FORECAST_PCT_PT} pt or payrolls ≥ ${MACRO_FORECAST_PAYROLLS_K}k from the Kalshi market-implied forecast; ` +
+  `without a forecast (always for PCE), CPI or PCE m/m ≥ ${MACRO_PCT_PT} pt or payrolls ≥ ${MACRO_PAYROLLS_K}k from the prior print; ` +
   `the US 2-year or 10-year moves ≥ ${YIELD_MOVE_BP} bp in a day, or 2s10s changes sign; a DE, GB or JP 10-year moves ≥ ${YIELD_MOVE_BP} bp; ` +
   `the odds of a move at the next Fed meeting change ≥ ${RATE_ODDS_MOVE_PTS} pts in a day, or its most likely outcome changes (Kalshi); ` +
   `the high-yield spread widens ≥ ${HY_DAY_BP} bp in a day or ≥ ${HY_WEEK_BP} bp in 5 trading days, or the investment-grade spread widens ≥ ${IG_DAY_BP} bp in a day; ` +
@@ -98,13 +106,62 @@ interface MacroRule {
   payrolls: boolean;
   source: string;
   drivers: readonly string[];
+  /** The seed-macro-forecasts release name, when Kalshi has a market for it. */
+  forecastRelease: string | null;
+  forecastThreshold: number;
 }
 
 const MACRO: readonly MacroRule[] = [
-  { test: /^cpi\b/i, label: 'US CPI', threshold: MACRO_PCT_PT, payrolls: false, source: 'BLS via FRED', drivers: ['CPI', 'inflation', 'consumer prices'] },
-  { test: /^pce\b/i, label: 'US PCE', threshold: MACRO_PCT_PT, payrolls: false, source: 'BEA via FRED', drivers: ['PCE', 'inflation', 'personal consumption'] },
-  { test: /payroll/i, label: 'US payrolls', threshold: MACRO_PAYROLLS_K, payrolls: true, source: 'BLS via FRED', drivers: ['payrolls', 'nonfarm', 'jobs report', 'unemployment', 'hiring'] },
+  { test: /^cpi\b/i, label: 'US CPI', threshold: MACRO_PCT_PT, payrolls: false, source: 'BLS via FRED', drivers: ['CPI', 'inflation', 'consumer prices'], forecastRelease: 'CPI', forecastThreshold: MACRO_FORECAST_PCT_PT },
+  // Kalshi lists core PCE only; the calendar's PCE is headline, so it keeps the prior-print rule.
+  { test: /^pce\b/i, label: 'US PCE', threshold: MACRO_PCT_PT, payrolls: false, source: 'BEA via FRED', drivers: ['PCE', 'inflation', 'personal consumption'], forecastRelease: null, forecastThreshold: MACRO_PCT_PT },
+  { test: /payroll/i, label: 'US payrolls', threshold: MACRO_PAYROLLS_K, payrolls: true, source: 'BLS via FRED', drivers: ['payrolls', 'nonfarm', 'jobs report', 'unemployment', 'hiring'], forecastRelease: 'Nonfarm Payrolls', forecastThreshold: MACRO_FORECAST_PAYROLLS_K },
 ];
+
+/** One release's market-implied forecast (seed-macro-forecasts, #128). */
+export interface MacroForecast {
+  /** Kalshi series: KXCPI or KXPAYROLLS. */
+  series: string;
+  /** The economic calendar's event name: CPI or Nonfarm Payrolls. */
+  release: string;
+  event: string;
+  releaseAt: number;
+  /** Implied median: % m/m for CPI, thousands of jobs for payrolls. */
+  median: number;
+  volume: number;
+  /** When this snapshot was taken (ms). */
+  at: number;
+  url: string;
+}
+
+export interface MacroForecasts {
+  fetchedAt: number;
+  forecasts: MacroForecast[];
+}
+
+/** The seeded payload (`economic:macro-forecasts:v1`), or null when it is not one. */
+export function decodeMacroForecasts(value: unknown): MacroForecasts | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.forecasts)) return null;
+  const fin = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
+  const forecasts: MacroForecast[] = [];
+  for (const raw of v.forecasts as Array<Record<string, unknown>>) {
+    if (!raw || typeof raw.release !== 'string' || typeof raw.event !== 'string' || !fin(raw.releaseAt) || !fin(raw.median) || !fin(raw.at)) continue;
+    forecasts.push({
+      series: typeof raw.series === 'string' ? raw.series : '', release: raw.release, event: raw.event, releaseAt: raw.releaseAt, median: raw.median,
+      volume: fin(raw.volume) ? raw.volume : 0, at: raw.at, url: typeof raw.url === 'string' && raw.url.startsWith('https://kalshi.com/') ? raw.url : '',
+    });
+  }
+  forecasts.sort((a, b) => a.releaseAt - b.releaseAt);
+  return { fetchedAt: v.fetchedAt as number, forecasts };
+}
+
+/** The forecast for a release at `at`: same release, released within 12 h of it, last read at most MACRO_FORECAST_MAX_AGE_HOURS before. */
+export function forecastFor(rule: MacroRule, at: number, forecasts: readonly MacroForecast[]): MacroForecast | null {
+  if (!rule.forecastRelease) return null;
+  return forecasts.find((f) => f.release === rule.forecastRelease && Math.abs(f.releaseAt - at) <= 12 * HOUR_MS
+    && f.at <= f.releaseAt && f.releaseAt - f.at <= MACRO_FORECAST_MAX_AGE_HOURS * HOUR_MS) ?? null;
+}
 
 export interface MacroPrint {
   event: EconomicEvent;
@@ -113,6 +170,9 @@ export interface MacroPrint {
   previous: number;
   change: number;
   at: number;
+  forecast: MacroForecast | null;
+  /** Actual minus the forecast, when there is one. */
+  surprise: number | null;
 }
 
 const num = (v: string | undefined) => (v && v.trim() ? Number.parseFloat(v) : Number.NaN);
@@ -122,8 +182,8 @@ export function macroValue(value: number, payrolls: boolean, digits = payrolls ?
   return payrolls ? `${value < 0 ? MINUS : '+'}${Math.abs(value).toFixed(digits)}k` : `${value < 0 ? MINUS : '+'}${Math.abs(value).toFixed(digits)}% m/m`;
 }
 
-/** US CPI, PCE and payrolls prints released in the last MACRO_RECENT_DAYS, newest first. */
-export function recentMacroPrints(events: readonly EconomicEvent[], now: number): MacroPrint[] {
+/** US CPI, PCE and payrolls prints released in the last MACRO_RECENT_DAYS, newest first, each with its forecast when there is one. */
+export function recentMacroPrints(events: readonly EconomicEvent[], now: number, forecasts: readonly MacroForecast[] = []): MacroPrint[] {
   const out: MacroPrint[] = [];
   for (const event of events) {
     if (event.country && event.country !== 'US') continue;
@@ -133,40 +193,75 @@ export function recentMacroPrints(events: readonly EconomicEvent[], now: number)
     if (!rule || !Number.isFinite(actual) || !Number.isFinite(previous)) continue;
     const at = newYorkTime(event.date, 8, 30);
     if (at > now || now - at > MACRO_RECENT_DAYS * DAY_MS) continue;
-    out.push({ event, rule, actual, previous, change: actual - previous, at });
+    const forecast = forecastFor(rule, at, forecasts);
+    out.push({ event, rule, actual, previous, change: actual - previous, at, forecast, surprise: forecast ? actual - forecast.median : null });
   }
   return out.sort((a, b) => b.at - a.at);
 }
 
-export function macroFeed(input: { calendar: ResourceState<GetEconomicCalendarResponse> } & Ctx): FeedState {
+/** Did this print fire: against its forecast when it has one, else against the prior print. */
+export function macroPrintFires(p: MacroPrint): boolean {
+  // Rounding: prints carry one decimal, so 0.2 can arrive as 0.19999.
+  return p.surprise !== null ? Math.abs(p.surprise) + 1e-9 >= p.rule.forecastThreshold : Math.abs(p.change) + 1e-9 >= p.rule.threshold;
+}
+
+/** A forecast in the print's unit: "−0.12% m/m", "+91k". */
+const forecastValue = (value: number, payrolls: boolean) => macroValue(value, payrolls, payrolls ? 0 : 2);
+const gapText = (value: number, payrolls: boolean) => (payrolls ? macroValue(value, true) : signed(value, 2, ' pt'));
+
+export function macroFeed(input: { calendar: ResourceState<GetEconomicCalendarResponse>; forecasts?: ResourceState<MacroForecasts> } & Ctx): FeedState {
   const { calendar, now } = input;
   const events = calendar.status === 'ready' ? calendar.data.events : [];
-  const prints = recentMacroPrints(events, now);
-  // Rounding: prints carry one decimal, so 0.2 can arrive as 0.19999.
-  const fired = prints.find((p) => Math.abs(p.change) + 1e-9 >= p.rule.threshold);
-  const indicator: Indicator | null = fired
-    ? {
-        id: 'macro-print', domain: 'fin', name: `Macro print · ${fired.rule.label}`,
-        value: macroValue(fired.actual, fired.rule.payrolls),
-        change: `${fired.rule.payrolls ? macroValue(fired.change, true) : signed(fired.change, 1, ' pt')} vs prior`,
-        rule: fired.rule.payrolls ? `±${MACRO_PAYROLLS_K}k vs prior` : `±${MACRO_PCT_PT} pt vs prior`,
-        detail: `Prior print ${macroValue(fired.previous, fired.rule.payrolls)} · no forecast source, so the prior print stands in`,
-        trust: { level: 'official', source: fired.rule.source }, at: fired.at, dataDate: `released ${dayMonth(fired.at)}`,
-        links: link(input, { instruments: ['^TNX'], drivers: fired.rule.drivers }, fired.at),
-      }
-    : null;
+  const forecasts = input.forecasts?.status === 'ready' ? input.forecasts.data.forecasts : [];
+  const prints = recentMacroPrints(events, now, forecasts);
+  // Until the forecasts load, a CPI or payrolls print waits rather than firing on the prior print and then un-firing.
+  const pending = input.forecasts?.status === 'loading';
+  const fired = prints.find((p) => !(pending && p.rule.forecastRelease) && macroPrintFires(p));
+  let indicator: Indicator | null = null;
+  if (fired) {
+    const { rule, forecast } = fired;
+    const prior = `prior print ${macroValue(fired.previous, rule.payrolls)}`;
+    indicator = {
+      id: 'macro-print', domain: 'fin', name: `Macro print · ${rule.label}`,
+      value: macroValue(fired.actual, rule.payrolls),
+      ...(forecast && fired.surprise !== null
+        ? {
+            change: `${gapText(fired.surprise, rule.payrolls)} vs forecast`,
+            rule: rule.payrolls ? `±${MACRO_FORECAST_PAYROLLS_K}k vs Kalshi forecast` : `±${MACRO_FORECAST_PCT_PT} pt vs Kalshi forecast`,
+            detail: `Forecast ${forecastValue(forecast.median, rule.payrolls)}: market data (Kalshi ${forecast.series}, implied median, ${Math.round(forecast.volume).toLocaleString('en-US')} contracts, read ${Math.max(0, Math.round((forecast.releaseAt - forecast.at) / 60_000))} min before release) · ${prior}`,
+          }
+        : {
+            change: `${rule.payrolls ? macroValue(fired.change, true) : signed(fired.change, 1, ' pt')} vs prior`,
+            rule: rule.payrolls ? `±${MACRO_PAYROLLS_K}k vs prior` : `±${MACRO_PCT_PT} pt vs prior`,
+            detail: `${prior[0]!.toUpperCase()}${prior.slice(1)} · ${rule.forecastRelease ? 'no Kalshi forecast for this release' : `no market forecast for ${rule.label.replace('US ', '')}`}, so the prior print stands in`,
+          }),
+      trust: { level: 'official', source: rule.source }, at: fired.at, dataDate: `released ${dayMonth(fired.at)}`,
+      links: link(input, { instruments: ['^TNX'], drivers: rule.drivers }, fired.at),
+    };
+  }
   const asOf = calendar.status === 'ready' ? parseTime(calendar.data.asOf) : null;
   const feed = feedState({ id: 'macro-print', name: 'Macro prints · US', source: calendar, seeder: 'seed-economic-calendar', cadenceMin: 720, dataAt: asOf, fired: indicator, now });
   const last = prints[0];
   const next = events
     .filter((e) => MACRO.some((r) => r.test.test(e.event)) && (!e.country || e.country === 'US') && newYorkTime(e.date, 8, 30) > now)
     .sort((a, b) => a.date.localeCompare(b.date))[0];
-  const nextText = next ? `next ${MACRO.find((r) => r.test.test(next.event))?.label ?? next.event} ${dayMonth(ymdMs(next.date))}` : null;
-  const lastText = last ? `${last.rule.label} ${macroValue(last.actual, last.rule.payrolls)}, prior ${macroValue(last.previous, last.rule.payrolls)}` : null;
+  const nextRule = next ? MACRO.find((r) => r.test.test(next.event)) : undefined;
+  // The next release's current forecast, only from a recent read: an older one means the seeder stopped covering it.
+  const nextAt = next ? newYorkTime(next.date, 8, 30) : 0;
+  const nextForecast = nextRule?.forecastRelease
+    ? forecasts.find((f) => f.release === nextRule.forecastRelease && Math.abs(f.releaseAt - nextAt) <= 12 * HOUR_MS && now - f.at <= MACRO_FORECAST_NEXT_MAX_AGE_HOURS * HOUR_MS)
+    : undefined;
+  const nextText = next
+    ? `next ${nextRule?.label ?? next.event} ${dayMonth(ymdMs(next.date))}${nextForecast && nextRule ? `, market expects ${forecastValue(nextForecast.median, nextRule.payrolls)}` : ''}`
+    : null;
+  const lastText = last
+    ? `${last.rule.label} ${macroValue(last.actual, last.rule.payrolls)}, ${last.forecast ? `forecast ${forecastValue(last.forecast.median, last.rule.payrolls)}` : `prior ${macroValue(last.previous, last.rule.payrolls)}`}`
+    : null;
+  const forecastsDown = input.forecasts && (input.forecasts.status === 'error' || input.forecasts.status === 'empty') ? 'Kalshi forecasts unavailable' : null;
   const reading = fired
-    ? `${fired.rule.label.replace('US ', '')} ${fired.rule.payrolls ? macroValue(fired.change, true) : signed(fired.change, 1, ' pt')} vs prior`
+    ? `${fired.rule.label.replace('US ', '')} ${fired.surprise !== null ? `${gapText(fired.surprise, fired.rule.payrolls)} vs forecast` : `${fired.rule.payrolls ? macroValue(fired.change, true) : signed(fired.change, 1, ' pt')} vs prior`}`
     : last ? `${last.rule.label.replace('US ', '')} ${macroValue(last.actual, last.rule.payrolls)}` : nextText;
-  return withReading(quietDetail(feed, [lastText, nextText, 'fires on a gap to the prior print'].filter(Boolean).join(' · ')), reading);
+  return withReading(quietDetail(feed, [lastText, nextText, forecastsDown, 'fires on a gap to the Kalshi forecast (CPI, payrolls) or the prior print'].filter(Boolean).join(' · ')), reading);
 }
 
 // ---- Treasury yields --------------------------------------------------------
@@ -719,6 +814,7 @@ export function filingsFeed(input: { filings: ResourceState<ListMaterialEventsRe
 /** Every step-3 feed, unsorted. */
 export function financeMacroFeeds(input: {
   calendar: ResourceState<GetEconomicCalendarResponse>;
+  forecasts?: ResourceState<MacroForecasts>;
   curves: ResourceState<UsTreasuryParYieldCurve[]>;
   spreads: ResourceState<CreditSpreads>;
   bonds: ResourceState<GetGovernmentYieldCurveResponse[]>;

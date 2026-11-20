@@ -102,6 +102,8 @@ import {
   HY_WEEK_BP,
   IG_DAY_BP,
   KEY_8K_ITEMS,
+  MACRO_FORECAST_PAYROLLS_K,
+  MACRO_FORECAST_PCT_PT,
   MACRO_PAYROLLS_K,
   MACRO_PCT_PT,
   MACRO_RECENT_DAYS,
@@ -111,6 +113,7 @@ import {
   bdiFeed,
   creditSpreadFeed,
   decodeCreditSpreads,
+  decodeMacroForecasts,
   etfFlowFeed,
   filingsFeed,
   financeMacroFeeds,
@@ -608,11 +611,74 @@ describe('Finance indicator rules, step 3', () => {
     assert.equal(feed.indicator.name, 'Macro print · US payrolls');
     assert.equal(feed.indicator.value, '+165k');
     assert.equal(feed.indicator.change, '+105k vs prior');
-    assert.match(feed.indicator.detail ?? '', /no forecast source/);
+    assert.match(feed.indicator.detail ?? '', /no Kalshi forecast for this release, so the prior print stands in/);
     assert.equal(feed.indicator.trust.level, 'official');
     // 0.3 after 0.1 is exactly 0.2 pt: it fires. 0.2 after 0.1 does not.
     assert.equal(macroFeed({ calendar: calendar([event({ actual: '+0.3', previous: '+0.1' })]), ...ctx }).kind, 'fired');
     assert.equal(macroFeed({ calendar: calendar([event({ actual: '+0.2', previous: '+0.1' })]), ...ctx }).kind, 'quiet');
+  });
+
+  describe('against the Kalshi forecast (#128)', () => {
+    const released = newYorkTime(ymd(AT - DAY), 8, 30);
+    const forecast = (o: Record<string, unknown> = {}) => ({ series: 'KXCPI', release: 'CPI', event: 'KXCPI-26OCT', releaseAt: released, median: 0.17, volume: 400_000, at: released - H, url: 'https://kalshi.com/markets/kxcpi', ...o });
+    const forecasts = (list: Array<Record<string, unknown>>) => ready(decodeMacroForecasts({ fetchedAt: AT - H, forecasts: list })!);
+
+    it(`fires CPI ${MACRO_FORECAST_PCT_PT} pt from the forecast and says the forecast rule fired`, () => {
+      const feed = macroFeed({ calendar: calendar([event({ actual: '+0.3', previous: '+0.2' })]), forecasts: forecasts([forecast()]), ...ctx });
+      assert.equal(feed.kind, 'fired');
+      if (feed.kind !== 'fired') return;
+      assert.equal(feed.indicator.change, '+0.13 pt vs forecast');
+      assert.equal(feed.indicator.rule, `±${MACRO_FORECAST_PCT_PT} pt vs Kalshi forecast`);
+      assert.match(feed.indicator.detail ?? '', /^Forecast \+0\.17% m\/m: market data \(Kalshi KXCPI, implied median, 400,000 contracts, read 60 min before release\) · prior print \+0\.2% m\/m$/);
+    });
+
+    it('stays quiet near the forecast even when the prior-print rule would fire', () => {
+      const calendarWithJump = calendar([event({ actual: '+0.2', previous: '+0.0' })]);
+      assert.equal(macroFeed({ calendar: calendarWithJump, ...ctx }).kind, 'fired', 'without a forecast the prior print fires');
+      const quiet = macroFeed({ calendar: calendarWithJump, forecasts: forecasts([forecast({ median: 0.18 })]), ...ctx });
+      assert.equal(quiet.kind, 'quiet');
+      assert.match(quiet.kind === 'quiet' ? quiet.detail : '', /US CPI \+0\.2% m\/m, forecast \+0\.18% m\/m/);
+    });
+
+    it(`fires payrolls ${MACRO_FORECAST_PAYROLLS_K}k from the forecast, in thousands`, () => {
+      const jobs = event({ event: 'Nonfarm Payrolls', actual: '+165', previous: '+120', unit: 'K' });
+      const feed = macroFeed({ calendar: calendar([jobs]), forecasts: forecasts([forecast({ series: 'KXPAYROLLS', release: 'Nonfarm Payrolls', event: 'KXPAYROLLS-26OCT', median: 74.25 })]), ...ctx });
+      assert.equal(feed.kind === 'fired' && feed.indicator.change, '+91k vs forecast');
+    });
+
+    it('falls back to the prior print for a forecast read too early, or for PCE, and says why', () => {
+      const stale = macroFeed({ calendar: calendar([event({ actual: '+0.4', previous: '+0.1' })]), forecasts: forecasts([forecast({ at: released - 3 * DAY })]), ...ctx });
+      assert.equal(stale.kind === 'fired' && stale.indicator.change, '+0.3 pt vs prior');
+      const pce = macroFeed({ calendar: calendar([event({ event: 'PCE', actual: '+0.4', previous: '+0.1' })]), forecasts: forecasts([forecast({ release: 'PCE' })]), ...ctx });
+      assert.match(pce.kind === 'fired' ? pce.indicator.detail ?? '' : '', /no market forecast for PCE, so the prior print stands in/);
+    });
+
+    it('names the next release\'s forecast while quiet, and notes when the forecasts are down', () => {
+      const next = event({ date: ymd(AT + 3 * DAY) });
+      const nextAt = newYorkTime(ymd(AT + 3 * DAY), 8, 30);
+      const quiet = macroFeed({ calendar: calendar([next]), forecasts: forecasts([forecast({ releaseAt: nextAt, median: -0.123, at: AT - H })]), ...ctx });
+      assert.match(quiet.kind === 'quiet' ? quiet.detail : '', /next US CPI 11 Nov, market expects −0\.12% m\/m/);
+      const down = macroFeed({ calendar: calendar([next]), forecasts: { status: 'error', data: null, at: AT, error: 'x' }, ...ctx });
+      assert.match(down.kind === 'quiet' ? down.detail : '', /Kalshi forecasts unavailable/);
+      // A snapshot older than 3 h means the seeder stopped covering the release: no expectation shown.
+      const old = macroFeed({ calendar: calendar([next]), forecasts: forecasts([forecast({ releaseAt: nextAt, median: -0.123, at: AT - 4 * H })]), ...ctx });
+      assert.doesNotMatch(old.kind === 'quiet' ? old.detail : '', /market expects/);
+    });
+
+    it('waits for the forecasts before judging CPI or payrolls, but not PCE', () => {
+      const loading = { status: 'loading' as const, data: null, at: AT };
+      assert.equal(macroFeed({ calendar: calendar([event({ actual: '+0.4', previous: '+0.1' })]), forecasts: loading, ...ctx }).kind, 'quiet');
+      assert.equal(macroFeed({ calendar: calendar([event({ event: 'PCE', actual: '+0.4', previous: '+0.1' })]), forecasts: loading, ...ctx }).kind, 'fired');
+    });
+
+    it('reads what the seeder writes (producer → reader)', async () => {
+      const { buildForecasts } = await import('../scripts/seed-macro-forecasts.mjs');
+      const ladder = [-0.1, 0, 0.1, 0.2].map((strike, i) => ({ event_ticker: 'KXCPI-26NOV', strike_type: 'greater', floor_strike: strike, yes_bid_dollars: String([0.9, 0.7, 0.3, 0.1][i]), yes_ask_dollars: String([0.92, 0.72, 0.32, 0.12][i]), volume_fp: '3000', close_time: new Date(AT + 2 * DAY).toISOString() }));
+      const read = decodeMacroForecasts(JSON.parse(JSON.stringify({ fetchedAt: AT, forecasts: buildForecasts(ladder, AT) })));
+      assert.equal(read?.forecasts.length, 1);
+      assert.equal(read?.forecasts[0]?.release, 'CPI');
+      assert.equal(read?.forecasts[0]?.median, 0.103, "0 + 0.21 / 0.40 × 0.1, plus half a step, to 3 decimals");
+    });
   });
 
   it('ignores macro prints without an actual or older than the recent window', () => {

@@ -425,6 +425,7 @@ const STANDALONE_KEYS = {
   travelLevels: 'intelligence:travel-levels:v1',
   // Lite Finance Fed decision odds (#125): Kalshi KXFED outcome odds.
   rateOdds: 'economic:rate-odds:v1',
+  macroForecasts: 'economic:macro-forecasts:v1',
   // Lite Tech AI models (#126): OpenRouter listing of the watched labs.
   aiModels: 'tech:ai-models:v1',
   // Lite Tech AI regulation (#127): EU and US AI and data rules.
@@ -962,6 +963,11 @@ const SEED_META = {
     key: 'seed-meta:intelligence:travel-levels', maxStaleMin: 360, // seed-travel-advisories every 2 h; 360 = 3x interval
     activationKey: 'seed-activated:intelligence:travel-levels',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 124, activationKey: 'seed-activated:intelligence:travel-levels' },
+  },
+  macroForecasts: {
+    key: 'seed-meta:economic:macro-forecasts', maxStaleMin: 180, // seed-macro-forecasts hourly; 180 = 3x interval
+    activationKey: 'seed-activated:economic:macro-forecasts',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 128, activationKey: 'seed-activated:economic:macro-forecasts' },
   },
   rateOdds: {
     key: 'seed-meta:economic:rate-odds', maxStaleMin: 180, // seed-rate-odds hourly; 180 = 3x interval
@@ -2787,7 +2793,7 @@ const ON_DEMAND_KEYS = new Set([
   // Lite Geopolitics export controls and tariffs (#122) and new restricted parties (#123).
   'federalRegister', 'cslAdditions', 'travelLevels',
   // Lite Finance Fed decision odds (#125), Tech AI models (#126) and AI regulation (#127).
-  'rateOdds', 'aiModels', 'aiRegulation',
+  'rateOdds', 'macroForecasts', 'aiModels', 'aiRegulation',
   // Per-country GDELT article index (#7748). The 15-minute materializer
   // writes the marker after the index and its seed-meta publish; absence is
   // pending until that first tick and strict afterward.
@@ -3011,6 +3017,7 @@ const ACTIVATION_MARKERS = {
   cslAdditions: SEED_META.cslAdditions.activationKey,
   travelLevels: SEED_META.travelLevels.activationKey,
   rateOdds: SEED_META.rateOdds.activationKey,
+  macroForecasts: SEED_META.macroForecasts.activationKey,
   aiModels: SEED_META.aiModels.activationKey,
   aiRegulation: SEED_META.aiRegulation.activationKey,
   // Written by scripts/seed-gdelt-bulk-materializer.mjs after the per-country
