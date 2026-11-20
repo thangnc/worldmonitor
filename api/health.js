@@ -419,6 +419,8 @@ const STANDALONE_KEYS = {
   kevRecent: 'cyber:kev-recent:v1',
   // Lite Geopolitics export controls and tariffs (#122): BIS and USTR Federal Register documents.
   federalRegister: 'policy:federal-register:v1',
+  // Lite Geopolitics new restricted parties (#123): seed-sanctions-pressure's projection of its change history.
+  cslAdditions: 'sanctions:csl-additions:v1',
   predictionCountryMarkets: 'prediction:markets-country-index:v1',
   // US HTS chapter 99 duty index (catalog; coverage shards are versioned by
   // release under trade:us-hts:coverage:v1). Read only by get-us-import-duty.
@@ -942,6 +944,11 @@ const SEED_META = {
     key: 'seed-meta:policy:federal-register', maxStaleMin: 360, // seed-federal-register every 2 h; 360 = 3x interval
     activationKey: 'seed-activated:policy:federal-register',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 122, activationKey: 'seed-activated:policy:federal-register' },
+  },
+  cslAdditions: {
+    key: 'seed-meta:sanctions:csl-additions', maxStaleMin: 720, // written with sanctionsChanges by seed-sanctions-pressure every 6 h
+    activationKey: 'seed-activated:sanctions:csl-additions',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 123, activationKey: 'seed-activated:sanctions:csl-additions' },
   },
   kevRecent: {
     key: 'seed-meta:cyber:kev-recent', maxStaleMin: 2880, // extra key of the daily NVD KEV sync; 2880 = 2x interval
@@ -2749,8 +2756,8 @@ const ON_DEMAND_KEYS = new Set([
   'cveReference',
   // Lite Tech indicator keys: pending until their seeders write the activation marker.
   'cyberThreatHistory', 'kevRecent',
-  // Lite Geopolitics export controls and tariffs (#122).
-  'federalRegister',
+  // Lite Geopolitics export controls and tariffs (#122) and new restricted parties (#123).
+  'federalRegister', 'cslAdditions',
   // Per-country GDELT article index (#7748). The 15-minute materializer
   // writes the marker after the index and its seed-meta publish; absence is
   // pending until that first tick and strict afterward.
@@ -2971,6 +2978,7 @@ const ACTIVATION_MARKERS = {
   cyberThreatHistory: SEED_META.cyberThreatHistory.activationKey,
   kevRecent: SEED_META.kevRecent.activationKey,
   federalRegister: SEED_META.federalRegister.activationKey,
+  cslAdditions: SEED_META.cslAdditions.activationKey,
   // Written by scripts/seed-gdelt-bulk-materializer.mjs after the per-country
   // article index publishes with its seed-meta (#7748).
   gdeltCountryArticles: SEED_META.gdeltCountryArticles.activationKey,
@@ -3378,6 +3386,8 @@ const ZERO_RECORD_DATA_OK_KEYS = new Set([
   'kevRecent',
   // A 30-day window with no kept BIS or USTR document is valid, but the key must exist (#122).
   'federalRegister',
+  // A week with no BIS or State listing is valid, but the key must exist (#123).
+  'cslAdditions',
   'ukmtoIncidents',
   ...EMPTY_DATA_OK_KEYS,
   'sanctionsChanges',

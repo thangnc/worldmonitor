@@ -560,3 +560,188 @@ export function exportControlFeeds(source: ResourceState<FederalRegisterFeed>, n
     ? `Live · no BIS or USTR action in ${FED_REG_NEW_DAYS} days · latest ${latest.agency} ${latest.type.toLowerCase()}, ${dayMonth(Date.parse(`${latest.publishedAt}T00:00:00Z`))}`
     : `Live · no BIS or USTR action in ${source.data.windowDays} days`);
 }
+
+// ---- New restricted parties (#123) -------------------------------------------
+
+/** An addition counts as new for this long after seed-sanctions-pressure first saw it. */
+export const RESTRICTED_WINDOW_HOURS = 24;
+/** seed-sanctions-pressure runs every 6 h. */
+export const RESTRICTED_CADENCE_MIN = 360;
+/** Additions for one country on one list that fire without an Entity List addition. */
+export const RESTRICTED_COUNTRY_MIN = 5;
+const RESTRICTED_MAX_CARDS = 6;
+const RESTRICTED_WORDS = /\b(entity list|export (controls?|curbs?|restrictions?|blacklist)|blacklist(ed)?|trade restrictions?|debar(red|ment)|denied persons|Commerce Department|sanction(s|ed)?)\b/i;
+
+/** The screening lists the projection carries: the BIS export-control lists and the State Department lists. */
+export const CSL_LISTS: Readonly<Record<string, { name: string; agency: 'BIS' | 'State' }>> = {
+  'CSL-EL': { name: 'Entity List', agency: 'BIS' },
+  'CSL-DPL': { name: 'Denied Persons List', agency: 'BIS' },
+  'CSL-UVL': { name: 'Unverified List', agency: 'BIS' },
+  'CSL-MEU': { name: 'Military End User List', agency: 'BIS' },
+  'CSL-DTC': { name: 'ITAR Debarred List', agency: 'State' },
+  'CSL-ACN': { name: 'Nonproliferation Sanctions', agency: 'State' },
+};
+const cslName = (list: string) => CSL_LISTS[list]?.name ?? list;
+
+export interface CslAddition {
+  /** When the seeder first saw the party (ms). */
+  at: number;
+  list: string;
+  name: string;
+  countries: string[];
+  programs: string[];
+  /** The list's start date (ms), or 0. */
+  effectiveAt: number;
+  notice: string;
+}
+
+export interface CslListState {
+  list: string;
+  /** ok, retained (the last good download, kept) or unavailable. */
+  status: string;
+  count: number;
+  /** trade.gov's last import of the list (ms), or null. */
+  publishedAt: number | null;
+}
+
+export interface CslGap {
+  list: string;
+  from: number;
+  to: number;
+  /** retained, unavailable, held (a removal surge) or baseline-unavailable. */
+  reason: string;
+}
+
+export interface CslAdditionsFeed {
+  fetchedAt: number;
+  windowDays: number;
+  lists: CslListState[];
+  events: CslAddition[];
+  truncated: boolean;
+  gaps: CslGap[];
+}
+
+/** The seeded projection (`sanctions:csl-additions:v1`), or null when it is not one. No additions is valid. */
+export function decodeCslAdditions(value: unknown): CslAdditionsFeed | null {
+  const v = value as Partial<Record<keyof CslAdditionsFeed, unknown>> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.lists) || !Array.isArray(v.events)) return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const strs = (x: unknown) => (Array.isArray(x) ? x.filter((s): s is string => typeof s === 'string') : []);
+  const num = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  const lists = (v.lists as Array<Record<string, unknown>>)
+    .filter((l) => str(l?.list))
+    .map((l) => ({ list: str(l.list), status: str(l.status) || 'unavailable', count: num(l.count) ?? 0, publishedAt: num(l.publishedAt) }));
+  const events: CslAddition[] = [];
+  for (const raw of v.events as Array<Record<string, unknown>>) {
+    const at = num(raw?.at);
+    if (at === null || !str(raw.list) || !str(raw.name)) continue;
+    const effective = Number(raw.effectiveAt);
+    events.push({
+      at, list: str(raw.list), name: str(raw.name),
+      countries: strs(raw.cc).map((c) => c.toUpperCase()).filter((c) => /^[A-Z]{2}$/.test(c)),
+      programs: strs(raw.pr), effectiveAt: Number.isFinite(effective) && effective > 0 ? effective : 0, notice: str(raw.notice),
+    });
+  }
+  events.sort((a, b) => b.at - a.at);
+  const gaps = (Array.isArray(v.gaps) ? (v.gaps as Array<Record<string, unknown>>) : [])
+    .filter((g) => str(g?.list) && num(g.from) !== null && num(g.to) !== null)
+    .map((g) => ({ list: str(g.list), from: num(g.from)!, to: num(g.to)!, reason: str(g.reason) }));
+  return { fetchedAt: v.fetchedAt as number, windowDays: Number.isInteger(v.windowDays) ? (v.windowDays as number) : 7, lists, events, truncated: v.truncated === true, gaps };
+}
+
+export interface CountryListings {
+  /** ISO2, or '' for parties the list gives no country. */
+  code: string;
+  name: string;
+  additions: CslAddition[];
+  /** [list, additions], most first. */
+  byList: Array<[string, number]>;
+  entityList: number;
+  at: number;
+}
+
+/**
+ * Parties added in the last RESTRICTED_WINDOW_HOURS, by country, for the
+ * countries that fire: any Entity List addition, or RESTRICTED_COUNTRY_MIN or
+ * more on one list. A party with addresses in several countries counts for
+ * each.
+ */
+export function newRestrictedParties(data: CslAdditionsFeed, now: number): CountryListings[] {
+  const byCountry = new Map<string, CountryListings>();
+  for (const a of data.events) {
+    if (a.at > now + HOUR_MS || now - a.at > RESTRICTED_WINDOW_HOURS * HOUR_MS) continue;
+    for (const code of a.countries.length ? a.countries : ['']) {
+      const group = byCountry.get(code) ?? { code, name: code ? countryName(code) : 'No country listed', additions: [], byList: [], entityList: 0, at: 0 };
+      group.additions.push(a);
+      group.at = Math.max(group.at, Math.min(now, a.at));
+      byCountry.set(code, group);
+    }
+  }
+  const fired: CountryListings[] = [];
+  for (const g of byCountry.values()) {
+    const counts = new Map<string, number>();
+    for (const a of g.additions) counts.set(a.list, (counts.get(a.list) ?? 0) + 1);
+    g.byList = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    g.entityList = counts.get('CSL-EL') ?? 0;
+    if (g.entityList > 0 || g.byList.some(([, n]) => n >= RESTRICTED_COUNTRY_MIN)) fired.push(g);
+  }
+  return fired.sort((a, b) => b.entityList - a.entityList || b.additions.length - a.additions.length || b.at - a.at);
+}
+
+export function restrictedPartyIndicators(data: CslAdditionsFeed, news: readonly LiteItem[], now: number): Indicator[] {
+  return newRestrictedParties(data, now).slice(0, RESTRICTED_MAX_CARDS).map((g) => {
+    const n = g.additions.length;
+    const links = linkNews(
+      { countries: g.code ? [{ code: g.code, name: g.name }] : undefined, drivers: ['Entity List', 'export controls', 'export blacklist', 'trade blacklist'] },
+      news, g.at, LINK_WINDOW_HOURS.geo,
+    );
+    // A story links only when it is about listings, and names the country (or its adjective) when there is one.
+    const names = [g.name, ...(TRADE_COUNTRIES.find((c) => c.code === g.code)?.names ?? [])];
+    const stories = links.stories.filter((st) => {
+      const text = `${st.item.title} ${st.item.snippet ?? ''}`;
+      return RESTRICTED_WORDS.test(text) && (!g.code || names.some((n) => wordRe(n).test(text)));
+    });
+    const lead = g.additions.find((a) => a.list === 'CSL-EL') ?? g.additions[0];
+    const agencies = [...new Set(g.byList.map(([list]) => CSL_LISTS[list]?.agency ?? 'US'))].join(', ');
+    return {
+      id: `restricted-parties:${g.code || 'none'}`,
+      domain: 'geo',
+      name: `New restricted parties · ${g.name}`,
+      value: `${n}${data.truncated ? '+' : ''} added`,
+      change: listMore(g.byList.map(([list, k]) => `${cslName(list)} ${k}`), 3),
+      rule: `Entity List addition, or ≥ ${RESTRICTED_COUNTRY_MIN} on one list for a country, ≤ ${RESTRICTED_WINDOW_HOURS} h`,
+      detail: [listMore(g.additions.map((a) => a.name), 3), lead?.notice ? lead.notice : null].filter(Boolean).join(' · '),
+      trust: { level: 'official', source: `US Consolidated Screening List (${agencies})` },
+      at: g.at,
+      dataDate: lead?.effectiveAt ? `listed ${dayMonth(lead.effectiveAt)}` : undefined,
+      updatedAt: data.fetchedAt,
+      links: { ...links, stories },
+      place: g.code ? { countries: [g.code] } : undefined,
+    } satisfies Indicator;
+  });
+}
+
+/**
+ * What the quiet row says about the comparison: lists the seeder could not
+ * compare on its latest run (a failed or held download), or that the first
+ * comparison is still to come.
+ */
+export function cslComparisonNote(data: CslAdditionsFeed): string | null {
+  const current = data.gaps.filter((g) => g.to === data.fetchedAt);
+  const paused = [...new Set(current.filter((g) => g.reason !== 'baseline-unavailable').map((g) => cslName(g.list)))];
+  if (paused.length) return `not compared on the last run: ${paused.join(', ')}`;
+  if (current.length) return 'first comparison on the next run';
+  return null;
+}
+
+export function restrictedPartyFeeds(source: ResourceState<CslAdditionsFeed>, news: readonly LiteItem[], now: number): FeedState[] {
+  const base = feedState({
+    id: 'restricted-parties', name: 'New restricted parties · BIS and State lists', source, seeder: 'seed-sanctions-pressure',
+    cadenceMin: RESTRICTED_CADENCE_MIN, dataAt: source.data?.fetchedAt ?? null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !source.data) return [base];
+  const el = source.data.lists.find((l) => l.list === 'CSL-EL');
+  const elNote = el && el.count ? `Entity List ${el.count.toLocaleString('en-US')} parties${el.publishedAt ? `, updated ${dayMonth(el.publishedAt)}` : ''}` : null;
+  const quiet = ['Live · no new BIS or State listing in 24 h', elNote, cslComparisonNote(source.data)].filter(Boolean).join(' · ');
+  return feeds(base, restrictedPartyIndicators(source.data, news, now), quiet);
+}

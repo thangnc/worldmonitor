@@ -207,6 +207,14 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['Export controls and tariffs indicator'],
   },
   {
+    // The ITA Data API terms require this notice wherever the data is shown.
+    id: 'csl', name: 'Consolidated Screening List · BIS and State', domain: 'geo',
+    kind: "Official list. This product uses the International Trade Administration's Data API but is not endorsed or certified by the International Trade Administration.",
+    method: 'API', producer: 'seed-sanctions-pressure', healthKeys: ['cslAdditions'], maxStaleMin: 720,
+    hosts: [{ host: 'data.trade.gov', licence: 'terms-review' }],
+    usedBy: ['New restricted parties indicator'],
+  },
+  {
     id: 'chokepoints', name: 'Chokepoint status', domain: 'fin', kind: 'Derived status', method: 'Derived',
     producer: 'get-chokepoint-status', healthKeys: ['chokepoints'], maxStaleMin: 60, hosts: [],
     usedBy: ['Where markets are moving map'],

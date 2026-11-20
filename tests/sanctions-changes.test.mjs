@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildSanctionsChanges } from '../scripts/_sanctions-changes.mjs';
+import { CSL_ADDITIONS_LIMIT, buildSanctionsChanges, projectCslAdditions } from '../scripts/_sanctions-changes.mjs';
 
 const now = Date.UTC(2026, 9, 18);
 const day = 86400000;
@@ -134,4 +134,42 @@ test('recovery after a held partial source starts a baseline instead of inventin
     previous: { SDN: snapshot(priorRows, now + 7200000) } });
   assert.equal(next.events.length, 1);
   assert.equal(next.events[0].op, 'added');
+});
+
+test('projects the last 7 days of CSL additions for the Lite indicator, newest first, with list state and window gaps (#123)', () => {
+  const ev = (list, op, at, name = `${list} ${op} ${at}`) => ({ at, op, list, id: `${list}:${name}`, name, et: 'unspecified', cc: ['CN', 'HK', 'A', 'B', 'C', 'D', 'E'], pr: ['P1', 'P2', 'P3', 'P4'], effectiveAt: '0', notice: '91 FR 1', url: 'https://x' });
+  const changes = {
+    version: 1, fetchedAt: now, events: [
+      ev('CSL-EL', 'added', now - 8 * day),
+      ev('CSL-EL', 'added', now - 6 * day),
+      ev('CSL-EL', 'removed', now - day),
+      ev('SDN', 'added', now - day),
+      ev('CSL-DTC', 'added', now),
+      ev('CSL-EL', 'amended', now),
+    ],
+    gaps: [{ list: 'CSL-EL', from: now - 9 * day, to: now - 8 * day, reason: 'held' }, { list: 'CSL-DPL', from: now, to: now, reason: 'unavailable' }, { list: 'SDN', from: now, to: now, reason: 'held' }],
+  };
+  const health = { 'CSL-EL': { status: 'ok', recordCount: 3317, publishedAt: now - 2 * day }, 'CSL-DPL': { status: 'unavailable', recordCount: 0, publishedAt: null } };
+  const out = projectCslAdditions(changes, health, ['CSL-EL', 'CSL-DPL', 'CSL-DTC']);
+  assert.deepEqual(out.events.map(e => [e.list, e.at]), [['CSL-DTC', now], ['CSL-EL', now - 6 * day]]);
+  assert.deepEqual(out.events[0].cc.length, 6);
+  assert.deepEqual(out.events[0].pr, ['P1', 'P2', 'P3']);
+  assert.equal(out.events[0].notice, '91 FR 1');
+  assert.equal('id' in out.events[0] || 'url' in out.events[0], false);
+  assert.deepEqual(out.lists, [
+    { list: 'CSL-EL', status: 'ok', count: 3317, publishedAt: now - 2 * day },
+    { list: 'CSL-DPL', status: 'unavailable', count: 0, publishedAt: null },
+    { list: 'CSL-DTC', status: 'unavailable', count: 0, publishedAt: null },
+  ]);
+  assert.deepEqual(out.gaps, [{ list: 'CSL-DPL', from: now, to: now, reason: 'unavailable' }]);
+  assert.equal(out.truncated, false);
+  assert.equal(out.windowDays, 7);
+
+  const many = { ...changes, events: Array.from({ length: CSL_ADDITIONS_LIMIT + 3 }, (_, i) => ev('CSL-EL', 'added', now - i * 1000)) };
+  const capped = projectCslAdditions(many, health, ['CSL-EL']);
+  assert.equal(capped.events.length, CSL_ADDITIONS_LIMIT);
+  assert.equal(capped.truncated, true);
+  assert.equal(capped.events[0].at, now);
+  assert.equal(projectCslAdditions({ ...changes, truncatedBefore: now - 2 * day }, health, ['CSL-EL']).truncated, true);
+  assert.equal(projectCslAdditions({ ...changes, truncatedBefore: now - 30 * day }, health, ['CSL-EL']).truncated, false);
 });

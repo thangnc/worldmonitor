@@ -1,4 +1,4 @@
-import { buildSanctionsChanges } from '../scripts/_sanctions-changes.mjs';
+import { buildSanctionsChanges, projectCslAdditions } from '../scripts/_sanctions-changes.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -39,7 +39,7 @@ async function publish({ successes = ['SDN', 'CONSOLIDATED', SEMA_SOURCE, 'CSL']
   const context = vm.createContext({
     console: { log() {}, warn() {} }, Buffer, gzipSync, gunzipSync,
     Date: class extends Date { static now() { return clock; } },
-    SEMA_SOURCE, SEMA_TIMEOUT_MS, CSL_TIMEOUT_MS, mergeSanctionEntries, sanctionsListContentMeta, projectCountrySanctions, buildSanctionsChanges,
+    SEMA_SOURCE, SEMA_TIMEOUT_MS, CSL_TIMEOUT_MS, mergeSanctionEntries, sanctionsListContentMeta, projectCountrySanctions, buildSanctionsChanges, projectCslAdditions,
     SANCTIONS_SOURCE_VERSION, SANCTIONS_MAX_CONTENT_AGE_MIN: 43200,
     readSeedSnapshot: async key => {
       if (readError) throw new Error('synthetic cache read failure');
@@ -107,6 +107,33 @@ describe('sanctions source lifecycle', () => {
     assert.equal(diagnostics.sourceState, 'ok');
     assert.equal(next.writes[1][0], 'sanctions:source-snapshots:v1');
     assert.deepEqual(next.writes[2], ['SET', 'seed-activated:sanctions:changes', '1']);
+    // The Lite restricted-parties projection (#123) follows the history it is built from.
+    const [addKey, additions, addTtl, addCount, addMetaKey, addMetaTtl, , addDiagnostics] = next.writes[3];
+    assert.equal(addKey, 'sanctions:csl-additions:v1');
+    assert.equal(addTtl, 7 * 86400);
+    assert.equal(addMetaTtl, addTtl);
+    assert.equal(addMetaKey, 'seed-meta:sanctions:csl-additions');
+    assert.equal(addCount, 0, 'a SEMA addition is not a CSL addition');
+    assert.deepEqual(additions.lists.map(l => [l.list, l.status, l.count]), CSL_SOURCES.map(s => [s, 'ok', 40]));
+    assert.equal(addDiagnostics.sourceState, 'ok');
+    assert.deepEqual(next.writes[4], ['SET', 'seed-activated:sanctions:csl-additions', '1']);
+    assert.equal(next.writes.length, 5);
+    const listed = await publish({ stored, history: normalize(first.data._changes), clock: now + 6 * 3600000,
+      cslRecords: { ...cslLists, 'CSL-EL': [...cslLists['CSL-EL'], cslRow('CSL-EL', 41)] } });
+    await save(listed);
+    const projected = listed.writes.find(([key]) => key === 'sanctions:csl-additions:v1');
+    assert.deepEqual(projected[1].events.map(e => [e.list, e.name, e.cc, e.notice]), [['CSL-EL', 'CSL-EL Firm 41', ['CN'], '90 FR 14032']]);
+    assert.equal(projected[3], 1);
+    // A failed projection write leaves the history and its activation in place.
+    const broken = await publish({ stored, history: normalize(first.data._changes), clock: now + 6 * 3600000, io: {
+      writeExtraKeyWithMeta: async (...args) => {
+        if (args[0] === 'sanctions:csl-additions:v1') throw new Error('synthetic projection failure');
+        broken.writes.push(normalize(args));
+      },
+    } });
+    await broken.options.beforePublish(broken.data, {});
+    assert.deepEqual(broken.writes.map(([key, value]) => key === 'SET' ? value : key),
+      ['sanctions:changes:v1', 'sanctions:source-snapshots:v1', 'seed-activated:sanctions:changes']);
     const failed = await publish({ stored, history: normalize(first.data._changes), successes: [], clock: now + 6 * 3600000 });
     await save(failed);
     assert.equal(failed.data._changes.events.length, 0);
@@ -599,6 +626,8 @@ it('refreshes core publication on a history failure while preserving the history
       error => error.exitCode === 0);
     const previousHistory = store.get('sanctions:changes:v1');
     const previousSnapshots = store.get('sanctions:source-snapshots:v1');
+    const previousAdditions = store.get('sanctions:csl-additions:v1');
+    assert.ok(previousAdditions, 'the first run writes the CSL additions projection');
     const failed = await publish({ clock: now + 6 * 3600000, io: {
       verifySeedKey,
       writeExtraKeyWithMeta: async (key, ...args) => {
@@ -611,6 +640,8 @@ it('refreshes core publication on a history failure while preserving the history
       error => error.exitCode === 0);
     assert.equal(store.get('sanctions:changes:v1'), previousHistory);
     assert.equal(store.get('sanctions:source-snapshots:v1'), previousSnapshots);
+    // No projection without the history it is built from.
+    assert.equal(store.get('sanctions:csl-additions:v1'), previousAdditions);
     const canonical = JSON.parse(store.get('sanctions:pressure:v1')).data;
     assert.equal(canonical._state.comparison.from, String(now));
     assert.equal(canonical._state.cohort.computationAt, String(now + 6 * 3600000));
