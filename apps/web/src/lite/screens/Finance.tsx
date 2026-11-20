@@ -15,6 +15,7 @@ import {
   useCountryShapes,
   useCryptoQuotes,
   useDigest,
+  useCreditSpreads,
   useEtfFlows,
   useFearGreed,
   useHyperliquid,
@@ -57,6 +58,7 @@ function useFinanceFeeds(): FeedState[] {
   const fearGreed = useFearGreed();
   const calendar = useMacroCalendar();
   const curves = useTreasuryCurves();
+  const spreads = useCreditSpreads();
   const bonds = useOtherBonds();
   const etf = useEtfFlows();
   const rates = useShippingRates();
@@ -67,9 +69,9 @@ function useFinanceFeeds(): FeedState[] {
     const now = Date.now();
     return sortFeeds([
       ...financeFeeds({ crypto, flow, stables, fearGreed, news, now }),
-      ...financeMacroFeeds({ calendar, curves, bonds, etf, flow, rates, filings, news, now }),
+      ...financeMacroFeeds({ calendar, curves, spreads, bonds, etf, flow, rates, filings, news, now }),
     ]);
-  }, [crypto, flow, stables, fearGreed, calendar, curves, bonds, etf, rates, filings, digest]);
+  }, [crypto, flow, stables, fearGreed, calendar, curves, spreads, bonds, etf, rates, filings, digest]);
 }
 
 export function Finance() {

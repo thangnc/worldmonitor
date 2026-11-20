@@ -68,6 +68,8 @@ export const LITE_SEED_SECTIONS = [
   { label: 'Crypto-Quotes', script: 'seed-crypto-quotes.mjs', seedMetaKey: 'market:crypto', intervalMs: 5 * MIN, timeoutMs: 120_000 },
   { label: 'Market-Quotes', script: 'seed-market-quotes.mjs', seedMetaKey: 'market:stocks', intervalMs: 10 * MIN, timeoutMs: 120_000 },
   { label: 'Commodity-Quotes', script: 'seed-commodity-quotes.mjs', seedMetaKey: 'market:commodities', intervalMs: 10 * MIN, timeoutMs: 120_000 },
+  // The credit-spread indicator reads the FRED series keys (BAMLH0A0HYM2, BAMLC0A0CM); fear & greed reads them too.
+  { label: 'FRED-Rates', script: 'seed-fred-rates.mjs', seedMetaKey: 'economic:fred-rates', intervalMs: 60 * MIN, timeoutMs: 300_000 },
   { label: 'US-Treasury-Par-Yield', script: 'seed-us-treasury-par-yield.mjs', seedMetaKey: 'economic:us-treasury-par-yield', intervalMs: DAY, timeoutMs: 180_000 },
   // The three curves the "Other 10y bonds" indicator reads (seed-bundle-yield-curves.mjs).
   { label: 'Yield-Curve-JP', script: 'seed-yield-curve-jp.mjs', seedMetaKey: 'economic:yield-curve-jp', intervalMs: DAY, timeoutMs: 180_000 },

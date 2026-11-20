@@ -1,7 +1,7 @@
 /**
  * Finance indicator feeds added in build step 3 (spec: Early indicators ›
- * Catalogue, Finance and crypto): macro prints, Treasury yields, other 10-year
- * bonds, bitcoin ETF flows, perp positioning, freight and 8-K filings. Pure
+ * Catalogue, Finance and crypto): macro prints, Treasury yields, credit
+ * spreads (#114), other 10-year bonds, bitcoin ETF flows, perp positioning, freight and 8-K filings. Pure
  * functions over loaded sources; Finance.tsx renders the result through the
  * shared indicator card.
  */
@@ -10,6 +10,8 @@ import type {
   GetGovernmentYieldCurveResponse,
   UsTreasuryParYieldCurve,
   EconomicEvent,
+  FredObservation,
+  FredSeries,
 } from '@wm/contracts/generated/client/worldmonitor/economic/v1/service_client';
 import type { GetHyperliquidFlowResponse, ListEtfFlowsResponse } from '@wm/contracts/generated/client/worldmonitor/market/v1/service_client';
 import type { GetShippingRatesResponse, ShippingIndex } from '@wm/contracts/generated/client/worldmonitor/supply_chain/v1/service_client';
@@ -33,6 +35,11 @@ export const MACRO_PAYROLLS_K = 100;
 export const MACRO_RECENT_DAYS = 3;
 /** Treasury and other 10-year moves that fire, in basis points per day. */
 export const YIELD_MOVE_BP = 10;
+/** High-yield spread widening that fires: in a day, and over 5 trading days, in basis points. */
+export const HY_DAY_BP = 20;
+export const HY_WEEK_BP = 50;
+/** Investment-grade spread widening in a day that fires, in basis points. */
+export const IG_DAY_BP = 5;
 /** Bitcoin ETFs that must flow the same way. */
 export const ETF_SAME_WAY = 8;
 /** Hyperliquid stress score that fires: the seeder's ALERT_THRESHOLD. */
@@ -52,6 +59,7 @@ export const KEY_8K_ITEMS: Readonly<Record<string, string>> = {
 export const MACRO_RULES =
   `US CPI or PCE m/m ≥ ${MACRO_PCT_PT} pt from the prior print, or payrolls ≥ ${MACRO_PAYROLLS_K}k from the prior print (no forecast source yet); ` +
   `the US 2-year or 10-year moves ≥ ${YIELD_MOVE_BP} bp in a day, or 2s10s changes sign; a DE, GB or JP 10-year moves ≥ ${YIELD_MOVE_BP} bp; ` +
+  `the high-yield spread widens ≥ ${HY_DAY_BP} bp in a day or ≥ ${HY_WEEK_BP} bp in 5 trading days, or the investment-grade spread widens ≥ ${IG_DAY_BP} bp in a day; ` +
   `${ETF_SAME_WAY} or more spot bitcoin ETFs flow the same way; a Hyperliquid stress score ≥ ${PERP_STRESS}; ` +
   `SCFI ≥ ${FREIGHT_MOVE_PCT}% week on week or the Baltic Dry ≥ ${FREIGHT_MOVE_PCT}% in a day; ` +
   `an 8-K from a company in the default stock list, or any filer reporting item ${Object.keys(KEY_8K_ITEMS).join(', ')}.`;
@@ -216,6 +224,89 @@ export function treasuryFeed(input: { curves: ResourceState<UsTreasuryParYieldCu
   const reading = latest ? `UST 10Y ${latest.tenYear?.toFixed(2) ?? '—'}% ${d10 != null ? bp(d10) : ''}`.trim() : null;
   return withReading(quietDetail(feed, latest
     ? `2Y ${latest.twoYear?.toFixed(2) ?? '—'}% (${d2 != null ? bp(d2) : '—'}) · 10Y ${latest.tenYear?.toFixed(2) ?? '—'}% (${d10 != null ? bp(d10) : '—'}) · ${spreadText ?? '2s10s —'} · data to ${dayMonth(latest.date)}`
+    : null), reading);
+}
+
+// ---- Credit spreads ---------------------------------------------------------
+
+/** ICE BofA option-adjusted spreads on FRED, in percent: US high yield and US investment grade. */
+export const CREDIT_SERIES = { hy: 'BAMLH0A0HYM2', ig: 'BAMLC0A0CM' } as const;
+
+export interface CreditSpreads {
+  hy: readonly FredObservation[];
+  ig: readonly FredObservation[];
+}
+
+export interface SpreadMove {
+  /** Latest spread, in basis points. */
+  level: number;
+  /** Change from the previous observation, in basis points. */
+  day: number | null;
+  /** Change over 5 observations (trading days), in basis points. */
+  week: number | null;
+  date: string;
+}
+
+/** Observations from a FRED batch response, or null when neither series came back. */
+export function decodeCreditSpreads(results: Readonly<Record<string, FredSeries>> | null | undefined): CreditSpreads | null {
+  const obs = (id: string) => (results?.[id]?.observations ?? []).filter((o) => Number.isFinite(o.value) && /^\d{4}-\d{2}-\d{2}/.test(o.date));
+  const hy = obs(CREDIT_SERIES.hy);
+  const ig = obs(CREDIT_SERIES.ig);
+  return hy.length || ig.length ? { hy, ig } : null;
+}
+
+/** The latest spread and its 1-day and 5-day changes, in basis points. */
+export function spreadMove(series: readonly FredObservation[] | null | undefined): SpreadMove | null {
+  const sorted = [...(series ?? [])].sort((a, b) => a.date.localeCompare(b.date));
+  const latest = sorted[sorted.length - 1];
+  if (!latest) return null;
+  const back = (n: number) => sorted[sorted.length - 1 - n];
+  const diff = (o: FredObservation | undefined) => (o ? Math.round((latest.value - o.value) * 1000) / 10 : null);
+  return { level: Math.round(latest.value * 1000) / 10, day: diff(back(1)), week: diff(back(5)), date: latest.date.slice(0, 10) };
+}
+
+/**
+ * Bond-market phrases only: a bare "high-yield" also matches savings
+ * accounts, and "default" or "downgrade" match stock and settings stories.
+ */
+const CREDIT_DRIVERS = [
+  'credit spread', 'credit spreads', 'junk bond', 'junk bonds', 'high-yield bond', 'high-yield bonds', 'high yield bond', 'high yield bonds',
+  'high-yield debt', 'corporate bond', 'corporate bonds', 'corporate debt', 'credit market', 'credit markets', 'private credit',
+  'leveraged loan', 'leveraged loans', 'bond default', 'debt default',
+];
+const reached = (value: number | null, threshold: number) => value != null && value + 1e-9 >= threshold;
+
+export function creditSpreadFeed(input: { spreads: ResourceState<CreditSpreads> } & Ctx): FeedState {
+  const { spreads, now } = input;
+  const data = spreads.status === 'ready' ? spreads.data : null;
+  const hy = spreadMove(data?.hy);
+  const ig = spreadMove(data?.ig);
+  const hyDay = reached(hy?.day ?? null, HY_DAY_BP);
+  const hyWeek = reached(hy?.week ?? null, HY_WEEK_BP);
+  const igDay = reached(ig?.day ?? null, IG_DAY_BP);
+  const newest = [hy?.date, ig?.date].filter((d): d is string => !!d).sort().pop();
+  const at = newest ? newYorkTime(newest, 17, 0) : now;
+  const level = (m: SpreadMove | null) => (m ? `${m.level.toFixed(0)}` : '—');
+  const move = (d: number | null | undefined) => (d != null ? bp(d) : '—');
+  const reasons = [hyDay ? `HY ${move(hy?.day)} in a day` : null, hyWeek ? `HY ${move(hy?.week)} in 5 days` : null, igDay ? `IG ${move(ig?.day)} in a day` : null].filter(Boolean);
+  const indicator: Indicator | null = newest && reasons.length
+    ? {
+        id: 'credit-spreads', domain: 'fin', name: 'Credit spreads · HY / IG',
+        value: `${level(hy)} / ${level(ig)} bp`, change: `${move(hy?.day).replace(' bp', '')} / ${move(ig?.day)}`,
+        rule: `HY +${HY_DAY_BP} bp/day or +${HY_WEEK_BP} bp/5d · IG +${IG_DAY_BP} bp/day`,
+        detail: [...reasons, !hyWeek && hy?.week != null ? `HY ${move(hy.week)} over 5 days` : null].filter(Boolean).join(' · '),
+        trust: { level: 'market', source: 'ICE BofA via FRED' }, at, dataDate: `data to ${dayMonth(ymdMs(newest))}`,
+        links: link(input, { drivers: CREDIT_DRIVERS }, at),
+      }
+    : null;
+  const feed = feedState({
+    id: 'credit-spreads', name: 'Credit spreads · HY / IG', source: data ? spreads : emptyOf(spreads), seeder: 'seed-fred-rates',
+    cadenceMin: 3 * 1440, dataAt: newest ? ymdMs(newest) : null, fired: indicator, now,
+  });
+  const near = (hy?.day != null && hy.day >= HY_DAY_BP / 2) || (hy?.week != null && hy.week >= HY_WEEK_BP / 2) || (ig?.day != null && ig.day >= IG_DAY_BP / 2);
+  const reading = hy || ig ? `HY ${level(hy)} bp ${move(hy?.day)} · IG ${level(ig)} bp ${move(ig?.day)}` : null;
+  return withReading(quietDetail(feed, newest
+    ? `${reading} · HY ${move(hy?.week)} over 5 days · data to ${dayMonth(ymdMs(newest))}${near ? ' · near the trigger' : ''}`
     : null), reading);
 }
 
@@ -487,6 +578,7 @@ export function filingsFeed(input: { filings: ResourceState<ListMaterialEventsRe
 export function financeMacroFeeds(input: {
   calendar: ResourceState<GetEconomicCalendarResponse>;
   curves: ResourceState<UsTreasuryParYieldCurve[]>;
+  spreads: ResourceState<CreditSpreads>;
   bonds: ResourceState<GetGovernmentYieldCurveResponse[]>;
   etf: ResourceState<ListEtfFlowsResponse>;
   flow: ResourceState<GetHyperliquidFlowResponse>;
@@ -496,6 +588,7 @@ export function financeMacroFeeds(input: {
   return [
     macroFeed(input),
     treasuryFeed(input),
+    creditSpreadFeed(input),
     otherBondsFeed(input),
     etfFlowFeed(input),
     perpPositioningFeed(input),
