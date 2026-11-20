@@ -49,6 +49,10 @@ export const HY_WEEK_BP = 50;
 export const IG_DAY_BP = 5;
 /** A move in the odds of a rate change at the next Fed meeting that fires, in percentage points per day (#125). */
 export const RATE_ODDS_MOVE_PTS = 15;
+/** A Fed or ECB decision fires for this long after it is published (#130). */
+export const CB_DECISION_WINDOW_HOURS = 24;
+/** seed-central-bank-decisions runs every 30 min. */
+export const CB_DECISIONS_CADENCE_MIN = 30;
 /** Bitcoin ETFs that must flow the same way. */
 export const ETF_SAME_WAY = 8;
 /** Hyperliquid stress score that fires: the seeder's ALERT_THRESHOLD. */
@@ -70,6 +74,7 @@ export const MACRO_RULES =
   `without a forecast (always for PCE), CPI or PCE m/m ≥ ${MACRO_PCT_PT} pt or payrolls ≥ ${MACRO_PAYROLLS_K}k from the prior print; ` +
   `the US 2-year or 10-year moves ≥ ${YIELD_MOVE_BP} bp in a day, or 2s10s changes sign; a DE, GB or JP 10-year moves ≥ ${YIELD_MOVE_BP} bp; ` +
   `the odds of a move at the next Fed meeting change ≥ ${RATE_ODDS_MOVE_PTS} pts in a day, or its most likely outcome changes (Kalshi); ` +
+  `a Fed or ECB rate decision published in the last ${CB_DECISION_WINDOW_HOURS} h; ` +
   `the high-yield spread widens ≥ ${HY_DAY_BP} bp in a day or ≥ ${HY_WEEK_BP} bp in 5 trading days, or the investment-grade spread widens ≥ ${IG_DAY_BP} bp in a day; ` +
   `${ETF_SAME_WAY} or more spot bitcoin ETFs flow the same way; a Hyperliquid stress score ≥ ${PERP_STRESS}; ` +
   `SCFI ≥ ${FREIGHT_MOVE_PCT}% week on week or the Baltic Dry ≥ ${FREIGHT_MOVE_PCT}% in a day; ` +
@@ -544,6 +549,168 @@ export function rateOddsFeed(input: { odds: ResourceState<RateOdds> } & Ctx): Fe
   return withReading(quietDetail(feed, r
     ? `${reading} · ${r.move !== null ? `move odds ${pctOf(r.move)} (${ptsOf(shift!)} in a day)` : (target === null ? 'move odds need the current target' : 'move odds unreadable: no outcome at the current target')} · ${targetText}${near ? ' · near the trigger' : ''}`
     : null), reading);
+}
+
+// ---- Central bank decisions (#130) -------------------------------------------
+
+export type CbBank = 'fed' | 'ecb';
+
+export interface CbDecision {
+  bank: CbBank;
+  /** When the statement was published (ms). */
+  at: number;
+  url: string;
+  /** False while the statement page has not been read or its wording was not recognised. */
+  parsed: boolean;
+  action: 'hold' | 'hike' | 'cut' | null;
+  /** +25, −50, 0 for a hold; null when not stated. */
+  changeBp: number | null;
+  /** The Fed's upper bound or the ECB's deposit facility rate, in percent. */
+  rate: number | null;
+  /** "3.75–4.00%" (Fed target range) or "2.50%" (ECB deposit facility rate). */
+  rateText: string;
+  votes: string | null;
+  dissent: string | null;
+  summary: string;
+}
+
+export interface CbDecisions {
+  fetchedAt: number;
+  decisions: CbDecision[];
+  /** Each feed's last good read; `ok` is false when this run could not read it. */
+  sources: Record<CbBank, { ok: boolean; okAt: number | null }>;
+}
+
+const CB_BANKS: Readonly<Record<CbBank, { name: string; meeting: string; host: string; source: string; calendar: RegExp; drivers: readonly string[] }>> = {
+  fed: { name: 'Fed', meeting: 'FOMC', host: 'https://www.federalreserve.gov/', source: 'Federal Reserve (FOMC statement)', calendar: /^FOMC\b/i, drivers: FED_DRIVERS },
+  ecb: {
+    name: 'ECB', meeting: 'ECB', host: 'https://www.ecb.europa.eu/', source: 'European Central Bank (monetary policy decisions)', calendar: /^ECB\b/i,
+    drivers: ['ECB', 'European Central Bank', 'Lagarde', 'Governing Council', 'deposit rate', 'deposit facility', 'rate cut', 'rate hike', 'interest rates'],
+  },
+};
+
+/** The seeded payload (`economic:central-bank-decisions:v1`), or null when it is not one. */
+export function decodeCbDecisions(value: unknown): CbDecisions | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.decisions)) return null;
+  const num = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const decisions: CbDecision[] = [];
+  for (const raw of v.decisions as Array<Record<string, unknown>>) {
+    const bank = raw?.bank;
+    const at = num(raw?.at);
+    if ((bank !== 'fed' && bank !== 'ecb') || at === null || !str(raw.url).startsWith(CB_BANKS[bank].host)) continue;
+    const action = raw.action === 'hold' || raw.action === 'hike' || raw.action === 'cut' ? raw.action : null;
+    decisions.push({
+      bank, at, url: str(raw.url), parsed: raw.parsed === true && action !== null, action,
+      changeBp: num(raw.changeBp), rate: num(raw.rate), rateText: str(raw.rateText), votes: str(raw.votes) || null, dissent: str(raw.dissent) || null, summary: str(raw.summary),
+    });
+  }
+  decisions.sort((a, b) => b.at - a.at);
+  const src = (v.sources ?? {}) as Record<string, Record<string, unknown> | undefined>;
+  const source = (bank: CbBank) => ({ ok: src[bank]?.ok !== false, okAt: num(src[bank]?.okAt) });
+  return { fetchedAt: v.fetchedAt as number, decisions, sources: { fed: source('fed'), ecb: source('ecb') } };
+}
+
+/** "Hold", "Hike 25 bp", "Cut 50 bp", or "Decision out" while the statement is unread. */
+export function cbDecisionValue(d: CbDecision): string {
+  if (!d.parsed || !d.action) return 'Decision out';
+  if (d.action === 'hold') return 'Hold';
+  const verb = d.action === 'hike' ? 'Hike' : 'Cut';
+  return d.changeBp ? `${verb} ${Math.abs(d.changeBp)} bp` : verb;
+}
+
+const cbRateText = (d: CbDecision) => (d.rateText ? `${d.bank === 'fed' ? 'range' : 'deposit rate'} ${d.rateText}` : '');
+const pastTense: Readonly<Record<'hold' | 'hike' | 'cut', string>> = { hold: 'held', hike: 'hiked', cut: 'cut' };
+
+/** The bank's newest decision, if it was published in the last CB_DECISION_WINDOW_HOURS. */
+export function recentCbDecision(data: CbDecisions, bank: CbBank, now: number): CbDecision | null {
+  const d = data.decisions.find((x) => x.bank === bank);
+  return d && d.at <= now + HOUR_MS && now - d.at <= CB_DECISION_WINDOW_HOURS * HOUR_MS ? d : null;
+}
+
+/**
+ * The next FOMC or ECB meeting on the macro calendar, as epoch ms of its date;
+ * 'beyond' when the calendar (31 days ahead) has none; null when it is not loaded.
+ */
+function nextMeeting(calendar: ResourceState<GetEconomicCalendarResponse> | undefined, bank: CbBank, now: number): number | 'beyond' | null {
+  if (calendar?.status !== 'ready') return null;
+  const today = new Date(now).toISOString().slice(0, 10);
+  const next = calendar.data.events
+    .filter((e) => CB_BANKS[bank].calendar.test(e.event) && e.date.slice(0, 10) > today)
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+  return next ? ymdMs(next.date) : 'beyond';
+}
+
+/** The bank a macro calendar row is a meeting of: "FOMC Rate Decision" → fed, "ECB Rate Decision" → ecb. */
+export function cbBankOf(event: string): CbBank | null {
+  return CB_BANKS.fed.calendar.test(event) ? 'fed' : CB_BANKS.ecb.calendar.test(event) ? 'ecb' : null;
+}
+
+/**
+ * The decision a calendar meeting row produced (published on its date, a day
+ * either side for time zones), with the bank's decision before it for the
+ * PRIOR column; null for other rows or a meeting not decided yet.
+ */
+export function cbDecisionForEvent(data: CbDecisions | null, event: Pick<EconomicEvent, 'event' | 'date'>): { decision: CbDecision; prior: CbDecision | null } | null {
+  const bank = cbBankOf(event.event);
+  if (!data || !bank) return null;
+  const day = ymdMs(event.date);
+  // The prior is the bank's decision just before, read or not: an unread one shows "—", never an older rate.
+  const own = data.decisions.filter((d) => d.bank === bank);
+  const i = own.findIndex((d) => d.parsed && Math.abs(ymdMs(new Date(d.at).toISOString()) - day) <= DAY_MS);
+  return i < 0 ? null : { decision: own[i]!, prior: own[i + 1] ?? null };
+}
+
+export function centralBankFeeds(input: { decisions: ResourceState<CbDecisions>; calendar?: ResourceState<GetEconomicCalendarResponse> } & Ctx): FeedState[] {
+  const { decisions, now } = input;
+  const data = decisions.status === 'ready' ? decisions.data : null;
+  // As fresh as the older feed's last good read.
+  const dataAt = data ? Math.min(data.fetchedAt, data.sources.fed.okAt ?? data.fetchedAt, data.sources.ecb.okAt ?? data.fetchedAt) : null;
+  const base = feedState({
+    id: 'cb-decision', name: 'Central bank decisions · Fed, ECB', source: decisions, seeder: 'seed-central-bank-decisions',
+    cadenceMin: CB_DECISIONS_CADENCE_MIN, dataAt, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !data) return [base];
+  const unread = (bank: CbBank) => {
+    const src = data.sources[bank];
+    return src.ok ? null : `${CB_BANKS[bank].name} feed unread${src.okAt ? ` since ${new Date(src.okAt).toISOString().slice(11, 16)} UTC` : ''}`;
+  };
+  const fired: Indicator[] = [];
+  for (const bank of ['fed', 'ecb'] as const) {
+    const d = recentCbDecision(data, bank, now);
+    if (!d) continue;
+    const b = CB_BANKS[bank];
+    fired.push({
+      id: `cb-decision:${bank}`, domain: 'fin', name: `Central bank decision · ${b.name}`,
+      value: cbDecisionValue(d),
+      ...(cbRateText(d) ? { change: cbRateText(d) } : {}),
+      rule: `${b.meeting} decision published ≤ ${CB_DECISION_WINDOW_HOURS} h`,
+      detail: [
+        d.parsed ? d.summary : 'The statement is out but has not been read yet; the seeder reads it again on its next run',
+        d.votes ? `vote ${d.votes}` : null,
+        d.dissent ? `dissent: ${d.dissent}` : null,
+        // A card for one bank still says when the other bank's feed is down.
+        unread(bank === 'fed' ? 'ecb' : 'fed'),
+      ].filter(Boolean).join(' · '),
+      trust: { level: 'official', source: b.source }, at: d.at, updatedAt: data.fetchedAt, dataDate: `decided ${dayMonth(d.at)}`,
+      links: link(input, { drivers: b.drivers }, d.at),
+    });
+  }
+  if (fired.length) return fired.map((indicator) => withReading({ kind: 'fired', id: indicator.id, name: indicator.name, indicator }, `${indicator.name.replace('Central bank decision · ', '')} ${indicator.value}`));
+  const parts = (['fed', 'ecb'] as const).map((bank) => {
+    const b = CB_BANKS[bank];
+    const last = data.decisions.find((x) => x.bank === bank && x.parsed && x.action);
+    const lastText = last ? `${b.name} ${pastTense[last.action!]}${last.changeBp ? ` ${Math.abs(last.changeBp)} bp` : ''}${last.rateText ? ` at ${last.rateText}` : ''} ${dayMonth(last.at)}` : `${b.name}: no decision read yet`;
+    const next = nextMeeting(input.calendar, bank, now);
+    const nextText = next === 'beyond' ? `next ${b.meeting} beyond the calendar's 31 days` : next ? `next ${b.meeting} ${dayMonth(next)}` : null;
+    return [lastText, nextText, unread(bank)].filter(Boolean).join(', ');
+  });
+  const newest = data.decisions.find((x) => x.parsed && x.action);
+  return [withReading(
+    quietDetail(base, `${parts.join(' · ')} · fires when a decision is published`),
+    newest ? `${CB_BANKS[newest.bank].name} ${pastTense[newest.action!]} ${dayMonth(newest.at)}` : null,
+  )];
 }
 
 // ---- Other 10-year bonds ----------------------------------------------------

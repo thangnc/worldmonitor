@@ -55,7 +55,7 @@ import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cy
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
 import { decodeAiModels, decodeAiRegulation, decodeRecentKev, decodeThreatHistory, type AiModels, type AiRegulation, type RecentKev, type ThreatHistory } from './tech-indicators';
-import { CREDIT_SERIES, decodeCreditSpreads, decodeMacroForecasts, decodeRateOdds, type CreditSpreads, type MacroForecasts, type RateOdds } from './finance-macro-indicators';
+import { CREDIT_SERIES, decodeCbDecisions, decodeCreditSpreads, decodeMacroForecasts, decodeRateOdds, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds } from './finance-macro-indicators';
 import { VIX_FRED_SERIES } from './finance-indicators';
 import {
   ConflictServiceClient,
@@ -307,6 +307,12 @@ export async function loadCreditSpreads(): Promise<CreditSpreads | null> {
 export async function loadRateOdds(): Promise<RateOdds> {
   await startBootstrap();
   return required('rateOdds', decodeRateOdds(await ensureHydrated('rateOdds')));
+}
+
+/** The Fed's and the ECB's rate decisions, newest first (seed-central-bank-decisions, #130). */
+export async function loadCbDecisions(): Promise<CbDecisions> {
+  await startBootstrap();
+  return required('cbDecisions', decodeCbDecisions(await ensureHydrated('cbDecisions')));
 }
 
 /** Kalshi's market-implied CPI and payrolls forecasts (seed-macro-forecasts, #128). */

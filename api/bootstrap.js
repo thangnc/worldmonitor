@@ -99,6 +99,13 @@ const ON_DEMAND_CACHE_PROFILES = {
     browser: 'max-age=300, stale-while-revalidate=300, stale-if-error=900',
     cdn: 'public, s-maxage=900, stale-while-revalidate=300, stale-if-error=900',
   },
+  // Fed and ECB rate decisions (#130): seed-central-bank-decisions every 30
+  // minutes with a 90-minute health budget, so the CDN holds half an interval
+  // and a decision reaches the card within about 45 minutes of publication.
+  cbDecisions: {
+    browser: 'max-age=300, stale-while-revalidate=300, stale-if-error=900',
+    cdn: 'public, s-maxage=900, stale-while-revalidate=300, stale-if-error=900',
+  },
   ukmtoIncidents: {
     browser: 'max-age=60, stale-while-revalidate=60, stale-if-error=60',
     cdn: 'public, s-maxage=60, stale-while-revalidate=60, stale-if-error=60',

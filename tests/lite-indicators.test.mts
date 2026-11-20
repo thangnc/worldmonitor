@@ -131,6 +131,11 @@ import {
   treasuryWindow,
   watchCompany,
   RATE_ODDS_MOVE_PTS,
+  CB_DECISION_WINDOW_HOURS,
+  cbDecisionForEvent,
+  cbDecisionValue,
+  centralBankFeeds,
+  decodeCbDecisions,
   decodeRateOdds,
   rateOddsFeed,
   rateOutcomeLabel,
@@ -2021,6 +2026,101 @@ describe('Fed decision odds (#125)', () => {
     // A hike to 4.25% went from 15% to 55%: it is now the most likely outcome, and move odds rose 40 pts.
     assert.equal(feed.kind === 'fired' && feed.indicator.value, 'Hike 25 bp 55%');
     assert.equal(feed.kind === 'fired' && feed.indicator.change, 'move odds 30% → 70%');
+  });
+});
+
+describe('Central bank decisions (#130)', () => {
+  const FED = 'https://www.federalreserve.gov/newsevents/pressreleases/monetary20261107a.htm';
+  const ECB = 'https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp261029~5b1e9a2c11.en.html';
+  const fed = (o: Record<string, unknown> = {}) => ({
+    bank: 'fed', at: AT - 4 * H, url: FED, parsed: true, action: 'cut', changeBp: -25, rate: 3.75, rateText: '3.50–3.75%', rateLabel: 'target range', votes: '10–2',
+    dissent: 'Beth M. Hammack, who preferred to maintain the target range', summary: 'The Committee decided to lower the target range for the federal funds rate by 1/4 percentage point to 3-1/2 to 3-3/4 percent.', ...o,
+  });
+  const ecb = (o: Record<string, unknown> = {}) => ({
+    bank: 'ecb', at: Date.UTC(2026, 9, 29, 13, 15), url: ECB, parsed: true, action: 'hold', changeBp: 0, rate: 2.5, rateText: '2.50%', rateLabel: 'deposit facility rate', votes: null, dissent: null,
+    summary: 'The Governing Council today decided to keep the three key ECB interest rates unchanged.', ...o,
+  });
+  const payload = (decisions: unknown[], o: Record<string, unknown> = {}) => ({ fetchedAt: AT - 10 * 60_000, decisions, sources: { fed: { ok: true, okAt: AT - 10 * 60_000 }, ecb: { ok: true, okAt: AT - 10 * 60_000 } }, ...o });
+  const calendar = ready({ events: [
+    { event: 'FOMC Rate Decision', country: 'US', date: '2026-12-09', impact: 'high', actual: '', estimate: '', previous: '', unit: '' },
+    { event: 'ECB Rate Decision', country: 'EU', date: '2026-12-17', impact: 'high', actual: '', estimate: '', previous: '', unit: '' },
+  ], fromDate: '2026-11-07', toDate: '2026-12-09', total: 2, unavailable: false, asOf: new Date(AT - H).toISOString() } as never);
+
+  it('decodes strictly and labels the decision', () => {
+    assert.equal(decodeCbDecisions(null), null);
+    const d = decodeCbDecisions(payload([fed(), ecb(), fed({ url: 'https://evil.example/x' }), { bank: 'boe', at: AT, url: FED }, ecb({ action: 'raise', parsed: true, url: `${ECB}?2` })]))!;
+    assert.deepEqual(d.decisions.map((x) => [x.bank, x.parsed]), [['fed', true], ['ecb', true], ['ecb', false]], 'other hosts and banks are dropped; an unknown action reads as unread');
+    assert.deepEqual([cbDecisionValue(d.decisions[0]!), cbDecisionValue(d.decisions[1]!), cbDecisionValue(d.decisions[2]!)], ['Cut 25 bp', 'Hold', 'Decision out']);
+    assert.deepEqual(d.sources, { fed: { ok: true, okAt: AT - 10 * 60_000 }, ecb: { ok: true, okAt: AT - 10 * 60_000 } });
+  });
+
+  it(`fires for a decision published in the last ${CB_DECISION_WINDOW_HOURS} h, with the vote, the dissent and Fed news`, () => {
+    const news = [story('Fed cuts rates by a quarter point; Powell signals a pause', AT - 3 * H), story('Retail sales beat estimates', AT - 3 * H)];
+    const feeds = centralBankFeeds({ decisions: ready(decodeCbDecisions(payload([fed(), ecb()]))!), calendar, news, now: AT });
+    assert.equal(feeds.length, 1);
+    const ind = feeds[0]!.kind === 'fired' ? feeds[0]!.indicator : null;
+    assert.equal(ind?.id, 'cb-decision:fed');
+    assert.equal(ind?.name, 'Central bank decision · Fed');
+    assert.equal(ind?.value, 'Cut 25 bp');
+    assert.equal(ind?.change, 'range 3.50–3.75%');
+    assert.equal(ind?.rule, 'FOMC decision published ≤ 24 h');
+    assert.equal(ind?.trust.level, 'official');
+    assert.equal(ind?.dataDate, 'decided 8 Nov');
+    assert.match(ind?.detail ?? '', /^The Committee decided to lower .* · vote 10–2 · dissent: Beth M\. Hammack, who preferred to maintain the target range$/);
+    assert.deepEqual(ind?.links.stories.map((st) => st.item.title), ['Fed cuts rates by a quarter point; Powell signals a pause']);
+    // The fired decision is pinned at its bank on the Finance map; the quiet row covering both is not.
+    assert.equal(pinIdForFeed(feeds[0]!), 'signal:fed');
+    assert.deepEqual(signalPins(feeds, [], 10).map((p) => [p.issuer.id, p.fired, p.signals[0]?.text]), [['fed', true, 'Fed Cut 25 bp']]);
+    assert.equal(pinIdForFeed(centralBankFeeds({ decisions: ready(decodeCbDecisions(payload([ecb()]))!), news: [], now: AT })[0]!), null);
+    // A statement not read yet still fires, and says so.
+    const unread = centralBankFeeds({ decisions: ready(decodeCbDecisions(payload([fed({ parsed: false, action: null, rateText: '', summary: '', votes: null, dissent: null })]))!), news: [], now: AT });
+    assert.equal(unread[0]!.kind === 'fired' && unread[0]!.indicator.value, 'Decision out');
+    assert.match(unread[0]!.kind === 'fired' ? unread[0]!.indicator.detail ?? '' : '', /not been read yet/);
+  });
+
+  it('is quiet with the last decisions and the next meetings, and reports stale, unavailable and a failed feed', () => {
+    const old = decodeCbDecisions(payload([fed({ at: AT - 25 * H }), ecb()]))!;
+    const [quiet] = centralBankFeeds({ decisions: ready(old), calendar, news: [], now: AT });
+    assert.equal(quiet!.kind, 'quiet');
+    assert.equal(quiet!.kind === 'quiet' && quiet!.detail, 'Fed cut 25 bp at 3.50–3.75% 7 Nov, next FOMC 9 Dec · ECB held at 2.50% 29 Oct, next ECB 17 Dec · fires when a decision is published');
+    const ecbDown = (okAt: number) => decodeCbDecisions(payload([fed({ at: AT - 25 * H })], { sources: { fed: { ok: true, okAt: AT }, ecb: { ok: false, okAt } } }))!;
+    const [down] = centralBankFeeds({ decisions: ready(ecbDown(AT - 40 * 60_000)), news: [], now: AT });
+    assert.match(down!.kind === 'quiet' ? down!.detail : '', /ECB: no decision read yet, ECB feed unread since 11:20 UTC/);
+    // The feed is as fresh as its older source: an ECB feed unread for 3 h makes the row stale.
+    assert.equal(centralBankFeeds({ decisions: ready(ecbDown(AT - 3 * H)), news: [], now: AT })[0]!.kind, 'stale');
+    // A fired Fed card still says the ECB feed is down.
+    const firedDown = centralBankFeeds({ decisions: ready(decodeCbDecisions(payload([fed()], { sources: { fed: { ok: true, okAt: AT }, ecb: { ok: false, okAt: AT - 40 * 60_000 } } }))!), news: [], now: AT });
+    assert.match(firedDown[0]!.kind === 'fired' ? firedDown[0]!.indicator.detail ?? '' : '', / · ECB feed unread since 11:20 UTC$/);
+    // The next meeting beyond the calendar's window is named as such, not left out.
+    const empty = ready({ events: [], fromDate: '2026-11-07', toDate: '2026-12-09', total: 0, unavailable: false, asOf: new Date(AT - H).toISOString() } as never);
+    const [beyond] = centralBankFeeds({ decisions: ready(old), calendar: empty, news: [], now: AT });
+    assert.match(beyond!.kind === 'quiet' ? beyond!.detail : '', /next FOMC beyond the calendar's 31 days/);
+    assert.equal(centralBankFeeds({ decisions: ready({ ...old, fetchedAt: AT - 2 * H }), news: [], now: AT })[0]!.kind, 'stale');
+    const err = centralBankFeeds({ decisions: { status: 'error', data: null, at: AT, error: 'x' }, news: [], now: AT })[0]!;
+    assert.match(err.kind === 'unavailable' ? err.detail : '', /seed-central-bank-decisions/);
+  });
+
+  it('matches a calendar meeting to its decision and the one before it', () => {
+    const d = decodeCbDecisions(payload([fed(), fed({ at: Date.UTC(2026, 8, 16, 18), url: `${FED}?sep`, action: 'hike', changeBp: 25, rate: 4 }), ecb()]))!;
+    const nov = cbDecisionForEvent(d, { event: 'FOMC Rate Decision', date: '2026-11-08' });
+    assert.deepEqual([nov?.decision.rate, nov?.prior?.rate], [3.75, 4]);
+    assert.equal(cbDecisionForEvent(d, { event: 'FOMC Rate Decision', date: '2026-12-09' }), null, 'a meeting not decided yet');
+    assert.equal(cbDecisionForEvent(d, { event: 'ECB Rate Decision', date: '2026-10-29' })?.decision.rate, 2.5);
+    assert.equal(cbDecisionForEvent(d, { event: 'CPI', date: '2026-11-08' }), null);
+    // An unread decision before it is the prior (its rate unknown), never the one two meetings back.
+    const gap = decodeCbDecisions(payload([fed(), fed({ at: Date.UTC(2026, 8, 16, 18), url: `${FED}?sep`, parsed: false, action: null, rate: null }), fed({ at: Date.UTC(2026, 6, 29, 18), url: `${FED}?jul`, rate: 4.25 })]))!;
+    const withGap = cbDecisionForEvent(gap, { event: 'FOMC Rate Decision', date: '2026-11-08' });
+    assert.deepEqual([withGap?.prior?.parsed, withGap?.prior?.rate], [false, null]);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { parseFedStatement, pageText } = await import('../scripts/seed-central-bank-decisions.mjs');
+    const parsed = parseFedStatement(pageText('<p>The Federal Open Market Committee approved the following statement for release by a 12 &ndash; 0 vote:</p><p>The Committee decided to raise the target range for the federal funds rate by 1/4 percentage point to 3-3/4 to 4 percent, in support of the Federal Reserve\'s dual mandate.</p>'));
+    const read = decodeCbDecisions(JSON.parse(JSON.stringify(payload([{ bank: 'fed', url: FED, at: AT - H, parsed: true, ...parsed }]))))!;
+    const [feed] = centralBankFeeds({ decisions: ready(read), news: [], now: AT });
+    assert.equal(feed!.kind === 'fired' && feed!.indicator.value, 'Hike 25 bp');
+    assert.equal(feed!.kind === 'fired' && feed!.indicator.change, 'range 3.75–4.00%');
+    assert.match(feed!.kind === 'fired' ? feed!.indicator.detail ?? '' : '', /vote 12–0$/);
   });
 });
 

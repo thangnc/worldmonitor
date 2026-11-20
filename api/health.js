@@ -427,6 +427,8 @@ const STANDALONE_KEYS = {
   // Lite Finance Fed decision odds (#125): Kalshi KXFED outcome odds.
   rateOdds: 'economic:rate-odds:v1',
   macroForecasts: 'economic:macro-forecasts:v1',
+  // Lite Finance central bank decisions (#130): Fed and ECB rate decisions.
+  cbDecisions: 'economic:central-bank-decisions:v1',
   // Lite Tech AI models (#126): OpenRouter listing of the watched labs.
   aiModels: 'tech:ai-models:v1',
   // Lite Tech AI regulation (#127): EU and US AI and data rules.
@@ -974,6 +976,11 @@ const SEED_META = {
     key: 'seed-meta:economic:macro-forecasts', maxStaleMin: 180, // seed-macro-forecasts hourly; 180 = 3x interval
     activationKey: 'seed-activated:economic:macro-forecasts',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 128, activationKey: 'seed-activated:economic:macro-forecasts' },
+  },
+  cbDecisions: {
+    key: 'seed-meta:economic:central-bank-decisions', maxStaleMin: 90, // seed-central-bank-decisions every 30 min; 90 = 3x interval
+    activationKey: 'seed-activated:economic:central-bank-decisions',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 130, activationKey: 'seed-activated:economic:central-bank-decisions' },
   },
   rateOdds: {
     key: 'seed-meta:economic:rate-odds', maxStaleMin: 180, // seed-rate-odds hourly; 180 = 3x interval
@@ -2798,8 +2805,8 @@ const ON_DEMAND_KEYS = new Set([
   'cyberThreatHistory', 'kevRecent',
   // Lite Geopolitics export controls and tariffs (#122) and new restricted parties (#123).
   'federalRegister', 'cslAdditions', 'euSanctions', 'travelLevels',
-  // Lite Finance Fed decision odds (#125), Tech AI models (#126) and AI regulation (#127).
-  'rateOdds', 'macroForecasts', 'aiModels', 'aiRegulation',
+  // Lite Finance Fed decision odds (#125), central bank decisions (#130), Tech AI models (#126) and AI regulation (#127).
+  'rateOdds', 'macroForecasts', 'cbDecisions', 'aiModels', 'aiRegulation',
   // Per-country GDELT article index (#7748). The 15-minute materializer
   // writes the marker after the index and its seed-meta publish; absence is
   // pending until that first tick and strict afterward.
@@ -3025,6 +3032,7 @@ const ACTIVATION_MARKERS = {
   travelLevels: SEED_META.travelLevels.activationKey,
   rateOdds: SEED_META.rateOdds.activationKey,
   macroForecasts: SEED_META.macroForecasts.activationKey,
+  cbDecisions: SEED_META.cbDecisions.activationKey,
   aiModels: SEED_META.aiModels.activationKey,
   aiRegulation: SEED_META.aiRegulation.activationKey,
   // Written by scripts/seed-gdelt-bulk-materializer.mjs after the per-country

@@ -50,6 +50,7 @@ export const useTreasuryCurves = () => useResource('treasuryCurves', src.loadTre
 export const useVixDaily = (enabled: boolean) => useResource('vixDaily', src.loadVixDaily, enabled);
 export const useCreditSpreads = () => useResource('creditSpreads', src.loadCreditSpreads);
 export const useRateOdds = () => useResource('rateOdds', src.loadRateOdds);
+export const useCbDecisions = () => useResource('cbDecisions', src.loadCbDecisions);
 export const useMacroForecasts = () => useResource('macroForecasts', src.loadMacroForecasts);
 export const useOtherBonds = () => useResource('otherBonds', src.loadOtherBonds);
 export const useShippingRates = () => useResource('shippingRates', src.loadShippingRates);

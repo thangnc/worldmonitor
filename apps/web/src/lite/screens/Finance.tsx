@@ -16,6 +16,7 @@ import {
   useCryptoQuotes,
   useDigest,
   useMacroCalendar,
+  useCbDecisions,
   useMarketQuotes,
   useOtherBonds,
   usePriceBoard,
@@ -26,7 +27,7 @@ import {
 import { useFinanceFeeds } from '../data/domain-feeds';
 import { FINANCE_RULES, } from '../data/finance-indicators';
 import { feedCounts, type FeedState } from '../data/indicators';
-import { MACRO_RULES, YIELD_MOVE_BP, bondMoves, macroValue, spreadBp, treasuryWindow } from '../data/finance-macro-indicators';
+import { MACRO_RULES, YIELD_MOVE_BP, bondMoves, cbBankOf, cbDecisionForEvent, macroValue, spreadBp, treasuryWindow, type CbDecision } from '../data/finance-macro-indicators';
 import {
   FINANCIAL_CENTRE_POINTS,
   chokepointPins,
@@ -400,19 +401,37 @@ function printChange(actual: string, previous: string, unit: string): { text: st
   return { text: /^k$/i.test(unit) ? macroValue(d, true) : signed(d, 1, unit === '%' ? ' pt' : unit ? ` ${unit}` : ''), value: d };
 }
 
+/** A rate decision's move: "Hold", "+25 bp", "−50 bp". */
+function decisionChange(d: CbDecision): { text: string; value: number } {
+  if (d.action === 'hold' || !d.changeBp) return { text: d.action === 'hold' ? 'Hold' : d.action === 'hike' ? 'Hike' : 'Cut', value: 0 };
+  return { text: `${d.changeBp < 0 ? MINUS : '+'}${Math.abs(d.changeBp)} bp`, value: d.changeBp };
+}
+
+/** The rate a decision set: the Fed's upper bound, the ECB's deposit facility rate. */
+const decisionRate = (d: CbDecision | null | undefined) => (d?.rate != null ? `${d.rate.toFixed(2)}%` : '—');
+
 function MacroCalendar({ search }: { search: string }) {
   const cal = useMacroCalendar();
-  const rows = cal.status === 'ready'
+  const cb = useCbDecisions();
+  const decisions = cb.status === 'ready' ? cb.data : null;
+  const today = new Date().toISOString().slice(0, 10);
+  const listed = cal.status === 'ready'
     ? cal.data.events
         .filter((e) => /high|medium/i.test(e.impact) && matchesSearch(search, e.event, e.country))
         .sort((a, b) => a.date.localeCompare(b.date))
-        .slice(0, 8)
     : [];
+  const rows = listed.slice(0, 8);
+  // The next Fed and ECB meetings stay on the calendar even past the first eight rows (#130).
+  for (const bank of ['fed', 'ecb'] as const) {
+    const next = listed.find((e) => cbBankOf(e.event) === bank && e.date.slice(0, 10) >= today);
+    if (next && !rows.includes(next)) rows.push(next);
+  }
+  rows.sort((a, b) => a.date.localeCompare(b.date));
   return (
     <Card
       title="Macro calendar"
       sub="recent releases & the next two weeks"
-      right={<DerivedTag how="CHANGE is the actual minus the prior print. No source gives a forecast yet, so the prior print stands in for one." />}
+      right={<DerivedTag how="CHANGE is the actual minus the prior print. No source gives a forecast yet, so the prior print stands in for one. For a Fed or ECB meeting, ACTUAL is the rate the decision set (the Fed's upper bound, the ECB's deposit facility rate) and PRIOR the one before it, read from the bank's statement." />}
       testId="macro-calendar"
     >
       <div class="flex flex-col gap-3 border-t border-line px-5 py-4">
@@ -429,7 +448,8 @@ function MacroCalendar({ search }: { search: string }) {
           <p class="text-[12px] text-dim">No medium- or high-impact releases in this window.</p>
         ) : (
           rows.map((e) => {
-            const change = printChange(e.actual, e.previous, e.unit);
+            const cbRow = cbDecisionForEvent(decisions, e);
+            const change = cbRow ? decisionChange(cbRow.decision) : printChange(e.actual, e.previous, e.unit);
             return (
               <div key={`${e.date}${e.event}`} class="flex items-center gap-3 border-t border-line pt-3" data-macro-row>
                 <span class="w-[86px] shrink-0 font-mono text-[11.5px] text-dim">{dayLabel(e.date)}</span>
@@ -437,8 +457,8 @@ function MacroCalendar({ search }: { search: string }) {
                   <span class="truncate text-[13px] text-ink" title={`${e.country} · ${e.event}`}>{e.country ? `${e.country} ` : ''}{e.event}</span>
                   {/high/i.test(e.impact) ? <span class="font-mono text-[9px] font-semibold tracking-[0.5px] text-crit">HIGH</span> : null}
                 </span>
-                <span class="w-16 text-right font-mono text-[12px] text-muted">{printValue(e.previous, e.unit)}</span>
-                <span class="w-16 text-right font-mono text-[12px] font-medium text-ink">{printValue(e.actual, e.unit)}</span>
+                <span class="w-16 text-right font-mono text-[12px] text-muted">{cbRow ? decisionRate(cbRow.prior) : printValue(e.previous, e.unit)}</span>
+                <span class="w-16 text-right font-mono text-[12px] font-medium text-ink" title={cbRow?.decision.rateText || undefined}>{cbRow ? decisionRate(cbRow.decision) : printValue(e.actual, e.unit)}</span>
                 <span class={cx('w-20 text-right font-mono text-[12px]', change ? changeTone(change.value) : 'text-dim')}>{change ? change.text : '—'}</span>
               </div>
             );
