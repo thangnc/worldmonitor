@@ -123,6 +123,11 @@ export const AI_NEW_DAYS = 7;
 export const AI_PRICE_PCT = 20;
 /** seed-ai-models runs every 6 h. */
 export const AI_MODELS_CADENCE_MIN = 360;
+/** An open-weight release fires when first seen this recently (#132). */
+export const OPEN_MODEL_NEW_DAYS = 7;
+/** It must also pass one of these on the Hugging Face Hub. */
+export const OPEN_MODEL_MIN_LIKES = 100;
+export const OPEN_MODEL_MIN_DOWNLOADS = 10_000;
 /** An AI or data rule counts as new for this many days after publication (weekly tier; #127). */
 export const AI_REG_NEW_DAYS = 7;
 /** seed-ai-regulation runs every 2 h. */
@@ -155,6 +160,7 @@ export const TECH_RULES =
   `attack-infrastructure indicators at ${SPIKE_RATIO}× their ${SPIKE_BASELINE_DAYS}-day average or more; ` +
   `an 8-K reporting item ${CYBER_8K_ITEM} (material cybersecurity incident) in the last ${FILING_WINDOW_HOURS} h; ` +
   `a model from a watched AI lab (OpenAI, Anthropic, Google, Meta, Mistral, xAI, DeepSeek, Qwen) listed on OpenRouter in the last ${AI_NEW_DAYS} days, or a price change of ${AI_PRICE_PCT}% or more on one; ` +
+  `open weights from Meta, Mistral, Qwen, DeepSeek or Google first seen on Hugging Face in the last ${OPEN_MODEL_NEW_DAYS} days with ${OPEN_MODEL_MIN_LIKES}+ likes or ${OPEN_MODEL_MIN_DOWNLOADS.toLocaleString('en-US')}+ downloads; ` +
   `an EU act, implementing act or guidelines on AI or data, or a US final or proposed rule on AI, published in the last ${AI_REG_NEW_DAYS} days; ` +
   `a breach listed by Have I Been Pwned in the last ${BREACH_NEW_DAYS} days with ${BREACH_MIN_ACCOUNTS.toLocaleString('en-US')} or more accounts, or at a domain of a vendor on the starter list. ` +
   'Linked news: tech digest stories from 12 h before to 1 h after (date-only feeds: from 12 h before the day).';
@@ -475,6 +481,7 @@ export function techFeeds(input: {
     spikeFeed(input.history, news, now),
     cyberFilingFeed(input.filings, news, now),
     ...(input.models ? aiModelFeeds(input.models, news, now) : []),
+    ...(input.models ? openModelFeeds(input.models, news, now) : []),
     ...(input.regulation ? aiRegulationFeeds(input.regulation, news, now) : []),
     ...(input.breaches ? breachFeeds(input.breaches, news, now) : []),
   ]);
@@ -509,6 +516,36 @@ export interface AiPriceChange {
   litellm: string;
 }
 
+/** An open-weight release on the Hugging Face Hub (#132). */
+export interface OpenModel {
+  /** Hub id, "deepseek-ai/DeepSeek-V4.1-Flash". */
+  id: string;
+  lab: string;
+  labName: string;
+  name: string;
+  /** When the seeder first saw it (ms): the release date, since repos are often made public after creation. */
+  firstSeenAt: number;
+  createdAt: number;
+  /** Hub task ("text-generation"), or '' when the repo names none. */
+  task: string;
+  license: string;
+  likes: number;
+  /** Downloads in the last 30 days (the Hub's count). */
+  downloads: number;
+  url: string;
+}
+
+export interface OpenModels {
+  models: OpenModel[];
+  /** Each lab's newest release on the Hub, over any threshold. */
+  latest: Array<Pick<OpenModel, 'lab' | 'labName' | 'name' | 'firstSeenAt' | 'url'>>;
+  /** False on the first read, which dates the backlog by creation. */
+  baseline: boolean;
+  /** The last run that read every lab (ms), or null. */
+  okAt: number | null;
+  failedLabs: string[];
+}
+
 export interface AiModels {
   fetchedAt: number;
   listed: number;
@@ -516,6 +553,8 @@ export interface AiModels {
   baseline: boolean;
   models: AiModel[];
   changes: AiPriceChange[];
+  /** Absent in payloads written before #132. */
+  open: OpenModels | null;
 }
 
 /** The seeded payload (`tech:ai-models:v1`), or null when it is not one. */
@@ -541,7 +580,30 @@ export function decodeAiModels(value: unknown): AiModels | null {
     changes.push({ at, id: str(raw.id), labName: str(raw.labName), name: str(raw.name) || str(raw.id), from: pair(raw.from), to: pair(raw.to), url: url(raw.url), litellm: str(raw.litellm) || 'missing' });
   }
   changes.sort((a, b) => b.at - a.at);
-  return { fetchedAt: v.fetchedAt as number, listed: num(v.listed) ?? 0, watched: num(v.watched) ?? 0, baseline: v.baseline === true, models, changes };
+  return { fetchedAt: v.fetchedAt as number, listed: num(v.listed) ?? 0, watched: num(v.watched) ?? 0, baseline: v.baseline === true, models, changes, open: decodeOpenModels(v.open) };
+}
+
+function decodeOpenModels(value: unknown): OpenModels | null {
+  const o = value as Record<string, unknown> | null;
+  if (!o || typeof o !== 'object' || !Array.isArray(o.models)) return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const num = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  const hub = (x: unknown) => (str(x).startsWith('https://huggingface.co/') ? str(x) : '');
+  const models: OpenModel[] = [];
+  for (const raw of o.models as Array<Record<string, unknown>>) {
+    const firstSeenAt = num(raw?.firstSeenAt);
+    if (!str(raw?.id) || !str(raw.labName) || firstSeenAt === null) continue;
+    models.push({
+      id: str(raw.id), lab: str(raw.lab), labName: str(raw.labName), name: str(raw.name) || str(raw.id), firstSeenAt, createdAt: num(raw.createdAt) ?? firstSeenAt,
+      task: str(raw.task), license: str(raw.license), likes: num(raw.likes) ?? 0, downloads: num(raw.downloads) ?? 0, url: hub(raw.url),
+    });
+  }
+  models.sort((a, b) => b.firstSeenAt - a.firstSeenAt || a.id.localeCompare(b.id));
+  const latest = (Array.isArray(o.latest) ? (o.latest as Array<Record<string, unknown>>) : [])
+    .filter((m) => str(m?.labName) && num(m?.firstSeenAt) !== null)
+    .map((m) => ({ lab: str(m.lab), labName: str(m.labName), name: str(m.name), firstSeenAt: num(m.firstSeenAt)!, url: hub(m.url) }))
+    .sort((a, b) => b.firstSeenAt - a.firstSeenAt);
+  return { models, latest, baseline: o.baseline === true, okAt: num(o.okAt), failedLabs: Array.isArray(o.failedLabs) ? (o.failedLabs as unknown[]).filter((x): x is string => typeof x === 'string') : [] };
 }
 
 /** A context length as "128k", "1M" or "1.1M" tokens, or "—". */
@@ -873,6 +935,85 @@ export function breachFeeds(source: ResourceState<Breaches>, news: readonly Lite
         : `Live · no breach listed in ${BREACH_NEW_DAYS} days`,
       latest ? `latest ${latest.title}, ${accountsText(latest.pwnCount)} accounts, listed ${dayMonthOf(latest.addedAt)}` : null,
       `${data.total.toLocaleString('en-US')} breaches in HIBP`,
+    ].filter(Boolean).join(' · '),
+  }];
+}
+
+// ---- Open-weight model releases (#132) -------------------------------------------
+
+/** "1.6M", "48k", "950". */
+const countText = (n: number) => (n >= 1_000_000 ? `${Number((n / 1_000_000).toFixed(1))}M` : n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}`);
+
+/**
+ * Names joined while they fit in `max` characters, then "+N more": the full card keeps
+ * the change line on one line, and Hub names run long ("DeepSeek-V4.1-Flash-1017").
+ */
+export function fitNames(names: readonly string[], max: number): string {
+  let out = names[0] ?? '';
+  let i = 1;
+  for (; i < names.length && `${out}, ${names[i]}`.length <= max; i++) out = `${out}, ${names[i]}`;
+  return i < names.length ? `${out} +${names.length - i} more` : out;
+}
+
+export function openModelPasses(m: OpenModel): boolean {
+  return m.likes >= OPEN_MODEL_MIN_LIKES || m.downloads >= OPEN_MODEL_MIN_DOWNLOADS;
+}
+
+/** One card per watched lab with open weights first seen in the last OPEN_MODEL_NEW_DAYS that pass the threshold. */
+export function openModelIndicators(data: AiModels, news: readonly LiteItem[], now: number): Indicator[] {
+  if (!data.open) return [];
+  const cutoff = now - OPEN_MODEL_NEW_DAYS * DAY_MS;
+  const byLab = new Map<string, OpenModel[]>();
+  for (const m of data.open.models) {
+    if (m.firstSeenAt < cutoff || m.firstSeenAt > now + HOUR_MS || !openModelPasses(m)) continue;
+    byLab.set(m.labName, [...(byLab.get(m.labName) ?? []), m]);
+  }
+  const out: Indicator[] = [];
+  for (const [labName, list] of byLab) {
+    const ranked = [...list].sort((a, b) => b.likes - a.likes || b.firstSeenAt - a.firstSeenAt);
+    const at = Math.min(now, Math.max(...list.map((m) => m.firstSeenAt)));
+    const names = ranked.map((m) => m.name);
+    // The card stays up for a week, so the coverage that follows a release counts: search the
+    // week up to now, not the hours before it was first seen.
+    const links = linkNews({ drivers: [labName, ...names] }, news, now, OPEN_MODEL_NEW_DAYS * 24);
+    // A story links only when it names one of the models.
+    const stories = links.stories.filter((st) => names.some((n) => new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(`${st.item.title} ${st.item.snippet ?? ''}`)));
+    out.push({
+      id: `open-models:${list[0]!.lab}`, domain: 'tech', name: `Open-weight models · ${labName}`,
+      value: `${list.length} released`,
+      change: fitNames(names, 40),
+      rule: `open weights first seen ≤ ${OPEN_MODEL_NEW_DAYS} days, ≥ ${OPEN_MODEL_MIN_LIKES} likes or ≥ ${countText(OPEN_MODEL_MIN_DOWNLOADS)} downloads`,
+      detail: ranked.slice(0, 3).map((m) => `${m.name}: ${[m.task, m.license].filter(Boolean).join(', ') || 'task not stated'} · ${countText(m.likes)} likes · ${countText(m.downloads)} downloads`).join(' · '),
+      trust: { level: 'reported', source: 'Hugging Face Hub', ...(ranked[0]!.url ? { url: ranked[0]!.url } : {}) },
+      at, dataDate: `seen ${new Date(at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}`,
+      updatedAt: data.fetchedAt, links: { ...links, stories },
+    });
+  }
+  return out.sort((a, b) => b.at - a.at);
+}
+
+export function openModelFeeds(source: ResourceState<AiModels>, news: readonly LiteItem[], now: number): FeedState[] {
+  const data = source.status === 'ready' ? source.data : null;
+  // A payload written before #132 has no Hub block: the row says so rather than reading as quiet.
+  const open = data?.open ?? null;
+  const state: ResourceState<AiModels> = data && !open ? { status: 'empty', data: null, at: source.at } : source;
+  const base = feedState({
+    id: 'open-models', name: 'Open-weight models · Hugging Face', source: state, seeder: 'seed-ai-models',
+    cadenceMin: AI_MODELS_CADENCE_MIN, dataAt: data && open ? Math.min(data.fetchedAt, open.okAt ?? data.fetchedAt) : null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !data || !open) return [base];
+  const fired = openModelIndicators(data, news, now);
+  if (fired.length) return fired.map((indicator) => ({ kind: 'fired' as const, id: indicator.id, name: indicator.name, indicator }));
+  const day = (t: number) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const newest = open.latest[0];
+  const below = open.models.filter((m) => now - m.firstSeenAt <= OPEN_MODEL_NEW_DAYS * DAY_MS && !openModelPasses(m)).length;
+  return [{
+    ...base,
+    detail: [
+      below ? `Live · ${below} new open-weight model${below === 1 ? '' : 's'} in ${OPEN_MODEL_NEW_DAYS} days, none over the threshold yet` : `Live · no new open-weight model from a watched lab in ${OPEN_MODEL_NEW_DAYS} days`,
+      newest ? `newest ${newest.labName} ${newest.name}, ${day(newest.firstSeenAt)}` : null,
+      open.failedLabs.length ? `${open.failedLabs.join(', ')} not read on the last run` : null,
+      open.baseline ? null : 'first read: the backlog is dated by repo creation',
     ].filter(Boolean).join(' · '),
   }];
 }

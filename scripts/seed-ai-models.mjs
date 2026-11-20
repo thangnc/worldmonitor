@@ -15,6 +15,17 @@
 // (`tech:ai-models:state:v1`); a model seen for the first time sets its
 // baseline. A price change is cross-checked against LiteLLM's public price
 // file (MIT; fetched only when a change is found).
+//
+// Open-weight releases (#132): the Hugging Face Hub's newest models per
+// watched lab (no key; one request per lab). Format variants (FP8, GGUF,
+// quantized and adapter repos) and tasks no paid API stands for (classifiers,
+// time series, detection) are left out. A repo is often created privately and
+// published later, so a model is dated by the run that first saw it
+// (`hfSeen` in the state key) when its repo is under HF_NEW_MAX_AGE_DAYS old;
+// each lab's first read dates its backlog by creation. A lab answering with an
+// empty list counts as failed.
+// One lab failing keeps its models from the last good read; the Hub unread
+// for one health budget fails the run, so freshness follows the older source.
 
 import { loadEnvFile, runSeed } from './_seed-utils.mjs';
 import { getOptionalUpstashCreds, upstashCommand } from './_upstash-rest.mjs';
@@ -41,6 +52,27 @@ export const CHANGES_KEEP_DAYS = 30;
 export const AI_MODELS_TTL_SECONDS = 72 * 3600; // a 6 h cadence
 export const STATE_TTL_SECONDS = 60 * 24 * 3600;
 export const AI_MODELS_MAX_STALE_MIN = 1080;
+/** Hugging Face author → the lab's display name (#132). */
+export const HF_LABS = Object.freeze({ 'meta-llama': 'Meta', mistralai: 'Mistral', Qwen: 'Qwen', 'deepseek-ai': 'DeepSeek', google: 'Google' });
+export const hfModelsUrl = (author) => `https://huggingface.co/api/models?author=${encodeURIComponent(author)}&sort=createdAt&direction=-1&limit=50`;
+/** Open-weight models kept: first seen in the last this many days. */
+export const OPEN_KEEP_DAYS = 30;
+export const OPEN_KEPT_MAX = 40;
+/** First-seen dates are kept this long, so a model is not new twice. */
+export const HF_SEEN_KEEP_DAYS = 120;
+/**
+ * A model first seen after a lab's baseline is a new release only when its repo is this young;
+ * an older repo reappearing (a lost date, a list that shrank) is dated by creation, never new.
+ */
+export const HF_NEW_MAX_AGE_DAYS = 90;
+/** A repo id naming a format variant of a release, not a release. */
+const HF_VARIANT = /(?:^|[-_.])(fp8|fp4|nvfp4|mxfp4|int4|int8|w4a16|w8a8|awq|gptq|gguf|mlx|bnb|4bit|8bit|original|onnx|qat|dynamic)(?:$|[-_.])/i;
+/** Hub tasks no paid model API stands for. */
+const HF_SKIP_TASKS = new Set([
+  'time-series-forecasting', 'text-classification', 'token-classification', 'zero-shot-classification', 'zero-shot-image-classification',
+  'object-detection', 'image-classification', 'image-segmentation', 'mask-generation', 'depth-estimation', 'reinforcement-learning',
+  'robotics', 'graph-ml', 'tabular-classification', 'tabular-regression', 'video-classification', 'audio-classification',
+]);
 const REQUEST_TIMEOUT_MS = 30_000;
 const USER_AGENT = 'WorldMonitor ai-models seeder (+https://worldmonitor.app)';
 const DAY_MS = 24 * 3600 * 1000;
@@ -70,6 +102,87 @@ export function normalizeModel(raw) {
     outPrice: perMillion(raw.pricing?.completion),
     url: `https://openrouter.ai/${id}`,
   };
+}
+
+/** One Hub model in the stored shape (without `firstSeenAt`), or null for a variant, a skipped task or a bad entry. */
+export function normalizeHfModel(raw, author) {
+  const id = typeof raw?.id === 'string' ? raw.id.trim() : '';
+  const [owner, name] = id.split('/');
+  const labName = HF_LABS[/** @type {keyof typeof HF_LABS} */ (author)];
+  const createdAt = Date.parse(typeof raw?.createdAt === 'string' ? raw.createdAt : '');
+  if (!labName || owner !== author || !name || !Number.isFinite(createdAt) || raw?.private === true) return null;
+  const tags = Array.isArray(raw.tags) ? raw.tags.filter((t) => typeof t === 'string') : [];
+  if (HF_VARIANT.test(name) || tags.some((t) => t.startsWith('base_model:quantized:') || t.startsWith('base_model:adapter:'))) return null;
+  const task = typeof raw.pipeline_tag === 'string' ? raw.pipeline_tag : '';
+  if (HF_SKIP_TASKS.has(task)) return null;
+  const count = (v) => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : 0);
+  return {
+    id, lab: author, labName, name, createdAt, task,
+    license: tags.find((t) => t.startsWith('license:'))?.slice('license:'.length) ?? '',
+    likes: count(raw.likes), downloads: count(raw.downloads),
+    url: `https://huggingface.co/${id}`,
+  };
+}
+
+/**
+ * The Hub's newest models per watched lab, dated by first sight. A lab that
+ * fails keeps its models from `previous.open`; `hf.okAt` is the last run that
+ * read every lab.
+ */
+export async function fetchOpenModels(fetchImpl, previous, nowMs) {
+  const authors = Object.keys(HF_LABS);
+  const results = await Promise.allSettled(authors.map((a) => getJson(fetchImpl, hfModelsUrl(a))));
+  // An empty list is a failed read: each watched lab lists dozens of models, and treating it as a
+  // good read would drop the lab's first-seen dates.
+  const failed = authors.filter((_, i) => {
+    const r = /** @type {any} */ (results[i]);
+    return r.status === 'rejected' || !Array.isArray(r.value) || r.value.length === 0;
+  });
+  const prevOkAt = Number.isFinite(previous?.hfOkAt) ? previous.hfOkAt : null;
+  if (failed.length && (prevOkAt === null || nowMs - prevOkAt > AI_MODELS_MAX_STALE_MIN * 60_000)) {
+    const reason = results.map((r, i) => (r.status === 'rejected' ? `${authors[i]}: ${r.reason?.message || r.reason}` : null)).filter(Boolean).join('; ');
+    throw new Error(`Hugging Face: ${failed.join(', ')} unread (${reason || 'no models listed'}) and ${prevOkAt === null ? 'no earlier read' : `last read ${Math.round((nowMs - prevOkAt) / 60_000)} min ago`}`);
+  }
+  const prevSeen = previous?.hfSeen && typeof previous.hfSeen === 'object' ? previous.hfSeen : null;
+  const seen = { ...(prevSeen ?? {}) };
+  const read = [];
+  const baselined = [];
+  authors.forEach((author, i) => {
+    if (failed.includes(author)) return;
+    // Each lab has its own baseline: its first read (a lab added later included) dates its backlog by creation.
+    const known = Object.keys(seen).some((id) => id.startsWith(`${author}/`));
+    if (known) baselined.push(author);
+    for (const raw of /** @type {any} */ (results[i]).value) {
+      const m = normalizeHfModel(raw, author);
+      if (!m) continue;
+      if (!Number.isFinite(seen[m.id])) seen[m.id] = known && nowMs - m.createdAt <= HF_NEW_MAX_AGE_DAYS * DAY_MS ? nowMs : m.createdAt;
+      read.push({ ...m, firstSeenAt: seen[m.id] });
+    }
+  });
+  const kept = Array.isArray(previous?.open) ? previous.open.filter((m) => failed.includes(m?.lab)) : [];
+  const cutoff = nowMs - OPEN_KEEP_DAYS * DAY_MS;
+  const models = [...read, ...kept]
+    .filter((m) => m.firstSeenAt >= cutoff)
+    .sort((a, b) => b.firstSeenAt - a.firstSeenAt || a.id.localeCompare(b.id))
+    .slice(0, OPEN_KEPT_MAX);
+  // Forget an old first-seen date only once its lab, read this run, no longer lists the model:
+  // a model still listed, or a failed lab's model, must never become new again.
+  const listed = new Set(read.map((m) => m.id));
+  const seenCutoff = nowMs - HF_SEEN_KEEP_DAYS * DAY_MS;
+  for (const [id, at] of Object.entries(seen)) {
+    if (!listed.has(id) && !failed.includes(id.split('/')[0]) && !(at >= seenCutoff)) delete seen[id];
+  }
+  const okAt = failed.length ? prevOkAt : nowMs;
+  // Each lab's newest release over any threshold, for the quiet line; a failed lab keeps its last one.
+  const prevLatest = Array.isArray(previous?.hfLatest) ? previous.hfLatest : [];
+  const latest = authors.flatMap((author) => {
+    if (failed.includes(author)) return prevLatest.filter((m) => m?.lab === author);
+    const top = read.filter((m) => m.lab === author).sort((a, b) => b.firstSeenAt - a.firstSeenAt || b.createdAt - a.createdAt)[0];
+    return top ? [{ lab: top.lab, labName: top.labName, name: top.name, firstSeenAt: top.firstSeenAt, url: top.url }] : [];
+  });
+  console.log(`  Hugging Face: ${authors.length - failed.length}/${authors.length} labs read${failed.length ? ` (${failed.join(', ')} kept from ${new Date(/** @type {number} */ (okAt)).toISOString()})` : ''}; ${models.length} open-weight models first seen in ${OPEN_KEEP_DAYS} days`);
+  // The quiet line's "first read" note: until every lab has a baseline.
+  return { open: { models, latest, baseline: baselined.length === authors.length - failed.length && Boolean(prevSeen), okAt, failedLabs: failed }, state: { hfSeen: seen, hfOkAt: okAt, open: models, hfLatest: latest } };
 }
 
 // A move to a zero price (a promotion, or an upstream glitch) is not a price change.
@@ -188,6 +301,7 @@ export async function fetchAiModels({
   const prices = { ...(previous?.prices ?? {}) };
   for (const m of models) if (m.inPrice !== null || m.outPrice !== null) prices[m.id] = [m.inPrice, m.outPrice];
   const changes = mergeChanges(fresh, previous?.changes, nowMs);
+  const hub = await fetchOpenModels(fetchImpl, previous, nowMs);
   const recent = models
     .filter((m) => nowMs - m.releasedAt <= MODELS_KEPT_DAYS * DAY_MS)
     .sort((a, b) => b.releasedAt - a.releasedAt || a.id.localeCompare(b.id))
@@ -200,7 +314,8 @@ export async function fetchAiModels({
     baseline: Boolean(previous?.prices && Object.keys(previous.prices).length),
     models: recent,
     changes,
-    state: { prices, changes },
+    open: hub.open,
+    state: { prices, changes, ...hub.state },
   };
 }
 
@@ -212,7 +327,8 @@ export function publishTransform(data) {
 
 export function validateFn(data) {
   return Boolean(data && Number.isFinite(data.fetchedAt) && Number(data.listed) >= MIN_LISTED && Number(data.watched) >= MIN_WATCHED && Array.isArray(data.models) && Array.isArray(data.changes)
-    && data.models.every((m) => typeof m?.id === 'string' && Number.isFinite(m?.releasedAt)));
+    && data.models.every((m) => typeof m?.id === 'string' && Number.isFinite(m?.releasedAt))
+    && Array.isArray(data.open?.models) && data.open.models.every((m) => typeof m?.id === 'string' && Number.isFinite(m?.firstSeenAt)));
 }
 
 export function declareRecords(data) {
@@ -236,7 +352,7 @@ if (isMainModule(import.meta.url, process.argv[1])) {
     ttlSeconds: AI_MODELS_TTL_SECONDS,
     maxStaleMin: AI_MODELS_MAX_STALE_MIN,
     schemaVersion: 1,
-    sourceVersion: 'openrouter-models-v1',
+    sourceVersion: 'openrouter-models-hf-hub-v2',
     publishTransform,
     extraKeys: [{
       key: STATE_KEY,

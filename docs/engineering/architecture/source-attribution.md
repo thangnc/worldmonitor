@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **851 active source hosts** representing **831 active providers** (**367 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **852 active source hosts** representing **832 active providers** (**368 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -372,6 +372,7 @@ This generated inventory covers **851 active source hosts** representing **831 a
 | hromadske.ua (hromadske.ua) | feed — packages/shared/news-catalog.json |
 | hts.usitc.gov (hts.usitc.gov) | structured — scripts/seed-supply-chain-trade.mjs |
 | hub.arcgis.com (hub.arcgis.com) | structured — scripts/seed-portwatch.mjs |
+| huggingface.co (huggingface.co) | structured — scripts/seed-ai-models.mjs |
 | humanprogress.org (humanprogress.org) | feed — packages/shared/news-catalog.json |
 | hvg.hu (hvg.hu) | feed — packages/shared/news-catalog.json |
 | Hyperliquid (api.hyperliquid.xyz) | structured — scripts/seed-hyperliquid-flow.mjs |
