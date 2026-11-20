@@ -70,6 +70,7 @@ export const useAiRegulation = () => useResource('aiRegulation', src.loadAiRegul
 export const useBreaches = () => useResource('dataBreaches', src.loadBreaches);
 export const useAiLabNews = () => useResource('aiLabNews', src.loadAiLabNews);
 export const useChipRevenue = () => useResource('chipRevenue', src.loadChipRevenue);
+export const useHyperscalerCapex = () => useResource('hyperscalerCapex', src.loadHyperscalerCapex);
 export const useDdosAttacks = () => useResource('ddosAttacks', src.loadDdosAttacks);
 /** The 6 h and 24 h DDoS windows: loaded only once the Tech map's range leaves 7d. */
 export const useDdosWindows = (enabled: boolean) => useResource('ddosWindows', src.loadDdosWindows, enabled);

@@ -75,6 +75,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   aiLabNews: 'tech:ai-lab-news:v1',
   // Lite Tech TSMC monthly revenue (#134): 13 months from TWSE and MOPS (seed-chip-revenue).
   chipRevenue: 'tech:chip-revenue:v1',
+  // Lite Tech hyperscaler capital spending (#135): Microsoft, Alphabet, Amazon and Meta from SEC EDGAR (seed-hyperscaler-capex).
+  hyperscalerCapex: 'tech:hyperscaler-capex:v1',
   techReadiness: 'economic:worldbank-techreadiness:v1',
   progressData: 'economic:worldbank-progress:v1',
   renewableEnergy: 'economic:worldbank-renewable:v1',
@@ -246,6 +248,8 @@ const ON_DEMAND_KEY_NAMES = new Set([
   'aiLabNews',
   // Lite Tech: TSMC's last 13 months of revenue (#134, about 3 KB), read only by /lite and /lite/tech.
   'chipRevenue',
+  // Lite Tech: nine quarters of capital spending for four companies (#135, about 6 KB), read only by /lite and /lite/tech.
+  'hyperscalerCapex',
   'chinaPolicyEvents', 'chinaDecisionSignals',
   'bisDsr', 'bisPropertyResidential', 'bisPropertyCommercial',
   // One row of this feeds the Central Banks tab's policy-rate list, which BIS

@@ -216,6 +216,7 @@ const EXCLUDED_BOOTSTRAP_KEYS = {
   aiModels: 'Lite indicator feed and model tracker (OpenRouter listing, #126); not reviewed for the widget catalog',
   aiRegulation: 'Lite indicator feed and policy panel (EU and US AI and data rules, #127); not reviewed for the widget catalog',
   chipRevenue: 'Lite indicator feed (TSMC monthly revenue, TWSE and MOPS, #134); not reviewed for the widget catalog',
+  hyperscalerCapex: 'Lite indicator feed (hyperscaler capital spending, SEC EDGAR, #135); not reviewed for the widget catalog',
   aiLabNews: 'Lite indicator feed (AI labs\' own announcements, #133); not reviewed for the widget catalog',
   dataBreaches: 'Lite indicator feed (Have I Been Pwned breach listings, CC BY 4.0, #131); not reviewed for the widget catalog',
   ukmtoIncidents: 'Publisher claims requiring source attribution and freshness; use the UKMTO panel',

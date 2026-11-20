@@ -54,7 +54,7 @@ import type {
 import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cyber/v1/service_client';
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
-import { decodeAiLabNews, decodeAiModels, decodeAiRegulation, decodeBreaches, decodeChipRevenue, decodeRecentKev, decodeThreatHistory, type AiLabNews, type AiModels, type AiRegulation, type Breaches, type ChipRevenue, type RecentKev, type ThreatHistory } from './tech-indicators';
+import { decodeAiLabNews, decodeAiModels, decodeAiRegulation, decodeBreaches, decodeChipRevenue, decodeHyperscalerCapex, decodeRecentKev, decodeThreatHistory, type AiLabNews, type AiModels, type AiRegulation, type Breaches, type ChipRevenue, type HyperscalerCapex, type RecentKev, type ThreatHistory } from './tech-indicators';
 import { CREDIT_SERIES, decodeCbDecisions, decodeCreditSpreads, decodeMacroForecasts, decodeRateOdds, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds } from './finance-macro-indicators';
 import { VIX_FRED_SERIES } from './finance-indicators';
 import {
@@ -466,6 +466,12 @@ export async function loadAiModels(): Promise<AiModels> {
 export async function loadChipRevenue(): Promise<ChipRevenue> {
   await startBootstrap();
   return required('chipRevenue', decodeChipRevenue(await ensureHydrated('chipRevenue')));
+}
+
+/** Microsoft, Alphabet, Amazon and Meta's last nine quarters of capital spending (seed-hyperscaler-capex, #135). */
+export async function loadHyperscalerCapex(): Promise<HyperscalerCapex> {
+  await startBootstrap();
+  return required('hyperscalerCapex', decodeHyperscalerCapex(await ensureHydrated('hyperscalerCapex')));
 }
 
 /** OpenAI, Google, Google DeepMind and Anthropic's own posts of the last 14 days (seed-ai-lab-news, #133). */
