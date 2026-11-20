@@ -46,6 +46,17 @@ import {
 } from '../data/geo-layers';
 import { shippingLanes } from '../data/markets-map';
 import { ESCALATION_REGIONS, groupFeedsByRegion, leadCountry } from '../data/regions';
+import {
+  REGION_ESCALATION_RULE,
+  REGION_HISTORY_KEY,
+  decodeRegionHistory,
+  recordReadings,
+  regionEscalationFeeds,
+  regionReadings,
+  type RegionHistory,
+} from '../data/region-escalation';
+import { safeStorageGet, safeStorageSet } from '@wm/client/utils/safe-storage';
+import type { ResourceState } from '../data/store';
 import { ucdpBackgroundLabel, ucdpMarkers, ucdpNewest } from '../data/ucdp';
 import {
   VIOLENCE_RULE,
@@ -119,7 +130,7 @@ export function Geopolitics() {
   const [focus, setFocus] = useState<string | null>(null);
   const digest = useDigest('full');
   const risk = useRiskScores();
-  const { escalation, tiles } = useEscalation();
+  const { escalation, tiles, source: escalationSource } = useEscalation();
 
   const incidents = useMemo(
     () => (digest.status === 'ready' ? selectIncidents(digest.data) : []),
@@ -176,7 +187,7 @@ export function Geopolitics() {
           <IncidentsCard state={digest} rows={visible.slice(0, 6)} total={visible.length} />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
-          <GeoIndicators tiles={tiles} onOpen={(feed) => setFocus(mapIdForFeed(feed))} />
+          <GeoIndicators tiles={tiles} escalation={escalation} escalationSource={escalationSource} onOpen={(feed) => setFocus(mapIdForFeed(feed))} />
           <Timeline incidents={inRange} region={region} />
           <EvidenceMix state={digest} region={region} range={range} />
         </div>
@@ -218,7 +229,7 @@ type Escalation = ReturnType<typeof scoreHotspots>;
  * have loaded. The map draws both; the indicator panel orders its region
  * groups by the tiles' levels.
  */
-function useEscalation(): { escalation: Escalation; tiles: RegionTile[] } {
+function useEscalation(): { escalation: Escalation; tiles: RegionTile[]; source: ResourceState<unknown> } {
   const digest = useDigest('full');
   const risk = useRiskScores();
   const unrest = useUnrestEvents();
@@ -245,13 +256,19 @@ function useEscalation(): { escalation: Escalation; tiles: RegionTile[] } {
     () =>
       regionStrip(
         ESCALATION_REGIONS,
-        escalation.map(({ hotspot, score }) => ({ hotspot, score: score.combinedScore, level: escalationLevel(score.combinedScore) })),
+        escalation.map(({ hotspot, score }) => ({ hotspot, score: score.combinedScore, level: escalationLevel(score.combinedScore), components: score.components })),
         counts,
         Date.now(),
       ),
     [escalation, counts],
   );
-  return { escalation, tiles };
+  // The region-escalation feed's state: ready once both main score inputs (risk scores and news) loaded,
+  // so a first reading is never taken from a partial score.
+  const source: ResourceState<unknown> = risk.status === 'ready' && digest.status === 'ready' ? risk
+    : risk.status !== 'ready' && risk.status !== 'loading' ? risk
+    : digest.status !== 'ready' && digest.status !== 'loading' ? digest
+    : { status: 'loading', data: null, at: 0 };
+  return { escalation, tiles, source };
 }
 
 const HOUR_MS = 3_600_000;
@@ -676,7 +693,17 @@ function RegionStrip({ tiles, region, area, onSelect }: { tiles: RegionTile[]; r
 const AIRSPACE_FEED: FeedState = { kind: 'unavailable', id: 'airspace', name: 'Airspace closures · NOTAM', detail: 'Awaiting FAA access' };
 
 /** The screen's indicator panel (spec: Early indicators › Catalogue, geopolitics rows). A card opens its marker on the map. */
-function GeoIndicators({ tiles, onOpen }: { tiles: readonly RegionTile[]; onOpen: (feed: FeedState) => void }) {
+function GeoIndicators({ tiles, escalation, escalationSource, onOpen }: { tiles: readonly RegionTile[]; escalation: Escalation; escalationSource: ResourceState<unknown>; onOpen: (feed: FeedState) => void }) {
+  // Region levels seen in this browser (#117): read once, then one reading added per strip update.
+  const [levelHistory, setLevelHistory] = useState<RegionHistory>(() => decodeRegionHistory(safeStorageGet(REGION_HISTORY_KEY)));
+  useEffect(() => {
+    if (escalationSource.status !== 'ready') return;
+    const readings = regionReadings(tiles, escalation[0]?.missing);
+    if (!readings.length) return;
+    const next = recordReadings(decodeRegionHistory(safeStorageGet(REGION_HISTORY_KEY)), readings, Date.now());
+    safeStorageSet(REGION_HISTORY_KEY, JSON.stringify(next));
+    setLevelHistory(next);
+  }, [tiles, escalation, escalationSource]);
   const conflict = useConflictCounts();
   const digest = useDigest('full');
   const flights = useMilitaryFlights();
@@ -696,9 +723,10 @@ function GeoIndicators({ tiles, onOpen }: { tiles: readonly RegionTile[]; onOpen
       ...chokepointFeeds(chokepoints, news, now),
       ...taiwanStraitFeeds(strait, news, now),
       ...embassyAlertFeeds(embassy, INTEL_HOTSPOTS, news, now),
+      ...regionEscalationFeeds({ regions: ESCALATION_REGIONS, tiles, source: escalationSource, missing: escalation[0]?.missing, history: levelHistory, news, now }),
       AIRSPACE_FEED,
     ]);
-  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy]);
+  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy, tiles, escalation, escalationSource, levelHistory]);
   const counts = feedCounts(feeds);
   const { groups, rest } = useMemo(() => groupFeedsByRegion(feeds, tiles), [feeds, tiles]);
   const rules = [
@@ -709,6 +737,7 @@ function GeoIndicators({ tiles, onOpen }: { tiles: readonly RegionTile[]; onOpen
     `Chokepoint transits: 7-day transits at or below ${Math.round(CHOKEPOINT_TRANSIT_SHARE * 100)}% of the year-earlier normal, or tanker flow below 85% of its 90-day normal 3 days running (IMF PortWatch, days behind).`,
     `Taiwan Strait: PLA aircraft or PLAN ships at ${TAIWAN_RATIO}× their 30-day median or more (at least ${TAIWAN_MIN.plaAircraftSorties} aircraft or ${TAIWAN_MIN.planShips} ships), Taiwan MND.`,
     `Embassy alerts: a US embassy alert in the last ${EMBASSY_WINDOW_HOURS} h for a curated hotspot's country (the watchlist stand-in).`,
+    `Region escalation: ${REGION_ESCALATION_RULE}`,
     'Linked news: digest stories naming the country, place or sea area, 24 h before to 1 h after.',
     'Fired indicators are grouped by region (a country in the region, else its map area), the region with the highest live hotspot score first, newest first inside; the rest are under Other.',
   ].join(' ');

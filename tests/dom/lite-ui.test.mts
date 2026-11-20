@@ -1269,6 +1269,8 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
       expect(panel().querySelector('[data-feed-group] [data-feed]')).toBeNull();
       expect(panel().querySelector('[data-feed="airspace"]')?.getAttribute('data-feed-state')).toBe('unavailable');
       expect(panel().querySelector('[data-testid="indicator-counts"]')?.textContent).toContain('by region');
+      // The region-escalation feed (#117) is listed even before a browser reading exists.
+      expect(panel().querySelector('[data-feed="region-escalation"], [data-indicator^="region:"]')).not.toBeNull();
 
       // The Taiwan Strait card opens the Taipei hotspot on the map.
       await vi.waitFor(async () => {

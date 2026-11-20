@@ -9,6 +9,7 @@
  */
 import { HOTSPOT_COUNTRY_MAP } from '@wm/shared/hotspot-country-map';
 import type { Hotspot } from '@wm/client/types';
+import type { EscalationComponents } from '@wm/shared/analysis-hotspot-escalation';
 import type { FeedState, Indicator } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews } from './news-link';
 import type { EscalationRegion } from './regions';
@@ -290,7 +291,7 @@ export interface RegionTile {
   level: string;
   tone: Tone;
   /** The region's highest-scoring curated hotspot, which sets the level; null when none is scored. */
-  lead: { name: string; score: number } | null;
+  lead: { id?: string; name: string; score: number; components?: EscalationComponents } | null;
   /** Reports in the last 24 complete hours against the 7-day daily average, in %; null when unknown. */
   change: number | null;
   /** Daily reports, 14 days through today (today partial). */
@@ -313,7 +314,7 @@ function hotspotCountries(id: string): string[] {
  */
 export function regionStrip(
   regions: ReadonlyArray<Pick<EscalationRegion, 'id' | 'name' | 'countries' | 'area'>>,
-  scored: ReadonlyArray<{ hotspot: Pick<Hotspot, 'id' | 'name'>; score: number; level: { tone: Tone; label: string } }>,
+  scored: ReadonlyArray<{ hotspot: Pick<Hotspot, 'id' | 'name'>; score: number; level: { tone: Tone; label: string }; components?: EscalationComponents }>,
   counts: ConflictCounts | null,
   now: number,
 ): RegionTile[] {
@@ -342,7 +343,7 @@ export function regionStrip(
       area: region.area,
       level: easing ? 'Easing' : level.label,
       tone: easing ? 'muted' : level.tone,
-      lead: top ? { name: top.hotspot.name, score: top.score } : null,
+      lead: top ? { id: top.hotspot.id, name: top.hotspot.name, score: top.score, ...(top.components ? { components: top.components } : {}) } : null,
       change,
       bars,
     };
