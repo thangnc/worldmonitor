@@ -13,6 +13,7 @@
 import type { ListFeedDigestResponse } from '@wm/contracts/generated/client/worldmonitor/news/v1/service_client';
 import type {
   CryptoQuote,
+  EarningsEntry,
   GetFearGreedIndexResponse,
   GetGoldIntelligenceResponse,
   GetHyperliquidFlowResponse,
@@ -55,7 +56,7 @@ import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cy
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
 import { decodeAiLabNews, decodeAiModels, decodeAiRegulation, decodeBreaches, decodeChipRevenue, decodeHyperscalerCapex, decodeRecentKev, decodeThreatHistory, type AiLabNews, type AiModels, type AiRegulation, type Breaches, type ChipRevenue, type HyperscalerCapex, type RecentKev, type ThreatHistory } from './tech-indicators';
-import { BALANCE_SHEET_SERIES, CREDIT_SERIES, decodeCbDecisions, decodeCreditSpreads, decodeFedBalanceSheet, decodeMacroForecasts, decodeRateOdds, decodeReverseRepo, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds, type ReverseRepo } from './finance-macro-indicators';
+import { BALANCE_SHEET_SERIES, CREDIT_SERIES, EARNINGS_AHEAD_DAYS, EARNINGS_PAST_DAYS, decodeCbDecisions, decodeCreditSpreads, decodeFedBalanceSheet, decodeMacroForecasts, decodeRateOdds, decodeReverseRepo, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds, type ReverseRepo } from './finance-macro-indicators';
 import { VIX_FRED_SERIES, decodeStablecoinSupply, type StablecoinSupply } from './finance-indicators';
 import {
   ConflictServiceClient,
@@ -301,6 +302,13 @@ export async function loadTreasuryCurves(): Promise<UsTreasuryParYieldCurve[] | 
 export async function loadCreditSpreads(): Promise<CreditSpreads | null> {
   const resp = await economic.getFredSeriesBatch({ seriesIds: [CREDIT_SERIES.hy, CREDIT_SERIES.ig], limit: 30 });
   return decodeCreditSpreads(resp.results);
+}
+
+/** Finnhub's earnings calendar, the past week and the next two weeks (seed-earnings-calendar, #138); null when not seeded. */
+export async function loadWatchlistEarnings(): Promise<{ earnings: EarningsEntry[]; asOf: string } | null> {
+  const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+  const resp = await market.listEarningsCalendar({ fromDate: day(-EARNINGS_PAST_DAYS), toDate: day(EARNINGS_AHEAD_DAYS) });
+  return resp.unavailable ? null : { earnings: resp.earnings, asOf: resp.asOf };
 }
 
 /** US$ stablecoin supply, total and the largest coins (seed-stablecoin-supply, #137). */

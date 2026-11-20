@@ -153,6 +153,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['Stablecoin supply indicator'],
   },
   {
+    id: 'earnings-calendar', name: 'Earnings dates · Finnhub', domain: 'fin', kind: 'Reported', method: 'API',
+    producer: 'seed-earnings-calendar', healthKeys: ['earningsCalendar'], maxStaleMin: 1440,
+    hosts: [{ host: 'finnhub.io', licence: 'terms-review' }],
+    usedBy: ['Earnings · watchlist (Finance)'],
+  },
+  {
     id: 'rate-odds', name: 'Fed decision odds · Kalshi KXFED', domain: 'fin', kind: 'Market data (one venue)', method: 'API',
     producer: 'seed-rate-odds', healthKeys: ['rateOdds'], maxStaleMin: 180,
     hosts: [{ host: 'api.elections.kalshi.com', licence: 'terms-review' }, { host: 'api.stlouisfed.org', licence: 'terms-review' }],

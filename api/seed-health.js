@@ -84,6 +84,7 @@ const SEED_DOMAINS = {
   'market:crypto':            { key: 'seed-meta:market:crypto',            intervalMin: 15 },
   'market:hyperliquid-flow':  { key: 'seed-meta:market:hyperliquid-flow',  intervalMin: 5 }, // Railway cron 5min via seed-bundle-market-backup
   'market:etf-flows':         { key: 'seed-meta:market:etf-flows',         intervalMin: 30 },
+  'market:earnings-calendar': { key: 'seed-meta:market:earnings-calendar', intervalMin: 720 }, // #138; maxStaleMin / 2 (1440 / 2), matching api/health.js
   // The bundle polls every 30min, but seed-health classifies at intervalMin*2.
   // Use half of /api/health's 180min alarm budget so both operator surfaces agree.
   'market:china-corporate-disclosures': { key: 'seed-meta:market:china-corporate-disclosures', intervalMin: 90 },
