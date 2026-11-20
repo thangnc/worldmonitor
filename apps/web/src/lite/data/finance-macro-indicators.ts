@@ -540,7 +540,8 @@ export function matchFilings(events: readonly MaterialEvent[], now: number): Fil
     .sort((a, b) => b.event.filedAtMs - a.event.filedAtMs);
 }
 
-const filerName = (name: string) => name.replace(/\s*\/[A-Z]{2}\/?\s*$/, '').replace(/,?\s*$/, '');
+/** A filer's name without EDGAR's state suffix ("ACME CORP /DE/" → "ACME CORP"). */
+export const filerName = (name: string) => name.replace(/\s*\/[A-Z]{2}\/?\s*$/, '').replace(/,?\s*$/, '');
 
 export function filingsFeed(input: { filings: ResourceState<ListMaterialEventsResponse> } & Ctx): FeedState {
   const { filings, now } = input;

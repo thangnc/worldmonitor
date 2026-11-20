@@ -23,6 +23,7 @@ import {
   useInternetOutages,
   useRecentKev,
   useServiceStatuses,
+  useMaterialEvents,
   useThreatHistory,
 } from '../data/hooks';
 import { SAMPLE_MODELS } from '../data/fixtures';
@@ -490,10 +491,11 @@ function Indicators({ onOpen }: { onOpen: (feed: FeedState) => void }) {
   const services = useServiceStatuses();
   const kev = useRecentKev();
   const history = useThreatHistory();
+  const filings = useMaterialEvents();
   const digest = useDigest('tech');
   const feeds = useMemo(
-    () => techFeeds({ outages, services, kev, history, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
-    [outages, services, kev, history, digest],
+    () => techFeeds({ outages, services, kev, history, filings, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
+    [outages, services, kev, history, filings, digest],
   );
   const counts = feedCounts(feeds);
   return (

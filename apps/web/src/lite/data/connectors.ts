@@ -198,7 +198,7 @@ export const CONNECTORS: readonly Connector[] = [
     id: 'sec-8k', name: 'SEC 8-K filings', domain: 'fin', kind: 'Official filings', method: 'API',
     producer: 'seed-sec-8k-stream', healthKeys: ['sec8kStream'], maxStaleMin: 120,
     hosts: [{ host: 'www.sec.gov', licence: 'reviewed' }],
-    usedBy: ['Company filings · 8-K indicator'],
+    usedBy: ['Company filings · 8-K indicator', 'Cyber incidents · 8-K item 1.05 indicator (Tech)'],
   },
   {
     id: 'chokepoints', name: 'Chokepoint status', domain: 'fin', kind: 'Derived status', method: 'Derived',
