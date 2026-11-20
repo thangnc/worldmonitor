@@ -119,6 +119,7 @@ import {
   watchCompany,
 } from '../apps/web/src/lite/data/finance-macro-indicators.ts';
 import type { ResourceState } from '../apps/web/src/lite/data/store.ts';
+import type { ListSanctionsPressureResponse } from '../packages/contracts/generated/client/worldmonitor/sanctions/v1/service_client.ts';
 import {
   CHOKEPOINT_TRANSIT_SHARE,
   TAIWAN_RATIO,
@@ -128,6 +129,9 @@ import {
   embassyAlertIndicators,
   embassyCoverage,
   isCrossStraitSnapshot,
+  SANCTIONS_ENTRY_LIMIT,
+  newOfacDesignations,
+  newSanctionsFeeds,
   taiwanStraitFeeds,
   taiwanStraitIndicators,
   type EmbassyAlerts,
@@ -1433,5 +1437,73 @@ describe('Region escalation (#117)', () => {
     assert.deepEqual(changedParts(parts(30, 22), parts(10, 20)), ['military activity +20']);
     assert.equal(rankOfScore(0.2), 1);
     assert.equal(rankOfScore(7), 5);
+  });
+});
+
+describe('New OFAC sanctions (#118)', () => {
+  type Entry = ListSanctionsPressureResponse['entries'][number];
+  const entry = (o: Partial<Entry> & { id: string }): Entry => ({
+    name: o.id.toUpperCase(), entityType: 'SANCTIONS_ENTITY_TYPE_ENTITY', countryCodes: ['RU'], countryNames: ['Russia'],
+    programs: ['RUSSIA-EO14024'], sourceLists: ['SDN'], effectiveAt: String(AT - 30 * 24 * H), isNew: false, note: '', ...o,
+  } as Entry);
+  const data = (entries: Entry[]): ListSanctionsPressureResponse => ({
+    entries, countries: [], programs: [], fetchedAt: String(AT - H), datasetDate: '0', totalCount: 18_000, sdnCount: 17_000,
+    consolidatedCount: 400, newEntryCount: entries.filter((e) => e.isNew).length, vesselCount: 0, aircraftCount: 0, semaCount: 0,
+  } as ListSanctionsPressureResponse);
+
+  it('groups new OFAC designations by country, from the latest run or dated in the last 24 h', () => {
+    const groups = newOfacDesignations(data([
+      entry({ id: 'a', isNew: true }),
+      entry({ id: 'b', isNew: true, programs: ['RUSSIA-EO14024', 'CYBER2'] }),
+      entry({ id: 'c', effectiveAt: String(AT - 3 * H), countryCodes: ['IR', 'AE'], countryNames: ['Iran', 'United Arab Emirates'], programs: ['IRAN'] }),
+      // Old, not new on the latest run: ignored.
+      entry({ id: 'd' }),
+      // Canada's SEMA list is not OFAC.
+      entry({ id: 'e', isNew: true, sourceLists: ['SEMA'] }),
+      // A date in the future beyond an hour is a bad date.
+      entry({ id: 'f', effectiveAt: String(AT + 5 * H), countryCodes: ['KP'], countryNames: ['North Korea'] }),
+    ]), AT);
+    assert.deepEqual(groups.map((g) => [g.code, g.entries.map((e) => e.id), g.programs]), [
+      ['RU', ['a', 'b'], ['RUSSIA-EO14024', 'CYBER2']],
+      ['IR', ['c'], ['IRAN']],
+      ['AE', ['c'], ['IRAN']],
+    ]);
+    assert.equal(groups[0]!.at, AT - H);
+    assert.equal(groups[1]!.at, AT - 3 * H);
+  });
+
+  it('fires a card per country with the programmes, count and names, and links only sanctions stories about the country', () => {
+    const news = [
+      story('Russia hit by new US sanctions on shipping firms', AT - 2 * H),
+      story('Russia reports record wheat harvest', AT - 2 * H),
+    ];
+    const feeds = newSanctionsFeeds(ready(data([entry({ id: 'alpha shipping', isNew: true }), entry({ id: 'beta trading', isNew: true }), entry({ id: 'gamma', isNew: true }), entry({ id: 'delta', isNew: true })])), news, AT);
+    assert.equal(feeds.length, 1);
+    const card = feeds[0]!;
+    assert.equal(card.kind, 'fired');
+    if (card.kind !== 'fired') return;
+    assert.equal(card.id, 'sanctions:RU');
+    assert.equal(card.indicator.name, 'New sanctions · Russia');
+    assert.equal(card.indicator.value, '4 designations');
+    assert.equal(card.indicator.change, 'RUSSIA-EO14024');
+    assert.equal(card.indicator.detail, 'ALPHA SHIPPING, BETA TRADING, GAMMA +1 more');
+    assert.deepEqual(card.indicator.trust, { level: 'official', source: 'US Treasury OFAC (SDN, Consolidated)' });
+    assert.deepEqual(card.indicator.place, { countries: ['RU'] });
+    assert.deepEqual(card.indicator.links.stories.map((st) => st.item.title), ['Russia hit by new US sanctions on shipping firms']);
+  });
+
+  it('says when the feed cut a large batch short, and keeps quiet, stale and unavailable states', () => {
+    const big = Array.from({ length: SANCTIONS_ENTRY_LIMIT }, (_, i) => entry({ id: `e${i}`, isNew: true }));
+    const [card] = newSanctionsFeeds(ready(data(big)), [], AT);
+    assert.equal(card?.kind === 'fired' && card.indicator.value, `${SANCTIONS_ENTRY_LIMIT}+ designations`);
+    assert.match(card?.kind === 'fired' ? card.indicator.detail ?? '' : '', /the feed carries the 60 newest entries/);
+    const quiet = newSanctionsFeeds(ready(data([entry({ id: 'old' })])), [], AT)[0]!;
+    assert.equal(quiet.kind, 'quiet');
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, 'Live · no new OFAC designation in 24 h · 17,400 listed');
+    const stale = newSanctionsFeeds(ready({ ...data([]), fetchedAt: String(AT - 20 * H) }), [], AT)[0]!;
+    assert.equal(stale.kind, 'stale');
+    const down = newSanctionsFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
+    assert.equal(down.kind, 'unavailable');
+    assert.match(down.kind === 'unavailable' ? down.detail : '', /seed-sanctions-pressure/);
   });
 });

@@ -1231,14 +1231,20 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
         { title: 'Demonstration alert', link: 'https://de.usembassy.gov/alert-2', pubDate: new Date(now - HOUR).toISOString(), source: 'US Embassy Germany', sourceCountry: 'US', level: 'info', country: 'DE' },
       ],
     };
-    return { chokepoints, strait, advisories };
+    const sanctions = {
+      fetchedAt: String(now - HOUR), datasetDate: '0', totalCount: 2, sdnCount: 2, consolidatedCount: 0, newEntryCount: 1, vesselCount: 0, aircraftCount: 0, semaCount: 0,
+      countries: [{ countryCode: 'IR', countryName: 'Iran', entryCount: 1, newEntryCount: 1, vesselCount: 0, aircraftCount: 0 }],
+      programs: [],
+      entries: [{ id: 'sdn-1', name: 'EXAMPLE TRADING LLC', entityType: 'SANCTIONS_ENTITY_TYPE_ENTITY', countryCodes: ['IR'], countryNames: ['Iran'], programs: ['IRAN'], sourceLists: ['SDN'], effectiveAt: '0', isNew: true, note: '' }],
+    };
+    return { chokepoints, strait, advisories, sanctions };
   }
 
   it('fires the three feeds from the bootstrap and opens Taipei from the Taiwan card', async () => {
     const data = fixtures(Date.now());
     const boot = await import('@wm/client/services/bootstrap');
     vi.mocked(boot.getHydratedData).mockImplementation((key: string) =>
-      key === 'chokepoints' ? data.chokepoints : key === 'crossStraitActivity' ? data.strait : key === 'securityAdvisories' ? data.advisories : undefined);
+      key === 'chokepoints' ? data.chokepoints : key === 'crossStraitActivity' ? data.strait : key === 'securityAdvisories' ? data.advisories : key === 'sanctionsPressure' ? data.sanctions : undefined);
     try {
       history.replaceState(null, '', '/lite/geopolitics');
       const { App } = await import('../../apps/web/src/lite/App');
@@ -1264,6 +1270,14 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
       expect(groupOf('[data-indicator="chokepoint:hormuz_strait"]')).toBe('gulf-iran');
       expect(groupOf('[data-indicator="taiwan"]')).toBe('taiwan-strait');
       expect(groupOf('[data-indicator^="embassy:kyiv:"]')).toBe('eastern-europe');
+      // A new OFAC designation (#118) fires under its country's region.
+      await vi.waitFor(async () => {
+        await flush();
+        expect(panel().querySelector('[data-indicator="sanctions:IR"]')).not.toBeNull();
+      }, { timeout: 10_000, interval: 50 });
+      expect(panel().querySelector('[data-indicator="sanctions:IR"]')?.textContent).toContain('New sanctions · Iran');
+      expect(panel().querySelector('[data-indicator="sanctions:IR"]')?.textContent).toContain('OFFICIAL');
+      expect(groupOf('[data-indicator="sanctions:IR"]')).toBe('gulf-iran');
       expect(panel().querySelector('[data-feed-group="taiwan-strait"] h3')?.textContent).toContain('Taiwan Strait');
       // Quiet, stale and unavailable rows stay one block after the groups.
       expect(panel().querySelector('[data-feed-group] [data-feed]')).toBeNull();
