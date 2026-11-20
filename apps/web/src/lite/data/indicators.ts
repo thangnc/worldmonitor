@@ -39,7 +39,7 @@ const TIER_BY_FEED: Readonly<Record<string, DecisionTier>> = {
   chokepoint: 'daily', chokepoints: 'daily', region: 'daily', 'region-escalation': 'daily', sanctions: 'daily',
   taiwan: 'daily', embassy: 'daily', 'export-controls': 'daily', 'restricted-parties': 'daily', 'travel-advisory': 'daily',
   // Finance: yields, credit, risk gauges, macro and price moves daily; crypto health, freight and filings weekly
-  treasury: 'daily', 'other-bonds': 'daily', 'credit-spreads': 'daily', vix: 'daily', 'dollar-index': 'daily',
+  treasury: 'daily', 'other-bonds': 'daily', 'credit-spreads': 'daily', 'fed-odds': 'daily', vix: 'daily', 'dollar-index': 'daily',
   'macro-print': 'daily', 'btc-move': 'daily',
   'etf-flows': 'weekly', 'stablecoin-depeg': 'weekly', 'perp-positioning': 'weekly', 'btc-funding': 'weekly',
   'fear-greed': 'weekly', 'freight-scfi': 'weekly', 'freight-bdi': 'weekly', 'sec-8k': 'weekly',

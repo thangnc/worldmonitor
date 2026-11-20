@@ -423,6 +423,8 @@ const STANDALONE_KEYS = {
   cslAdditions: 'sanctions:csl-additions:v1',
   // Lite Geopolitics travel advisories (#124): US and UK level changes.
   travelLevels: 'intelligence:travel-levels:v1',
+  // Lite Finance Fed decision odds (#125): Kalshi KXFED outcome odds.
+  rateOdds: 'economic:rate-odds:v1',
   predictionCountryMarkets: 'prediction:markets-country-index:v1',
   // US HTS chapter 99 duty index (catalog; coverage shards are versioned by
   // release under trade:us-hts:coverage:v1). Read only by get-us-import-duty.
@@ -956,6 +958,11 @@ const SEED_META = {
     key: 'seed-meta:intelligence:travel-levels', maxStaleMin: 360, // seed-travel-advisories every 2 h; 360 = 3x interval
     activationKey: 'seed-activated:intelligence:travel-levels',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 124, activationKey: 'seed-activated:intelligence:travel-levels' },
+  },
+  rateOdds: {
+    key: 'seed-meta:economic:rate-odds', maxStaleMin: 180, // seed-rate-odds hourly; 180 = 3x interval
+    activationKey: 'seed-activated:economic:rate-odds',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 125, activationKey: 'seed-activated:economic:rate-odds' },
   },
   kevRecent: {
     key: 'seed-meta:cyber:kev-recent', maxStaleMin: 2880, // extra key of the daily NVD KEV sync; 2880 = 2x interval
@@ -2765,6 +2772,8 @@ const ON_DEMAND_KEYS = new Set([
   'cyberThreatHistory', 'kevRecent',
   // Lite Geopolitics export controls and tariffs (#122) and new restricted parties (#123).
   'federalRegister', 'cslAdditions', 'travelLevels',
+  // Lite Finance Fed decision odds (#125).
+  'rateOdds',
   // Per-country GDELT article index (#7748). The 15-minute materializer
   // writes the marker after the index and its seed-meta publish; absence is
   // pending until that first tick and strict afterward.
@@ -2987,6 +2996,7 @@ const ACTIVATION_MARKERS = {
   federalRegister: SEED_META.federalRegister.activationKey,
   cslAdditions: SEED_META.cslAdditions.activationKey,
   travelLevels: SEED_META.travelLevels.activationKey,
+  rateOdds: SEED_META.rateOdds.activationKey,
   // Written by scripts/seed-gdelt-bulk-materializer.mjs after the per-country
   // article index publishes with its seed-meta (#7748).
   gdeltCountryArticles: SEED_META.gdeltCountryArticles.activationKey,

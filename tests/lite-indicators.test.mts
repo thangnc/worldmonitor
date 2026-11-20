@@ -120,6 +120,10 @@ import {
   treasuryFeed,
   treasuryWindow,
   watchCompany,
+  RATE_ODDS_MOVE_PTS,
+  decodeRateOdds,
+  rateOddsFeed,
+  rateOutcomeLabel,
 } from '../apps/web/src/lite/data/finance-macro-indicators.ts';
 import type { ResourceState } from '../apps/web/src/lite/data/store.ts';
 import type { ListSanctionsPressureResponse } from '../packages/contracts/generated/client/worldmonitor/sanctions/v1/service_client.ts';
@@ -1579,7 +1583,7 @@ describe('New OFAC sanctions (#118)', () => {
 describe('Decision tiers (#121)', () => {
   it('tags each feed check daily or check weekly as the spec tables do, and leaves analyst inputs untagged', () => {
     for (const id of ['chokepoint:hormuz_strait', 'chokepoints', 'region:red-sea', 'sanctions:RU', 'export-controls:2026-1', 'restricted-parties:CN', 'travel-advisory:US:IL', 'taiwan', 'embassy:kyiv:x', 'treasury', 'other-bonds',
-      'credit-spreads', 'vix', 'dollar-index', 'macro-print', 'btc-move', 'service-outage', 'kev-new', 'cyber-8k', 'internet-outage']) {
+      'credit-spreads', 'fed-odds', 'vix', 'dollar-index', 'macro-print', 'btc-move', 'service-outage', 'kev-new', 'cyber-8k', 'internet-outage']) {
       assert.equal(feedTier(id), 'daily', id);
     }
     for (const id of ['etf-flows', 'stablecoin-depeg', 'perp-positioning', 'btc-funding', 'fear-greed', 'freight-scfi', 'freight-bdi', 'sec-8k']) {
@@ -1816,5 +1820,79 @@ describe('Travel advisories (#124)', () => {
     assert.deepEqual(read?.changes.map((c) => [c.source, c.country]), [['UK', 'UA'], ['US', 'IL']]);
     const fired = travelAdvisoryFeeds(ready(read!), [telaviv, kyiv], [], AT);
     assert.deepEqual(fired.map((f) => f.kind === 'fired' && f.indicator.value), ['UK: no travel', 'US Level 4']);
+  });
+});
+
+describe('Fed decision odds (#125)', () => {
+  const meetingAt = Date.UTC(2026, 11, 9, 18, 55);
+  const bucket = (upper: number | null, p: number, pPrev: number, o: Record<string, unknown> = {}) => ({ upper, below: false, above: null, p, pPrev, ...o });
+  const odds = (buckets: unknown[], o: Record<string, unknown> = {}) => decodeRateOdds({
+    fetchedAt: AT - 30 * 60_000, target: { value: 4, date: '2026-11-07' },
+    meetings: [{ event: 'KXFED-26DEC', decisionAt: meetingAt, volume: 1_300_000, url: 'https://kalshi.com/markets/kxfed', buckets }], ...o,
+  })!;
+  const ladder = (hold: number, holdPrev: number) => [
+    bucket(3.5, 0.01, 0.01, { below: true }), bucket(3.75, 0.99 - hold - 0.05, 0.99 - holdPrev - 0.05), bucket(4, hold, holdPrev), bucket(4.25, 0.05, 0.05), bucket(null, 0, 0, { above: 4.25 }),
+  ];
+
+  it('decodes strictly and labels outcomes against the current target', () => {
+    assert.equal(decodeRateOdds(null), null);
+    const d = odds([...ladder(0.7, 0.7), bucket(4.5, 2, 0)]);
+    assert.equal(d.meetings[0]!.buckets.length, 5, 'an odds value above 1 is dropped');
+    assert.equal(decodeRateOdds({ fetchedAt: AT, target: null, meetings: [{ decisionAt: meetingAt, buckets: [bucket(4, 1, 1)] }] })!.meetings.length, 0, 'a meeting needs three outcomes');
+    assert.equal(rateOutcomeLabel(bucket(4, 0, 0), 4), 'Hold');
+    assert.equal(rateOutcomeLabel(bucket(3.75, 0, 0), 4), 'Cut 25 bp');
+    assert.equal(rateOutcomeLabel(bucket(4.5, 0, 0), 4), 'Hike 50 bp');
+    assert.equal(rateOutcomeLabel(bucket(3.5, 0, 0, { below: true }), 4), 'Cut ≥ 50 bp');
+    assert.equal(rateOutcomeLabel(bucket(null, 0, 0, { above: 4.25 }), 4), 'Hike > 25 bp');
+    assert.equal(rateOutcomeLabel(bucket(4.25, 0, 0), null), '4.25%');
+  });
+
+  it(`fires when the move odds shift ${RATE_ODDS_MOVE_PTS} pts in a day, with Fed news`, () => {
+    const news = [story('Powell signals the Fed could cut rates in December', AT - 2 * H), story('Retail sales beat estimates', AT - 2 * H)];
+    // Hold 70% → 50%: move odds 30% → 50%, +20 pts; hold stays the most likely outcome.
+    const fired = rateOddsFeed({ odds: ready(odds(ladder(0.5, 0.7))), news, now: AT });
+    assert.equal(fired.kind, 'fired');
+    const ind = fired.kind === 'fired' ? fired.indicator : null;
+    assert.equal(ind?.name, 'Fed decision odds · 9 Dec');
+    assert.equal(ind?.value, 'Hold 50%');
+    assert.equal(ind?.change, 'move odds 30% → 50%');
+    assert.equal(ind?.trust.level, 'market');
+    assert.match(ind?.detail ?? '', /Hold 50% · Cut 25 bp 44% · Hike 25 bp 5% · target upper bound 4\.00% \(FRED, 7 Nov\)/);
+    assert.deepEqual(ind?.links.stories.map((st) => st.item.title), ['Powell signals the Fed could cut rates in December']);
+  });
+
+  it('fires when the most likely outcome changes, and stays quiet on a small shift', () => {
+    // Hold 50% → 40%: +10 pts only, but a cut (54%) overtakes the hold.
+    const flip = rateOddsFeed({ odds: ready(odds(ladder(0.4, 0.5))), news: [], now: AT });
+    assert.equal(flip.kind === 'fired' && flip.indicator.value, 'Cut 25 bp 54%');
+    assert.match(flip.kind === 'fired' ? flip.indicator.detail ?? '' : '', /most likely was Hold 50% a day earlier/);
+    const quiet = rateOddsFeed({ odds: ready(odds(ladder(0.7, 0.75))), news: [], now: AT });
+    assert.equal(quiet.kind, 'quiet');
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, 'Hold 70% at the 9 Dec meeting · move odds 30% (+5 pts in a day) · target upper bound 4.00% (FRED, 7 Nov)');
+    // Without the current target only the most-likely rule can fire.
+    const noTarget = rateOddsFeed({ odds: ready(odds(ladder(0.5, 0.7), { target: null })), news: [], now: AT });
+    assert.equal(noTarget.kind, 'quiet');
+    assert.match(noTarget.kind === 'quiet' ? noTarget.detail : '', /move odds need the current target/);
+    // The target at the open bottom bucket ("≤ 4.00%" mixes hold and cuts): no move odds, never a made-up 100%.
+    const offLadder = rateOddsFeed({ odds: ready(odds([bucket(4, 0.3, 0.6, { below: true }), bucket(4.25, 0.6, 0.35), bucket(4.5, 0.1, 0.05), bucket(null, 0, 0, { above: 4.5 })])), news: [], now: AT });
+    assert.equal(offLadder.kind === 'fired' && offLadder.indicator.change, 'was ≤ 4.00% 60%');
+  });
+
+  it('reports stale, unavailable and a passed meeting', () => {
+    assert.equal(rateOddsFeed({ odds: ready({ ...odds(ladder(0.7, 0.7)), fetchedAt: AT - 3 * H }), news: [], now: AT }).kind, 'stale');
+    const down = rateOddsFeed({ odds: { status: 'error', data: null, at: AT, error: 'x' }, news: [], now: AT });
+    assert.match(down.kind === 'unavailable' ? down.detail : '', /seed-rate-odds/);
+    assert.notEqual(rateOddsFeed({ odds: ready(odds(ladder(0.7, 0.7))), news: [], now: meetingAt + H }).kind, 'quiet');
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { buildMeetings } = await import('../scripts/seed-rate-odds.mjs');
+    const r = (strike: number, last: number, prev: number) => ({ event_ticker: 'KXFED-26DEC', strike_type: 'greater', floor_strike: strike, last_price_dollars: String(last), previous_price_dollars: String(prev), volume_fp: '10', close_time: '2026-12-09T18:55:00Z' });
+    const meetings = buildMeetings([r(3.5, 0.99, 0.99), r(3.75, 0.9, 0.9), r(4, 0.6, 0.2), r(4.25, 0.05, 0.05)], AT);
+    const read = decodeRateOdds(JSON.parse(JSON.stringify({ fetchedAt: AT - 30 * 60_000, series: 'KXFED', target: { value: 4, date: '2026-11-07' }, meetings })));
+    const feed = rateOddsFeed({ odds: ready(read!), news: [], now: AT });
+    // A hike to 4.25% went from 15% to 55%: it is now the most likely outcome, and move odds rose 40 pts.
+    assert.equal(feed.kind === 'fired' && feed.indicator.value, 'Hike 25 bp 55%');
+    assert.equal(feed.kind === 'fired' && feed.indicator.change, 'move odds 30% → 70%');
   });
 });

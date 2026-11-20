@@ -229,6 +229,7 @@ const SEED_DOMAINS = {
   'correlation:market-alerts-scorecard': { key: 'seed-meta:correlation:market-alerts-scorecard', intervalMin: 5, activationKey: 'seed-activated:correlation:market-alerts' },
   'intelligence:advisories':  { key: 'seed-meta:intelligence:advisories',  intervalMin: 60 },
   'intelligence:travel-levels': { key: 'seed-meta:intelligence:travel-levels', intervalMin: 180, activationKey: 'seed-activated:intelligence:travel-levels' }, // #124; maxStaleMin / 2 (360 / 2), matching api/health.js
+  'economic:rate-odds':       { key: 'seed-meta:economic:rate-odds',       intervalMin: 90, activationKey: 'seed-activated:economic:rate-odds' }, // #125; maxStaleMin / 2 (180 / 2), matching api/health.js
   'policy:federal-register':  { key: 'seed-meta:policy:federal-register',  intervalMin: 180, activationKey: 'seed-activated:policy:federal-register' }, // #122; intervalMin = maxStaleMin / 2 (360 / 2), matching api/health.js
   // Corporate intelligence (#5695): intervalMin = maxStaleMin / 2 (api/health.js: 2880 / 120).
   'intelligence:sec-cik-map': { key: 'seed-meta:intelligence:sec-cik-map', intervalMin: 1440, minRecordCount: 5000 },
