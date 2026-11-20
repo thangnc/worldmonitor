@@ -7148,13 +7148,16 @@
     },
     {
       "host": "openrouter.ai",
-      "provider": "openrouter.ai",
+      "provider": "OpenRouter",
       "kind": "structured",
       "observed": true,
-      "license": "Excluded: first-party, control-plane, UI, or rendering transport",
-      "attribution": "Excluded from the external-provider count: not an ingested upstream dataset.",
-      "status": "excluded",
+      "license": "OpenRouter terms of service; the public model list (/api/v1/models) is read without a key. Redistribution terms require review.",
+      "attribution": "Model listings, context lengths and prices from OpenRouter (openrouter.ai); a listing date can be later than the release.",
+      "status": "terms-review",
       "references": [
+        {
+          "path": "apps/web/src/lite/data/tech-indicators.ts"
+        },
         {
           "path": "scripts/eval-classify-labels.mjs"
         },
@@ -7166,6 +7169,9 @@
         },
         {
           "path": "scripts/regional-snapshot/weekly-brief.mjs"
+        },
+        {
+          "path": "scripts/seed-ai-models.mjs"
         }
       ]
     },
@@ -7906,6 +7912,9 @@
         },
         {
           "path": "scripts/generate-oref-locations.mjs"
+        },
+        {
+          "path": "scripts/seed-ai-models.mjs"
         },
         {
           "path": "scripts/seed-cve-reference.mjs"

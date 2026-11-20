@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **846 active source hosts** representing **826 active providers** (**362 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **847 active source hosts** representing **827 active providers** (**363 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -526,7 +526,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | open.alberta.ca (open.alberta.ca) | Excluded / candidate — No current fetch observed |
 | open.iub.gov.lv (open.iub.gov.lv) | structured — scripts/_global-tender-feeds.mjs |
 | OpenAQ (api.openaq.org) | structured — scripts/seed-health-air-quality.mjs |
-| openrouter.ai (openrouter.ai) | structured — scripts/eval-classify-labels.mjs, scripts/lib/brief-dedup-consts.mjs, scripts/lib/company-monitoring-classifier-client.mjs, scripts/regional-snapshot/weekly-brief.mjs |
+| OpenRouter (openrouter.ai) | structured — apps/web/src/lite/data/tech-indicators.ts, scripts/eval-classify-labels.mjs, scripts/lib/brief-dedup-consts.mjs, scripts/lib/company-monitoring-classifier-client.mjs, +2 more |
 | OpenSanctions (api.opensanctions.org) | Excluded / candidate — No current fetch observed |
 | opensky-network.org (auth.opensky-network.org) | structured — scripts/seed-military-flights.mjs |
 | opensky-network.org (opensky-network.org) | structured — scripts/ais-relay.cjs, scripts/seed-military-flights.mjs |
@@ -575,7 +575,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | railway.instatus.com (railway.instatus.com) | operational-status — packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts |
 | rakuten-guardian-1-ie.samsung.wurl.tv (rakuten-guardian-1-ie.samsung.wurl.tv) | Excluded / candidate — No current fetch observed |
 | ransomware.live (ransomware.live) | feed — packages/shared/news-catalog.json |
-| raw.githubusercontent.com (raw.githubusercontent.com) | structured — scripts/ais-relay.cjs, scripts/build-plane-alert-watchlist.mjs, scripts/fetch-country-boundary-overrides.mjs, scripts/generate-airline-codes.mjs, +5 more |
+| raw.githubusercontent.com (raw.githubusercontent.com) | structured — scripts/ais-relay.cjs, scripts/build-plane-alert-watchlist.mjs, scripts/fetch-country-boundary-overrides.mjs, scripts/generate-airline-codes.mjs, +6 more |
 | reasonstobecheerful.world (reasonstobecheerful.world) | feed — packages/shared/news-catalog.json |
 | reddit.com (reddit.com) | structured — scripts/ais-relay.cjs |
 | registry.modelcontextprotocol.io (registry.modelcontextprotocol.io) | Excluded / candidate — No current fetch observed |

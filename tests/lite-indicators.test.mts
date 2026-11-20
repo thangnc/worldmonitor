@@ -32,6 +32,10 @@ import {
   cyberFilings,
   techFeeds,
   threatBaseline,
+  AI_NEW_DAYS,
+  aiModelFeeds,
+  decodeAiModels,
+  modelPriceText,
   type ExploitedVulnerability,
   type RecentKev,
   type ThreatHistory,
@@ -1586,7 +1590,7 @@ describe('Decision tiers (#121)', () => {
       'credit-spreads', 'fed-odds', 'vix', 'dollar-index', 'macro-print', 'btc-move', 'service-outage', 'kev-new', 'cyber-8k', 'internet-outage']) {
       assert.equal(feedTier(id), 'daily', id);
     }
-    for (const id of ['etf-flows', 'stablecoin-depeg', 'perp-positioning', 'btc-funding', 'fear-greed', 'freight-scfi', 'freight-bdi', 'sec-8k']) {
+    for (const id of ['etf-flows', 'stablecoin-depeg', 'perp-positioning', 'btc-funding', 'fear-greed', 'freight-scfi', 'freight-bdi', 'sec-8k', 'ai-models:new:openai', 'ai-models:price:openai/x']) {
       assert.equal(feedTier(id), 'weekly', id);
     }
     for (const id of ['aircraft:kyiv', 'gps:taipei', 'gps-region:europe', 'attack-spike', 'violence:UA', 'sea:u1', 'airspace', 'unknown']) {
@@ -1894,5 +1898,59 @@ describe('Fed decision odds (#125)', () => {
     // A hike to 4.25% went from 15% to 55%: it is now the most likely outcome, and move odds rose 40 pts.
     assert.equal(feed.kind === 'fired' && feed.indicator.value, 'Hike 25 bp 55%');
     assert.equal(feed.kind === 'fired' && feed.indicator.change, 'move odds 30% → 70%');
+  });
+});
+
+describe('AI models (#126)', () => {
+  const model = (id: string, labName: string, releasedAt: number, o: Record<string, unknown> = {}) => ({
+    id, lab: id.split('/')[0], labName, name: id.split('/')[1]!.toUpperCase(), releasedAt, context: 1_000_000, inPrice: 2, outPrice: 10, url: `https://openrouter.ai/${id}`, ...o,
+  });
+  const feed = (models: unknown[], changes: unknown[] = [], o: Record<string, unknown> = {}) =>
+    decodeAiModels({ fetchedAt: AT - H, listed: 477, watched: 210, baseline: true, models, changes, ...o })!;
+
+  it('decodes strictly, newest first, and formats prices', () => {
+    assert.equal(decodeAiModels(null), null);
+    const d = feed([model('openai/a', 'OpenAI', AT - 5 * 86_400_000), model('google/b', 'Google', AT - 86_400_000, { url: 'https://evil.example' }), { id: 'x' }]);
+    assert.deepEqual(d.models.map((m) => [m.id, m.url]), [['google/b', ''], ['openai/a', 'https://openrouter.ai/openai/a']]);
+    assert.equal(modelPriceText(2, 10), '$2 / $10');
+    assert.equal(modelPriceText(1.425, 4.275), '$1.425 / $4.275');
+    assert.equal(modelPriceText(0, 0), 'free');
+    assert.equal(modelPriceText(null, null), '—');
+  });
+
+  it(`fires one card per lab with models listed in the last ${AI_NEW_DAYS} days, and one per price change`, () => {
+    const data = feed([
+      model('openai/gpt-astra', 'OpenAI', AT - 2 * 86_400_000), model('openai/gpt-sol', 'OpenAI', AT - 2 * 86_400_000 - H),
+      model('google/gemini-neon', 'Google', AT - 3 * 86_400_000), model('anthropic/old', 'Anthropic', AT - 30 * 86_400_000),
+    ], [{ at: AT - 5 * H, id: 'qwen/qwen-max', labName: 'Qwen', name: 'Qwen Max', from: [2, 6], to: [1.5, 4.5], url: 'https://openrouter.ai/qwen/qwen-max', litellm: 'match' }]);
+    const news = [story('OpenAI launches GPT-ASTRA for enterprise', AT - 2 * 86_400_000 - 2 * H), story('Markets rally on rate hopes', AT - 2 * 86_400_000)];
+    const list = aiModelFeeds(ready(data), news, AT);
+    assert.deepEqual(list.map((f) => f.id), ['ai-models:price:qwen/qwen-max', 'ai-models:new:openai', 'ai-models:new:google']);
+    const [price, openai] = list;
+    assert.equal(openai?.kind === 'fired' && openai.indicator.name, 'New AI models · OpenAI');
+    assert.equal(openai?.kind === 'fired' && openai.indicator.value, '2 listed');
+    assert.equal(openai?.kind === 'fired' && openai.indicator.change, 'GPT-ASTRA, GPT-SOL');
+    assert.equal(openai?.kind === 'fired' && openai.indicator.trust.level, 'reported');
+    assert.deepEqual(openai?.kind === 'fired' && openai.indicator.links.stories.map((st) => st.item.title), ['OpenAI launches GPT-ASTRA for enterprise']);
+    assert.equal(price?.kind === 'fired' && price.indicator.value, 'input −25%');
+    assert.equal(price?.kind === 'fired' && price.indicator.change, '$2 / $6 → $1.5 / $4.5 per 1M');
+    assert.equal(price?.kind === 'fired' && price.indicator.detail, 'Qwen · LiteLLM price file agrees');
+  });
+
+  it('stays quiet naming the latest model and the price baseline, and reports stale and unavailable', () => {
+    const quiet = aiModelFeeds(ready(feed([model('anthropic/old', 'Anthropic', Date.UTC(2026, 9, 20))], [], { baseline: false })), [], AT)[0]!;
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, 'Live · no new model from a watched lab in 7 days · latest Anthropic OLD, 20 Oct · price baseline set; changes count from the next run');
+    assert.equal(aiModelFeeds(ready({ ...feed([]), fetchedAt: AT - 13 * H }), [], AT)[0]!.kind, 'stale');
+    const down = aiModelFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
+    assert.match(down.kind === 'unavailable' ? down.detail : '', /seed-ai-models/);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { normalizeModel, priceChanges, publishTransform } = await import('../scripts/seed-ai-models.mjs');
+    const m = normalizeModel({ id: 'deepseek/deepseek-v5', name: 'DeepSeek: DeepSeek V5', created: Math.floor((AT - 86_400_000) / 1000), context_length: 256000, pricing: { prompt: '0.0000003', completion: '0.0000012' } });
+    const changes = priceChanges([m], { 'deepseek/deepseek-v5': [0.6, 2.4] }, AT - H).map((c: object) => ({ ...c, litellm: 'missing' }));
+    const read = decodeAiModels(JSON.parse(JSON.stringify(publishTransform({ fetchedAt: AT - H, listed: 477, watched: 1, baseline: true, models: [m], changes, state: { prices: {} } }))));
+    const list = aiModelFeeds(ready(read!), [], AT);
+    assert.deepEqual(list.map((f) => f.kind === 'fired' && f.indicator.name), ['AI price change · DeepSeek V5', 'New AI models · DeepSeek']);
   });
 });

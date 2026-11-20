@@ -239,6 +239,12 @@ export const CONNECTORS: readonly Connector[] = [
   },
   // ---- Technology & AI ----
   {
+    id: 'ai-models', name: 'AI models · OpenRouter', domain: 'tech', kind: 'Reported listing', method: 'API',
+    producer: 'seed-ai-models', healthKeys: ['aiModels'], maxStaleMin: 1080,
+    hosts: [{ host: 'openrouter.ai', licence: 'terms-review' }, { host: 'raw.githubusercontent.com', licence: 'terms-review' }],
+    usedBy: ['AI models indicator', 'Model tracker'],
+  },
+  {
     id: 'digest-tech', name: 'News digest · tech', domain: 'tech', kind: 'News aggregate', method: 'RSS',
     producer: 'list-feed-digest', digest: 'tech', hosts: [],
     usedBy: ['Material developments', 'Watched topics'],
@@ -307,7 +313,7 @@ export const CONNECTORS: readonly Connector[] = [
   {
     id: 'insights', name: 'AI world brief', domain: 'all', kind: 'LLM summary of the digest', method: 'LLM',
     producer: 'seed-insights', healthKeys: ['newsInsights'], maxStaleMin: 30,
-    hosts: [{ host: 'openrouter.ai', licence: 'excluded' }],
+    hosts: [{ host: 'openrouter.ai', licence: 'terms-review' }],
     usedBy: ['Hourly brief'],
   },
 ];

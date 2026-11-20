@@ -117,6 +117,13 @@ export const SPIKE_RATIO = 2;
 export const SPIKE_BASELINE_DAYS = 7;
 export const SPIKE_MIN_BASELINE_DAYS = 3;
 
+/** An AI model counts as new for this many days after OpenRouter listed it (weekly tier; #126). */
+export const AI_NEW_DAYS = 7;
+/** A price change of this many percent or more, in or out, fires (the seeder's PRICE_CHANGE_PCT). */
+export const AI_PRICE_PCT = 20;
+/** seed-ai-models runs every 6 h. */
+export const AI_MODELS_CADENCE_MIN = 360;
+
 /** Providers whose partial or major outage fires (cloud and AI). */
 export const WATCHED_PROVIDERS: Readonly<Record<string, readonly string[]>> = {
   aws: ['AWS', 'Amazon Web Services'],
@@ -135,7 +142,8 @@ export const TECH_RULES =
   'a watched cloud or AI provider reporting a partial or major outage; ' +
   `a CVE added to CISA KEV in the last ${KEV_NEW_DAYS} days, a vendor on the starter watchlist ranked first; ` +
   `attack-infrastructure indicators at ${SPIKE_RATIO}× their ${SPIKE_BASELINE_DAYS}-day average or more; ` +
-  `an 8-K reporting item ${CYBER_8K_ITEM} (material cybersecurity incident) in the last ${FILING_WINDOW_HOURS} h. ` +
+  `an 8-K reporting item ${CYBER_8K_ITEM} (material cybersecurity incident) in the last ${FILING_WINDOW_HOURS} h; ` +
+  `a model from a watched AI lab (OpenAI, Anthropic, Google, Meta, Mistral, xAI, DeepSeek, Qwen) listed on OpenRouter in the last ${AI_NEW_DAYS} days, or a price change of ${AI_PRICE_PCT}% or more on one. ` +
   'Linked news: tech digest stories from 12 h before to 1 h after (date-only feeds: from 12 h before the day).';
 
 /** Feed labels for the threat counts (seed-cyber-threats raw source names). */
@@ -440,6 +448,7 @@ export function techFeeds(input: {
   kev: ResourceState<RecentKev>;
   history: ResourceState<ThreatHistory>;
   filings: ResourceState<ListMaterialEventsResponse>;
+  models?: ResourceState<AiModels>;
   news: readonly LiteItem[];
   now: number;
 }): FeedState[] {
@@ -450,5 +459,154 @@ export function techFeeds(input: {
     kevFeed(input.kev, news, now),
     spikeFeed(input.history, news, now),
     cyberFilingFeed(input.filings, news, now),
+    ...(input.models ? aiModelFeeds(input.models, news, now) : []),
   ]);
+}
+
+// ---- AI model releases and price changes (#126) -------------------------------
+
+export interface AiModel {
+  /** OpenRouter id, "openai/gpt-6.2-astra". */
+  id: string;
+  lab: string;
+  labName: string;
+  name: string;
+  /** When OpenRouter listed it (ms): usually the release, sometimes a later listing. */
+  releasedAt: number;
+  context: number | null;
+  /** USD per million input and output tokens; null when not listed. */
+  inPrice: number | null;
+  outPrice: number | null;
+  url: string;
+}
+
+export interface AiPriceChange {
+  at: number;
+  id: string;
+  labName: string;
+  name: string;
+  from: [number | null, number | null];
+  to: [number | null, number | null];
+  url: string;
+  /** LiteLLM's price file: match, differs, missing or unavailable. */
+  litellm: string;
+}
+
+export interface AiModels {
+  fetchedAt: number;
+  listed: number;
+  watched: number;
+  baseline: boolean;
+  models: AiModel[];
+  changes: AiPriceChange[];
+}
+
+/** The seeded payload (`tech:ai-models:v1`), or null when it is not one. */
+export function decodeAiModels(value: unknown): AiModels | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.models) || !Array.isArray(v.changes)) return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const num = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  const pair = (x: unknown): [number | null, number | null] => (Array.isArray(x) ? [num(x[0]), num(x[1])] : [null, null]);
+  const url = (x: unknown) => (str(x).startsWith('https://openrouter.ai/') ? str(x) : '');
+  const models: AiModel[] = [];
+  for (const raw of v.models as Array<Record<string, unknown>>) {
+    const releasedAt = num(raw?.releasedAt);
+    if (!str(raw?.id) || !str(raw.labName) || releasedAt === null) continue;
+    models.push({ id: str(raw.id), lab: str(raw.lab), labName: str(raw.labName), name: str(raw.name) || str(raw.id), releasedAt,
+      context: num(raw.context), inPrice: num(raw.inPrice), outPrice: num(raw.outPrice), url: url(raw.url) });
+  }
+  models.sort((a, b) => b.releasedAt - a.releasedAt || a.id.localeCompare(b.id));
+  const changes: AiPriceChange[] = [];
+  for (const raw of v.changes as Array<Record<string, unknown>>) {
+    const at = num(raw?.at);
+    if (at === null || !str(raw.id)) continue;
+    changes.push({ at, id: str(raw.id), labName: str(raw.labName), name: str(raw.name) || str(raw.id), from: pair(raw.from), to: pair(raw.to), url: url(raw.url), litellm: str(raw.litellm) || 'missing' });
+  }
+  changes.sort((a, b) => b.at - a.at);
+  return { fetchedAt: v.fetchedAt as number, listed: num(v.listed) ?? 0, watched: num(v.watched) ?? 0, baseline: v.baseline === true, models, changes };
+}
+
+/** A context length as "128k", "1M" or "1.1M" tokens, or "—". */
+export function contextText(n: number | null): string {
+  if (n === null) return '—';
+  return n >= 1_000_000 ? `${Number((n / 1_000_000).toFixed(1))}M` : `${Math.round(n / 1000)}k`;
+}
+
+/** "$1.50 / $7.50" per million tokens, "free", or "—". */
+export function modelPriceText(inPrice: number | null, outPrice: number | null): string {
+  if (inPrice === null && outPrice === null) return '—';
+  if (inPrice === 0 && outPrice === 0) return 'free';
+  const usd = (n: number | null) => (n === null ? '—' : `$${n >= 10 ? n.toFixed(0) : Number(n.toFixed(3)).toString()}`);
+  return `${usd(inPrice)} / ${usd(outPrice)}`;
+}
+
+const priceMove = (from: number | null, to: number | null) =>
+  from !== null && to !== null && from > 0 ? Math.round(((to - from) / from) * 100) : null;
+const signedPct = (n: number) => `${n < 0 ? '−' : '+'}${Math.abs(n)}%`;
+const LITELLM_TEXT: Readonly<Record<string, string>> = {
+  match: 'LiteLLM price file agrees', differs: 'LiteLLM price file shows a different price', missing: 'not in the LiteLLM price file', unavailable: 'LiteLLM price file unavailable',
+};
+
+/**
+ * One card per watched lab with models listed in the last AI_NEW_DAYS (the
+ * newest listing's time), and one per price change in the same window.
+ */
+export function aiModelIndicators(data: AiModels, news: readonly LiteItem[], now: number): Indicator[] {
+  const cutoff = now - AI_NEW_DAYS * DAY_MS;
+  const byLab = new Map<string, AiModel[]>();
+  for (const m of data.models) {
+    if (m.releasedAt < cutoff || m.releasedAt > now + HOUR_MS) continue;
+    byLab.set(m.labName, [...(byLab.get(m.labName) ?? []), m]);
+  }
+  const out: Indicator[] = [];
+  for (const [labName, list] of byLab) {
+    const at = Math.min(now, list[0]!.releasedAt);
+    const names = list.map((m) => m.name);
+    const links = linkNews({ drivers: [labName, ...names] }, news, at, AI_NEW_DAYS * 24);
+    // A story links only when it names the lab or one of the models.
+    const stories = links.stories.filter((st) => [labName, ...names].some((n) => new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(`${st.item.title} ${st.item.snippet ?? ''}`)));
+    out.push({
+      id: `ai-models:new:${list[0]!.lab}`, domain: 'tech', name: `New AI models · ${labName}`,
+      value: `${list.length} listed`,
+      change: names.length > 3 ? `${names.slice(0, 3).join(', ')} +${names.length - 3} more` : names.join(', '),
+      rule: `model from a watched lab listed ≤ ${AI_NEW_DAYS} days`,
+      detail: list.slice(0, 4).map((m) => `${m.name} ${modelPriceText(m.inPrice, m.outPrice)} per 1M tokens${m.context ? ` · ${contextText(m.context)} context` : ''}`).join(' · '),
+      trust: { level: 'reported', source: 'OpenRouter listing' },
+      at, dataDate: `listed ${new Date(at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}`,
+      updatedAt: data.fetchedAt, links: { ...links, stories },
+    });
+  }
+  for (const c of data.changes) {
+    if (c.at < cutoff || c.at > now + HOUR_MS || out.some((i) => i.id === `ai-models:price:${c.id}`)) continue;
+    const dIn = priceMove(c.from[0], c.to[0]);
+    const dOut = priceMove(c.from[1], c.to[1]);
+    const lead = dIn !== null && (dOut === null || Math.abs(dIn) >= Math.abs(dOut)) ? 'input' : 'output';
+    const d = lead === 'input' ? dIn : dOut;
+    out.push({
+      id: `ai-models:price:${c.id}`, domain: 'tech', name: `AI price change · ${c.name}`,
+      value: d !== null ? `${lead} ${signedPct(d)}` : 'price changed',
+      change: `${modelPriceText(c.from[0], c.from[1])} → ${modelPriceText(c.to[0], c.to[1])} per 1M`,
+      rule: `price change ≥ ${AI_PRICE_PCT}% on a watched lab's model`,
+      detail: [c.labName, LITELLM_TEXT[c.litellm] ?? c.litellm].filter(Boolean).join(' · '),
+      trust: { level: 'reported', source: 'OpenRouter listing' },
+      at: Math.min(now, c.at), updatedAt: data.fetchedAt,
+      links: linkNews({ drivers: [c.name, `${c.labName} pricing`, `${c.labName} price`] }, news, Math.min(now, c.at), AI_NEW_DAYS * 24),
+    });
+  }
+  return out.sort((a, b) => b.at - a.at);
+}
+
+export function aiModelFeeds(source: ResourceState<AiModels>, news: readonly LiteItem[], now: number): FeedState[] {
+  const data = source.status === 'ready' ? source.data : null;
+  const fired = data ? aiModelIndicators(data, news, now) : [];
+  const base = feedState({
+    id: 'ai-models', name: 'AI models · OpenRouter', source, seeder: 'seed-ai-models',
+    cadenceMin: AI_MODELS_CADENCE_MIN, dataAt: data?.fetchedAt ?? null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !data) return [base];
+  if (fired.length) return fired.map((indicator) => ({ kind: 'fired' as const, id: indicator.id, name: indicator.name, indicator }));
+  const latest = data.models[0];
+  const day = (t: number) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  return [{ ...base, detail: [`Live · no new model from a watched lab in ${AI_NEW_DAYS} days`, latest ? `latest ${latest.labName} ${latest.name}, ${day(latest.releasedAt)}` : null, data.baseline ? null : 'price baseline set; changes count from the next run'].filter(Boolean).join(' · ') }];
 }

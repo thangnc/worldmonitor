@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Box, Check, CheckCheck, CloudOff, Cpu, Landmark, Quote, Scale, Server, ShieldAlert, Sparkles, Waypoints, type LucideIcon } from 'lucide-preact';
 import { getLatestActions, getUpcomingDeadlines } from '@wm/client/config/ai-regulations';
 import { Topbar, matchesSearch } from '../components/Topbar';
-import { Card, ColLabel, DerivedTag, Dot, Panel, SampleBadge, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
+import { Card, ColLabel, DerivedTag, Dot, Panel, SegmentedControl, SourceState, TEXT, cx } from '../components/ui';
 import { HealthDots, IndicatorFeed } from '../components/indicator';
 import { LayersPopover, type LayerGroup } from '../components/LayersPopover';
 import { TimeRangeControl } from '../components/TimeRange';
@@ -11,6 +11,7 @@ import { AggregateMark, AssetMark, EventMark, LineSwatch, RampSwatch, SwatchRun 
 import { LegendRow, MapLegend } from '../map/legend';
 import {
   selectTechDevelopments,
+  useAiModels,
   useArxiv,
   useCableHealth,
   useCountryShapes,
@@ -26,7 +27,6 @@ import {
   useThreatHistory,
 } from '../data/hooks';
 import { useTechFeeds } from '../data/domain-feeds';
-import { SAMPLE_MODELS } from '../data/fixtures';
 import { MINUS } from '../format';
 import { feedCounts, type FeedState } from '../data/indicators';
 import {
@@ -45,12 +45,15 @@ import {
 } from '../data/tech-map';
 import type { ResourceState } from '../data/store';
 import {
+  AI_NEW_DAYS,
   SPIKE_BASELINE_DAYS,
   TECH_RULES,
   WATCHED_PROVIDERS,
   isOutageLive,
   isWatchedOutage,
+  contextText,
   kevWeekCounts,
+  modelPriceText,
   threatBaseline,
 } from '../data/tech-indicators';
 import {
@@ -374,36 +377,47 @@ function Developments({ state, rows, total }: { state: ReturnType<typeof useDige
   );
 }
 
-const EVAL_TONE: Record<string, Tone> = { high: 'high', elev: 'elev', ok: 'ok', muted: 'muted' };
+const MODEL_ROWS = 8;
+const shortDay = (t: number) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
+/** The watched labs' newest models on OpenRouter (seed-ai-models, #126). */
 function ModelTracker() {
+  const state = useAiModels();
+  const now = Date.now();
+  const rows = state.status === 'ready' ? state.data.models.slice(0, MODEL_ROWS) : [];
   return (
-    <Card title="Model & product tracker" sub="claims vs. independent evaluation" right={<SampleBadge title="No model-release source yet. These are the design sample rows." />} testId="model-tracker">
-      <div class="hidden h-7 items-center gap-[14px] border-y border-line bg-bg px-5 md:flex">
-        <ColLabel class="flex-1">MODEL</ColLabel>
-        <ColLabel class="w-[72px]">RELEASED</ColLabel>
-        <ColLabel class="w-24">ACCESS</ColLabel>
-        <ColLabel class="w-[150px]">CLAIMED</ColLabel>
-        <ColLabel class="w-32">INDEPENDENT EVAL</ColLabel>
-      </div>
-      {SAMPLE_MODELS.map((m) => (
-        <div key={m.name} class="flex flex-wrap items-center gap-x-[14px] gap-y-1 border-b border-line px-5 py-[11px] last:border-b-0" data-sample-row>
-          <span class="flex min-w-0 flex-1 basis-full flex-col gap-[2px] md:basis-0">
-            <span class="flex items-center gap-2">
-              <span class="text-[13px] font-medium text-ink">{m.name}</span>
-              {m.isNew ? <span class="rounded-[3px] bg-tech/15 px-[5px] py-px font-mono text-[9px] font-semibold text-tech">NEW</span> : null}
-            </span>
-            <span class="text-[11.5px] text-dim">{m.org}</span>
-          </span>
-          <span class="font-mono text-[12px] text-muted md:w-[72px]">{m.released}</span>
-          <span class="text-[12px] text-muted md:w-24">{m.access}</span>
-          <span class="text-[12px] text-muted md:w-[150px]">{m.claimed}</span>
-          <span class="flex items-center gap-[6px] md:w-32">
-            <Dot tone={EVAL_TONE[m.evalTone] ?? 'muted'} />
-            <span class={cx('text-[12px] font-medium', TEXT[EVAL_TONE[m.evalTone] ?? 'muted'])}>{m.evalLabel}</span>
-          </span>
-        </div>
-      ))}
+    <Card
+      title="Model tracker"
+      sub="watched labs' newest models · OpenRouter listing, price per 1M tokens"
+      right={<span class="font-mono text-[10px] text-dim" title="OpenRouter's public model list: the listing date, context length and price. A listing date can be later than the release.">REPORTED</span>}
+      testId="model-tracker"
+    >
+      {rows.length ? (
+        <>
+          <div class="hidden h-7 items-center gap-[14px] border-y border-line bg-bg px-5 md:flex">
+            <ColLabel class="flex-1">MODEL</ColLabel>
+            <ColLabel class="w-[72px]">LISTED</ColLabel>
+            <ColLabel class="w-[72px]">CONTEXT</ColLabel>
+            <ColLabel class="w-[120px]">IN / OUT</ColLabel>
+          </div>
+          {rows.map((m) => (
+            <a key={m.id} href={m.url || undefined} target="_blank" rel="noopener noreferrer" class="flex flex-wrap items-center gap-x-[14px] gap-y-1 border-b border-line px-5 py-[11px] last:border-b-0 hover:bg-bg" data-model-row={m.id}>
+              <span class="flex min-w-0 flex-1 basis-full flex-col gap-[2px] md:basis-0">
+                <span class="flex items-center gap-2">
+                  <span class="truncate text-[13px] font-medium text-ink">{m.name}</span>
+                  {now - m.releasedAt <= AI_NEW_DAYS * 86_400_000 ? <span class="rounded-[3px] bg-tech/15 px-[5px] py-px font-mono text-[9px] font-semibold text-tech">NEW</span> : null}
+                </span>
+                <span class="text-[11.5px] text-dim">{m.labName}</span>
+              </span>
+              <span class="font-mono text-[12px] text-muted md:w-[72px]">{shortDay(m.releasedAt)}</span>
+              <span class="font-mono text-[12px] text-muted md:w-[72px]">{contextText(m.context)}</span>
+              <span class="font-mono text-[12px] text-muted md:w-[120px]">{modelPriceText(m.inPrice, m.outPrice)}</span>
+            </a>
+          ))}
+        </>
+      ) : (
+        <SourceState state={state.status === 'ready' ? { status: 'empty', data: null, at: state.at } : state} source="OpenRouter model list (seed-ai-models)" />
+      )}
     </Card>
   );
 }

@@ -54,7 +54,7 @@ import type {
 import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cyber/v1/service_client';
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
-import { decodeRecentKev, decodeThreatHistory, type RecentKev, type ThreatHistory } from './tech-indicators';
+import { decodeAiModels, decodeRecentKev, decodeThreatHistory, type AiModels, type RecentKev, type ThreatHistory } from './tech-indicators';
 import { CREDIT_SERIES, decodeCreditSpreads, decodeRateOdds, type CreditSpreads, type RateOdds } from './finance-macro-indicators';
 import { VIX_FRED_SERIES } from './finance-indicators';
 import {
@@ -436,6 +436,12 @@ export async function loadTravelLevels(): Promise<TravelLevelsFeed> {
 export async function loadRecentKev(): Promise<RecentKev> {
   await startBootstrap();
   return required('kevRecent', decodeRecentKev(await ensureHydrated('kevRecent')));
+}
+
+/** Recent models from the watched AI labs and their price changes (seed-ai-models, #126). */
+export async function loadAiModels(): Promise<AiModels> {
+  await startBootstrap();
+  return required('aiModels', decodeAiModels(await ensureHydrated('aiModels')));
 }
 
 // The Technology map's layers.
