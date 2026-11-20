@@ -34,7 +34,18 @@ import {
   type ThreatHistory,
 } from '../apps/web/src/lite/data/tech-indicators.ts';
 import type { LiteItem } from '../apps/web/src/lite/data/transforms.ts';
-import { groupFeedsByRegion, regionOfPlace } from '../apps/web/src/lite/data/regions.ts';
+import { ESCALATION_REGIONS, groupFeedsByRegion, regionOfPlace } from '../apps/web/src/lite/data/regions.ts';
+import {
+  REGION_FIRE_RANK,
+  REGION_LEVELS,
+  baselineOf,
+  changedParts,
+  decodeRegionHistory,
+  rankOfScore,
+  recordReadings,
+  regionEscalationFeeds,
+  regionReadings,
+} from '../apps/web/src/lite/data/region-escalation.ts';
 import type { MilitaryFlight } from '../packages/contracts/generated/client/worldmonitor/military/v1/service_client.ts';
 import type { ListUkmtoIncidentsResponse } from '../packages/contracts/generated/client/worldmonitor/maritime/v1/service_client.ts';
 import {
@@ -527,7 +538,7 @@ describe('GDELT reported violence', () => {
     const tiles = regionStrip(regions, scored, c, NOW);
     assert.deepEqual(tiles.map((t) => t.id), ['eastern-europe', 'red-sea', 'nowhere'], 'list order, every region');
     assert.equal(tiles[0]?.level, 'High', "Kyiv's 4.2 beats Moscow's 3.1");
-    assert.deepEqual(tiles[0]?.lead, { name: 'Kyiv', score: 4.2 });
+    assert.deepEqual(tiles[0]?.lead, { id: 'kyiv', name: 'Kyiv', score: 4.2 });
     assert.equal(tiles[0]?.area, 'europe');
     assert.equal(Math.round(tiles[0]?.change ?? 0), 140);
     assert.equal(tiles[0]?.bars.length, 14);
@@ -1348,4 +1359,79 @@ describe('Geopolitics indicator panel grouped by region (#116)', () => {
     assert.deepEqual(groupFeedsByRegion([quiet, down], tiles).groups, []);
   });
 
+});
+
+describe('Region escalation (#117)', () => {
+  const MIN = 60_000;
+  const parts = (military: number, news = 20) => ({ newsActivity: news, ciiContribution: 40, geoConvergence: 10, militaryActivity: military });
+  const tile = (id: string, score: number, lead = 'sanaa', components = parts(20)) => ({ id, lead: { id: lead, name: lead === 'sanaa' ? 'Sanaa' : lead, score, components } });
+  const ok = { status: 'ready', data: {}, at: AT } as const;
+  const run = (tiles: ReturnType<typeof tile>[], history: Record<string, { at: number; rank: number; lead?: string; parts?: ReturnType<typeof parts> }[]>, news: LiteItem[] = []) =>
+    regionEscalationFeeds({ regions: ESCALATION_REGIONS, tiles, source: ok, history, news, now: AT });
+
+  it(`fires when a region rises a step to ${REGION_LEVELS[REGION_FIRE_RANK - 1]} or higher against an earlier reading, naming the lead and what moved`, () => {
+    const history = { 'red-sea': [{ at: AT - 5 * 60 * MIN, rank: 2, lead: 'sanaa', parts: parts(2) }, { at: AT - 60 * MIN, rank: 3, lead: 'sanaa', parts: parts(15) }] };
+    const news = [story('Houthi strikes near Sanaa as Yemen tensions rise', AT - 2 * H)];
+    const [feed] = run([tile('red-sea', 3.6, 'sanaa', parts(24))], history, news);
+    assert.equal(feed?.kind, 'fired');
+    if (feed?.kind !== 'fired') return;
+    assert.equal(feed.id, 'region:red-sea');
+    assert.equal(feed.indicator.name, 'Region escalation · Red Sea / Aden');
+    // 3.6 rounds to High, two steps up from Watch.
+    assert.equal(feed.indicator.value, 'High');
+    assert.match(feed.indicator.change ?? '', /^up from Watch \(\d\d:\d\d UTC\)$/);
+    assert.match(feed.indicator.detail ?? '', /^Led by Sanaa 3\.6\/5 · military activity \+22 · compared with a reading kept in this browser$/);
+    assert.equal(feed.indicator.trust.level, 'estimated');
+    assert.deepEqual(feed.indicator.place, { countries: ['YE', 'SA', 'EG'] });
+    assert.equal(feed.indicator.links.stories.length, 1);
+    // Since the first reading at the current level or above after the baseline.
+    assert.equal(feed.indicator.at, AT - 60 * MIN);
+  });
+
+  it('stays quiet below Elevated, on no rise, and on a fall; needs a reading at least 30 min old', () => {
+    const was = (rank: number, ago = 2 * 60) => [{ at: AT - ago * MIN, rank }];
+    // Stable to Watch is a rise but stays below Elevated.
+    const low = run([tile('red-sea', 2.2)], { 'red-sea': was(1) })[0]!;
+    assert.equal(low.kind, 'quiet');
+    assert.match(low.kind === 'quiet' ? low.detail : '', /Red Sea \/ Aden Watch/);
+    assert.equal(run([tile('red-sea', 3.1)], { 'red-sea': was(3) })[0]!.kind, 'quiet');
+    assert.equal(run([tile('red-sea', 3.1)], { 'red-sea': was(5) })[0]!.kind, 'quiet');
+    // A reading 10 minutes old is too recent to compare; one past 24 h is gone.
+    const fresh = run([tile('red-sea', 4)], { 'red-sea': was(1, 10) })[0]!;
+    assert.match(fresh.kind === 'quiet' ? fresh.detail : '', /^First readings kept in this browser/);
+    assert.equal(run([tile('red-sea', 4)], { 'red-sea': was(1, 25 * 60) })[0]!.kind, 'quiet');
+    // A reading taken while an input was missing (a lower, partial score) is not a baseline for a full one.
+    const partial = { 'red-sea': [{ at: AT - 2 * 60 * MIN, rank: 1, inputs: 'countryRisk' }] };
+    assert.equal(run([tile('red-sea', 4)], partial)[0]!.kind, 'quiet');
+    assert.equal(regionEscalationFeeds({ regions: ESCALATION_REGIONS, tiles: [tile('red-sea', 4)], source: ok, missing: ['countryRisk'], history: partial, news: [], now: AT })[0]!.kind, 'fired');
+    // The baseline is the earliest qualifying reading, not the latest.
+    assert.equal(run([tile('red-sea', 3)], { 'red-sea': [{ at: AT - 6 * 60 * MIN, rank: 2 }, { at: AT - 60 * MIN, rank: 3 }] })[0]!.kind, 'fired');
+  });
+
+  it('names a change of lead hotspot, and reports the source state when the score inputs failed', () => {
+    const [feed] = run([tile('levant', 4, 'beirut')], { levant: [{ at: AT - 2 * 60 * MIN, rank: 3, lead: 'jerusalem', parts: parts(0) }] });
+    assert.equal(feed?.kind === 'fired' && feed.indicator.detail, 'Led by beirut 4.0/5 · a different hotspot now leads · compared with a reading kept in this browser');
+    const failed = regionEscalationFeeds({ regions: ESCALATION_REGIONS, tiles: [], source: { status: 'error', data: null, at: AT, error: 'x' }, history: {}, news: [], now: AT })[0]!;
+    assert.equal(failed.kind, 'unavailable');
+    assert.match(failed.kind === 'unavailable' ? failed.detail : '', /get-risk-scores/);
+  });
+
+  it('keeps one reading per 15 min unless the level changes, drops readings past 24 h, and survives bad storage', () => {
+    const readings = regionReadings([tile('red-sea', 3.2), { id: 'sahel', lead: null } as never]);
+    assert.deepEqual(readings.map((r) => [r.id, r.rank]), [['red-sea', 3]]);
+    let h = recordReadings({}, readings, AT);
+    h = recordReadings(h, readings, AT + 5 * MIN);
+    assert.equal(h['red-sea']?.length, 1);
+    h = recordReadings(h, regionReadings([tile('red-sea', 4.1)]), AT + 6 * MIN);
+    assert.equal(h['red-sea']?.length, 2);
+    h = recordReadings(h, readings, AT + 25 * 60 * MIN);
+    assert.deepEqual(h['red-sea']?.map((s) => s.at), [AT + 25 * 60 * MIN]);
+    assert.deepEqual(decodeRegionHistory(JSON.stringify(h)), h);
+    assert.deepEqual(decodeRegionHistory('{bad'), {});
+    assert.deepEqual(decodeRegionHistory(JSON.stringify({ 'red-sea': [{ at: 'x', rank: 9 }, { at: AT, rank: 2 }] })), { 'red-sea': [{ at: AT, rank: 2 }] });
+    assert.equal(baselineOf(undefined, AT), null);
+    assert.deepEqual(changedParts(parts(30, 22), parts(10, 20)), ['military activity +20']);
+    assert.equal(rankOfScore(0.2), 1);
+    assert.equal(rankOfScore(7), 5);
+  });
 });
