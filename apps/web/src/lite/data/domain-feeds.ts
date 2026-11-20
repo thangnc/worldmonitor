@@ -12,7 +12,7 @@ import { escalationLevel, scoreHotspots } from './escalation';
 import { financeFeeds, riskGaugeFeeds } from './finance-indicators';
 import { financeMacroFeeds } from './finance-macro-indicators';
 import { aircraftFeeds, gpsFeeds, seaIncidentFeeds } from './geo-layers';
-import { chokepointFeeds, embassyAlertFeeds, newSanctionsFeeds, taiwanStraitFeeds } from './geo-watch';
+import { chokepointFeeds, embassyAlertFeeds, exportControlFeeds, newSanctionsFeeds, taiwanStraitFeeds } from './geo-watch';
 import {
   useChokepoints,
   useCommodityQuotes,
@@ -24,6 +24,7 @@ import {
   useEarthquakes,
   useEmbassyAlerts,
   useEtfFlows,
+  useFederalRegister,
   useFearGreed,
   useGoldIntelligence,
   useGpsHighCells,
@@ -125,6 +126,7 @@ export function useGeoFeeds({ escalation, tiles, source: escalationSource }: { e
   const strait = useCrossStraitActivity();
   const embassy = useEmbassyAlerts();
   const sanctions = useSanctions();
+  const federalRegister = useFederalRegister();
   return useMemo(() => {
     const now = Date.now();
     const news = digest.status === 'ready' ? digestItems(digest.data) : [];
@@ -137,10 +139,11 @@ export function useGeoFeeds({ escalation, tiles, source: escalationSource }: { e
       ...taiwanStraitFeeds(strait, news, now),
       ...embassyAlertFeeds(embassy, INTEL_HOTSPOTS, news, now),
       ...newSanctionsFeeds(sanctions, news, now),
+      ...exportControlFeeds(federalRegister, news, now),
       ...regionEscalationFeeds({ regions: ESCALATION_REGIONS, tiles, source: escalationSource, missing: escalation[0]?.missing, history: levelHistory, news, now }),
       AIRSPACE_FEED,
     ]);
-  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy, sanctions, tiles, escalation, escalationSource, levelHistory]);
+  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy, sanctions, federalRegister, tiles, escalation, escalationSource, levelHistory]);
 }
 
 /** The airspace row stays unavailable until the FAA grants NOTAM access (spec: Owner decisions). */

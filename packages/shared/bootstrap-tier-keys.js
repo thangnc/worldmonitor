@@ -51,6 +51,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   // Lite Technology & AI indicators (docs/engineering/architecture/lite.md).
   cyberThreatHistory: 'cyber:threats:history:v1',
   kevRecent: 'cyber:kev-recent:v1',
+  // Lite Geopolitics export controls and tariffs (#122): BIS and USTR Federal Register documents (seed-federal-register).
+  federalRegister: 'policy:federal-register:v1',
   techReadiness: 'economic:worldbank-techreadiness:v1',
   progressData: 'economic:worldbank-progress:v1',
   renewableEnergy: 'economic:worldbank-renewable:v1',
@@ -200,6 +202,8 @@ const ON_DEMAND_KEY_NAMES = new Set([
   // Lite Tech indicators: 30 days of attack-infrastructure counts (~3 KB) and
   // the last 30 days of CISA KEV additions (~17 KB), read only by /lite/tech.
   'cyberThreatHistory', 'kevRecent',
+  // Lite Geopolitics: the last 30 days of BIS and USTR Federal Register documents (#122), read only by /lite and /lite/geopolitics.
+  'federalRegister',
   'chinaPolicyEvents', 'chinaDecisionSignals',
   'bisDsr', 'bisPropertyResidential', 'bisPropertyCommercial',
   // One row of this feeds the Central Banks tab's policy-rate list, which BIS

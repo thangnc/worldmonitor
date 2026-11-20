@@ -58,6 +58,7 @@ import { FEED_LABEL, escalationLevel, } from '../data/escalation';
 import {
   CHOKEPOINT_TRANSIT_SHARE,
   EMBASSY_WINDOW_HOURS,
+  FED_REG_NEW_DAYS,
   SANCTIONS_WINDOW_HOURS,
   TAIWAN_MIN,
   TAIWAN_RATIO,
@@ -645,6 +646,7 @@ function GeoIndicators({ tiles, escalation, escalationSource, onOpen }: { tiles:
     `Taiwan Strait: PLA aircraft or PLAN ships at ${TAIWAN_RATIO}× their 30-day median or more (at least ${TAIWAN_MIN.plaAircraftSorties} aircraft or ${TAIWAN_MIN.planShips} ships), Taiwan MND.`,
     `Embassy alerts: a US embassy alert in the last ${EMBASSY_WINDOW_HOURS} h for a curated hotspot's country (the watchlist stand-in).`,
     `Region escalation: ${REGION_ESCALATION_RULE}`,
+    `Export controls and tariffs: a BIS or USTR rule, proposed rule, or notice that changes controls or tariffs, published in the last ${FED_REG_NEW_DAYS} days (Federal Register; routine notices are dropped).`,
     `New sanctions: a new OFAC designation (SDN or Consolidated list) for a country, first seen on the seeder's latest run or dated in the last ${SANCTIONS_WINDOW_HOURS} h; linked news must name the country and sanctions.`,
     'Linked news: digest stories naming the country, place or sea area, 24 h before to 1 h after.',
     'Fired indicators are grouped by region (a country in the region, else its map area), the region with the highest live hotspot score first, newest first inside; the rest are under Other.',

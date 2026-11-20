@@ -63,6 +63,8 @@ export const LITE_SEED_SECTIONS = [
   // Japan MoD needs a proxy; without one the tick reports a config error for this section only.
   { label: 'Cross-Strait-Activity', script: 'seed-cross-strait-activity.mjs', useBundledCa: true, seedMetaKey: 'military:cross-strait-activity:complete', sourceRetryMetaKey: 'seed-meta:military:cross-strait-activity:taiwan-mnd', sourceRetryDelayMs: 30 * MIN, intervalMs: 3 * HOUR, timeoutMs: 300_000, requiredEnv: [['JAPAN_MOD_PROXY_URL', 'PROXY_URL']] },
   { label: 'Security-Advisories', script: 'seed-security-advisories.mjs', seedMetaKey: 'intelligence:advisories', intervalMs: 60 * MIN, timeoutMs: 300_000 },
+  // BIS and USTR Federal Register documents for the export-controls and tariffs indicator (#122).
+  { label: 'Federal-Register', script: 'seed-federal-register.mjs', seedMetaKey: 'policy:federal-register', intervalMs: 2 * HOUR, timeoutMs: 120_000 },
 
   // Finance & Crypto
   { label: 'Crypto-Quotes', script: 'seed-crypto-quotes.mjs', seedMetaKey: 'market:crypto', intervalMs: 5 * MIN, timeoutMs: 120_000 },

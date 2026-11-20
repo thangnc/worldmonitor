@@ -11912,6 +11912,23 @@
       ]
     },
     {
+      "host": "www.federalregister.gov",
+      "provider": "www.federalregister.gov",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit www.federalregister.gov and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "apps/web/src/lite/data/geo-watch.ts"
+        },
+        {
+          "path": "scripts/seed-federal-register.mjs"
+        }
+      ]
+    },
+    {
       "host": "www.federalreserve.gov",
       "provider": "www.federalreserve.gov",
       "kind": "feed+structured",

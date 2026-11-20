@@ -417,6 +417,8 @@ const STANDALONE_KEYS = {
   // the last 30 days of KEV additions (seed-cve-reference extra key).
   cyberThreatHistory: 'cyber:threats:history:v1',
   kevRecent: 'cyber:kev-recent:v1',
+  // Lite Geopolitics export controls and tariffs (#122): BIS and USTR Federal Register documents.
+  federalRegister: 'policy:federal-register:v1',
   predictionCountryMarkets: 'prediction:markets-country-index:v1',
   // US HTS chapter 99 duty index (catalog; coverage shards are versioned by
   // release under trade:us-hts:coverage:v1). Read only by get-us-import-duty.
@@ -935,6 +937,11 @@ const SEED_META = {
     key: 'seed-meta:cyber:threats:history', maxStaleMin: 240, // written after each 2h cyber snapshot; 240 = 2x interval
     activationKey: 'seed-activated:cyber:threats-history',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 34, activationKey: 'seed-activated:cyber:threats-history' },
+  },
+  federalRegister: {
+    key: 'seed-meta:policy:federal-register', maxStaleMin: 360, // seed-federal-register every 2 h; 360 = 3x interval
+    activationKey: 'seed-activated:policy:federal-register',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 122, activationKey: 'seed-activated:policy:federal-register' },
   },
   kevRecent: {
     key: 'seed-meta:cyber:kev-recent', maxStaleMin: 2880, // extra key of the daily NVD KEV sync; 2880 = 2x interval
@@ -2742,6 +2749,8 @@ const ON_DEMAND_KEYS = new Set([
   'cveReference',
   // Lite Tech indicator keys: pending until their seeders write the activation marker.
   'cyberThreatHistory', 'kevRecent',
+  // Lite Geopolitics export controls and tariffs (#122).
+  'federalRegister',
   // Per-country GDELT article index (#7748). The 15-minute materializer
   // writes the marker after the index and its seed-meta publish; absence is
   // pending until that first tick and strict afterward.
@@ -2961,6 +2970,7 @@ const ACTIVATION_MARKERS = {
   cveReference: SEED_META.cveReference.activationKey,
   cyberThreatHistory: SEED_META.cyberThreatHistory.activationKey,
   kevRecent: SEED_META.kevRecent.activationKey,
+  federalRegister: SEED_META.federalRegister.activationKey,
   // Written by scripts/seed-gdelt-bulk-materializer.mjs after the per-country
   // article index publishes with its seed-meta (#7748).
   gdeltCountryArticles: SEED_META.gdeltCountryArticles.activationKey,
@@ -3366,6 +3376,8 @@ const MISSING_DATA_IS_FAILURE_KEYS = new Set([
 const ZERO_RECORD_DATA_OK_KEYS = new Set([
   // A 30-day window with no CISA KEV addition is valid, but the key must exist (Lite Tech indicators).
   'kevRecent',
+  // A 30-day window with no kept BIS or USTR document is valid, but the key must exist (#122).
+  'federalRegister',
   'ukmtoIncidents',
   ...EMPTY_DATA_OK_KEYS,
   'sanctionsChanges',

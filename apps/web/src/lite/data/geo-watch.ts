@@ -419,3 +419,144 @@ export function newSanctionsFeeds(source: ResourceState<ListSanctionsPressureRes
   const listed = source.data.sdnCount + source.data.consolidatedCount;
   return feeds(base, newSanctionsIndicators(source.data, news, now), `Live · no new OFAC designation in ${SANCTIONS_WINDOW_HOURS} h · ${listed.toLocaleString('en-US')} listed`);
 }
+
+// ---- Export controls and tariffs (#122) --------------------------------------
+
+/** A Federal Register document counts as new for this many days: the source is dated, not timed, and this covers a weekend. */
+export const FED_REG_NEW_DAYS = 3;
+/** seed-federal-register runs every 2 h. */
+export const FED_REG_CADENCE_MIN = 120;
+const FED_REG_MAX_CARDS = 4;
+
+export interface FederalRegisterDoc {
+  id: string;
+  title: string;
+  type: string;
+  action: string;
+  agency: 'BIS' | 'USTR';
+  kind: 'export-control' | 'tariff';
+  /** YYYY-MM-DD. */
+  publishedAt: string;
+  effectiveOn: string;
+  url: string;
+  abstract: string;
+  aiRelated: boolean;
+}
+
+export interface FederalRegisterFeed {
+  fetchedAt: number;
+  windowDays: number;
+  items: FederalRegisterDoc[];
+}
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The seeded payload (`policy:federal-register:v1`), or null when it is not one. An empty list is valid. */
+export function decodeFederalRegister(value: unknown): FederalRegisterFeed | null {
+  const v = value as Partial<FederalRegisterFeed> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.items)) return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const items: FederalRegisterDoc[] = [];
+  for (const raw of v.items as unknown[]) {
+    const i = raw as Record<string, unknown>;
+    const agency = i?.agency === 'BIS' || i?.agency === 'USTR' ? i.agency : null;
+    const kind = i?.kind === 'export-control' || i?.kind === 'tariff' ? i.kind : null;
+    if (!agency || !kind || !str(i.id) || !str(i.title) || !DATE_ONLY.test(str(i.publishedAt))) continue;
+    items.push({
+      id: str(i.id), title: str(i.title), type: str(i.type), action: str(i.action), agency, kind, publishedAt: str(i.publishedAt),
+      effectiveOn: DATE_ONLY.test(str(i.effectiveOn)) ? str(i.effectiveOn) : '', url: str(i.url).startsWith('https://www.federalregister.gov/') ? str(i.url) : '',
+      abstract: str(i.abstract), aiRelated: i.aiRelated === true,
+    });
+  }
+  items.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || b.id.localeCompare(a.id));
+  return { fetchedAt: v.fetchedAt as number, windowDays: Number.isInteger(v.windowDays) ? (v.windowDays as number) : 30, items };
+}
+
+/** Countries trade and export-control documents name most often, with the adjective headlines use. */
+const TRADE_COUNTRIES: ReadonlyArray<{ code: string; names: readonly string[] }> = [
+  { code: 'CN', names: ['China', 'Chinese', "People's Republic of China", 'PRC'] },
+  { code: 'RU', names: ['Russia', 'Russian'] },
+  { code: 'IR', names: ['Iran', 'Iranian'] },
+  { code: 'VN', names: ['Vietnam', 'Vietnamese'] },
+  { code: 'MX', names: ['Mexico', 'Mexican'] },
+  { code: 'CA', names: ['Canada', 'Canadian'] },
+  { code: 'IN', names: ['India', 'Indian'] },
+  { code: 'JP', names: ['Japan', 'Japanese'] },
+  // "Korea" alone is ambiguous; North Korea has its own row.
+  { code: 'KR', names: ['South Korea', 'South Korean', 'Republic of Korea'] },
+  { code: 'TW', names: ['Taiwan', 'Taiwanese'] },
+  { code: 'BR', names: ['Brazil', 'Brazilian'] },
+  { code: 'TR', names: ['Turkey', 'Türkiye', 'Turkish'] },
+  { code: 'BY', names: ['Belarus', 'Belarusian'] },
+  { code: 'KP', names: ['North Korea', 'North Korean'] },
+];
+const wordRe = (w: string) => new RegExp(`(^|[^\\p{L}])${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^\\p{L}])`, 'iu');
+
+/** ISO2 codes of the countries a text names, in list order. */
+export function tradeCountries(text: string): string[] {
+  return TRADE_COUNTRIES.filter((c) => c.names.some((n) => wordRe(n).test(text))).map((c) => c.code);
+}
+
+const KIND_WORDS: Readonly<Record<FederalRegisterDoc['kind'], RegExp>> = {
+  'export-control': /\b(export controls?|entity list|chip curbs?|blacklist(ed)?|semiconductors?|chips?|Commerce Department|BIS)\b/i,
+  tariff: /\b(tariffs?|Section (301|232)|duties|trade (war|deal|talks)|USTR|trade representative|exclusions?)\b/i,
+};
+const KIND_DRIVERS: Readonly<Record<FederalRegisterDoc['kind'], readonly string[]>> = {
+  'export-control': ['export controls', 'export control', 'Entity List', 'chip curbs', 'Commerce Department'],
+  tariff: ['tariff', 'tariffs', 'Section 301', 'Section 232', 'USTR', 'trade representative'],
+};
+
+const daysSinceDate = (date: string, now: number) =>
+  Math.floor((Date.parse(`${new Date(now).toISOString().slice(0, 10)}T00:00:00Z`) - Date.parse(`${date}T00:00:00Z`)) / (24 * HOUR_MS));
+const docLabel = (d: FederalRegisterDoc) => (d.action && d.action.length <= 40 ? d.action.replace(/\.$/, '') : d.type);
+
+/**
+ * One card per BIS or USTR document published in the last FED_REG_NEW_DAYS
+ * days (rules, proposed rules, and notices that change controls or tariffs;
+ * the seeder drops routine notices). News links when a story uses the
+ * document's trade or export-control words and, when the title names a
+ * country, names that country too.
+ */
+export function exportControlIndicators(data: FederalRegisterFeed, news: readonly LiteItem[], now: number): Indicator[] {
+  return data.items
+    .filter((d) => { const age = daysSinceDate(d.publishedAt, now); return age >= 0 && age < FED_REG_NEW_DAYS; })
+    .slice(0, FED_REG_MAX_CARDS)
+    .map((d) => {
+      // Published around 08:45 New York time; the news window ends an hour after.
+      const at = Math.min(now, Date.parse(`${d.publishedAt}T14:00:00Z`));
+      const codes = tradeCountries(d.title);
+      const names = TRADE_COUNTRIES.filter((c) => codes.includes(c.code)).flatMap((c) => c.names);
+      const links = linkNews({ countries: codes.map((code) => ({ code, name: countryName(code) })), drivers: [...KIND_DRIVERS[d.kind], ...names] }, news, at, LINK_WINDOW_HOURS.geo);
+      const stories = links.stories.filter((st) => {
+        const text = `${st.item.title} ${st.item.snippet ?? ''}`;
+        return KIND_WORDS[d.kind].test(text) && (!names.length || names.some((n) => wordRe(n).test(text)));
+      });
+      return {
+        id: `export-controls:${d.id}`,
+        domain: 'geo',
+        name: `${d.kind === 'export-control' ? 'Export controls' : 'Tariffs'} · ${d.agency} ${d.type.toLowerCase()}`,
+        value: docLabel(d),
+        change: d.effectiveOn ? `effective ${dayMonth(Date.parse(`${d.effectiveOn}T00:00:00Z`))}` : undefined,
+        rule: `new ${d.agency} rule or action ≤ ${FED_REG_NEW_DAYS} days`,
+        detail: d.title,
+        trust: { level: 'official', source: `Federal Register (${d.agency})` },
+        at,
+        dataDate: `published ${dayMonth(Date.parse(`${d.publishedAt}T00:00:00Z`))}`,
+        updatedAt: data.fetchedAt,
+        links: { ...links, stories },
+        place: codes.length ? { countries: codes } : undefined,
+      } satisfies Indicator;
+    });
+}
+
+export function exportControlFeeds(source: ResourceState<FederalRegisterFeed>, news: readonly LiteItem[], now: number): FeedState[] {
+  const base = feedState({
+    id: 'export-controls', name: 'Export controls and tariffs · Federal Register', source, seeder: 'seed-federal-register',
+    cadenceMin: FED_REG_CADENCE_MIN, dataAt: source.data?.fetchedAt ?? null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !source.data) return [base];
+  const latest = source.data.items[0];
+  return feeds(base, exportControlIndicators(source.data, news, now), latest
+    ? `Live · no BIS or USTR action in ${FED_REG_NEW_DAYS} days · latest ${latest.agency} ${latest.type.toLowerCase()}, ${dayMonth(Date.parse(`${latest.publishedAt}T00:00:00Z`))}`
+    : `Live · no BIS or USTR action in ${source.data.windowDays} days`);
+}

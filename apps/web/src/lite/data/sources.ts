@@ -30,7 +30,7 @@ import { MILITARY_QUERY_REGIONS } from '@wm/client/config/military';
 import { isConflictCounts, type ConflictCounts } from './conflict';
 import { isGpsHighCells, type GpsHighCells } from './geo-layers';
 import { isDdosWindows, type DdosWindows } from './tech-map';
-import { isCrossStraitSnapshot, type EmbassyAlerts } from './geo-watch';
+import { decodeFederalRegister, isCrossStraitSnapshot, type EmbassyAlerts, type FederalRegisterFeed } from './geo-watch';
 import type { CrossStraitActivitySnapshot } from '@wm/client/types/cross-strait-activity';
 import type { ListUkmtoIncidentsResponse } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';
 import { readUkmtoSnapshot } from '@wm/shared/ukmto-incidents';
@@ -406,6 +406,12 @@ function required<T>(key: string, value: T | null): T {
 export async function loadThreatHistory(): Promise<ThreatHistory> {
   await startBootstrap();
   return required('cyberThreatHistory', decodeThreatHistory(await ensureHydrated('cyberThreatHistory')));
+}
+
+/** BIS and USTR Federal Register documents of the last 30 days (seed-federal-register, #122). */
+export async function loadFederalRegister(): Promise<FederalRegisterFeed> {
+  await startBootstrap();
+  return required('federalRegister', decodeFederalRegister(await ensureHydrated('federalRegister')));
 }
 
 /** CISA KEV additions of the last 30 days (seed-cve-reference). */

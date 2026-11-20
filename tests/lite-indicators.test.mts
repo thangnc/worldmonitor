@@ -133,6 +133,10 @@ import {
   embassyCoverage,
   isCrossStraitSnapshot,
   SANCTIONS_ENTRY_LIMIT,
+  FED_REG_NEW_DAYS,
+  decodeFederalRegister,
+  exportControlFeeds,
+  tradeCountries,
   newOfacDesignations,
   newSanctionsFeeds,
   taiwanStraitFeeds,
@@ -1565,7 +1569,7 @@ describe('New OFAC sanctions (#118)', () => {
 
 describe('Decision tiers (#121)', () => {
   it('tags each feed check daily or check weekly as the spec tables do, and leaves analyst inputs untagged', () => {
-    for (const id of ['chokepoint:hormuz_strait', 'chokepoints', 'region:red-sea', 'sanctions:RU', 'taiwan', 'embassy:kyiv:x', 'treasury', 'other-bonds',
+    for (const id of ['chokepoint:hormuz_strait', 'chokepoints', 'region:red-sea', 'sanctions:RU', 'export-controls:2026-1', 'taiwan', 'embassy:kyiv:x', 'treasury', 'other-bonds',
       'credit-spreads', 'vix', 'dollar-index', 'macro-print', 'btc-move', 'service-outage', 'kev-new', 'cyber-8k', 'internet-outage']) {
       assert.equal(feedTier(id), 'daily', id);
     }
@@ -1575,5 +1579,71 @@ describe('Decision tiers (#121)', () => {
     for (const id of ['aircraft:kyiv', 'gps:taipei', 'gps-region:europe', 'attack-spike', 'violence:UA', 'sea:u1', 'airspace', 'unknown']) {
       assert.equal(feedTier(id), null, id);
     }
+  });
+});
+
+describe('Export controls and tariffs (#122)', () => {
+  const docRaw = (o: Record<string, unknown> = {}) => ({
+    id: '2026-20001', title: 'Addressing Remote Access to Advanced Semiconductors', type: 'Rule', action: 'Interim final rule.', agency: 'BIS',
+    kind: 'export-control', publishedAt: '2026-11-07', effectiveOn: '2026-11-07', url: 'https://www.federalregister.gov/d/2026-20001', abstract: '', aiRelated: false, ...o,
+  });
+  const feed = (items: unknown[]) => decodeFederalRegister({ fetchedAt: AT - H, windowDays: 30, items })!;
+
+  it('decodes the seeded payload strictly, newest first, and keeps an empty list valid', () => {
+    assert.equal(decodeFederalRegister(null), null);
+    assert.deepEqual(feed([]).items, []);
+    const d = feed([docRaw({ id: 'old', publishedAt: '2026-10-30' }), docRaw(), docRaw({ id: 'bad', agency: 'FDA' }), docRaw({ id: 'x', url: 'https://evil.example' })]);
+    // Same day: by document number, descending.
+    assert.deepEqual(d.items.map((i) => i.id), ['x', '2026-20001', 'old']);
+    assert.equal(d.items[0]!.url, '');
+  });
+
+  it(`fires one card per BIS or USTR action in the last ${FED_REG_NEW_DAYS} days, with its place and filtered news`, () => {
+    const data = feed([
+      docRaw(),
+      docRaw({ id: '2026-2', agency: 'USTR', kind: 'tariff', type: 'Notice', action: 'Notice.', publishedAt: '2026-11-06', effectiveOn: '',
+        title: "Notice of Modification of Section 301 Action: China's Targeting of the Maritime, Logistics, and Shipbuilding Sectors" }),
+      docRaw({ id: '2026-old', publishedAt: '2026-11-04' }),
+    ]);
+    const news = [
+      // The USTR notice is dated 6 Nov (14:00 UTC); its window is the 24 h before.
+      story('China vows response after US raises Section 301 tariffs on ships', AT - 47 * H),
+      story('EU and US agree on steel tariffs', AT - 47 * H),
+      story('Commerce Department tightens chip curbs on remote access', AT - 26 * H),
+    ];
+    const list = exportControlFeeds(ready(data), news, AT);
+    assert.deepEqual(list.map((f) => f.id), ['export-controls:2026-20001', 'export-controls:2026-2']);
+    const [bis, ustr] = list;
+    assert.equal(bis?.kind === 'fired' && bis.indicator.name, 'Export controls · BIS rule');
+    assert.equal(bis?.kind === 'fired' && bis.indicator.value, 'Interim final rule');
+    assert.equal(bis?.kind === 'fired' && bis.indicator.change, 'effective 7 Nov');
+    assert.equal(bis?.kind === 'fired' && bis.indicator.place, undefined);
+    assert.deepEqual(bis?.kind === 'fired' && bis.indicator.links.stories.map((st) => st.item.title), ['Commerce Department tightens chip curbs on remote access']);
+    assert.equal(ustr?.kind === 'fired' && ustr.indicator.name, 'Tariffs · USTR notice');
+    assert.deepEqual(ustr?.kind === 'fired' && ustr.indicator.place, { countries: ['CN'] });
+    // A tariff story about other countries does not link to the China action.
+    assert.deepEqual(ustr?.kind === 'fired' && ustr.indicator.links.stories.map((st) => st.item.title), ['China vows response after US raises Section 301 tariffs on ships']);
+    assert.equal(ustr?.kind === 'fired' && ustr.indicator.trust.source, 'Federal Register (USTR)');
+  });
+
+  it('stays quiet naming the latest action, and reports stale and unavailable with the seeder', () => {
+    const quiet = exportControlFeeds(ready(feed([docRaw({ publishedAt: '2026-10-30' })])), [], AT)[0]!;
+    assert.equal(quiet.kind, 'quiet');
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, 'Live · no BIS or USTR action in 3 days · latest BIS rule, 30 Oct');
+    assert.equal(exportControlFeeds(ready({ ...feed([]), fetchedAt: AT - 9 * H }), [], AT)[0]!.kind, 'stale');
+    const down = exportControlFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
+    assert.match(down.kind === 'unavailable' ? down.detail : '', /seed-federal-register/);
+    assert.deepEqual(tradeCountries("Vietnam's Acts and Chinese overcapacity; North Korean entities"), ['CN', 'VN', 'KP']);
+    assert.deepEqual(tradeCountries('Republic of Korea steel'), ['KR']);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { fetchFederalRegister } = await import('../scripts/seed-federal-register.mjs');
+    const body = { total_pages: 1, results: [{ document_number: '2026-9', title: 'Additions to the Entity List', type: 'Rule', action: 'Final rule.', abstract: '', publication_date: '2026-11-08',
+      effective_on: '2026-11-08', html_url: 'https://www.federalregister.gov/d/2026-9', agencies: [{ slug: 'industry-and-security-bureau' }] }] };
+    const seeded = await fetchFederalRegister({ fetchImpl: async () => ({ ok: true, status: 200, json: async () => body }) as never, nowMs: AT });
+    const read = decodeFederalRegister(JSON.parse(JSON.stringify(seeded)));
+    assert.deepEqual(read?.items.map((i) => [i.id, i.agency, i.kind]), [['2026-9', 'BIS', 'export-control']]);
+    assert.equal(exportControlFeeds(ready(read!), [], AT)[0]?.kind, 'fired');
   });
 });

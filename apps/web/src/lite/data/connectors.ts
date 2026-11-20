@@ -201,6 +201,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['Company filings · 8-K indicator', 'Cyber incidents · 8-K item 1.05 indicator (Tech)'],
   },
   {
+    id: 'federal-register', name: 'Federal Register · BIS and USTR', domain: 'geo', kind: 'Official notices', method: 'API',
+    producer: 'seed-federal-register', healthKeys: ['federalRegister'], maxStaleMin: 360,
+    hosts: [{ host: 'www.federalregister.gov', licence: 'terms-review' }],
+    usedBy: ['Export controls and tariffs indicator'],
+  },
+  {
     id: 'chokepoints', name: 'Chokepoint status', domain: 'fin', kind: 'Derived status', method: 'Derived',
     producer: 'get-chokepoint-status', healthKeys: ['chokepoints'], maxStaleMin: 60, hosts: [],
     usedBy: ['Where markets are moving map'],
