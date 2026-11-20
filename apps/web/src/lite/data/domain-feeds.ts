@@ -24,6 +24,8 @@ import {
   useChipRevenue,
   useHyperscalerCapex,
   useCreditSpreads,
+  useFedBalanceSheet,
+  useReverseRepo,
   useCrossStraitActivity,
   useCryptoQuotes,
   useDigest,
@@ -180,6 +182,8 @@ export function useFinanceFeeds(): FeedState[] {
   const calendar = useMacroCalendar();
   const curves = useTreasuryCurves();
   const spreads = useCreditSpreads();
+  const balance = useFedBalanceSheet();
+  const rrp = useReverseRepo();
   const odds = useRateOdds();
   const cbDecisions = useCbDecisions();
   const forecasts = useMacroForecasts();
@@ -194,11 +198,11 @@ export function useFinanceFeeds(): FeedState[] {
     return sortFeeds([
       ...financeFeeds({ crypto, flow, stables, fearGreed, news, now }),
       ...riskGaugeFeeds({ commodities, vixDaily, gold, news, now }),
-      ...financeMacroFeeds({ calendar, forecasts, curves, spreads, bonds, etf, flow, rates, filings, news, now }),
+      ...financeMacroFeeds({ calendar, forecasts, curves, spreads, bonds, etf, flow, rates, filings, balance, rrp, news, now }),
       rateOddsFeed({ odds, news, now }),
       ...centralBankFeeds({ decisions: cbDecisions, calendar, news, now }),
     ]);
-  }, [crypto, flow, stables, fearGreed, commodities, vixDaily, gold, calendar, forecasts, curves, spreads, odds, cbDecisions, bonds, etf, rates, filings, digest]);
+  }, [crypto, flow, stables, fearGreed, commodities, vixDaily, gold, calendar, forecasts, curves, spreads, balance, rrp, odds, cbDecisions, bonds, etf, rates, filings, digest]);
 }
 
 

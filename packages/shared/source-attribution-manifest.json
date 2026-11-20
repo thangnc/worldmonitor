@@ -6261,6 +6261,20 @@
       ]
     },
     {
+      "host": "markets.newyorkfed.org",
+      "provider": "markets.newyorkfed.org",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit markets.newyorkfed.org and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "scripts/seed-reverse-repo.mjs"
+        }
+      ]
+    },
+    {
       "host": "marketwatch.com",
       "provider": "marketwatch.com",
       "kind": "feed",
