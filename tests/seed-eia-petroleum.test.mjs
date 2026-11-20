@@ -7,6 +7,7 @@ import {
   countSeries,
   validatePetroleum,
   declareRecords,
+  fetchEiaPetroleum,
 } from '../scripts/seed-eia-petroleum.mjs';
 
 describe('seed-eia-petroleum constants', () => {
@@ -14,8 +15,11 @@ describe('seed-eia-petroleum constants', () => {
     assert.equal(CANONICAL_KEY, 'energy:eia-petroleum:v1');
   });
 
-  it('SERIES maps the four expected indicators to EIA series ids', () => {
-    assert.deepEqual(Object.keys(SERIES).sort(), ['brent', 'inventory', 'production', 'wti']);
+  it('SERIES maps the expected indicators to EIA series ids', () => {
+    assert.deepEqual(Object.keys(SERIES).sort(), ['brent', 'distillate', 'gasoline', 'inventory', 'production', 'wti']);
+    // Product stocks for the Lite US crude stocks card (#139).
+    assert.equal(SERIES.gasoline, 'PET.WGTSTUS1.W');
+    assert.equal(SERIES.distillate, 'PET.WDISTUS1.W');
     assert.equal(SERIES.wti, 'PET.RWTC.W');
     assert.equal(SERIES.brent, 'PET.RBRTE.W');
     assert.equal(SERIES.production, 'PET.WCRFPUS2.W');
@@ -47,6 +51,7 @@ describe('parseSeries', () => {
       current: 76.23,
       previous: 75.10,
       date: '2026-04-11',
+      previousDate: '2026-04-04',
       unit: 'dollars per barrel',
     });
   });
@@ -98,6 +103,10 @@ describe('countSeries + validatePetroleum + declareRecords', () => {
     assert.equal(countSeries({}), 0);
   });
 
+  it('countSeries counts only the series, not other fields', () => {
+    assert.equal(countSeries({ wti: point, fetchedAt: 1, note: 'x' }), 1);
+  });
+
   it('countSeries counts only present series', () => {
     assert.equal(countSeries({ wti: point }), 1);
     assert.equal(countSeries({ wti: point, brent: point }), 2);
@@ -119,5 +128,28 @@ describe('countSeries + validatePetroleum + declareRecords', () => {
     assert.equal(declareRecords({}), 0);
     assert.equal(declareRecords({ wti: point }), 1);
     assert.equal(declareRecords({ wti: point, brent: point, production: point, inventory: point }), 4);
+  });
+});
+
+describe('fetchEiaPetroleum (#139)', () => {
+  const row = (value, period) => ({ value: String(value), period, units: 'MBBL' });
+  const answer = (rows) => ({ response: { data: rows } });
+
+  it('reads every series with a User-Agent and the key, and keeps the series that answered', async () => {
+    const calls = [];
+    const fetchImpl = async (url, init) => {
+      calls.push([url, init?.headers?.['User-Agent']]);
+      const body = /WCESTUS1/.test(url) ? answer([row(417797, '2026-11-13'), row(414417, '2026-11-06')])
+        : /WGTSTUS1/.test(url) ? answer([row(205000, '2026-11-13'), row(206100, '2026-11-06')])
+          : null;
+      return { ok: body !== null, status: body ? 200 : 503, json: async () => body };
+    };
+    const data = await fetchEiaPetroleum({ fetchImpl, apiKey: 'test-key' });
+    assert.equal(calls.length, Object.keys(SERIES).length);
+    assert.ok(calls.every(([url, ua]) => /^https:\/\/api\.eia\.gov\/v2\/seriesid\/PET\.\w+\.W\?api_key=test-key&num=2$/.test(url) && /^WorldMonitor /.test(ua)));
+    assert.deepEqual(data.inventory, { current: 417797, previous: 414417, date: '2026-11-13', previousDate: '2026-11-06', unit: 'thousand barrels' });
+    assert.equal(data.gasoline?.current, 205000);
+    assert.deepEqual(Object.keys(data).sort(), ['gasoline', 'inventory']);
+    await assert.rejects(fetchEiaPetroleum({ fetchImpl, apiKey: '' }), /EIA_API_KEY not set/);
   });
 });

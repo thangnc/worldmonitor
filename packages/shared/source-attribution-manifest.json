@@ -10675,6 +10675,9 @@
           "path": "scripts/seed-chip-revenue.mjs"
         },
         {
+          "path": "scripts/seed-eia-petroleum.mjs"
+        },
+        {
           "path": "scripts/seed-five-factor-scorecard.mjs"
         },
         {

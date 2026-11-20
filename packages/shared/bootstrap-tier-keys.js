@@ -69,6 +69,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   reverseRepo: 'economic:reverse-repo:v1',
   // Lite Finance stablecoin supply (#137): US$ stablecoins' total and largest coins from DefiLlama (seed-stablecoin-supply).
   stablecoinSupply: 'market:stablecoin-supply:v1',
+  // Lite Finance US crude stocks (#139): EIA weekly petroleum figures (seed-eia-petroleum, also in the energy bundle).
+  eiaPetroleum: 'energy:eia-petroleum:v1',
   // Lite Tech AI models (#126): watched labs' recent models and price changes (seed-ai-models).
   aiModels: 'tech:ai-models:v1',
   // Lite Tech AI regulation (#127): EU and US AI and data rules (seed-ai-regulation).
@@ -246,6 +248,8 @@ const ON_DEMAND_KEY_NAMES = new Set([
   'reverseRepo',
   // Lite Finance: US$ stablecoin supply now, a week and a month ago (#137, about 2 KB), read only by /lite and /lite/finance.
   'stablecoinSupply',
+  // Lite Finance: EIA weekly crude, gasoline and distillate stocks with prices and production (#139, about 1 KB), read only by /lite and /lite/finance.
+  'eiaPetroleum',
   // Lite Tech: the watched AI labs' models of the last 90 days and price changes (#126, ~10 KB), read only by /lite and /lite/tech.
   'aiModels',
   // Lite Tech: a 60-day log of EU and US AI and data rules (#127, a few KB), read only by /lite and /lite/tech.

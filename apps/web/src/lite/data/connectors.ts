@@ -159,6 +159,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['Earnings · watchlist (Finance)'],
   },
   {
+    id: 'eia-petroleum', name: 'US oil inventories · EIA', domain: 'fin', kind: 'Official', method: 'API',
+    producer: 'seed-eia-petroleum', healthKeys: ['eiaPetroleum'], maxStaleMin: 4320,
+    hosts: [{ host: 'api.eia.gov', licence: 'terms-review' }],
+    usedBy: ['US crude stocks indicator'],
+  },
+  {
     id: 'rate-odds', name: 'Fed decision odds · Kalshi KXFED', domain: 'fin', kind: 'Market data (one venue)', method: 'API',
     producer: 'seed-rate-odds', healthKeys: ['rateOdds'], maxStaleMin: 180,
     hosts: [{ host: 'api.elections.kalshi.com', licence: 'terms-review' }, { host: 'api.stlouisfed.org', licence: 'terms-review' }],

@@ -215,6 +215,7 @@ const EXCLUDED_BOOTSTRAP_KEYS = {
   cbDecisions: 'Lite indicator feed and macro calendar (Fed and ECB rate decisions, #130); not reviewed for the widget catalog',
   reverseRepo: 'Lite indicator feed (NY Fed reverse repo take-up, #136); not reviewed for the widget catalog',
   stablecoinSupply: 'Lite indicator feed (DefiLlama stablecoin supply, #137); not reviewed for the widget catalog',
+  eiaPetroleum: 'Lite indicator feed (EIA weekly crude and product stocks, #139); not reviewed for the widget catalog',
   aiModels: 'Lite indicator feed and model tracker (OpenRouter listing, #126); not reviewed for the widget catalog',
   aiRegulation: 'Lite indicator feed and policy panel (EU and US AI and data rules, #127); not reviewed for the widget catalog',
   chipRevenue: 'Lite indicator feed (TSMC monthly revenue, TWSE and MOPS, #134); not reviewed for the widget catalog',

@@ -56,7 +56,7 @@ import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cy
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
 import { decodeAiLabNews, decodeAiModels, decodeAiRegulation, decodeBreaches, decodeChipRevenue, decodeHyperscalerCapex, decodeRecentKev, decodeThreatHistory, type AiLabNews, type AiModels, type AiRegulation, type Breaches, type ChipRevenue, type HyperscalerCapex, type RecentKev, type ThreatHistory } from './tech-indicators';
-import { BALANCE_SHEET_SERIES, CREDIT_SERIES, EARNINGS_AHEAD_DAYS, EARNINGS_PAST_DAYS, decodeCbDecisions, decodeCreditSpreads, decodeFedBalanceSheet, decodeMacroForecasts, decodeRateOdds, decodeReverseRepo, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds, type ReverseRepo } from './finance-macro-indicators';
+import { BALANCE_SHEET_SERIES, CREDIT_SERIES, EARNINGS_AHEAD_DAYS, EARNINGS_PAST_DAYS, decodeOilStocks, type OilStocks, decodeCbDecisions, decodeCreditSpreads, decodeFedBalanceSheet, decodeMacroForecasts, decodeRateOdds, decodeReverseRepo, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds, type ReverseRepo } from './finance-macro-indicators';
 import { VIX_FRED_SERIES, decodeStablecoinSupply, type StablecoinSupply } from './finance-indicators';
 import {
   ConflictServiceClient,
@@ -302,6 +302,12 @@ export async function loadTreasuryCurves(): Promise<UsTreasuryParYieldCurve[] | 
 export async function loadCreditSpreads(): Promise<CreditSpreads | null> {
   const resp = await economic.getFredSeriesBatch({ seriesIds: [CREDIT_SERIES.hy, CREDIT_SERIES.ig], limit: 30 });
   return decodeCreditSpreads(resp.results);
+}
+
+/** EIA's weekly US crude, gasoline and distillate stocks (seed-eia-petroleum, #139). */
+export async function loadOilStocks(): Promise<OilStocks> {
+  await startBootstrap();
+  return required('eiaPetroleum', decodeOilStocks(await ensureHydrated('eiaPetroleum')));
 }
 
 /** Finnhub's earnings calendar, the past week and the next two weeks (seed-earnings-calendar, #138); null when not seeded. */

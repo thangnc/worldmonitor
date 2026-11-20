@@ -1,23 +1,30 @@
 #!/usr/bin/env node
 // @ts-check
+//
+// EIA weekly petroleum figures (API v2, key EIA_API_KEY): WTI and Brent spot,
+// US crude production, and US commercial stocks of crude, gasoline and
+// distillate. The stocks feed the Lite "US crude stocks" indicator (#139;
+// spec docs/engineering/architecture/lite.md, Early indicators › Catalogue).
 
 import { loadEnvFile, runSeed } from './_seed-utils.mjs';
-
-loadEnvFile(import.meta.url);
+import { isMainModule } from './lib/main-module.mjs';
 
 export const CANONICAL_KEY = 'energy:eia-petroleum:v1';
 const TTL_SECONDS = 7 * 86400; // 7d — covers one weekly EIA cycle + buffer
 const FETCH_TIMEOUT_MS = 15_000;
+const USER_AGENT = 'WorldMonitor eia-petroleum seeder (+https://worldmonitor.app)';
 
 export const SERIES = /** @type {const} */ ({
   wti:        'PET.RWTC.W',    // WTI spot price, weekly
   brent:      'PET.RBRTE.W',   // Brent spot price, weekly
   production: 'PET.WCRFPUS2.W',// US crude oil production, weekly
   inventory:  'PET.WCESTUS1.W',// US commercial crude inventory, weekly
+  gasoline:   'PET.WGTSTUS1.W',// US total motor gasoline stocks, weekly (#139)
+  distillate: 'PET.WDISTUS1.W',// US distillate fuel oil stocks, weekly (#139)
 });
 
 /**
- * @typedef {{ current: number, previous: number | null, date: string, unit: string }} SeriesPoint
+ * @typedef {{ current: number, previous: number | null, date: string, previousDate: string, unit: string }} SeriesPoint
  * @typedef {Partial<Record<keyof typeof SERIES, SeriesPoint>>} EiaPetroleum
  */
 
@@ -44,6 +51,8 @@ export function parseSeries(payload) {
     current,
     previous,
     date: String(values[0]?.period ?? ''),
+    // The week the previous figure is for, so a reader can tell a week-on-week change from a gap.
+    previousDate: previous == null ? '' : String(values[1]?.period ?? ''),
     unit: units[sourceUnit] ?? sourceUnit,
   };
 }
@@ -54,7 +63,7 @@ export function parseSeries(payload) {
  */
 export function countSeries(agg) {
   if (!agg) return 0;
-  return Object.values(agg).filter(v => v != null).length;
+  return Object.keys(SERIES).filter((k) => /** @type {any} */ (agg)[k] != null).length;
 }
 
 /**
@@ -71,13 +80,14 @@ export function validatePetroleum(agg) {
  * @param {string} key
  * @param {string} seriesId
  * @param {string} apiKey
+ * @param {typeof fetch} fetchImpl
  * @returns {Promise<SeriesPoint | null>}
  */
-async function fetchOne(key, seriesId, apiKey) {
+async function fetchOne(key, seriesId, apiKey, fetchImpl) {
   const url = `https://api.eia.gov/v2/seriesid/${seriesId}?api_key=${apiKey}&num=2`;
   try {
-    const resp = await fetch(url, {
-      headers: { Accept: 'application/json' },
+    const resp = await fetchImpl(url, {
+      headers: { Accept: 'application/json', 'User-Agent': USER_AGENT },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!resp.ok) {
@@ -95,15 +105,15 @@ async function fetchOne(key, seriesId, apiKey) {
 }
 
 /**
+ * @param {{ fetchImpl?: typeof fetch, apiKey?: string }} [opts]
  * @returns {Promise<EiaPetroleum>}
  */
-async function fetchEiaPetroleum() {
-  const apiKey = process.env.EIA_API_KEY;
+export async function fetchEiaPetroleum({ fetchImpl = (...args) => globalThis.fetch(...args), apiKey = process.env.EIA_API_KEY } = {}) {
   if (!apiKey) throw new Error('EIA_API_KEY not set');
 
   const entries = /** @type {[keyof typeof SERIES, string][]} */ (Object.entries(SERIES));
   const pairs = await Promise.all(
-    entries.map(async ([key, id]) => /** @type {const} */ ([key, await fetchOne(key, id, apiKey)])),
+    entries.map(async ([key, id]) => /** @type {const} */ ([key, await fetchOne(key, id, apiKey, fetchImpl)])),
   );
 
   /** @type {EiaPetroleum} */
@@ -121,9 +131,8 @@ export function declareRecords(data) {
   return countSeries(data);
 }
 
-const isMain = process.argv[1]?.endsWith('seed-eia-petroleum.mjs');
-
-if (isMain) {
+if (isMainModule(import.meta.url, process.argv[1])) {
+  loadEnvFile(import.meta.url);
   runSeed('energy', 'eia-petroleum', CANONICAL_KEY, fetchEiaPetroleum, {
     validateFn: validatePetroleum,
     ttlSeconds: TTL_SECONDS,
