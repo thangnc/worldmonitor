@@ -133,6 +133,8 @@ import {
   creditSpreadFeed,
   decodeCreditSpreads,
   BALANCE_SHEET_SERIES,
+  EARNINGS_WATCH,
+  watchlistEarnings,
   BALANCE_SHEET_WEEK_BN,
   RRP_DAY_BN,
   balanceSheetFeed,
@@ -2046,6 +2048,53 @@ describe('Travel advisories (#124)', () => {
     assert.deepEqual(read?.changes.map((c) => [c.source, c.country]), [['UK', 'UA'], ['US', 'IL']]);
     const fired = travelAdvisoryFeeds(ready(read!), [telaviv, kyiv], [], AT);
     assert.deepEqual(fired.map((f) => f.kind === 'fired' && f.indicator.value), ['UK: no travel', 'US Level 4']);
+  });
+});
+
+describe('Earnings dates for the watch list (#138)', () => {
+  const entry = (symbol: string, date: string, o: Record<string, unknown> = {}) => ({
+    symbol, company: symbol, date, hour: 'amc', epsEstimate: 1.5, revenueEstimate: 1e9, epsActual: 0, revenueActual: 0, hasActuals: false, surpriseDirection: '', ...o,
+  });
+
+  it('lists default-stock-list companies from a week back to two weeks ahead, in date order, with times and results', () => {
+    const rows = watchlistEarnings([
+      entry('COST', '2026-12-03', { hour: 'amc' }),
+      entry('NVDA', '2026-11-17', { epsEstimate: 2.525, epsActual: 2.68, hasActuals: true, surpriseDirection: 'beat' }),
+      entry('HD', '2026-11-17', { hour: 'bmo', epsEstimate: 3.9542, epsActual: 3.86, hasActuals: true, surpriseDirection: 'miss' }),
+      entry('ZM', '2026-11-24'), // not on the default stock list
+      entry('ORCL', '2026-12-30'), // past the two weeks
+      entry('AAPL', '2026-10-30'), // before the week back
+      entry('AVGO', '2026-12-02', { epsEstimate: 0, hour: '' }), // the RPC sends 0 for a missing estimate
+    ], '2026-11-20');
+    assert.deepEqual(rows.map((r) => [r.date, r.symbol, r.name, r.time, r.epsEstimate, r.epsActual, r.surprise]), [
+      ['2026-11-17', 'HD', 'Home Depot', 'before open', 3.9542, 3.86, 'miss'],
+      ['2026-11-17', 'NVDA', 'NVIDIA', 'after close', 2.525, 2.68, 'beat'],
+      ['2026-12-02', 'AVGO', 'Broadcom', '', null, null, ''],
+      ['2026-12-03', 'COST', 'Costco', 'after close', 1.5, null, ''],
+    ]);
+    assert.deepEqual(watchlistEarnings(null, '2026-11-20'), []);
+    assert.ok(!EARNINGS_WATCH.has('^GSPC') && EARNINGS_WATCH.get('TSM') === 'TSMC');
+    // Finnhub lists US companies only: the Hong Kong, Shanghai and Mumbai listings are not watched (and so never shown
+    // as not reporting). Berkshire's "BRK.B" at Finnhub is "BRK-B" on the list.
+    assert.ok(!EARNINGS_WATCH.has('0700.HK') && !EARNINGS_WATCH.has('RELIANCE.NS') && !EARNINGS_WATCH.has('000001.SS'));
+    assert.deepEqual(watchlistEarnings([entry('BRK.B', '2026-11-25')], '2026-11-20').map((r) => [r.symbol, r.name]), [['BRK-B', 'Berkshire']]);
+  });
+
+  it('reads what the seeder writes, through the earnings RPC (producer → reader)', async () => {
+    const { normalizeEarning, boundEarningsCalendar } = await import('../scripts/seed-earnings-calendar.mjs');
+    const { buildEarningsCalendarResponse } = await import('../packages/server/worldmonitor/market/v1/list-earnings-calendar.ts');
+    const earnings = boundEarningsCalendar([
+      normalizeEarning({ symbol: 'WMT', name: 'Walmart Inc', date: '2026-11-19', hour: 'bmo', epsEstimate: 0.6421, epsActual: 0.65, revenueEstimate: 189e9 }),
+      normalizeEarning({ symbol: 'COST', name: 'Costco', date: '2026-12-10', hour: 'amc', epsEstimate: null, revenueEstimate: 70e9 }),
+    ]);
+    const resp = buildEarningsCalendarResponse(JSON.parse(JSON.stringify({ earnings, asOf: '2026-11-20T12:00:00Z' })), { fromDate: '2026-11-13', toDate: '2026-12-04' });
+    // The RPC's range ends at toDate, so COST (10 Dec) is outside; WMT reads as a beat.
+    assert.deepEqual(watchlistEarnings(resp.earnings, '2026-11-20').map((r) => [r.symbol, r.epsActual, r.surprise]), [['WMT', 0.65, 'beat']]);
+    const wide = buildEarningsCalendarResponse(JSON.parse(JSON.stringify({ earnings })), { fromDate: '2026-11-13', toDate: '2026-12-11' });
+    // 13 days ahead of 27 Nov reaches COST (10 Dec); WMT (19 Nov) is past the week back.
+    assert.deepEqual(watchlistEarnings(wide.earnings, '2026-11-27').map((r) => [r.symbol, r.epsEstimate]), [['COST', null]]);
+    // The card's window ends 13 days ahead, a day short of the seeder's 14, so its last day is always fetched.
+    assert.deepEqual(watchlistEarnings(wide.earnings, '2026-11-26').map((r) => r.symbol), ['WMT'], 'COST is 14 days ahead');
   });
 });
 

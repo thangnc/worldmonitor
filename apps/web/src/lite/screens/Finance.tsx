@@ -23,11 +23,12 @@ import {
   useSanctions,
   useShippingRates,
   useTreasuryCurves,
+  useWatchlistEarnings,
 } from '../data/hooks';
 import { useFinanceFeeds } from '../data/domain-feeds';
 import { FINANCE_RULES, } from '../data/finance-indicators';
 import { feedCounts, type FeedState } from '../data/indicators';
-import { MACRO_RULES, YIELD_MOVE_BP, bondMoves, cbBankOf, cbDecisionForEvent, macroValue, spreadBp, treasuryWindow, type CbDecision } from '../data/finance-macro-indicators';
+import { MACRO_RULES, YIELD_MOVE_BP, bondMoves, cbBankOf, cbDecisionForEvent, macroValue, spreadBp, treasuryWindow, watchlistEarnings, type CbDecision } from '../data/finance-macro-indicators';
 import {
   FINANCIAL_CENTRE_POINTS,
   chokepointPins,
@@ -69,6 +70,7 @@ export function Finance() {
           <MarketsMap feeds={feeds} focus={focus} onFocus={setFocus} />
           <MarketEvents state={digest} events={events.filter((e) => matchesSearch(search, e.title, e.source, e.tickers.join(' ')))} />
           <MacroCalendar search={search} />
+          <EarningsCalendar search={search} />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
           <Indicators feeds={feeds} onOpen={(feed) => setFocus(pinIdForFeed(feed))} />
@@ -463,6 +465,56 @@ function MacroCalendar({ search }: { search: string }) {
               </div>
             );
           })
+        )}
+      </div>
+    </Card>
+  );
+}
+
+/** "1.23", or "—" when unknown. */
+const eps = (v: number | null) => (v == null ? '—' : `${v < 0 ? MINUS : ''}${Math.abs(v).toFixed(2)}`);
+
+function EarningsCalendar({ search }: { search: string }) {
+  const state = useWatchlistEarnings();
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = state.status === 'ready' ? watchlistEarnings(state.data.earnings, today).filter((r) => matchesSearch(search, r.symbol, r.name)) : [];
+  const asOf = state.status === 'ready' && Number.isFinite(Date.parse(state.data.asOf)) ? dayLabel(state.data.asOf) : null;
+  return (
+    <Card
+      title="Earnings · watchlist"
+      sub={`default stock list, US listings · recent results & the next two weeks${asOf ? ` · as of ${asOf}` : ''}`}
+      right={<span class="font-mono text-[10px] font-semibold tracking-[0.6px] text-dim" title="Reported by Finnhub's earnings calendar (US listings only). EPS is per share; ESTIMATE is the analysts' consensus Finnhub reports.">REPORTED · FINNHUB</span>}
+      testId="earnings-calendar"
+    >
+      <div class="flex flex-col gap-3 border-t border-line px-5 py-4">
+        <div class="flex gap-3">
+          <ColLabel class="w-[86px] text-[9.5px]">DATE</ColLabel>
+          <ColLabel class="flex-1 text-[9.5px]">COMPANY</ColLabel>
+          <ColLabel class="w-16 text-right text-[9.5px]">EPS EST</ColLabel>
+          <ColLabel class="w-16 text-right text-[9.5px]">ACTUAL</ColLabel>
+          <ColLabel class="w-14 text-right text-[9.5px]">RESULT</ColLabel>
+        </div>
+        {state.status !== 'ready' ? (
+          <SourceState state={state} source="earnings calendar (seed-earnings-calendar)" pad={false} />
+        ) : rows.length === 0 ? (
+          <p class="text-[12px] text-dim">No US company on the default stock list reports in this window.</p>
+        ) : (
+          rows.map((r) => (
+            <div key={`${r.date}${r.symbol}`} class={cx('flex items-center gap-3 border-t border-line pt-3', r.date < today ? 'opacity-70' : '')} data-earnings-row>
+              <span class="w-[86px] shrink-0 font-mono text-[11.5px] text-dim">{dayLabel(r.date)}</span>
+              <span class="flex min-w-0 flex-1 items-baseline gap-[6px]">
+                {/* A phone has room for the symbol only; the name joins it from the sm breakpoint. */}
+                <span class="hidden truncate text-[13px] text-ink sm:inline" title={`${r.name} (${r.symbol})`}>{r.name}</span>
+                <span class="font-mono text-[12px] text-ink sm:text-[10.5px] sm:text-dim" title={r.name}>{r.symbol}</span>
+                {r.time ? <span class="hidden truncate text-[11px] text-dim sm:inline">{r.time}</span> : null}
+              </span>
+              <span class="w-16 text-right font-mono text-[12px] text-muted">{eps(r.epsEstimate)}</span>
+              <span class="w-16 text-right font-mono text-[12px] font-medium text-ink">{eps(r.epsActual)}</span>
+              <span class={cx('w-14 text-right font-mono text-[11px] font-semibold', r.surprise === 'beat' ? 'text-ok' : r.surprise === 'miss' ? 'text-crit' : 'text-dim')}>
+                {r.surprise ? r.surprise.toUpperCase() : r.date === today ? 'today' : r.date > today ? 'due' : '—'}
+              </span>
+            </div>
+          ))
         )}
       </div>
     </Card>

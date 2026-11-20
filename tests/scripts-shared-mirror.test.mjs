@@ -35,6 +35,9 @@ const MIRRORED_FILES = [
   // The classifier's default thresholds come from its SIBLING stablecoins.json
   // (both homes), so a drift in the JSON mirror silently changes classification.
   'stablecoins.json',
+  // seed-earnings-calendar reserves the default stock list from scripts/shared/ on Railway; the Lite card reads the
+  // packages/shared/ copy (#138).
+  'stocks.json',
   'story-identity.js',
   'un-to-iso2.json',
   'world-bank-rpc-cache.js',

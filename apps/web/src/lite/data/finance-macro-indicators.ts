@@ -13,7 +13,7 @@ import type {
   FredObservation,
   FredSeries,
 } from '@wm/contracts/generated/client/worldmonitor/economic/v1/service_client';
-import type { GetHyperliquidFlowResponse, ListEtfFlowsResponse } from '@wm/contracts/generated/client/worldmonitor/market/v1/service_client';
+import type { EarningsEntry, GetHyperliquidFlowResponse, ListEtfFlowsResponse } from '@wm/contracts/generated/client/worldmonitor/market/v1/service_client';
 import type { GetShippingRatesResponse, ShippingIndex } from '@wm/contracts/generated/client/worldmonitor/supply_chain/v1/service_client';
 import type { ListMaterialEventsResponse, MaterialEvent } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
 import { MARKET_SYMBOLS } from '@wm/client/config/markets';
@@ -1130,4 +1130,61 @@ export function financeMacroFeeds(input: {
     ...(input.balance ? [balanceSheetFeed({ ...input, balance: input.balance })] : []),
     ...(input.rrp ? [reverseRepoFeed({ ...input, rrp: input.rrp })] : []),
   ];
+}
+
+// ---- Earnings dates for the watch list (#138) ---------------------------------
+
+/**
+ * The card's window around today: recent results and the next two weeks. seed-earnings-calendar reads 14 days ahead
+ * of its run; the card stops a day short, so its last day was fetched even when the data is a day old.
+ */
+export const EARNINGS_PAST_DAYS = 7;
+export const EARNINGS_AHEAD_DAYS = 13;
+
+/**
+ * The default stock list's US companies (the watchlist stand-in): symbol to display name. Finnhub's free calendar
+ * lists US companies only, so listings with an exchange suffix ("0700.HK") and indices are left out rather than
+ * shown as never reporting.
+ */
+export const EARNINGS_WATCH: ReadonlyMap<string, string> = new Map(
+  MARKET_SYMBOLS.filter((s) => !s.symbol.startsWith('^') && !/\.[A-Z]{1,2}$/.test(s.symbol)).map((s) => [s.symbol, s.name]),
+);
+
+export interface WatchEarning {
+  symbol: string;
+  name: string;
+  /** "2026-11-19". */
+  date: string;
+  /** "before open", "after close", "during the session", or "" when Finnhub does not say. */
+  time: string;
+  /** EPS estimate and actual, or null when unknown (the RPC sends 0 for a missing estimate). */
+  epsEstimate: number | null;
+  epsActual: number | null;
+  surprise: 'beat' | 'miss' | '';
+}
+
+const EARNINGS_TIME: Readonly<Record<string, string>> = { bmo: 'before open', amc: 'after close', dmh: 'during the session' };
+
+/** Watch-list companies reporting from EARNINGS_PAST_DAYS before today to EARNINGS_AHEAD_DAYS after, in date order. */
+export function watchlistEarnings(entries: readonly EarningsEntry[] | null | undefined, today: string): WatchEarning[] {
+  const day = (offset: number) => new Date(ymdMs(today) + offset * DAY_MS).toISOString().slice(0, 10);
+  const from = day(-EARNINGS_PAST_DAYS);
+  const to = day(EARNINGS_AHEAD_DAYS);
+  const seen = new Set<string>();
+  const rows: WatchEarning[] = [];
+  for (const e of entries ?? []) {
+    // Class shares: "BRK.B" at Finnhub is "BRK-B" on the list.
+    const symbol = EARNINGS_WATCH.has(e.symbol) ? e.symbol : e.symbol.replace('.', '-');
+    const name = EARNINGS_WATCH.get(symbol);
+    const date = (e.date ?? '').slice(0, 10);
+    if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date < from || date > to || seen.has(`${symbol}${date}`)) continue;
+    seen.add(`${symbol}${date}`);
+    rows.push({
+      symbol, name, date, time: EARNINGS_TIME[e.hour] ?? '',
+      epsEstimate: Number.isFinite(e.epsEstimate) && e.epsEstimate !== 0 ? e.epsEstimate : null,
+      epsActual: e.hasActuals && Number.isFinite(e.epsActual) ? e.epsActual : null,
+      surprise: e.hasActuals && (e.surpriseDirection === 'beat' || e.surpriseDirection === 'miss') ? e.surpriseDirection : '',
+    });
+  }
+  return rows.sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol));
 }
