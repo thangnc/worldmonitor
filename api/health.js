@@ -433,6 +433,8 @@ const STANDALONE_KEYS = {
   aiModels: 'tech:ai-models:v1',
   // Lite Tech AI regulation (#127): EU and US AI and data rules.
   aiRegulation: 'policy:ai-regulation:v1',
+  // Lite Tech data breaches (#131): Have I Been Pwned's recent listings.
+  dataBreaches: 'cyber:breaches:v1',
   predictionCountryMarkets: 'prediction:markets-country-index:v1',
   // US HTS chapter 99 duty index (catalog; coverage shards are versioned by
   // release under trade:us-hts:coverage:v1). Read only by get-us-import-duty.
@@ -991,6 +993,11 @@ const SEED_META = {
     key: 'seed-meta:tech:ai-models', maxStaleMin: 1080, // seed-ai-models every 6 h; 1080 = 3x interval
     activationKey: 'seed-activated:tech:ai-models',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 126, activationKey: 'seed-activated:tech:ai-models' },
+  },
+  dataBreaches: {
+    key: 'seed-meta:cyber:breaches', maxStaleMin: 540, // seed-breaches every 3 h; 540 = 3x interval
+    activationKey: 'seed-activated:cyber:breaches',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 131, activationKey: 'seed-activated:cyber:breaches' },
   },
   aiRegulation: {
     key: 'seed-meta:policy:ai-regulation', maxStaleMin: 360, // seed-ai-regulation every 2 h; 360 = 3x interval
@@ -2806,7 +2813,7 @@ const ON_DEMAND_KEYS = new Set([
   // Lite Geopolitics export controls and tariffs (#122) and new restricted parties (#123).
   'federalRegister', 'cslAdditions', 'euSanctions', 'travelLevels',
   // Lite Finance Fed decision odds (#125), central bank decisions (#130), Tech AI models (#126) and AI regulation (#127).
-  'rateOdds', 'macroForecasts', 'cbDecisions', 'aiModels', 'aiRegulation',
+  'rateOdds', 'macroForecasts', 'cbDecisions', 'aiModels', 'aiRegulation', 'dataBreaches',
   // Per-country GDELT article index (#7748). The 15-minute materializer
   // writes the marker after the index and its seed-meta publish; absence is
   // pending until that first tick and strict afterward.
@@ -3035,6 +3042,7 @@ const ACTIVATION_MARKERS = {
   cbDecisions: SEED_META.cbDecisions.activationKey,
   aiModels: SEED_META.aiModels.activationKey,
   aiRegulation: SEED_META.aiRegulation.activationKey,
+  dataBreaches: SEED_META.dataBreaches.activationKey,
   // Written by scripts/seed-gdelt-bulk-materializer.mjs after the per-country
   // article index publishes with its seed-meta (#7748).
   gdeltCountryArticles: SEED_META.gdeltCountryArticles.activationKey,

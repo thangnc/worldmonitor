@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **850 active source hosts** representing **830 active providers** (**366 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **851 active source hosts** representing **831 active providers** (**367 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -362,6 +362,7 @@ This generated inventory covers **850 active source hosts** representing **830 a
 | hapi.humdata.org (hapi.humdata.org) | structured — scripts/_conflict-hapi.mjs |
 | happy.worldmonitor.app (happy.worldmonitor.app) | Excluded / candidate — No current fetch observed |
 | Havana Times (havanatimes.org) | feed — packages/shared/news-catalog.json |
+| haveibeenpwned.com (haveibeenpwned.com) | structured — apps/web/src/lite/data/tech-indicators.ts, scripts/seed-breaches.mjs |
 | health.aws.amazon.com (health.aws.amazon.com) | operational-status — packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts |
 | hiiraan.com (hiiraan.com) | feed — packages/shared/news-catalog.json |
 | hirado.hu (hirado.hu) | feed — packages/shared/news-catalog.json |

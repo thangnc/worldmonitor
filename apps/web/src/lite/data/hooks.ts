@@ -67,6 +67,7 @@ export const useThreatHistory = () => useResource('threatHistory', src.loadThrea
 export const useRecentKev = () => useResource('recentKev', src.loadRecentKev);
 export const useAiModels = () => useResource('aiModels', src.loadAiModels);
 export const useAiRegulation = () => useResource('aiRegulation', src.loadAiRegulation);
+export const useBreaches = () => useResource('dataBreaches', src.loadBreaches);
 export const useDdosAttacks = () => useResource('ddosAttacks', src.loadDdosAttacks);
 /** The 6 h and 24 h DDoS windows: loaded only once the Tech map's range leaves 7d. */
 export const useDdosWindows = (enabled: boolean) => useResource('ddosWindows', src.loadDdosWindows, enabled);

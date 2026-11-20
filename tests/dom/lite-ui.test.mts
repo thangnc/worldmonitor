@@ -934,6 +934,24 @@ describe('Lite indicator card', () => {
     // The AI line is suppressed when nothing is linked.
     expect(full.textContent).not.toContain('Model inference');
     expect(full.textContent).toContain('08:31 UTC');
+    // No source link unless the indicator carries one.
+    expect(root.querySelector('[data-testid="trust-link"]')).toBeNull();
+  });
+
+  it('links the source on the full card only, when the licence asks for a link (#131)', async () => {
+    const { IndicatorCard, IndicatorCardCompact } = await import('../../apps/web/src/lite/components/indicator');
+    const indicator = {
+      id: 'breach:Careers360', domain: 'tech' as const, name: 'Data breach · Careers360', value: '3.6M accounts', change: 'breached 14 Nov 2026 · listed 20 Nov', rule: 'listed ≤ 3 days, ≥ 1M accounts',
+      trust: { level: 'reported' as const, source: 'Have I Been Pwned (CC BY 4.0)', url: 'https://haveibeenpwned.com/Breach/Careers360' }, at: Date.UTC(2026, 10, 20, 3, 44),
+      links: { stories: [], searched: 40, windowHours: 12 },
+    };
+    await act(() => render(h('div', null, h(IndicatorCardCompact, { indicator }), h(IndicatorCard, { indicator, now: Date.UTC(2026, 10, 20, 9) })), root));
+    // The compact card is a button: no link inside it.
+    expect(root.querySelector('button[data-indicator="breach:Careers360"] a')).toBeNull();
+    const link = root.querySelector('article[data-indicator="breach:Careers360"] [data-testid="trust-link"]') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('https://haveibeenpwned.com/Breach/Careers360');
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(link.textContent).toBe('Have I Been Pwned (CC BY 4.0)');
   });
 });
 

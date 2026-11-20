@@ -233,6 +233,7 @@ const SEED_DOMAINS = {
   'economic:macro-forecasts': { key: 'seed-meta:economic:macro-forecasts', intervalMin: 90, activationKey: 'seed-activated:economic:macro-forecasts' }, // #128; maxStaleMin / 2 (180 / 2), matching api/health.js
   'economic:central-bank-decisions': { key: 'seed-meta:economic:central-bank-decisions', intervalMin: 45, activationKey: 'seed-activated:economic:central-bank-decisions' }, // #130; maxStaleMin / 2 (90 / 2), matching api/health.js
   'tech:ai-models':           { key: 'seed-meta:tech:ai-models',           intervalMin: 540, activationKey: 'seed-activated:tech:ai-models' }, // #126; maxStaleMin / 2 (1080 / 2), matching api/health.js
+  'cyber:breaches':           { key: 'seed-meta:cyber:breaches',           intervalMin: 270, activationKey: 'seed-activated:cyber:breaches' }, // #131; maxStaleMin / 2 (540 / 2), matching api/health.js
   'policy:ai-regulation':     { key: 'seed-meta:policy:ai-regulation',     intervalMin: 180, activationKey: 'seed-activated:policy:ai-regulation' }, // #127; maxStaleMin / 2 (360 / 2), matching api/health.js
   'policy:federal-register':  { key: 'seed-meta:policy:federal-register',  intervalMin: 180, activationKey: 'seed-activated:policy:federal-register' }, // #122; intervalMin = maxStaleMin / 2 (360 / 2), matching api/health.js
   // Corporate intelligence (#5695): intervalMin = maxStaleMin / 2 (api/health.js: 2880 / 120).

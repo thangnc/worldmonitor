@@ -58,7 +58,12 @@ export function TrustChip({ trust, compact = false }: { trust: Indicator['trust'
       <span class={cx('whitespace-nowrap font-mono font-semibold', TRUST_TEXT[trust.level], compact ? 'text-[9px] tracking-[0.5px]' : 'text-[10px] tracking-[0.6px]')}>
         {TRUST_LABEL[trust.level]}
       </span>
-      <span class={cx('truncate', compact ? 'text-[10.5px] text-dim' : 'text-[11.5px] text-muted')}>{trust.source}</span>
+      {/* The compact card is a button, so only the full card can hold the source link. */}
+      {!compact && trust.url?.startsWith('https://') ? (
+        <a href={trust.url} target="_blank" rel="noopener noreferrer" class="truncate text-[11.5px] text-muted underline decoration-dim underline-offset-2 hover:text-ink" data-testid="trust-link">{trust.source}</a>
+      ) : (
+        <span class={cx('truncate', compact ? 'text-[10.5px] text-dim' : 'text-[11.5px] text-muted')}>{trust.source}</span>
+      )}
     </>
   );
   return compact ? (
