@@ -125,6 +125,10 @@ export const AI_PRICE_PCT = 20;
 export const AI_MODELS_CADENCE_MIN = 360;
 /** An open-weight release fires when first seen this recently (#132). */
 export const OPEN_MODEL_NEW_DAYS = 7;
+/** A lab's own release announcement fires for this long (#133). */
+export const LAB_NEWS_NEW_DAYS = 7;
+/** seed-ai-lab-news runs every 3 h. */
+export const LAB_NEWS_CADENCE_MIN = 180;
 /** It must also pass one of these on the Hugging Face Hub. */
 export const OPEN_MODEL_MIN_LIKES = 100;
 export const OPEN_MODEL_MIN_DOWNLOADS = 10_000;
@@ -160,6 +164,7 @@ export const TECH_RULES =
   `attack-infrastructure indicators at ${SPIKE_RATIO}× their ${SPIKE_BASELINE_DAYS}-day average or more; ` +
   `an 8-K reporting item ${CYBER_8K_ITEM} (material cybersecurity incident) in the last ${FILING_WINDOW_HOURS} h; ` +
   `a model from a watched AI lab (OpenAI, Anthropic, Google, Meta, Mistral, xAI, DeepSeek, Qwen) listed on OpenRouter in the last ${AI_NEW_DAYS} days, or a price change of ${AI_PRICE_PCT}% or more on one; ` +
+  `a release announcement (a model or product introduced or made available) on OpenAI's, Google's, Google DeepMind's or Anthropic's own site in the last ${LAB_NEWS_NEW_DAYS} days; ` +
   `open weights from Meta, Mistral, Qwen, DeepSeek or Google first seen on Hugging Face in the last ${OPEN_MODEL_NEW_DAYS} days with ${OPEN_MODEL_MIN_LIKES}+ likes or ${OPEN_MODEL_MIN_DOWNLOADS.toLocaleString('en-US')}+ downloads; ` +
   `an EU act, implementing act or guidelines on AI or data, or a US final or proposed rule on AI, published in the last ${AI_REG_NEW_DAYS} days; ` +
   `a breach listed by Have I Been Pwned in the last ${BREACH_NEW_DAYS} days with ${BREACH_MIN_ACCOUNTS.toLocaleString('en-US')} or more accounts, or at a domain of a vendor on the starter list. ` +
@@ -470,6 +475,7 @@ export function techFeeds(input: {
   models?: ResourceState<AiModels>;
   regulation?: ResourceState<AiRegulation>;
   breaches?: ResourceState<Breaches>;
+  labNews?: ResourceState<AiLabNews>;
   news: readonly LiteItem[];
   now: number;
 }): FeedState[] {
@@ -484,6 +490,7 @@ export function techFeeds(input: {
     ...(input.models ? openModelFeeds(input.models, news, now) : []),
     ...(input.regulation ? aiRegulationFeeds(input.regulation, news, now) : []),
     ...(input.breaches ? breachFeeds(input.breaches, news, now) : []),
+    ...(input.labNews ? labNewsFeeds(input.labNews, news, now) : []),
   ]);
 }
 
@@ -1014,6 +1021,121 @@ export function openModelFeeds(source: ResourceState<AiModels>, news: readonly L
       newest ? `newest ${newest.labName} ${newest.name}, ${day(newest.firstSeenAt)}` : null,
       open.failedLabs.length ? `${open.failedLabs.join(', ')} not read on the last run` : null,
       open.baseline ? null : 'first read: the backlog is dated by repo creation',
+    ].filter(Boolean).join(' · '),
+  }];
+}
+
+// ---- AI lab announcements (#133) -------------------------------------------------
+
+export interface LabPost {
+  /** The feed it came from: openai, google, deepmind, anthropic. */
+  source: string;
+  lab: string;
+  title: string;
+  url: string;
+  /** Published (RSS) or first seen (Anthropic's sitemap), ms. */
+  at: number;
+  /** True when dated by first sight, not by the lab. */
+  firstSeen: boolean;
+  /** The title announces a model or product release. */
+  release: boolean;
+}
+
+export interface AiLabNews {
+  fetchedAt: number;
+  keepDays: number;
+  sources: Record<string, { ok: boolean; okAt: number | null }>;
+  posts: LabPost[];
+}
+
+const LAB_HOSTS: Readonly<Record<string, string>> = {
+  openai: 'https://openai.com/', google: 'https://blog.google/', deepmind: 'https://deepmind.google/', anthropic: 'https://www.anthropic.com/',
+};
+const LAB_OF: Readonly<Record<string, string>> = { openai: 'OpenAI', google: 'Google', deepmind: 'Google DeepMind', anthropic: 'Anthropic' };
+
+/** The seeded payload (`tech:ai-lab-news:v1`), or null when it is not one. */
+export function decodeAiLabNews(value: unknown): AiLabNews | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.posts) || !v.sources || typeof v.sources !== 'object') return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const posts: LabPost[] = [];
+  for (const raw of v.posts as Array<Record<string, unknown>>) {
+    const source = str(raw?.source);
+    const at = raw?.at;
+    const host = LAB_HOSTS[source];
+    // Only a lab's own page: the link must be on the lab's site.
+    if (!host || typeof at !== 'number' || !Number.isFinite(at) || !str(raw.title) || !str(raw.url).startsWith(host)) continue;
+    posts.push({ source, lab: LAB_OF[source]!, title: str(raw.title), url: str(raw.url), at, firstSeen: raw.firstSeen === true, release: raw.release === true });
+  }
+  posts.sort((a, b) => b.at - a.at);
+  const sources: AiLabNews['sources'] = {};
+  for (const [id, raw] of Object.entries(v.sources as Record<string, Record<string, unknown> | undefined>)) {
+    if (!LAB_HOSTS[id]) continue;
+    const okAt = raw?.okAt;
+    sources[id] = { ok: raw?.ok !== false, okAt: typeof okAt === 'number' && Number.isFinite(okAt) ? okAt : null };
+  }
+  return { fetchedAt: v.fetchedAt as number, keepDays: Number.isInteger(v.keepDays) ? (v.keepDays as number) : 14, sources, posts };
+}
+
+/** Model and product names a title carries, for matching news ("GPT-6.2", "Gemini 4", "Claude"). */
+const PRODUCT_NAMES = /\b(GPT[- ]?\d[\w.]*|o\d(?:-\w+)?|Gemini(?: \d[\w.]*)?|Gemma(?: \d[\w.]*)?|Claude(?: (?:Opus|Sonnet|Haiku|Fable))?(?: \d[\w.]*)?|Codex|Sora(?: \d)?|Veo(?: \d)?|Imagen(?: \d)?|Genie(?: \d)?|Lyria(?: \d)?)\b/g;
+
+/** One card per lab with release announcements in the last LAB_NEWS_NEW_DAYS. */
+export function labNewsIndicators(data: AiLabNews, news: readonly LiteItem[], now: number): Indicator[] {
+  const cutoff = now - LAB_NEWS_NEW_DAYS * DAY_MS;
+  const byLab = new Map<string, LabPost[]>();
+  for (const p of data.posts) {
+    if (!p.release || p.at < cutoff || p.at > now + HOUR_MS) continue;
+    byLab.set(p.lab, [...(byLab.get(p.lab) ?? []), p]);
+  }
+  const out: Indicator[] = [];
+  for (const [lab, list] of byLab) {
+    const newest = list[0]!;
+    const names = [...new Set(list.flatMap((p) => p.title.match(PRODUCT_NAMES) ?? []))];
+    // The card stays up for a week: search the week up to now, and keep stories that name a product.
+    const links = linkNews({ drivers: [lab, ...names] }, news, now, LAB_NEWS_NEW_DAYS * 24);
+    const stories = names.length
+      ? links.stories.filter((st) => names.some((n) => new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(`${st.item.title} ${st.item.snippet ?? ''}`)))
+      : [];
+    const day = (t: number) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+    out.push({
+      id: `lab-news:${newest.source}`, domain: 'tech', name: `Lab announcement · ${lab}`,
+      value: `${list.length} release${list.length === 1 ? '' : 's'}`,
+      ...(names.length ? { change: fitNames(names, 40) } : {}),
+      rule: `release announced on the lab's own site ≤ ${LAB_NEWS_NEW_DAYS} days`,
+      detail: list.slice(0, 3).map((p) => `${p.title} (${day(p.at)}${p.firstSeen ? ', first seen' : ''})`).join(' · ') + (list.length > 3 ? ` · +${list.length - 3} more` : ''),
+      trust: { level: 'official', source: `${lab} (own site)`, url: newest.url },
+      at: Math.min(now, newest.at), dataDate: `${newest.firstSeen ? 'seen' : 'posted'} ${day(newest.at)}`,
+      updatedAt: data.fetchedAt, links: { ...links, stories },
+    });
+  }
+  return out.sort((a, b) => b.at - a.at);
+}
+
+/** As fresh as the oldest source's last good read. */
+export function labNewsDataAt(data: AiLabNews | null): number | null {
+  if (!data) return null;
+  return Math.min(data.fetchedAt, ...Object.values(data.sources).map((s) => s.okAt ?? data.fetchedAt));
+}
+
+export function labNewsFeeds(source: ResourceState<AiLabNews>, news: readonly LiteItem[], now: number): FeedState[] {
+  const data = source.status === 'ready' ? source.data : null;
+  const base = feedState({
+    id: 'lab-news', name: 'AI lab announcements · own sites', source, seeder: 'seed-ai-lab-news',
+    cadenceMin: LAB_NEWS_CADENCE_MIN, dataAt: labNewsDataAt(data), fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !data) return [base];
+  const fired = labNewsIndicators(data, news, now);
+  if (fired.length) return fired.map((indicator) => ({ kind: 'fired' as const, id: indicator.id, name: indicator.name, indicator }));
+  const recent = data.posts.filter((p) => now - p.at <= LAB_NEWS_NEW_DAYS * DAY_MS && p.at <= now + HOUR_MS);
+  const newest = recent[0];
+  const down = Object.entries(data.sources).filter(([, s]) => !s.ok).map(([id]) => LAB_OF[id]);
+  return [{
+    ...base,
+    detail: [
+      `Live · ${recent.length} lab post${recent.length === 1 ? '' : 's'} in ${LAB_NEWS_NEW_DAYS} days, none announcing a model or product`,
+      newest ? `newest ${newest.lab}: ${newest.title}` : null,
+      down.length ? `${down.join(', ')} not read on the last run` : null,
     ].filter(Boolean).join(' · '),
   }];
 }

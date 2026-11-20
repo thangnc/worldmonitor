@@ -20,6 +20,7 @@ import {
   useAiModels,
   useAiRegulation,
   useBreaches,
+  useAiLabNews,
   useCreditSpreads,
   useCrossStraitActivity,
   useCryptoQuotes,
@@ -209,9 +210,10 @@ export function useTechFeeds(): FeedState[] {
   const models = useAiModels();
   const regulation = useAiRegulation();
   const breaches = useBreaches();
+  const labNews = useAiLabNews();
   const digest = useDigest('tech');
   return useMemo(
-    () => techFeeds({ outages, services, kev, history, filings, models, regulation, breaches, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
-    [outages, services, kev, history, filings, models, regulation, breaches, digest],
+    () => techFeeds({ outages, services, kev, history, filings, models, regulation, breaches, labNews, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
+    [outages, services, kev, history, filings, models, regulation, breaches, labNews, digest],
   );
 }

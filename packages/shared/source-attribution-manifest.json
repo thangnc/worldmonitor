@@ -1978,6 +1978,23 @@
       ]
     },
     {
+      "host": "blog.google",
+      "provider": "blog.google",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit blog.google and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "apps/web/src/lite/data/tech-indicators.ts"
+        },
+        {
+          "path": "scripts/seed-ai-lab-news.mjs"
+        }
+      ]
+    },
+    {
       "host": "bloomberg.com",
       "provider": "bloomberg.com",
       "kind": "feed",
@@ -3134,6 +3151,23 @@
       "references": [
         {
           "path": "packages/shared/news-catalog.json"
+        }
+      ]
+    },
+    {
+      "host": "deepmind.google",
+      "provider": "deepmind.google",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit deepmind.google and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "apps/web/src/lite/data/tech-indicators.ts"
+        },
+        {
+          "path": "scripts/seed-ai-lab-news.mjs"
         }
       ]
     },
@@ -7187,6 +7221,23 @@
       ]
     },
     {
+      "host": "openai.com",
+      "provider": "openai.com",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit openai.com and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "apps/web/src/lite/data/tech-indicators.ts"
+        },
+        {
+          "path": "scripts/seed-ai-lab-news.mjs"
+        }
+      ]
+    },
+    {
       "host": "opendata.adsb.fi",
       "provider": "adsb.fi Open Data",
       "kind": "structured",
@@ -10900,6 +10951,20 @@
       "references": [
         {
           "path": "packages/shared/news-catalog.json"
+        }
+      ]
+    },
+    {
+      "host": "www.anthropic.com",
+      "provider": "www.anthropic.com",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit www.anthropic.com and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "scripts/seed-ai-lab-news.mjs"
         }
       ]
     },

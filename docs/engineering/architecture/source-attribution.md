@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **852 active source hosts** representing **832 active providers** (**368 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **856 active source hosts** representing **836 active providers** (**372 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -133,6 +133,7 @@ This generated inventory covers **852 active source hosts** representing **832 a
 | Binance (binance.com) | feed — packages/shared/news-catalog.json |
 | bitbucket.status.atlassian.com (bitbucket.status.atlassian.com) | operational-status — packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts |
 | bitcoinmagazine.com (bitcoinmagazine.com) | feed — packages/shared/news-catalog.json |
+| blog.google (blog.google) | structured — apps/web/src/lite/data/tech-indicators.ts, scripts/seed-ai-lab-news.mjs |
 | bloomberg.com (bloomberg.com) | feed — packages/client/config/live-video-sources.ts, packages/shared/news-catalog.json |
 | bothsidesofthetable.com (bothsidesofthetable.com) | Excluded / candidate — No current fetch observed |
 | Brave Search API (api.search.brave.com) | structured — packages/server/worldmonitor/market/v1/stock-news-search.ts, scripts/ais-relay.cjs |
@@ -222,6 +223,7 @@ This generated inventory covers **852 active source hosts** representing **832 a
 | de.euronews.com (de.euronews.com) | feed — packages/shared/news-catalog.json |
 | de.usembassy.gov (de.usembassy.gov) | structured — scripts/seed-security-advisories.mjs |
 | decrypt.co (decrypt.co) | feed — packages/shared/news-catalog.json |
+| deepmind.google (deepmind.google) | structured — apps/web/src/lite/data/tech-indicators.ts, scripts/seed-ai-lab-news.mjs |
 | defense.gov (defense.gov) | Excluded / candidate — No current fetch observed |
 | dev.events (dev.events) | structured — packages/server/worldmonitor/research/v1/list-tech-events.ts, scripts/ais-relay.cjs, scripts/seed-research.mjs |
 | dev.to (dev.to) | feed — packages/shared/news-catalog.json |
@@ -529,6 +531,7 @@ This generated inventory covers **852 active source hosts** representing **832 a
 | open-meteo.caseyjhand.com (open-meteo.caseyjhand.com) | Excluded / candidate — No current fetch observed |
 | open.alberta.ca (open.alberta.ca) | Excluded / candidate — No current fetch observed |
 | open.iub.gov.lv (open.iub.gov.lv) | structured — scripts/_global-tender-feeds.mjs |
+| openai.com (openai.com) | structured — apps/web/src/lite/data/tech-indicators.ts, scripts/seed-ai-lab-news.mjs |
 | OpenAQ (api.openaq.org) | structured — scripts/seed-health-air-quality.mjs |
 | OpenRouter (openrouter.ai) | structured — apps/web/src/lite/data/tech-indicators.ts, scripts/eval-classify-labels.mjs, scripts/lib/brief-dedup-consts.mjs, scripts/lib/company-monitoring-classifier-client.mjs, +2 more |
 | OpenSanctions (api.opensanctions.org) | Excluded / candidate — No current fetch observed |
@@ -817,6 +820,7 @@ This generated inventory covers **852 active source hosts** representing **832 a
 | www.amarujala.com (www.amarujala.com) | feed — packages/shared/news-catalog.json |
 | www.anp.tl (www.anp.tl) | structured — scripts/lib/regional-fuel-feeds.mjs, scripts/shared/regional-energy-feeds.json |
 | www.ansa.it (www.ansa.it) | feed — packages/shared/news-catalog.json |
+| www.anthropic.com (www.anthropic.com) | structured — scripts/seed-ai-lab-news.mjs |
 | www.app.gov.al (www.app.gov.al) | structured — scripts/_global-tender-feeds.mjs |
 | www.applytosupply.digitalmarketplace.service.gov.uk (www.applytosupply.digitalmarketplace.service.gov.uk) | Excluded / candidate — No current fetch observed |
 | www.armeps.am (www.armeps.am) | structured — scripts/_global-tender-feeds.mjs |

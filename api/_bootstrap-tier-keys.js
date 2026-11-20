@@ -74,6 +74,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   aiRegulation: 'policy:ai-regulation:v1',
   // Lite Tech data breaches (#131): Have I Been Pwned's breaches listed in the last 30 days (seed-breaches).
   dataBreaches: 'cyber:breaches:v1',
+  // Lite Tech AI lab announcements (#133): the labs' own posts of the last 14 days (seed-ai-lab-news).
+  aiLabNews: 'tech:ai-lab-news:v1',
   techReadiness: 'economic:worldbank-techreadiness:v1',
   progressData: 'economic:worldbank-progress:v1',
   renewableEnergy: 'economic:worldbank-renewable:v1',
@@ -241,6 +243,8 @@ const ON_DEMAND_KEY_NAMES = new Set([
   'aiRegulation',
   // Lite Tech: Have I Been Pwned's breaches of the last 30 days (#131, a few KB), read only by /lite and /lite/tech.
   'dataBreaches',
+  // Lite Tech: OpenAI, Google, Google DeepMind and Anthropic posts of the last 14 days (#133, about 15 KB), read only by /lite and /lite/tech.
+  'aiLabNews',
   'chinaPolicyEvents', 'chinaDecisionSignals',
   'bisDsr', 'bisPropertyResidential', 'bisPropertyCommercial',
   // One row of this feeds the Central Banks tab's policy-rate list, which BIS
