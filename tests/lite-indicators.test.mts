@@ -28,6 +28,8 @@ import {
   kevSubject,
   kevWeekCounts,
   watchedVendor,
+  CYBER_8K_ITEM,
+  cyberFilings,
   techFeeds,
   threatBaseline,
   type ExploitedVulnerability,
@@ -1046,6 +1048,7 @@ describe('Technology & AI indicator rules', () => {
     services?: ServiceStatus[];
     kev?: ExploitedVulnerability[];
     history?: ThreatHistory;
+    filings?: MaterialEvent[];
     news?: LiteItem[];
   } = {}) {
     return techFeeds({
@@ -1053,6 +1056,7 @@ describe('Technology & AI indicator rules', () => {
       services: ready(services(opts.services ?? [status('aws', 'AWS', 'SERVICE_OPERATIONAL_STATUS_OPERATIONAL')])),
       kev: ready(kev(opts.kev ?? [])),
       history: ready(opts.history ?? history([100, 100, 100], 100)),
+      filings: ready<ListMaterialEventsResponse>({ events: opts.filings ?? [], unavailable: false, fetchedAtMs: AT - 10 * 60_000 }),
       news: opts.news ?? [],
       now: AT,
     });
@@ -1133,6 +1137,28 @@ describe('Technology & AI indicator rules', () => {
     assert.deepEqual(decodeRecentKev({ fetchedAt: 3, items: [{ id: 'CVE-2026-0001', addedAt: '2026-11-01', vendor: 'Ivanti', product: 7 }] })?.items.map((i) => [i.vendor, i.product]), [['Ivanti', '']]);
   });
 
+  it(`fires on an 8-K reporting item ${CYBER_8K_ITEM} in ${FILING_WINDOW_HOURS} h from any filer, naming stock-list companies (#120)`, () => {
+    const filing = (company: string, codes: string[], hoursAgo: number): MaterialEvent => ({
+      company, cik: '1', form: '8-K', accession: `${company}-${hoursAgo}`, filedAtMs: AT - hoursAgo * H, url: 'https://www.sec.gov/x',
+      items: codes.map((code) => ({ code, description: `Item ${code}` })),
+    });
+    assert.equal(find(feeds({ filings: [filing('Tiny Corp', ['1.01'], 1), filing('Old Corp', ['1.05'], 30)] }), 'cyber-8k')?.kind, 'quiet');
+    const fired = find(feeds({
+      filings: [filing('Acme Logistics Inc /DE/', ['1.05', '7.01'], 2), filing('APPLE INC', ['1.05'], 5), filing('Tiny Corp', ['1.01'], 1)],
+      news: [story('Acme Logistics discloses ransomware attack', AT - 3 * H)],
+    }), 'cyber-8k');
+    assert.equal(fired?.kind, 'fired');
+    if (fired?.kind !== 'fired') return;
+    assert.equal(fired.indicator.name, 'Cyber incident 8-K · Acme Logistics Inc');
+    assert.equal(fired.indicator.value, `Item ${CYBER_8K_ITEM}`);
+    assert.equal(fired.indicator.detail, 'Listed filer; check whether it is a peer or supplier · also APPLE INC');
+    assert.equal(fired.indicator.trust.level, 'official');
+    assert.equal(fired.indicator.links.stories.length, 1);
+    const apple = find(feeds({ filings: [filing('APPLE INC', ['1.05'], 1)] }), 'cyber-8k');
+    assert.match(apple?.kind === 'fired' ? apple.indicator.detail ?? '' : '', /^Apple \(AAPL\) is on the default stock list$/);
+    assert.deepEqual(cyberFilings({ events: [filing('A', ['1.05'], 30), filing('B', ['1.05'], 1)], unavailable: false, fetchedAtMs: AT }, AT).map((e) => e.company), ['B']);
+  });
+
   it('links a KEV entry by its id and the vendor and product in CISA\'s name when NVD has no product yet', () => {
     assert.deepEqual(kevSubject(kevItem('CVE-2026-9', '2026-11-07')).drivers, ['CVE-2026-9', 'ivanti', 'connect']);
     assert.deepEqual(kevSubject(kevItem('CVE-2026-9', '2026-11-07', { vendorProduct: 'microsoft:exchange_server', name: 'Microsoft Exchange Server Remote Code Execution Vulnerability' })).drivers,
@@ -1170,9 +1196,11 @@ describe('Technology & AI indicator rules', () => {
       services: ready(services([status('aws', 'AWS', 'SERVICE_OPERATIONAL_STATUS_OPERATIONAL')])),
       kev: ready({ ...kev([]), fetchedAt: AT - 3 * 24 * H }),
       history: { status: 'empty', data: null, at: AT },
+      filings: { status: 'error', data: null, at: AT, error: 'x' },
       news: [],
       now: AT,
     });
+    assert.match((() => { const f = find(list, 'cyber-8k'); return f?.kind === 'unavailable' ? f.detail : ''; })(), /seed-sec-8k-stream/);
     const out = find(list, 'internet-outage');
     assert.equal(out?.kind, 'unavailable');
     assert.match(out?.kind === 'unavailable' ? out.detail : '', /seed-internet-outages/);

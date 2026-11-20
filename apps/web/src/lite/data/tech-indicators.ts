@@ -7,6 +7,8 @@
 import type { InternetOutage, ListInternetOutagesResponse, ListServiceStatusesResponse, ServiceStatus } from '@wm/contracts/generated/client/worldmonitor/infrastructure/v1/service_client';
 import { resolveCountryCode } from '@wm/shared/country-code-resolve';
 import { STARTER_VENDOR_WATCHLIST, type WatchedVendor } from '@wm/client/config/vendor-watchlist';
+import type { ListMaterialEventsResponse } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
+import { FILING_WINDOW_HOURS, filerName, watchCompany } from './finance-macro-indicators';
 import { feedState, sortFeeds, type FeedState, type Indicator } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';
 import type { ResourceState } from './store';
@@ -107,6 +109,8 @@ const DAY_MS = 24 * HOUR_MS;
 export const OUTAGE_RECENT_HOURS = 24;
 /** A KEV addition fires for this many days, which covers a weekend. */
 export const KEV_NEW_DAYS = 3;
+/** The 8-K item for a material cybersecurity incident (also a key item on Finance's 8-K rule; #120). */
+export const CYBER_8K_ITEM = '1.05';
 /** Attack infrastructure fires at this multiple of its 7-day average. */
 export const SPIKE_RATIO = 2;
 /** Days averaged for the attack-infrastructure baseline, and the fewest needed. */
@@ -130,7 +134,8 @@ export const TECH_RULES =
   `An internet outage ongoing or detected in the last ${OUTAGE_RECENT_HOURS} h; ` +
   'a watched cloud or AI provider reporting a partial or major outage; ' +
   `a CVE added to CISA KEV in the last ${KEV_NEW_DAYS} days, a vendor on the starter watchlist ranked first; ` +
-  `attack-infrastructure indicators at ${SPIKE_RATIO}× their ${SPIKE_BASELINE_DAYS}-day average or more. ` +
+  `attack-infrastructure indicators at ${SPIKE_RATIO}× their ${SPIKE_BASELINE_DAYS}-day average or more; ` +
+  `an 8-K reporting item ${CYBER_8K_ITEM} (material cybersecurity incident) in the last ${FILING_WINDOW_HOURS} h. ` +
   'Linked news: tech digest stories from 12 h before to 1 h after (date-only feeds: from 12 h before the day).';
 
 /** Feed labels for the threat counts (seed-cyber-threats raw source names). */
@@ -381,11 +386,60 @@ function spikeFeed(state: ResourceState<ThreatHistory>, news: readonly LiteItem[
     : `${base.latest.toLocaleString('en-US')} indicators · ×${(base.ratio ?? 0).toFixed(1)} vs ${Math.round(base.average).toLocaleString('en-US')} avg · fires at ×${SPIKE_RATIO}`);
 }
 
+// ---- Cyber incidents at peers and suppliers (#120) --------------------------
+
+/**
+ * 8-K filings reporting item 1.05 in the last 24 h, newest first: a listed
+ * company telling the SEC it had a material cyber incident. Every filer
+ * counts (third-party risk reaches beyond the stock list); a filer on the
+ * default stock list is named as such.
+ */
+const CORP_SUFFIX = /[,\s]+(inc|incorporated|corp|corporation|co|company|ltd|limited|plc|holdings?|group|sa|nv|ag|se|llc|lp)\.?$/i;
+/** A filer's name as headlines write it: "ACME LOGISTICS INC" → "ACME LOGISTICS". */
+export function shortCompany(name: string): string {
+  let out = name.trim();
+  for (let i = 0; i < 2; i++) out = out.replace(CORP_SUFFIX, '').trim();
+  return out || name;
+}
+
+export function cyberFilings(data: ListMaterialEventsResponse | null | undefined, now: number) {
+  return (data?.events ?? [])
+    .filter((e) => e.filedAtMs <= now + HOUR_MS && now - e.filedAtMs <= FILING_WINDOW_HOURS * HOUR_MS && e.items.some((i) => i.code === CYBER_8K_ITEM))
+    .sort((a, b) => b.filedAtMs - a.filedAtMs);
+}
+
+export function cyberFilingFeed(state: ResourceState<ListMaterialEventsResponse>, news: readonly LiteItem[], now: number): FeedState {
+  const data = state.status === 'ready' ? state.data : null;
+  const filings = cyberFilings(data, now);
+  const top = filings[0];
+  const fetchedAt = data && data.fetchedAtMs > 0 ? data.fetchedAtMs : null;
+  let fired: Indicator | null = null;
+  if (top) {
+    const name = filerName(top.company);
+    const company = watchCompany(top.company);
+    const others = filings.slice(1).map((f) => filerName(f.company));
+    fired = {
+      id: 'cyber-8k', domain: 'tech', name: `Cyber incident 8-K · ${name}`,
+      value: `Item ${CYBER_8K_ITEM}`, change: 'material cybersecurity incident', rule: `item ${CYBER_8K_ITEM} ≤ ${FILING_WINDOW_HOURS} h`,
+      detail: [
+        company ? `${company.name} (${company.symbol}) is on the default stock list` : 'Listed filer; check whether it is a peer or supplier',
+        others.length ? `also ${others.slice(0, 2).join(', ')}${others.length > 2 ? ` +${others.length - 2} more` : ''}` : null,
+      ].filter(Boolean).join(' · '),
+      trust: { level: 'official', source: 'SEC EDGAR 8-K' }, at: top.filedAtMs, updatedAt: fetchedAt ?? undefined,
+      links: linkNews({ instruments: company ? [company.symbol] : [], drivers: [company?.name ?? shortCompany(name)] }, news, top.filedAtMs, LINK_WINDOW_HOURS.tech),
+    };
+  }
+  const feed = feedState({ id: 'cyber-8k', name: 'Cyber incidents · 8-K item 1.05', source: state, seeder: 'seed-sec-8k-stream', cadenceMin: 30, dataAt: fetchedAt, fired, now });
+  const recent = data ? data.events.filter((e) => now - e.filedAtMs <= FILING_WINDOW_HOURS * HOUR_MS).length : 0;
+  return quietDetail(feed, data ? `${recent} material filing${recent === 1 ? '' : 's'} in ${FILING_WINDOW_HOURS} h · none reports a cyber incident (item ${CYBER_8K_ITEM})` : null);
+}
+
 export function techFeeds(input: {
   outages: ResourceState<ListInternetOutagesResponse>;
   services: ResourceState<ListServiceStatusesResponse>;
   kev: ResourceState<RecentKev>;
   history: ResourceState<ThreatHistory>;
+  filings: ResourceState<ListMaterialEventsResponse>;
   news: readonly LiteItem[];
   now: number;
 }): FeedState[] {
@@ -395,5 +449,6 @@ export function techFeeds(input: {
     serviceFeed(input.services, news, now),
     kevFeed(input.kev, news, now),
     spikeFeed(input.history, news, now),
+    cyberFilingFeed(input.filings, news, now),
   ]);
 }
