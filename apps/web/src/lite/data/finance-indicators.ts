@@ -39,10 +39,18 @@ export const DXY_MOVE_PCT = 1;
 /** FRED's daily VIX close, read only when the Yahoo quote is missing. */
 export const VIX_FRED_SERIES = 'VIXCLS';
 
+/** The US-dollar stablecoins' total supply moving this much in 7 days fires, in percent (#137). */
+export const SUPPLY_TOTAL_WEEK_PCT = 2;
+/** One of the five largest coins' supply moving this much in 7 days fires, in percent. */
+export const SUPPLY_COIN_WEEK_PCT = 5;
+/** The coins the per-coin rule watches: the largest by supply now or a week ago. */
+export const SUPPLY_TOP_COINS = 5;
+
 export const FINANCE_RULES =
   `BTC 24h move ≥ ${BTC_MOVE_PCT}%; BTC perp funding ≥ ${FUNDING_PCT_PER_HOUR}%/h; ` +
   `a stablecoin more than ${STABLECOIN_DEPEG_PCT}% from $1; fear & greed ≤ 20 or ≥ 80; ` +
-  `VIX ≥ ${VIX_LEVEL} or up ≥ ${VIX_JUMP_PCT}% in a day; the dollar index ±${DXY_MOVE_PCT}% in a day. ` +
+  `VIX ≥ ${VIX_LEVEL} or up ≥ ${VIX_JUMP_PCT}% in a day; the dollar index ±${DXY_MOVE_PCT}% in a day; ` +
+  `US-dollar stablecoin supply ±${SUPPLY_TOTAL_WEEK_PCT}% in 7 days, or one of the ${SUPPLY_TOP_COINS} largest coins ±${SUPPLY_COIN_WEEK_PCT}% in 7 days (DefiLlama). ` +
   'Linked news: finance digest stories from 6 h before to 1 h after.';
 
 const SUBJECTS: Readonly<Record<string, LinkSubject>> = {
@@ -87,6 +95,7 @@ export function financeFeeds(input: {
   flow: ResourceState<GetHyperliquidFlowResponse>;
   stables: ResourceState<ListStablecoinMarketsResponse>;
   fearGreed: ResourceState<GetFearGreedIndexResponse>;
+  supply?: ResourceState<StablecoinSupply>;
   news: readonly LiteItem[];
   now: number;
 }): FeedState[] {
@@ -160,6 +169,7 @@ export function financeFeeds(input: {
     ? nearDetail(fgState, `Score ${Math.round(score)} (${fearGreed.data.compositeLabel}) · fires at ≤ 20 or ≥ 80`)
     : null));
 
+  if (input.supply) feeds.push(...stablecoinSupplyFeeds(input.supply, news, now));
   return sortFeeds(feeds);
 }
 
@@ -264,4 +274,135 @@ export function riskGaugeFeeds(input: {
       dxy ? `DXY ${dxy.value.toFixed(2)} ${signed(dxy.changePct, 2)}` : null,
     ),
   ];
+}
+
+// ---- Stablecoin supply (#137) -----------------------------------------------
+
+/** seed-stablecoin-supply runs every 6 h. */
+export const SUPPLY_CADENCE_MIN = 360;
+
+export interface SupplyCoin {
+  symbol: string;
+  name: string;
+  /** Circulating supply in US$, now and a week and a month ago (null when DefiLlama has none). */
+  current: number;
+  prevWeek: number | null;
+  prevMonth: number | null;
+}
+
+export interface StablecoinSupply {
+  fetchedAt: number;
+  total: {
+    current: number;
+    /** The same coins now and a week (a month) ago. */
+    weekNow: number;
+    weekAgo: number;
+    monthNow: number;
+    monthAgo: number;
+  };
+  /** Largest first. */
+  top: SupplyCoin[];
+}
+
+/** The seeded payload (`market:stablecoin-supply:v1`), or null when it is not one. */
+export function decodeStablecoinSupply(value: unknown): StablecoinSupply | null {
+  const v = value as Record<string, unknown> | null;
+  const t = v?.total as Record<string, unknown> | undefined;
+  const num = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  if (!v || typeof v !== 'object' || num(v.fetchedAt) === null || !t || !Array.isArray(v.top)) return null;
+  const total = { current: num(t.current), weekNow: num(t.weekNow), weekAgo: num(t.weekAgo), monthNow: num(t.monthNow), monthAgo: num(t.monthAgo) };
+  if (Object.values(total).some((x) => x === null)) return null;
+  const top: SupplyCoin[] = [];
+  for (const raw of v.top as Array<Record<string, unknown>>) {
+    const current = num(raw?.current);
+    if (typeof raw?.symbol !== 'string' || !raw.symbol || current === null) continue;
+    top.push({ symbol: raw.symbol, name: typeof raw.name === 'string' ? raw.name : raw.symbol, current, prevWeek: num(raw.prevWeek), prevMonth: num(raw.prevMonth) });
+  }
+  top.sort((a, b) => supplySize(b) - supplySize(a));
+  return top.length ? { fetchedAt: v.fetchedAt as number, total: total as StablecoinSupply['total'], top } : null;
+}
+
+/** A coin's size for the top-5 rule: the larger of now and a week ago, so a coin shrinking fast keeps its place (and its card). */
+export const supplySize = (c: Pick<SupplyCoin, 'current' | 'prevWeek'>) => Math.max(c.current, c.prevWeek ?? 0);
+
+/**
+ * News phrases per coin for the supply cards: the coin and its issuer, never a bare common word ("Sky", "Dai", one
+ * letter), which would link unrelated stories.
+ */
+const SUPPLY_DRIVERS: Readonly<Record<string, readonly string[]>> = {
+  USDT: ['Tether', 'USDT'],
+  USDC: ['USDC', 'USD Coin'],
+  USDE: ['USDe', 'Ethena'],
+  DAI: ['MakerDAO', 'Dai stablecoin'],
+  USDS: ['USDS', 'Sky Dollar'],
+  USD1: ['USD1', 'World Liberty Financial'],
+  RLUSD: ['RLUSD', 'Ripple USD'],
+  PYUSD: ['PYUSD', 'PayPal USD'],
+  FDUSD: ['FDUSD', 'First Digital USD'],
+};
+const supplyDrivers = (c: SupplyCoin) => SUPPLY_DRIVERS[c.symbol.toUpperCase()] ?? [c.name, ...(c.symbol.length >= 4 ? [c.symbol] : [])];
+
+/** Percent change, rounded to the one decimal the card shows, so the rule fires on the number it displays. */
+const change = (now: number, ago: number | null) => (ago != null && ago > 0 ? Math.round((now / ago - 1) * 1000) / 10 : null);
+/** "$283.7bn", or "$4.88bn" under $10bn. */
+const usdSupply = (n: number) => `$${(n / 1e9).toFixed(n < 10e9 ? 2 : 1)}bn`;
+const pct = (n: number) => `${n < 0 ? '−' : '+'}${Math.abs(n).toFixed(1)}%`.replace('−0.0%', '+0.0%');
+
+export function stablecoinSupplyFeeds(source: ResourceState<StablecoinSupply>, news: readonly LiteItem[], now: number): FeedState[] {
+  const data = source.status === 'ready' ? source.data : null;
+  const base = feedState({
+    id: 'stablecoin-supply', name: 'Stablecoin supply · DefiLlama', source, seeder: 'seed-stablecoin-supply',
+    cadenceMin: SUPPLY_CADENCE_MIN, dataAt: data?.fetchedAt ?? null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !data) return [base];
+  const at = Math.min(now, data.fetchedAt);
+  const link = (subject: LinkSubject) => linkNews(subject, news, at, LINK_WINDOW_HOURS.fin);
+  const totalWeek = change(data.total.weekNow, data.total.weekAgo);
+  const totalMonth = change(data.total.monthNow, data.total.monthAgo);
+  const top = [...data.top].sort((a, b) => supplySize(b) - supplySize(a)).slice(0, SUPPLY_TOP_COINS).map((c) => ({ coin: c, week: change(c.current, c.prevWeek), month: change(c.current, c.prevMonth) }));
+  const fired: FeedState[] = [];
+  if (totalWeek !== null && Math.abs(totalWeek) + 1e-9 >= SUPPLY_TOTAL_WEEK_PCT) {
+    const indicator: Indicator = {
+      id: 'stablecoin-supply:total', domain: 'fin', name: 'Stablecoin supply · all US$ coins',
+      value: usdSupply(data.total.current), change: `${pct(totalWeek)} in 7 days`,
+      rule: `total ±${SUPPLY_TOTAL_WEEK_PCT}% in 7 days`,
+      detail: [
+        `${totalWeek < 0 ? 'down' : 'up'} ${usdSupply(Math.abs(data.total.weekNow - data.total.weekAgo))} in a week`,
+        totalMonth !== null ? `${pct(totalMonth)} in 30 days` : null,
+        `largest: ${top.slice(0, 3).map((t) => `${t.coin.symbol} ${t.week !== null ? pct(t.week) : 'n/a'}`).join(', ')}`,
+      ].filter(Boolean).join(' · '),
+      trust: { level: 'market', source: 'DefiLlama' }, at, updatedAt: data.fetchedAt,
+      links: link({ drivers: ['stablecoin', 'stablecoins', 'stablecoin supply', 'stablecoin market'] }),
+    };
+    fired.push({ kind: 'fired', id: indicator.id, name: indicator.name, indicator });
+  }
+  for (const t of top) {
+    if (t.week === null || Math.abs(t.week) + 1e-9 < SUPPLY_COIN_WEEK_PCT) continue;
+    const { coin } = t;
+    const names = supplyDrivers(coin);
+    const indicator: Indicator = {
+      id: `stablecoin-supply:${coin.symbol}`, domain: 'fin', name: `Stablecoin supply · ${coin.symbol}`,
+      value: usdSupply(coin.current), change: `${pct(t.week)} in 7 days`,
+      rule: `a top-${SUPPLY_TOP_COINS} coin ±${SUPPLY_COIN_WEEK_PCT}% in 7 days`,
+      detail: [
+        `${coin.name}: ${usdSupply(coin.prevWeek!)} a week ago`,
+        t.month !== null ? `${pct(t.month)} in 30 days` : null,
+        totalWeek !== null ? `all US$ coins ${pct(totalWeek)} in 7 days` : null,
+      ].filter(Boolean).join(' · '),
+      trust: { level: 'market', source: 'DefiLlama' }, at, updatedAt: data.fetchedAt,
+      // A story links when it names the coin or its issuer.
+      links: link({ drivers: names }),
+    };
+    fired.push({ kind: 'fired', id: indicator.id, name: indicator.name, indicator });
+  }
+  if (fired.length) return fired;
+  const reading = totalWeek !== null ? `stablecoins ${pct(totalWeek)} 7d` : null;
+  return [withReading({
+    ...base,
+    detail: [
+      `Live · all US$ coins ${usdSupply(data.total.current)}${totalWeek !== null ? `, ${pct(totalWeek)} in 7 days` : ''}`,
+      `largest: ${top.map((t) => `${t.coin.symbol} ${t.week !== null ? pct(t.week) : 'n/a'}`).join(', ')}`,
+      `fires at ±${SUPPLY_TOTAL_WEEK_PCT}% total or ±${SUPPLY_COIN_WEEK_PCT}% for a top-${SUPPLY_TOP_COINS} coin`,
+    ].join(' · '),
+  }, reading)];
 }

@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **859 active source hosts** representing **839 active providers** (**375 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **860 active source hosts** representing **840 active providers** (**376 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -656,6 +656,7 @@ This generated inventory covers **859 active source hosts** representing **839 a
 | slidstvo.info (slidstvo.info) | feed — packages/shared/news-catalog.json |
 | spglobal.com (spglobal.com) | feed — packages/shared/news-catalog.json |
 | ssl.bing.com (ssl.bing.com) | Excluded / candidate — No current fetch observed |
+| stablecoins.llama.fi (stablecoins.llama.fi) | structured — scripts/seed-stablecoin-supply.mjs |
 | stat.gov.kg (stat.gov.kg) | structured — scripts/lib/food-prices-adapters/nsckg.mjs |
 | stat.gov.kz (stat.gov.kz) | structured — scripts/lib/food-prices-adapters/statkz.mjs |
 | stat.uz (api.siat.stat.uz) | structured — scripts/lib/food-prices-adapters/statuz.mjs |

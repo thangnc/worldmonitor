@@ -231,6 +231,7 @@ const SEED_DOMAINS = {
   'intelligence:travel-levels': { key: 'seed-meta:intelligence:travel-levels', intervalMin: 180, activationKey: 'seed-activated:intelligence:travel-levels' }, // #124; maxStaleMin / 2 (360 / 2), matching api/health.js
   'economic:rate-odds':       { key: 'seed-meta:economic:rate-odds',       intervalMin: 90, activationKey: 'seed-activated:economic:rate-odds' }, // #125; maxStaleMin / 2 (180 / 2), matching api/health.js
   'economic:macro-forecasts': { key: 'seed-meta:economic:macro-forecasts', intervalMin: 90, activationKey: 'seed-activated:economic:macro-forecasts' }, // #128; maxStaleMin / 2 (180 / 2), matching api/health.js
+  'market:stablecoin-supply': { key: 'seed-meta:market:stablecoin-supply', intervalMin: 540, activationKey: 'seed-activated:market:stablecoin-supply' }, // #137; maxStaleMin / 2 (1080 / 2), matching api/health.js
   'economic:reverse-repo':    { key: 'seed-meta:economic:reverse-repo',    intervalMin: 270, activationKey: 'seed-activated:economic:reverse-repo' }, // #136; maxStaleMin / 2 (540 / 2), matching api/health.js
   'economic:central-bank-decisions': { key: 'seed-meta:economic:central-bank-decisions', intervalMin: 45, activationKey: 'seed-activated:economic:central-bank-decisions' }, // #130; maxStaleMin / 2 (90 / 2), matching api/health.js
   'tech:ai-models':           { key: 'seed-meta:tech:ai-models',           intervalMin: 540, activationKey: 'seed-activated:tech:ai-models' }, // #126; maxStaleMin / 2 (1080 / 2), matching api/health.js

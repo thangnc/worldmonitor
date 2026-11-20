@@ -8967,6 +8967,20 @@
       "status": "excluded"
     },
     {
+      "host": "stablecoins.llama.fi",
+      "provider": "stablecoins.llama.fi",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit stablecoins.llama.fi and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "scripts/seed-stablecoin-supply.mjs"
+        }
+      ]
+    },
+    {
       "host": "stat.gov.kg",
       "provider": "stat.gov.kg",
       "kind": "structured",
