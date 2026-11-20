@@ -337,6 +337,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['Hyperscaler capital spending indicator'],
   },
   {
+    id: 'ai-funding', name: 'AI funding rounds · SEC Form D', domain: 'tech', kind: 'Official filing (US only). Issuers with AI in their name.', method: 'API',
+    producer: 'seed-ai-funding', healthKeys: ['aiFunding'], maxStaleMin: 1080,
+    hosts: [{ host: 'efts.sec.gov', licence: 'reviewed' }, { host: 'www.sec.gov', licence: 'reviewed' }],
+    usedBy: ['AI funding · Form D indicator'],
+  },
+  {
     id: 'digest-tech', name: 'News digest · tech', domain: 'tech', kind: 'News aggregate', method: 'RSS',
     producer: 'list-feed-digest', digest: 'tech', hosts: [],
     usedBy: ['Material developments', 'Watched topics'],

@@ -47,7 +47,7 @@ const TIER_BY_FEED: Readonly<Record<string, DecisionTier>> = {
   'fed-balance-sheet': 'weekly', 'reverse-repo': 'weekly', 'stablecoin-supply': 'weekly', 'oil-inventories': 'weekly',
   // Technology
   'service-outage': 'daily', 'kev-new': 'daily', 'cyber-8k': 'daily', 'internet-outage': 'daily', breach: 'daily',
-  'ai-models': 'weekly', 'open-models': 'weekly', 'lab-news': 'weekly', 'chip-revenue': 'weekly', 'hyperscaler-capex': 'weekly', 'ai-regulation': 'weekly',
+  'ai-models': 'weekly', 'open-models': 'weekly', 'lab-news': 'weekly', 'chip-revenue': 'weekly', 'hyperscaler-capex': 'weekly', 'ai-regulation': 'weekly', 'ai-funding': 'weekly',
 };
 
 /** A feed's tier by its id ("sanctions:RU" reads as "sanctions"); null for analyst inputs. */

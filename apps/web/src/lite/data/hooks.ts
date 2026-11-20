@@ -36,6 +36,7 @@ export const useCslAdditions = () => useResource('cslAdditions', src.loadCslAddi
 export const useEuSanctions = () => useResource('euSanctions', src.loadEuSanctions);
 export const useUkSanctions = () => useResource('ukSanctions', src.loadUkSanctions);
 export const useElections = () => useResource('elections', src.loadElections);
+export const useAiFunding = () => useResource('aiFunding', src.loadAiFunding);
 export const useTravelLevels = () => useResource('travelLevels', src.loadTravelLevels);
 export const useEmbassyAlerts = () => useResource('embassyAlerts', src.loadEmbassyAlerts);
 export const useCryptoQuotes = () => useResource('cryptoQuotes', src.loadCryptoQuotes);

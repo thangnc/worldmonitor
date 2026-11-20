@@ -38,6 +38,7 @@ import {
   useEuSanctions,
   useUkSanctions,
   useElections,
+  useAiFunding,
   useFederalRegister,
   useFearGreed,
   useGoldIntelligence,
@@ -229,9 +230,10 @@ export function useTechFeeds(): FeedState[] {
   const labNews = useAiLabNews();
   const chipRevenue = useChipRevenue();
   const capex = useHyperscalerCapex();
+  const funding = useAiFunding();
   const digest = useDigest('tech');
   return useMemo(
-    () => techFeeds({ outages, services, kev, history, filings, models, regulation, breaches, labNews, chipRevenue, capex, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
-    [outages, services, kev, history, filings, models, regulation, breaches, labNews, chipRevenue, capex, digest],
+    () => techFeeds({ outages, services, kev, history, filings, models, regulation, breaches, labNews, chipRevenue, capex, funding, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
+    [outages, services, kev, history, filings, models, regulation, breaches, labNews, chipRevenue, capex, funding, digest],
   );
 }

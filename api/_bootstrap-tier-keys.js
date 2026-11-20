@@ -90,6 +90,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   chipRevenue: 'tech:chip-revenue:v1',
   // Lite Tech hyperscaler capital spending (#135): Microsoft, Alphabet, Amazon and Meta from SEC EDGAR (seed-hyperscaler-capex).
   hyperscalerCapex: 'tech:hyperscaler-capex:v1',
+  // Lite Tech AI funding (#142): AI-named SEC Form D filings of the last 14 days (seed-ai-funding).
+  aiFunding: 'tech:ai-funding:v1',
   techReadiness: 'economic:worldbank-techreadiness:v1',
   progressData: 'economic:worldbank-progress:v1',
   renewableEnergy: 'economic:worldbank-renewable:v1',
@@ -273,6 +275,8 @@ const ON_DEMAND_KEY_NAMES = new Set([
   'chipRevenue',
   // Lite Tech: nine quarters of capital spending for four companies (#135, about 6 KB), read only by /lite and /lite/tech.
   'hyperscalerCapex',
+  // Lite Tech: AI-named Form D filings of the last 14 days (#142, ~9 KB), read only by /lite and /lite/tech.
+  'aiFunding',
   'chinaPolicyEvents', 'chinaDecisionSignals',
   'bisDsr', 'bisPropertyResidential', 'bisPropertyCommercial',
   // One row of this feeds the Central Banks tab's policy-rate list, which BIS

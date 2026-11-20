@@ -55,7 +55,7 @@ import type {
 import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cyber/v1/service_client';
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
-import { decodeAiLabNews, decodeAiModels, decodeAiRegulation, decodeBreaches, decodeChipRevenue, decodeHyperscalerCapex, decodeRecentKev, decodeThreatHistory, type AiLabNews, type AiModels, type AiRegulation, type Breaches, type ChipRevenue, type HyperscalerCapex, type RecentKev, type ThreatHistory } from './tech-indicators';
+import { decodeAiFunding, decodeAiLabNews, decodeAiModels, decodeAiRegulation, decodeBreaches, decodeChipRevenue, decodeHyperscalerCapex, decodeRecentKev, decodeThreatHistory, type AiFunding, type AiLabNews, type AiModels, type AiRegulation, type Breaches, type ChipRevenue, type HyperscalerCapex, type RecentKev, type ThreatHistory } from './tech-indicators';
 import { BALANCE_SHEET_SERIES, CREDIT_SERIES, EARNINGS_AHEAD_DAYS, EARNINGS_PAST_DAYS, decodeOilStocks, type OilStocks, decodeCbDecisions, decodeCreditSpreads, decodeFedBalanceSheet, decodeMacroForecasts, decodeRateOdds, decodeReverseRepo, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds, type ReverseRepo } from './finance-macro-indicators';
 import { VIX_FRED_SERIES, decodeStablecoinSupply, type StablecoinSupply } from './finance-indicators';
 import {
@@ -516,6 +516,12 @@ export async function loadChipRevenue(): Promise<ChipRevenue> {
 export async function loadHyperscalerCapex(): Promise<HyperscalerCapex> {
   await startBootstrap();
   return required('hyperscalerCapex', decodeHyperscalerCapex(await ensureHydrated('hyperscalerCapex')));
+}
+
+/** AI-named SEC Form D filings of the last 14 days with their offerings (seed-ai-funding, #142). */
+export async function loadAiFunding(): Promise<AiFunding> {
+  await startBootstrap();
+  return required('aiFunding', decodeAiFunding(await ensureHydrated('aiFunding')));
 }
 
 /** OpenAI, Google, Google DeepMind and Anthropic's own posts of the last 14 days (seed-ai-lab-news, #133). */

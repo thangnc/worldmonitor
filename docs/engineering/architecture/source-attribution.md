@@ -631,9 +631,9 @@ This generated inventory covers **861 active source hosts** representing **841 a
 | search.yahoo.com (search.yahoo.com) | Excluded / candidate — No current fetch observed |
 | searchadvisor.naver.com (searchadvisor.naver.com) | Excluded / candidate — No current fetch observed |
 | searchconsole.googleapis.com (searchconsole.googleapis.com) | Excluded / candidate — No current fetch observed |
-| SEC (www.sec.gov) | feed+structured — apps/web/src/lite/data/tech-indicators.ts, packages/shared/news-catalog.json, scripts/openapi-inject-examples.mjs, scripts/seed-regulatory-actions.mjs, +2 more |
+| SEC (www.sec.gov) | feed+structured — apps/web/src/lite/data/tech-indicators.ts, packages/shared/news-catalog.json, scripts/openapi-inject-examples.mjs, scripts/seed-ai-funding.mjs, +3 more |
 | SEC EDGAR (data.sec.gov) | structured — packages/server/_shared/sec-edgar.ts, scripts/seed-hyperscaler-capex.mjs |
-| SEC EDGAR Full-Text Search (efts.sec.gov) | structured — packages/server/_shared/sec-edgar.ts |
+| SEC EDGAR Full-Text Search (efts.sec.gov) | structured — packages/server/_shared/sec-edgar.ts, scripts/seed-ai-funding.mjs |
 | sedeaplicaciones.minetur.gob.es (sedeaplicaciones.minetur.gob.es) | structured — scripts/backfill-fuel-prices-prev.mjs, scripts/seed-fuel-prices.mjs |
 | seekingalpha.com (seekingalpha.com) | feed — packages/shared/news-catalog.json |
 | semianalysis.com (semianalysis.com) | feed — packages/shared/news-catalog.json |
