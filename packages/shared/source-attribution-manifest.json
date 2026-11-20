@@ -3977,9 +3977,6 @@
       "status": "terms-review",
       "references": [
         {
-          "path": "apps/web/src/lite/data/geo-watch.ts"
-        },
-        {
           "path": "scripts/seed-ai-regulation.mjs"
         }
       ]
@@ -8468,6 +8465,20 @@
       "references": [
         {
           "path": "packages/shared/news-catalog.json"
+        }
+      ]
+    },
+    {
+      "host": "sanctionslist.fcdo.gov.uk",
+      "provider": "sanctionslist.fcdo.gov.uk",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit sanctionslist.fcdo.gov.uk and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "scripts/seed-uk-sanctions.mjs"
         }
       ]
     },

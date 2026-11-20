@@ -12,7 +12,7 @@ import { escalationLevel, scoreHotspots } from './escalation';
 import { financeFeeds, riskGaugeFeeds } from './finance-indicators';
 import { centralBankFeeds, financeMacroFeeds, rateOddsFeed } from './finance-macro-indicators';
 import { aircraftFeeds, gpsFeeds, seaIncidentFeeds } from './geo-layers';
-import { chokepointFeeds, embassyAlertFeeds, euSanctionsFeeds, exportControlFeeds, newSanctionsFeeds, restrictedPartyFeeds, taiwanStraitFeeds, travelAdvisoryFeeds } from './geo-watch';
+import { chokepointFeeds, embassyAlertFeeds, euSanctionsFeeds, exportControlFeeds, newSanctionsFeeds, restrictedPartyFeeds, taiwanStraitFeeds, travelAdvisoryFeeds, ukSanctionsFeeds } from './geo-watch';
 import {
   useChokepoints,
   useCommodityQuotes,
@@ -36,6 +36,7 @@ import {
   useEtfFlows,
   useCslAdditions,
   useEuSanctions,
+  useUkSanctions,
   useFederalRegister,
   useFearGreed,
   useGoldIntelligence,
@@ -145,6 +146,7 @@ export function useGeoFeeds({ escalation, tiles, source: escalationSource }: { e
   const federalRegister = useFederalRegister();
   const cslAdditions = useCslAdditions();
   const euSanctions = useEuSanctions();
+  const ukSanctions = useUkSanctions();
   const travelLevels = useTravelLevels();
   return useMemo(() => {
     const now = Date.now();
@@ -159,13 +161,14 @@ export function useGeoFeeds({ escalation, tiles, source: escalationSource }: { e
       ...embassyAlertFeeds(embassy, INTEL_HOTSPOTS, news, now),
       ...newSanctionsFeeds(sanctions, news, now),
       ...euSanctionsFeeds(euSanctions, INTEL_HOTSPOTS, news, now),
+      ...ukSanctionsFeeds(ukSanctions, INTEL_HOTSPOTS, news, now),
       ...exportControlFeeds(federalRegister, news, now),
       ...restrictedPartyFeeds(cslAdditions, news, now),
       ...travelAdvisoryFeeds(travelLevels, INTEL_HOTSPOTS, news, now),
       ...regionEscalationFeeds({ regions: ESCALATION_REGIONS, tiles, source: escalationSource, missing: escalation[0]?.missing, history: levelHistory, news, now }),
       AIRSPACE_FEED,
     ]);
-  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy, sanctions, euSanctions, federalRegister, cslAdditions, travelLevels, tiles, escalation, escalationSource, levelHistory]);
+  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy, sanctions, euSanctions, ukSanctions, federalRegister, cslAdditions, travelLevels, tiles, escalation, escalationSource, levelHistory]);
 }
 
 /** The airspace row stays unavailable until the FAA grants NOTAM access (spec: Owner decisions). */

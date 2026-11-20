@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **860 active source hosts** representing **840 active providers** (**376 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **861 active source hosts** representing **841 active providers** (**377 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -283,7 +283,7 @@ This generated inventory covers **860 active source hosts** representing **840 a
 | ertflix.ascdn.broadpeak.io (ertflix.ascdn.broadpeak.io) | Excluded / candidate — No current fetch observed |
 | es.euronews.com (es.euronews.com) | feed — packages/shared/news-catalog.json |
 | eu-startups.com (eu-startups.com) | feed — packages/shared/news-catalog.json |
-| eur-lex.europa.eu (eur-lex.europa.eu) | structured — apps/web/src/lite/data/geo-watch.ts, scripts/seed-ai-regulation.mjs |
+| eur-lex.europa.eu (eur-lex.europa.eu) | structured — scripts/seed-ai-regulation.mjs |
 | euractiv.com (euractiv.com) | Excluded / candidate — No current fetch observed |
 | eurasianet.org (eurasianet.org) | feed — packages/shared/news-catalog.json |
 | euromaidanpress.com (euromaidanpress.com) | feed — packages/shared/news-catalog.json |
@@ -617,6 +617,7 @@ This generated inventory covers **860 active source hosts** representing **840 a
 | sabconetanw.cdn.mangomolo.com (sabconetanw.cdn.mangomolo.com) | feed — packages/client/config/live-video-sources.ts |
 | Safecast (api.safecast.org) | structured — scripts/seed-radiation-watch.mjs |
 | Sana'a Center (sanaacenter.org) | feed — packages/shared/news-catalog.json |
+| sanctionslist.fcdo.gov.uk (sanctionslist.fcdo.gov.uk) | structured — scripts/seed-uk-sanctions.mjs |
 | sanctionslistservice.ofac.treas.gov (sanctionslistservice.ofac.treas.gov) | structured — scripts/seed-sanctions-pressure.mjs |
 | SaskAlert (emergencyalert.saskatchewan.ca) | structured — scripts/lib/saskalert.mjs, scripts/source-attribution.mjs |
 | sccd.royalnavy.mod.uk (sccd.royalnavy.mod.uk) | Excluded / candidate — No current fetch observed |

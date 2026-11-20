@@ -263,6 +263,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['New sanctions · EU indicator'],
   },
   {
+    id: 'uk-sanctions', name: 'UK Sanctions List · FCDO', domain: 'geo', kind: 'Official list (UK). Contains public sector information licensed under the Open Government Licence v3.0.', method: 'API',
+    producer: 'seed-uk-sanctions', healthKeys: ['ukSanctions'], maxStaleMin: 720,
+    hosts: [{ host: 'sanctionslist.fcdo.gov.uk', licence: 'terms-review' }],
+    usedBy: ['New sanctions · UK indicator'],
+  },
+  {
     id: 'travel-advisories', name: 'Travel advisories · US State Department and UK FCDO', domain: 'geo', kind: 'Official notices', method: 'API',
     producer: 'seed-travel-advisories', healthKeys: ['travelLevels'], maxStaleMin: 360,
     hosts: [{ host: 'travel.state.gov', licence: 'terms-review' }, { host: 'www.gov.uk', licence: 'terms-review' }],

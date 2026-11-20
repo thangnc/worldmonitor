@@ -194,7 +194,9 @@ import {
   decodeTravelLevels,
   EU_SANCTIONS_DAY_MIN,
   decodeEuSanctions,
+  decodeUkSanctions,
   euSanctionsFeeds,
+  ukSanctionsFeeds,
   newEuListings,
   travelAdvisoryFeeds,
   travelChangeFires,
@@ -2024,6 +2026,67 @@ describe('EU sanctions (#129)', () => {
     const [e] = parseEuList(xml).entities;
     const read = decodeEuSanctions(JSON.parse(JSON.stringify({ fetchedAt: AT - H, generatedAt: AT - 3 * H, entityCount: 5000, baselineAt: AT - 86_400_000 * 5, windowDays: 14, additions: [{ ...e, at: AT - H }] })));
     assert.deepEqual(read?.additions.map((a) => [a.id, a.name, a.type, a.countries, a.programmes]), [['9', 'OOO Example', 'entity', ['RU'], ['RUS']]]);
+  });
+});
+
+describe('UK sanctions (#140)', () => {
+  const moscow = { id: 'moscow', name: 'Moscow', lat: 55.75, lon: 37.62 };
+  const listing = (id: string, o: Record<string, unknown> = {}) => ({
+    at: AT - 2 * H, id, ref: id, name: `Person ${id}`, type: 'person', programmes: ['RUS'], countries: ['RU'],
+    listedOn: '2026-11-07', regulation: 'Russia (Sanctions) (EU Exit) Regulations 2019', url: '', ...o,
+  });
+  const feed = (additions: unknown[], o: Record<string, unknown> = {}) => decodeUkSanctions({ fetchedAt: AT - H, generatedAt: AT - 8 * H, entityCount: 6448, baselineAt: AT - 10 * 86_400_000, windowDays: 14, additions, ...o })!;
+
+  it('decodes strictly and keeps no link', () => {
+    assert.equal(decodeUkSanctions(null), null);
+    assert.equal(decodeUkSanctions({ fetchedAt: AT, additions: [] }), null, 'no designation count');
+    const d = feed([listing('RUS1', { countries: ['ru', 'XX1'], url: 'https://eur-lex.europa.eu/x' }), { id: 'RUS2', at: AT }]);
+    assert.deepEqual(d.additions.map((a) => [a.id, a.countries, a.url]), [['RUS1', ['RU'], '']]);
+  });
+
+  it('fires with UK labels for a hotspot country, and for every country from five listings', () => {
+    const one = ukSanctionsFeeds(ready(feed([listing('RUS1'), listing('RUS2', { countries: ['FR'] })])), [moscow], [], AT);
+    assert.deepEqual(one.map((f) => f.id), ['uk-sanctions:RU']);
+    const card = one[0]!;
+    assert.equal(card.kind === 'fired' && card.indicator.name, 'New UK sanctions · Russia');
+    assert.equal(card.kind === 'fired' && card.indicator.rule, 'new UK listing ≤ 24 h, hotspot country');
+    assert.equal(card.kind === 'fired' && card.indicator.detail, 'Person RUS1 · under Russia (Sanctions) (EU Exit) Regulations 2019');
+    assert.equal(card.kind === 'fired' && card.indicator.trust.source, 'FCDO (UK Sanctions List)');
+    const busy = [listing('RUS1'), ...['1', '2', '3', '4'].map((n) => listing(`IRN${n}`, { countries: ['AE'], programmes: ['IRN'] }))];
+    const ae = ukSanctionsFeeds(ready(feed(busy)), [moscow], [], AT).find((f) => f.id === 'uk-sanctions:AE')!;
+    assert.equal(ae.kind === 'fired' && ae.indicator.rule, `${EU_SANCTIONS_DAY_MIN}+ UK listings ≤ 24 h (5 today)`);
+    // The EU feed keeps its own labels through the shared reader.
+    const eu = euSanctionsFeeds(ready(decodeEuSanctions({ fetchedAt: AT - H, entityCount: 5000, baselineAt: AT - 10 * 86_400_000, additions: [listing('1')] })!), [moscow], [], AT)[0]!;
+    assert.deepEqual(eu.kind === 'fired' && [eu.indicator.id, eu.indicator.name, eu.indicator.trust.source], ['eu-sanctions:RU', 'New EU sanctions · Russia', 'European Commission (EU financial sanctions list)']);
+  });
+
+  it('links only sanctions stories about the country', () => {
+    const news = [story('UK sanctions Russian oil traders in new asset freeze', AT - 3 * H), story('Russia launches drones at Kyiv', AT - 3 * H)];
+    const card = ukSanctionsFeeds(ready(feed([listing('RUS1')])), [moscow], news, AT)[0]!;
+    assert.deepEqual(card.kind === 'fired' && card.indicator.links.stories.map((st) => st.item.title), ['UK sanctions Russian oil traders in new asset freeze']);
+  });
+
+  it('stays quiet, stale or unavailable with UK wording', () => {
+    const old = ukSanctionsFeeds(ready(feed([listing('RUS1', { at: AT - 30 * H })])), [moscow], [], AT)[0]!;
+    assert.equal(old.kind === 'quiet' && old.detail, 'Live · no new UK listing in 24 h · 6,448 listed');
+    const off = ukSanctionsFeeds(ready(feed([listing('RUS1', { countries: ['FR'] })])), [moscow], [], AT)[0]!;
+    assert.equal(off.kind === 'quiet' && off.detail, 'Live · 1 new UK listing in 24 h, none for a hotspot country · 6,448 listed');
+    const fresh = ukSanctionsFeeds(ready(feed([], { baselineAt: AT - 2 * H })), [moscow], [], AT)[0]!;
+    assert.match(fresh.kind === 'quiet' ? fresh.detail : '', /first read of the list 8 Nov; new listings show from the next change/);
+    assert.equal(ukSanctionsFeeds(ready(feed([], { fetchedAt: AT - 13 * H })), [moscow], [], AT)[0]!.kind, 'stale');
+    const down = ukSanctionsFeeds({ status: 'error', data: null, at: AT, error: 'HTTP 500' }, [moscow], [], AT)[0]!;
+    assert.notEqual(down.kind, 'quiet');
+    assert.equal(down.name, 'New sanctions · UK');
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { parseUkList } = await import('../scripts/seed-uk-sanctions.mjs');
+    const xml = `<Designations><DateGenerated>08/11/2026</DateGenerated><Designation><DateDesignated>07/11/2026</DateDesignated><UniqueID>RUS3001</UniqueID><Names><Name><Name6>Example Tanker</Name6><NameType>Primary name</NameType></Name></Names><RegimeName>The Russia (Sanctions) (EU Exit) Regulations 2019</RegimeName><IndividualEntityShip>Ship</IndividualEntityShip><ShipDetails><Ship><CurrentBelievedFlagOfShips><CurrentBelievedFlagOfShip>Panama</CurrentBelievedFlagOfShip></CurrentBelievedFlagOfShips></Ship></ShipDetails></Designation></Designations>`;
+    const [e] = parseUkList(xml).entities;
+    const read = decodeUkSanctions(JSON.parse(JSON.stringify({ fetchedAt: AT - H, generatedAt: AT - 3 * H, entityCount: 6448, baselineAt: AT - 86_400_000 * 5, windowDays: 14, additions: [{ ...e, at: AT - H }] })));
+    assert.deepEqual(read?.additions.map((a) => [a.id, a.name, a.type, a.countries, a.programmes, a.listedOn]), [['RUS3001', 'Example Tanker', 'ship', ['RU'], ['RUS'], '2026-11-07']]);
+    const card = ukSanctionsFeeds(ready(read!), [moscow], [], AT)[0]!;
+    assert.equal(card.kind === 'fired' && card.indicator.value, '1 listing');
   });
 });
 
