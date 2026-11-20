@@ -134,7 +134,12 @@ import {
   isCrossStraitSnapshot,
   SANCTIONS_ENTRY_LIMIT,
   FED_REG_NEW_DAYS,
+  RESTRICTED_COUNTRY_MIN,
+  cslComparisonNote,
+  decodeCslAdditions,
   decodeFederalRegister,
+  newRestrictedParties,
+  restrictedPartyFeeds,
   exportControlFeeds,
   tradeCountries,
   newOfacDesignations,
@@ -1569,7 +1574,7 @@ describe('New OFAC sanctions (#118)', () => {
 
 describe('Decision tiers (#121)', () => {
   it('tags each feed check daily or check weekly as the spec tables do, and leaves analyst inputs untagged', () => {
-    for (const id of ['chokepoint:hormuz_strait', 'chokepoints', 'region:red-sea', 'sanctions:RU', 'export-controls:2026-1', 'taiwan', 'embassy:kyiv:x', 'treasury', 'other-bonds',
+    for (const id of ['chokepoint:hormuz_strait', 'chokepoints', 'region:red-sea', 'sanctions:RU', 'export-controls:2026-1', 'restricted-parties:CN', 'taiwan', 'embassy:kyiv:x', 'treasury', 'other-bonds',
       'credit-spreads', 'vix', 'dollar-index', 'macro-print', 'btc-move', 'service-outage', 'kev-new', 'cyber-8k', 'internet-outage']) {
       assert.equal(feedTier(id), 'daily', id);
     }
@@ -1645,5 +1650,95 @@ describe('Export controls and tariffs (#122)', () => {
     const read = decodeFederalRegister(JSON.parse(JSON.stringify(seeded)));
     assert.deepEqual(read?.items.map((i) => [i.id, i.agency, i.kind]), [['2026-9', 'BIS', 'export-control']]);
     assert.equal(exportControlFeeds(ready(read!), [], AT)[0]?.kind, 'fired');
+  });
+});
+
+describe('New restricted parties (#123)', () => {
+  const ev = (o: Record<string, unknown> = {}) => ({
+    at: AT - 2 * H, list: 'CSL-EL', name: 'Shenzhen Example Technology Co., Ltd.', cc: ['CN'], pr: [], effectiveAt: String(Date.UTC(2026, 10, 7)),
+    notice: '91 FR 70001', ...o,
+  });
+  const lists = [
+    { list: 'CSL-EL', status: 'ok', count: 3317, publishedAt: Date.UTC(2026, 10, 7, 20) },
+    { list: 'CSL-DTC', status: 'ok', count: 797, publishedAt: Date.UTC(2026, 6, 24) },
+  ];
+  const feed = (events: unknown[], o: Record<string, unknown> = {}) =>
+    decodeCslAdditions({ version: 1, fetchedAt: AT - H, windowDays: 7, lists, events, truncated: false, gaps: [], ...o })!;
+
+  it('decodes the projection strictly, newest first, and keeps no additions valid', () => {
+    assert.equal(decodeCslAdditions(null), null);
+    assert.equal(decodeCslAdditions({ fetchedAt: AT, lists: [] }), null);
+    assert.deepEqual(feed([]).events, []);
+    const d = feed([ev({ name: 'older', at: AT - 5 * H }), ev(), ev({ name: '' }), ev({ cc: ['cn', 'XXX'], name: 'lower' })]);
+    assert.deepEqual(d.events.map((e) => e.name), ['Shenzhen Example Technology Co., Ltd.', 'lower', 'older']);
+    assert.deepEqual(d.events[1]!.countries, ['CN']);
+    assert.equal(d.events[0]!.effectiveAt, Date.UTC(2026, 10, 7));
+  });
+
+  it(`fires per country on any Entity List addition, or ${RESTRICTED_COUNTRY_MIN} on one list, within 24 h`, () => {
+    const dtc = (i: number, cc = ['RU']) => ev({ list: 'CSL-DTC', name: `Debarred person ${i}`, cc, notice: '', effectiveAt: '0' });
+    const data = feed([
+      ev(),
+      ev({ name: 'Hong Kong Example Trading', cc: ['HK', 'CN'] }),
+      ...[1, 2, 3, 4, 5].map((i) => dtc(i)),
+      ...[1, 2, 3, 4].map((i) => dtc(i, ['IR'])),
+      ev({ name: 'Old listing', cc: ['AE'], at: AT - 30 * H }),
+    ]);
+    const groups = newRestrictedParties(data, AT);
+    assert.deepEqual(groups.map((g) => [g.code, g.additions.length, g.entityList]), [['CN', 2, 2], ['HK', 1, 1], ['RU', 5, 0]]);
+    const news = [
+      story('US adds Chinese chipmakers to Entity List', AT - 4 * H),
+      story('China hosts trade fair in Shenzhen', AT - 4 * H),
+      story('Commerce Department blacklists Russian firms', AT - 4 * H),
+    ];
+    const list = restrictedPartyFeeds(ready(data), news, AT);
+    assert.deepEqual(list.map((f) => f.id), ['restricted-parties:CN', 'restricted-parties:HK', 'restricted-parties:RU']);
+    const [cn, , ru] = list;
+    assert.equal(cn?.kind === 'fired' && cn.indicator.name, 'New restricted parties · China');
+    assert.equal(cn?.kind === 'fired' && cn.indicator.value, '2 added');
+    assert.equal(cn?.kind === 'fired' && cn.indicator.change, 'Entity List 2');
+    assert.equal(cn?.kind === 'fired' && cn.indicator.dataDate, 'listed 7 Nov');
+    assert.match(cn?.kind === 'fired' ? cn.indicator.detail ?? '' : '', /91 FR 70001/);
+    assert.deepEqual(cn?.kind === 'fired' && cn.indicator.place, { countries: ['CN'] });
+    // A story about the country links only when it is about listings.
+    assert.deepEqual(cn?.kind === 'fired' && cn.indicator.links.stories.map((st) => st.item.title), ['US adds Chinese chipmakers to Entity List']);
+    assert.equal(ru?.kind === 'fired' && ru.indicator.change, 'ITAR Debarred List 5');
+    assert.equal(ru?.kind === 'fired' && ru.indicator.trust.source, 'US Consolidated Screening List (State)');
+    assert.deepEqual(ru?.kind === 'fired' && ru.indicator.links.stories.map((st) => st.item.title), ['Commerce Department blacklists Russian firms']);
+  });
+
+  it('stays quiet with the Entity List size, says when a list was not compared, and reports stale and unavailable', () => {
+    const quiet = restrictedPartyFeeds(ready(feed([ev({ at: AT - 30 * H })])), [], AT)[0]!;
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, 'Live · no new BIS or State listing in 24 h · Entity List 3,317 parties, updated 7 Nov');
+    const held = feed([], { gaps: [{ list: 'CSL-EL', from: AT - 7 * H, to: AT - H, reason: 'held' }, { list: 'CSL-DTC', from: AT - 30 * H, to: AT - 20 * H, reason: 'unavailable' }] });
+    assert.equal(cslComparisonNote(held), 'not compared on the last run: Entity List');
+    assert.equal(cslComparisonNote(feed([], { gaps: [{ list: 'CSL-EL', from: AT - H, to: AT - H, reason: 'baseline-unavailable' }] })), 'first comparison on the next run');
+    assert.equal(restrictedPartyFeeds(ready({ ...feed([]), fetchedAt: AT - 20 * H }), [], AT)[0]!.kind, 'stale');
+    const down = restrictedPartyFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
+    assert.match(down.kind === 'unavailable' ? down.detail : '', /seed-sanctions-pressure/);
+  });
+
+  it('reads what seed-sanctions-pressure writes (CSL download → change history → projection → reader)', async () => {
+    const { parseCslPayload, CSL_SOURCES } = await import('../scripts/_csl-sanctions.mjs');
+    const { buildSanctionsChanges, projectCslAdditions } = await import('../scripts/_sanctions-changes.mjs');
+    const row = (id: string, name: string, country: string) => ({
+      source: 'Entity List (EL) - Bureau of Industry and Security', id: id.repeat(56), name, addresses: [{ country }],
+      start_date: '2026-11-07', federal_register_notice: '91 FR 70001', source_list_url: 'https://www.bis.gov/entity-list', programs: [],
+    });
+    const payload = (rows: unknown[]) => ({ results: rows, sources_used: [{ source: 'Entity List (EL) - Bureau of Industry and Security', source_last_updated: '2026-11-07T20:00:00+00:00' }] });
+    const t0 = AT - 8 * H;
+    const t1 = AT - H;
+    const before = parseCslPayload(payload([row('a', 'Existing Party', 'CN')]), t0).lists;
+    const after = parseCslPayload(payload([row('a', 'Existing Party', 'CN'), row('b', 'New Party Ltd', 'CN')]), t1).lists;
+    const snap = (lists: Record<string, { records: unknown[], publishedAt: number }>, at: number) =>
+      Object.fromEntries(CSL_SOURCES.filter((s: string) => lists[s]?.records.length).map((s: string) => [s, { fetchedAt: at, publishedAt: lists[s]!.publishedAt, records: lists[s]!.records }]));
+    const health = { 'CSL-EL': { status: 'ok', recordCount: 2, publishedAt: Date.UTC(2026, 10, 7, 20) } };
+    const changes = buildSanctionsChanges({ history: null, previous: snap(before, t0), current: snap(after, t1), health, now: t1 });
+    const projected = projectCslAdditions(changes, health, CSL_SOURCES);
+    const read = decodeCslAdditions(JSON.parse(JSON.stringify(projected)));
+    assert.deepEqual(read?.events.map((e) => [e.list, e.name, e.countries]), [['CSL-EL', 'New Party Ltd', ['CN']]]);
+    const fired = restrictedPartyFeeds(ready(read!), [], AT)[0];
+    assert.equal(fired?.kind === 'fired' && fired.indicator.id, 'restricted-parties:CN');
+    assert.equal(fired?.kind === 'fired' && fired.indicator.dataDate, 'listed 7 Nov');
   });
 });

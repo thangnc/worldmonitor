@@ -10,7 +10,7 @@ import { projectCountrySanctions } from './shared/country-sanctions-signals.mjs'
 
 import { loadEnvFile, runSeed, verifySeedKey, readSeedSnapshot, writeExtraKeyWithMeta } from './_seed-utils.mjs';
 import { fetchOfacSourceResponse } from './_sanctions-source.mjs';
-import { buildSanctionsChanges } from './_sanctions-changes.mjs';
+import { buildSanctionsChanges, projectCslAdditions } from './_sanctions-changes.mjs';
 import { CSL_ROW_ID, CSL_SOURCES, CSL_TIMEOUT_MS, ingestCslEntries } from './_csl-sanctions.mjs';
 import { getOptionalUpstashCreds, upstashCommand } from './_upstash-rest.mjs';
 import { SANCTIONS_MAX_CONTENT_AGE_MIN, SANCTIONS_SOURCE_VERSION, SEMA_SOURCE, SEMA_TIMEOUT_MS, ingestSemaEntries, mergeSanctionEntries, ofacRegistrationToIdentifier, sanctionsListContentMeta } from './_sema-sanctions.mjs';
@@ -31,6 +31,12 @@ const CHANGES_KEY = 'sanctions:changes:v1';
 const CHANGES_META_KEY = 'seed-meta:sanctions:changes';
 const CHANGES_ACTIVATION_KEY = 'seed-activated:sanctions:changes';
 const CHANGES_TTL = 100 * 86400;
+// The Lite "New restricted parties" indicator's projection of the change history (#123):
+// the last 7 days of CSL additions, small enough for the browser's on-demand bootstrap.
+const CSL_ADDITIONS_KEY = 'sanctions:csl-additions:v1';
+const CSL_ADDITIONS_META_KEY = 'seed-meta:sanctions:csl-additions';
+const CSL_ADDITIONS_ACTIVATION_KEY = 'seed-activated:sanctions:csl-additions';
+const CSL_ADDITIONS_TTL = 7 * 86400;
 // OFAC's lists change slowly, and a Railway container can lose egress to
 // treasury.gov/S3 for several runs; 12h dropped ~20k OFAC entities on 2026-09-27.
 const SOURCE_RETAIN_MS = 48 * 60 * 60 * 1000;
@@ -881,6 +887,22 @@ runSeed('sanctions', 'pressure', CANONICAL_KEY, fetchSanctionsPressure, {
       await upstashCommand(creds, ['SET', CHANGES_ACTIVATION_KEY, '1']);
     } catch {
       console.warn('  Sanctions change history publication failed; core sanctions publication will continue.');
+      return;
+    }
+    // Projected from the history just written, so it never claims additions the history lacks.
+    try {
+      const additions = projectCslAdditions(data._changes, data._sourceHealth, CSL_SOURCES);
+      const failed = additions.gaps.filter(gap => gap.to === additions.fetchedAt && gap.reason !== 'baseline-unavailable');
+      await writeExtraKeyWithMeta(CSL_ADDITIONS_KEY, additions, CSL_ADDITIONS_TTL, additions.events.length,
+        CSL_ADDITIONS_META_KEY, CSL_ADDITIONS_TTL, undefined, {
+          sourceState: failed.length ? 'error' : 'ok',
+          errorCode: failed.some(gap => gap.reason === 'held') ? 'SANCTIONS_CHANGES_HELD'
+            : failed.length ? 'SANCTIONS_CHANGES_SOURCE_FAILED' : null,
+          failedSources: [...new Set(failed.map(gap => gap.list))],
+        });
+      await upstashCommand(creds, ['SET', CSL_ADDITIONS_ACTIVATION_KEY, '1']);
+    } catch {
+      console.warn('  CSL additions projection publication failed; core sanctions publication will continue.');
     }
   },
   extraKeys: [

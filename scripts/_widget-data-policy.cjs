@@ -207,6 +207,7 @@ const EXCLUDED_BOOTSTRAP_KEYS = {
   cyberThreatHistory: 'Lite indicator baseline (daily attack-infrastructure counts); not reviewed for the widget catalog',
   kevRecent: 'Lite indicator feed (recent CISA KEV additions, NVD attribution required); not reviewed for the widget catalog',
   federalRegister: 'Lite indicator feed (BIS and USTR Federal Register documents, #122); not reviewed for the widget catalog',
+  cslAdditions: 'Lite indicator feed (BIS and State screening-list additions, #123); not reviewed for the widget catalog',
   ukmtoIncidents: 'Publisher claims requiring source attribution and freshness; use the UKMTO panel',
   iranEvents: "Disabled in production (IRAN_EVENTS_ENABLED off); returns nothing",
   liveVideoResolved: "Internal: live-video channel to video-ID map",

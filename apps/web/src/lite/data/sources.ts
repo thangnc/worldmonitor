@@ -30,7 +30,7 @@ import { MILITARY_QUERY_REGIONS } from '@wm/client/config/military';
 import { isConflictCounts, type ConflictCounts } from './conflict';
 import { isGpsHighCells, type GpsHighCells } from './geo-layers';
 import { isDdosWindows, type DdosWindows } from './tech-map';
-import { decodeFederalRegister, isCrossStraitSnapshot, type EmbassyAlerts, type FederalRegisterFeed } from './geo-watch';
+import { decodeCslAdditions, decodeFederalRegister, isCrossStraitSnapshot, type CslAdditionsFeed, type EmbassyAlerts, type FederalRegisterFeed } from './geo-watch';
 import type { CrossStraitActivitySnapshot } from '@wm/client/types/cross-strait-activity';
 import type { ListUkmtoIncidentsResponse } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';
 import { readUkmtoSnapshot } from '@wm/shared/ukmto-incidents';
@@ -412,6 +412,12 @@ export async function loadThreatHistory(): Promise<ThreatHistory> {
 export async function loadFederalRegister(): Promise<FederalRegisterFeed> {
   await startBootstrap();
   return required('federalRegister', decodeFederalRegister(await ensureHydrated('federalRegister')));
+}
+
+/** BIS and State Department screening-list additions of the last 7 days (seed-sanctions-pressure's change history, #123). */
+export async function loadCslAdditions(): Promise<CslAdditionsFeed> {
+  await startBootstrap();
+  return required('cslAdditions', decodeCslAdditions(await ensureHydrated('cslAdditions')));
 }
 
 /** CISA KEV additions of the last 30 days (seed-cve-reference). */

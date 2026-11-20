@@ -32,6 +32,7 @@ export const useGpsInterference = (enabled: boolean) => useResource('gpsInterfer
 export const useGpsHighCells = () => useResource('gpsHighCells', src.loadGpsHighCells);
 export const useCrossStraitActivity = () => useResource('crossStraitActivity', src.loadCrossStraitActivity);
 export const useFederalRegister = () => useResource('federalRegister', src.loadFederalRegister);
+export const useCslAdditions = () => useResource('cslAdditions', src.loadCslAdditions);
 export const useEmbassyAlerts = () => useResource('embassyAlerts', src.loadEmbassyAlerts);
 export const useCryptoQuotes = () => useResource('cryptoQuotes', src.loadCryptoQuotes);
 export const useMarketQuotes = () => useResource('marketQuotes', src.loadMarketQuotes);

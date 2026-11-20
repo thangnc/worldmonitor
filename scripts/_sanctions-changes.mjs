@@ -91,3 +91,44 @@ export function buildSanctionsChanges({ history = null, previous, current, healt
   return { version: 1, fetchedAt: now, sourceFetchedAt, heldSources: [...heldSources], events, gaps,
     ...(truncatedBefore ? { truncatedBefore } : {}) };
 }
+
+export const CSL_ADDITIONS_WINDOW_DAYS = 7;
+export const CSL_ADDITIONS_LIMIT = 500;
+
+/**
+ * The browser projection of the change history for the Lite "New restricted
+ * parties" indicator (#123): parties added to the screening lists in `lists`
+ * (the CSL export-control and State Department lists) in the last
+ * CSL_ADDITIONS_WINDOW_DAYS, newest first, with each list's size, state and
+ * source date and any comparison gap in the window. OFAC additions stay out:
+ * the Lite sanctions indicator reads them from the pressure key.
+ * @param {{ fetchedAt: number, events: any[], gaps: any[] }} changes
+ * @param {Record<string, { status?: string, recordCount?: number, publishedAt?: number | null }>} health
+ * @param {readonly string[]} lists
+ */
+export function projectCslAdditions(changes, health, lists) {
+  const now = changes.fetchedAt;
+  const from = now - CSL_ADDITIONS_WINDOW_DAYS * DAY;
+  const kept = new Set(lists);
+  const added = changes.events
+    .filter(e => e.op === 'added' && kept.has(e.list) && e.at >= from)
+    .sort((a, b) => b.at - a.at || a.list.localeCompare(b.list) || a.name.localeCompare(b.name));
+  return {
+    version: 1,
+    fetchedAt: now,
+    windowDays: CSL_ADDITIONS_WINDOW_DAYS,
+    lists: lists.map(list => ({
+      list,
+      status: health[list]?.status ?? 'unavailable',
+      count: health[list]?.recordCount ?? 0,
+      publishedAt: health[list]?.publishedAt || null,
+    })),
+    events: added.slice(0, CSL_ADDITIONS_LIMIT).map(e => ({
+      at: e.at, list: e.list, name: e.name, cc: e.cc.slice(0, 6), pr: e.pr.slice(0, 3), effectiveAt: e.effectiveAt,
+      ...(e.notice ? { notice: e.notice } : {}),
+    })),
+    // The history itself drops its oldest events past EVENT_LIMIT; a cut inside the window means additions are missing too.
+    truncated: added.length > CSL_ADDITIONS_LIMIT || (changes.truncatedBefore ?? 0) > from,
+    gaps: changes.gaps.filter(g => kept.has(g.list) && g.to >= from).map(({ list, from: gapFrom, to, reason }) => ({ list, from: gapFrom, to, reason })),
+  };
+}
