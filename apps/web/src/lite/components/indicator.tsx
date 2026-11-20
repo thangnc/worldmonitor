@@ -257,7 +257,7 @@ const HEALTH_DOT: Readonly<Record<FeedState['kind'], string>> = {
 /** One dot per feed, in the order given. */
 export function HealthDots({ feeds }: { feeds: readonly FeedState[] }) {
   return (
-    <span class="flex items-center gap-[5px]" aria-label="Feed health" role="img" title={feeds.map((f) => `${f.name}: ${f.kind}`).join(' · ')}>
+    <span class="flex flex-wrap items-center gap-[5px]" aria-label="Feed health" role="img" title={feeds.map((f) => `${f.name}: ${f.kind}`).join(' · ')}>
       {feeds.map((f) => <span key={f.id} class={cx('h-2 w-2 rounded-full', HEALTH_DOT[f.kind])} aria-hidden="true" />)}
     </span>
   );

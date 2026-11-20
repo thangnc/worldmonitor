@@ -15,25 +15,18 @@ import {
   useCountryShapes,
   useCryptoQuotes,
   useDigest,
-  useCreditSpreads,
-  useEtfFlows,
-  useFearGreed,
-  useGoldIntelligence,
-  useHyperliquid,
   useMacroCalendar,
   useMarketQuotes,
-  useMaterialEvents,
   useOtherBonds,
   usePriceBoard,
   useSanctions,
   useShippingRates,
-  useStablecoins,
   useTreasuryCurves,
-  useVixDaily,
 } from '../data/hooks';
-import { FINANCE_RULES, financeFeeds, riskGaugeFeeds } from '../data/finance-indicators';
-import { feedCounts, sortFeeds, type FeedState } from '../data/indicators';
-import { MACRO_RULES, YIELD_MOVE_BP, bondMoves, financeMacroFeeds, macroValue, spreadBp, treasuryWindow } from '../data/finance-macro-indicators';
+import { useFinanceFeeds } from '../data/domain-feeds';
+import { FINANCE_RULES, } from '../data/finance-indicators';
+import { feedCounts, type FeedState } from '../data/indicators';
+import { MACRO_RULES, YIELD_MOVE_BP, bondMoves, macroValue, spreadBp, treasuryWindow } from '../data/finance-macro-indicators';
 import {
   FINANCIAL_CENTRE_POINTS,
   chokepointPins,
@@ -47,39 +40,10 @@ import {
   signalPins,
 } from '../data/markets-map';
 import { PRICE_LINK_RULE, eventTag, geoCause, linkPriceMoves, priceMoveLabel } from '../data/prices';
-import { digestItems, relativeTime, sourceCount } from '../data/transforms';
+import { relativeTime, sourceCount } from '../data/transforms';
 import { MINUS, price, signed } from '../format';
 
 const changeTone = (v: number | null | undefined): string => (v == null ? 'text-dim' : v < 0 ? 'text-crit' : 'text-ok');
-
-/** Every Finance feed, sorted: fired newest first, then quiet, stale and unavailable. */
-function useFinanceFeeds(): FeedState[] {
-  const crypto = useCryptoQuotes();
-  const flow = useHyperliquid();
-  const stables = useStablecoins();
-  const fearGreed = useFearGreed();
-  const commodities = useCommodityQuotes();
-  const gold = useGoldIntelligence();
-  // FRED's VIX close only when the commodity quotes settled without ^VIX.
-  const vixDaily = useVixDaily(commodities.status !== 'loading' && !(commodities.status === 'ready' && commodities.data.some((q) => q.symbol === '^VIX')));
-  const calendar = useMacroCalendar();
-  const curves = useTreasuryCurves();
-  const spreads = useCreditSpreads();
-  const bonds = useOtherBonds();
-  const etf = useEtfFlows();
-  const rates = useShippingRates();
-  const filings = useMaterialEvents();
-  const digest = useDigest('finance');
-  return useMemo(() => {
-    const news = digest.status === 'ready' ? digestItems(digest.data) : [];
-    const now = Date.now();
-    return sortFeeds([
-      ...financeFeeds({ crypto, flow, stables, fearGreed, news, now }),
-      ...riskGaugeFeeds({ commodities, vixDaily, gold, news, now }),
-      ...financeMacroFeeds({ calendar, curves, spreads, bonds, etf, flow, rates, filings, news, now }),
-    ]);
-  }, [crypto, flow, stables, fearGreed, commodities, vixDaily, gold, calendar, curves, spreads, bonds, etf, rates, filings, digest]);
-}
 
 export function Finance() {
   const [search, setSearch] = useState('');

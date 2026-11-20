@@ -23,9 +23,9 @@ import {
   useInternetOutages,
   useRecentKev,
   useServiceStatuses,
-  useMaterialEvents,
   useThreatHistory,
 } from '../data/hooks';
+import { useTechFeeds } from '../data/domain-feeds';
 import { SAMPLE_MODELS } from '../data/fixtures';
 import { MINUS } from '../format';
 import { feedCounts, type FeedState } from '../data/indicators';
@@ -51,7 +51,6 @@ import {
   isOutageLive,
   isWatchedOutage,
   kevWeekCounts,
-  techFeeds,
   threatBaseline,
 } from '../data/tech-indicators';
 import {
@@ -487,16 +486,7 @@ function ResearchRadar() {
 }
 
 function Indicators({ onOpen }: { onOpen: (feed: FeedState) => void }) {
-  const outages = useInternetOutages();
-  const services = useServiceStatuses();
-  const kev = useRecentKev();
-  const history = useThreatHistory();
-  const filings = useMaterialEvents();
-  const digest = useDigest('tech');
-  const feeds = useMemo(
-    () => techFeeds({ outages, services, kev, history, filings, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
-    [outages, services, kev, history, filings, digest],
-  );
+  const feeds = useTechFeeds();
   const counts = feedCounts(feeds);
   return (
     <Panel

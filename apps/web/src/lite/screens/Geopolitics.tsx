@@ -12,21 +12,15 @@ import { LegendRow, MapLegend } from '../map/legend';
 import { HealthDots, IndicatorFeed } from '../components/indicator';
 import {
   selectIncidents,
-  useChokepoints,
   useConflictCounts,
-  useCrossStraitActivity,
   useDigest,
-  useEarthquakes,
-  useEmbassyAlerts,
-  useSanctions,
-  useGpsHighCells,
   useGpsInterference,
   useMilitaryFlights,
   useRiskScores,
   useSeaIncidents,
   useUcdpEvents,
-  useUnrestEvents,
 } from '../data/hooks';
+import { useEscalation, useGeoFeeds, type Escalation } from '../data/domain-feeds';
 import {
   AIRCRAFT_FULL_AT,
   AIRCRAFT_MIN,
@@ -37,7 +31,6 @@ import {
   aircraftFeeds,
   aircraftKind,
   aircraftNearHotspots,
-  gpsFeeds,
   gpsHexFills,
   hotspotState,
   kindSplit,
@@ -49,14 +42,7 @@ import { shippingLanes } from '../data/markets-map';
 import { ESCALATION_REGIONS, groupFeedsByRegion, leadCountry } from '../data/regions';
 import {
   REGION_ESCALATION_RULE,
-  REGION_HISTORY_KEY,
-  decodeRegionHistory,
-  recordReadings,
-  regionEscalationFeeds,
-  regionReadings,
-  type RegionHistory,
 } from '../data/region-escalation';
-import { safeStorageGet, safeStorageSet } from '@wm/client/utils/safe-storage';
 import type { ResourceState } from '../data/store';
 import { ucdpBackgroundLabel, ucdpMarkers, ucdpNewest } from '../data/ucdp';
 import {
@@ -64,23 +50,17 @@ import {
   conflictHistogram,
   countryName,
   countryShading,
-  regionStrip,
-  violenceFeeds,
   type RegionTile,
 } from '../data/conflict';
-import { feedCounts, feedsStale, sortFeeds, type FeedState } from '../data/indicators';
+import { feedCounts, feedsStale, type FeedState } from '../data/indicators';
 import { LINK_WINDOW_HOURS, linkNews } from '../data/news-link';
-import { FEED_LABEL, escalationLevel, scoreHotspots } from '../data/escalation';
+import { FEED_LABEL, escalationLevel, } from '../data/escalation';
 import {
   CHOKEPOINT_TRANSIT_SHARE,
   EMBASSY_WINDOW_HOURS,
   SANCTIONS_WINDOW_HOURS,
   TAIWAN_MIN,
   TAIWAN_RATIO,
-  chokepointFeeds,
-  embassyAlertFeeds,
-  newSanctionsFeeds,
-  taiwanStraitFeeds,
 } from '../data/geo-watch';
 import {
   CORROBORATION_RULE,
@@ -231,55 +211,6 @@ function mapIdForFeed(feed: FeedState): string | null {
   if (kind === 'aircraft' || kind === 'gps' || kind === 'embassy') return `hotspot:${key}`;
   if (kind === 'sea') return feed.id;
   return null;
-}
-
-type Escalation = ReturnType<typeof scoreHotspots>;
-
-/**
- * The live hotspot scores and the region strip's tiles, from whichever inputs
- * have loaded. The map draws both; the indicator panel orders its region
- * groups by the tiles' levels.
- */
-function useEscalation(): { escalation: Escalation; tiles: RegionTile[]; source: ResourceState<unknown> } {
-  const digest = useDigest('full');
-  const risk = useRiskScores();
-  const unrest = useUnrestEvents();
-  const earthquakes = useEarthquakes();
-  const flights = useMilitaryFlights();
-  const conflict = useConflictCounts();
-  const escalation = useMemo(
-    () =>
-      scoreHotspots(
-        INTEL_HOTSPOTS,
-        {
-          news: digest.status === 'ready' ? digestItems(digest.data) : null,
-          ciiScores: risk.status === 'ready' ? risk.data.ciiScores : null,
-          unrest: unrest.status === 'ready' ? unrest.data : null,
-          earthquakes: earthquakes.status === 'ready' ? earthquakes.data : null,
-          flights: flights.status === 'ready' ? flights.data : null,
-        },
-        Date.now(),
-      ),
-    [digest, risk, unrest, earthquakes, flights],
-  );
-  const counts = conflict.status === 'ready' ? conflict.data : null;
-  const tiles = useMemo(
-    () =>
-      regionStrip(
-        ESCALATION_REGIONS,
-        escalation.map(({ hotspot, score }) => ({ hotspot, score: score.combinedScore, level: escalationLevel(score.combinedScore), components: score.components })),
-        counts,
-        Date.now(),
-      ),
-    [escalation, counts],
-  );
-  // The region-escalation feed's state: ready once both main score inputs (risk scores and news) loaded,
-  // so a first reading is never taken from a partial score.
-  const source: ResourceState<unknown> = risk.status === 'ready' && digest.status === 'ready' ? risk
-    : risk.status !== 'ready' && risk.status !== 'loading' ? risk
-    : digest.status !== 'ready' && digest.status !== 'loading' ? digest
-    : { status: 'loading', data: null, at: 0 };
-  return { escalation, tiles, source };
 }
 
 const HOUR_MS = 3_600_000;
@@ -700,46 +631,9 @@ function RegionStrip({ tiles, region, area, onSelect }: { tiles: RegionTile[]; r
   );
 }
 
-/** The airspace row stays unavailable until the FAA grants NOTAM access (spec: Owner decisions). */
-const AIRSPACE_FEED: FeedState = { kind: 'unavailable', id: 'airspace', name: 'Airspace closures · NOTAM', detail: 'Awaiting FAA access' };
-
 /** The screen's indicator panel (spec: Early indicators › Catalogue, geopolitics rows). A card opens its marker on the map. */
 function GeoIndicators({ tiles, escalation, escalationSource, onOpen }: { tiles: readonly RegionTile[]; escalation: Escalation; escalationSource: ResourceState<unknown>; onOpen: (feed: FeedState) => void }) {
-  // Region levels seen in this browser (#117): read once, then one reading added per strip update.
-  const [levelHistory, setLevelHistory] = useState<RegionHistory>(() => decodeRegionHistory(safeStorageGet(REGION_HISTORY_KEY)));
-  useEffect(() => {
-    if (escalationSource.status !== 'ready') return;
-    const readings = regionReadings(tiles, escalation[0]?.missing);
-    if (!readings.length) return;
-    const next = recordReadings(decodeRegionHistory(safeStorageGet(REGION_HISTORY_KEY)), readings, Date.now());
-    safeStorageSet(REGION_HISTORY_KEY, JSON.stringify(next));
-    setLevelHistory(next);
-  }, [tiles, escalation, escalationSource]);
-  const conflict = useConflictCounts();
-  const digest = useDigest('full');
-  const flights = useMilitaryFlights();
-  const sea = useSeaIncidents();
-  const gpsCells = useGpsHighCells();
-  const chokepoints = useChokepoints();
-  const strait = useCrossStraitActivity();
-  const embassy = useEmbassyAlerts();
-  const sanctions = useSanctions();
-  const feeds = useMemo(() => {
-    const now = Date.now();
-    const news = digest.status === 'ready' ? digestItems(digest.data) : [];
-    return sortFeeds([
-      ...violenceFeeds(conflict.status === 'ready' ? conflict.data : null, conflict.status, news, now),
-      ...aircraftFeeds(flights, INTEL_HOTSPOTS, news, now),
-      ...seaIncidentFeeds(sea, news, now),
-      ...gpsFeeds(gpsCells, INTEL_HOTSPOTS, news, now),
-      ...chokepointFeeds(chokepoints, news, now),
-      ...taiwanStraitFeeds(strait, news, now),
-      ...embassyAlertFeeds(embassy, INTEL_HOTSPOTS, news, now),
-      ...newSanctionsFeeds(sanctions, news, now),
-      ...regionEscalationFeeds({ regions: ESCALATION_REGIONS, tiles, source: escalationSource, missing: escalation[0]?.missing, history: levelHistory, news, now }),
-      AIRSPACE_FEED,
-    ]);
-  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy, sanctions, tiles, escalation, escalationSource, levelHistory]);
+  const feeds = useGeoFeeds({ escalation, tiles, source: escalationSource });
   const counts = feedCounts(feeds);
   const { groups, rest } = useMemo(() => groupFeedsByRegion(feeds, tiles), [feeds, tiles]);
   const rules = [
