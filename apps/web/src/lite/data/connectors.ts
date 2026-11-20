@@ -278,6 +278,17 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['Data breach indicator'],
   },
   {
+    id: 'ai-lab-news', name: 'AI lab announcements · OpenAI, Google, DeepMind, Anthropic', domain: 'tech', kind: 'Official (the labs\' own sites)', method: 'RSS',
+    producer: 'seed-ai-lab-news', healthKeys: ['aiLabNews'], maxStaleMin: 540,
+    hosts: [
+      { host: 'openai.com', licence: 'terms-review' },
+      { host: 'blog.google', licence: 'terms-review' },
+      { host: 'deepmind.google', licence: 'terms-review' },
+      { host: 'www.anthropic.com', licence: 'terms-review' },
+    ],
+    usedBy: ['Lab announcement indicator'],
+  },
+  {
     id: 'digest-tech', name: 'News digest · tech', domain: 'tech', kind: 'News aggregate', method: 'RSS',
     producer: 'list-feed-digest', digest: 'tech', hosts: [],
     usedBy: ['Material developments', 'Watched topics'],

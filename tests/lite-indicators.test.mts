@@ -35,6 +35,9 @@ import {
   AI_NEW_DAYS,
   aiModelFeeds,
   OPEN_MODEL_NEW_DAYS,
+  LAB_NEWS_NEW_DAYS,
+  decodeAiLabNews,
+  labNewsFeeds,
   fitNames,
   openModelFeeds,
   decodeAiModels,
@@ -2090,6 +2093,65 @@ describe('Open-weight models (#132)', () => {
     const read = decodeAiModels(JSON.parse(JSON.stringify({ fetchedAt: AT - H, listed: 477, watched: 210, baseline: true, models: [], changes: [], open: { models: [{ ...m, firstSeenAt: AT - 2 * H }], latest: [], baseline: true, okAt: AT - H, failedLabs: [] } })))!;
     const [feed] = openModelFeeds(ready(read), [], AT);
     assert.equal(feed!.kind === 'fired' && feed!.indicator.detail, 'gemma-5-9b-it: image-text-to-text, gemma · 150 likes · 4k downloads');
+  });
+});
+
+describe('AI lab announcements (#133)', () => {
+  const post = (source: string, title: string, agoH: number, o: Record<string, unknown> = {}) => ({
+    source, lab: '', title, url: `${({ openai: 'https://openai.com/index/', google: 'https://blog.google/technology/ai/', deepmind: 'https://deepmind.google/blog/', anthropic: 'https://www.anthropic.com/news/' } as Record<string, string>)[source]}${title.toLowerCase().replace(/\W+/g, '-')}`,
+    at: AT - agoH * H, firstSeen: source === 'anthropic', release: /^Introducing|now available/.test(title), ...o,
+  });
+  const ok = { ok: true, okAt: AT - H };
+  const feed = (posts: unknown[], sources: Record<string, unknown> = { openai: ok, google: ok, deepmind: ok, anthropic: ok }) =>
+    decodeAiLabNews({ fetchedAt: AT - H, keepDays: 14, sources, posts })!;
+
+  it('decodes strictly: only a lab\'s own links, the lab named from its feed', () => {
+    assert.equal(decodeAiLabNews(null), null);
+    const d = feed([post('openai', 'Introducing GPT-6.2', 3), post('openai', 'Spoofed', 2, { url: 'https://evil.example/x' }), post('bogus', 'x', 1)]);
+    assert.deepEqual(d.posts.map((p) => [p.lab, p.title]), [['OpenAI', 'Introducing GPT-6.2']]);
+  });
+
+  it(`fires one card per lab for release announcements in ${LAB_NEWS_NEW_DAYS} days, linking the post and product news`, () => {
+    const news = [story('OpenAI unveils GPT-6.2 Astra with a 2M-token context', AT - 2 * H), story('OpenAI hires a new CFO', AT - 2 * H)];
+    const feeds = labNewsFeeds(ready(feed([
+      post('openai', 'Introducing GPT-6.2 Astra and Sol', 20),
+      post('openai', 'How OpenAI keeps ChatGPT fast', 5, { release: false }),
+      post('deepmind', 'Introducing Gemini 4 Neon', 30),
+      post('deepmind', 'Genie 4 is now available', 31),
+      post('google', 'Introducing Gemma 2 in 2024', 8 * 24),
+    ])), news, AT);
+    assert.deepEqual(feeds.map((f) => f.id), ['lab-news:openai', 'lab-news:deepmind']);
+    const openai = feeds[0]!.kind === 'fired' ? feeds[0]!.indicator : null;
+    assert.equal(openai?.name, 'Lab announcement · OpenAI');
+    assert.equal(openai?.value, '1 release');
+    assert.equal(openai?.change, 'GPT-6.2');
+    assert.equal(openai?.rule, "release announced on the lab's own site ≤ 7 days");
+    assert.equal(openai?.detail, 'Introducing GPT-6.2 Astra and Sol (7 Nov)');
+    assert.deepEqual(openai?.trust, { level: 'official', source: 'OpenAI (own site)', url: 'https://openai.com/index/introducing-gpt-6-2-astra-and-sol' });
+    assert.deepEqual(openai?.links.stories.map((st) => st.item.title), ['OpenAI unveils GPT-6.2 Astra with a 2M-token context']);
+    const dm = feeds[1]!.kind === 'fired' ? feeds[1]!.indicator : null;
+    assert.deepEqual([dm?.value, dm?.change], ['2 releases', 'Gemini 4, Genie 4']);
+    // An Anthropic page is dated by first sight and says so.
+    const anth = labNewsFeeds(ready(feed([post('anthropic', 'Introducing Claude Opus 5', 4)])), [], AT)[0]!;
+    assert.equal(anth.kind === 'fired' && anth.indicator.detail, 'Introducing Claude Opus 5 (8 Nov, first seen)');
+    assert.equal(anth.kind === 'fired' && anth.indicator.change, 'Claude Opus 5');
+  });
+
+  it('is quiet without a release, names a failed lab, and is as fresh as its oldest source', () => {
+    const [quiet] = labNewsFeeds(ready(feed([post('openai', 'How OpenAI keeps ChatGPT fast', 5, { release: false })], { openai: ok, google: { ok: false, okAt: AT - 2 * H }, deepmind: ok, anthropic: ok })), [], AT);
+    assert.equal(quiet!.kind === 'quiet' && quiet!.detail, 'Live · 1 lab post in 7 days, none announcing a model or product · newest OpenAI: How OpenAI keeps ChatGPT fast · Google not read on the last run');
+    assert.equal(labNewsFeeds(ready(feed([], { openai: ok, google: { ok: false, okAt: AT - 7 * H }, deepmind: ok, anthropic: ok })), [], AT)[0]!.kind, 'stale');
+    const err = labNewsFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
+    assert.match(err.kind === 'unavailable' ? err.detail : '', /seed-ai-lab-news/);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { rssPosts, isReleasePost, SOURCES } = await import('../scripts/seed-ai-lab-news.mjs');
+    const xml = `<rss><channel><item><title>Introducing Gemini 4 Neon</title><link>https://deepmind.google/blog/gemini-4-neon/</link><pubDate>${new Date(AT - 5 * H).toUTCString()}</pubDate></item></channel></rss>`;
+    const posts = rssPosts(xml, SOURCES.find((s: { id: string }) => s.id === 'deepmind')).map((p: { title: string }) => ({ ...p, release: isReleasePost(p.title) }));
+    const read = decodeAiLabNews(JSON.parse(JSON.stringify({ fetchedAt: AT - H, keepDays: 14, sources: { openai: ok, google: ok, deepmind: ok, anthropic: ok }, posts })))!;
+    const [f] = labNewsFeeds(ready(read), [], AT);
+    assert.equal(f!.kind === 'fired' && f!.indicator.name, 'Lab announcement · Google DeepMind');
   });
 });
 
