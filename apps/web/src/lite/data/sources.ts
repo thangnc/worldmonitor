@@ -54,7 +54,7 @@ import type {
 import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cyber/v1/service_client';
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
-import { decodeAiLabNews, decodeAiModels, decodeAiRegulation, decodeBreaches, decodeRecentKev, decodeThreatHistory, type AiLabNews, type AiModels, type AiRegulation, type Breaches, type RecentKev, type ThreatHistory } from './tech-indicators';
+import { decodeAiLabNews, decodeAiModels, decodeAiRegulation, decodeBreaches, decodeChipRevenue, decodeRecentKev, decodeThreatHistory, type AiLabNews, type AiModels, type AiRegulation, type Breaches, type ChipRevenue, type RecentKev, type ThreatHistory } from './tech-indicators';
 import { CREDIT_SERIES, decodeCbDecisions, decodeCreditSpreads, decodeMacroForecasts, decodeRateOdds, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds } from './finance-macro-indicators';
 import { VIX_FRED_SERIES } from './finance-indicators';
 import {
@@ -460,6 +460,12 @@ export async function loadRecentKev(): Promise<RecentKev> {
 export async function loadAiModels(): Promise<AiModels> {
   await startBootstrap();
   return required('aiModels', decodeAiModels(await ensureHydrated('aiModels')));
+}
+
+/** TSMC's last 13 months of revenue (seed-chip-revenue, #134). */
+export async function loadChipRevenue(): Promise<ChipRevenue> {
+  await startBootstrap();
+  return required('chipRevenue', decodeChipRevenue(await ensureHydrated('chipRevenue')));
 }
 
 /** OpenAI, Google, Google DeepMind and Anthropic's own posts of the last 14 days (seed-ai-lab-news, #133). */

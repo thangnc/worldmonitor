@@ -37,6 +37,9 @@ import {
   OPEN_MODEL_NEW_DAYS,
   LAB_NEWS_NEW_DAYS,
   decodeAiLabNews,
+  CHIP_YOY_SHIFT_PTS,
+  chipRevenueFeeds,
+  decodeChipRevenue,
   labNewsFeeds,
   fitNames,
   openModelFeeds,
@@ -2152,6 +2155,56 @@ describe('AI lab announcements (#133)', () => {
     const read = decodeAiLabNews(JSON.parse(JSON.stringify({ fetchedAt: AT - H, keepDays: 14, sources: { openai: ok, google: ok, deepmind: ok, anthropic: ok }, posts })))!;
     const [f] = labNewsFeeds(ready(read), [], AT);
     assert.equal(f!.kind === 'fired' && f!.indicator.name, 'Lab announcement · Google DeepMind');
+  });
+});
+
+describe('TSMC monthly revenue (#134)', () => {
+  const month = (m: string, yoy: number | null, o: Record<string, unknown> = {}) => ({ month: m, revenue: 586_890_319, mom: 14.66, yoy, ytdYoy: 43.29, seenAt: AT - 2 * 86_400_000, source: 'mops', ...o });
+  const feed = (months: unknown[], o: Record<string, unknown> = {}) => decodeChipRevenue({ fetchedAt: AT - H, company: 'TSMC', unit: 'thousand TWD', months, ...o })!;
+
+  it('decodes strictly, newest month first', () => {
+    assert.equal(decodeChipRevenue(null), null);
+    assert.equal(decodeChipRevenue({ fetchedAt: AT, months: [] }), null, 'no month is not a reading');
+    const d = feed([month('2026-09', 54.64), month('2026-10', 59.71), { month: 'Oct', revenue: 1, seenAt: AT }]);
+    assert.deepEqual(d.months.map((m) => m.month), ['2026-10', '2026-09']);
+  });
+
+  it(`fires when y/y growth moves ${CHIP_YOY_SHIFT_PTS}+ pts from the month before, for a month filed in the last week, with TSMC news`, () => {
+    const news = [story('TSMC October revenue jumps on AI chip demand', AT - 20 * H), story('Taiwan dollar firms', AT - 20 * H)];
+    const [f] = chipRevenueFeeds(ready(feed([month('2026-10', 67.86, { mom: 6.16, ytdYoy: 40.1 }), month('2026-09', 30.09)])), news, AT);
+    const ind = f!.kind === 'fired' ? f!.indicator : null;
+    assert.equal(ind?.id, 'chip-revenue:2330');
+    assert.equal(ind?.name, 'TSMC monthly revenue · Oct 2026');
+    assert.equal(ind?.value, 'NT$586.9bn');
+    assert.equal(ind?.change, '+67.9% y/y');
+    assert.equal(ind?.rule, 'y/y growth ±10 pts from the month before');
+    assert.equal(ind?.detail, 'y/y growth +37.8 pts from Sep +30.1% · +6.2% m/m · year to date +40.1% y/y');
+    assert.deepEqual(ind?.trust, { level: 'official', source: 'TSMC filing via TWSE' });
+    assert.deepEqual(ind?.links.stories.map((st) => st.item.title), ['TSMC October revenue jumps on AI chip demand']);
+    // A fall year on year fires on its own.
+    const [fall] = chipRevenueFeeds(ready(feed([month('2026-10', -3.2), month('2026-09', 2)])), [], AT);
+    assert.equal(fall!.kind === 'fired' && fall!.indicator.rule, 'revenue down year on year');
+  });
+
+  it('is quiet on a small shift or an old filing, says when the month before is missing, and reports stale and unavailable', () => {
+    const [quiet] = chipRevenueFeeds(ready(feed([month('2026-10', 59.71), month('2026-09', 54.64)])), [], AT);
+    assert.equal(quiet!.kind === 'quiet' && quiet!.detail, 'Live · Oct 2026 NT$586.9bn, +59.7% y/y (Sep +54.6%, +5.1 pts) · fires at ±10 pts or a y/y fall · near the trigger');
+    // A big shift filed more than a week ago no longer fires.
+    assert.equal(chipRevenueFeeds(ready(feed([month('2026-10', 67.86, { seenAt: AT - 9 * 86_400_000 }), month('2026-09', 30.09)])), [], AT)[0]!.kind, 'quiet');
+    const [lone] = chipRevenueFeeds(ready(feed([month('2026-10', 59.71)])), [], AT);
+    assert.match(lone!.kind === 'quiet' ? lone!.detail : '', /the month before not read yet/);
+    assert.equal(chipRevenueFeeds(ready(feed([month('2026-10', 59.71)], { fetchedAt: AT - 13 * H })), [], AT)[0]!.kind, 'stale');
+    const err = chipRevenueFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
+    assert.match(err.kind === 'unavailable' ? err.detail : '', /seed-chip-revenue/);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { fromApi, fromMops } = await import('../scripts/seed-chip-revenue.mjs');
+    const oct = fromApi([{ 出表日期: '1151117', 資料年月: '11510', 公司代號: '2330', '營業收入-當月營收': '586890319', '營業收入-上月營收': '511857399', '營業收入-去年當月營收': '367473051', '營業收入-上月比較增減(%)': '14.66', '營業收入-去年同月增減(%)': '59.71', '累計營業收入-前期比較增減(%)': '43.29' }]);
+    const sep = fromMops('<tr><td>2330</td><td>TSMC</td><td>511,857,399</td><td>514,805,337</td><td>330,980,920</td><td>-0.57</td><Td>44.00</Td><td>1</td><td>1</td><td>41.10</td></tr>', '2026-09');
+    const read = decodeChipRevenue(JSON.parse(JSON.stringify({ fetchedAt: AT - H, company: 'TSMC', months: [{ ...oct, seenAt: AT - 3 * H }, { ...sep, seenAt: AT - 30 * 86_400_000 }] })))!;
+    const [f] = chipRevenueFeeds(ready(read), [], AT);
+    assert.equal(f!.kind === 'fired' && f!.indicator.detail?.startsWith('y/y growth +15.7 pts from Sep +44.0%'), true);
   });
 });
 

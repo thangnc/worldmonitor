@@ -76,6 +76,8 @@ export const LITE_SEED_SECTIONS = [
   { label: 'AI-Models', script: 'seed-ai-models.mjs', seedMetaKey: 'tech:ai-models', intervalMs: 6 * HOUR, timeoutMs: 120_000 },
   // EU and US AI and data rules for the AI regulation indicator and the Tech policy panel (#127).
   { label: 'AI-Regulation', script: 'seed-ai-regulation.mjs', seedMetaKey: 'policy:ai-regulation', intervalMs: 2 * HOUR, timeoutMs: 180_000 },
+  // TSMC's monthly revenue from TWSE (and MOPS for earlier months) for the chip revenue indicator (#134).
+  { label: 'Chip-Revenue', script: 'seed-chip-revenue.mjs', seedMetaKey: 'tech:chip-revenue', intervalMs: 6 * HOUR, timeoutMs: 180_000 },
   // OpenAI, Google, Google DeepMind and Anthropic's own posts for the lab announcement indicator (#133).
   { label: 'AI-Lab-News', script: 'seed-ai-lab-news.mjs', seedMetaKey: 'tech:ai-lab-news', intervalMs: 3 * HOUR, timeoutMs: 240_000 },
   // Have I Been Pwned's breach catalogue for the data breach indicator (#131).
