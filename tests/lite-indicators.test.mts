@@ -18,7 +18,7 @@ import { CENTRAL_BANKS } from '../packages/client/config/finance-geo.ts';
 import { STRATEGIC_WATERWAYS } from '../packages/client/config/geo.ts';
 import { TRADE_ROUTES } from '../packages/client/config/trade-routes.ts';
 import type { ChokepointInfo } from '../packages/contracts/generated/client/worldmonitor/supply_chain/v1/service_client.ts';
-import { DXY_MOVE_PCT, STABLECOIN_DEPEG_PCT, VIX_JUMP_PCT, VIX_LEVEL, dollarIndex, financeFeeds, riskGaugeFeeds, vixReading } from '../apps/web/src/lite/data/finance-indicators.ts';
+import { DXY_MOVE_PCT, STABLECOIN_DEPEG_PCT, SUPPLY_COIN_WEEK_PCT, SUPPLY_TOP_COINS, SUPPLY_TOTAL_WEEK_PCT, VIX_JUMP_PCT, VIX_LEVEL, decodeStablecoinSupply, dollarIndex, financeFeeds, riskGaugeFeeds, stablecoinSupplyFeeds, vixReading } from '../apps/web/src/lite/data/finance-indicators.ts';
 import type { InternetOutage, ListInternetOutagesResponse, ListServiceStatusesResponse, ServiceStatus } from '../packages/contracts/generated/client/worldmonitor/infrastructure/v1/service_client.ts';
 import {
   KEV_NEW_DAYS,
@@ -2046,6 +2046,84 @@ describe('Travel advisories (#124)', () => {
     assert.deepEqual(read?.changes.map((c) => [c.source, c.country]), [['UK', 'UA'], ['US', 'IL']]);
     const fired = travelAdvisoryFeeds(ready(read!), [telaviv, kyiv], [], AT);
     assert.deepEqual(fired.map((f) => f.kind === 'fired' && f.indicator.value), ['UK: no travel', 'US Level 4']);
+  });
+});
+
+describe('Stablecoin supply (#137)', () => {
+  const bn = (n: number) => n * 1e9;
+  const coin = (symbol: string, name: string, cur: number, week: number | null, month: number | null = week) => ({ symbol, name, current: bn(cur), prevWeek: week === null ? null : bn(week), prevMonth: month === null ? null : bn(month) });
+  const calm = [coin('USDT', 'Tether', 175, 174), coin('USDC', 'USD Coin', 69, 68.5), coin('USDe', 'Ethena USDe', 4.9, 4.85), coin('DAI', 'Dai', 4.6, 4.62), coin('USDS', 'Sky Dollar', 3.2, 3.15)];
+  const payload = (top: unknown[], total: Record<string, number> = {}, o: Record<string, unknown> = {}) => decodeStablecoinSupply({
+    fetchedAt: AT - H, unit: 'USD', top,
+    total: { current: bn(284), weekNow: bn(283), weekAgo: bn(281), monthNow: bn(283), monthAgo: bn(278), ...total },
+    ...o,
+  })!;
+
+  it('decodes strictly, largest coin first', () => {
+    assert.equal(decodeStablecoinSupply(null), null);
+    assert.equal(decodeStablecoinSupply({ fetchedAt: AT, total: { current: 1 }, top: [] }), null, 'an incomplete total is not a reading');
+    assert.deepEqual(payload([calm[1], calm[0], { symbol: '', current: 1 }]).top.map((c) => c.symbol), ['USDT', 'USDC']);
+  });
+
+  it(`fires on the total moving ${SUPPLY_TOTAL_WEEK_PCT}% in 7 days, or a top-5 coin ${SUPPLY_COIN_WEEK_PCT}%, linking stories that name it`, () => {
+    // Total +2.5% in a week.
+    const [total] = stablecoinSupplyFeeds(ready(payload(calm, { weekNow: bn(287), weekAgo: bn(280) })), [story('Stablecoin supply hits record as traders return', AT - 2 * H)], AT);
+    const t = total!.kind === 'fired' ? total!.indicator : null;
+    assert.equal(t?.id, 'stablecoin-supply:total');
+    assert.equal(t?.value, '$284.0bn');
+    assert.equal(t?.change, '+2.5% in 7 days');
+    assert.equal(t?.rule, 'total ±2% in 7 days');
+    assert.equal(t?.detail, 'up $7.00bn in a week · +1.8% in 30 days · largest: USDT +0.6%, USDC +0.7%, USDe +1.0%');
+    assert.deepEqual(t?.trust, { level: 'market', source: 'DefiLlama' });
+    assert.equal(t?.links.stories.length, 1);
+
+    // USDS −41.6% (live on 20 Nov 2026), the total calm: one card for the coin, linked only to a story naming it.
+    const usds = [...calm.slice(0, 4), coin('USDS', 'Sky Dollar', 3.15, 5.39, 6.0)];
+    const news = [story('Sky Dollar supply shrinks as USDS holders redeem', AT - 2 * H), story('Stablecoins steady as bitcoin rallies', AT - 2 * H)];
+    const feeds = stablecoinSupplyFeeds(ready(payload(usds)), news, AT);
+    assert.deepEqual(feeds.map((f) => f.id), ['stablecoin-supply:USDS']);
+    const c = feeds[0]!.kind === 'fired' ? feeds[0]!.indicator : null;
+    assert.equal(c?.value, '$3.15bn');
+    assert.equal(c?.change, '−41.6% in 7 days');
+    assert.equal(c?.rule, 'a top-5 coin ±5% in 7 days');
+    assert.equal(c?.detail, 'Sky Dollar: $5.39bn a week ago · −47.5% in 30 days · all US$ coins +0.7% in 7 days');
+    assert.deepEqual(c?.links.stories.map((st) => st.item.title), ['Sky Dollar supply shrinks as USDS holders redeem']);
+    // A coin outside the top 5 never fires.
+    assert.equal(stablecoinSupplyFeeds(ready(payload([...calm, coin('PYUSD', 'PayPal USD', 1, 2)])), [], AT)[0]!.kind, 'quiet');
+    // A coin shrinking out of the top 5 by today's supply keeps its card: ranked by the larger of now and a week ago.
+    const shrinking = [...calm.slice(0, 4), coin('USDS', 'Sky Dollar', 3.2, 3.15), coin('USD1', 'World Liberty Financial USD', 2.0, 5.0)];
+    assert.deepEqual(stablecoinSupplyFeeds(ready(payload(shrinking)), [], AT).map((f) => f.id), ['stablecoin-supply:USD1']);
+    assert.equal(SUPPLY_TOP_COINS, 5);
+    // DAI's card does not link a story about Sky the broadcaster or Dai-ichi Life.
+    const dai = [...calm.slice(0, 3), coin('DAI', 'Dai', 4.0, 4.62), calm[4]!];
+    const [daiCard] = stablecoinSupplyFeeds(ready(payload(dai)), [story("Comcast's Sky to cut jobs", AT - H), story('Dai-ichi Life buys US insurer', AT - H), story('MakerDAO votes to cut Dai stablecoin rate', AT - H)], AT);
+    assert.deepEqual(daiCard!.kind === 'fired' ? daiCard!.indicator.links.stories.map((st) => st.item.title) : [], ['MakerDAO votes to cut Dai stablecoin rate']);
+  });
+
+  it('is quiet below both triggers, and reports stale and unavailable', () => {
+    const [quiet] = stablecoinSupplyFeeds(ready(payload(calm)), [], AT);
+    assert.equal(quiet!.kind === 'quiet' && quiet!.detail, 'Live · all US$ coins $284.0bn, +0.7% in 7 days · largest: USDT +0.6%, USDC +0.7%, USDe +1.0%, DAI −0.4%, USDS +1.6% · fires at ±2% total or ±5% for a top-5 coin');
+    assert.equal(stablecoinSupplyFeeds(ready(payload(calm, {}, { fetchedAt: AT - 13 * H })), [], AT)[0]!.kind, 'stale');
+    // The rule fires on the rounded number the card shows: +1.96% reads +2.0% and fires; +1.94% reads +1.9% and does not.
+    assert.equal(stablecoinSupplyFeeds(ready(payload(calm, { weekNow: bn(101.96), weekAgo: bn(100) })), [], AT)[0]!.kind, 'fired');
+    assert.equal(stablecoinSupplyFeeds(ready(payload(calm, { weekNow: bn(101.94), weekAgo: bn(100) })), [], AT)[0]!.kind, 'quiet');
+    // A tiny fall reads +0.0%, not −0.0%.
+    const [flat] = stablecoinSupplyFeeds(ready(payload(calm, { weekNow: bn(99.99), weekAgo: bn(100) })), [], AT);
+    assert.match(flat!.kind === 'quiet' ? flat!.detail : '', /\$284\.0bn, \+0\.0% in 7 days/);
+    const err = stablecoinSupplyFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
+    assert.match(err.kind === 'unavailable' ? err.detail : '', /seed-stablecoin-supply/);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { supplyFrom } = await import('../scripts/seed-stablecoin-supply.mjs');
+    const a = (id: number, symbol: string, name: string, cur: number, week: number) => ({ id: String(id), symbol, name, pegType: 'peggedUSD', circulating: { peggedUSD: bn(cur) }, circulatingPrevWeek: { peggedUSD: bn(week) }, circulatingPrevMonth: { peggedUSD: bn(week) } });
+    const { total, top } = supplyFrom({ peggedAssets: [a(1, 'USDT', 'Tether', 175, 175), a(2, 'USDC', 'USD Coin', 69, 69), a(3, 'USDe', 'Ethena USDe', 5, 5), a(4, 'DAI', 'Dai', 4.6, 4.6), a(5, 'USDS', 'Sky Dollar', 3.15, 5.39)] });
+    const read = decodeStablecoinSupply(JSON.parse(JSON.stringify({ fetchedAt: AT - H, unit: 'USD', total, top })))!;
+    const feeds = stablecoinSupplyFeeds(ready(read), [], AT);
+    assert.deepEqual(feeds.map((f) => [f.id, f.kind]), [['stablecoin-supply:USDS', 'fired']]);
+    // Wired into the Finance feeds.
+    const failed = { status: 'error', data: null, at: AT, error: 'x' } as const;
+    assert.ok(financeFeeds({ crypto: failed, flow: failed, stables: failed, fearGreed: failed, supply: ready(read), news: [], now: AT }).some((f) => f.id === 'stablecoin-supply:USDS'));
   });
 });
 

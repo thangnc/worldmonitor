@@ -56,7 +56,7 @@ import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
 import { decodeAiLabNews, decodeAiModels, decodeAiRegulation, decodeBreaches, decodeChipRevenue, decodeHyperscalerCapex, decodeRecentKev, decodeThreatHistory, type AiLabNews, type AiModels, type AiRegulation, type Breaches, type ChipRevenue, type HyperscalerCapex, type RecentKev, type ThreatHistory } from './tech-indicators';
 import { BALANCE_SHEET_SERIES, CREDIT_SERIES, decodeCbDecisions, decodeCreditSpreads, decodeFedBalanceSheet, decodeMacroForecasts, decodeRateOdds, decodeReverseRepo, type CbDecisions, type CreditSpreads, type MacroForecasts, type RateOdds, type ReverseRepo } from './finance-macro-indicators';
-import { VIX_FRED_SERIES } from './finance-indicators';
+import { VIX_FRED_SERIES, decodeStablecoinSupply, type StablecoinSupply } from './finance-indicators';
 import {
   ConflictServiceClient,
   CyberServiceClient,
@@ -301,6 +301,12 @@ export async function loadTreasuryCurves(): Promise<UsTreasuryParYieldCurve[] | 
 export async function loadCreditSpreads(): Promise<CreditSpreads | null> {
   const resp = await economic.getFredSeriesBatch({ seriesIds: [CREDIT_SERIES.hy, CREDIT_SERIES.ig], limit: 30 });
   return decodeCreditSpreads(resp.results);
+}
+
+/** US$ stablecoin supply, total and the largest coins (seed-stablecoin-supply, #137). */
+export async function loadStablecoinSupply(): Promise<StablecoinSupply> {
+  await startBootstrap();
+  return required('stablecoinSupply', decodeStablecoinSupply(await ensureHydrated('stablecoinSupply')));
 }
 
 /** The Fed's weekly balance sheet, FRED WALCL (seed-fred-rates; #136). */

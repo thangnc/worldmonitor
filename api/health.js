@@ -431,6 +431,8 @@ const STANDALONE_KEYS = {
   cbDecisions: 'economic:central-bank-decisions:v1',
   // Lite Finance reverse repo (#136): the NY Fed's daily take-up.
   reverseRepo: 'economic:reverse-repo:v1',
+  // Lite Finance stablecoin supply (#137): DefiLlama.
+  stablecoinSupply: 'market:stablecoin-supply:v1',
   // Lite Tech AI models (#126): OpenRouter listing of the watched labs.
   aiModels: 'tech:ai-models:v1',
   // Lite Tech AI regulation (#127): EU and US AI and data rules.
@@ -996,6 +998,11 @@ const SEED_META = {
     key: 'seed-meta:economic:reverse-repo', maxStaleMin: 540, // seed-reverse-repo every 3 h; 540 = 3x interval
     activationKey: 'seed-activated:economic:reverse-repo',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 136, activationKey: 'seed-activated:economic:reverse-repo' },
+  },
+  stablecoinSupply: {
+    key: 'seed-meta:market:stablecoin-supply', maxStaleMin: 1080, // seed-stablecoin-supply every 6 h; 1080 = 3x interval
+    activationKey: 'seed-activated:market:stablecoin-supply',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 137, activationKey: 'seed-activated:market:stablecoin-supply' },
   },
   rateOdds: {
     key: 'seed-meta:economic:rate-odds', maxStaleMin: 180, // seed-rate-odds hourly; 180 = 3x interval
@@ -2841,7 +2848,7 @@ const ON_DEMAND_KEYS = new Set([
   // Lite Geopolitics export controls and tariffs (#122) and new restricted parties (#123).
   'federalRegister', 'cslAdditions', 'euSanctions', 'travelLevels',
   // Lite Finance Fed decision odds (#125), central bank decisions (#130), Tech AI models (#126) and AI regulation (#127).
-  'rateOdds', 'macroForecasts', 'cbDecisions', 'reverseRepo', 'aiModels', 'aiRegulation', 'dataBreaches', 'aiLabNews', 'chipRevenue', 'hyperscalerCapex',
+  'rateOdds', 'macroForecasts', 'cbDecisions', 'reverseRepo', 'stablecoinSupply', 'aiModels', 'aiRegulation', 'dataBreaches', 'aiLabNews', 'chipRevenue', 'hyperscalerCapex',
   // Per-country GDELT article index (#7748). The 15-minute materializer
   // writes the marker after the index and its seed-meta publish; absence is
   // pending until that first tick and strict afterward.
@@ -3069,6 +3076,7 @@ const ACTIVATION_MARKERS = {
   macroForecasts: SEED_META.macroForecasts.activationKey,
   cbDecisions: SEED_META.cbDecisions.activationKey,
   reverseRepo: SEED_META.reverseRepo.activationKey,
+  stablecoinSupply: SEED_META.stablecoinSupply.activationKey,
   aiModels: SEED_META.aiModels.activationKey,
   aiRegulation: SEED_META.aiRegulation.activationKey,
   dataBreaches: SEED_META.dataBreaches.activationKey,

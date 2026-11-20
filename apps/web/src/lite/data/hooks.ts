@@ -51,6 +51,7 @@ export const useVixDaily = (enabled: boolean) => useResource('vixDaily', src.loa
 export const useCreditSpreads = () => useResource('creditSpreads', src.loadCreditSpreads);
 export const useFedBalanceSheet = () => useResource('fedBalanceSheet', src.loadFedBalanceSheet);
 export const useReverseRepo = () => useResource('reverseRepo', src.loadReverseRepo);
+export const useStablecoinSupply = () => useResource('stablecoinSupply', src.loadStablecoinSupply);
 export const useRateOdds = () => useResource('rateOdds', src.loadRateOdds);
 export const useCbDecisions = () => useResource('cbDecisions', src.loadCbDecisions);
 export const useMacroForecasts = () => useResource('macroForecasts', src.loadMacroForecasts);

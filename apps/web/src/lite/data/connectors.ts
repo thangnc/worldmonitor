@@ -147,6 +147,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['Fed reverse repo indicator'],
   },
   {
+    id: 'stablecoin-supply', name: 'Stablecoin supply · DefiLlama', domain: 'fin', kind: 'Market data', method: 'API',
+    producer: 'seed-stablecoin-supply', healthKeys: ['stablecoinSupply'], maxStaleMin: 1080,
+    hosts: [{ host: 'stablecoins.llama.fi', licence: 'terms-review' }],
+    usedBy: ['Stablecoin supply indicator'],
+  },
+  {
     id: 'rate-odds', name: 'Fed decision odds · Kalshi KXFED', domain: 'fin', kind: 'Market data (one venue)', method: 'API',
     producer: 'seed-rate-odds', healthKeys: ['rateOdds'], maxStaleMin: 180,
     hosts: [{ host: 'api.elections.kalshi.com', licence: 'terms-review' }, { host: 'api.stlouisfed.org', licence: 'terms-review' }],
