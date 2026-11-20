@@ -26,6 +26,32 @@ export const TRUST_MEANING: Readonly<Record<Trust, string>> = {
   market: 'Prices and market-derived values from a quote provider.',
 };
 
+/**
+ * Decision tier (spec: Decision tiers, owner's view 2026-11-19; #121). Check
+ * daily: can need action the same day; check weekly: shapes plans. Analyst
+ * inputs (military aircraft, GPS interference, attack infrastructure, and the
+ * violence and sea-incident layers that feed the region view) have none.
+ */
+export type DecisionTier = 'daily' | 'weekly';
+
+const TIER_BY_FEED: Readonly<Record<string, DecisionTier>> = {
+  // Geopolitics
+  chokepoint: 'daily', chokepoints: 'daily', region: 'daily', 'region-escalation': 'daily', sanctions: 'daily',
+  taiwan: 'daily', embassy: 'daily',
+  // Finance: yields, credit, risk gauges, macro and price moves daily; crypto health, freight and filings weekly
+  treasury: 'daily', 'other-bonds': 'daily', 'credit-spreads': 'daily', vix: 'daily', 'dollar-index': 'daily',
+  'macro-print': 'daily', 'btc-move': 'daily',
+  'etf-flows': 'weekly', 'stablecoin-depeg': 'weekly', 'perp-positioning': 'weekly', 'btc-funding': 'weekly',
+  'fear-greed': 'weekly', 'freight-scfi': 'weekly', 'freight-bdi': 'weekly', 'sec-8k': 'weekly',
+  // Technology
+  'service-outage': 'daily', 'kev-new': 'daily', 'cyber-8k': 'daily', 'internet-outage': 'daily',
+};
+
+/** A feed's tier by its id ("sanctions:RU" reads as "sanctions"); null for analyst inputs. */
+export function feedTier(id: string): DecisionTier | null {
+  return TIER_BY_FEED[id] ?? TIER_BY_FEED[id.split(':')[0] ?? ''] ?? null;
+}
+
 export interface IndicatorPlace {
   countries?: readonly string[];
   lat?: number;

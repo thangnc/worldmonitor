@@ -11,7 +11,7 @@ import type {
   ListStablecoinMarketsResponse,
 } from '../packages/contracts/generated/client/worldmonitor/market/v1/service_client.ts';
 import { DRIVERS, LINK_WINDOW_HOURS, MAX_LINKED_STORIES, linkNews, matchReason, offsetLabel } from '../apps/web/src/lite/data/news-link.ts';
-import { STALE_FACTOR, feedCounts, feedState, sortFeeds, type FeedState, type Indicator } from '../apps/web/src/lite/data/indicators.ts';
+import { STALE_FACTOR, feedCounts, feedState, feedTier, sortFeeds, type FeedState, type Indicator } from '../apps/web/src/lite/data/indicators.ts';
 import { centreCard, chokepointPins, featureIso2, newSanctionCountries, pinIdForFeed, sanctionFills, shippingLanes, signalCard, signalPins } from '../apps/web/src/lite/data/markets-map.ts';
 import { buildPriceBoard } from '../apps/web/src/lite/data/prices.ts';
 import { CENTRAL_BANKS } from '../packages/client/config/finance-geo.ts';
@@ -1560,5 +1560,20 @@ describe('New OFAC sanctions (#118)', () => {
     const down = newSanctionsFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
     assert.equal(down.kind, 'unavailable');
     assert.match(down.kind === 'unavailable' ? down.detail : '', /seed-sanctions-pressure/);
+  });
+});
+
+describe('Decision tiers (#121)', () => {
+  it('tags each feed check daily or check weekly as the spec tables do, and leaves analyst inputs untagged', () => {
+    for (const id of ['chokepoint:hormuz_strait', 'chokepoints', 'region:red-sea', 'sanctions:RU', 'taiwan', 'embassy:kyiv:x', 'treasury', 'other-bonds',
+      'credit-spreads', 'vix', 'dollar-index', 'macro-print', 'btc-move', 'service-outage', 'kev-new', 'cyber-8k', 'internet-outage']) {
+      assert.equal(feedTier(id), 'daily', id);
+    }
+    for (const id of ['etf-flows', 'stablecoin-depeg', 'perp-positioning', 'btc-funding', 'fear-greed', 'freight-scfi', 'freight-bdi', 'sec-8k']) {
+      assert.equal(feedTier(id), 'weekly', id);
+    }
+    for (const id of ['aircraft:kyiv', 'gps:taipei', 'gps-region:europe', 'attack-spike', 'violence:UA', 'sea:u1', 'airspace', 'unknown']) {
+      assert.equal(feedTier(id), null, id);
+    }
   });
 });
