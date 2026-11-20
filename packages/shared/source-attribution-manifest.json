@@ -10528,6 +10528,9 @@
           "path": "scripts/seed-ai-regulation.mjs"
         },
         {
+          "path": "scripts/seed-central-bank-decisions.mjs"
+        },
+        {
           "path": "scripts/seed-five-factor-scorecard.mjs"
         },
         {
@@ -11739,6 +11742,9 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "scripts/seed-central-bank-decisions.mjs"
+        },
+        {
           "path": "scripts/seed-economic-calendar.mjs"
         }
       ]
@@ -12020,6 +12026,9 @@
       "references": [
         {
           "path": "packages/shared/news-catalog.json"
+        },
+        {
+          "path": "scripts/seed-central-bank-decisions.mjs"
         },
         {
           "path": "scripts/seed-economic-calendar.mjs"

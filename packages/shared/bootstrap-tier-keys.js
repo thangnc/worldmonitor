@@ -63,6 +63,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   rateOdds: 'economic:rate-odds:v1',
   // Lite Finance macro forecasts (#128): Kalshi KXCPI / KXPAYROLLS implied medians (seed-macro-forecasts).
   macroForecasts: 'economic:macro-forecasts:v1',
+  // Lite Finance central bank decisions (#130): Fed and ECB rate decisions (seed-central-bank-decisions).
+  cbDecisions: 'economic:central-bank-decisions:v1',
   // Lite Tech AI models (#126): watched labs' recent models and price changes (seed-ai-models).
   aiModels: 'tech:ai-models:v1',
   // Lite Tech AI regulation (#127): EU and US AI and data rules (seed-ai-regulation).
@@ -226,6 +228,8 @@ const ON_DEMAND_KEY_NAMES = new Set([
   // Lite Finance: Kalshi Fed decision odds for the next three meetings (#125, ~3 KB), read only by /lite and /lite/finance.
   'rateOdds',
   'macroForecasts',
+  // Lite Finance: the Fed and ECB rate decisions of the last ~15 months (#130, a few KB), read only by /lite and /lite/finance.
+  'cbDecisions',
   // Lite Tech: the watched AI labs' models of the last 90 days and price changes (#126, ~10 KB), read only by /lite and /lite/tech.
   'aiModels',
   // Lite Tech: a 60-day log of EU and US AI and data rules (#127, a few KB), read only by /lite and /lite/tech.

@@ -50,6 +50,9 @@ export const ISSUERS: Readonly<Record<string, Issuer>> = {
 export const FEED_ISSUER: Readonly<Record<string, string>> = {
   'macro-print': 'fed',
   treasury: 'fed',
+  // A fired rate decision sits at its bank; the quiet row covers both banks, so it has no place (#130).
+  'cb-decision:fed': 'fed',
+  'cb-decision:ecb': 'ecb',
   'sec-8k': 'nyse',
   'freight-scfi': 'shanghai',
   'freight-bdi': 'london',

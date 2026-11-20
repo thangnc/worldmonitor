@@ -10,7 +10,7 @@ import { safeStorageGet, safeStorageSet } from '@wm/client/utils/safe-storage';
 import { regionStrip, violenceFeeds, type RegionTile } from './conflict';
 import { escalationLevel, scoreHotspots } from './escalation';
 import { financeFeeds, riskGaugeFeeds } from './finance-indicators';
-import { financeMacroFeeds, rateOddsFeed } from './finance-macro-indicators';
+import { centralBankFeeds, financeMacroFeeds, rateOddsFeed } from './finance-macro-indicators';
 import { aircraftFeeds, gpsFeeds, seaIncidentFeeds } from './geo-layers';
 import { chokepointFeeds, embassyAlertFeeds, euSanctionsFeeds, exportControlFeeds, newSanctionsFeeds, restrictedPartyFeeds, taiwanStraitFeeds, travelAdvisoryFeeds } from './geo-watch';
 import {
@@ -39,6 +39,7 @@ import {
   useMilitaryFlights,
   useOtherBonds,
   useRateOdds,
+  useCbDecisions,
   useMacroForecasts,
   useRecentKev,
   useRiskScores,
@@ -176,6 +177,7 @@ export function useFinanceFeeds(): FeedState[] {
   const curves = useTreasuryCurves();
   const spreads = useCreditSpreads();
   const odds = useRateOdds();
+  const cbDecisions = useCbDecisions();
   const forecasts = useMacroForecasts();
   const bonds = useOtherBonds();
   const etf = useEtfFlows();
@@ -190,8 +192,9 @@ export function useFinanceFeeds(): FeedState[] {
       ...riskGaugeFeeds({ commodities, vixDaily, gold, news, now }),
       ...financeMacroFeeds({ calendar, forecasts, curves, spreads, bonds, etf, flow, rates, filings, news, now }),
       rateOddsFeed({ odds, news, now }),
+      ...centralBankFeeds({ decisions: cbDecisions, calendar, news, now }),
     ]);
-  }, [crypto, flow, stables, fearGreed, commodities, vixDaily, gold, calendar, forecasts, curves, spreads, odds, bonds, etf, rates, filings, digest]);
+  }, [crypto, flow, stables, fearGreed, commodities, vixDaily, gold, calendar, forecasts, curves, spreads, odds, cbDecisions, bonds, etf, rates, filings, digest]);
 }
 
 

@@ -147,6 +147,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['Fed decision odds indicator'],
   },
   {
+    id: 'cb-decisions', name: 'Central bank decisions · Fed and ECB', domain: 'fin', kind: 'Official statement', method: 'RSS',
+    producer: 'seed-central-bank-decisions', healthKeys: ['cbDecisions'], maxStaleMin: 90,
+    hosts: [{ host: 'www.federalreserve.gov', licence: 'terms-review' }, { host: 'www.ecb.europa.eu', licence: 'terms-review' }],
+    usedBy: ['Central bank decision indicator', 'Macro calendar (decision outcomes)'],
+  },
+  {
     id: 'macro-forecasts', name: 'CPI and payrolls forecasts · Kalshi', domain: 'fin', kind: 'Market data (Kalshi, implied forecast)', method: 'API',
     producer: 'seed-macro-forecasts', healthKeys: ['macroForecasts'], maxStaleMin: 180,
     hosts: [{ host: 'api.elections.kalshi.com', licence: 'terms-review' }],

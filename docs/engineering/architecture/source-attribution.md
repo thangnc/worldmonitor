@@ -796,7 +796,7 @@ This generated inventory covers **850 active source hosts** representing **830 a
 | World Bank Open Data (api.worldbank.org) | structured — packages/server/worldmonitor/economic/v1/list-world-bank-indicators.ts, packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts, packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts, scripts/_defense-industrial-source.mjs, +13 more |
 | World Monitor hosted API (api.worldmonitor.app) | feed+structured — packages/client/services/runtime.ts, packages/shared/news-catalog.json, scripts/_widget-data-policy.cjs, scripts/ais-relay.cjs, +16 more |
 | World Monitor proxy (proxy.worldmonitor.app) | structured — packages/client/utils/proxy.ts, scripts/seed-security-advisories.mjs |
-| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/server/_shared/brief-url.ts, +22 more |
+| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/server/_shared/brief-url.ts, +23 more |
 | World Monitor web app (www.worldmonitor.app) | structured — api/_cors.js, api/not-found.ts, packages/server/_shared/deprecation-policy.ts, packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts, +10 more |
 | WorldMonitor test origin (worldmonitor.invalid) | structured — api/_md-url-twin.ts, packages/client/shared/public-rpc-cache.ts |
 | worldmonitor.mintlify.dev (worldmonitor.mintlify.dev) | Excluded / candidate — No current fetch observed |
@@ -869,7 +869,7 @@ This generated inventory covers **850 active source hosts** representing **830 a
 | www.dnevnik.bg (www.dnevnik.bg) | feed — packages/shared/news-catalog.json |
 | www.dockerstatus.com (www.dockerstatus.com) | operational-status — packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts |
 | www.dr.dk (www.dr.dk) | feed — packages/shared/news-catalog.json |
-| www.ecb.europa.eu (www.ecb.europa.eu) | structured — scripts/seed-economic-calendar.mjs |
+| www.ecb.europa.eu (www.ecb.europa.eu) | structured — scripts/seed-central-bank-decisions.mjs, scripts/seed-economic-calendar.mjs |
 | www.ecdc.europa.eu (www.ecdc.europa.eu) | structured — scripts/seed-disease-outbreaks.mjs, scripts/seed-security-advisories.mjs |
 | www.economia-sniim.gob.mx (www.economia-sniim.gob.mx) | structured — scripts/lib/food-prices-fetch.mjs |
 | www.eia.gov (www.eia.gov) | feed+structured — packages/shared/news-catalog.json, scripts/seed-oil-trade-series.mjs |
@@ -886,7 +886,7 @@ This generated inventory covers **850 active source hosts** representing **830 a
 | www.factal.com (www.factal.com) | Excluded / candidate — No current fetch observed |
 | www.fao.org (www.fao.org) | feed+structured — packages/shared/news-catalog.json, scripts/lib/food-prices-fetch.mjs, scripts/lib/food-prices.mjs, scripts/seed-fao-food-price-index.mjs |
 | www.federalregister.gov (www.federalregister.gov) | structured — apps/web/src/lite/data/geo-watch.ts, scripts/seed-ai-regulation.mjs, scripts/seed-federal-register.mjs |
-| www.federalreserve.gov (www.federalreserve.gov) | feed+structured — packages/shared/news-catalog.json, scripts/seed-economic-calendar.mjs, scripts/seed-regulatory-actions.mjs |
+| www.federalreserve.gov (www.federalreserve.gov) | feed+structured — packages/shared/news-catalog.json, scripts/seed-central-bank-decisions.mjs, scripts/seed-economic-calendar.mjs, scripts/seed-regulatory-actions.mjs |
 | www.flightglobal.com (www.flightglobal.com) | structured — scripts/seed-aviation.mjs |
 | www.foreignaffairs.com (www.foreignaffairs.com) | feed — packages/shared/news-catalog.json |
 | www.fpri.org (www.fpri.org) | Excluded / candidate — No current fetch observed |
