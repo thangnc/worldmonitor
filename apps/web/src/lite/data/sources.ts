@@ -55,7 +55,7 @@ import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cy
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
 import { decodeRecentKev, decodeThreatHistory, type RecentKev, type ThreatHistory } from './tech-indicators';
-import { CREDIT_SERIES, decodeCreditSpreads, type CreditSpreads } from './finance-macro-indicators';
+import { CREDIT_SERIES, decodeCreditSpreads, decodeRateOdds, type CreditSpreads, type RateOdds } from './finance-macro-indicators';
 import { VIX_FRED_SERIES } from './finance-indicators';
 import {
   ConflictServiceClient,
@@ -301,6 +301,12 @@ export async function loadTreasuryCurves(): Promise<UsTreasuryParYieldCurve[] | 
 export async function loadCreditSpreads(): Promise<CreditSpreads | null> {
   const resp = await economic.getFredSeriesBatch({ seriesIds: [CREDIT_SERIES.hy, CREDIT_SERIES.ig], limit: 30 });
   return decodeCreditSpreads(resp.results);
+}
+
+/** Kalshi's Fed decision odds for the next meetings, with FRED's current target (seed-rate-odds, #125). */
+export async function loadRateOdds(): Promise<RateOdds> {
+  await startBootstrap();
+  return required('rateOdds', decodeRateOdds(await ensureHydrated('rateOdds')));
 }
 
 /** FRED's daily VIX closes: the VIX indicator's fallback when the Yahoo quote is missing. */

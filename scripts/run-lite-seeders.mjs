@@ -67,6 +67,8 @@ export const LITE_SEED_SECTIONS = [
   { label: 'Federal-Register', script: 'seed-federal-register.mjs', seedMetaKey: 'policy:federal-register', intervalMs: 2 * HOUR, timeoutMs: 120_000 },
   // US and UK travel advisory level changes for the travel advisories indicator (#124).
   { label: 'Travel-Advisories', script: 'seed-travel-advisories.mjs', seedMetaKey: 'intelligence:travel-levels', intervalMs: 2 * HOUR, timeoutMs: 300_000 },
+  // Kalshi Fed decision odds and FRED's current target for the Fed decision odds indicator (#125).
+  { label: 'Rate-Odds', script: 'seed-rate-odds.mjs', seedMetaKey: 'economic:rate-odds', intervalMs: 60 * MIN, timeoutMs: 120_000 },
 
   // Finance & Crypto
   { label: 'Crypto-Quotes', script: 'seed-crypto-quotes.mjs', seedMetaKey: 'market:crypto', intervalMs: 5 * MIN, timeoutMs: 120_000 },

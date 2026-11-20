@@ -84,7 +84,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | api.scrapecreators.com (api.scrapecreators.com) | structured — scripts/ais-relay.cjs |
 | api.spdrgoldshares.com (api.spdrgoldshares.com) | structured — scripts/seed-gold-etf-flows.mjs |
 | api.statistiken.bundesbank.de (api.statistiken.bundesbank.de) | structured — scripts/seed-yield-curve-de.mjs |
-| api.stlouisfed.org (api.stlouisfed.org) | structured — scripts/seed-economic-calendar.mjs, scripts/seed-us-cpi.mjs, scripts/seed-us-interest-rates.mjs |
+| api.stlouisfed.org (api.stlouisfed.org) | structured — scripts/seed-economic-calendar.mjs, scripts/seed-rate-odds.mjs, scripts/seed-us-cpi.mjs, scripts/seed-us-interest-rates.mjs |
 | api.ted.europa.eu (api.ted.europa.eu) | structured — scripts/seed-global-tenders.mjs |
 | api.telegram.org (api.telegram.org) | Excluded / candidate — No current fetch observed |
 | api.typesafe.ai (api.typesafe.ai) | structured — scripts/lib/internal-links.mjs |
@@ -412,8 +412,8 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | jmespath.org (jmespath.org) | Excluded / candidate — No current fetch observed |
 | jsDelivr asset CDN (cdn.jsdelivr.net) | structured — scripts/ais-relay.cjs |
 | justice.gov (justice.gov) | feed — packages/shared/news-catalog.json |
-| Kalshi (api.elections.kalshi.com) | structured — scripts/_forecast-market-settlements.mjs, scripts/seed-prediction-markets.mjs |
-| kalshi.com (kalshi.com) | structured — scripts/_bet-templates-markets.mjs, scripts/seed-prediction-markets.mjs |
+| Kalshi (api.elections.kalshi.com) | structured — scripts/_forecast-market-settlements.mjs, scripts/seed-prediction-markets.mjs, scripts/seed-rate-odds.mjs |
+| kalshi.com (kalshi.com) | structured — apps/web/src/lite/data/finance-macro-indicators.ts, scripts/_bet-templates-markets.mjs, scripts/seed-prediction-markets.mjs, scripts/seed-rate-odds.mjs |
 | kan11.media.kan.org.il (kan11.media.kan.org.il) | Excluded / candidate — No current fetch observed |
 | kancdn.medonecdn.net (kancdn.medonecdn.net) | feed — packages/client/config/live-video-sources.ts |
 | kathimerini.gr (kathimerini.gr) | feed — packages/shared/news-catalog.json |

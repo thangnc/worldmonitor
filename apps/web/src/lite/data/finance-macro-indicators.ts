@@ -40,6 +40,8 @@ export const HY_DAY_BP = 20;
 export const HY_WEEK_BP = 50;
 /** Investment-grade spread widening in a day that fires, in basis points. */
 export const IG_DAY_BP = 5;
+/** A move in the odds of a rate change at the next Fed meeting that fires, in percentage points per day (#125). */
+export const RATE_ODDS_MOVE_PTS = 15;
 /** Bitcoin ETFs that must flow the same way. */
 export const ETF_SAME_WAY = 8;
 /** Hyperliquid stress score that fires: the seeder's ALERT_THRESHOLD. */
@@ -59,6 +61,7 @@ export const KEY_8K_ITEMS: Readonly<Record<string, string>> = {
 export const MACRO_RULES =
   `US CPI or PCE m/m ≥ ${MACRO_PCT_PT} pt from the prior print, or payrolls ≥ ${MACRO_PAYROLLS_K}k from the prior print (no forecast source yet); ` +
   `the US 2-year or 10-year moves ≥ ${YIELD_MOVE_BP} bp in a day, or 2s10s changes sign; a DE, GB or JP 10-year moves ≥ ${YIELD_MOVE_BP} bp; ` +
+  `the odds of a move at the next Fed meeting change ≥ ${RATE_ODDS_MOVE_PTS} pts in a day, or its most likely outcome changes (Kalshi); ` +
   `the high-yield spread widens ≥ ${HY_DAY_BP} bp in a day or ≥ ${HY_WEEK_BP} bp in 5 trading days, or the investment-grade spread widens ≥ ${IG_DAY_BP} bp in a day; ` +
   `${ETF_SAME_WAY} or more spot bitcoin ETFs flow the same way; a Hyperliquid stress score ≥ ${PERP_STRESS}; ` +
   `SCFI ≥ ${FREIGHT_MOVE_PCT}% week on week or the Baltic Dry ≥ ${FREIGHT_MOVE_PCT}% in a day; ` +
@@ -307,6 +310,144 @@ export function creditSpreadFeed(input: { spreads: ResourceState<CreditSpreads> 
   const reading = hy || ig ? `HY ${level(hy)} bp ${move(hy?.day)} · IG ${level(ig)} bp ${move(ig?.day)}` : null;
   return withReading(quietDetail(feed, newest
     ? `${reading} · HY ${move(hy?.week)} over 5 days · data to ${dayMonth(ymdMs(newest))}${near ? ' · near the trigger' : ''}`
+    : null), reading);
+}
+
+// ---- Fed decision odds (#125) ------------------------------------------------
+
+/** seed-rate-odds runs hourly. */
+export const RATE_ODDS_CADENCE_MIN = 60;
+const FED_DRIVERS = ['Fed', 'FOMC', 'Federal Reserve', 'Powell', 'rate cut', 'rate cuts', 'rate hike', 'rate hikes', 'interest rates', 'federal funds'];
+
+export interface RateOddsBucket {
+  /** The target range's upper bound after the meeting, in percent; null for the open top bucket. */
+  upper: number | null;
+  /** The bottom bucket: at or below `upper`. */
+  below: boolean;
+  /** The top bucket: above this strike. */
+  above: number | null;
+  p: number;
+  /** The same outcome a day earlier (Kalshi's previous prices). */
+  pPrev: number;
+}
+
+export interface RateOddsMeeting {
+  event: string;
+  /** When the market closes on the decision (ms). */
+  decisionAt: number;
+  volume: number;
+  url: string;
+  buckets: RateOddsBucket[];
+}
+
+export interface RateOdds {
+  fetchedAt: number;
+  /** FRED DFEDTARU: the current upper bound, or null. */
+  target: { value: number; date: string } | null;
+  meetings: RateOddsMeeting[];
+}
+
+/** The seeded payload (`economic:rate-odds:v1`), or null when it is not one. */
+export function decodeRateOdds(value: unknown): RateOdds | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.meetings)) return null;
+  const num = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  const prob = (x: unknown) => { const n = num(x); return n !== null && n >= 0 && n <= 1 ? n : null; };
+  const meetings: RateOddsMeeting[] = [];
+  for (const raw of v.meetings as Array<Record<string, unknown>>) {
+    const decisionAt = num(raw?.decisionAt);
+    if (decisionAt === null || !Array.isArray(raw.buckets)) continue;
+    const buckets: RateOddsBucket[] = [];
+    for (const b of raw.buckets as Array<Record<string, unknown>>) {
+      const p = prob(b?.p);
+      const pPrev = prob(b?.pPrev);
+      if (p === null || pPrev === null) continue;
+      buckets.push({ upper: num(b.upper), below: b.below === true, above: num(b.above), p, pPrev });
+    }
+    if (buckets.length < 3) continue;
+    meetings.push({ event: typeof raw.event === 'string' ? raw.event : '', decisionAt, volume: num(raw.volume) ?? 0,
+      url: typeof raw.url === 'string' && raw.url.startsWith('https://kalshi.com/') ? raw.url : '', buckets });
+  }
+  meetings.sort((a, b) => a.decisionAt - b.decisionAt);
+  const t = v.target as Record<string, unknown> | null;
+  const target = t && num(t.value) !== null && typeof t.date === 'string' ? { value: num(t.value)!, date: t.date } : null;
+  return { fetchedAt: v.fetchedAt as number, target, meetings };
+}
+
+const bpOf = (pts: number) => Math.round(pts * 100);
+
+/** "Hold", "Cut 25 bp", "Hike 50 bp", or the bound itself when the current target is unknown. */
+export function rateOutcomeLabel(b: RateOddsBucket, target: number | null): string {
+  if (b.upper === null) return target === null ? `Above ${b.above?.toFixed(2)}%` : `Hike > ${bpOf((b.above ?? 0) - target)} bp`;
+  if (target === null) return `${b.below ? '≤ ' : ''}${b.upper.toFixed(2)}%`;
+  const d = bpOf(b.upper - target);
+  if (b.below) return d >= 0 ? `≤ ${b.upper.toFixed(2)}%` : `Cut ≥ ${-d} bp`;
+  return d === 0 ? 'Hold' : d < 0 ? `Cut ${-d} bp` : `Hike ${d} bp`;
+}
+
+export interface RateOddsReading {
+  meeting: RateOddsMeeting;
+  modal: RateOddsBucket;
+  modalPrev: RateOddsBucket;
+  /** Odds of any move, now and a day earlier; null without the current target. */
+  move: number | null;
+  movePrev: number | null;
+}
+
+/** The next meeting's most likely outcome and move odds, now and a day earlier. */
+export function rateOddsReading(odds: RateOdds, now: number): RateOddsReading | null {
+  const meeting = odds.meetings.find((m) => m.decisionAt > now);
+  if (!meeting) return null;
+  const top = (key: 'p' | 'pPrev') => meeting.buckets.reduce((best, b) => (b[key] > best[key] ? b : best));
+  const target = odds.target?.value ?? null;
+  const hold = target === null ? undefined : meeting.buckets.find((b) => b.upper !== null && !b.below && Math.abs(b.upper - target) < 1e-6);
+  // No bucket at the current target (it falls in the open bottom bucket, or off the ladder):
+  // the odds of a move cannot be read, so only the most-likely rule applies.
+  return {
+    meeting, modal: top('p'), modalPrev: top('pPrev'),
+    move: hold ? 1 - hold.p : null,
+    movePrev: hold ? 1 - hold.pPrev : null,
+  };
+}
+
+const pctOf = (p: number) => `${Math.round(p * 100)}%`;
+const ptsOf = (d: number) => {
+  const n = Math.abs(Math.round(d * 100));
+  return `${d < 0 ? MINUS : '+'}${n} pt${n === 1 ? '' : 's'}`;
+};
+
+export function rateOddsFeed(input: { odds: ResourceState<RateOdds> } & Ctx): FeedState {
+  const { odds, now } = input;
+  const data = odds.status === 'ready' ? odds.data : null;
+  const r = data ? rateOddsReading(data, now) : null;
+  const target = data?.target?.value ?? null;
+  const shift = r && r.move !== null && r.movePrev !== null ? r.move - r.movePrev : null;
+  const moved = shift !== null && Math.abs(shift) * 100 + 1e-9 >= RATE_ODDS_MOVE_PTS;
+  const label = (b: RateOddsBucket) => rateOutcomeLabel(b, target);
+  const flipped = r ? label(r.modal) !== label(r.modalPrev) : false;
+  const meetingDay = r ? dayMonth(r.meeting.decisionAt) : '';
+  const at = data?.fetchedAt ?? now;
+  const top3 = r ? [...r.meeting.buckets].sort((a, b) => b.p - a.p).slice(0, 3).filter((b) => b.p >= 0.01).map((b) => `${label(b)} ${pctOf(b.p)}`).join(' · ') : '';
+  const targetText = data?.target ? `target upper bound ${data.target.value.toFixed(2)}% (FRED, ${dayMonth(ymdMs(data.target.date))})` : 'current target unknown';
+  const indicator: Indicator | null = r && (moved || flipped)
+    ? {
+        id: 'fed-odds', domain: 'fin', name: `Fed decision odds · ${meetingDay}`,
+        value: `${label(r.modal)} ${pctOf(r.modal.p)}`,
+        change: shift !== null ? `move odds ${pctOf(r.movePrev!)} → ${pctOf(r.move!)}` : `was ${label(r.modalPrev)} ${pctOf(r.modalPrev.pPrev)}`,
+        rule: `move odds ±${RATE_ODDS_MOVE_PTS} pts in a day, or the most likely outcome changes (next meeting)`,
+        detail: [flipped ? `most likely was ${label(r.modalPrev)} ${pctOf(r.modalPrev.pPrev)} a day earlier` : null, top3, targetText].filter(Boolean).join(' · '),
+        trust: { level: 'market', source: 'Kalshi KXFED (one venue)' }, at, dataDate: `meeting ${meetingDay}`,
+        links: link(input, { drivers: FED_DRIVERS }, at),
+      }
+    : null;
+  const feed = feedState({
+    id: 'fed-odds', name: 'Fed decision odds · Kalshi', source: data && r ? odds : emptyOf(odds), seeder: 'seed-rate-odds',
+    cadenceMin: RATE_ODDS_CADENCE_MIN, dataAt: data?.fetchedAt ?? null, fired: indicator, now,
+  });
+  const reading = r ? `${label(r.modal)} ${pctOf(r.modal.p)} at the ${meetingDay} meeting` : null;
+  const near = shift !== null && Math.abs(shift) * 100 >= RATE_ODDS_MOVE_PTS / 2;
+  return withReading(quietDetail(feed, r
+    ? `${reading} · ${r.move !== null ? `move odds ${pctOf(r.move)} (${ptsOf(shift!)} in a day)` : (target === null ? 'move odds need the current target' : 'move odds unreadable: no outcome at the current target')} · ${targetText}${near ? ' · near the trigger' : ''}`
     : null), reading);
 }
 

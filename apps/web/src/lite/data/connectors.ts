@@ -141,6 +141,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['Credit spreads · HY / IG indicator', 'Volatility · VIX indicator (FRED close when the quote is missing)'],
   },
   {
+    id: 'rate-odds', name: 'Fed decision odds · Kalshi KXFED', domain: 'fin', kind: 'Market data (one venue)', method: 'API',
+    producer: 'seed-rate-odds', healthKeys: ['rateOdds'], maxStaleMin: 180,
+    hosts: [{ host: 'api.elections.kalshi.com', licence: 'terms-review' }, { host: 'api.stlouisfed.org', licence: 'terms-review' }],
+    usedBy: ['Fed decision odds indicator'],
+  },
+  {
     id: 'other-bonds', name: 'Bond curves · DE GB JP', domain: 'fin', kind: 'Official rates', method: 'API',
     producer: 'seed-bundle-yield-curves', healthKeys: ['yieldCurveDe', 'yieldCurveGb', 'yieldCurveJp'], maxStaleMin: 4460,
     hosts: [

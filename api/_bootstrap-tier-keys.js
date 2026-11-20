@@ -60,6 +60,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   cslAdditions: 'sanctions:csl-additions:v1',
   // Lite Geopolitics travel advisories (#124): US and UK level changes (seed-travel-advisories).
   travelLevels: 'intelligence:travel-levels:v1',
+  // Lite Finance Fed decision odds (#125): Kalshi KXFED outcome odds (seed-rate-odds).
+  rateOdds: 'economic:rate-odds:v1',
   techReadiness: 'economic:worldbank-techreadiness:v1',
   progressData: 'economic:worldbank-progress:v1',
   renewableEnergy: 'economic:worldbank-renewable:v1',
@@ -215,6 +217,8 @@ const ON_DEMAND_KEY_NAMES = new Set([
   'cslAdditions',
   // Lite Geopolitics: 14 days of US and UK travel advisory level changes (#124), read only by /lite and /lite/geopolitics.
   'travelLevels',
+  // Lite Finance: Kalshi Fed decision odds for the next three meetings (#125, ~3 KB), read only by /lite and /lite/finance.
+  'rateOdds',
   'chinaPolicyEvents', 'chinaDecisionSignals',
   'bisDsr', 'bisPropertyResidential', 'bisPropertyCommercial',
   // One row of this feeds the Central Banks tab's policy-rate list, which BIS

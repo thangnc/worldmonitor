@@ -209,6 +209,7 @@ const EXCLUDED_BOOTSTRAP_KEYS = {
   federalRegister: 'Lite indicator feed (BIS and USTR Federal Register documents, #122); not reviewed for the widget catalog',
   cslAdditions: 'Lite indicator feed (BIS and State screening-list additions, #123); not reviewed for the widget catalog',
   travelLevels: 'Lite indicator feed (US and UK travel advisory level changes, #124); not reviewed for the widget catalog',
+  rateOdds: 'Lite indicator feed (Kalshi Fed decision odds, #125); not reviewed for the widget catalog',
   ukmtoIncidents: 'Publisher claims requiring source attribution and freshness; use the UKMTO panel',
   iranEvents: "Disabled in production (IRAN_EVENTS_ENABLED off); returns nothing",
   liveVideoResolved: "Internal: live-video channel to video-ID map",

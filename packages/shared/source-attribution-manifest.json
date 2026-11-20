@@ -746,6 +746,9 @@
         },
         {
           "path": "scripts/seed-prediction-markets.mjs"
+        },
+        {
+          "path": "scripts/seed-rate-odds.mjs"
         }
       ]
     },
@@ -1197,6 +1200,9 @@
       "references": [
         {
           "path": "scripts/seed-economic-calendar.mjs"
+        },
+        {
+          "path": "scripts/seed-rate-odds.mjs"
         },
         {
           "path": "scripts/seed-us-cpi.mjs"
@@ -5610,10 +5616,16 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "apps/web/src/lite/data/finance-macro-indicators.ts"
+        },
+        {
           "path": "scripts/_bet-templates-markets.mjs"
         },
         {
           "path": "scripts/seed-prediction-markets.mjs"
+        },
+        {
+          "path": "scripts/seed-rate-odds.mjs"
         }
       ]
     },

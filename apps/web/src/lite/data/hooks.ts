@@ -48,6 +48,7 @@ export const useTreasuryCurves = () => useResource('treasuryCurves', src.loadTre
 /** FRED's VIX closes: fetched only when the Yahoo quote is missing. */
 export const useVixDaily = (enabled: boolean) => useResource('vixDaily', src.loadVixDaily, enabled);
 export const useCreditSpreads = () => useResource('creditSpreads', src.loadCreditSpreads);
+export const useRateOdds = () => useResource('rateOdds', src.loadRateOdds);
 export const useOtherBonds = () => useResource('otherBonds', src.loadOtherBonds);
 export const useShippingRates = () => useResource('shippingRates', src.loadShippingRates);
 export const useMaterialEvents = () => useResource('materialEvents', src.loadMaterialEvents);
