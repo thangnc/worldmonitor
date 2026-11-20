@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **856 active source hosts** representing **836 active providers** (**372 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **858 active source hosts** representing **838 active providers** (**374 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -478,6 +478,7 @@ This generated inventory covers **856 active source hosts** representing **836 a
 | mm.usembassy.gov (mm.usembassy.gov) | structured — scripts/seed-security-advisories.mjs |
 | mofcom.gov.cn (mofcom.gov.cn) | feed — packages/shared/news-catalog.json |
 | montrealgazette.com (montrealgazette.com) | feed — packages/shared/news-catalog.json |
+| mopsov.twse.com.tw (mopsov.twse.com.tw) | structured — scripts/seed-chip-revenue.mjs |
 | moxie.foxnews.com (moxie.foxnews.com) | feed — packages/shared/news-catalog.json |
 | mshibanami.github.io (mshibanami.github.io) | feed — packages/shared/news-catalog.json |
 | msi.nga.mil (msi.nga.mil) | structured — packages/server/worldmonitor/infrastructure/v1/get-cable-health.ts, packages/server/worldmonitor/maritime/v1/list-navigational-warnings.ts |
@@ -532,6 +533,7 @@ This generated inventory covers **856 active source hosts** representing **836 a
 | open.alberta.ca (open.alberta.ca) | Excluded / candidate — No current fetch observed |
 | open.iub.gov.lv (open.iub.gov.lv) | structured — scripts/_global-tender-feeds.mjs |
 | openai.com (openai.com) | structured — apps/web/src/lite/data/tech-indicators.ts, scripts/seed-ai-lab-news.mjs |
+| openapi.twse.com.tw (openapi.twse.com.tw) | structured — scripts/seed-chip-revenue.mjs |
 | OpenAQ (api.openaq.org) | structured — scripts/seed-health-air-quality.mjs |
 | OpenRouter (openrouter.ai) | structured — apps/web/src/lite/data/tech-indicators.ts, scripts/eval-classify-labels.mjs, scripts/lib/brief-dedup-consts.mjs, scripts/lib/company-monitoring-classifier-client.mjs, +2 more |
 | OpenSanctions (api.opensanctions.org) | Excluded / candidate — No current fetch observed |
@@ -801,7 +803,7 @@ This generated inventory covers **856 active source hosts** representing **836 a
 | World Bank Open Data (api.worldbank.org) | structured — packages/server/worldmonitor/economic/v1/list-world-bank-indicators.ts, packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts, packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts, scripts/_defense-industrial-source.mjs, +13 more |
 | World Monitor hosted API (api.worldmonitor.app) | feed+structured — packages/client/services/runtime.ts, packages/shared/news-catalog.json, scripts/_widget-data-policy.cjs, scripts/ais-relay.cjs, +16 more |
 | World Monitor proxy (proxy.worldmonitor.app) | structured — packages/client/utils/proxy.ts, scripts/seed-security-advisories.mjs |
-| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/server/_shared/brief-url.ts, +23 more |
+| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/server/_shared/brief-url.ts, +24 more |
 | World Monitor web app (www.worldmonitor.app) | structured — api/_cors.js, api/not-found.ts, packages/server/_shared/deprecation-policy.ts, packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts, +10 more |
 | WorldMonitor test origin (worldmonitor.invalid) | structured — api/_md-url-twin.ts, packages/client/shared/public-rpc-cache.ts |
 | worldmonitor.mintlify.dev (worldmonitor.mintlify.dev) | Excluded / candidate — No current fetch observed |

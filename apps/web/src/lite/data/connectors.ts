@@ -289,6 +289,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['Lab announcement indicator'],
   },
   {
+    id: 'chip-revenue', name: 'TSMC monthly revenue · TWSE and MOPS', domain: 'tech', kind: 'Official (company filing via the exchange)', method: 'API',
+    producer: 'seed-chip-revenue', healthKeys: ['chipRevenue'], maxStaleMin: 1080,
+    hosts: [{ host: 'openapi.twse.com.tw', licence: 'terms-review' }, { host: 'mopsov.twse.com.tw', licence: 'terms-review' }],
+    usedBy: ['TSMC monthly revenue indicator'],
+  },
+  {
     id: 'digest-tech', name: 'News digest · tech', domain: 'tech', kind: 'News aggregate', method: 'RSS',
     producer: 'list-feed-digest', digest: 'tech', hosts: [],
     usedBy: ['Material developments', 'Watched topics'],

@@ -9,7 +9,7 @@ import { resolveCountryCode } from '@wm/shared/country-code-resolve';
 import { STARTER_VENDOR_WATCHLIST, type WatchedVendor } from '@wm/client/config/vendor-watchlist';
 import type { ListMaterialEventsResponse } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
 import { FILING_WINDOW_HOURS, filerName, watchCompany } from './finance-macro-indicators';
-import { feedState, sortFeeds, type FeedState, type Indicator } from './indicators';
+import { feedState, sortFeeds, withReading, type FeedState, type Indicator } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';
 import type { ResourceState } from './store';
 import type { LiteItem } from './transforms';
@@ -125,6 +125,12 @@ export const AI_PRICE_PCT = 20;
 export const AI_MODELS_CADENCE_MIN = 360;
 /** An open-weight release fires when first seen this recently (#132). */
 export const OPEN_MODEL_NEW_DAYS = 7;
+/** TSMC's year-on-year revenue growth moving this many points from the month before fires (#134). */
+export const CHIP_YOY_SHIFT_PTS = 10;
+/** A month's revenue fires for this long after it is filed. */
+export const CHIP_NEW_DAYS = 7;
+/** seed-chip-revenue runs every 6 h. */
+export const CHIP_CADENCE_MIN = 360;
 /** A lab's own release announcement fires for this long (#133). */
 export const LAB_NEWS_NEW_DAYS = 7;
 /** seed-ai-lab-news runs every 3 h. */
@@ -164,6 +170,7 @@ export const TECH_RULES =
   `attack-infrastructure indicators at ${SPIKE_RATIO}× their ${SPIKE_BASELINE_DAYS}-day average or more; ` +
   `an 8-K reporting item ${CYBER_8K_ITEM} (material cybersecurity incident) in the last ${FILING_WINDOW_HOURS} h; ` +
   `a model from a watched AI lab (OpenAI, Anthropic, Google, Meta, Mistral, xAI, DeepSeek, Qwen) listed on OpenRouter in the last ${AI_NEW_DAYS} days, or a price change of ${AI_PRICE_PCT}% or more on one; ` +
+  `TSMC's monthly revenue growth year on year moving ${CHIP_YOY_SHIFT_PTS} points or more from the month before, or falling year on year, filed in the last ${CHIP_NEW_DAYS} days; ` +
   `a release announcement (a model or product introduced or made available) on OpenAI's, Google's, Google DeepMind's or Anthropic's own site in the last ${LAB_NEWS_NEW_DAYS} days; ` +
   `open weights from Meta, Mistral, Qwen, DeepSeek or Google first seen on Hugging Face in the last ${OPEN_MODEL_NEW_DAYS} days with ${OPEN_MODEL_MIN_LIKES}+ likes or ${OPEN_MODEL_MIN_DOWNLOADS.toLocaleString('en-US')}+ downloads; ` +
   `an EU act, implementing act or guidelines on AI or data, or a US final or proposed rule on AI, published in the last ${AI_REG_NEW_DAYS} days; ` +
@@ -476,6 +483,7 @@ export function techFeeds(input: {
   regulation?: ResourceState<AiRegulation>;
   breaches?: ResourceState<Breaches>;
   labNews?: ResourceState<AiLabNews>;
+  chipRevenue?: ResourceState<ChipRevenue>;
   news: readonly LiteItem[];
   now: number;
 }): FeedState[] {
@@ -491,6 +499,7 @@ export function techFeeds(input: {
     ...(input.regulation ? aiRegulationFeeds(input.regulation, news, now) : []),
     ...(input.breaches ? breachFeeds(input.breaches, news, now) : []),
     ...(input.labNews ? labNewsFeeds(input.labNews, news, now) : []),
+    ...(input.chipRevenue ? chipRevenueFeeds(input.chipRevenue, news, now) : []),
   ]);
 }
 
@@ -1138,4 +1147,114 @@ export function labNewsFeeds(source: ResourceState<AiLabNews>, news: readonly Li
       down.length ? `${down.join(', ')} not read on the last run` : null,
     ].filter(Boolean).join(' · '),
   }];
+}
+
+// ---- TSMC monthly revenue (#134) ---------------------------------------------------
+
+export interface ChipMonth {
+  /** "2026-10". */
+  month: string;
+  /** Thousand NT$. */
+  revenue: number;
+  /** Growth in percent, or null when the filing omits it. */
+  mom: number | null;
+  yoy: number | null;
+  ytdYoy: number | null;
+  /** When it was filed: when it could first have been read (the later of the run before and its due date), or the 10th of the next month for backfilled months, ms. */
+  seenAt: number;
+}
+
+export interface ChipRevenue {
+  fetchedAt: number;
+  company: string;
+  months: ChipMonth[];
+}
+
+/** The seeded payload (`tech:chip-revenue:v1`), or null when it is not one. */
+export function decodeChipRevenue(value: unknown): ChipRevenue | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.months)) return null;
+  const num = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  const months: ChipMonth[] = [];
+  for (const raw of v.months as Array<Record<string, unknown>>) {
+    const revenue = num(raw?.revenue);
+    const seenAt = num(raw?.seenAt);
+    if (typeof raw?.month !== 'string' || !/^\d{4}-\d{2}$/.test(raw.month) || revenue === null || seenAt === null) continue;
+    months.push({ month: raw.month, revenue, mom: num(raw.mom), yoy: num(raw.yoy), ytdYoy: num(raw.ytdYoy), seenAt });
+  }
+  months.sort((a, b) => b.month.localeCompare(a.month));
+  return months.length ? { fetchedAt: v.fetchedAt as number, company: typeof v.company === 'string' ? v.company : 'TSMC', months } : null;
+}
+
+/** "Sep", or "Sep 2026": a fixed table, since en-GB spells September "Sept" in some ICU versions. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthName = (month: string, withYear = false) => `${MONTHS[Number(month.slice(5, 7)) - 1] ?? month}${withYear ? ` ${month.slice(0, 4)}` : ''}`;
+/** Thousand NT$ as "NT$586.9bn". */
+const ntd = (thousand: number) => `NT$${(thousand / 1e6).toFixed(1)}bn`;
+const pct1 = (n: number) => `${n < 0 ? '−' : '+'}${Math.abs(n).toFixed(1)}%`;
+const pts1 = (n: number) => `${n < 0 ? '−' : '+'}${Math.abs(n).toFixed(1)} pts`;
+
+export interface ChipReading {
+  latest: ChipMonth;
+  /** The month before, when the log has it. */
+  prev: ChipMonth | null;
+  /** Year-on-year growth now minus the month before, in points. */
+  shift: number | null;
+  fires: boolean;
+}
+
+export function chipReading(data: ChipRevenue, now: number): ChipReading {
+  const latest = data.months[0]!;
+  const [y, m] = latest.month.split('-').map(Number) as [number, number];
+  const before = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+  const prev = data.months.find((x) => x.month === before) ?? null;
+  const shift = latest.yoy !== null && prev?.yoy != null ? latest.yoy - prev.yoy : null;
+  const fresh = latest.seenAt <= now + HOUR_MS && now - latest.seenAt <= CHIP_NEW_DAYS * DAY_MS;
+  const fires = fresh && ((shift !== null && Math.abs(shift) + 1e-9 >= CHIP_YOY_SHIFT_PTS) || (latest.yoy !== null && latest.yoy < 0));
+  return { latest, prev, shift, fires };
+}
+
+export function chipRevenueFeeds(source: ResourceState<ChipRevenue>, news: readonly LiteItem[], now: number): FeedState[] {
+  const data = source.status === 'ready' ? source.data : null;
+  const base = feedState({
+    id: 'chip-revenue', name: 'TSMC monthly revenue · TWSE', source, seeder: 'seed-chip-revenue',
+    cadenceMin: CHIP_CADENCE_MIN, dataAt: data?.fetchedAt ?? null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !data) return [base];
+  const r = chipReading(data, now);
+  const { latest, prev, shift } = r;
+  const vsPrev = prev?.yoy != null ? `${monthName(prev.month)} ${pct1(prev.yoy)}` : null;
+  const reading = latest.yoy !== null ? `TSMC ${pct1(latest.yoy)} y/y` : null;
+  if (r.fires) {
+    const fell = latest.yoy !== null && latest.yoy < 0;
+    // The card stays up for a week, so the coverage that follows the filing counts: search the week up to now.
+    const links = linkNews({ instruments: ['TSM'], drivers: ['TSMC', 'Taiwan Semiconductor'] }, news, now, CHIP_NEW_DAYS * 24);
+    // A story links only when it names TSMC.
+    const stories = links.stories.filter((st) => /\b(TSMC|Taiwan Semiconductor)\b/i.test(`${st.item.title} ${st.item.snippet ?? ''}`));
+    const indicator: Indicator = {
+      id: 'chip-revenue:2330', domain: 'tech', name: `TSMC monthly revenue · ${monthName(latest.month, true)}`,
+      value: ntd(latest.revenue),
+      ...(latest.yoy !== null ? { change: `${pct1(latest.yoy)} y/y` } : {}),
+      rule: fell && (shift === null || Math.abs(shift) < CHIP_YOY_SHIFT_PTS) ? 'revenue down year on year' : `y/y growth ±${CHIP_YOY_SHIFT_PTS} pts from the month before`,
+      detail: [
+        shift !== null && vsPrev ? `y/y growth ${pts1(shift)} from ${vsPrev}` : 'the month before not read',
+        latest.mom !== null ? `${pct1(latest.mom)} m/m` : null,
+        latest.ytdYoy !== null ? `year to date ${pct1(latest.ytdYoy)} y/y` : null,
+      ].filter(Boolean).join(' · '),
+      trust: { level: 'official', source: 'TSMC filing via TWSE' },
+      at: Math.min(now, latest.seenAt),
+      dataDate: `filed ${new Date(latest.seenAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Asia/Taipei' })}`,
+      updatedAt: data.fetchedAt, links: { ...links, stories },
+    };
+    return [withReading({ kind: 'fired', id: indicator.id, name: indicator.name, indicator }, reading)];
+  }
+  const near = shift !== null && Math.abs(shift) >= CHIP_YOY_SHIFT_PTS / 2;
+  return [withReading({
+    ...base,
+    detail: [
+      `Live · ${monthName(latest.month, true)} ${ntd(latest.revenue)}${latest.yoy !== null ? `, ${pct1(latest.yoy)} y/y` : ''}${vsPrev && shift !== null ? ` (${vsPrev}, ${pts1(shift)})` : ''}`,
+      prev ? null : 'the month before not read yet',
+      `fires at ±${CHIP_YOY_SHIFT_PTS} pts or a y/y fall${near ? ' · near the trigger' : ''}`,
+    ].filter(Boolean).join(' · '),
+  }, reading)];
 }

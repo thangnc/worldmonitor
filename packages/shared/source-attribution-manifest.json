@@ -6504,6 +6504,20 @@
       ]
     },
     {
+      "host": "mopsov.twse.com.tw",
+      "provider": "mopsov.twse.com.tw",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit mopsov.twse.com.tw and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "scripts/seed-chip-revenue.mjs"
+        }
+      ]
+    },
+    {
       "host": "moxie.foxbusiness.com",
       "provider": "Fox Business",
       "kind": "feed",
@@ -7234,6 +7248,20 @@
         },
         {
           "path": "scripts/seed-ai-lab-news.mjs"
+        }
+      ]
+    },
+    {
+      "host": "openapi.twse.com.tw",
+      "provider": "openapi.twse.com.tw",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit openapi.twse.com.tw and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "scripts/seed-chip-revenue.mjs"
         }
       ]
     },
@@ -10611,6 +10639,9 @@
         },
         {
           "path": "scripts/seed-central-bank-decisions.mjs"
+        },
+        {
+          "path": "scripts/seed-chip-revenue.mjs"
         },
         {
           "path": "scripts/seed-five-factor-scorecard.mjs"

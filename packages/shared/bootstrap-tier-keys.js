@@ -73,6 +73,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   dataBreaches: 'cyber:breaches:v1',
   // Lite Tech AI lab announcements (#133): the labs' own posts of the last 14 days (seed-ai-lab-news).
   aiLabNews: 'tech:ai-lab-news:v1',
+  // Lite Tech TSMC monthly revenue (#134): 13 months from TWSE and MOPS (seed-chip-revenue).
+  chipRevenue: 'tech:chip-revenue:v1',
   techReadiness: 'economic:worldbank-techreadiness:v1',
   progressData: 'economic:worldbank-progress:v1',
   renewableEnergy: 'economic:worldbank-renewable:v1',
@@ -242,6 +244,8 @@ const ON_DEMAND_KEY_NAMES = new Set([
   'dataBreaches',
   // Lite Tech: OpenAI, Google, Google DeepMind and Anthropic posts of the last 14 days (#133, about 15 KB), read only by /lite and /lite/tech.
   'aiLabNews',
+  // Lite Tech: TSMC's last 13 months of revenue (#134, about 3 KB), read only by /lite and /lite/tech.
+  'chipRevenue',
   'chinaPolicyEvents', 'chinaDecisionSignals',
   'bisDsr', 'bisPropertyResidential', 'bisPropertyCommercial',
   // One row of this feeds the Central Banks tab's policy-rate list, which BIS
