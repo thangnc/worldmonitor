@@ -18,6 +18,7 @@ import {
   useCreditSpreads,
   useEtfFlows,
   useFearGreed,
+  useGoldIntelligence,
   useHyperliquid,
   useMacroCalendar,
   useMarketQuotes,
@@ -28,8 +29,9 @@ import {
   useShippingRates,
   useStablecoins,
   useTreasuryCurves,
+  useVixDaily,
 } from '../data/hooks';
-import { FINANCE_RULES, financeFeeds } from '../data/finance-indicators';
+import { FINANCE_RULES, financeFeeds, riskGaugeFeeds } from '../data/finance-indicators';
 import { feedCounts, sortFeeds, type FeedState } from '../data/indicators';
 import { MACRO_RULES, YIELD_MOVE_BP, bondMoves, financeMacroFeeds, macroValue, spreadBp, treasuryWindow } from '../data/finance-macro-indicators';
 import {
@@ -56,6 +58,10 @@ function useFinanceFeeds(): FeedState[] {
   const flow = useHyperliquid();
   const stables = useStablecoins();
   const fearGreed = useFearGreed();
+  const commodities = useCommodityQuotes();
+  const gold = useGoldIntelligence();
+  // FRED's VIX close only when the commodity quotes settled without ^VIX.
+  const vixDaily = useVixDaily(commodities.status !== 'loading' && !(commodities.status === 'ready' && commodities.data.some((q) => q.symbol === '^VIX')));
   const calendar = useMacroCalendar();
   const curves = useTreasuryCurves();
   const spreads = useCreditSpreads();
@@ -69,9 +75,10 @@ function useFinanceFeeds(): FeedState[] {
     const now = Date.now();
     return sortFeeds([
       ...financeFeeds({ crypto, flow, stables, fearGreed, news, now }),
+      ...riskGaugeFeeds({ commodities, vixDaily, gold, news, now }),
       ...financeMacroFeeds({ calendar, curves, spreads, bonds, etf, flow, rates, filings, news, now }),
     ]);
-  }, [crypto, flow, stables, fearGreed, calendar, curves, spreads, bonds, etf, rates, filings, digest]);
+  }, [crypto, flow, stables, fearGreed, commodities, vixDaily, gold, calendar, curves, spreads, bonds, etf, rates, filings, digest]);
 }
 
 export function Finance() {

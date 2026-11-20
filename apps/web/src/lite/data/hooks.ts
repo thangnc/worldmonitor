@@ -42,6 +42,8 @@ export const useStablecoins = () => useResource('stablecoins', src.loadStablecoi
 export const useFearGreed = () => useResource('fearGreed', src.loadFearGreed);
 export const useMacroCalendar = () => useResource('macroCalendar', src.loadMacroCalendar);
 export const useTreasuryCurves = () => useResource('treasuryCurves', src.loadTreasuryCurves);
+/** FRED's VIX closes: fetched only when the Yahoo quote is missing. */
+export const useVixDaily = (enabled: boolean) => useResource('vixDaily', src.loadVixDaily, enabled);
 export const useCreditSpreads = () => useResource('creditSpreads', src.loadCreditSpreads);
 export const useOtherBonds = () => useResource('otherBonds', src.loadOtherBonds);
 export const useShippingRates = () => useResource('shippingRates', src.loadShippingRates);

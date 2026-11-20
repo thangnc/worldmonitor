@@ -1,16 +1,20 @@
 /**
  * Finance & Crypto indicator feeds (spec: Early indicators › Catalogue, and
  * the Finance screen's indicator panel). Step 1 carries the four rules the
- * risk-alerts panel already evaluated; step 3 adds the rest of the catalogue.
+ * risk-alerts panel already evaluated; step 3 adds the rest of the catalogue;
+ * #115 adds the VIX and the dollar index (`riskGaugeFeeds`).
  */
 import type {
+  CommodityQuote,
   CryptoQuote,
   GetFearGreedIndexResponse,
+  GetGoldIntelligenceResponse,
   GetHyperliquidFlowResponse,
   ListStablecoinMarketsResponse,
 } from '@wm/contracts/generated/client/worldmonitor/market/v1/service_client';
+import type { FredObservation } from '@wm/contracts/generated/client/worldmonitor/economic/v1/service_client';
 import { price, signed } from '../format';
-import { feedState, sortFeeds, type FeedState, type Indicator } from './indicators';
+import { feedState, sortFeeds, withReading, type FeedState, type Indicator } from './indicators';
 import { DRIVERS, LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';
 import type { ResourceState } from './store';
 import { fearGreedState, thresholdState, type LiteItem } from './transforms';
@@ -27,9 +31,18 @@ const STABLECOIN_SYMBOL: Readonly<Record<string, string>> = { usdt: 'USDT', usdc
 /** Distance from $1 that fires, in percent (owner's choice, 2026-11-08). */
 export const STABLECOIN_DEPEG_PCT = 0.5;
 
+/** VIX level that fires, and its rise in a day that fires, in percent. */
+export const VIX_LEVEL = 25;
+export const VIX_JUMP_PCT = 20;
+/** Dollar index move in a day that fires, in percent. */
+export const DXY_MOVE_PCT = 1;
+/** FRED's daily VIX close, read only when the Yahoo quote is missing. */
+export const VIX_FRED_SERIES = 'VIXCLS';
+
 export const FINANCE_RULES =
   `BTC 24h move ≥ ${BTC_MOVE_PCT}%; BTC perp funding ≥ ${FUNDING_PCT_PER_HOUR}%/h; ` +
-  `a stablecoin more than ${STABLECOIN_DEPEG_PCT}% from $1; fear & greed ≤ 20 or ≥ 80. ` +
+  `a stablecoin more than ${STABLECOIN_DEPEG_PCT}% from $1; fear & greed ≤ 20 or ≥ 80; ` +
+  `VIX ≥ ${VIX_LEVEL} or up ≥ ${VIX_JUMP_PCT}% in a day; the dollar index ±${DXY_MOVE_PCT}% in a day. ` +
   'Linked news: finance digest stories from 6 h before to 1 h after.';
 
 const SUBJECTS: Readonly<Record<string, LinkSubject>> = {
@@ -37,6 +50,8 @@ const SUBJECTS: Readonly<Record<string, LinkSubject>> = {
   funding: { instruments: ['BTC'], entities: ['bitcoin'], drivers: ['funding', 'perpetual', 'perp', 'leverage', 'open interest', 'liquidation', 'liquidations'] },
   depeg: { drivers: ['stablecoin', 'stablecoins', 'depeg', 'peg', 'redemption', 'redemptions'] },
   sentiment: { instruments: ['BTC', 'ETH', '^GSPC'], drivers: ['fear', 'greed', 'sentiment', 'sell-off', 'selloff', 'risk-off', 'rally'] },
+  vix: { instruments: ['^VIX', '^GSPC'], drivers: ['VIX', 'volatility', 'fear gauge', 'sell-off', 'selloff', 'risk-off', 'market turmoil'] },
+  dollar: { instruments: ['DXY'], drivers: [...DRIVERS.DXY!, 'dollar index', 'greenback'] },
 };
 
 /** Stablecoin names a depeg story may use instead of the word "stablecoin". */
@@ -146,4 +161,107 @@ export function financeFeeds(input: {
     : null));
 
   return sortFeeds(feeds);
+}
+
+// ---- VIX and the dollar index (#115) ----------------------------------------
+
+/** About 4 pm New York, when the VIX closes, as an offset from UTC midnight. */
+const CLOSE_UTC_MS = 21 * 3_600_000;
+const ymdMs = (ymd: string) => Date.parse(`${ymd.slice(0, 10)}T00:00:00Z`);
+const dayMonth = (ts: number) => new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const notReady = <T,>(state: ResourceState<T>): ResourceState<T> => (state.status === 'ready' ? { status: 'empty', data: null, at: state.at } : state);
+
+export interface VixReading {
+  level: number;
+  /** Change from the prior close, in percent. */
+  changePct: number | null;
+  source: 'yahoo' | 'fred';
+  /** FRED close date (YYYY-MM-DD); Yahoo quotes carry none. */
+  date?: string;
+}
+
+/** The VIX from the Yahoo quote, or the latest FRED `VIXCLS` close when the quote is missing. */
+export function vixReading(quotes: readonly CommodityQuote[] | null | undefined, fred: readonly FredObservation[] | null | undefined): VixReading | null {
+  const q = quotes?.find((c) => c.symbol === '^VIX' && Number.isFinite(c.price) && c.price > 0);
+  if (q) return { level: q.price, changePct: Number.isFinite(q.change) ? q.change : null, source: 'yahoo' };
+  const obs = [...(fred ?? [])].filter((o) => Number.isFinite(o.value) && o.value > 0).sort((a, b) => a.date.localeCompare(b.date));
+  const latest = obs[obs.length - 1];
+  if (!latest) return null;
+  const prior = obs[obs.length - 2];
+  return { level: latest.value, changePct: prior ? ((latest.value - prior.value) / prior.value) * 100 : null, source: 'fred', date: latest.date.slice(0, 10) };
+}
+
+/** The dollar index from the gold drivers (Yahoo `DX-Y.NYB`). */
+export function dollarIndex(gold: GetGoldIntelligenceResponse | null | undefined): { value: number; changePct: number } | null {
+  const d = gold?.drivers.find((x) => x.symbol === 'DX-Y.NYB' || /^dxy$/i.test(x.label));
+  return d && Number.isFinite(d.value) && d.value > 0 && Number.isFinite(d.changePct) ? { value: d.value, changePct: d.changePct } : null;
+}
+
+export function riskGaugeFeeds(input: {
+  commodities: ResourceState<CommodityQuote[]>;
+  vixDaily: ResourceState<FredObservation[]>;
+  gold: ResourceState<GetGoldIntelligenceResponse>;
+  news: readonly LiteItem[];
+  now: number;
+}): FeedState[] {
+  const { commodities, vixDaily, gold, news, now } = input;
+  const link = (subject: LinkSubject, at: number) => linkNews(subject, news, at, LINK_WINDOW_HOURS.fin);
+
+  // VIX: level, or the rise in a day.
+  const vix = vixReading(commodities.status === 'ready' ? commodities.data : null, vixDaily.status === 'ready' ? vixDaily.data : null);
+  const fromFred = vix?.source === 'fred';
+  const vixAt = fromFred && vix?.date ? ymdMs(vix.date) + CLOSE_UTC_MS : commodities.status === 'ready' ? commodities.at : now;
+  const high = vix != null && vix.level + 1e-9 >= VIX_LEVEL;
+  const jump = vix?.changePct != null && vix.changePct + 1e-9 >= VIX_JUMP_PCT;
+  const vixChange = vix?.changePct != null ? `${signed(vix.changePct)} ${fromFred ? 'on the prior close' : 'today'}` : undefined;
+  const vixFired: Indicator | null = vix && (high || jump)
+    ? {
+        id: 'vix', domain: 'fin', name: 'Volatility · VIX',
+        value: vix.level.toFixed(2), change: vixChange, rule: `≥ ${VIX_LEVEL} or +${VIX_JUMP_PCT}% in a day`,
+        detail: [high ? `at or above ${VIX_LEVEL}` : null, jump ? `up ${vix.changePct!.toFixed(1)}% in a day` : null].filter(Boolean).join(' · '),
+        trust: { level: 'market', source: fromFred ? 'Cboe via FRED (VIXCLS)' : 'Cboe via Yahoo' }, at: vixAt,
+        ...(fromFred && vix.date ? { dataDate: `close ${dayMonth(ymdMs(vix.date))}` } : { updatedAt: vixAt }),
+        links: link(SUBJECTS.vix!, vixAt),
+      }
+    : null;
+  const vixSource: ResourceState<unknown> = vix
+    ? (fromFred ? vixDaily : commodities)
+    : commodities.status !== 'ready' ? commodities : vixDaily.status === 'ready' ? notReady(vixDaily) : vixDaily;
+  const vixFeed = feedState({
+    id: 'vix', name: 'Volatility · VIX', source: vixSource,
+    seeder: fromFred ? 'seed-fred-rates' : 'seed-commodity-quotes', cadenceMin: fromFred ? 3 * 1440 : 10,
+    dataAt: fromFred && vix?.date ? ymdMs(vix.date) : null, fired: vixFired, now,
+  });
+  const vixNear = vix != null && (vix.level >= VIX_LEVEL * 0.8 || (vix.changePct ?? 0) >= VIX_JUMP_PCT / 2);
+  const vixReadingText = vix ? `VIX ${vix.level.toFixed(2)}${vix.changePct != null ? ` ${signed(vix.changePct)}` : ''}` : null;
+  const vixDetail = vix
+    ? `${vixReadingText}${fromFred && vix.date ? ` · FRED close ${dayMonth(ymdMs(vix.date))}` : ''} · fires at ≥ ${VIX_LEVEL} or +${VIX_JUMP_PCT}%${vixNear ? ' · near the trigger' : ''}`
+    : null;
+
+  // Dollar index: the move in a day.
+  const dxy = gold.status === 'ready' ? dollarIndex(gold.data) : null;
+  const goldAt = gold.status === 'ready' ? parseTime(gold.data.updatedAt) : null;
+  const dxyAt = goldAt ?? (gold.status === 'ready' ? gold.at : now);
+  const dxyState = thresholdState(dxy?.changePct, DXY_MOVE_PCT * 0.6, DXY_MOVE_PCT);
+  const dxyFired: Indicator | null = dxy && dxyState === 'triggered'
+    ? {
+        id: 'dollar-index', domain: 'fin', name: 'Dollar index · DXY',
+        value: dxy.value.toFixed(2), change: `${signed(dxy.changePct, 2)} today`, rule: `±${DXY_MOVE_PCT}% in a day`,
+        detail: dxy.changePct > 0 ? 'Dollar stronger: squeezes foreign revenue and emerging markets' : 'Dollar weaker',
+        trust: { level: 'market', source: 'ICE dollar index via Yahoo' }, at: dxyAt, updatedAt: dxyAt,
+        links: link(SUBJECTS.dollar!, dxyAt),
+      }
+    : null;
+  const dxyFeed = feedState({
+    id: 'dollar-index', name: 'Dollar index · DXY', source: dxy ? gold : notReady(gold), seeder: 'seed-commodity-quotes',
+    cadenceMin: 10, dataAt: goldAt, fired: dxyFired, now,
+  });
+
+  return [
+    withReading(quietDetail(vixFeed, vixDetail), vixReadingText),
+    withReading(
+      quietDetail(dxyFeed, dxy ? nearDetail(dxyState, `DXY ${dxy.value.toFixed(2)} ${signed(dxy.changePct, 2)} · fires at ±${DXY_MOVE_PCT}%`) : null),
+      dxy ? `DXY ${dxy.value.toFixed(2)} ${signed(dxy.changePct, 2)}` : null,
+    ),
+  ];
 }

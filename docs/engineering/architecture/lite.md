@@ -146,7 +146,7 @@ The owner's view (2026-11-19): an indicator earns its place by the decision it i
 |---|---|---|---|
 | Treasury yields and the 2s10s spread | Daily | Cost of capital, valuations, when to refinance | Built |
 | Credit spreads | Daily | The earliest sign of credit stress: hold more cash, delay raising money | Built (#114) |
-| VIX and dollar index | Daily | Risk appetite; a strong dollar squeezes foreign revenue | #115 |
+| VIX and dollar index | Daily | Risk appetite; a strong dollar squeezes foreign revenue | Built (#115) |
 | Macro release surprise | Daily | The expected rate path | Built against the prior print; forecast stand-in #128 |
 | Rate decisions and expectations | Daily | Hedging and debt timing | Odds #125; decision calendar #130 |
 | Price moves (Brent, gold, S&P 500, BTC) | Daily | Input costs, safe-haven demand, risk appetite | Built |
@@ -221,7 +221,7 @@ A slow feed shows the date its data covers ("data to 3 Nov", "week to 7 Nov"), n
 | Perp positioning | `seed-hyperliquid-flow` (one venue, every 5 min: BTC, ETH, SOL, PAXG, oil, metals, natural gas, EUR, JPY; stress score from funding 30%, volume 25%, open interest 25%, basis 20%) | Stress score 60 or more (the seeder's `ALERT_THRESHOLD`) | Market data (Hyperliquid, one venue). No liquidation figures: no source has them |
 | Container and bulk freight | `seed-supply-chain-trade` (`supply_chain:shipping:v2`: SCFI weekly on Fridays, Baltic Dry daily) | SCFI 5% or more week on week, or the Baltic Dry 5% or more in a day | Official (Shanghai Shipping Exchange) for SCFI; Market data for the Baltic Dry |
 | Credit spreads | `seed-fred-rates` (FRED `BAMLH0A0HYM2` high yield and `BAMLC0A0CM` investment grade, the last 120 daily observations; key `FRED_API_KEY`), read through `GetFredSeriesBatch`. `seed-fear-greed` reads the same keys | High yield widens 20 bp or more in a day, or 50 bp or more in 5 trading days; investment grade widens 5 bp or more in a day | Market data (ICE BofA via FRED) |
-| VIX and dollar index | Planned (#115): Yahoo `^VIX` and `DX-Y.NYB`, already seeded by `seed-commodity-quotes` and `seed-fear-greed`; FRED `VIXCLS` as the daily fallback | VIX at 25 or above, or up 20% or more in a day; the dollar index moves 1% or more in a day | Market data |
+| VIX and dollar index | `seed-commodity-quotes` (Yahoo `^VIX` in the commodity quotes, and `DX-Y.NYB` in the gold drivers, `market:gold-extended`; no key). When the quote has no `^VIX`, the VIX reads the latest FRED `VIXCLS` close from `seed-fred-rates` and names its date | VIX at 25 or above, or up 20% or more on the prior close (a fall never fires); the dollar index moves 1% or more either way in a day | Market data (Cboe via Yahoo, or via FRED; ICE dollar index via Yahoo) |
 | Rate expectations | Planned (#125): Kalshi Fed decision markets (series `KXFED`; no key for market data) | The probability of a move at the next meeting changes 15 points or more in a day, or the most likely outcome changes | Market data (Kalshi, one venue) |
 | Central bank decisions | Planned (#130): the FOMC calendar page and the ECB press RSS, unless `seed-economic-calendar` already carries the meeting dates | A Fed or ECB decision published in the last 24 h | Official |
 | Fed liquidity | Planned (#136): NY Fed Markets API (reverse repo; no key) and FRED `WALCL` (balance sheet, already read by `seed-fear-greed`) | The balance sheet moves 50 bn USD or more in a week, or the reverse repo 100 bn USD or more in a day | Official data |

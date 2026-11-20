@@ -39,6 +39,7 @@ import type {
   GetEconomicCalendarResponse,
   GetGovernmentYieldCurveResponse,
   UsTreasuryParYieldCurve,
+  FredObservation,
 } from '@wm/contracts/generated/client/worldmonitor/economic/v1/service_client';
 import type { GetChokepointStatusResponse, GetShippingRatesResponse } from '@wm/contracts/generated/client/worldmonitor/supply_chain/v1/service_client';
 import type { ListSanctionsPressureResponse } from '@wm/contracts/generated/client/worldmonitor/sanctions/v1/service_client';
@@ -55,6 +56,7 @@ import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
 import { decodeRecentKev, decodeThreatHistory, type RecentKev, type ThreatHistory } from './tech-indicators';
 import { CREDIT_SERIES, decodeCreditSpreads, type CreditSpreads } from './finance-macro-indicators';
+import { VIX_FRED_SERIES } from './finance-indicators';
 import {
   ConflictServiceClient,
   CyberServiceClient,
@@ -235,7 +237,7 @@ export async function loadMarketQuotes(): Promise<MarketQuote[] | null> {
 /** Brent and gold futures: the tickers need them; the bootstrap set must contain them. */
 export const COMMODITY_SYMBOLS = ['BZ=F', 'GC=F'] as const;
 /** Fallback request when bootstrap misses: the tickers plus what market events link to. */
-const COMMODITY_FALLBACK_SYMBOLS = [...COMMODITY_SYMBOLS, 'CL=F', 'NG=F', 'SI=F', 'HG=F', 'EURUSD=X', 'USDJPY=X'] as const;
+const COMMODITY_FALLBACK_SYMBOLS = [...COMMODITY_SYMBOLS, '^VIX', 'CL=F', 'NG=F', 'SI=F', 'HG=F', 'EURUSD=X', 'USDJPY=X'] as const;
 
 /** Every seeded commodity and FX quote (market events link stories to them). */
 export async function loadCommodityQuotes(): Promise<CommodityQuote[] | null> {
@@ -299,6 +301,13 @@ export async function loadTreasuryCurves(): Promise<UsTreasuryParYieldCurve[] | 
 export async function loadCreditSpreads(): Promise<CreditSpreads | null> {
   const resp = await economic.getFredSeriesBatch({ seriesIds: [CREDIT_SERIES.hy, CREDIT_SERIES.ig], limit: 30 });
   return decodeCreditSpreads(resp.results);
+}
+
+/** FRED's daily VIX closes: the VIX indicator's fallback when the Yahoo quote is missing. */
+export async function loadVixDaily(): Promise<FredObservation[] | null> {
+  const resp = await economic.getFredSeriesBatch({ seriesIds: [VIX_FRED_SERIES], limit: 10 });
+  const obs = resp.results[VIX_FRED_SERIES]?.observations ?? [];
+  return obs.length ? obs : null;
 }
 
 /** Government bond markets whose 10-year the Finance indicators watch. */

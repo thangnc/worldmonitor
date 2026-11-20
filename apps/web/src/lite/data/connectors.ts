@@ -121,12 +121,12 @@ export const CONNECTORS: readonly Connector[] = [
   {
     id: 'commodities', name: 'Commodities and FX', domain: 'fin', kind: 'Market data', method: 'API',
     producer: 'seed-commodity-quotes', healthKeys: ['commodityQuotes'], maxStaleMin: 30, hosts: [yahoo],
-    usedBy: ['Tickers', 'Market pulse', 'Market event price links'],
+    usedBy: ['Tickers', 'Market pulse', 'Market event price links', 'Volatility · VIX indicator'],
   },
   {
     id: 'gold', name: 'Gold and dollar drivers', domain: 'fin', kind: 'Market data', method: 'API',
     producer: 'seed-commodity-quotes', healthKeys: ['goldExtended'], maxStaleMin: 30, hosts: [yahoo],
-    usedBy: ['Market pulse', 'Market event price links'],
+    usedBy: ['Market pulse', 'Market event price links', 'Dollar index · DXY indicator'],
   },
   {
     id: 'treasury', name: 'US Treasury par yields', domain: 'fin', kind: 'Official rates', method: 'API',
@@ -138,7 +138,7 @@ export const CONNECTORS: readonly Connector[] = [
     id: 'credit-spreads', name: 'Credit spreads · ICE BofA via FRED', domain: 'fin', kind: 'Market data', method: 'API',
     producer: 'seed-fred-rates', healthKeys: ['fredRatesSeeder'], maxStaleMin: 180,
     hosts: [{ host: 'api.stlouisfed.org', licence: 'terms-review' }],
-    usedBy: ['Credit spreads · HY / IG indicator'],
+    usedBy: ['Credit spreads · HY / IG indicator', 'Volatility · VIX indicator (FRED close when the quote is missing)'],
   },
   {
     id: 'other-bonds', name: 'Bond curves · DE GB JP', domain: 'fin', kind: 'Official rates', method: 'API',
