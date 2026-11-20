@@ -1093,3 +1093,125 @@ function sanctionsListFeeds(list: SanctionsList, source: ResourceState<EuSanctio
       : `Live · no new ${list.label} listing in ${EU_SANCTIONS_WINDOW_HOURS} h · ${listed}`;
   return feeds(base, sanctionsListIndicators(list, d, hotspots, news, now), quiet);
 }
+
+// ---- Elections (#141) ---------------------------------------------------------
+
+/** An election this close fires for a hotspot country. */
+export const ELECTION_WINDOW_DAYS = 30;
+/** seed-elections runs every 12 h. */
+export const ELECTIONS_CADENCE_MIN = 720;
+const ELECTIONS_MAX_CARDS = 6;
+const ELECTION_WORDS = /\b(elections?|electoral|vote[sd]?|voting|voters?|ballots?|polls?|referend(um|a|ums)|campaign(s|ing)?|candidates?)\b/i;
+
+export interface Election {
+  /** First voting day (YYYY-MM-DD). */
+  date: string;
+  /** Last voting day of a multi-day vote, else null. */
+  endDate: string | null;
+  /** ISO2. */
+  country: string;
+  countryName: string;
+  /** The office or chamber: "President (1st round)", "Senate and Congress of Deputies". */
+  body: string;
+  /** The election's Wikipedia article, or ''. */
+  url: string;
+}
+
+export interface ElectionsFeed {
+  fetchedAt: number;
+  /** The calendar pages read: last year's, this year's and next year's. */
+  pages: { year: number; found: boolean; entries: number }[];
+  elections: Election[];
+}
+
+const YMD = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The seeded payload (`intelligence:elections:v1`), or null when it is not one. */
+export function decodeElections(value: unknown): ElectionsFeed | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.elections) || !Array.isArray(v.pages)) return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const pages = (v.pages as Array<Record<string, unknown>>)
+    .filter((p) => p && Number.isInteger(p.year))
+    .map((p) => ({ year: p.year as number, found: p.found === true, entries: Number.isFinite(p.entries) ? (p.entries as number) : 0 }));
+  const elections: Election[] = [];
+  for (const raw of v.elections as Array<Record<string, unknown>>) {
+    const date = str(raw?.date);
+    const country = str(raw?.country).toUpperCase();
+    if (!YMD.test(date) || !/^[A-Z]{2}$/.test(country)) continue;
+    elections.push({
+      date, endDate: YMD.test(str(raw.endDate)) ? str(raw.endDate) : null, country, countryName: str(raw.countryName) || countryName(country),
+      body: str(raw.body), url: str(raw.url).startsWith('https://en.wikipedia.org/wiki/') ? str(raw.url) : '',
+    });
+  }
+  elections.sort((a, b) => a.date.localeCompare(b.date) || a.country.localeCompare(b.country));
+  return { fetchedAt: v.fetchedAt as number, pages, elections };
+}
+
+const ymdMs = (d: string) => Date.parse(`${d}T00:00:00Z`);
+/** Whole UTC days from now's day to the vote's first day. */
+const daysUntil = (e: Election, now: number) => Math.round((ymdMs(e.date) - ymdMs(new Date(now).toISOString().slice(0, 10))) / (24 * HOUR_MS));
+const inDays = (n: number) => (n <= 0 ? 'voting now' : n === 1 ? 'tomorrow' : `in ${n} days`);
+/** "29 Nov", "18–20 Sept", or "30 Nov–1 Dec" across a month end. */
+const voteDate = (e: Election) => {
+  if (!e.endDate || e.endDate === e.date) return dayMonth(ymdMs(e.date));
+  const end = dayMonth(ymdMs(e.endDate));
+  return e.date.slice(0, 7) === e.endDate.slice(0, 7) ? `${Number(e.date.slice(8))}–${end}` : `${dayMonth(ymdMs(e.date))}–${end}`;
+};
+
+/** Elections not over yet (by their last voting day) that start within ELECTION_WINDOW_DAYS, soonest first. */
+export function upcomingElections(data: ElectionsFeed, now: number): Election[] {
+  const today = new Date(now).toISOString().slice(0, 10);
+  return data.elections.filter((e) => (e.endDate ?? e.date) >= today && daysUntil(e, now) <= ELECTION_WINDOW_DAYS);
+}
+
+/** One card per upcoming election in a curated hotspot's country (the watchlist stand-in). */
+export function electionIndicators(data: ElectionsFeed, hotspots: readonly Place[], news: readonly LiteItem[], now: number): Indicator[] {
+  const byCountry = hotspotByCountry(hotspots);
+  return upcomingElections(data, now).filter((e) => byCountry.has(e.country)).slice(0, ELECTIONS_MAX_CARDS).map((e) => {
+    const links = linkNews({ countries: [{ code: e.country, name: e.countryName }], drivers: ['election', 'referendum', 'vote'] }, news, data.fetchedAt, LINK_WINDOW_HOURS.geo);
+    // A story links only when it is about the vote.
+    const stories = links.stories.filter((st) => ELECTION_WORDS.test(`${st.item.title} ${st.item.snippet ?? ''}`));
+    return {
+      id: `elections:${e.country}:${e.date}`,
+      domain: 'geo',
+      name: `Election · ${e.countryName}`,
+      // The voting days show once, in place of the clock time (dataDate).
+      value: inDays(daysUntil(e, now)),
+      rule: `national election ≤ ${ELECTION_WINDOW_DAYS} days, hotspot country`,
+      detail: e.body || undefined,
+      trust: { level: 'reported', source: 'Wikipedia (national electoral calendar)', ...(e.url ? { url: e.url } : {}) },
+      at: data.fetchedAt,
+      dataDate: `vote ${voteDate(e)}`,
+      updatedAt: data.fetchedAt,
+      links: { ...links, stories },
+      place: { countries: [e.country] },
+    } satisfies Indicator;
+  });
+}
+
+export function electionFeeds(source: ResourceState<ElectionsFeed>, hotspots: readonly Place[], news: readonly LiteItem[], now: number): FeedState[] {
+  const base = feedState({
+    id: 'elections', name: 'Elections · national', source, seeder: 'seed-elections',
+    cadenceMin: ELECTIONS_CADENCE_MIN, dataAt: source.data?.fetchedAt ?? null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !source.data) return [base];
+  const d = source.data;
+  const byCountry = hotspotByCountry(hotspots);
+  const soon = upcomingElections(d, now);
+  const today = new Date(now).toISOString().slice(0, 10);
+  const nextHot = d.elections.find((e) => (e.endDate ?? e.date) >= today && byCountry.has(e.country));
+  // This year's or next year's page that is missing, or found but with nothing dated read from it (a layout change):
+  // either hides part of the 30-day window, so the quiet line says so.
+  const year = new Date(now).getUTCFullYear();
+  const missing = d.pages.filter((p) => p.year >= year && !p.found).map((p) => p.year);
+  const unreadable = d.pages.filter((p) => p.year >= year && p.found && p.entries === 0).map((p) => p.year);
+  const quiet = [
+    `Live · no national election within ${ELECTION_WINDOW_DAYS} days in a hotspot country`,
+    soon.length ? `${soon.length} elsewhere, first ${soon[0]!.countryName} ${voteDate(soon[0]!)}` : null,
+    nextHot ? `next hotspot vote ${nextHot.countryName} ${voteDate(nextHot)}` : null,
+    missing.length ? `no ${missing.join(', ')} calendar yet` : null,
+    unreadable.length ? `${unreadable.join(', ')} calendar unreadable` : null,
+  ].filter(Boolean).join(' · ');
+  return feeds(base, electionIndicators(d, hotspots, news, now), quiet);
+}

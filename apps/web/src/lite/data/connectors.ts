@@ -269,6 +269,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['New sanctions · UK indicator'],
   },
   {
+    id: 'elections', name: 'National electoral calendar · Wikipedia', domain: 'geo', kind: 'Reported (Wikipedia, CC BY-SA 4.0). Only dates, countries and offices are shown, with a link to each article.', method: 'API',
+    producer: 'seed-elections', healthKeys: ['elections'], maxStaleMin: 1440,
+    hosts: [{ host: 'en.wikipedia.org', licence: 'terms-review' }],
+    usedBy: ['Elections indicator'],
+  },
+  {
     id: 'travel-advisories', name: 'Travel advisories · US State Department and UK FCDO', domain: 'geo', kind: 'Official notices', method: 'API',
     producer: 'seed-travel-advisories', healthKeys: ['travelLevels'], maxStaleMin: 360,
     hosts: [{ host: 'travel.state.gov', licence: 'terms-review' }, { host: 'www.gov.uk', licence: 'terms-review' }],

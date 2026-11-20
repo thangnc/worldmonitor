@@ -262,7 +262,7 @@ This generated inventory covers **861 active source hosts** representing **841 a
 | en.mehrnews.com (en.mehrnews.com) | feed — packages/shared/news-catalog.json |
 | en.sge.com.cn (en.sge.com.cn) | structured — scripts/seed-physical-premiums.mjs |
 | en.sse.net.cn (en.sse.net.cn) | structured — scripts/seed-supply-chain-trade.mjs |
-| en.wikipedia.org (en.wikipedia.org) | structured — packages/server/worldmonitor/intelligence/v1/get-country-facts.ts, scripts/seed-sovereign-wealth.mjs |
+| en.wikipedia.org (en.wikipedia.org) | structured — apps/web/src/lite/data/geo-watch.ts, packages/server/worldmonitor/intelligence/v1/get-country-facts.ts, scripts/seed-elections.mjs, scripts/seed-sovereign-wealth.mjs |
 | Enab Baladi English (english.enabbaladi.net) | feed — packages/shared/news-catalog.json |
 | energy.ec.europa.eu (energy.ec.europa.eu) | structured — scripts/backfill-fuel-prices-prev.mjs, scripts/seed-fuel-prices.mjs |
 | energy.worldmonitor.app (energy.worldmonitor.app) | Excluded / candidate — No current fetch observed |

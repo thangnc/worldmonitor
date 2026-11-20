@@ -31,7 +31,7 @@ import { MILITARY_QUERY_REGIONS } from '@wm/client/config/military';
 import { isConflictCounts, type ConflictCounts } from './conflict';
 import { isGpsHighCells, type GpsHighCells } from './geo-layers';
 import { isDdosWindows, type DdosWindows } from './tech-map';
-import { decodeCslAdditions, decodeEuSanctions, decodeFederalRegister, decodeUkSanctions, decodeTravelLevels, isCrossStraitSnapshot, type CslAdditionsFeed, type EmbassyAlerts, type EuSanctionsFeed, type FederalRegisterFeed, type TravelLevelsFeed } from './geo-watch';
+import { decodeCslAdditions, decodeElections, decodeEuSanctions, decodeFederalRegister, decodeUkSanctions, decodeTravelLevels, isCrossStraitSnapshot, type CslAdditionsFeed, type ElectionsFeed, type EmbassyAlerts, type EuSanctionsFeed, type FederalRegisterFeed, type TravelLevelsFeed } from './geo-watch';
 import type { CrossStraitActivitySnapshot } from '@wm/client/types/cross-strait-activity';
 import type { ListUkmtoIncidentsResponse } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';
 import { readUkmtoSnapshot } from '@wm/shared/ukmto-incidents';
@@ -468,6 +468,12 @@ export async function loadFederalRegister(): Promise<FederalRegisterFeed> {
 export async function loadEuSanctions(): Promise<EuSanctionsFeed> {
   await startBootstrap();
   return required('euSanctions', decodeEuSanctions(await ensureHydrated('euSanctions')));
+}
+
+/** Upcoming national elections from Wikipedia's electoral calendars (seed-elections, #141). */
+export async function loadElections(): Promise<ElectionsFeed> {
+  await startBootstrap();
+  return required('elections', decodeElections(await ensureHydrated('elections')));
 }
 
 /** New UK sanctions designations (seed-uk-sanctions, #140). */
