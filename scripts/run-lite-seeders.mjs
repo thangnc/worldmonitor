@@ -76,6 +76,8 @@ export const LITE_SEED_SECTIONS = [
   { label: 'Reverse-Repo', script: 'seed-reverse-repo.mjs', seedMetaKey: 'economic:reverse-repo', intervalMs: 3 * HOUR, timeoutMs: 60_000 },
   // DefiLlama's US$ stablecoin supply for the stablecoin supply indicator (#137).
   { label: 'Stablecoin-Supply', script: 'seed-stablecoin-supply.mjs', seedMetaKey: 'market:stablecoin-supply', intervalMs: 6 * HOUR, timeoutMs: 60_000 },
+  // EIA weekly petroleum figures (EIA_API_KEY) for the US crude stocks indicator (#139); the energy bundle runs it daily too.
+  { label: 'EIA-Petroleum', script: 'seed-eia-petroleum.mjs', seedMetaKey: 'energy:eia-petroleum', intervalMs: 24 * HOUR, timeoutMs: 90_000 },
   // Finnhub's earnings calendar (FINNHUB_API_KEY) for the Finance earnings card, the default stock list's dates (#138).
   { label: 'Earnings-Calendar', script: 'seed-earnings-calendar.mjs', seedMetaKey: 'market:earnings-calendar', intervalMs: 12 * HOUR, timeoutMs: 60_000 },
   // OpenRouter's model list for the AI models indicator and the Tech model tracker (#126).

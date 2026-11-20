@@ -53,6 +53,7 @@ export const useFedBalanceSheet = () => useResource('fedBalanceSheet', src.loadF
 export const useReverseRepo = () => useResource('reverseRepo', src.loadReverseRepo);
 export const useStablecoinSupply = () => useResource('stablecoinSupply', src.loadStablecoinSupply);
 export const useWatchlistEarnings = () => useResource('watchlistEarnings', src.loadWatchlistEarnings);
+export const useOilStocks = () => useResource('eiaPetroleum', src.loadOilStocks);
 export const useRateOdds = () => useResource('rateOdds', src.loadRateOdds);
 export const useCbDecisions = () => useResource('cbDecisions', src.loadCbDecisions);
 export const useMacroForecasts = () => useResource('macroForecasts', src.loadMacroForecasts);

@@ -133,6 +133,10 @@ import {
   creditSpreadFeed,
   decodeCreditSpreads,
   BALANCE_SHEET_SERIES,
+  OIL_STOCKS_WEEK_MBBL,
+  decodeOilStocks,
+  oilStocksFeed,
+  stockChange,
   EARNINGS_WATCH,
   watchlistEarnings,
   BALANCE_SHEET_WEEK_BN,
@@ -975,6 +979,50 @@ describe('Finance indicator rules, step 3', () => {
     const read = decodeReverseRepo(JSON.parse(JSON.stringify({ fetchedAt: AT - H, unit: 'USD', days })))!;
     const card = reverseRepoFeed({ rrp: ready(read), ...ctx });
     assert.equal(card.kind === 'fired' && card.indicator.change, '−$169.1bn d/d');
+  });
+
+  it(`fires on US crude stocks moving ${OIL_STOCKS_WEEK_MBBL}m barrels in a week (#139)`, async () => {
+    // EIA's weekly figures in thousand barrels; the week ends on a Friday and the report comes out the next Wednesday.
+    const s = (current: number, previous: number | null, date = '2026-10-30', previousDate = '2026-10-23') => ({ current, previous, date, previousDate, unit: 'thousand barrels' });
+    const payload = (o: Record<string, unknown>) => ready(decodeOilStocks({ wti: s(60, 59), ...o })!);
+    const fired = oilStocksFeed({ stocks: payload({ inventory: s(424_410, 407_000), gasoline: s(205_000, 206_100), distillate: s(110_000, 109_200) }), ...ctx });
+    assert.equal(fired.kind, 'fired');
+    if (fired.kind === 'fired') {
+      assert.equal(fired.indicator.id, 'oil-inventories');
+      assert.equal(fired.indicator.value, '424.4m bbl');
+      assert.equal(fired.indicator.change, '+17.4m bbl w/w');
+      assert.equal(fired.indicator.rule, 'crude stocks ±5m bbl in a week');
+      assert.equal(fired.indicator.detail, 'a build of 17.4m barrels in the week to 30 Oct · gasoline −1.1m bbl · distillate +0.8m bbl');
+      assert.equal(fired.indicator.dataDate, 'week to 30 Oct');
+      assert.deepEqual(fired.indicator.trust, { level: 'official', source: 'EIA weekly petroleum status' });
+      // Dated by the report: the Wednesday after the week, 10:30 New York time.
+      assert.equal(fired.indicator.at, newYorkTime('2026-11-04', 10, 30));
+    }
+    const quiet = oilStocksFeed({ stocks: payload({ inventory: s(417_797, 414_417) }), ...ctx });
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, '417.8m bbl, +3.4m bbl in the week to 30 Oct · fires at ±5m bbl a week · near the trigger');
+    // A draw fires too; a gap between the two figures is not a weekly change.
+    assert.equal(oilStocksFeed({ stocks: payload({ inventory: s(400_000, 406_000) }), ...ctx }).kind, 'fired');
+    assert.equal(stockChange(s(400_000, 420_000, '2026-10-30', '2026-10-16')), null);
+    assert.equal(oilStocksFeed({ stocks: payload({ inventory: s(400_000, 420_000, '2026-10-30', '2026-10-16') }), ...ctx }).kind, 'quiet');
+    // A report more than two weeks old is stale; no stocks at all is unavailable, naming the seeder.
+    assert.equal(oilStocksFeed({ stocks: payload({ inventory: s(424_410, 407_000, '2026-10-16', '2026-10-09') }), ...ctx }).kind, 'stale');
+    assert.equal(decodeOilStocks({ wti: s(60, 59) }), null);
+    // Products without crude (a failed crude request): not a calm quiet row.
+    const noCrude = oilStocksFeed({ stocks: payload({ gasoline: s(205_000, 206_100) }), ...ctx });
+    assert.notEqual(noCrude.kind, 'quiet');
+    assert.match('detail' in noCrude ? noCrude.detail : '', /seed-eia-petroleum/);
+    // The rule fires on the rounded change it shows: 4,951 thousand barrels reads +5.0m and fires; −10 reads +0.0m.
+    assert.equal(oilStocksFeed({ stocks: payload({ inventory: s(404_951, 400_000) }), ...ctx }).kind, 'fired');
+    assert.match((() => { const f = oilStocksFeed({ stocks: payload({ inventory: s(424_410, 407_000), distillate: s(107_149, 107_159) }), ...ctx }); return f.kind === 'fired' ? f.indicator.detail ?? '' : ''; })(), /distillate \+0\.0m bbl/);
+    const err = oilStocksFeed({ stocks: { status: 'error', data: null, at: AT, error: 'x' }, ...ctx });
+    assert.match(err.kind === 'unavailable' ? err.detail : '', /seed-eia-petroleum/);
+
+    // Producer → reader: the seeder's parsed series, through JSON.
+    const { parseSeries } = await import('../scripts/seed-eia-petroleum.mjs');
+    const inventory = parseSeries({ response: { data: [{ value: '424410', period: '2026-10-30', units: 'MBBL' }, { value: '407000', period: '2026-10-23', units: 'MBBL' }] } });
+    const read = decodeOilStocks(JSON.parse(JSON.stringify({ inventory })))!;
+    const card = oilStocksFeed({ stocks: ready(read), ...ctx });
+    assert.equal(card.kind === 'fired' && card.indicator.change, '+17.4m bbl w/w');
   });
 
   it('lists every step-3 feed, each naming its seeder when its source failed', () => {

@@ -77,6 +77,7 @@ export const MACRO_RULES =
   `a Fed or ECB rate decision published in the last ${CB_DECISION_WINDOW_HOURS} h; ` +
   `the high-yield spread widens ≥ ${HY_DAY_BP} bp in a day or ≥ ${HY_WEEK_BP} bp in 5 trading days, or the investment-grade spread widens ≥ ${IG_DAY_BP} bp in a day; ` +
   'the Fed balance sheet changes ≥ $50bn in a week (H.4.1), or reverse repo take-up changes ≥ $100bn in a day (NY Fed); ' +
+  'US commercial crude stocks change ≥ 5m barrels in a week (EIA); ' +
   `${ETF_SAME_WAY} or more spot bitcoin ETFs flow the same way; a Hyperliquid stress score ≥ ${PERP_STRESS}; ` +
   `SCFI ≥ ${FREIGHT_MOVE_PCT}% week on week or the Baltic Dry ≥ ${FREIGHT_MOVE_PCT}% in a day; ` +
   `an 8-K from a company in the default stock list, or any filer reporting item ${Object.keys(KEY_8K_ITEMS).join(', ')}.`;
@@ -1116,6 +1117,7 @@ export function financeMacroFeeds(input: {
   filings: ResourceState<ListMaterialEventsResponse>;
   balance?: ResourceState<FredObservation[]>;
   rrp?: ResourceState<ReverseRepo>;
+  stocks?: ResourceState<OilStocks>;
 } & Ctx): FeedState[] {
   return [
     macroFeed(input),
@@ -1129,6 +1131,7 @@ export function financeMacroFeeds(input: {
     filingsFeed(input),
     ...(input.balance ? [balanceSheetFeed({ ...input, balance: input.balance })] : []),
     ...(input.rrp ? [reverseRepoFeed({ ...input, rrp: input.rrp })] : []),
+    ...(input.stocks ? [oilStocksFeed({ ...input, stocks: input.stocks })] : []),
   ];
 }
 
@@ -1187,4 +1190,92 @@ export function watchlistEarnings(entries: readonly EarningsEntry[] | null | und
     });
   }
   return rows.sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol));
+}
+
+// ---- US oil inventories (#139) ------------------------------------------------
+
+/** A week-on-week change in US commercial crude stocks that fires, in million barrels. */
+export const OIL_STOCKS_WEEK_MBBL = 5;
+/** Phrases about oil stocks only: a bare "stockpiles" also matches ammunition, chip and grain stories. */
+const OIL_STOCK_DRIVERS = [
+  'crude inventories', 'crude inventory', 'crude stocks', 'crude stockpiles', 'oil inventories', 'oil stockpiles',
+  'EIA', 'Energy Information Administration', 'gasoline inventories', 'gasoline stocks', 'distillate stocks', 'distillate inventories',
+];
+
+export interface StockSeries {
+  /** Thousand barrels. */
+  current: number;
+  previous: number | null;
+  /** The week the figure is for (EIA's period, a Friday), and the week before. */
+  date: string;
+  previousDate: string;
+}
+
+export interface OilStocks {
+  crude: StockSeries | null;
+  gasoline: StockSeries | null;
+  distillate: StockSeries | null;
+}
+
+/** The seeded payload (`energy:eia-petroleum:v1`) cut to the stock series, or null when it has none. */
+export function decodeOilStocks(value: unknown): OilStocks | null {
+  const v = value as Record<string, Record<string, unknown> | undefined> | null;
+  if (!v || typeof v !== 'object') return null;
+  const series = (raw: Record<string, unknown> | undefined): StockSeries | null => {
+    const current = typeof raw?.current === 'number' && Number.isFinite(raw.current) ? raw.current : null;
+    const date = typeof raw?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.date) ? raw.date : null;
+    if (current === null || date === null) return null;
+    const previous = typeof raw?.previous === 'number' && Number.isFinite(raw.previous) ? raw.previous : null;
+    return { current, previous, date, previousDate: typeof raw?.previousDate === 'string' ? raw.previousDate : '' };
+  };
+  const out = { crude: series(v.inventory), gasoline: series(v.gasoline), distillate: series(v.distillate) };
+  return out.crude || out.gasoline || out.distillate ? out : null;
+}
+
+/**
+ * Week-on-week change in million barrels, or null without a figure for the week before. Before the seeder stored the
+ * previous week's date, the two figures were EIA's last two rows, which are consecutive weeks.
+ */
+export function stockChange(s: StockSeries | null): number | null {
+  if (!s || s.previous === null) return null;
+  if (s.previousDate && Math.round((ymdMs(s.date) - ymdMs(s.previousDate)) / DAY_MS) !== 7) return null;
+  // Rounded to the 0.1m barrels the card shows, so the rule fires on the number it displays.
+  return Math.round((s.current - s.previous) / 100) / 10;
+}
+
+const mbbl = (n: number) => `${n < 0 ? MINUS : '+'}${Math.abs(n).toFixed(1)}m`.replace(`${MINUS}0.0m`, '+0.0m');
+
+export function oilStocksFeed(input: { stocks: ResourceState<OilStocks> } & Ctx): FeedState {
+  const { stocks, now } = input;
+  const data = stocks.status === 'ready' ? stocks.data : null;
+  const crude = data?.crude ?? null;
+  const week = stockChange(crude);
+  // The weekly petroleum status report comes out the Wednesday after the week (a Friday) at 10:30 New York time.
+  const at = crude ? Math.min(now, newYorkTime(new Date(ymdMs(crude.date) + 5 * DAY_MS).toISOString().slice(0, 10), 10, 30)) : now;
+  const weekTo = crude ? `week to ${dayMonth(ymdMs(crude.date))}` : '';
+  const products = [
+    data?.gasoline ? `gasoline ${stockChange(data.gasoline) !== null ? `${mbbl(stockChange(data.gasoline)!)} bbl` : 'n/a'}` : null,
+    data?.distillate ? `distillate ${stockChange(data.distillate) !== null ? `${mbbl(stockChange(data.distillate)!)} bbl` : 'n/a'}` : null,
+  ].filter(Boolean).join(' · ');
+  const fires = week !== null && Math.abs(week) + 1e-9 >= OIL_STOCKS_WEEK_MBBL;
+  const indicator: Indicator | null = crude && fires
+    ? {
+        id: 'oil-inventories', domain: 'fin', name: 'US crude stocks · EIA',
+        value: `${(crude.current / 1000).toFixed(1)}m bbl`, change: `${mbbl(week!)} bbl w/w`,
+        rule: `crude stocks ±${OIL_STOCKS_WEEK_MBBL}m bbl in a week`,
+        detail: [`${week! < 0 ? 'a draw' : 'a build'} of ${Math.abs(week!).toFixed(1)}m barrels in the ${weekTo}`, products || null].filter(Boolean).join(' · '),
+        trust: { level: 'official', source: 'EIA weekly petroleum status' }, at, dataDate: weekTo,
+        links: link(input, { instruments: ['CL=F', 'BZ=F'], drivers: OIL_STOCK_DRIVERS }, at),
+      }
+    : null;
+  const feed = feedState({
+    // Without the crude series (one failed EIA request publishes the others), the row is unavailable, not quiet.
+    id: 'oil-inventories', name: 'US crude stocks · EIA', source: crude ? stocks : emptyOf(stocks), seeder: 'seed-eia-petroleum',
+    cadenceMin: 7 * 1440, dataAt: crude ? at : null, fired: indicator, now,
+  });
+  const reading = crude ? `crude ${(crude.current / 1000).toFixed(1)}m bbl${week !== null ? ` ${mbbl(week)}` : ''}` : null;
+  const near = week !== null && Math.abs(week) >= OIL_STOCKS_WEEK_MBBL / 2;
+  return withReading(quietDetail(feed, crude
+    ? `${(crude.current / 1000).toFixed(1)}m bbl, ${week !== null ? `${mbbl(week)} bbl` : 'no change read'} in the ${weekTo}${products ? ` · ${products}` : ''} · fires at ±${OIL_STOCKS_WEEK_MBBL}m bbl a week${near ? ' · near the trigger' : ''}`
+    : null), reading);
 }

@@ -623,6 +623,7 @@
       "scripts/data/spr-policies.json",
       "scripts/data/storage-facilities.json",
       "scripts/lib/llm-telemetry.cjs",
+      "scripts/lib/main-module.mjs",
       "scripts/nixpacks.toml",
       "scripts/package-lock.json",
       "scripts/package.json",
