@@ -9,7 +9,8 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Domain } from '../data/briefing';
 import { TRUST_LABEL, TRUST_MEANING, updatedLabel, type FeedState, type Indicator, type Trust } from '../data/indicators';
 import { offsetLabel, type NewsLinks } from '../data/news-link';
-import { cx } from './ui';
+import type { FeedGroup } from '../data/regions';
+import { Dot, TEXT, cx } from './ui';
 
 const DOMAIN_FULL: Readonly<Record<Domain, string>> = { geo: 'GEOPOLITICS', fin: 'FINANCE', tech: 'TECH & AI' };
 const DOMAIN_SHORT: Readonly<Record<Domain, string>> = { geo: 'GEO', fin: 'FIN', tech: 'AI' };
@@ -264,18 +265,33 @@ export function HealthDots({ feeds }: { feeds: readonly FeedState[] }) {
 
 /**
  * A feed list: fired feeds as compact cards that expand in place, the rest as
- * state rows. `onOpen` lets a screen focus the feed's map marker.
+ * state rows. `onOpen` lets a screen focus the feed's map marker. With
+ * `groups`, fired feeds show under a heading per group (Geopolitics: one per
+ * region) and `feeds` holds the rest, shown after them as one block.
  */
-export function IndicatorFeed({ feeds, now, onOpen }: { feeds: readonly FeedState[]; now: number; onOpen?: (feed: FeedState) => void }) {
+export function IndicatorFeed({ feeds, groups, now, onOpen }: { feeds: readonly FeedState[]; groups?: readonly FeedGroup[]; now: number; onOpen?: (feed: FeedState) => void }) {
   const [open, setOpen] = useState<string | null>(null);
+  const row = (f: FeedState) => {
+    if (f.kind !== 'fired') return <FeedStateRow key={f.id} feed={f} />;
+    return open === f.id
+      ? <IndicatorCard key={f.id} indicator={f.indicator} now={now} onCollapse={() => setOpen(null)} />
+      : <IndicatorCardCompact key={f.id} indicator={f.indicator} onExpand={() => { setOpen(f.id); onOpen?.(f); }} />;
+  };
   return (
     <div class="flex flex-col gap-[10px]" data-testid="indicator-feed">
-      {feeds.map((f) => {
-        if (f.kind !== 'fired') return <FeedStateRow key={f.id} feed={f} />;
-        return open === f.id
-          ? <IndicatorCard key={f.id} indicator={f.indicator} now={now} onCollapse={() => setOpen(null)} />
-          : <IndicatorCardCompact key={f.id} indicator={f.indicator} onExpand={() => { setOpen(f.id); onOpen?.(f); }} />;
-      })}
+      {groups?.map((g) => (
+        <section key={g.id} class="flex flex-col gap-[8px]" data-feed-group={g.id} aria-label={`${g.name}: ${g.feeds.length} fired`}>
+          <h3 class="flex items-center gap-[6px] pt-[2px] text-[11px] font-semibold text-muted">
+            {g.level ? <Dot tone={g.level.tone} /> : null}
+            <span class="truncate">{g.name}</span>
+            {g.level ? <span class={cx('font-normal', TEXT[g.level.tone])}>{g.level.label}</span> : null}
+            <span class="ml-auto font-mono text-[10px] font-normal text-dim">{g.feeds.length} fired</span>
+          </h3>
+          {g.feeds.map(row)}
+        </section>
+      ))}
+      {groups?.length && feeds.length ? <div class="mt-[2px] border-t border-line" aria-hidden="true" /> : null}
+      {feeds.map(row)}
     </div>
   );
 }

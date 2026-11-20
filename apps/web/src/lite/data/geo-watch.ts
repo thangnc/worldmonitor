@@ -9,7 +9,7 @@ import type { ChokepointInfo, GetChokepointStatusResponse } from '@wm/contracts/
 import type { SecurityAdvisoryItem } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
 import type { CrossStraitActivitySnapshot, TaiwanMndActivityObservation } from '@wm/client/types/cross-strait-activity';
 import { countryName } from './conflict';
-import { feeds, hotspotSubject, type Place } from './geo-layers';
+import { feeds, hotspotPlace, hotspotSubject, type Place } from './geo-layers';
 import { feedState, type FeedState, type Indicator } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews } from './news-link';
 import type { ResourceState } from './store';
@@ -92,6 +92,7 @@ export function chokepointIndicators(resp: GetChokepointStatusResponse, news: re
       dataDate: day && end ? `data to ${dayMonth(end)}` : undefined,
       updatedAt: Number.isFinite(fetchedAt) ? fetchedAt : undefined,
       links: linkNews({ drivers: [...new Set([cp.name, short])] }, news, at, LINK_WINDOW_HOURS.geo),
+      place: Number.isFinite(cp.lat) && Number.isFinite(cp.lon) ? { lat: cp.lat, lon: cp.lon } : undefined,
     });
   }
   return out;
@@ -224,6 +225,7 @@ export function taiwanStraitIndicators(snapshot: CrossStraitActivitySnapshot, ne
       { countries: [{ code: 'TW', name: countryName('TW') }], drivers: ['Taiwan Strait', 'PLA', 'Chinese military'] },
       news, at, LINK_WINDOW_HOURS.geo,
     ),
+    place: { countries: ['TW'] },
   }];
 }
 
@@ -303,6 +305,7 @@ export function embassyAlertIndicators(data: EmbassyAlerts, hotspots: readonly P
       at: Math.min(at, now),
       updatedAt: data.fetchedAt ?? undefined,
       links: linkNews({ ...hotspotSubject(hotspot), drivers: [hotspot.name, 'embassy'] }, news, Math.min(at, now), LINK_WINDOW_HOURS.geo),
+      place: { ...hotspotPlace(hotspot), countries: [a.country] },
     });
   }
   return out.sort((x, y) => y.at - x.at);

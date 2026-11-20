@@ -34,6 +34,7 @@ import {
   type ThreatHistory,
 } from '../apps/web/src/lite/data/tech-indicators.ts';
 import type { LiteItem } from '../apps/web/src/lite/data/transforms.ts';
+import { groupFeedsByRegion, regionOfPlace } from '../apps/web/src/lite/data/regions.ts';
 import type { MilitaryFlight } from '../packages/contracts/generated/client/worldmonitor/military/v1/service_client.ts';
 import type { ListUkmtoIncidentsResponse } from '../packages/contracts/generated/client/worldmonitor/maritime/v1/service_client.ts';
 import {
@@ -465,6 +466,9 @@ describe('GDELT reported violence', () => {
   it('says why nothing fired: no data, late, building history, or quiet', () => {
     assert.equal(violenceFeeds(null, 'error', [], NOW)[0]?.kind, 'unavailable');
     assert.equal(violenceFeeds(ukraine(5), 'ready', [], NOW)[0]?.kind, 'fired');
+    // Its place groups it under its region on the panel (#116).
+    const spike = violenceFeeds(ukraine(5), 'ready', [], NOW)[0];
+    assert.deepEqual(spike?.kind === 'fired' && spike.indicator.place, { countries: ['UA'] });
     assert.equal(violenceFeeds(build({ day: () => ({ UA: 40 }), updatedAt: NOW - 45 * 60_000 }), 'ready', [], NOW)[0]?.kind, 'stale');
     const building = violenceFeeds(build({ dayCohorts: () => 10 }), 'ready', [], NOW)[0];
     assert.equal(building?.kind, 'unavailable');
@@ -1289,4 +1293,59 @@ describe('Geopolitics watch feeds: chokepoint transits, Taiwan Strait, embassy a
     const stale = embassyAlertFeeds(ready(alerts([])), HOTSPOTS, [], AT + 3 * H);
     assert.equal(stale[0]!.kind, 'stale');
   });
+});
+
+describe('Geopolitics indicator panel grouped by region (#116)', () => {
+  const fired = (id: string, at: number, place?: Indicator['place']): FeedState => ({
+    kind: 'fired', id, name: id,
+    indicator: { id, domain: 'geo', name: id, value: '1', rule: 'r', trust: { level: 'reported', source: 's' }, at, links: { stories: [], searched: 0, windowHours: 24 }, place },
+  });
+  const tile = (id: string, score: number | null, level = 'Elevated', tone: 'elev' | 'crit' = 'elev') => ({ id, name: id, level, tone, lead: score == null ? null : { name: 'x', score } });
+
+  it('places by country first, else by the smallest region view holding the point, else nowhere', () => {
+    assert.equal(regionOfPlace({ countries: ['UA'] })?.id, 'eastern-europe');
+    assert.equal(regionOfPlace({ countries: ['TW'] })?.id, 'taiwan-strait');
+    // Bab el-Mandeb sits in both the Red Sea and Gulf views; the Red Sea view is smaller.
+    assert.equal(regionOfPlace({ lat: 12.6, lon: 43.3 })?.id, 'red-sea');
+    // Hormuz sits only in the Gulf view.
+    assert.equal(regionOfPlace({ lat: 26.6, lon: 56.3 })?.id, 'gulf-iran');
+    // A country outside every region wins over a point inside one.
+    assert.equal(regionOfPlace({ countries: ['DE'], lat: 26.6, lon: 56.3 })?.id, 'gulf-iran');
+    assert.equal(regionOfPlace({ countries: ['DE'] }), null);
+    assert.equal(regionOfPlace({ lat: 0, lon: -150 }), null);
+    assert.equal(regionOfPlace(undefined), null);
+  });
+
+  it('orders regions by live level, newest first inside, Other last, and keeps the rest as one block', () => {
+    const quiet: FeedState = { kind: 'quiet', id: 'sea', name: 'sea', detail: 'Live' };
+    const down: FeedState = { kind: 'unavailable', id: 'airspace', name: 'airspace', detail: 'x' };
+    const feeds = [
+      quiet,
+      fired('violence:UA', AT - 3 * H, { countries: ['UA'] }),
+      fired('gps-region:europe', AT - H),
+      fired('aircraft:kyiv', AT - H, { countries: ['UA'], lat: 50.45, lon: 30.5 }),
+      fired('chokepoint:hormuz', AT - 2 * H, { lat: 26.6, lon: 56.3 }),
+      fired('taiwan', AT, { countries: ['TW'] }),
+      down,
+    ];
+    const tiles = [tile('red-sea', 4), tile('eastern-europe', 3.5), tile('gulf-iran', 4.4, 'Critical', 'crit'), tile('taiwan-strait', null)];
+    const { groups, rest } = groupFeedsByRegion(feeds, tiles);
+    assert.deepEqual(groups.map((g) => [g.id, g.feeds.map((f) => f.id)]), [
+      ['gulf-iran', ['chokepoint:hormuz']],
+      ['eastern-europe', ['aircraft:kyiv', 'violence:UA']],
+      ['taiwan-strait', ['taiwan']],
+      ['other', ['gps-region:europe']],
+    ]);
+    assert.deepEqual(groups[0]!.level, { label: 'Critical', tone: 'crit' });
+    // An unscored region shows no level; "Other" never does.
+    assert.equal(groups[2]!.level, undefined);
+    assert.equal(groups[3]!.name, 'Other');
+    assert.deepEqual(rest.map((f) => f.id), ['sea', 'airspace']);
+
+    // Equal scores keep the strip's order; nothing fired means no groups.
+    const tied = groupFeedsByRegion([fired('taiwan', AT, { countries: ['TW'] }), fired('violence:YE', AT, { countries: ['YE'] })], []);
+    assert.deepEqual(tied.groups.map((g) => g.id), ['red-sea', 'taiwan-strait']);
+    assert.deepEqual(groupFeedsByRegion([quiet, down], tiles).groups, []);
+  });
+
 });

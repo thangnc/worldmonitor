@@ -10,7 +10,7 @@ import type { Hotspot } from '@wm/client/types';
 import type { MilitaryAircraftType, MilitaryFlight } from '@wm/contracts/generated/client/worldmonitor/military/v1/service_client';
 import type { ListUkmtoIncidentsResponse, UkmtoIncident } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';
 import { countryName, shadingBasis } from './conflict';
-import { feedState, type FeedState, type Indicator } from './indicators';
+import { feedState, type FeedState, type Indicator, type IndicatorPlace } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';
 import type { ResourceState } from './store';
 import { GEO_REGION_LABEL, regionOfPoint, type LiteItem, type TimeRange, type Tone } from './transforms';
@@ -21,10 +21,18 @@ const DAY_MS = 86_400_000;
 
 export type Place = Pick<Hotspot, 'id' | 'name' | 'lat' | 'lon'>;
 
-export function hotspotSubject(hotspot: Place): LinkSubject {
+function hotspotCodes(hotspot: Place): string[] {
   const mapped = HOTSPOT_COUNTRY_MAP[hotspot.id];
-  const codes = mapped == null ? [] : typeof mapped === 'string' ? [mapped] : [...mapped];
-  return { countries: codes.map((code) => ({ code, name: countryName(code) })), drivers: [hotspot.name] };
+  return mapped == null ? [] : typeof mapped === 'string' ? [mapped] : [...mapped];
+}
+
+export function hotspotSubject(hotspot: Place): LinkSubject {
+  return { countries: hotspotCodes(hotspot).map((code) => ({ code, name: countryName(code) })), drivers: [hotspot.name] };
+}
+
+/** A hotspot's countries and point, for grouping its indicators by region. */
+export function hotspotPlace(hotspot: Place): IndicatorPlace {
+  return { countries: hotspotCodes(hotspot), lat: hotspot.lat, lon: hotspot.lon };
 }
 
 /** Fired indicators, or the feed's one state row whose quiet line says what was checked. */
@@ -125,6 +133,7 @@ export function aircraftIndicators(clusters: readonly AircraftCluster[], news: r
         at,
         updatedAt: at,
         links: linkNews(hotspotSubject(c.hotspot), news, at, LINK_WINDOW_HOURS.geo),
+        place: hotspotPlace(c.hotspot),
       };
     });
 }
@@ -194,6 +203,7 @@ export function seaIncidentIndicators(resp: ListUkmtoIncidentsResponse, news: re
         at,
         updatedAt: resp.fetchedAt,
         links: linkNews({ drivers: ['UKMTO', ...areas] }, news, at, LINK_WINDOW_HOURS.geo),
+        place: i.location ? { lat: i.location.latitude, lon: i.location.longitude } : undefined,
       };
     });
 }
@@ -293,6 +303,7 @@ export function gpsIndicators(cells: GpsHighCells, hotspots: readonly Place[], n
       change: 'none the day before',
       rule: `new high cell ≤ ${GPS_RADIUS_KM} km`,
       links: linkNews({ ...hotspotSubject(hotspot), drivers: [hotspot.name, 'GPS', 'jamming', 'spoofing'] }, news, at, LINK_WINDOW_HOURS.geo),
+      place: hotspotPlace(hotspot),
     });
   }
   const before = regionCounts(cells.prevHigh);

@@ -45,7 +45,7 @@ import {
   seaIncidentState,
 } from '../data/geo-layers';
 import { shippingLanes } from '../data/markets-map';
-import { ESCALATION_REGIONS, leadCountry } from '../data/regions';
+import { ESCALATION_REGIONS, groupFeedsByRegion, leadCountry } from '../data/regions';
 import { ucdpBackgroundLabel, ucdpMarkers, ucdpNewest } from '../data/ucdp';
 import {
   VIOLENCE_RULE,
@@ -119,6 +119,7 @@ export function Geopolitics() {
   const [focus, setFocus] = useState<string | null>(null);
   const digest = useDigest('full');
   const risk = useRiskScores();
+  const { escalation, tiles } = useEscalation();
 
   const incidents = useMemo(
     () => (digest.status === 'ready' ? selectIncidents(digest.data) : []),
@@ -170,11 +171,12 @@ export function Geopolitics() {
               if (picked && region !== 'all' && picked.area !== region) setRegion(picked.area);
               setArea(id);
             }}
-            layers={layers} onLayers={setLayers} range={range} onRange={setRange} focus={focus} onFocus={setFocus} />
+            layers={layers} onLayers={setLayers} range={range} onRange={setRange} focus={focus} onFocus={setFocus}
+            escalation={escalation} tiles={tiles} />
           <IncidentsCard state={digest} rows={visible.slice(0, 6)} total={visible.length} />
         </div>
         <div class="flex w-full flex-col gap-4 wide:w-[352px] wide:shrink-0">
-          <GeoIndicators onOpen={(feed) => setFocus(mapIdForFeed(feed))} />
+          <GeoIndicators tiles={tiles} onOpen={(feed) => setFocus(mapIdForFeed(feed))} />
           <Timeline incidents={inRange} region={region} />
           <EvidenceMix state={digest} region={region} range={range} />
         </div>
@@ -209,12 +211,55 @@ function mapIdForFeed(feed: FeedState): string | null {
   return null;
 }
 
+type Escalation = ReturnType<typeof scoreHotspots>;
+
+/**
+ * The live hotspot scores and the region strip's tiles, from whichever inputs
+ * have loaded. The map draws both; the indicator panel orders its region
+ * groups by the tiles' levels.
+ */
+function useEscalation(): { escalation: Escalation; tiles: RegionTile[] } {
+  const digest = useDigest('full');
+  const risk = useRiskScores();
+  const unrest = useUnrestEvents();
+  const earthquakes = useEarthquakes();
+  const flights = useMilitaryFlights();
+  const conflict = useConflictCounts();
+  const escalation = useMemo(
+    () =>
+      scoreHotspots(
+        INTEL_HOTSPOTS,
+        {
+          news: digest.status === 'ready' ? digestItems(digest.data) : null,
+          ciiScores: risk.status === 'ready' ? risk.data.ciiScores : null,
+          unrest: unrest.status === 'ready' ? unrest.data : null,
+          earthquakes: earthquakes.status === 'ready' ? earthquakes.data : null,
+          flights: flights.status === 'ready' ? flights.data : null,
+        },
+        Date.now(),
+      ),
+    [digest, risk, unrest, earthquakes, flights],
+  );
+  const counts = conflict.status === 'ready' ? conflict.data : null;
+  const tiles = useMemo(
+    () =>
+      regionStrip(
+        ESCALATION_REGIONS,
+        escalation.map(({ hotspot, score }) => ({ hotspot, score: score.combinedScore, level: escalationLevel(score.combinedScore) })),
+        counts,
+        Date.now(),
+      ),
+    [escalation, counts],
+  );
+  return { escalation, tiles };
+}
+
 const HOUR_MS = 3_600_000;
 const MAX_AIRCRAFT_PINS = 150;
 type CellBoundary = (h3: string) => number[][];
 
 function ConflictMap({
-  region, area, onArea, layers, onLayers, range, onRange, focus, onFocus,
+  region, area, onArea, layers, onLayers, range, onRange, focus, onFocus, escalation, tiles,
 }: {
   region: GeoRegion;
   /** The named region a strip tile zoomed to, or null. */
@@ -227,12 +272,11 @@ function ConflictMap({
   onRange: (range: TimeRange) => void;
   focus: string | null;
   onFocus: (id: string | null) => void;
+  escalation: Escalation;
+  tiles: RegionTile[];
 }) {
   const ucdp = useUcdpEvents();
   const digest = useDigest('full');
-  const risk = useRiskScores();
-  const unrest = useUnrestEvents();
-  const earthquakes = useEarthquakes();
   const flights = useMilitaryFlights();
   const conflict = useConflictCounts();
   const sea = useSeaIncidents();
@@ -251,23 +295,6 @@ function ConflictMap({
       live = false;
     };
   }, [layers.gps, boundary]);
-
-  // The dashboard's live hotspot score, from whichever of its inputs have loaded.
-  const escalation = useMemo(
-    () =>
-      scoreHotspots(
-        INTEL_HOTSPOTS,
-        {
-          news: digest.status === 'ready' ? digestItems(digest.data) : null,
-          ciiScores: risk.status === 'ready' ? risk.data.ciiScores : null,
-          unrest: unrest.status === 'ready' ? unrest.data : null,
-          earthquakes: earthquakes.status === 'ready' ? earthquakes.data : null,
-          flights: flights.status === 'ready' ? flights.data : null,
-        },
-        Date.now(),
-      ),
-    [digest, risk, unrest, earthquakes, flights],
-  );
 
   const counts = conflict.status === 'ready' ? conflict.data : null;
   const shading = useMemo(() => (counts ? countryShading(counts, range, Date.now()) : null), [counts, range]);
@@ -457,16 +484,6 @@ function ConflictMap({
     };
   }, [layers.violence, shading, news, range]);
 
-  const tiles = useMemo(
-    () =>
-      regionStrip(
-        ESCALATION_REGIONS,
-        escalation.map(({ hotspot, score }) => ({ hotspot, score: score.combinedScore, level: escalationLevel(score.combinedScore) })),
-        counts,
-        Date.now(),
-      ),
-    [escalation, counts],
-  );
   const zoomed = ESCALATION_REGIONS.find((r) => r.id === area);
 
   const unavailable = [
@@ -659,7 +676,7 @@ function RegionStrip({ tiles, region, area, onSelect }: { tiles: RegionTile[]; r
 const AIRSPACE_FEED: FeedState = { kind: 'unavailable', id: 'airspace', name: 'Airspace closures · NOTAM', detail: 'Awaiting FAA access' };
 
 /** The screen's indicator panel (spec: Early indicators › Catalogue, geopolitics rows). A card opens its marker on the map. */
-function GeoIndicators({ onOpen }: { onOpen: (feed: FeedState) => void }) {
+function GeoIndicators({ tiles, onOpen }: { tiles: readonly RegionTile[]; onOpen: (feed: FeedState) => void }) {
   const conflict = useConflictCounts();
   const digest = useDigest('full');
   const flights = useMilitaryFlights();
@@ -683,6 +700,7 @@ function GeoIndicators({ onOpen }: { onOpen: (feed: FeedState) => void }) {
     ]);
   }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy]);
   const counts = feedCounts(feeds);
+  const { groups, rest } = useMemo(() => groupFeedsByRegion(feeds, tiles), [feeds, tiles]);
   const rules = [
     `Reported violence: ${VIOLENCE_RULE}, per country, GDELT material-conflict articles.`,
     `Military aircraft: ${AIRCRAFT_MIN} or more airborne within ${AIRCRAFT_RADIUS_KM} km of a curated hotspot.`,
@@ -692,14 +710,15 @@ function GeoIndicators({ onOpen }: { onOpen: (feed: FeedState) => void }) {
     `Taiwan Strait: PLA aircraft or PLAN ships at ${TAIWAN_RATIO}× their 30-day median or more (at least ${TAIWAN_MIN.plaAircraftSorties} aircraft or ${TAIWAN_MIN.planShips} ships), Taiwan MND.`,
     `Embassy alerts: a US embassy alert in the last ${EMBASSY_WINDOW_HOURS} h for a curated hotspot's country (the watchlist stand-in).`,
     'Linked news: digest stories naming the country, place or sea area, 24 h before to 1 h after.',
+    'Fired indicators are grouped by region (a country in the region, else its map area), the region with the highest live hotspot score first, newest first inside; the rest are under Other.',
   ].join(' ');
   return (
     <Panel title="Indicators" right={<><HealthDots feeds={feeds} /><DerivedTag how={rules} /></>} testId="geo-indicators">
       {/* The counts sit under the title, as on Finance: beside it they wrap in the narrow column. */}
       <p class="-mt-1 text-[11.5px] text-dim" data-testid="indicator-counts">
-        {[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`, 'newest first'].filter(Boolean).join(' · ')}
+        {[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`, groups.length ? 'by region' : 'newest first'].filter(Boolean).join(' · ')}
       </p>
-      <IndicatorFeed feeds={feeds} now={Date.now()} onOpen={onOpen} />
+      <IndicatorFeed feeds={rest} groups={groups} now={Date.now()} onOpen={onOpen} />
     </Panel>
   );
 }
