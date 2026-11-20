@@ -71,6 +71,8 @@ export const LITE_SEED_SECTIONS = [
   { label: 'Rate-Odds', script: 'seed-rate-odds.mjs', seedMetaKey: 'economic:rate-odds', intervalMs: 60 * MIN, timeoutMs: 120_000 },
   // OpenRouter's model list for the AI models indicator and the Tech model tracker (#126).
   { label: 'AI-Models', script: 'seed-ai-models.mjs', seedMetaKey: 'tech:ai-models', intervalMs: 6 * HOUR, timeoutMs: 120_000 },
+  // EU and US AI and data rules for the AI regulation indicator and the Tech policy panel (#127).
+  { label: 'AI-Regulation', script: 'seed-ai-regulation.mjs', seedMetaKey: 'policy:ai-regulation', intervalMs: 2 * HOUR, timeoutMs: 180_000 },
 
   // Finance & Crypto
   { label: 'Crypto-Quotes', script: 'seed-crypto-quotes.mjs', seedMetaKey: 'market:crypto', intervalMs: 5 * MIN, timeoutMs: 120_000 },

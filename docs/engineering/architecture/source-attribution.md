@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **847 active source hosts** representing **827 active providers** (**363 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **849 active source hosts** representing **829 active providers** (**365 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -229,6 +229,7 @@ This generated inventory covers **847 active source hosts** representing **827 a
 | dfrlab.org (dfrlab.org) | feed — packages/shared/news-catalog.json |
 | Dhaka Tribune (dhakatribune.com) | feed — packages/shared/news-catalog.json |
 | dhs.gov (dhs.gov) | feed — packages/shared/news-catalog.json |
+| digital-strategy.ec.europa.eu (digital-strategy.ec.europa.eu) | structured — scripts/seed-ai-regulation.mjs |
 | discord.com (discord.com) | Excluded / candidate — No current fetch observed |
 | discord.gg (discord.gg) | Excluded / candidate — No current fetch observed |
 | discordstatus.com (discordstatus.com) | operational-status — packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts |
@@ -280,6 +281,7 @@ This generated inventory covers **847 active source hosts** representing **827 a
 | ertflix.ascdn.broadpeak.io (ertflix.ascdn.broadpeak.io) | Excluded / candidate — No current fetch observed |
 | es.euronews.com (es.euronews.com) | feed — packages/shared/news-catalog.json |
 | eu-startups.com (eu-startups.com) | feed — packages/shared/news-catalog.json |
+| eur-lex.europa.eu (eur-lex.europa.eu) | structured — scripts/seed-ai-regulation.mjs |
 | euractiv.com (euractiv.com) | Excluded / candidate — No current fetch observed |
 | eurasianet.org (eurasianet.org) | feed — packages/shared/news-catalog.json |
 | euromaidanpress.com (euromaidanpress.com) | feed — packages/shared/news-catalog.json |
@@ -793,7 +795,7 @@ This generated inventory covers **847 active source hosts** representing **827 a
 | World Bank Open Data (api.worldbank.org) | structured — packages/server/worldmonitor/economic/v1/list-world-bank-indicators.ts, packages/server/worldmonitor/resilience/v1/_dimension-scorers.ts, packages/server/worldmonitor/resilience/v1/_indicator-source-policy.ts, scripts/_defense-industrial-source.mjs, +13 more |
 | World Monitor hosted API (api.worldmonitor.app) | feed+structured — packages/client/services/runtime.ts, packages/shared/news-catalog.json, scripts/_widget-data-policy.cjs, scripts/ais-relay.cjs, +16 more |
 | World Monitor proxy (proxy.worldmonitor.app) | structured — packages/client/utils/proxy.ts, scripts/seed-security-advisories.mjs |
-| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/server/_shared/brief-url.ts, +21 more |
+| World Monitor web app (worldmonitor.app) | structured — api/seed-contract-probe.ts, packages/client/bootstrap/web-vitals-utils.ts, packages/client/config/web-origin.ts, packages/server/_shared/brief-url.ts, +22 more |
 | World Monitor web app (www.worldmonitor.app) | structured — api/_cors.js, api/not-found.ts, packages/server/_shared/deprecation-policy.ts, packages/server/worldmonitor/intelligence/v1/_country-brief-evidence.ts, +10 more |
 | WorldMonitor test origin (worldmonitor.invalid) | structured — api/_md-url-twin.ts, packages/client/shared/public-rpc-cache.ts |
 | worldmonitor.mintlify.dev (worldmonitor.mintlify.dev) | Excluded / candidate — No current fetch observed |
@@ -882,7 +884,7 @@ This generated inventory covers **847 active source hosts** representing **827 a
 | www.facebook.com (www.facebook.com) | Excluded / candidate — No current fetch observed |
 | www.factal.com (www.factal.com) | Excluded / candidate — No current fetch observed |
 | www.fao.org (www.fao.org) | feed+structured — packages/shared/news-catalog.json, scripts/lib/food-prices-fetch.mjs, scripts/lib/food-prices.mjs, scripts/seed-fao-food-price-index.mjs |
-| www.federalregister.gov (www.federalregister.gov) | structured — apps/web/src/lite/data/geo-watch.ts, scripts/seed-federal-register.mjs |
+| www.federalregister.gov (www.federalregister.gov) | structured — apps/web/src/lite/data/geo-watch.ts, scripts/seed-ai-regulation.mjs, scripts/seed-federal-register.mjs |
 | www.federalreserve.gov (www.federalreserve.gov) | feed+structured — packages/shared/news-catalog.json, scripts/seed-economic-calendar.mjs, scripts/seed-regulatory-actions.mjs |
 | www.flightglobal.com (www.flightglobal.com) | structured — scripts/seed-aviation.mjs |
 | www.foreignaffairs.com (www.foreignaffairs.com) | feed — packages/shared/news-catalog.json |

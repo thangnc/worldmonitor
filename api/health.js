@@ -427,6 +427,8 @@ const STANDALONE_KEYS = {
   rateOdds: 'economic:rate-odds:v1',
   // Lite Tech AI models (#126): OpenRouter listing of the watched labs.
   aiModels: 'tech:ai-models:v1',
+  // Lite Tech AI regulation (#127): EU and US AI and data rules.
+  aiRegulation: 'policy:ai-regulation:v1',
   predictionCountryMarkets: 'prediction:markets-country-index:v1',
   // US HTS chapter 99 duty index (catalog; coverage shards are versioned by
   // release under trade:us-hts:coverage:v1). Read only by get-us-import-duty.
@@ -970,6 +972,11 @@ const SEED_META = {
     key: 'seed-meta:tech:ai-models', maxStaleMin: 1080, // seed-ai-models every 6 h; 1080 = 3x interval
     activationKey: 'seed-activated:tech:ai-models',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 126, activationKey: 'seed-activated:tech:ai-models' },
+  },
+  aiRegulation: {
+    key: 'seed-meta:policy:ai-regulation', maxStaleMin: 360, // seed-ai-regulation every 2 h; 360 = 3x interval
+    activationKey: 'seed-activated:policy:ai-regulation',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 127, activationKey: 'seed-activated:policy:ai-regulation' },
   },
   kevRecent: {
     key: 'seed-meta:cyber:kev-recent', maxStaleMin: 2880, // extra key of the daily NVD KEV sync; 2880 = 2x interval
@@ -2779,8 +2786,8 @@ const ON_DEMAND_KEYS = new Set([
   'cyberThreatHistory', 'kevRecent',
   // Lite Geopolitics export controls and tariffs (#122) and new restricted parties (#123).
   'federalRegister', 'cslAdditions', 'travelLevels',
-  // Lite Finance Fed decision odds (#125) and Tech AI models (#126).
-  'rateOdds', 'aiModels',
+  // Lite Finance Fed decision odds (#125), Tech AI models (#126) and AI regulation (#127).
+  'rateOdds', 'aiModels', 'aiRegulation',
   // Per-country GDELT article index (#7748). The 15-minute materializer
   // writes the marker after the index and its seed-meta publish; absence is
   // pending until that first tick and strict afterward.
@@ -3005,6 +3012,7 @@ const ACTIVATION_MARKERS = {
   travelLevels: SEED_META.travelLevels.activationKey,
   rateOdds: SEED_META.rateOdds.activationKey,
   aiModels: SEED_META.aiModels.activationKey,
+  aiRegulation: SEED_META.aiRegulation.activationKey,
   // Written by scripts/seed-gdelt-bulk-materializer.mjs after the per-country
   // article index publishes with its seed-meta (#7748).
   gdeltCountryArticles: SEED_META.gdeltCountryArticles.activationKey,
@@ -3416,6 +3424,8 @@ const ZERO_RECORD_DATA_OK_KEYS = new Set([
   'cslAdditions',
   // A fortnight with no US or UK level change is valid, but the key must exist (#124).
   'travelLevels',
+  // A 60-day log with no EU or US AI rule is valid, but the key must exist (#127).
+  'aiRegulation',
   'ukmtoIncidents',
   ...EMPTY_DATA_OK_KEYS,
   'sanctionsChanges',

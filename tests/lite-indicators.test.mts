@@ -35,6 +35,9 @@ import {
   AI_NEW_DAYS,
   aiModelFeeds,
   decodeAiModels,
+  AI_REG_NEW_DAYS,
+  aiRegulationFeeds,
+  decodeAiRegulation,
   modelPriceText,
   type ExploitedVulnerability,
   type RecentKev,
@@ -1590,7 +1593,7 @@ describe('Decision tiers (#121)', () => {
       'credit-spreads', 'fed-odds', 'vix', 'dollar-index', 'macro-print', 'btc-move', 'service-outage', 'kev-new', 'cyber-8k', 'internet-outage']) {
       assert.equal(feedTier(id), 'daily', id);
     }
-    for (const id of ['etf-flows', 'stablecoin-depeg', 'perp-positioning', 'btc-funding', 'fear-greed', 'freight-scfi', 'freight-bdi', 'sec-8k', 'ai-models:new:openai', 'ai-models:price:openai/x']) {
+    for (const id of ['etf-flows', 'stablecoin-depeg', 'perp-positioning', 'btc-funding', 'fear-greed', 'freight-scfi', 'freight-bdi', 'sec-8k', 'ai-models:new:openai', 'ai-models:price:openai/x', 'ai-regulation:celex:32026R2601']) {
       assert.equal(feedTier(id), 'weekly', id);
     }
     for (const id of ['aircraft:kyiv', 'gps:taipei', 'gps-region:europe', 'attack-spike', 'violence:UA', 'sea:u1', 'airspace', 'unknown']) {
@@ -1952,5 +1955,59 @@ describe('AI models (#126)', () => {
     const read = decodeAiModels(JSON.parse(JSON.stringify(publishTransform({ fetchedAt: AT - H, listed: 477, watched: 1, baseline: true, models: [m], changes, state: { prices: {} } }))));
     const list = aiModelFeeds(ready(read!), [], AT);
     assert.deepEqual(list.map((f) => f.kind === 'fired' && f.indicator.name), ['AI price change · DeepSeek V5', 'New AI models · DeepSeek']);
+  });
+});
+
+describe('AI regulation (#127)', () => {
+  const src = (o: Record<string, unknown> = {}) => ({ id: 'eurlex-oj', label: 'EUR-Lex, Official Journal L', ok: true, okAt: AT - H, ...o });
+  const item = (o: Record<string, unknown> = {}) => ({
+    id: 'celex:32026R2601', jurisdiction: 'EU', source: 'EUR-Lex', kind: 'implementing act', agency: '',
+    title: 'Commission Implementing Regulation (EU) 2026/2601 on AI regulatory sandboxes', url: 'https://eur-lex.europa.eu/x', publishedAt: AT - 2 * 86_400_000, ...o,
+  });
+  const feed = (items: unknown[], o: Record<string, unknown> = {}) => decodeAiRegulation({ fetchedAt: AT - H, logDays: 60, sources: [src()], items, ...o })!;
+
+  it('decodes strictly, newest first, and keeps an empty log valid', () => {
+    assert.equal(decodeAiRegulation(null), null);
+    assert.deepEqual(feed([]).items, []);
+    const d = feed([item({ id: 'old', publishedAt: AT - 20 * 86_400_000 }), item(), item({ id: 'x', jurisdiction: 'UK' }), item({ id: 'y', url: 'https://evil.example' })]);
+    assert.deepEqual(d.items.map((i) => [i.id, i.url]), [['celex:32026R2601', 'https://eur-lex.europa.eu/x'], ['y', ''], ['old', 'https://eur-lex.europa.eu/x']]);
+  });
+
+  it(`fires one card per EU or US rule published in the last ${AI_REG_NEW_DAYS} days, with AI news only`, () => {
+    const data = feed([
+      item(),
+      item({ id: 'fr:2026-30001', jurisdiction: 'US', source: 'Federal Register', kind: 'proposed rule', agency: 'Labor Department', title: 'Use of Artificial Intelligence in Benefit Determinations', publishedAt: AT - 3 * 86_400_000, url: 'https://www.federalregister.gov/d/1' }),
+      item({ id: 'old', publishedAt: AT - 9 * 86_400_000 }),
+    ]);
+    const news = [story('Brussels sets rules for AI Act sandboxes', AT - 2 * 86_400_000 - 3 * H), story('European Commission fines a carmaker', AT - 2 * 86_400_000 - 3 * H)];
+    const list = aiRegulationFeeds(ready(data), news, AT);
+    assert.deepEqual(list.map((f) => f.id), ['ai-regulation:celex:32026R2601', 'ai-regulation:fr:2026-30001']);
+    const [eu, us] = list;
+    assert.equal(eu?.kind === 'fired' && eu.indicator.name, 'AI rule · EU implementing act');
+    assert.equal(eu?.kind === 'fired' && eu.indicator.trust.source, 'EUR-Lex');
+    assert.equal(eu?.kind === 'fired' && eu.indicator.dataDate, 'published 6 Nov');
+    assert.deepEqual(eu?.kind === 'fired' && eu.indicator.links.stories.map((st) => st.item.title), ['Brussels sets rules for AI Act sandboxes']);
+    assert.equal(us?.kind === 'fired' && us.indicator.change, 'Labor Department');
+  });
+
+  it('says "first seen" for an item the feed gave no date', () => {
+    const [card] = aiRegulationFeeds(ready(feed([item({ id: 'celex:52026PC0640', kind: 'proposal', dateKind: 'seen' })])), [], AT);
+    assert.equal(card?.kind === 'fired' && card.indicator.dataDate, 'first seen 6 Nov');
+  });
+
+  it('stays quiet naming the latest rule and unread sources, and is as fresh as its oldest source', () => {
+    const quiet = aiRegulationFeeds(ready(feed([item({ publishedAt: AT - 20 * 86_400_000 })], { sources: [src(), src({ id: 'federal-register', label: 'Federal Register', ok: false, okAt: AT - 3 * H })] })), [], AT)[0]!;
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, 'Live · no new EU or US AI rule in 7 days · latest EU implementing act, 19 Oct · not read on the last run: Federal Register');
+    assert.equal(aiRegulationFeeds(ready(feed([], { sources: [src({ okAt: AT - 5 * H })] })), [], AT)[0]!.kind, 'stale');
+    const down = aiRegulationFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
+    assert.match(down.kind === 'unavailable' ? down.detail : '', /seed-ai-regulation/);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { euItem, frItem, mergeLog } = await import('../scripts/seed-ai-regulation.mjs');
+    const eu = euItem({ title: 'CELEX:32026R2601: Commission Implementing Regulation (EU) 2026/2601 applying Regulation (EU) 2024/1689', link: 'https://eur-lex.europa.eu/x', pubDate: new Date(AT - 86_400_000).toUTCString() }, 'EUR-Lex', { needInstrument: false });
+    const us = frItem({ document_number: '9', title: 'Artificial Intelligence Disclosures', type: 'Rule', abstract: '', publication_date: '2026-11-07', html_url: 'https://www.federalregister.gov/d/9', agencies: [{ name: 'Securities and Exchange Commission' }] });
+    const read = decodeAiRegulation(JSON.parse(JSON.stringify({ fetchedAt: AT - H, logDays: 60, sources: [src()], items: mergeLog([eu, us], [], AT) })));
+    assert.deepEqual(aiRegulationFeeds(ready(read!), [], AT).map((f) => f.id), ['ai-regulation:fr:9', 'ai-regulation:celex:32026R2601']);
   });
 });

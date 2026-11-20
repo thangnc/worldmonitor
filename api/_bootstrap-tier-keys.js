@@ -64,6 +64,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   rateOdds: 'economic:rate-odds:v1',
   // Lite Tech AI models (#126): watched labs' recent models and price changes (seed-ai-models).
   aiModels: 'tech:ai-models:v1',
+  // Lite Tech AI regulation (#127): EU and US AI and data rules (seed-ai-regulation).
+  aiRegulation: 'policy:ai-regulation:v1',
   techReadiness: 'economic:worldbank-techreadiness:v1',
   progressData: 'economic:worldbank-progress:v1',
   renewableEnergy: 'economic:worldbank-renewable:v1',
@@ -223,6 +225,8 @@ const ON_DEMAND_KEY_NAMES = new Set([
   'rateOdds',
   // Lite Tech: the watched AI labs' models of the last 90 days and price changes (#126, ~10 KB), read only by /lite and /lite/tech.
   'aiModels',
+  // Lite Tech: a 60-day log of EU and US AI and data rules (#127, a few KB), read only by /lite and /lite/tech.
+  'aiRegulation',
   'chinaPolicyEvents', 'chinaDecisionSignals',
   'bisDsr', 'bisPropertyResidential', 'bisPropertyCommercial',
   // One row of this feeds the Central Banks tab's policy-rate list, which BIS

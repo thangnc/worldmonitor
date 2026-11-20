@@ -123,6 +123,10 @@ export const AI_NEW_DAYS = 7;
 export const AI_PRICE_PCT = 20;
 /** seed-ai-models runs every 6 h. */
 export const AI_MODELS_CADENCE_MIN = 360;
+/** An AI or data rule counts as new for this many days after publication (weekly tier; #127). */
+export const AI_REG_NEW_DAYS = 7;
+/** seed-ai-regulation runs every 2 h. */
+export const AI_REG_CADENCE_MIN = 120;
 
 /** Providers whose partial or major outage fires (cloud and AI). */
 export const WATCHED_PROVIDERS: Readonly<Record<string, readonly string[]>> = {
@@ -143,7 +147,8 @@ export const TECH_RULES =
   `a CVE added to CISA KEV in the last ${KEV_NEW_DAYS} days, a vendor on the starter watchlist ranked first; ` +
   `attack-infrastructure indicators at ${SPIKE_RATIO}× their ${SPIKE_BASELINE_DAYS}-day average or more; ` +
   `an 8-K reporting item ${CYBER_8K_ITEM} (material cybersecurity incident) in the last ${FILING_WINDOW_HOURS} h; ` +
-  `a model from a watched AI lab (OpenAI, Anthropic, Google, Meta, Mistral, xAI, DeepSeek, Qwen) listed on OpenRouter in the last ${AI_NEW_DAYS} days, or a price change of ${AI_PRICE_PCT}% or more on one. ` +
+  `a model from a watched AI lab (OpenAI, Anthropic, Google, Meta, Mistral, xAI, DeepSeek, Qwen) listed on OpenRouter in the last ${AI_NEW_DAYS} days, or a price change of ${AI_PRICE_PCT}% or more on one; ` +
+  `an EU act, implementing act or guidelines on AI or data, or a US final or proposed rule on AI, published in the last ${AI_REG_NEW_DAYS} days. ` +
   'Linked news: tech digest stories from 12 h before to 1 h after (date-only feeds: from 12 h before the day).';
 
 /** Feed labels for the threat counts (seed-cyber-threats raw source names). */
@@ -449,6 +454,7 @@ export function techFeeds(input: {
   history: ResourceState<ThreatHistory>;
   filings: ResourceState<ListMaterialEventsResponse>;
   models?: ResourceState<AiModels>;
+  regulation?: ResourceState<AiRegulation>;
   news: readonly LiteItem[];
   now: number;
 }): FeedState[] {
@@ -460,6 +466,7 @@ export function techFeeds(input: {
     spikeFeed(input.history, news, now),
     cyberFilingFeed(input.filings, news, now),
     ...(input.models ? aiModelFeeds(input.models, news, now) : []),
+    ...(input.regulation ? aiRegulationFeeds(input.regulation, news, now) : []),
   ]);
 }
 
@@ -609,4 +616,111 @@ export function aiModelFeeds(source: ResourceState<AiModels>, news: readonly Lit
   const latest = data.models[0];
   const day = (t: number) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
   return [{ ...base, detail: [`Live · no new model from a watched lab in ${AI_NEW_DAYS} days`, latest ? `latest ${latest.labName} ${latest.name}, ${day(latest.releasedAt)}` : null, data.baseline ? null : 'price baseline set; changes count from the next run'].filter(Boolean).join(' · ') }];
+}
+
+// ---- AI and data regulation (#127) --------------------------------------------
+
+export interface AiRegulationItem {
+  id: string;
+  jurisdiction: 'EU' | 'US';
+  /** European Commission, EUR-Lex or Federal Register. */
+  source: string;
+  /** guidelines, implementing act, regulation, proposal, final rule, proposed rule, … */
+  kind: string;
+  title: string;
+  agency: string;
+  url: string;
+  publishedAt: number;
+  /** 'seen' when the feed gave no date and publishedAt is the first sighting (EUR-Lex proposals). */
+  dateKind: 'published' | 'seen';
+}
+
+export interface AiRegulationSource {
+  id: string;
+  label: string;
+  ok: boolean;
+  /** The source's last good read (ms), or null. */
+  okAt: number | null;
+}
+
+export interface AiRegulation {
+  fetchedAt: number;
+  logDays: number;
+  sources: AiRegulationSource[];
+  items: AiRegulationItem[];
+}
+
+const REG_URL = /^https:\/\/(digital-strategy\.ec\.europa\.eu|eur-lex\.europa\.eu|www\.federalregister\.gov)\//;
+
+/** The seeded payload (`policy:ai-regulation:v1`), or null when it is not one. An empty log is valid. */
+export function decodeAiRegulation(value: unknown): AiRegulation | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.items) || !Array.isArray(v.sources)) return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const num = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  const items: AiRegulationItem[] = [];
+  for (const raw of v.items as Array<Record<string, unknown>>) {
+    const publishedAt = num(raw?.publishedAt);
+    const jurisdiction = raw?.jurisdiction === 'EU' || raw?.jurisdiction === 'US' ? raw.jurisdiction : null;
+    if (publishedAt === null || !jurisdiction || !str(raw.id) || !str(raw.title)) continue;
+    items.push({ id: str(raw.id), jurisdiction, source: str(raw.source), kind: str(raw.kind) || 'notice', title: str(raw.title), agency: str(raw.agency),
+      url: REG_URL.test(str(raw.url)) ? str(raw.url) : '', publishedAt, dateKind: raw.dateKind === 'seen' ? 'seen' : 'published' });
+  }
+  items.sort((a, b) => b.publishedAt - a.publishedAt || a.id.localeCompare(b.id));
+  const sources = (v.sources as Array<Record<string, unknown>>).filter((x) => str(x?.id)).map((x) => ({ id: str(x.id), label: str(x.label) || str(x.id), ok: x.ok === true, okAt: num(x.okAt) }));
+  return { fetchedAt: v.fetchedAt as number, logDays: Number.isInteger(v.logDays) ? (v.logDays as number) : 60, sources, items };
+}
+
+const AI_NEWS_WORDS = /\b(AI|A\.I\.|artificial intelligence|AI Act|machine learning|algorithm\w*|data protection|GDPR|Data Act)\b/i;
+/** "first seen" when the feed gave no date, else "published". */
+const regDateWord = (i: Pick<AiRegulationItem, 'dateKind'>) => (i.dateKind === 'seen' ? 'first seen' : 'published');
+const regDay = (t: number) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+/** One card per EU or US AI or data rule published in the last AI_REG_NEW_DAYS (at most four, newest first). */
+export function aiRegulationIndicators(data: AiRegulation, news: readonly LiteItem[], now: number): Indicator[] {
+  return data.items
+    .filter((i) => i.publishedAt <= now + HOUR_MS && now - i.publishedAt <= AI_REG_NEW_DAYS * DAY_MS)
+    .slice(0, 4)
+    .map((i) => {
+      const at = Math.min(now, i.publishedAt);
+      const drivers = i.jurisdiction === 'EU' ? ['AI Act', 'European Commission', 'EU regulation', 'Brussels'] : ['AI regulation', 'AI rule', ...(i.agency ? [i.agency] : [])];
+      const links = linkNews({ drivers }, news, at, AI_REG_NEW_DAYS * 24);
+      // A story links only when it is about AI or data rules.
+      const stories = links.stories.filter((st) => AI_NEWS_WORDS.test(`${st.item.title} ${st.item.snippet ?? ''}`));
+      return {
+        id: `ai-regulation:${i.id}`, domain: 'tech', name: `AI rule · ${i.jurisdiction} ${i.kind}`,
+        value: `${i.jurisdiction} ${i.kind}`,
+        change: i.agency || i.source,
+        rule: `EU act, implementing act or guidelines on AI or data, or a US AI rule, ≤ ${AI_REG_NEW_DAYS} days`,
+        detail: i.title,
+        trust: { level: 'official', source: i.source || (i.jurisdiction === 'EU' ? 'EUR-Lex' : 'Federal Register') },
+        at, dataDate: `${regDateWord(i)} ${regDay(i.publishedAt)}`, updatedAt: data.fetchedAt,
+        links: { ...links, stories },
+      } satisfies Indicator;
+    });
+}
+
+/** The feed is as fresh as its oldest source's last good read, else the fetch time. */
+export function aiRegulationDataAt(data: AiRegulation | null): number | null {
+  if (!data) return null;
+  const reads = data.sources.map((s) => s.okAt).filter((t): t is number => t !== null);
+  return reads.length ? Math.min(data.fetchedAt, ...reads) : data.fetchedAt;
+}
+
+export function aiRegulationFeeds(source: ResourceState<AiRegulation>, news: readonly LiteItem[], now: number): FeedState[] {
+  const data = source.status === 'ready' ? source.data : null;
+  const base = feedState({
+    id: 'ai-regulation', name: 'AI and data rules · EU and US', source, seeder: 'seed-ai-regulation',
+    cadenceMin: AI_REG_CADENCE_MIN, dataAt: aiRegulationDataAt(data), fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !data) return [base];
+  const fired = aiRegulationIndicators(data, news, now);
+  if (fired.length) return fired.map((indicator) => ({ kind: 'fired' as const, id: indicator.id, name: indicator.name, indicator }));
+  const latest = data.items[0];
+  const failed = data.sources.filter((s) => !s.ok).map((s) => s.label);
+  return [{ ...base, detail: [
+    `Live · no new EU or US AI rule in ${AI_REG_NEW_DAYS} days`,
+    latest ? `latest ${latest.jurisdiction} ${latest.kind}, ${latest.dateKind === 'seen' ? 'first seen ' : ''}${regDay(latest.publishedAt)}` : `none in the ${data.logDays}-day log`,
+    failed.length ? `not read on the last run: ${failed.join(', ')}` : null,
+  ].filter(Boolean).join(' · ') }];
 }

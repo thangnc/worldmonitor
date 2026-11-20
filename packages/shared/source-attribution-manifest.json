@@ -3234,6 +3234,20 @@
       ]
     },
     {
+      "host": "digital-strategy.ec.europa.eu",
+      "provider": "digital-strategy.ec.europa.eu",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit digital-strategy.ec.europa.eu and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "scripts/seed-ai-regulation.mjs"
+        }
+      ]
+    },
+    {
       "host": "discord.com",
       "provider": "discord.com",
       "kind": "structured",
@@ -3910,6 +3924,20 @@
       "references": [
         {
           "path": "packages/shared/news-catalog.json"
+        }
+      ]
+    },
+    {
+      "host": "eur-lex.europa.eu",
+      "provider": "eur-lex.europa.eu",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit eur-lex.europa.eu and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "scripts/seed-ai-regulation.mjs"
         }
       ]
     },
@@ -10474,6 +10502,9 @@
           "path": "scripts/lib/x-news-accounts.cjs"
         },
         {
+          "path": "scripts/seed-ai-regulation.mjs"
+        },
+        {
           "path": "scripts/seed-five-factor-scorecard.mjs"
         },
         {
@@ -11946,6 +11977,9 @@
       "references": [
         {
           "path": "apps/web/src/lite/data/geo-watch.ts"
+        },
+        {
+          "path": "scripts/seed-ai-regulation.mjs"
         },
         {
           "path": "scripts/seed-federal-register.mjs"
