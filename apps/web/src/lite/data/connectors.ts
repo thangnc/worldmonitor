@@ -135,6 +135,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['US Treasury curve', 'Treasury yields · 2Y / 10Y indicator'],
   },
   {
+    id: 'credit-spreads', name: 'Credit spreads · ICE BofA via FRED', domain: 'fin', kind: 'Market data', method: 'API',
+    producer: 'seed-fred-rates', healthKeys: ['fredRatesSeeder'], maxStaleMin: 180,
+    hosts: [{ host: 'api.stlouisfed.org', licence: 'terms-review' }],
+    usedBy: ['Credit spreads · HY / IG indicator'],
+  },
+  {
     id: 'other-bonds', name: 'Bond curves · DE GB JP', domain: 'fin', kind: 'Official rates', method: 'API',
     producer: 'seed-bundle-yield-curves', healthKeys: ['yieldCurveDe', 'yieldCurveGb', 'yieldCurveJp'], maxStaleMin: 4460,
     hosts: [

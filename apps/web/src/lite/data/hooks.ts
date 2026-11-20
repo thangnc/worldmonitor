@@ -42,6 +42,7 @@ export const useStablecoins = () => useResource('stablecoins', src.loadStablecoi
 export const useFearGreed = () => useResource('fearGreed', src.loadFearGreed);
 export const useMacroCalendar = () => useResource('macroCalendar', src.loadMacroCalendar);
 export const useTreasuryCurves = () => useResource('treasuryCurves', src.loadTreasuryCurves);
+export const useCreditSpreads = () => useResource('creditSpreads', src.loadCreditSpreads);
 export const useOtherBonds = () => useResource('otherBonds', src.loadOtherBonds);
 export const useShippingRates = () => useResource('shippingRates', src.loadShippingRates);
 export const useMaterialEvents = () => useResource('materialEvents', src.loadMaterialEvents);

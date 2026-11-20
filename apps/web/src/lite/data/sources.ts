@@ -54,6 +54,7 @@ import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cy
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
 import { decodeRecentKev, decodeThreatHistory, type RecentKev, type ThreatHistory } from './tech-indicators';
+import { CREDIT_SERIES, decodeCreditSpreads, type CreditSpreads } from './finance-macro-indicators';
 import {
   ConflictServiceClient,
   CyberServiceClient,
@@ -289,6 +290,15 @@ export async function loadTreasuryCurves(): Promise<UsTreasuryParYieldCurve[] | 
   const resp = await economic.getUsTreasuryParYieldCurve({ history: true, limit: 10 });
   if (resp.unavailable) return null;
   return [...resp.curves].filter((c) => Number.isFinite(c.date)).sort((a, b) => a.date - b.date);
+}
+
+/**
+ * The last 30 daily US high-yield and investment-grade credit spreads, from
+ * the FRED keys seed-fred-rates writes. Null when neither series is cached.
+ */
+export async function loadCreditSpreads(): Promise<CreditSpreads | null> {
+  const resp = await economic.getFredSeriesBatch({ seriesIds: [CREDIT_SERIES.hy, CREDIT_SERIES.ig], limit: 30 });
+  return decodeCreditSpreads(resp.results);
 }
 
 /** Government bond markets whose 10-year the Finance indicators watch. */

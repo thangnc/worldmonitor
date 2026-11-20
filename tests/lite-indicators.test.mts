@@ -75,13 +75,19 @@ import {
   ETF_SAME_WAY,
   FILING_WINDOW_HOURS,
   FREIGHT_MOVE_PCT,
+  HY_DAY_BP,
+  HY_WEEK_BP,
+  IG_DAY_BP,
   KEY_8K_ITEMS,
   MACRO_PAYROLLS_K,
   MACRO_PCT_PT,
   MACRO_RECENT_DAYS,
   PERP_STRESS,
   YIELD_MOVE_BP,
+  CREDIT_SERIES,
   bdiFeed,
+  creditSpreadFeed,
+  decodeCreditSpreads,
   etfFlowFeed,
   filingsFeed,
   financeMacroFeeds,
@@ -94,6 +100,7 @@ import {
   recentMacroPrints,
   scfiFeed,
   spreadBp,
+  spreadMove,
   treasuryFeed,
   treasuryWindow,
   watchCompany,
@@ -615,10 +622,64 @@ describe('Finance indicator rules, step 3', () => {
     assert.ok(KEY_8K_ITEMS['1.05']);
   });
 
+  it('fires on credit spreads widening: HY 20 bp a day or 50 bp in 5 days, IG 5 bp a day', () => {
+    // FRED keeps the spreads in percent; the rule works in basis points.
+    const series = (values: number[], last = '2026-11-06') => values.map((value, i) => ({
+      date: new Date(Date.parse(`${last}T00:00:00Z`) - (values.length - 1 - i) * 86_400_000).toISOString().slice(0, 10), value,
+    }));
+    const spreads = (hy: number[], ig: number[]) => ready({ hy: series(hy), ig: series(ig) });
+    const calm = [3.0, 3.02, 3.01, 3.03, 3.05, 3.06];
+    const igCalm = [0.85, 0.85, 0.86, 0.86, 0.86, 0.87];
+
+    assert.deepEqual(spreadMove(series(calm)), { level: 306, day: 1, week: 6, date: '2026-11-06' });
+    assert.equal(spreadMove([]), null);
+
+    const quiet = creditSpreadFeed({ spreads: spreads(calm, igCalm), ...ctx });
+    assert.equal(quiet.kind, 'quiet');
+    if (quiet.kind === 'quiet') assert.match(quiet.detail, /^HY 306 bp \+1 bp · IG 87 bp \+1 bp · HY \+6 bp over 5 days · data to 6 Nov$/);
+
+    const hyDay = creditSpreadFeed({ spreads: spreads([3.0, 3.02, 3.01, 3.03, 3.05, 3.25], igCalm), ...ctx });
+    assert.equal(hyDay.kind, 'fired');
+    if (hyDay.kind === 'fired') {
+      assert.equal(hyDay.indicator.id, 'credit-spreads');
+      assert.equal(hyDay.indicator.value, '325 / 87 bp');
+      assert.equal(hyDay.indicator.change, `+${HY_DAY_BP} / +1 bp`);
+      assert.equal(hyDay.indicator.trust.level, 'market');
+      assert.equal(hyDay.indicator.trust.source, 'ICE BofA via FRED');
+      assert.match(hyDay.indicator.detail ?? '', /^HY \+20 bp in a day · HY \+25 bp over 5 days$/);
+      assert.equal(hyDay.indicator.dataDate, 'data to 6 Nov');
+    }
+
+    // 50 bp over 5 trading days without a 20 bp day.
+    const hyWeek = creditSpreadFeed({ spreads: spreads([3.0, 3.1, 3.2, 3.3, 3.4, 3.5], igCalm), ...ctx });
+    assert.equal(hyWeek.kind, 'fired');
+    if (hyWeek.kind === 'fired') assert.equal(hyWeek.indicator.detail, `HY +${HY_WEEK_BP} bp in 5 days`);
+
+    const igDay = creditSpreadFeed({ spreads: spreads(calm, [0.85, 0.85, 0.86, 0.86, 0.86, 0.91]), ...ctx });
+    assert.equal(igDay.kind, 'fired');
+    if (igDay.kind === 'fired') assert.match(igDay.indicator.detail ?? '', new RegExp(`IG \\+${IG_DAY_BP} bp in a day`));
+
+    // Tightening never fires.
+    assert.equal(creditSpreadFeed({ spreads: spreads([3.6, 3.5, 3.4, 3.3, 3.2, 3.0], [0.95, 0.85, 0.85, 0.85, 0.85, 0.8]), ...ctx }).kind, 'quiet');
+
+    // A story about junk bonds links; the card says so instead of guessing.
+    const withNews = creditSpreadFeed({ spreads: spreads([3.0, 3.02, 3.01, 3.03, 3.05, 3.25], igCalm), ...ctx, news: [story('Junk bond selloff deepens as defaults rise', newYorkTime('2026-11-06', 17, 0) - H)] });
+    assert.equal(withNews.kind, 'fired');
+    if (withNews.kind === 'fired') assert.equal(withNews.indicator.links.stories.length, 1);
+    // A savings-account story is not about the bond market.
+    const savings = creditSpreadFeed({ spreads: spreads([3.0, 3.02, 3.01, 3.03, 3.05, 3.25], igCalm), ...ctx, news: [story('5 Questions To Ask Before Opening A High-Yield Savings Account', newYorkTime('2026-11-06', 17, 0) - H)] });
+    if (savings.kind === 'fired') assert.equal(savings.indicator.links.stories.length, 0);
+
+    // Only one series back still reads; neither series is empty, not quiet.
+    assert.deepEqual(decodeCreditSpreads({ [CREDIT_SERIES.hy]: { seriesId: CREDIT_SERIES.hy, title: '', units: '', frequency: '', observations: series(calm) } })?.ig, []);
+    assert.equal(decodeCreditSpreads({}), null);
+    assert.equal(creditSpreadFeed({ spreads: { status: 'error', data: null, at: AT, error: 'x' }, ...ctx }).kind, 'unavailable');
+  });
+
   it('lists every step-3 feed, each naming its seeder when its source failed', () => {
     const failed = { status: 'error', data: null, at: AT, error: 'x' } as const;
-    const feeds = financeMacroFeeds({ calendar: failed, curves: failed, bonds: failed, etf: failed, flow: failed, rates: failed, filings: failed, ...ctx });
-    assert.deepEqual(feeds.map((f) => f.id), ['macro-print', 'treasury', 'other-bonds', 'etf-flows', 'perp-positioning', 'freight-scfi', 'freight-bdi', 'sec-8k']);
+    const feeds = financeMacroFeeds({ calendar: failed, curves: failed, spreads: failed, bonds: failed, etf: failed, flow: failed, rates: failed, filings: failed, ...ctx });
+    assert.deepEqual(feeds.map((f) => f.id), ['macro-print', 'treasury', 'credit-spreads', 'other-bonds', 'etf-flows', 'perp-positioning', 'freight-scfi', 'freight-bdi', 'sec-8k']);
     assert.ok(feeds.every((f) => f.kind === 'unavailable' && /seed-/.test(f.detail)));
   });
 });
