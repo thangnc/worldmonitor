@@ -37,7 +37,7 @@ export type DecisionTier = 'daily' | 'weekly';
 const TIER_BY_FEED: Readonly<Record<string, DecisionTier>> = {
   // Geopolitics
   chokepoint: 'daily', chokepoints: 'daily', region: 'daily', 'region-escalation': 'daily', sanctions: 'daily',
-  taiwan: 'daily', embassy: 'daily',
+  taiwan: 'daily', embassy: 'daily', 'export-controls': 'daily',
   // Finance: yields, credit, risk gauges, macro and price moves daily; crypto health, freight and filings weekly
   treasury: 'daily', 'other-bonds': 'daily', 'credit-spreads': 'daily', vix: 'daily', 'dollar-index': 'daily',
   'macro-print': 'daily', 'btc-move': 'daily',

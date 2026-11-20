@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **845 active source hosts** representing **825 active providers** (**361 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **846 active source hosts** representing **826 active providers** (**362 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -882,6 +882,7 @@ This generated inventory covers **845 active source hosts** representing **825 a
 | www.facebook.com (www.facebook.com) | Excluded / candidate — No current fetch observed |
 | www.factal.com (www.factal.com) | Excluded / candidate — No current fetch observed |
 | www.fao.org (www.fao.org) | feed+structured — packages/shared/news-catalog.json, scripts/lib/food-prices-fetch.mjs, scripts/lib/food-prices.mjs, scripts/seed-fao-food-price-index.mjs |
+| www.federalregister.gov (www.federalregister.gov) | structured — apps/web/src/lite/data/geo-watch.ts, scripts/seed-federal-register.mjs |
 | www.federalreserve.gov (www.federalreserve.gov) | feed+structured — packages/shared/news-catalog.json, scripts/seed-economic-calendar.mjs, scripts/seed-regulatory-actions.mjs |
 | www.flightglobal.com (www.flightglobal.com) | structured — scripts/seed-aviation.mjs |
 | www.foreignaffairs.com (www.foreignaffairs.com) | feed — packages/shared/news-catalog.json |

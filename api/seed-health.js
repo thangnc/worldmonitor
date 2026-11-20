@@ -228,6 +228,7 @@ const SEED_DOMAINS = {
   'correlation:market-alerts': { key: 'seed-meta:correlation:market-alerts', intervalMin: 5, activationKey: 'seed-activated:correlation:market-alerts' }, // #8867 ledger tick in seed-bundle-derived-signals; its scorecard shares the run and the marker
   'correlation:market-alerts-scorecard': { key: 'seed-meta:correlation:market-alerts-scorecard', intervalMin: 5, activationKey: 'seed-activated:correlation:market-alerts' },
   'intelligence:advisories':  { key: 'seed-meta:intelligence:advisories',  intervalMin: 60 },
+  'policy:federal-register':  { key: 'seed-meta:policy:federal-register',  intervalMin: 180, activationKey: 'seed-activated:policy:federal-register' }, // #122; intervalMin = maxStaleMin / 2 (360 / 2), matching api/health.js
   // Corporate intelligence (#5695): intervalMin = maxStaleMin / 2 (api/health.js: 2880 / 120).
   'intelligence:sec-cik-map': { key: 'seed-meta:intelligence:sec-cik-map', intervalMin: 1440, minRecordCount: 5000 },
   'intelligence:sec-8k-stream': { key: 'seed-meta:intelligence:sec-8k-stream', intervalMin: 60, minRecordCount: 50 },
