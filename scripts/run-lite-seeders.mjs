@@ -116,6 +116,8 @@ export const LITE_SEED_SECTIONS = [
   { label: 'EU-Sanctions', script: 'seed-eu-sanctions.mjs', seedMetaKey: 'sanctions:eu-additions', intervalMs: 6 * HOUR, timeoutMs: 300_000 },
   // The FCDO's UK Sanctions List (about 22 MB of XML) for the New sanctions · UK indicator (#140).
   { label: 'UK-Sanctions', script: 'seed-uk-sanctions.mjs', seedMetaKey: 'sanctions:uk-additions', intervalMs: 6 * HOUR, timeoutMs: 300_000 },
+  // Wikipedia's national electoral calendars (this year and next) for the Elections indicator (#141).
+  { label: 'Elections', script: 'seed-elections.mjs', seedMetaKey: 'intelligence:elections', intervalMs: 12 * HOUR, timeoutMs: 90_000 },
 
   // Technology & AI
   { label: 'Internet-Outages', script: 'seed-internet-outages.mjs', seedMetaKey: 'infra:outages', intervalMs: 15 * MIN, timeoutMs: 120_000 },

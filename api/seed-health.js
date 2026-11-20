@@ -271,6 +271,7 @@ const SEED_DOMAINS = {
   'sanctions:entities':       { key: 'seed-meta:sanctions:entities',       intervalMin: 360 },
   'sanctions:eu-additions':   { key: 'seed-meta:sanctions:eu-additions',   intervalMin: 360, activationKey: 'seed-activated:sanctions:eu-additions' }, // #129; maxStaleMin / 2 (720 / 2), matching api/health.js
   'sanctions:uk-additions':   { key: 'seed-meta:sanctions:uk-additions',   intervalMin: 360, activationKey: 'seed-activated:sanctions:uk-additions' }, // #140; maxStaleMin / 2 (720 / 2), matching api/health.js
+  'intelligence:elections':   { key: 'seed-meta:intelligence:elections',   intervalMin: 720, activationKey: 'seed-activated:intelligence:elections' }, // #141; maxStaleMin / 2 (1440 / 2), matching api/health.js
   'sanctions:csl-additions':  { key: 'seed-meta:sanctions:csl-additions',  intervalMin: 360, activationKey: 'seed-activated:sanctions:csl-additions' }, // #123; maxStaleMin / 2 (720 / 2), matching api/health.js
   'health:air-quality':       { key: 'seed-meta:health:air-quality',       intervalMin: 60 },  // hourly cron (shared seeder writes health + climate keys)
   'economic:grocery-basket':  { key: 'seed-meta:economic:grocery-basket',  intervalMin: 5040 }, // weekly seed; intervalMin = maxStaleMin / 2

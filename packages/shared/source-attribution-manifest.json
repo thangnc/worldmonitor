@@ -3715,7 +3715,13 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "apps/web/src/lite/data/geo-watch.ts"
+        },
+        {
           "path": "packages/server/worldmonitor/intelligence/v1/get-country-facts.ts"
+        },
+        {
+          "path": "scripts/seed-elections.mjs"
         },
         {
           "path": "scripts/seed-sovereign-wealth.mjs"

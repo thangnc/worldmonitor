@@ -210,6 +210,7 @@ const EXCLUDED_BOOTSTRAP_KEYS = {
   cslAdditions: 'Lite indicator feed (BIS and State screening-list additions, #123); not reviewed for the widget catalog',
   euSanctions: 'Lite indicator feed (EU financial sanctions listings, #129); not reviewed for the widget catalog',
   ukSanctions: 'Lite indicator feed (UK sanctions designations, #140); not reviewed for the widget catalog',
+  elections: 'Lite indicator feed (upcoming national elections, #141); not reviewed for the widget catalog',
   travelLevels: 'Lite indicator feed (US and UK travel advisory level changes, #124); not reviewed for the widget catalog',
   rateOdds: 'Lite indicator feed (Kalshi Fed decision odds, #125); not reviewed for the widget catalog',
   macroForecasts: 'Lite indicator input (Kalshi CPI and payrolls forecasts, #128); not reviewed for the widget catalog',

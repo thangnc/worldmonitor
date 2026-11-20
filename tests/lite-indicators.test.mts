@@ -195,6 +195,9 @@ import {
   EU_SANCTIONS_DAY_MIN,
   decodeEuSanctions,
   decodeUkSanctions,
+  decodeElections,
+  electionFeeds,
+  ELECTION_WINDOW_DAYS,
   euSanctionsFeeds,
   ukSanctionsFeeds,
   newEuListings,
@@ -2087,6 +2090,69 @@ describe('UK sanctions (#140)', () => {
     assert.deepEqual(read?.additions.map((a) => [a.id, a.name, a.type, a.countries, a.programmes, a.listedOn]), [['RUS3001', 'Example Tanker', 'ship', ['RU'], ['RUS'], '2026-11-07']]);
     const card = ukSanctionsFeeds(ready(read!), [moscow], [], AT)[0]!;
     assert.equal(card.kind === 'fired' && card.indicator.value, '1 listing');
+  });
+});
+
+describe('Elections (#141)', () => {
+  // AT is 8 Nov 2026 12:00 UTC.
+  const moscow = { id: 'moscow', name: 'Moscow', lat: 55.75, lon: 37.62 };
+  const telaviv = { id: 'telaviv', name: 'Tel Aviv', lat: 32.08, lon: 34.78 };
+  const el = (date: string, country: string, countryName: string, o: Record<string, unknown> = {}) => ({ date, endDate: null, country, countryName, body: 'Parliament', url: `https://en.wikipedia.org/wiki/${date}_${country}`, ...o });
+  const feed = (elections: unknown[], o: Record<string, unknown> = {}) => decodeElections({ fetchedAt: AT - H, pages: [{ year: 2026, found: true, entries: 74 }, { year: 2027, found: true, entries: 16 }], elections, ...o })!;
+
+  it('decodes strictly', () => {
+    assert.equal(decodeElections(null), null);
+    assert.equal(decodeElections({ fetchedAt: AT, elections: [] }), null, 'no pages');
+    const d = feed([el('2026-11-29', 'es', 'Spain', { url: 'https://evil.example/x', endDate: 'soon' }), { date: 'November', country: 'FR' }, el('2026-11-20', 'RU', 'Russia')]);
+    assert.deepEqual(d.elections.map((e) => [e.date, e.country, e.endDate, e.url]), [['2026-11-20', 'RU', null, 'https://en.wikipedia.org/wiki/2026-11-20_RU'], ['2026-11-29', 'ES', null, '']]);
+  });
+
+  it('fires for a hotspot country\'s election within 30 days, linking election stories, with the article as the source link', () => {
+    const news = [story('Russia election: polls open in Duma vote', AT - 2 * H), story('Russia launches drones at Kyiv', AT - 2 * H)];
+    const out = electionFeeds(ready(feed([el('2026-11-20', 'RU', 'Russia', { endDate: '2026-11-22', body: 'State Duma' }), el('2026-11-29', 'ES', 'Spain')])), [moscow], news, AT);
+    assert.deepEqual(out.map((f) => f.id), ['elections:RU:2026-11-20']);
+    const card = out[0]!;
+    assert.ok(card.kind === 'fired');
+    if (card.kind !== 'fired') return;
+    assert.deepEqual([card.indicator.name, card.indicator.value, card.indicator.change, card.indicator.detail, card.indicator.dataDate], ['Election · Russia', 'in 12 days', undefined, 'State Duma', 'vote 20–22 Nov']);
+    assert.equal(card.indicator.rule, `national election ≤ ${ELECTION_WINDOW_DAYS} days, hotspot country`);
+    assert.deepEqual(card.indicator.trust, { level: 'reported', source: 'Wikipedia (national electoral calendar)', url: 'https://en.wikipedia.org/wiki/2026-11-20_RU' });
+    assert.deepEqual(card.indicator.place?.countries, ['RU']);
+    assert.deepEqual(card.indicator.links.stories.map((st) => st.item.title), ['Russia election: polls open in Duma vote']);
+    // Tomorrow, today, a vote running now, the window's edge, and one day past it.
+    const value = (date: string, o: Record<string, unknown> = {}) => {
+      const f = electionFeeds(ready(feed([el(date, 'IL', 'Israel', o)])), [telaviv], [], AT)[0]!;
+      return f.kind === 'fired' ? f.indicator.value : f.kind;
+    };
+    assert.equal(value('2026-11-09'), 'tomorrow');
+    assert.equal(value('2026-11-08'), 'voting now');
+    assert.equal(value('2026-11-07', { endDate: '2026-11-09' }), 'voting now');
+    assert.equal(value('2026-12-08'), 'in 30 days');
+    assert.equal(value('2026-12-09'), 'quiet');
+    assert.equal(value('2026-11-07'), 'quiet', 'a one-day vote yesterday is over');
+  });
+
+  it('stays quiet off the hotspots or outside the window, naming what is coming, and goes stale or unavailable', () => {
+    const quiet = electionFeeds(ready(feed([el('2026-11-29', 'ES', 'Spain'), el('2026-12-05', 'GM', 'Gambia'), el('2027-04-18', 'FR', 'France'), el('2027-09-18', 'RU', 'Russia')])), [moscow], [], AT)[0]!;
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, 'Live · no national election within 30 days in a hotspot country · 2 elsewhere, first Spain 29 Nov · next hotspot vote Russia 18 Sept');
+    const noNext = electionFeeds(ready(feed([], { pages: [{ year: 2026, found: true, entries: 74 }, { year: 2027, found: false, entries: 0 }] })), [moscow], [], AT)[0]!;
+    assert.equal(noNext.kind === 'quiet' && noNext.detail, 'Live · no national election within 30 days in a hotspot country · no 2027 calendar yet');
+    // Next year's page found but nothing dated read from it (a layout change); last year's page is never named.
+    const blank = electionFeeds(ready(feed([], { pages: [{ year: 2025, found: false, entries: 0 }, { year: 2026, found: true, entries: 74 }, { year: 2027, found: true, entries: 0 }] })), [moscow], [], AT)[0]!;
+    assert.equal(blank.kind === 'quiet' && blank.detail, 'Live · no national election within 30 days in a hotspot country · 2027 calendar unreadable');
+    assert.equal(electionFeeds(ready(feed([], { fetchedAt: AT - 25 * H })), [moscow], [], AT)[0]!.kind, 'stale');
+    const down = electionFeeds({ status: 'error', data: null, at: AT, error: 'HTTP 500' }, [moscow], [], AT)[0]!;
+    assert.equal(down.kind, 'unavailable');
+    assert.match(down.kind === 'unavailable' ? down.detail : '', /seed-elections/);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { parseCalendar } = await import('../scripts/seed-elections.mjs');
+    const { elections } = parseCalendar('==November==\n* 20–22 November: [[Elections in Russia|Russia]], [[2026 Russian test election|State Duma]]<ref>x</ref>\n', 2026);
+    const read = decodeElections(JSON.parse(JSON.stringify({ fetchedAt: AT - H, pages: [{ year: 2026, found: true, entries: 1 }], elections })));
+    assert.deepEqual(read?.elections, [{ date: '2026-11-20', endDate: '2026-11-22', country: 'RU', countryName: 'Russia', body: 'State Duma', url: 'https://en.wikipedia.org/wiki/2026_Russian_test_election' }]);
+    const card = electionFeeds(ready(read!), [moscow], [], AT)[0]!;
+    assert.equal(card.kind === 'fired' && card.indicator.name, 'Election · Russia');
   });
 });
 
