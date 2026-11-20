@@ -140,6 +140,10 @@ import {
   decodeFederalRegister,
   newRestrictedParties,
   restrictedPartyFeeds,
+  decodeTravelLevels,
+  travelAdvisoryFeeds,
+  travelChangeFires,
+  travelCoverageNote,
   exportControlFeeds,
   tradeCountries,
   newOfacDesignations,
@@ -1574,7 +1578,7 @@ describe('New OFAC sanctions (#118)', () => {
 
 describe('Decision tiers (#121)', () => {
   it('tags each feed check daily or check weekly as the spec tables do, and leaves analyst inputs untagged', () => {
-    for (const id of ['chokepoint:hormuz_strait', 'chokepoints', 'region:red-sea', 'sanctions:RU', 'export-controls:2026-1', 'restricted-parties:CN', 'taiwan', 'embassy:kyiv:x', 'treasury', 'other-bonds',
+    for (const id of ['chokepoint:hormuz_strait', 'chokepoints', 'region:red-sea', 'sanctions:RU', 'export-controls:2026-1', 'restricted-parties:CN', 'travel-advisory:US:IL', 'taiwan', 'embassy:kyiv:x', 'treasury', 'other-bonds',
       'credit-spreads', 'vix', 'dollar-index', 'macro-print', 'btc-move', 'service-outage', 'kev-new', 'cyber-8k', 'internet-outage']) {
       assert.equal(feedTier(id), 'daily', id);
     }
@@ -1740,5 +1744,77 @@ describe('New restricted parties (#123)', () => {
     const fired = restrictedPartyFeeds(ready(read!), [], AT)[0];
     assert.equal(fired?.kind === 'fired' && fired.indicator.id, 'restricted-parties:CN');
     assert.equal(fired?.kind === 'fired' && fired.indicator.dataDate, 'listed 7 Nov');
+  });
+});
+
+describe('Travel advisories (#124)', () => {
+  const telaviv = { id: 'telaviv', name: 'Tel Aviv', lat: 32.08, lon: 34.78 };
+  const kyiv = { id: 'kyiv', name: 'Kyiv', lat: 50.45, lon: 30.52 };
+  const us = (o: Record<string, unknown> = {}) => ({ at: AT - 2 * H, source: 'US', country: 'IL', name: 'Israel', from: 2, to: 3, url: 'https://travel.state.gov/isr.html', updatedAt: Date.UTC(2026, 10, 7), ...o });
+  const uk = (o: Record<string, unknown> = {}) => ({ at: AT - 3 * H, source: 'UK', country: 'UA', name: 'Ukraine', from: ['avoid_all_but_essential_travel_to_parts'], to: ['avoid_all_travel_to_parts', 'avoid_all_but_essential_travel_to_parts'], url: 'https://www.gov.uk/foreign-travel-advice/ukraine', updatedAt: null, note: 'Updated information about the Russian invasion', ...o });
+  const feed = (changes: unknown[], o: Record<string, unknown> = {}) => decodeTravelLevels({
+    fetchedAt: AT - H, keepDays: 14, us: { ok: true, countries: 208, level4: 24, level3: 25, baseline: true }, uk: { ok: true, indexed: 213, known: 213, pending: 0 }, changes, ...o,
+  })!;
+
+  it('decodes strictly and fires only on tighter advice', () => {
+    assert.equal(decodeTravelLevels(null), null);
+    assert.equal(decodeTravelLevels({ fetchedAt: AT, changes: [] }), null);
+    const d = feed([us({ to: 9 }), us({ url: 'https://evil.example' }), uk({ to: ['bogus', 'avoid_all_travel_to_whole_country'] }), { source: 'EU', country: 'FR', at: AT }]);
+    assert.deepEqual(d.changes.map((c) => [c.source, c.country, c.url]), [['US', 'IL', ''], ['UK', 'UA', 'https://www.gov.uk/foreign-travel-advice/ukraine']]);
+    assert.deepEqual(d.changes[1]!.to, ['avoid_all_travel_to_whole_country']);
+    const [up, ukUp] = feed([us(), uk()]).changes;
+    assert.equal(travelChangeFires(up!), true);
+    assert.equal(travelChangeFires({ ...up!, from: 4, to: 3 } as never), false, 'a fall does not fire');
+    assert.equal(travelChangeFires({ ...up!, from: null, to: 3 } as never), true, 'new to the register at Level 3');
+    assert.equal(travelChangeFires({ ...up!, from: null, to: 2 } as never), false);
+    assert.equal(travelChangeFires(ukUp!), true);
+    assert.equal(travelChangeFires({ ...ukUp!, from: (ukUp as { to: string[] }).to, to: (ukUp as { from: string[] }).from } as never), false, 'a lifted UK warning does not fire');
+  });
+
+  it('fires one card per source and hotspot country, newest change first, with filtered news', () => {
+    const data = feed([us(), us({ at: AT - 5 * H, from: 1, to: 2 }), uk(), us({ country: 'FR', name: 'France' }), us({ country: 'UA', at: AT - 30 * H })]);
+    const news = [
+      story('Israel travel advisory raised as tensions grow', AT - 4 * H),
+      story('Israel wins the match', AT - 4 * H),
+      story('UK Foreign Office warns against all travel to parts of Ukraine', AT - 4 * H),
+    ];
+    const list = travelAdvisoryFeeds(ready(data), [telaviv, kyiv], news, AT);
+    assert.deepEqual(list.map((f) => f.id), ['travel-advisory:US:IL', 'travel-advisory:UK:UA']);
+    const [il, ua] = list;
+    assert.equal(il?.kind === 'fired' && il.indicator.name, 'Travel advisory · Israel');
+    assert.equal(il?.kind === 'fired' && il.indicator.value, 'US Level 3');
+    assert.equal(il?.kind === 'fired' && il.indicator.change, 'from Level 2');
+    assert.equal(il?.kind === 'fired' && il.indicator.detail, 'Reconsider travel');
+    assert.equal(il?.kind === 'fired' && il.indicator.dataDate, 'issued 7 Nov');
+    assert.deepEqual(il?.kind === 'fired' && il.indicator.links.stories.map((st) => st.item.title), ['Israel travel advisory raised as tensions grow']);
+    assert.equal(ua?.kind === 'fired' && ua.indicator.value, 'UK: no travel to parts');
+    assert.equal(ua?.kind === 'fired' && ua.indicator.change, 'was essential travel only, parts');
+    assert.equal(ua?.kind === 'fired' && ua.indicator.detail, 'FCDO advises against all travel to parts; against all but essential travel to parts · Updated information about the Russian invasion');
+    assert.equal(ua?.kind === 'fired' && ua.indicator.trust.source, 'UK FCDO (GOV.UK)');
+    assert.deepEqual(ua?.kind === 'fired' && ua.indicator.place?.countries, ['UA']);
+  });
+
+  it('stays quiet naming coverage, says when a source failed or a baseline is filling, and reports stale and unavailable', () => {
+    const quiet = travelAdvisoryFeeds(ready(feed([us({ from: 3, to: 2 })])), [telaviv], [], AT)[0]!;
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, 'Live · no tighter advice for a hotspot country in 24 h · US Level 4 in 24 countries');
+    assert.equal(travelCoverageNote(feed([], { us: { ok: false, okAt: Date.UTC(2026, 10, 8, 9, 5) }, uk: { ok: true, indexed: 213, known: 80, pending: 133 } })), 'US register last read 8 Nov 09:05 UTC · UK baseline 80 of 213 countries');
+    assert.equal(travelCoverageNote(feed([], { us: { ok: true, baseline: false, level4: 24 }, uk: { ok: false } })), 'US baseline set; changes count from the next run · GOV.UK not read yet');
+    // Freshness is the older source's: a US register last read 7 h ago makes the feed stale.
+    assert.equal(travelAdvisoryFeeds(ready(feed([], { us: { ok: false, okAt: AT - 7 * H }, uk: { ok: true, okAt: AT - H, indexed: 213, known: 213, pending: 0 } })), [telaviv], [], AT)[0]!.kind, 'stale');
+    assert.equal(travelAdvisoryFeeds(ready({ ...feed([]), fetchedAt: AT - 7 * H }), [telaviv], [], AT)[0]!.kind, 'stale');
+    const down = travelAdvisoryFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [telaviv], [], AT)[0]!;
+    assert.match(down.kind === 'unavailable' ? down.detail : '', /seed-travel-advisories/);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { diffLevels, mergeChanges, publishTransform } = await import('../scripts/seed-travel-advisories.mjs');
+    const usRead = new Map([['IL', { code: 'IL', name: 'Israel', level: 4, url: 'https://travel.state.gov/isr.html', updatedAt: AT - 5 * H }]]);
+    const ukPages = new Map([['UA', { slug: 'ukraine', name: 'Ukraine', updatedAt: '2026-11-08T08:00:00Z', flags: ['avoid_all_travel_to_whole_country'], note: 'Updated' }]]);
+    const { state, changes } = diffLevels({ previous: { us: { IL: 3 }, uk: { UA: { flags: [], updatedAt: 'old' } } }, us: usRead, ukIndex: new Map(), ukPages, nowMs: AT - H });
+    const payload = { fetchedAt: AT - H, keepDays: 14, us: { ok: true, countries: 1, level4: 1, level3: 0, baseline: true }, uk: { ok: true, indexed: 1, known: 1, pending: 0 }, changes: mergeChanges(changes, [], AT - H), state };
+    const read = decodeTravelLevels(JSON.parse(JSON.stringify(publishTransform(payload))));
+    assert.deepEqual(read?.changes.map((c) => [c.source, c.country]), [['UK', 'UA'], ['US', 'IL']]);
+    const fired = travelAdvisoryFeeds(ready(read!), [telaviv, kyiv], [], AT);
+    assert.deepEqual(fired.map((f) => f.kind === 'fired' && f.indicator.value), ['UK: no travel', 'US Level 4']);
   });
 });

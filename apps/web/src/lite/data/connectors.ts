@@ -215,6 +215,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['New restricted parties indicator'],
   },
   {
+    id: 'travel-advisories', name: 'Travel advisories · US State Department and UK FCDO', domain: 'geo', kind: 'Official notices', method: 'API',
+    producer: 'seed-travel-advisories', healthKeys: ['travelLevels'], maxStaleMin: 360,
+    hosts: [{ host: 'travel.state.gov', licence: 'terms-review' }, { host: 'www.gov.uk', licence: 'terms-review' }],
+    usedBy: ['Travel advisories indicator'],
+  },
+  {
     id: 'chokepoints', name: 'Chokepoint status', domain: 'fin', kind: 'Derived status', method: 'Derived',
     producer: 'get-chokepoint-status', healthKeys: ['chokepoints'], maxStaleMin: 60, hosts: [],
     usedBy: ['Where markets are moving map'],

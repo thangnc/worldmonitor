@@ -55,6 +55,8 @@ export const BOOTSTRAP_CACHE_KEYS = Object.freeze({
   federalRegister: 'policy:federal-register:v1',
   // Lite Geopolitics new restricted parties (#123): 7 days of BIS and State screening-list additions (seed-sanctions-pressure).
   cslAdditions: 'sanctions:csl-additions:v1',
+  // Lite Geopolitics travel advisories (#124): US and UK level changes (seed-travel-advisories).
+  travelLevels: 'intelligence:travel-levels:v1',
   techReadiness: 'economic:worldbank-techreadiness:v1',
   progressData: 'economic:worldbank-progress:v1',
   renewableEnergy: 'economic:worldbank-renewable:v1',
@@ -208,6 +210,8 @@ const ON_DEMAND_KEY_NAMES = new Set([
   'federalRegister',
   // Lite Geopolitics: 7 days of BIS and State screening-list additions (#123), read only by /lite and /lite/geopolitics.
   'cslAdditions',
+  // Lite Geopolitics: 14 days of US and UK travel advisory level changes (#124), read only by /lite and /lite/geopolitics.
+  'travelLevels',
   'chinaPolicyEvents', 'chinaDecisionSignals',
   'bisDsr', 'bisPropertyResidential', 'bisPropertyCommercial',
   // One row of this feeds the Central Banks tab's policy-rate list, which BIS

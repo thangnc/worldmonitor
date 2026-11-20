@@ -12,7 +12,7 @@ import { escalationLevel, scoreHotspots } from './escalation';
 import { financeFeeds, riskGaugeFeeds } from './finance-indicators';
 import { financeMacroFeeds } from './finance-macro-indicators';
 import { aircraftFeeds, gpsFeeds, seaIncidentFeeds } from './geo-layers';
-import { chokepointFeeds, embassyAlertFeeds, exportControlFeeds, newSanctionsFeeds, restrictedPartyFeeds, taiwanStraitFeeds } from './geo-watch';
+import { chokepointFeeds, embassyAlertFeeds, exportControlFeeds, newSanctionsFeeds, restrictedPartyFeeds, taiwanStraitFeeds, travelAdvisoryFeeds } from './geo-watch';
 import {
   useChokepoints,
   useCommodityQuotes,
@@ -43,6 +43,7 @@ import {
   useShippingRates,
   useStablecoins,
   useThreatHistory,
+  useTravelLevels,
   useTreasuryCurves,
   useUnrestEvents,
   useVixDaily,
@@ -129,6 +130,7 @@ export function useGeoFeeds({ escalation, tiles, source: escalationSource }: { e
   const sanctions = useSanctions();
   const federalRegister = useFederalRegister();
   const cslAdditions = useCslAdditions();
+  const travelLevels = useTravelLevels();
   return useMemo(() => {
     const now = Date.now();
     const news = digest.status === 'ready' ? digestItems(digest.data) : [];
@@ -143,10 +145,11 @@ export function useGeoFeeds({ escalation, tiles, source: escalationSource }: { e
       ...newSanctionsFeeds(sanctions, news, now),
       ...exportControlFeeds(federalRegister, news, now),
       ...restrictedPartyFeeds(cslAdditions, news, now),
+      ...travelAdvisoryFeeds(travelLevels, INTEL_HOTSPOTS, news, now),
       ...regionEscalationFeeds({ regions: ESCALATION_REGIONS, tiles, source: escalationSource, missing: escalation[0]?.missing, history: levelHistory, news, now }),
       AIRSPACE_FEED,
     ]);
-  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy, sanctions, federalRegister, cslAdditions, tiles, escalation, escalationSource, levelHistory]);
+  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy, sanctions, federalRegister, cslAdditions, travelLevels, tiles, escalation, escalationSource, levelHistory]);
 }
 
 /** The airspace row stays unavailable until the FAA grants NOTAM access (spec: Owner decisions). */

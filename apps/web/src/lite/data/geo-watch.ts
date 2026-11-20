@@ -745,3 +745,167 @@ export function restrictedPartyFeeds(source: ResourceState<CslAdditionsFeed>, ne
   const quiet = ['Live · no new BIS or State listing in 24 h', elNote, cslComparisonNote(source.data)].filter(Boolean).join(' · ');
   return feeds(base, restrictedPartyIndicators(source.data, news, now), quiet);
 }
+
+// ---- Travel advisory level changes (#124) ------------------------------------
+
+/** A level change counts as new for this long after seed-travel-advisories first saw it. */
+export const TRAVEL_WINDOW_HOURS = 24;
+/** seed-travel-advisories runs every 2 h. */
+export const TRAVEL_CADENCE_MIN = 120;
+const TRAVEL_WORDS = /\b(travel (advisory|advisories|advice|warning|ban)|do not travel|leave (the country|immediately)|evacuat\w*|FCDO|Foreign Office|State Department)\b/i;
+
+/** The US State Department's level names. */
+export const US_LEVEL_TEXT: Readonly<Record<number, string>> = {
+  1: 'Exercise normal precautions', 2: 'Exercise increased caution', 3: 'Reconsider travel', 4: 'Do not travel',
+};
+/** The UK FCDO's `alert_status` flags, most severe first. */
+export const UK_FLAG_TEXT: Readonly<Record<string, string>> = {
+  avoid_all_travel_to_whole_country: 'against all travel',
+  avoid_all_travel_to_parts: 'against all travel to parts',
+  avoid_all_but_essential_travel_to_whole_country: 'against all but essential travel',
+  avoid_all_but_essential_travel_to_parts: 'against all but essential travel to parts',
+};
+const UK_FLAGS = Object.keys(UK_FLAG_TEXT);
+/** Short forms for the card's value line. */
+const UK_FLAG_SHORT: Readonly<Record<string, string>> = {
+  avoid_all_travel_to_whole_country: 'no travel',
+  avoid_all_travel_to_parts: 'no travel to parts',
+  avoid_all_but_essential_travel_to_whole_country: 'essential travel only',
+  avoid_all_but_essential_travel_to_parts: 'essential travel only, parts',
+};
+
+interface ChangeBase {
+  /** When the seeder first saw the change (ms). */
+  at: number;
+  country: string;
+  name: string;
+  url: string;
+  /** The advisory's own issue date (ms), or null. */
+  updatedAt: number | null;
+}
+export interface UsLevelChange extends ChangeBase {
+  source: 'US';
+  /** Null when the country is new to the register. */
+  from: number | null;
+  to: number;
+}
+export interface UkAdviceChange extends ChangeBase {
+  source: 'UK';
+  from: string[];
+  to: string[];
+  /** GOV.UK's change description. */
+  note: string;
+}
+export type TravelChange = UsLevelChange | UkAdviceChange;
+
+export interface TravelLevelsFeed {
+  fetchedAt: number;
+  keepDays: number;
+  /** okAt: the source's last good read (ms), or null. */
+  us: { ok: boolean; okAt: number | null; countries: number; level4: number; level3: number; baseline: boolean };
+  uk: { ok: boolean; okAt: number | null; indexed: number; known: number; pending: number };
+  changes: TravelChange[];
+}
+
+/** The seeded payload (`intelligence:travel-levels:v1`), or null when it is not one. No changes is valid. */
+export function decodeTravelLevels(value: unknown): TravelLevelsFeed | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.changes) || !v.us || !v.uk) return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const num = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  const flags = (x: unknown) => (Array.isArray(x) ? UK_FLAGS.filter((f) => x.includes(f)) : []);
+  const level = (x: unknown) => (Number.isInteger(x) && (x as number) >= 1 && (x as number) <= 4 ? (x as number) : null);
+  const us = v.us as Record<string, unknown>;
+  const uk = v.uk as Record<string, unknown>;
+  const changes: TravelChange[] = [];
+  for (const raw of v.changes as Array<Record<string, unknown>>) {
+    const at = num(raw?.at);
+    const country = str(raw?.country).toUpperCase();
+    if (at === null || !/^[A-Z]{2}$/.test(country)) continue;
+    const base = { at, country, name: str(raw.name), url: /^https:\/\/(travel\.state\.gov|www\.gov\.uk)\//.test(str(raw.url)) ? str(raw.url) : '', updatedAt: num(raw.updatedAt) };
+    if (raw.source === 'US' && level(raw.to) !== null) changes.push({ ...base, source: 'US', from: level(raw.from), to: level(raw.to)! });
+    else if (raw.source === 'UK' && Array.isArray(raw.to)) changes.push({ ...base, source: 'UK', from: flags(raw.from), to: flags(raw.to), note: str(raw.note) });
+  }
+  changes.sort((a, b) => b.at - a.at);
+  return {
+    fetchedAt: v.fetchedAt as number,
+    keepDays: Number.isInteger(v.keepDays) ? (v.keepDays as number) : 14,
+    us: { ok: us.ok === true, okAt: num(us.okAt), countries: num(us.countries) ?? 0, level4: num(us.level4) ?? 0, level3: num(us.level3) ?? 0, baseline: us.baseline === true },
+    uk: { ok: uk.ok === true, okAt: num(uk.okAt), indexed: num(uk.indexed) ?? 0, known: num(uk.known) ?? 0, pending: num(uk.pending) ?? 0 },
+    changes,
+  };
+}
+
+/**
+ * Whether a change fires: a US level that rises (or a country new to the
+ * register at Level 3 or 4), or UK advice that adds a flag against travel.
+ */
+export function travelChangeFires(c: TravelChange): boolean {
+  if (c.source === 'US') return c.from === null ? c.to >= 3 : c.to > c.from;
+  return c.to.some((f) => !c.from.includes(f));
+}
+
+/** One card per source and hotspot country whose advice tightened in the last TRAVEL_WINDOW_HOURS (the newest change). */
+export function travelAdvisoryIndicators(data: TravelLevelsFeed, hotspots: readonly Place[], news: readonly LiteItem[], now: number): Indicator[] {
+  const byCountry = hotspotByCountry(hotspots);
+  const seen = new Set<string>();
+  const out: Indicator[] = [];
+  for (const c of data.changes) {
+    const hotspot = byCountry.get(c.country);
+    if (!hotspot || c.at > now + HOUR_MS || now - c.at > TRAVEL_WINDOW_HOURS * HOUR_MS || !travelChangeFires(c)) continue;
+    const id = `travel-advisory:${c.source}:${c.country}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const at = Math.min(c.at, now);
+    const subject = hotspotSubject(hotspot);
+    const links = linkNews({ ...subject, countries: [{ code: c.country, name: countryName(c.country) }], drivers: ['travel advisory', 'do not travel', 'travel warning'] }, news, at, LINK_WINDOW_HOURS.geo);
+    // A story links only when it is about travel advice.
+    const stories = links.stories.filter((st) => TRAVEL_WORDS.test(`${st.item.title} ${st.item.snippet ?? ''}`));
+    const us = c.source === 'US';
+    out.push({
+      id,
+      domain: 'geo',
+      name: `Travel advisory · ${countryName(c.country)}`,
+      value: us ? `US Level ${c.to}` : `UK: ${UK_FLAG_SHORT[c.to[0]!] ?? 'advice changed'}`,
+      change: us
+        ? (c.from === null ? 'newly listed' : `from Level ${c.from}`)
+        : (c.from.length ? `was ${UK_FLAG_SHORT[c.from[0]!]}` : 'was no warning'),
+      rule: `US level rises, or new at Level 3–4; UK adds advice against travel; ≤ ${TRAVEL_WINDOW_HOURS} h, hotspot country`,
+      detail: us ? US_LEVEL_TEXT[c.to] : [`FCDO advises ${c.to.map((f) => UK_FLAG_TEXT[f]).join('; ')}`, c.note].filter(Boolean).join(' · '),
+      trust: { level: 'official', source: us ? 'US State Department' : 'UK FCDO (GOV.UK)' },
+      at,
+      dataDate: c.updatedAt ? `issued ${dayMonth(c.updatedAt)}` : undefined,
+      updatedAt: data.fetchedAt,
+      links: { ...links, stories },
+      place: { ...hotspotPlace(hotspot), countries: [c.country] },
+    });
+  }
+  return out.sort((x, y) => y.at - x.at);
+}
+
+/** What the quiet row says about coverage: a source that failed, a baseline still being set. */
+export function travelCoverageNote(data: TravelLevelsFeed): string {
+  const parts: string[] = [];
+  if (!data.us.ok) parts.push(data.us.okAt ? `US register last read ${dayMonth(data.us.okAt)} ${new Date(data.us.okAt).toISOString().slice(11, 16)} UTC` : 'US register not read yet');
+  else if (!data.us.baseline) parts.push('US baseline set; changes count from the next run');
+  else parts.push(`US Level 4 in ${data.us.level4} countries`);
+  if (!data.uk.ok) parts.push(data.uk.okAt ? `GOV.UK last read ${dayMonth(data.uk.okAt)} ${new Date(data.uk.okAt).toISOString().slice(11, 16)} UTC` : 'GOV.UK not read yet');
+  else if (data.uk.pending > 0) parts.push(`UK baseline ${data.uk.known} of ${data.uk.indexed} countries`);
+  return parts.join(' · ');
+}
+
+/** The feed is as fresh as its older source: the older last good read, else the fetch time. */
+export function travelDataAt(data: TravelLevelsFeed | null): number | null {
+  if (!data) return null;
+  const reads = [data.us.okAt, data.uk.okAt].filter((t): t is number => t !== null);
+  return reads.length ? Math.min(data.fetchedAt, ...reads) : data.fetchedAt;
+}
+
+export function travelAdvisoryFeeds(source: ResourceState<TravelLevelsFeed>, hotspots: readonly Place[], news: readonly LiteItem[], now: number): FeedState[] {
+  const base = feedState({
+    id: 'travel-advisory', name: 'Travel advisories · US and UK', source, seeder: 'seed-travel-advisories',
+    cadenceMin: TRAVEL_CADENCE_MIN, dataAt: travelDataAt(source.data), fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !source.data) return [base];
+  return feeds(base, travelAdvisoryIndicators(source.data, hotspots, news, now), `Live · no tighter advice for a hotspot country in ${TRAVEL_WINDOW_HOURS} h · ${travelCoverageNote(source.data)}`);
+}
