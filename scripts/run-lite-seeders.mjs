@@ -88,6 +88,8 @@ export const LITE_SEED_SECTIONS = [
   { label: 'Chip-Revenue', script: 'seed-chip-revenue.mjs', seedMetaKey: 'tech:chip-revenue', intervalMs: 6 * HOUR, timeoutMs: 180_000 },
   // Microsoft, Alphabet, Amazon and Meta's quarterly capital spending from SEC EDGAR for the capex indicator (#135).
   { label: 'Hyperscaler-Capex', script: 'seed-hyperscaler-capex.mjs', seedMetaKey: 'tech:hyperscaler-capex', intervalMs: 6 * HOUR, timeoutMs: 120_000 },
+  // EDGAR full-text search and Form D documents for the AI funding indicator (#142).
+  { label: 'AI-Funding', script: 'seed-ai-funding.mjs', seedMetaKey: 'tech:ai-funding', intervalMs: 6 * HOUR, timeoutMs: 120_000 },
   // OpenAI, Google, Google DeepMind and Anthropic's own posts for the lab announcement indicator (#133).
   { label: 'AI-Lab-News', script: 'seed-ai-lab-news.mjs', seedMetaKey: 'tech:ai-lab-news', intervalMs: 3 * HOUR, timeoutMs: 240_000 },
   // Have I Been Pwned's breach catalogue for the data breach indicator (#131).

@@ -58,6 +58,10 @@ import {
   breachVendor,
   decodeBreaches,
   modelPriceText,
+  AI_FUNDING_MIN_USD,
+  aiFundingFeeds,
+  decodeAiFunding,
+  usdShort,
   type ExploitedVulnerability,
   type RecentKev,
   type ThreatHistory,
@@ -2613,6 +2617,70 @@ describe('Hyperscaler capital spending (#135)', () => {
     assert.match(feed!.kind === 'quiet' ? feed!.detail : '', /Alphabet \+114\.4% \(\+14\.3 pts\)/);
     const dayAfterFiling = hyperscalerCapexFeeds(ready(read), [], Date.UTC(2026, 9, 30, 12))[0]!;
     assert.equal(dayAfterFiling.kind, 'quiet', 'a 14.3-point shift stays under the trigger');
+  });
+});
+
+describe('AI funding · Form D (#142)', () => {
+  // AT is 8 Nov 2026 12:00 UTC.
+  const filing = (o: Record<string, unknown> = {}) => ({
+    adsh: '0002093123-26-000002', cik: '2093123', name: 'Pathos AI, Inc.', fileDate: '2026-11-06', firstSale: '2026-10-30', offering: 300_000_000, sold: 238_000_000,
+    industry: 'Biotechnology', fund: false, fundType: '', state: 'IL', url: 'https://www.sec.gov/Archives/edgar/data/2093123/000209312326000002/0002093123-26-000002-index.htm', ...o,
+  });
+  const feed = (filings: unknown[], o: Record<string, unknown> = {}) => decodeAiFunding({ fetchedAt: AT - H, windowDays: 14, searched: 25, named: 24, docErrors: 0, filings, ...o })!;
+
+  it('decodes strictly and formats amounts', () => {
+    assert.equal(decodeAiFunding(null), null);
+    assert.equal(decodeAiFunding({ fetchedAt: AT, filings: [] }), null, 'no search count');
+    const d = feed([filing({ url: 'https://evil.example/x', offering: 'Indefinite', sold: -5 }), { adsh: 'x', name: 'No date AI' }]);
+    assert.deepEqual(d.filings.map((f) => [f.adsh, f.offering, f.sold, f.url]), [['0002093123-26-000002', null, null, '']]);
+    assert.deepEqual([usdShort(2_037_000_000), usdShort(300_000_000), usdShort(21_140_000), usdShort(4_300_000), usdShort(850_000)], ['$2bn', '$300M', '$21M', '$4.3M', '$850k']);
+  });
+
+  it('fires for a filing of $100M or more within 7 days, sized by the larger of offering and sold, linking funding stories', () => {
+    // The shared rule searches 12 h before to 1 h after the filing (6 Nov 12:00 UTC).
+    const filed = Date.UTC(2026, 10, 6, 12);
+    const news = [story('Pathos AI raises $300M Series D to scale oncology models', filed - 3 * H), story('Pathos AI publishes trial data', filed - 3 * H)];
+    const out = aiFundingFeeds(ready(feed([
+      filing(),
+      // An "Indefinite" offering is sized by what was sold.
+      filing({ adsh: '0001-26-2', name: 'Harvey AI Corp', offering: null, sold: 550_000_000, industry: 'Other Technology', state: 'CA', fileDate: '2026-11-04' }),
+      filing({ adsh: '0001-26-3', name: 'Elemental AI Growth X LP', offering: 200_000_000, sold: 200_000_000, fund: true, fundType: 'Venture Capital Fund', industry: 'Pooled Investment Fund', state: 'DE', fileDate: '2026-11-07' }),
+      filing({ adsh: '0001-26-4', name: 'Small AI Inc', offering: 99_000_000, sold: 10_000_000 }),
+      filing({ adsh: '0001-26-5', name: 'Old AI Inc', fileDate: '2026-10-31' }),
+    ])), news, AT);
+    assert.deepEqual(out.map((f) => f.id), ['ai-funding:0001-26-2', 'ai-funding:0002093123-26-000002', 'ai-funding:0001-26-3']);
+    const [harvey, pathos, fund] = out.map((f) => (f.kind === 'fired' ? f.indicator : null));
+    assert.deepEqual([harvey?.name, harvey?.value, harvey?.change], ['AI funding · Harvey AI Corp', '$550M', '$550M sold']);
+    assert.deepEqual([pathos?.value, pathos?.change, pathos?.detail, pathos?.dataDate, pathos?.rule], ['$300M', '$238M sold of $300M', 'Biotechnology · issuer IL · first sale 30 Oct', 'filed 6 Nov', `Form D ≥ ${usdShort(AI_FUNDING_MIN_USD)}, filed ≤ 7 days`]);
+    assert.deepEqual(pathos?.trust, { level: 'official', source: 'SEC EDGAR (Form D)', url: 'https://www.sec.gov/Archives/edgar/data/2093123/000209312326000002/0002093123-26-000002-index.htm' });
+    assert.deepEqual(pathos?.links.stories.map((st) => st.item.title), ['Pathos AI raises $300M Series D to scale oncology models']);
+    assert.deepEqual([fund?.name, fund?.detail], ['AI fund raise · Elemental AI Growth X LP', 'pooled fund (venture capital fund) · issuer DE · first sale 30 Oct']);
+    // A name with nothing distinctive beyond AI and fund links no story, even one about an AI fund (reviewer finding).
+    const generic = aiFundingFeeds(ready(feed([filing({ name: 'AI Fund, LP', fund: true, industry: 'Pooled Investment Fund' })])), [story('AI fund raises $500M for robotics', Date.UTC(2026, 10, 6, 9))], AT)[0]!;
+    assert.deepEqual(generic.kind === 'fired' && generic.indicator.links.stories, []);
+  });
+
+  it('stays quiet with the week\'s count and largest, notes unread filings, and goes stale or unavailable', () => {
+    const quiet = aiFundingFeeds(ready(feed([filing({ offering: 21_140_000, sold: 21_139_989, name: 'Nadhi AI, Inc.' }), filing({ adsh: 'b', offering: 4_000_000, sold: 0 }), filing({ adsh: 'c', fileDate: '2026-10-20' })], { docErrors: 2 })), [], AT)[0]!;
+    assert.equal(quiet.kind === 'quiet' && quiet.detail, 'Live · 2 AI Form D filings read in 7 days, none $100M+ · largest Nadhi AI, Inc., $21M · 2 of 24 filings in 14 days not read · US only');
+    // Unread filings never read as "no filing" (reviewer finding).
+    const unread = aiFundingFeeds(ready(feed([], { named: 1, docErrors: 1 })), [], AT)[0]!;
+    assert.equal(unread.kind === 'quiet' && unread.detail, 'Live · 0 AI Form D filings read in 7 days · 1 of 1 filings in 14 days not read · US only');
+    const none = aiFundingFeeds(ready(feed([])), [], AT)[0]!;
+    assert.equal(none.kind === 'quiet' && none.detail, 'Live · no AI Form D filing in 7 days · US only');
+    assert.equal(aiFundingFeeds(ready(feed([], { fetchedAt: AT - 13 * H })), [], AT)[0]!.kind, 'stale');
+    const down = aiFundingFeeds({ status: 'error', data: null, at: AT, error: 'HTTP 500' }, [], AT)[0]!;
+    assert.equal(down.kind, 'unavailable');
+    assert.match(down.kind === 'unavailable' ? down.detail : '', /seed-ai-funding/);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { parseFormD } = await import('../scripts/seed-ai-funding.mjs');
+    const d = parseFormD('<edgarSubmission><primaryIssuer><entityName>Shield AI Inc</entityName><issuerAddress><stateOrCountry>CA</stateOrCountry></issuerAddress></primaryIssuer><offeringData><industryGroup><industryGroupType>Other Technology</industryGroupType></industryGroup><typeOfFiling><dateOfFirstSale><value>2026-10-01</value></dateOfFirstSale></typeOfFiling><offeringSalesAmounts><totalOfferingAmount>592000000</totalOfferingAmount><totalAmountSold>592000000</totalAmountSold></offeringSalesAmounts></offeringData></edgarSubmission>');
+    const written = { adsh: '0001-26-9', cik: '1', name: d.entityName, fileDate: '2026-11-07', firstSale: d.firstSale, offering: d.offering, sold: d.sold, industry: d.industry, fund: d.fund, fundType: d.fundType, state: d.state, url: 'https://www.sec.gov/Archives/edgar/data/1/0001269/0001-26-9-index.htm' };
+    const read = decodeAiFunding(JSON.parse(JSON.stringify({ fetchedAt: AT - H, windowDays: 14, searched: 1, named: 1, docErrors: 0, filings: [written] })));
+    const card = aiFundingFeeds(ready(read!), [], AT)[0]!;
+    assert.deepEqual(card.kind === 'fired' && [card.indicator.name, card.indicator.value, card.indicator.detail], ['AI funding · Shield AI Inc', '$592M', 'Other Technology · issuer CA · first sale 1 Oct']);
   });
 });
 

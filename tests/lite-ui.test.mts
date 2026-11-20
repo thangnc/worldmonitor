@@ -743,7 +743,7 @@ describe('Lite Sources connectors', () => {
     const tally = licenceTally();
     const hosts = new Set(CONNECTORS.flatMap((c) => c.hosts.map((h) => h.host)));
     assert.equal(tally.reviewed.length + tally['terms-review'].length + tally.excluded.length, hosts.size);
-    assert.deepEqual(tally.reviewed, ['api.adsb.lol', 'data.sec.gov', 'nvd.nist.gov', 'services.nvd.nist.gov', 'www.sec.gov']);
+    assert.deepEqual(tally.reviewed, ['api.adsb.lol', 'data.sec.gov', 'efts.sec.gov', 'nvd.nist.gov', 'services.nvd.nist.gov', 'www.sec.gov']);
     const tiers = tierRows();
     assert.deepEqual(tiers.map((t) => t.tier), [1, 2, 3, 4]);
     assert.equal(tiers.reduce((sum, t) => sum + t.outlets, 0), Object.values(SOURCE_TIERS).filter((t) => t >= 1 && t <= 4).length);

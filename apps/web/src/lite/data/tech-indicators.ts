@@ -492,6 +492,7 @@ export function techFeeds(input: {
   labNews?: ResourceState<AiLabNews>;
   chipRevenue?: ResourceState<ChipRevenue>;
   capex?: ResourceState<HyperscalerCapex>;
+  funding?: ResourceState<AiFunding>;
   news: readonly LiteItem[];
   now: number;
 }): FeedState[] {
@@ -509,6 +510,7 @@ export function techFeeds(input: {
     ...(input.labNews ? labNewsFeeds(input.labNews, news, now) : []),
     ...(input.chipRevenue ? chipRevenueFeeds(input.chipRevenue, news, now) : []),
     ...(input.capex ? hyperscalerCapexFeeds(input.capex, news, now) : []),
+    ...(input.funding ? aiFundingFeeds(input.funding, news, now) : []),
   ]);
 }
 
@@ -1437,4 +1439,146 @@ export function hyperscalerCapexFeeds(source: ResourceState<HyperscalerCapex>, n
       `fires at ±${CAPEX_YOY_SHIFT_PTS} pts within ${CAPEX_NEW_DAYS} days of a filing`,
     ].join(' · '),
   }, all?.yoy != null ? `all four ${pct1(all.yoy)} y/y` : null)];
+}
+
+// ---- AI funding rounds from SEC Form D (#142) ----------------------------------------
+
+/** A Form D this large fires (the larger of the offering and the amount sold, US$). */
+export const AI_FUNDING_MIN_USD = 100_000_000;
+/** A filing counts as new for this many days after its filing date. */
+export const AI_FUNDING_NEW_DAYS = 7;
+/** seed-ai-funding runs every 6 h. */
+export const AI_FUNDING_CADENCE_MIN = 360;
+const AI_FUNDING_MAX_CARDS = 6;
+/** Words that do not tell one AI issuer from another. */
+const GENERIC_NAME_WORDS = /\b(a\.?i\.?|artificial|intelligence|funds?|ventures?|capital|partners|holdings?|group|growth|opportunit(y|ies)|investments?|series|leaders|the|of|and|[ivxl]+|\d+)\b/gi;
+const FUNDING_WORDS = /\b(rais(e[sd]?|ing)|funding|round|series [a-z]|seed|valuation|valued|invest(s|ed|ment|ors?)?|backed|fund(s)?|venture)\b/i;
+
+export interface FormDFiling {
+  /** Accession number, "0002161778-26-000001". */
+  adsh: string;
+  cik: string;
+  name: string;
+  /** Filing date, YYYY-MM-DD. */
+  fileDate: string;
+  /** Date of first sale, YYYY-MM-DD, or ''. */
+  firstSale: string;
+  /** Total offering amount (US$), or null when "Indefinite". */
+  offering: number | null;
+  sold: number | null;
+  /** Form D industry group, e.g. "Other Technology", "Pooled Investment Fund". */
+  industry: string;
+  /** A pooled investment fund (an AI fund raising), not a company. */
+  fund: boolean;
+  fundType: string;
+  /** The issuer's state or country code (EDGAR's). */
+  state: string;
+  /** The filing's EDGAR index page. */
+  url: string;
+}
+
+export interface AiFunding {
+  fetchedAt: number;
+  windowDays: number;
+  /** Form D notices the search found in the window. */
+  searched: number;
+  /** Of those, issuers with AI in their name. */
+  named: number;
+  /** Primary documents that could not be read. */
+  docErrors: number;
+  filings: FormDFiling[];
+}
+
+/** The seeded payload (`tech:ai-funding:v1`), or null when it is not one. */
+export function decodeAiFunding(value: unknown): AiFunding | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Number.isFinite(v.searched) || !Array.isArray(v.filings)) return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const usd = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) && x >= 0 ? x : null);
+  const ymd = (x: unknown) => (/^\d{4}-\d{2}-\d{2}$/.test(str(x)) ? str(x) : '');
+  const filings: FormDFiling[] = [];
+  for (const raw of v.filings as Array<Record<string, unknown>>) {
+    if (!str(raw?.adsh) || !str(raw?.name) || !ymd(raw?.fileDate)) continue;
+    filings.push({
+      adsh: str(raw.adsh), cik: str(raw.cik), name: str(raw.name), fileDate: ymd(raw.fileDate), firstSale: ymd(raw.firstSale),
+      offering: usd(raw.offering), sold: usd(raw.sold), industry: str(raw.industry), fund: raw.fund === true, fundType: str(raw.fundType),
+      state: str(raw.state), url: str(raw.url).startsWith('https://www.sec.gov/Archives/edgar/data/') ? str(raw.url) : '',
+    });
+  }
+  filings.sort((a, b) => b.fileDate.localeCompare(a.fileDate) || a.adsh.localeCompare(b.adsh));
+  const int = (x: unknown) => (Number.isFinite(x) ? (x as number) : 0);
+  return { fetchedAt: v.fetchedAt as number, windowDays: Number.isInteger(v.windowDays) ? (v.windowDays as number) : 14, searched: v.searched as number, named: int(v.named), docErrors: int(v.docErrors), filings };
+}
+
+/** The filing's size: the larger of the offering and the amount sold (an "Indefinite" offering has only the latter). */
+export const formDSize = (f: Pick<FormDFiling, 'offering' | 'sold'>) => Math.max(f.offering ?? 0, f.sold ?? 0);
+
+/** "$1.2bn", "$300M", "$4.3M", "$850k". */
+export function usdShort(n: number): string {
+  if (n >= 1e9) return `$${Number((n / 1e9).toFixed(1))}bn`;
+  if (n >= 1e7) return `$${Math.round(n / 1e6)}M`;
+  if (n >= 1e6) return `$${Number((n / 1e6).toFixed(1))}M`;
+  return `$${Math.round(n / 1e3)}k`;
+}
+
+const filedAt = (f: FormDFiling) => Date.parse(`${f.fileDate}T12:00:00Z`);
+const isNewFiling = (f: FormDFiling, now: number) => now - filedAt(f) <= AI_FUNDING_NEW_DAYS * DAY_MS && filedAt(f) <= now + DAY_MS;
+
+export function aiFundingIndicators(data: AiFunding, news: readonly LiteItem[], now: number): Indicator[] {
+  return data.filings
+    .filter((f) => isNewFiling(f, now) && formDSize(f) >= AI_FUNDING_MIN_USD)
+    .sort((a, b) => formDSize(b) - formDSize(a) || b.fileDate.localeCompare(a.fileDate))
+    .slice(0, AI_FUNDING_MAX_CARDS)
+    .map((f) => {
+      const at = Math.min(now, filedAt(f));
+      // The issuer's name without its legal suffix, for the news match: "Pathos AI, Inc." → "Pathos AI".
+      const short = f.name.replace(/,?\s+(Inc|Corp|Corporation|LLC|L\.?P|Ltd|Co|Holdings?)\.?$/i, '').trim();
+      // A name with nothing distinctive beyond AI, fund and the like ("AI Fund, LP") would match any AI-fund story:
+      // it links no news, and the card says so.
+      const distinctive = /[a-z0-9]{3,}/i.test(short.replace(GENERIC_NAME_WORDS, ' '));
+      const links = linkNews({ drivers: distinctive ? [short] : [] }, news, at, LINK_WINDOW_HOURS.tech);
+      const named = (t: string) => new RegExp(`\\b${short.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(t);
+      const stories = distinctive ? links.stories.filter((st) => { const t = `${st.item.title} ${st.item.snippet ?? ''}`; return named(t) && FUNDING_WORDS.test(t); }) : [];
+      const offering = f.offering === null ? 'offering indefinite' : `${usdShort(f.offering)} offered`;
+      return {
+        id: `ai-funding:${f.adsh}`, domain: 'tech',
+        name: `AI ${f.fund ? 'fund raise' : 'funding'} · ${f.name}`,
+        value: `${usdShort(formDSize(f))}`,
+        change: f.sold !== null && f.offering !== null && f.sold !== f.offering ? `${usdShort(f.sold)} sold of ${usdShort(f.offering)}` : f.sold !== null ? `${usdShort(f.sold)} sold` : offering,
+        rule: `Form D ≥ ${usdShort(AI_FUNDING_MIN_USD)}, filed ≤ ${AI_FUNDING_NEW_DAYS} days`,
+        detail: [
+          f.fund ? `pooled fund${f.fundType ? ` (${f.fundType.toLowerCase()})` : ''}` : f.industry || null,
+          f.state ? `issuer ${f.state}` : null,
+          f.firstSale ? `first sale ${dayMonthOf(Date.parse(`${f.firstSale}T12:00:00Z`))}` : null,
+        ].filter(Boolean).join(' · '),
+        trust: { level: 'official', source: 'SEC EDGAR (Form D)', ...(f.url ? { url: f.url } : {}) },
+        at, dataDate: `filed ${dayMonthOf(filedAt(f))}`, updatedAt: data.fetchedAt,
+        links: { ...links, stories },
+      } satisfies Indicator;
+    });
+}
+
+export function aiFundingFeeds(source: ResourceState<AiFunding>, news: readonly LiteItem[], now: number): FeedState[] {
+  const data = source.status === 'ready' ? source.data : null;
+  const base = feedState({
+    id: 'ai-funding', name: 'AI funding · Form D', source, seeder: 'seed-ai-funding',
+    cadenceMin: AI_FUNDING_CADENCE_MIN, dataAt: data?.fetchedAt ?? null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !data) return [base];
+  const fired = aiFundingIndicators(data, news, now);
+  if (fired.length) return fired.map((indicator) => ({ kind: 'fired' as const, id: indicator.id, name: indicator.name, indicator }));
+  const recent = data.filings.filter((f) => isNewFiling(f, now));
+  const largest = [...recent].sort((a, b) => formDSize(b) - formDSize(a))[0];
+  // Unread filings could be large ones: say how many were read rather than claim there were none.
+  const unread = data.docErrors > 0;
+  const read = `${recent.length} AI Form D filing${recent.length === 1 ? '' : 's'}${unread ? ' read' : ''} in ${AI_FUNDING_NEW_DAYS} days`;
+  return [{
+    ...base,
+    detail: [
+      recent.length ? `Live · ${read}, none ${usdShort(AI_FUNDING_MIN_USD)}+` : unread ? `Live · ${read}` : `Live · no AI Form D filing in ${AI_FUNDING_NEW_DAYS} days`,
+      largest && formDSize(largest) > 0 ? `largest ${largest.name}, ${usdShort(formDSize(largest))}` : null,
+      unread ? `${data.docErrors} of ${data.named || data.docErrors + data.filings.length} filings in ${data.windowDays} days not read` : null,
+      'US only',
+    ].filter(Boolean).join(' · '),
+  }];
 }
