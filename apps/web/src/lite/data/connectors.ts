@@ -257,10 +257,10 @@ export const CONNECTORS: readonly Connector[] = [
   },
   // ---- Technology & AI ----
   {
-    id: 'ai-models', name: 'AI models · OpenRouter', domain: 'tech', kind: 'Reported listing', method: 'API',
+    id: 'ai-models', name: 'AI models · OpenRouter and Hugging Face', domain: 'tech', kind: 'Reported listing', method: 'API',
     producer: 'seed-ai-models', healthKeys: ['aiModels'], maxStaleMin: 1080,
-    hosts: [{ host: 'openrouter.ai', licence: 'terms-review' }, { host: 'raw.githubusercontent.com', licence: 'terms-review' }],
-    usedBy: ['AI models indicator', 'Model tracker'],
+    hosts: [{ host: 'openrouter.ai', licence: 'terms-review' }, { host: 'raw.githubusercontent.com', licence: 'terms-review' }, { host: 'huggingface.co', licence: 'terms-review' }],
+    usedBy: ['AI models indicator', 'Model tracker', 'Open-weight models indicator'],
   },
   {
     id: 'ai-regulation', name: 'AI and data rules · EU and US', domain: 'tech', kind: 'Official documents', method: 'RSS',

@@ -34,6 +34,9 @@ import {
   threatBaseline,
   AI_NEW_DAYS,
   aiModelFeeds,
+  OPEN_MODEL_NEW_DAYS,
+  fitNames,
+  openModelFeeds,
   decodeAiModels,
   AI_REG_NEW_DAYS,
   aiRegulationFeeds,
@@ -2032,6 +2035,61 @@ describe('Fed decision odds (#125)', () => {
     // A hike to 4.25% went from 15% to 55%: it is now the most likely outcome, and move odds rose 40 pts.
     assert.equal(feed.kind === 'fired' && feed.indicator.value, 'Hike 25 bp 55%');
     assert.equal(feed.kind === 'fired' && feed.indicator.change, 'move odds 30% → 70%');
+  });
+});
+
+describe('Open-weight models (#132)', () => {
+  const hubModel = (id: string, seenAgoH: number, o: Record<string, unknown> = {}) => ({
+    id, lab: id.split('/')[0], labName: ({ Qwen: 'Qwen', 'deepseek-ai': 'DeepSeek', mistralai: 'Mistral', google: 'Google' } as Record<string, string>)[id.split('/')[0]!] ?? 'Meta',
+    name: id.split('/')[1], firstSeenAt: AT - seenAgoH * H, createdAt: AT - seenAgoH * H, task: 'text-generation', license: 'apache-2.0', likes: 420, downloads: 31_000,
+    url: `https://huggingface.co/${id}`, ...o,
+  });
+  const payload = (models: unknown[], o: Record<string, unknown> = {}) => decodeAiModels({
+    fetchedAt: AT - H, listed: 477, watched: 210, baseline: true, models: [], changes: [],
+    open: { models, latest: [{ lab: 'Qwen', labName: 'Qwen', name: 'Qwen3.8-27B', firstSeenAt: AT - 10 * 24 * H, url: 'https://huggingface.co/Qwen/Qwen3.8-27B' }], baseline: true, okAt: AT - H, failedLabs: [], ...o },
+  })!;
+
+  it(`fires one card per lab for open weights first seen in ${OPEN_MODEL_NEW_DAYS} days over the threshold, with Hub links and model news`, () => {
+    const news = [story('DeepSeek-V4.2 open weights beat GPT on coding benchmarks', AT - 2 * H), story('DeepSeek hires a new chief scientist', AT - 2 * H)];
+    const feeds = openModelFeeds(ready(payload([
+      hubModel('deepseek-ai/DeepSeek-V4.2', 5, { likes: 2400, downloads: 120_000, license: 'mit' }),
+      hubModel('deepseek-ai/DeepSeek-V4.2-Base', 5, { likes: 300 }),
+      hubModel('Qwen/Qwen3.8-Tiny', 6, { likes: 12, downloads: 900 }),
+      hubModel('mistralai/Mistral-Old', 9 * 24),
+    ])), news, AT);
+    assert.equal(feeds.length, 1);
+    const ind = feeds[0]!.kind === 'fired' ? feeds[0]!.indicator : null;
+    assert.equal(ind?.id, 'open-models:deepseek-ai');
+    assert.equal(ind?.name, 'Open-weight models · DeepSeek');
+    assert.equal(ind?.value, '2 released');
+    assert.equal(ind?.change, 'DeepSeek-V4.2, DeepSeek-V4.2-Base');
+    // Long Hub names stop where they would overflow the one-line change.
+    assert.equal(fitNames(['DeepSeek-V9-Example', 'DeepSeek-V9-Example-Base', 'X'], 40), 'DeepSeek-V9-Example +2 more');
+    assert.equal(ind?.rule, 'open weights first seen ≤ 7 days, ≥ 100 likes or ≥ 10k downloads');
+    assert.equal(ind?.detail, 'DeepSeek-V4.2: text-generation, mit · 2k likes · 120k downloads · DeepSeek-V4.2-Base: text-generation, apache-2.0 · 300 likes · 31k downloads');
+    assert.deepEqual(ind?.trust, { level: 'reported', source: 'Hugging Face Hub', url: 'https://huggingface.co/deepseek-ai/DeepSeek-V4.2' });
+    assert.deepEqual(ind?.links.stories.map((st) => st.item.title), ['DeepSeek-V4.2 open weights beat GPT on coding benchmarks']);
+  });
+
+  it('is quiet below the threshold, names the newest release and a failed lab, and reports stale, missing and unavailable', () => {
+    const [quiet] = openModelFeeds(ready(payload([hubModel('Qwen/Qwen3.8-Tiny', 6, { likes: 12, downloads: 900 })], { failedLabs: ['google'] })), [], AT);
+    assert.equal(quiet!.kind === 'quiet' && quiet!.detail, 'Live · 1 new open-weight model in 7 days, none over the threshold yet · newest Qwen Qwen3.8-27B, 29 Oct · google not read on the last run');
+    // The Hub read older than the cadence allows makes the row stale, though OpenRouter is fresh.
+    assert.equal(openModelFeeds(ready(payload([], { okAt: AT - 14 * H })), [], AT)[0]!.kind, 'stale');
+    // A payload from before #132 has no Hub block: unavailable, not a confident quiet.
+    const old = decodeAiModels({ fetchedAt: AT - H, listed: 477, watched: 210, baseline: true, models: [], changes: [] })!;
+    assert.equal(old.open, null);
+    assert.notEqual(openModelFeeds(ready(old), [], AT)[0]!.kind, 'quiet');
+    const err = openModelFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
+    assert.match(err.kind === 'unavailable' ? err.detail : '', /seed-ai-models/);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { normalizeHfModel } = await import('../scripts/seed-ai-models.mjs');
+    const m = normalizeHfModel({ id: 'google/gemma-5-9b-it', createdAt: new Date(AT - 2 * H).toISOString(), likes: 150, downloads: 4000, pipeline_tag: 'image-text-to-text', tags: ['license:gemma'] }, 'google');
+    const read = decodeAiModels(JSON.parse(JSON.stringify({ fetchedAt: AT - H, listed: 477, watched: 210, baseline: true, models: [], changes: [], open: { models: [{ ...m, firstSeenAt: AT - 2 * H }], latest: [], baseline: true, okAt: AT - H, failedLabs: [] } })))!;
+    const [feed] = openModelFeeds(ready(read), [], AT);
+    assert.equal(feed!.kind === 'fired' && feed!.indicator.detail, 'gemma-5-9b-it: image-text-to-text, gemma · 150 likes · 4k downloads');
   });
 });
 

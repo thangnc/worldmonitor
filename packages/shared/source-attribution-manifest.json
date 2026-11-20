@@ -5163,6 +5163,20 @@
       ]
     },
     {
+      "host": "huggingface.co",
+      "provider": "huggingface.co",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit huggingface.co and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "scripts/seed-ai-models.mjs"
+        }
+      ]
+    },
+    {
       "host": "humanprogress.org",
       "provider": "humanprogress.org",
       "kind": "feed",
