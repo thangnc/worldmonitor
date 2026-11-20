@@ -1259,6 +1259,17 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
       // Germany is not a curated hotspot country.
       expect(panel().textContent).not.toContain('Embassy alert · Germany');
 
+      // Fired cards sit under their region (#116): Hormuz by its point, Taiwan and Ukraine by country.
+      const groupOf = (sel: string) => panel().querySelector(sel)?.closest('[data-feed-group]')?.getAttribute('data-feed-group');
+      expect(groupOf('[data-indicator="chokepoint:hormuz_strait"]')).toBe('gulf-iran');
+      expect(groupOf('[data-indicator="taiwan"]')).toBe('taiwan-strait');
+      expect(groupOf('[data-indicator^="embassy:kyiv:"]')).toBe('eastern-europe');
+      expect(panel().querySelector('[data-feed-group="taiwan-strait"] h3')?.textContent).toContain('Taiwan Strait');
+      // Quiet, stale and unavailable rows stay one block after the groups.
+      expect(panel().querySelector('[data-feed-group] [data-feed]')).toBeNull();
+      expect(panel().querySelector('[data-feed="airspace"]')?.getAttribute('data-feed-state')).toBe('unavailable');
+      expect(panel().querySelector('[data-testid="indicator-counts"]')?.textContent).toContain('by region');
+
       // The Taiwan Strait card opens the Taipei hotspot on the map.
       await vi.waitFor(async () => {
         await flush();

@@ -26,6 +26,12 @@ export const TRUST_MEANING: Readonly<Record<Trust, string>> = {
   market: 'Prices and market-derived values from a quote provider.',
 };
 
+export interface IndicatorPlace {
+  countries?: readonly string[];
+  lat?: number;
+  lon?: number;
+}
+
 export interface Indicator {
   id: string;
   domain: Domain;
@@ -48,6 +54,8 @@ export interface Indicator {
   links: NewsLinks;
   /** The map marker this indicator points at, when its screen has a map ("outage:cf-1", "provider:aws"). */
   focusId?: string;
+  /** Where it happened: ISO2 countries and/or a point. Geopolitics groups its panel by region with it. */
+  place?: IndicatorPlace;
   /** A grounded one-line "why", labelled model inference. Not produced yet. */
   why?: string;
 }

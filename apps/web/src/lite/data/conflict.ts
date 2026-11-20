@@ -254,6 +254,7 @@ export function violenceIndicators(counts: ConflictCounts, news: readonly LiteIt
       at: s.at,
       updatedAt: counts.updatedAt,
       links: linkNews({ countries: [{ name, code: s.code }] }, news, s.at, LINK_WINDOW_HOURS.geo),
+      place: { countries: [s.code] },
     };
   });
 }
