@@ -380,8 +380,10 @@ describe('Lite UI shell', () => {
     expect(development?.textContent).toContain('Lab releases open-weights model');
     expect(development?.textContent).toContain('Benchmarks self-reported.');
     expect(development?.textContent).toContain('Single publisher');
-    expect(root.querySelectorAll('[data-testid="model-tracker"] [data-sample-row]')).toHaveLength(4);
-    expect(root.querySelector('[data-testid="model-tracker"] [data-sample="true"]')).not.toBeNull();
+    // #126: the model tracker reads seed-ai-models; with no data it says so, and no sample rows remain on Tech.
+    expect(root.querySelector('[data-testid="model-tracker"] [data-source-state]')?.textContent).toContain('OpenRouter model list (seed-ai-models)');
+    expect(root.querySelector('[data-testid="model-tracker"] [data-sample-row]')).toBeNull();
+    expect(root.querySelector('[data-lite-screen] [data-sample="true"]')).toBeNull();
   });
 });
 

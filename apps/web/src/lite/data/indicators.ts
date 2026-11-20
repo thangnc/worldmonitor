@@ -45,6 +45,7 @@ const TIER_BY_FEED: Readonly<Record<string, DecisionTier>> = {
   'fear-greed': 'weekly', 'freight-scfi': 'weekly', 'freight-bdi': 'weekly', 'sec-8k': 'weekly',
   // Technology
   'service-outage': 'daily', 'kev-new': 'daily', 'cyber-8k': 'daily', 'internet-outage': 'daily',
+  'ai-models': 'weekly',
 };
 
 /** A feed's tier by its id ("sanctions:RU" reads as "sanctions"); null for analyst inputs. */

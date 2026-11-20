@@ -137,7 +137,7 @@ export const PROVIDER_IDENTITY_GROUPS = Object.freeze({
   'al-jazeera': Object.freeze({
     provider: 'Al Jazeera',
     memberHosts: Object.freeze(['aljazeera.com', 'www.aljazeera.com']),
-    reason: 'The Al Jazeera feed host and its Google News site: search name one publisher.',
+    reason: 'The Al Jazeera feed host and its Google News site: search name one publisher; plus Issue #126, the OpenRouter model list as an ingested source.',
     reviewReference: 'PR #9237 follow-up: 2026-10-17 /verify audit, Al Jazeera claim-pool depth',
   }),
   bbc: Object.freeze({
@@ -527,6 +527,14 @@ const PROVIDER_OVERRIDES = {
     provider: 'Kalshi',
     license: 'Kalshi API terms; commercial-use and redistribution terms require review',
     attribution: 'Kalshi prediction markets; link to the relevant market/API response.',
+    status: 'terms-review',
+  },
+  // Also the LLM chain's provider (packages/server/_shared/llm.ts); since #126 its public
+  // model list is an ingested dataset (seed-ai-models), so the host counts as a source.
+  'openrouter.ai': {
+    provider: 'OpenRouter',
+    license: 'OpenRouter terms of service; the public model list (/api/v1/models) is read without a key. Redistribution terms require review.',
+    attribution: 'Model listings, context lengths and prices from OpenRouter (openrouter.ai); a listing date can be later than the release.',
     status: 'terms-review',
   },
   'api.hyperliquid.xyz': {
@@ -1084,7 +1092,9 @@ const PROVIDER_OVERRIDES = {
 // a provider-bearing override a separate, explicit lifecycle event instead of
 // something `--write` can silently normalize into the manifest.
 export const PROVIDER_IDENTITY_REVIEW = Object.freeze({
-  sha256: 'e9e1c1e84ccaad353d2e316eb3fd845a84bab4def9aa02387d171cc0a86a6fd3',
+  sha256: 'bdd7fa883a1962f32d09258e5d94b6a49ac9965635d169ec9447b71bffe2a020',
+  // 2026-11-20 (#126): OpenRouter leaves the exclusion list: its public model
+  // list is now an ingested dataset (seed-ai-models), in terms review.
   // 2026-11-05 (#10147, #10113): add Statistics Norway and Taiwan oil111
   // as distinct public fuel-price publishers; SSB is CC BY 4.0 and oil111
   // remains in terms review.
@@ -1097,7 +1107,7 @@ export const PROVIDER_IDENTITY_REVIEW = Object.freeze({
   // stated terms of stat.uz (CC BY 4.0), SIMA Niger and Amman Central Market.
   // 2026-10-24: added Shanghai Financial Portal as a distinct official M2
   // republisher; PBOC source credit is preserved under /BQSM/index.html section 2.
-  reason: 'Group the NVD documentation and API hosts as one NVD (NIST) provider with its attribution sentence (#9385). Preserve all reviewed provider identities, including Shanghai Financial Portal with PBOC source attribution (2026-10-24 review). Add the Uzbekistan Statistics Agency as one identity across stat.uz and api.siat.stat.uz, with its CC BY 4.0 terms, and record the citation and reserved-rights terms that SIMA Niger and Greater Amman Municipality state on their sites (#9892). Add the Algerian Ministry of Agriculture (madr.gov.dz) and the National Statistics Office of Mongolia data host (data.1212.mn) as food-price publishers in terms review (#10050). Add the Philippine Department of Energy as one identity across doe.gov.ph and its CloudFront media host, and SONABHY as one identity across www.sonabhy.bf and the Strapi CMS its tariff page reads (#10051). Move Ember electricity data to files.ember-energy.org, where Ember now publishes its monthly release; storage.googleapis.com now serves only GDELT bulk files and joins api.gdeltproject.org as one GDELT identity (2026-11-03).',
+  reason: 'Group the NVD documentation and API hosts as one NVD (NIST) provider with its attribution sentence (#9385). Preserve all reviewed provider identities, including Shanghai Financial Portal with PBOC source attribution (2026-10-24 review). Add the Uzbekistan Statistics Agency as one identity across stat.uz and api.siat.stat.uz, with its CC BY 4.0 terms, and record the citation and reserved-rights terms that SIMA Niger and Greater Amman Municipality state on their sites (#9892). Add the Algerian Ministry of Agriculture (madr.gov.dz) and the National Statistics Office of Mongolia data host (data.1212.mn) as food-price publishers in terms review (#10050). Add the Philippine Department of Energy as one identity across doe.gov.ph and its CloudFront media host, and SONABHY as one identity across www.sonabhy.bf and the Strapi CMS its tariff page reads (#10051). Move Ember electricity data to files.ember-energy.org, where Ember now publishes its monthly release; storage.googleapis.com now serves only GDELT bulk files and joins api.gdeltproject.org as one GDELT identity (2026-11-03). Move OpenRouter (openrouter.ai) from the excluded control-plane hosts to a source in terms review: since #126 seed-ai-models ingests its public model list (2026-11-20).',
   // A URL cited here is scanned like any other: this file sits inside
   // SOURCE_ROOTS, so citing a host that is not already a registered source
   // invents a provider row for it. The B.C. catalogue URLs above are safe
@@ -1156,7 +1166,6 @@ const EXCLUDED_HOSTS = new Set([
   'wa.me',
   't.me',
   'reddit.com',
-  'openrouter.ai',
   // AI model provider (packages/server/_shared/llm-anthropic.ts), not an ingested dataset.
   'api.anthropic.com',
   'api.typesafe.ai',
