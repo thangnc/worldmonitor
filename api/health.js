@@ -421,6 +421,8 @@ const STANDALONE_KEYS = {
   federalRegister: 'policy:federal-register:v1',
   // Lite Geopolitics new restricted parties (#123): seed-sanctions-pressure's projection of its change history.
   cslAdditions: 'sanctions:csl-additions:v1',
+  // Lite Geopolitics travel advisories (#124): US and UK level changes.
+  travelLevels: 'intelligence:travel-levels:v1',
   predictionCountryMarkets: 'prediction:markets-country-index:v1',
   // US HTS chapter 99 duty index (catalog; coverage shards are versioned by
   // release under trade:us-hts:coverage:v1). Read only by get-us-import-duty.
@@ -949,6 +951,11 @@ const SEED_META = {
     key: 'seed-meta:sanctions:csl-additions', maxStaleMin: 720, // written with sanctionsChanges by seed-sanctions-pressure every 6 h
     activationKey: 'seed-activated:sanctions:csl-additions',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 123, activationKey: 'seed-activated:sanctions:csl-additions' },
+  },
+  travelLevels: {
+    key: 'seed-meta:intelligence:travel-levels', maxStaleMin: 360, // seed-travel-advisories every 2 h; 360 = 3x interval
+    activationKey: 'seed-activated:intelligence:travel-levels',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 124, activationKey: 'seed-activated:intelligence:travel-levels' },
   },
   kevRecent: {
     key: 'seed-meta:cyber:kev-recent', maxStaleMin: 2880, // extra key of the daily NVD KEV sync; 2880 = 2x interval
@@ -2757,7 +2764,7 @@ const ON_DEMAND_KEYS = new Set([
   // Lite Tech indicator keys: pending until their seeders write the activation marker.
   'cyberThreatHistory', 'kevRecent',
   // Lite Geopolitics export controls and tariffs (#122) and new restricted parties (#123).
-  'federalRegister', 'cslAdditions',
+  'federalRegister', 'cslAdditions', 'travelLevels',
   // Per-country GDELT article index (#7748). The 15-minute materializer
   // writes the marker after the index and its seed-meta publish; absence is
   // pending until that first tick and strict afterward.
@@ -2979,6 +2986,7 @@ const ACTIVATION_MARKERS = {
   kevRecent: SEED_META.kevRecent.activationKey,
   federalRegister: SEED_META.federalRegister.activationKey,
   cslAdditions: SEED_META.cslAdditions.activationKey,
+  travelLevels: SEED_META.travelLevels.activationKey,
   // Written by scripts/seed-gdelt-bulk-materializer.mjs after the per-country
   // article index publishes with its seed-meta (#7748).
   gdeltCountryArticles: SEED_META.gdeltCountryArticles.activationKey,
@@ -3388,6 +3396,8 @@ const ZERO_RECORD_DATA_OK_KEYS = new Set([
   'federalRegister',
   // A week with no BIS or State listing is valid, but the key must exist (#123).
   'cslAdditions',
+  // A fortnight with no US or UK level change is valid, but the key must exist (#124).
+  'travelLevels',
   'ukmtoIncidents',
   ...EMPTY_DATA_OK_KEYS,
   'sanctionsChanges',

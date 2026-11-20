@@ -64,6 +64,7 @@ import {
   SANCTIONS_WINDOW_HOURS,
   TAIWAN_MIN,
   TAIWAN_RATIO,
+  TRAVEL_WINDOW_HOURS,
 } from '../data/geo-watch';
 import {
   CORROBORATION_RULE,
@@ -650,6 +651,7 @@ function GeoIndicators({ tiles, escalation, escalationSource, onOpen }: { tiles:
     `Region escalation: ${REGION_ESCALATION_RULE}`,
     `Export controls and tariffs: a BIS or USTR rule, proposed rule, or notice that changes controls or tariffs, published in the last ${FED_REG_NEW_DAYS} days (Federal Register; routine notices are dropped).`,
     `New restricted parties: any Entity List addition, or ${RESTRICTED_COUNTRY_MIN} or more additions for one country on one BIS or State Department list, first seen in the last ${RESTRICTED_WINDOW_HOURS} h (US Consolidated Screening List, compared run to run; OFAC additions are the sanctions row).`,
+    `Travel advisories: for a hotspot country, a US State Department level that rises (or a country new to the register at Level 3 or 4), or UK FCDO advice that adds a warning against all or all but essential travel, first seen in the last ${TRAVEL_WINDOW_HOURS} h.`,
     `New sanctions: a new OFAC designation (SDN or Consolidated list) for a country, first seen on the seeder's latest run or dated in the last ${SANCTIONS_WINDOW_HOURS} h; linked news must name the country and sanctions.`,
     'Linked news: digest stories naming the country, place or sea area, 24 h before to 1 h after.',
     'Fired indicators are grouped by region (a country in the region, else its map area), the region with the highest live hotspot score first, newest first inside; the rest are under Other.',

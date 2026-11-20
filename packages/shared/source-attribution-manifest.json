@@ -9781,6 +9781,9 @@
       "references": [
         {
           "path": "scripts/seed-security-advisories.mjs"
+        },
+        {
+          "path": "scripts/seed-travel-advisories.mjs"
         }
       ]
     },
@@ -12237,6 +12240,9 @@
         },
         {
           "path": "scripts/seed-security-advisories.mjs"
+        },
+        {
+          "path": "scripts/seed-travel-advisories.mjs"
         }
       ]
     },

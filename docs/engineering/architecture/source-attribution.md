@@ -732,7 +732,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | Toronto Police Service Open Data (www.tps.ca) | structured — scripts/lib/tps-open-data.mjs |
 | Toronto Transit Commission (TTC) GTFS-RT (gtfsrt.ttc.ca) | structured — scripts/seed-ttc-alerts.mjs |
 | TradingView (scanner.tradingview.com) | structured — scripts/_sp500-breadth.mjs |
-| travel.state.gov (travel.state.gov) | structured — scripts/seed-security-advisories.mjs |
+| travel.state.gov (travel.state.gov) | structured — scripts/seed-security-advisories.mjs, scripts/seed-travel-advisories.mjs |
 | Travelpayouts flight-price data (api.travelpayouts.com) | Excluded / candidate — No current fetch observed |
 | treasury.gov (treasury.gov) | feed — packages/shared/news-catalog.json |
 | trumpstruth.org (trumpstruth.org) | feed — packages/shared/news-catalog.json |
@@ -903,7 +903,7 @@ This generated inventory covers **846 active source hosts** representing **826 a
 | www.google.com (www.google.com) | structured — scripts/ais-relay.cjs |
 | www.googleapis.com (www.googleapis.com) | Excluded / candidate — No current fetch observed |
 | www.gov.br (www.gov.br) | structured — scripts/seed-fuel-prices.mjs, scripts/shared/regional-energy-feeds.json |
-| www.gov.uk (www.gov.uk) | feed+structured — packages/server/worldmonitor/displacement/v1/cross-border-data.ts, packages/shared/news-catalog.json, scripts/lib/border-route-sources.mjs, scripts/seed-fuel-prices.mjs, +1 more |
+| www.gov.uk (www.gov.uk) | feed+structured — packages/server/worldmonitor/displacement/v1/cross-border-data.ts, packages/shared/news-catalog.json, scripts/lib/border-route-sources.mjs, scripts/seed-fuel-prices.mjs, +2 more |
 | www.gub.uy (www.gub.uy) | structured — scripts/shared/regional-energy-feeds.json |
 | www.handybulk.com (www.handybulk.com) | structured — scripts/seed-supply-chain-trade.mjs |
 | www.hotnews.ro (www.hotnews.ro) | feed — packages/shared/news-catalog.json |

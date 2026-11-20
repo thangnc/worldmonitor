@@ -30,7 +30,7 @@ import { MILITARY_QUERY_REGIONS } from '@wm/client/config/military';
 import { isConflictCounts, type ConflictCounts } from './conflict';
 import { isGpsHighCells, type GpsHighCells } from './geo-layers';
 import { isDdosWindows, type DdosWindows } from './tech-map';
-import { decodeCslAdditions, decodeFederalRegister, isCrossStraitSnapshot, type CslAdditionsFeed, type EmbassyAlerts, type FederalRegisterFeed } from './geo-watch';
+import { decodeCslAdditions, decodeFederalRegister, decodeTravelLevels, isCrossStraitSnapshot, type CslAdditionsFeed, type EmbassyAlerts, type FederalRegisterFeed, type TravelLevelsFeed } from './geo-watch';
 import type { CrossStraitActivitySnapshot } from '@wm/client/types/cross-strait-activity';
 import type { ListUkmtoIncidentsResponse } from '@wm/contracts/generated/client/worldmonitor/maritime/v1/service_client';
 import { readUkmtoSnapshot } from '@wm/shared/ukmto-incidents';
@@ -418,6 +418,12 @@ export async function loadFederalRegister(): Promise<FederalRegisterFeed> {
 export async function loadCslAdditions(): Promise<CslAdditionsFeed> {
   await startBootstrap();
   return required('cslAdditions', decodeCslAdditions(await ensureHydrated('cslAdditions')));
+}
+
+/** US and UK travel advisory level changes of the last 14 days (seed-travel-advisories, #124). */
+export async function loadTravelLevels(): Promise<TravelLevelsFeed> {
+  await startBootstrap();
+  return required('travelLevels', decodeTravelLevels(await ensureHydrated('travelLevels')));
 }
 
 /** CISA KEV additions of the last 30 days (seed-cve-reference). */
