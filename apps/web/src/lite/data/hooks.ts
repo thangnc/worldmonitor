@@ -34,6 +34,7 @@ export const useCrossStraitActivity = () => useResource('crossStraitActivity', s
 export const useFederalRegister = () => useResource('federalRegister', src.loadFederalRegister);
 export const useCslAdditions = () => useResource('cslAdditions', src.loadCslAdditions);
 export const useEuSanctions = () => useResource('euSanctions', src.loadEuSanctions);
+export const useUkSanctions = () => useResource('ukSanctions', src.loadUkSanctions);
 export const useTravelLevels = () => useResource('travelLevels', src.loadTravelLevels);
 export const useEmbassyAlerts = () => useResource('embassyAlerts', src.loadEmbassyAlerts);
 export const useCryptoQuotes = () => useResource('cryptoQuotes', src.loadCryptoQuotes);

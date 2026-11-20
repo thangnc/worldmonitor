@@ -422,6 +422,8 @@ const STANDALONE_KEYS = {
   // Lite Geopolitics new restricted parties (#123): seed-sanctions-pressure's projection of its change history.
   cslAdditions: 'sanctions:csl-additions:v1',
   euSanctions: 'sanctions:eu-additions:v1',
+  // Lite Geopolitics UK sanctions (#140): new UK sanctions designations.
+  ukSanctions: 'sanctions:uk-additions:v1',
   // Lite Geopolitics travel advisories (#124): US and UK level changes.
   travelLevels: 'intelligence:travel-levels:v1',
   // Lite Finance Fed decision odds (#125): Kalshi KXFED outcome odds.
@@ -973,6 +975,11 @@ const SEED_META = {
     key: 'seed-meta:sanctions:eu-additions', maxStaleMin: 720, // seed-eu-sanctions every 6 h, as cslAdditions
     activationKey: 'seed-activated:sanctions:eu-additions',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 129, activationKey: 'seed-activated:sanctions:eu-additions' },
+  },
+  ukSanctions: {
+    key: 'seed-meta:sanctions:uk-additions', maxStaleMin: 720, // seed-uk-sanctions every 6 h, as euSanctions
+    activationKey: 'seed-activated:sanctions:uk-additions',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 140, activationKey: 'seed-activated:sanctions:uk-additions' },
   },
   cslAdditions: {
     key: 'seed-meta:sanctions:csl-additions', maxStaleMin: 720, // written with sanctionsChanges by seed-sanctions-pressure every 6 h
@@ -2846,7 +2853,7 @@ const ON_DEMAND_KEYS = new Set([
   // Lite Tech indicator keys: pending until their seeders write the activation marker.
   'cyberThreatHistory', 'kevRecent',
   // Lite Geopolitics export controls and tariffs (#122) and new restricted parties (#123).
-  'federalRegister', 'cslAdditions', 'euSanctions', 'travelLevels',
+  'federalRegister', 'cslAdditions', 'euSanctions', 'ukSanctions', 'travelLevels',
   // Lite Finance Fed decision odds (#125), central bank decisions (#130), Tech AI models (#126) and AI regulation (#127).
   'rateOdds', 'macroForecasts', 'cbDecisions', 'reverseRepo', 'stablecoinSupply', 'aiModels', 'aiRegulation', 'dataBreaches', 'aiLabNews', 'chipRevenue', 'hyperscalerCapex',
   // Per-country GDELT article index (#7748). The 15-minute materializer
@@ -3071,6 +3078,7 @@ const ACTIVATION_MARKERS = {
   federalRegister: SEED_META.federalRegister.activationKey,
   cslAdditions: SEED_META.cslAdditions.activationKey,
   euSanctions: SEED_META.euSanctions.activationKey,
+  ukSanctions: SEED_META.ukSanctions.activationKey,
   travelLevels: SEED_META.travelLevels.activationKey,
   rateOdds: SEED_META.rateOdds.activationKey,
   macroForecasts: SEED_META.macroForecasts.activationKey,

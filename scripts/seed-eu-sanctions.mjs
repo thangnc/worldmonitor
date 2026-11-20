@@ -43,7 +43,8 @@ const USER_AGENT = 'WorldMonitor eu-sanctions seeder (+https://worldmonitor.app)
 const DAY_MS = 24 * 3600 * 1000;
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
-const decode = (s) => String(s ?? '')
+/** XML text or an attribute value with its entities decoded and whitespace collapsed (seed-uk-sanctions reads its text the same way). */
+export const decodeXmlText = (s) => String(s ?? '')
   .replace(/&(amp|lt|gt|quot|apos);/g, (_, e) => ENTITIES[/** @type {keyof typeof ENTITIES} */ (e)])
   .replace(/&#(x[0-9a-f]+|\d+);/gi, (_, n) => String.fromCodePoint(n[0].toLowerCase() === 'x' ? Number.parseInt(n.slice(1), 16) : Number(n)))
   .replace(/\s+/g, ' ')
@@ -52,7 +53,7 @@ const decode = (s) => String(s ?? '')
 /** The attributes of one start tag, decoded. */
 export function attrs(tag) {
   const out = /** @type {Record<string, string>} */ ({});
-  for (const m of tag.matchAll(/([\w:-]+)="([^"]*)"/g)) out[m[1].replace(/^\w+:/, '')] = decode(m[2]);
+  for (const m of tag.matchAll(/([\w:-]+)="([^"]*)"/g)) out[m[1].replace(/^\w+:/, '')] = decodeXmlText(m[2]);
   return out;
 }
 
@@ -80,7 +81,7 @@ export function parseEntity(open, body) {
   if (!id || !alias) return null;
   // A `<regulation>` is self-closing or holds its `<publicationUrl>`.
   const acts = [...body.matchAll(/<(?:\w+:)?regulation\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?regulation>)/g)]
-    .map((m) => ({ ...attrs(m[1]), url: eurLex(decode(/<(?:\w+:)?publicationUrl>([^<]*)</.exec(m[2] ?? '')?.[1] ?? '')) }))
+    .map((m) => ({ ...attrs(m[1]), url: eurLex(decodeXmlText(/<(?:\w+:)?publicationUrl>([^<]*)</.exec(m[2] ?? '')?.[1] ?? '')) }))
     .filter((r) => DATE.test(r.publicationDate ?? ''))
     .sort((x, y) => y.publicationDate.localeCompare(x.publicationDate));
   const latest = acts[0];
