@@ -54,7 +54,7 @@ import type {
 import type { CyberThreat } from '@wm/contracts/generated/client/worldmonitor/cyber/v1/service_client';
 import type { CloudRegion } from '@wm/client/config/tech-geo';
 import type { AIDataCenter, UnderseaCable } from '@wm/client/types';
-import { decodeAiModels, decodeRecentKev, decodeThreatHistory, type AiModels, type RecentKev, type ThreatHistory } from './tech-indicators';
+import { decodeAiModels, decodeAiRegulation, decodeRecentKev, decodeThreatHistory, type AiModels, type AiRegulation, type RecentKev, type ThreatHistory } from './tech-indicators';
 import { CREDIT_SERIES, decodeCreditSpreads, decodeRateOdds, type CreditSpreads, type RateOdds } from './finance-macro-indicators';
 import { VIX_FRED_SERIES } from './finance-indicators';
 import {
@@ -442,6 +442,12 @@ export async function loadRecentKev(): Promise<RecentKev> {
 export async function loadAiModels(): Promise<AiModels> {
   await startBootstrap();
   return required('aiModels', decodeAiModels(await ensureHydrated('aiModels')));
+}
+
+/** EU and US AI and data rules of the last 60 days (seed-ai-regulation, #127). */
+export async function loadAiRegulation(): Promise<AiRegulation> {
+  await startBootstrap();
+  return required('aiRegulation', decodeAiRegulation(await ensureHydrated('aiRegulation')));
 }
 
 // The Technology map's layers.

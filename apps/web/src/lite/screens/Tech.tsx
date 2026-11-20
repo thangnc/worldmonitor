@@ -12,6 +12,7 @@ import { LegendRow, MapLegend } from '../map/legend';
 import {
   selectTechDevelopments,
   useAiModels,
+  useAiRegulation,
   useArxiv,
   useCableHealth,
   useCountryShapes,
@@ -435,11 +436,37 @@ function jurisdiction(country: string): string {
   return map[country] ?? country.slice(0, 2).toUpperCase();
 }
 
+const LIVE_RULES = 3;
+
 function Policy() {
-  const actions = getLatestActions(4);
+  const regulation = useAiRegulation();
+  const live = regulation.status === 'ready' ? regulation.data.items.slice(0, LIVE_RULES) : [];
+  const actions = getLatestActions(live.length ? 2 : 4);
   const next = getUpcomingDeadlines()[0];
   return (
-    <Panel title="Policy & governance" sub="curated" right={<span class="font-mono text-[10px] text-dim" title="From packages/client/config/ai-regulations.ts, a hand-maintained list.">STATIC LIST</span>} testId="policy">
+    <Panel
+      title="Policy & governance"
+      sub="live EU and US rules · curated milestones"
+      right={<span class="font-mono text-[10px] text-dim" title="Live: EUR-Lex, the European Commission and the Federal Register (seed-ai-regulation, #127). Below: packages/client/config/ai-regulations.ts, a hand-maintained list.">LIVE + CURATED</span>}
+      testId="policy"
+    >
+      {regulation.status === 'ready' ? (
+        live.length ? live.map((r) => (
+          <a key={r.id} href={r.url || undefined} target="_blank" rel="noopener noreferrer" class="flex items-center gap-[10px] hover:opacity-90" data-ai-rule={r.id}>
+            <span class="flex h-[22px] w-[30px] shrink-0 items-center justify-center rounded-[4px] border border-line font-mono text-[10.5px] font-semibold text-muted">{r.jurisdiction}</span>
+            <span class="flex min-w-0 flex-1 flex-col gap-[2px]">
+              <span class="truncate text-[12.5px] font-medium text-ink" title={r.title}>{r.title}</span>
+              <span class="font-mono text-[11px] text-dim">{r.dateKind === 'seen' ? 'first seen ' : ''}{new Date(r.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}{r.agency ? ` · ${r.agency}` : ''}</span>
+            </span>
+            <span class="text-[11px] text-muted">{r.kind}</span>
+          </a>
+        )) : (
+          <p class="text-[12px] text-dim" data-source-state="ready">No EU or US AI or data rule in the last {regulation.data.logDays} days.</p>
+        )
+      ) : (
+        <SourceState state={regulation} source="EUR-Lex, the Commission and the Federal Register (seed-ai-regulation)" pad={false} />
+      )}
+      <p class="font-mono text-[10px] uppercase tracking-[0.08em] text-dim">Curated milestones</p>
       {actions.map((a) => {
         const status = ACTION_STATUS[a.type] ?? { label: a.type, tone: 'muted' as Tone };
         return (

@@ -245,6 +245,15 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['AI models indicator', 'Model tracker'],
   },
   {
+    id: 'ai-regulation', name: 'AI and data rules · EU and US', domain: 'tech', kind: 'Official documents', method: 'RSS',
+    producer: 'seed-ai-regulation', healthKeys: ['aiRegulation'], maxStaleMin: 360,
+    hosts: [
+      { host: 'digital-strategy.ec.europa.eu', licence: 'terms-review' }, { host: 'eur-lex.europa.eu', licence: 'terms-review' },
+      { host: 'www.federalregister.gov', licence: 'terms-review' },
+    ],
+    usedBy: ['AI regulation indicator', 'Policy & governance panel'],
+  },
+  {
     id: 'digest-tech', name: 'News digest · tech', domain: 'tech', kind: 'News aggregate', method: 'RSS',
     producer: 'list-feed-digest', digest: 'tech', hosts: [],
     usedBy: ['Material developments', 'Watched topics'],
