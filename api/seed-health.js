@@ -233,6 +233,7 @@ const SEED_DOMAINS = {
   'economic:macro-forecasts': { key: 'seed-meta:economic:macro-forecasts', intervalMin: 90, activationKey: 'seed-activated:economic:macro-forecasts' }, // #128; maxStaleMin / 2 (180 / 2), matching api/health.js
   'economic:central-bank-decisions': { key: 'seed-meta:economic:central-bank-decisions', intervalMin: 45, activationKey: 'seed-activated:economic:central-bank-decisions' }, // #130; maxStaleMin / 2 (90 / 2), matching api/health.js
   'tech:ai-models':           { key: 'seed-meta:tech:ai-models',           intervalMin: 540, activationKey: 'seed-activated:tech:ai-models' }, // #126; maxStaleMin / 2 (1080 / 2), matching api/health.js
+  'tech:hyperscaler-capex':   { key: 'seed-meta:tech:hyperscaler-capex',   intervalMin: 540, activationKey: 'seed-activated:tech:hyperscaler-capex' }, // #135; maxStaleMin / 2 (1080 / 2), matching api/health.js
   'tech:chip-revenue':        { key: 'seed-meta:tech:chip-revenue',        intervalMin: 540, activationKey: 'seed-activated:tech:chip-revenue' }, // #134; maxStaleMin / 2 (1080 / 2), matching api/health.js
   'tech:ai-lab-news':         { key: 'seed-meta:tech:ai-lab-news',         intervalMin: 270, activationKey: 'seed-activated:tech:ai-lab-news' }, // #133; maxStaleMin / 2 (540 / 2), matching api/health.js
   'cyber:breaches':           { key: 'seed-meta:cyber:breaches',           intervalMin: 270, activationKey: 'seed-activated:cyber:breaches' }, // #131; maxStaleMin / 2 (540 / 2), matching api/health.js

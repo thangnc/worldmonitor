@@ -629,8 +629,8 @@ This generated inventory covers **858 active source hosts** representing **838 a
 | search.yahoo.com (search.yahoo.com) | Excluded / candidate — No current fetch observed |
 | searchadvisor.naver.com (searchadvisor.naver.com) | Excluded / candidate — No current fetch observed |
 | searchconsole.googleapis.com (searchconsole.googleapis.com) | Excluded / candidate — No current fetch observed |
-| SEC (www.sec.gov) | feed+structured — packages/shared/news-catalog.json, scripts/openapi-inject-examples.mjs, scripts/seed-regulatory-actions.mjs, scripts/seed-sec-8k-stream.mjs, +1 more |
-| SEC EDGAR (data.sec.gov) | structured — packages/server/_shared/sec-edgar.ts |
+| SEC (www.sec.gov) | feed+structured — apps/web/src/lite/data/tech-indicators.ts, packages/shared/news-catalog.json, scripts/openapi-inject-examples.mjs, scripts/seed-regulatory-actions.mjs, +2 more |
+| SEC EDGAR (data.sec.gov) | structured — packages/server/_shared/sec-edgar.ts, scripts/seed-hyperscaler-capex.mjs |
 | SEC EDGAR Full-Text Search (efts.sec.gov) | structured — packages/server/_shared/sec-edgar.ts |
 | sedeaplicaciones.minetur.gob.es (sedeaplicaciones.minetur.gob.es) | structured — scripts/backfill-fuel-prices-prev.mjs, scripts/seed-fuel-prices.mjs |
 | seekingalpha.com (seekingalpha.com) | feed — packages/shared/news-catalog.json |

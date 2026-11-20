@@ -295,6 +295,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['TSMC monthly revenue indicator'],
   },
   {
+    id: 'hyperscaler-capex', name: 'Hyperscaler capital spending · SEC EDGAR', domain: 'tech', kind: 'Official (company filings)', method: 'API',
+    producer: 'seed-hyperscaler-capex', healthKeys: ['hyperscalerCapex'], maxStaleMin: 1080,
+    hosts: [{ host: 'data.sec.gov', licence: 'reviewed' }],
+    usedBy: ['Hyperscaler capital spending indicator'],
+  },
+  {
     id: 'digest-tech', name: 'News digest · tech', domain: 'tech', kind: 'News aggregate', method: 'RSS',
     producer: 'list-feed-digest', digest: 'tech', hosts: [],
     usedBy: ['Material developments', 'Watched topics'],

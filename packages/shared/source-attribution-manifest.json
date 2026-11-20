@@ -2931,6 +2931,9 @@
       "references": [
         {
           "path": "packages/server/_shared/sec-edgar.ts"
+        },
+        {
+          "path": "scripts/seed-hyperscaler-capex.mjs"
         }
       ]
     },
@@ -13799,6 +13802,9 @@
       "attribution": "U.S. Securities and Exchange Commission (SEC).",
       "status": "reviewed",
       "references": [
+        {
+          "path": "apps/web/src/lite/data/tech-indicators.ts"
+        },
         {
           "path": "packages/shared/news-catalog.json"
         },

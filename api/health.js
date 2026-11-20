@@ -439,6 +439,8 @@ const STANDALONE_KEYS = {
   aiLabNews: 'tech:ai-lab-news:v1',
   // Lite Tech TSMC monthly revenue (#134).
   chipRevenue: 'tech:chip-revenue:v1',
+  // Lite Tech hyperscaler capital spending (#135).
+  hyperscalerCapex: 'tech:hyperscaler-capex:v1',
   predictionCountryMarkets: 'prediction:markets-country-index:v1',
   // US HTS chapter 99 duty index (catalog; coverage shards are versioned by
   // release under trade:us-hts:coverage:v1). Read only by get-us-import-duty.
@@ -1002,6 +1004,11 @@ const SEED_META = {
     key: 'seed-meta:tech:chip-revenue', maxStaleMin: 1080, // seed-chip-revenue every 6 h; 1080 = 3x interval
     activationKey: 'seed-activated:tech:chip-revenue',
     cutover: { mode: 'activation-marker', fromKey: null, issue: 134, activationKey: 'seed-activated:tech:chip-revenue' },
+  },
+  hyperscalerCapex: {
+    key: 'seed-meta:tech:hyperscaler-capex', maxStaleMin: 1080, // seed-hyperscaler-capex every 6 h; 1080 = 3x interval
+    activationKey: 'seed-activated:tech:hyperscaler-capex',
+    cutover: { mode: 'activation-marker', fromKey: null, issue: 135, activationKey: 'seed-activated:tech:hyperscaler-capex' },
   },
   aiLabNews: {
     key: 'seed-meta:tech:ai-lab-news', maxStaleMin: 540, // seed-ai-lab-news every 3 h; 540 = 3x interval
@@ -2827,7 +2834,7 @@ const ON_DEMAND_KEYS = new Set([
   // Lite Geopolitics export controls and tariffs (#122) and new restricted parties (#123).
   'federalRegister', 'cslAdditions', 'euSanctions', 'travelLevels',
   // Lite Finance Fed decision odds (#125), central bank decisions (#130), Tech AI models (#126) and AI regulation (#127).
-  'rateOdds', 'macroForecasts', 'cbDecisions', 'aiModels', 'aiRegulation', 'dataBreaches', 'aiLabNews', 'chipRevenue',
+  'rateOdds', 'macroForecasts', 'cbDecisions', 'aiModels', 'aiRegulation', 'dataBreaches', 'aiLabNews', 'chipRevenue', 'hyperscalerCapex',
   // Per-country GDELT article index (#7748). The 15-minute materializer
   // writes the marker after the index and its seed-meta publish; absence is
   // pending until that first tick and strict afterward.
@@ -3059,6 +3066,7 @@ const ACTIVATION_MARKERS = {
   dataBreaches: SEED_META.dataBreaches.activationKey,
   aiLabNews: SEED_META.aiLabNews.activationKey,
   chipRevenue: SEED_META.chipRevenue.activationKey,
+  hyperscalerCapex: SEED_META.hyperscalerCapex.activationKey,
   // Written by scripts/seed-gdelt-bulk-materializer.mjs after the per-country
   // article index publishes with its seed-meta (#7748).
   gdeltCountryArticles: SEED_META.gdeltCountryArticles.activationKey,

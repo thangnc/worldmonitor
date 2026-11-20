@@ -40,6 +40,10 @@ import {
   CHIP_YOY_SHIFT_PTS,
   chipRevenueFeeds,
   decodeChipRevenue,
+  CAPEX_YOY_SHIFT_PTS,
+  capexTotal,
+  decodeHyperscalerCapex,
+  hyperscalerCapexFeeds,
   labNewsFeeds,
   fitNames,
   openModelFeeds,
@@ -2155,6 +2159,81 @@ describe('AI lab announcements (#133)', () => {
     const read = decodeAiLabNews(JSON.parse(JSON.stringify({ fetchedAt: AT - H, keepDays: 14, sources: { openai: ok, google: ok, deepmind: ok, anthropic: ok }, posts })))!;
     const [f] = labNewsFeeds(ready(read), [], AT);
     assert.equal(f!.kind === 'fired' && f!.indicator.name, 'Lab announcement · Google DeepMind');
+  });
+});
+
+describe('Hyperscaler capital spending (#135)', () => {
+  const start = (end: string) => `${end.slice(0, 5)}${String(Number(end.slice(5, 7)) - 2).padStart(2, '0')}-01`;
+  const q = (end: string, bn: number, o: Record<string, unknown> = {}) => ({ start: start(end), end, value: bn * 1e9, filed: '2026-10-28', form: '10-Q', accn: '', derived: false, ...o });
+  // Each company: Jul–Sep and Apr–Jun of 2026 and 2025. Quiet ones grow 50% y/y in both quarters (no shift).
+  const firm = (ticker: string, name: string, cik: string, quarters: unknown[]) => ({ ticker, name, cik, quarters });
+  const flat = (filed = '2026-10-28') => [q('2026-09-30', 30, { filed }), q('2026-06-30', 30), q('2025-09-30', 20), q('2025-06-30', 20)];
+  const payload = (amazon: unknown[], o: Record<string, unknown> = {}) => decodeHyperscalerCapex({
+    fetchedAt: AT - H,
+    companies: [firm('MSFT', 'Microsoft', '0000789019', flat()), firm('GOOGL', 'Alphabet', '0001652044', flat()), firm('AMZN', 'Amazon', '0001018724', amazon), firm('META', 'Meta', '0001326801', flat())],
+    ...o,
+  })!;
+  // Amazon, filed two days before AT: +100% y/y in Jul–Sep against +50% in Apr–Jun, a 50-point shift.
+  const amazon = (o: Record<string, unknown> = {}) => [
+    q('2026-09-30', 80, { filed: '2026-11-06', accn: '0001018724-26-000030', ...o }), q('2026-06-30', 60), q('2025-09-30', 40), q('2025-06-30', 40),
+  ];
+
+  it('decodes strictly, newest quarter first', () => {
+    assert.equal(decodeHyperscalerCapex(null), null);
+    assert.equal(decodeHyperscalerCapex({ fetchedAt: AT, companies: [] }), null, 'no company is not a reading');
+    const d = decodeHyperscalerCapex({ fetchedAt: AT, companies: [firm('MSFT', 'Microsoft', '1', [q('2025-09-30', 20), q('2026-09-30', 30), { end: 'Sep', value: 1 }])] })!;
+    assert.deepEqual(d.companies[0]!.quarters.map((x) => x.end), ['2026-09-30', '2025-09-30']);
+    assert.deepEqual(capexTotal(payload(amazon())), { quarter: payload(amazon()).companies[0]!.quarters[0], total: 170e9, yoy: 70 });
+  });
+
+  it(`fires when a company's y/y growth moves ${CAPEX_YOY_SHIFT_PTS}+ pts from the quarter before, within a week of the filing, with news naming it and its spending`, () => {
+    const news = [story('Amazon lifts capital spending again on AI data centres', AT - 20 * H), story('Score a 49% saving on a Samsung SSD at Amazon', AT - 20 * H), story('Cloud prices steady', AT - 20 * H)];
+    const feeds = hyperscalerCapexFeeds(ready(payload(amazon())), news, AT);
+    assert.equal(feeds.length, 1, 'only the fired card');
+    const ind = feeds[0]!.kind === 'fired' ? feeds[0]!.indicator : null;
+    assert.equal(ind?.id, 'hyperscaler-capex:AMZN');
+    assert.equal(ind?.name, 'Amazon capital spending · Jul–Sep 2026');
+    assert.equal(ind?.value, '$80.0bn');
+    assert.equal(ind?.change, '+100.0% y/y');
+    assert.equal(ind?.rule, 'y/y growth ±15 pts from the quarter before');
+    assert.equal(ind?.detail, 'y/y growth +50.0 pts from Apr–Jun 2026 +50.0% · all four $170.0bn, +70.0% y/y in Jul–Sep 2026');
+    assert.deepEqual(ind?.trust, { level: 'official', source: 'Amazon 10-Q via SEC EDGAR', url: 'https://www.sec.gov/Archives/edgar/data/1018724/000101872426000030/0001018724-26-000030-index.htm' });
+    assert.equal(ind?.dataDate, 'filed 6 Nov');
+    assert.deepEqual(ind?.links.stories.map((st) => st.item.title), ['Amazon lifts capital spending again on AI data centres']);
+    // A quarter in doubt (year-to-date figures on two bases) is not compared: no card, and the four together fall back
+    // to the quarter before.
+    const [doubted] = hyperscalerCapexFeeds(ready(payload(amazon({ derived: true, doubt: 'restated' }))), news, AT);
+    assert.equal(doubted!.kind, 'quiet');
+    assert.match(doubted!.kind === 'quiet' ? doubted!.detail : '', /^Live · all four \$150\.0bn, \+50\.0% y\/y in Apr–Jun 2026 · .*Amazon n\/a \(restated figures, not compared\)/);
+    // A quarter computed from year-to-date figures says so.
+    const derived = hyperscalerCapexFeeds(ready(payload(amazon({ derived: true }))), [], AT)[0]!;
+    assert.match(derived.kind === 'fired' ? derived.indicator.detail ?? '' : '', /year to date less the quarter before/);
+  });
+
+  it('is quiet on a small shift or an old filing, and reports stale and unavailable', () => {
+    const [quiet] = hyperscalerCapexFeeds(ready(payload(amazon({ filed: '2026-10-30' }))), [], AT);
+    assert.equal(quiet!.kind === 'quiet' && quiet!.detail,
+      'Live · all four $170.0bn, +70.0% y/y in Jul–Sep 2026 · latest quarters y/y: Microsoft +50.0% (+0.0 pts), Alphabet +50.0% (+0.0 pts), Amazon +100.0% (+50.0 pts), Meta +50.0% (+0.0 pts) · fires at ±15 pts within 7 days of a filing');
+    assert.equal(hyperscalerCapexFeeds(ready(payload(flat('2026-11-06'))), [], AT)[0]!.kind, 'quiet', 'a fresh filing with no shift');
+    assert.equal(hyperscalerCapexFeeds(ready(payload(amazon(), { fetchedAt: AT - 13 * H })), [], AT)[0]!.kind, 'stale');
+    const err = hyperscalerCapexFeeds({ status: 'error', data: null, at: AT, error: 'x' }, [], AT)[0]!;
+    assert.match(err.kind === 'unavailable' ? err.detail : '', /seed-hyperscaler-capex/);
+  });
+
+  it('reads what the seeder writes (producer → reader)', async () => {
+    const { quarterly } = await import('../scripts/seed-hyperscaler-capex.mjs');
+    const f = (start: string, end: string, val: number, filed: string, form = '10-Q') => ({ start, end, val, filed, form, accn: '0001652044-26-000123' });
+    const facts = [
+      f('2025-01-01', '2025-03-31', 17_197e6, '2025-04-25'), f('2025-01-01', '2025-06-30', 39_643e6, '2025-07-24'), f('2025-01-01', '2025-09-30', 63_596e6, '2025-10-30'),
+      f('2026-01-01', '2026-03-31', 35_674e6, '2026-04-30'), f('2026-01-01', '2026-06-30', 80_598e6, '2026-07-23'), f('2026-01-01', '2026-09-30', 131_953e6, '2026-10-29'),
+    ];
+    const qs = quarterly(facts);
+    const written = { fetchedAt: AT - H, unit: 'USD', companies: ['Microsoft', 'Alphabet', 'Amazon', 'Meta'].map((name, i) => ({ ticker: String(i), name, cik: '1652044', concept: 'x', quarters: qs })) };
+    const read = decodeHyperscalerCapex(JSON.parse(JSON.stringify(written)))!;
+    const [feed] = hyperscalerCapexFeeds(ready(read), [], AT);
+    assert.match(feed!.kind === 'quiet' ? feed!.detail : '', /Alphabet \+114\.4% \(\+14\.3 pts\)/);
+    const dayAfterFiling = hyperscalerCapexFeeds(ready(read), [], Date.UTC(2026, 9, 30, 12))[0]!;
+    assert.equal(dayAfterFiling.kind, 'quiet', 'a 14.3-point shift stays under the trigger');
   });
 });
 

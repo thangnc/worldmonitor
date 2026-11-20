@@ -131,6 +131,12 @@ export const CHIP_YOY_SHIFT_PTS = 10;
 export const CHIP_NEW_DAYS = 7;
 /** seed-chip-revenue runs every 6 h. */
 export const CHIP_CADENCE_MIN = 360;
+/** A hyperscaler's year-on-year capital spending growth moving this many points from the quarter before fires (#135). */
+export const CAPEX_YOY_SHIFT_PTS = 15;
+/** A quarter fires for this long after its filing. */
+export const CAPEX_NEW_DAYS = 7;
+/** seed-hyperscaler-capex runs every 6 h. */
+export const CAPEX_CADENCE_MIN = 360;
 /** A lab's own release announcement fires for this long (#133). */
 export const LAB_NEWS_NEW_DAYS = 7;
 /** seed-ai-lab-news runs every 3 h. */
@@ -171,6 +177,7 @@ export const TECH_RULES =
   `an 8-K reporting item ${CYBER_8K_ITEM} (material cybersecurity incident) in the last ${FILING_WINDOW_HOURS} h; ` +
   `a model from a watched AI lab (OpenAI, Anthropic, Google, Meta, Mistral, xAI, DeepSeek, Qwen) listed on OpenRouter in the last ${AI_NEW_DAYS} days, or a price change of ${AI_PRICE_PCT}% or more on one; ` +
   `TSMC's monthly revenue growth year on year moving ${CHIP_YOY_SHIFT_PTS} points or more from the month before, or falling year on year, filed in the last ${CHIP_NEW_DAYS} days; ` +
+  `Microsoft's, Alphabet's, Amazon's or Meta's quarterly capital spending growth year on year moving ${CAPEX_YOY_SHIFT_PTS} points or more from the quarter before, filed in the last ${CAPEX_NEW_DAYS} days; ` +
   `a release announcement (a model or product introduced or made available) on OpenAI's, Google's, Google DeepMind's or Anthropic's own site in the last ${LAB_NEWS_NEW_DAYS} days; ` +
   `open weights from Meta, Mistral, Qwen, DeepSeek or Google first seen on Hugging Face in the last ${OPEN_MODEL_NEW_DAYS} days with ${OPEN_MODEL_MIN_LIKES}+ likes or ${OPEN_MODEL_MIN_DOWNLOADS.toLocaleString('en-US')}+ downloads; ` +
   `an EU act, implementing act or guidelines on AI or data, or a US final or proposed rule on AI, published in the last ${AI_REG_NEW_DAYS} days; ` +
@@ -484,6 +491,7 @@ export function techFeeds(input: {
   breaches?: ResourceState<Breaches>;
   labNews?: ResourceState<AiLabNews>;
   chipRevenue?: ResourceState<ChipRevenue>;
+  capex?: ResourceState<HyperscalerCapex>;
   news: readonly LiteItem[];
   now: number;
 }): FeedState[] {
@@ -500,6 +508,7 @@ export function techFeeds(input: {
     ...(input.breaches ? breachFeeds(input.breaches, news, now) : []),
     ...(input.labNews ? labNewsFeeds(input.labNews, news, now) : []),
     ...(input.chipRevenue ? chipRevenueFeeds(input.chipRevenue, news, now) : []),
+    ...(input.capex ? hyperscalerCapexFeeds(input.capex, news, now) : []),
   ]);
 }
 
@@ -1257,4 +1266,175 @@ export function chipRevenueFeeds(source: ResourceState<ChipRevenue>, news: reado
       `fires at ±${CHIP_YOY_SHIFT_PTS} pts or a y/y fall${near ? ' · near the trigger' : ''}`,
     ].filter(Boolean).join(' · '),
   }, reading)];
+}
+
+// ---- Hyperscaler capital spending (#135) -------------------------------------------
+
+export interface CapexQuarter {
+  /** "2026-07-01" to "2026-09-30". */
+  start: string;
+  end: string;
+  /** US$. */
+  value: number;
+  /** The EDGAR filing that first reported it: its date ("2026-10-28"), form and accession number. */
+  filed: string;
+  form: string;
+  accn: string;
+  /** Computed from two year-to-date figures rather than reported for the quarter. */
+  derived: boolean;
+  /** A derived quarter not to compare: its year-to-date figures are on two bases (a filing restated earlier figures), or it came out negative. */
+  doubt?: 'restated' | 'negative';
+}
+
+export interface CapexCompany {
+  ticker: string;
+  name: string;
+  cik: string;
+  /** Newest first. */
+  quarters: CapexQuarter[];
+}
+
+export interface HyperscalerCapex {
+  fetchedAt: number;
+  companies: CapexCompany[];
+}
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The seeded payload (`tech:hyperscaler-capex:v1`), or null when it is not one. */
+export function decodeHyperscalerCapex(value: unknown): HyperscalerCapex | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || !Number.isFinite(v.fetchedAt) || !Array.isArray(v.companies)) return null;
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  const companies: CapexCompany[] = [];
+  for (const raw of v.companies as Array<Record<string, unknown>>) {
+    if (typeof raw?.ticker !== 'string' || typeof raw?.name !== 'string' || !Array.isArray(raw.quarters)) continue;
+    const quarters: CapexQuarter[] = [];
+    for (const q of raw.quarters as Array<Record<string, unknown>>) {
+      if (!ISO_DAY.test(str(q?.start)) || !ISO_DAY.test(str(q?.end)) || !ISO_DAY.test(str(q?.filed)) || typeof q?.value !== 'number' || !Number.isFinite(q.value)) continue;
+      quarters.push({ start: str(q.start), end: str(q.end), value: q.value, filed: str(q.filed), form: str(q.form), accn: str(q.accn), derived: q.derived === true, ...(q.doubt === 'restated' || q.doubt === 'negative' ? { doubt: q.doubt } : {}) });
+    }
+    quarters.sort((a, b) => b.end.localeCompare(a.end));
+    if (quarters.length) companies.push({ ticker: raw.ticker, name: raw.name, cik: str(raw.cik), quarters });
+  }
+  return companies.length ? { fetchedAt: v.fetchedAt as number, companies } : null;
+}
+
+const dayMs = (iso: string) => Date.parse(`${iso}T00:00:00Z`);
+/** The same quarter a year earlier: the one ending in the same month of the year before. */
+const yearAgo = (qs: readonly CapexQuarter[], q: CapexQuarter) => qs.find((x) => x.end.slice(0, 7) === `${Number(q.end.slice(0, 4)) - 1}${q.end.slice(4, 7)}`) ?? null;
+/** Growth year on year, or null without the year-ago quarter or when either is in doubt. */
+const growth = (qs: readonly CapexQuarter[], q: CapexQuarter | null) => {
+  const ago = q ? yearAgo(qs, q) : null;
+  return q && ago && ago.value > 0 && !q.doubt && !ago.doubt ? (q.value / ago.value - 1) * 100 : null;
+};
+/** "Jul–Sep 2026". */
+export const quarterName = (q: Pick<CapexQuarter, 'start' | 'end'>) =>
+  `${MONTHS[Number(q.start.slice(5, 7)) - 1]}–${MONTHS[Number(q.end.slice(5, 7)) - 1]} ${q.end.slice(0, 4)}`;
+/** A story about capital spending or the quarter's results. */
+const CAPEX_TOPIC = /\b(capex|capital (spending|expenditures?)|spend(s|ing)?|invest(s|ing|ment)?|data[- ]cent(er|re)s?|infrastructure|earnings|results|quarter(ly)?|guidance)\b/i;
+/** US$ as "$39.4bn". */
+const usdBn = (n: number) => `$${(n / 1e9).toFixed(1)}bn`;
+
+export interface CapexReading {
+  company: CapexCompany;
+  latest: CapexQuarter;
+  /** The quarter before, when filed. */
+  prev: CapexQuarter | null;
+  yoy: number | null;
+  prevYoy: number | null;
+  /** A quarter the comparison needs is in doubt (restated figures or a negative difference): no growth, no shift, no card. */
+  doubt: boolean;
+  /** Year-on-year growth now minus the quarter before, in points. */
+  shift: number | null;
+  /** When the latest quarter was filed (the EDGAR filing date, 00:00 UTC), ms. */
+  filedAt: number;
+  fires: boolean;
+}
+
+export function capexReading(company: CapexCompany, now: number): CapexReading {
+  const qs = company.quarters;
+  const latest = qs[0]!;
+  const prev = qs.find((x) => {
+    const gap = (dayMs(latest.end) - dayMs(x.end)) / DAY_MS;
+    return gap >= 80 && gap <= 100;
+  }) ?? null;
+  const yoy = growth(qs, latest);
+  const prevYoy = growth(qs, prev);
+  const shift = yoy !== null && prevYoy !== null ? yoy - prevYoy : null;
+  const doubt = [latest, yearAgo(qs, latest), prev, prev ? yearAgo(qs, prev) : null].some((x) => x?.doubt);
+  const filedAt = dayMs(latest.filed);
+  const fresh = filedAt <= now + HOUR_MS && now - filedAt <= CAPEX_NEW_DAYS * DAY_MS;
+  return { company, latest, prev, yoy, prevYoy, doubt, shift, filedAt, fires: fresh && shift !== null && Math.abs(shift) + 1e-9 >= CAPEX_YOY_SHIFT_PTS };
+}
+
+/** The four together in the newest calendar quarter all of them have filed, with its growth year on year. */
+export function capexTotal(data: HyperscalerCapex): { quarter: CapexQuarter; total: number; yoy: number | null } | null {
+  const first = data.companies[0];
+  if (!first) return null;
+  for (const q of first.quarters) {
+    const month = q.end.slice(0, 7);
+    const same = data.companies.map((c) => c.quarters.find((x) => x.end.slice(0, 7) === month) ?? null);
+    if (same.some((x) => !x || x.doubt)) continue;
+    const ago = data.companies.map((c, i) => yearAgo(c.quarters, same[i]!)).map((x) => (x?.doubt ? null : x));
+    const total = same.reduce((n, x) => n + x!.value, 0);
+    const before = ago.every(Boolean) ? ago.reduce((n, x) => n + x!.value, 0) : 0;
+    return { quarter: q, total, yoy: before > 0 ? (total / before - 1) * 100 : null };
+  }
+  return null;
+}
+
+/** The EDGAR filing index page, or undefined without an accession number. */
+const filingUrl = (cik: string, accn: string) =>
+  /^\d{10}-\d{2}-\d{6}$/.test(accn) && /^\d+$/.test(cik) ? `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${accn.replace(/-/g, '')}/${accn}-index.htm` : undefined;
+
+export function hyperscalerCapexFeeds(source: ResourceState<HyperscalerCapex>, news: readonly LiteItem[], now: number): FeedState[] {
+  const data = source.status === 'ready' ? source.data : null;
+  const base = feedState({
+    id: 'hyperscaler-capex', name: 'Hyperscaler capital spending · SEC EDGAR', source, seeder: 'seed-hyperscaler-capex',
+    cadenceMin: CAPEX_CADENCE_MIN, dataAt: data?.fetchedAt ?? null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !data) return [base];
+  const readings = data.companies.map((c) => capexReading(c, now));
+  const all = capexTotal(data);
+  const allLine = all ? `all four ${usdBn(all.total)}${all.yoy !== null ? `, ${pct1(all.yoy)} y/y` : ''} in ${quarterName(all.quarter)}` : null;
+  const fired = readings.filter((r) => r.fires).sort((a, b) => b.filedAt - a.filedAt).map((r): FeedState => {
+    const { company, latest, prev, prevYoy, shift } = r;
+    // The card stays up for a week, so the coverage that follows the filing counts: search the week up to now.
+    const links = linkNews({ instruments: [company.ticker], drivers: [company.name] }, news, now, CAPEX_NEW_DAYS * 24);
+    // A story links only when it names the company and its spending or results: the company name alone also
+    // matches shopping deals and lawsuits.
+    const named = new RegExp(`\\b${company.name}\\b`, 'i');
+    const stories = links.stories.filter((st) => {
+      const text = `${st.item.title} ${st.item.snippet ?? ''}`;
+      return named.test(text) && CAPEX_TOPIC.test(text);
+    });
+    const url = filingUrl(company.cik, latest.accn);
+    const indicator: Indicator = {
+      id: `hyperscaler-capex:${company.ticker}`, domain: 'tech', name: `${company.name} capital spending · ${quarterName(latest)}`,
+      value: usdBn(latest.value),
+      ...(r.yoy !== null ? { change: `${pct1(r.yoy)} y/y` } : {}),
+      rule: `y/y growth ±${CAPEX_YOY_SHIFT_PTS} pts from the quarter before`,
+      detail: [
+        prev && prevYoy !== null && shift !== null ? `y/y growth ${pts1(shift)} from ${quarterName(prev)} ${pct1(prevYoy)}` : null,
+        latest.derived ? 'the quarter is the filing\'s year to date less the quarter before' : null,
+        allLine,
+      ].filter(Boolean).join(' · '),
+      trust: { level: 'official', source: `${company.name} ${latest.form || 'filing'} via SEC EDGAR`, ...(url ? { url } : {}) },
+      at: Math.min(now, r.filedAt),
+      dataDate: `filed ${new Date(r.filedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}`,
+      updatedAt: data.fetchedAt, links: { ...links, stories },
+    };
+    return withReading({ kind: 'fired', id: indicator.id, name: indicator.name, indicator }, r.yoy !== null ? `${company.name} ${pct1(r.yoy)} y/y` : null);
+  });
+  if (fired.length) return fired;
+  const shifts = readings.map((r) => `${r.company.name} ${r.yoy !== null ? pct1(r.yoy) : 'n/a'}${r.shift !== null ? ` (${pts1(r.shift)})` : r.doubt ? ' (restated figures, not compared)' : ''}`);
+  return [withReading({
+    ...base,
+    detail: [
+      allLine ? `Live · ${allLine}` : 'Live',
+      `latest quarters y/y: ${shifts.join(', ')}`,
+      `fires at ±${CAPEX_YOY_SHIFT_PTS} pts within ${CAPEX_NEW_DAYS} days of a filing`,
+    ].join(' · '),
+  }, all?.yoy != null ? `all four ${pct1(all.yoy)} y/y` : null)];
 }

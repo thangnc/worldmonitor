@@ -22,6 +22,7 @@ import {
   useBreaches,
   useAiLabNews,
   useChipRevenue,
+  useHyperscalerCapex,
   useCreditSpreads,
   useCrossStraitActivity,
   useCryptoQuotes,
@@ -213,9 +214,10 @@ export function useTechFeeds(): FeedState[] {
   const breaches = useBreaches();
   const labNews = useAiLabNews();
   const chipRevenue = useChipRevenue();
+  const capex = useHyperscalerCapex();
   const digest = useDigest('tech');
   return useMemo(
-    () => techFeeds({ outages, services, kev, history, filings, models, regulation, breaches, labNews, chipRevenue, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
-    [outages, services, kev, history, filings, models, regulation, breaches, labNews, chipRevenue, digest],
+    () => techFeeds({ outages, services, kev, history, filings, models, regulation, breaches, labNews, chipRevenue, capex, news: digest.status === 'ready' ? digestItems(digest.data) : [], now: Date.now() }),
+    [outages, services, kev, history, filings, models, regulation, breaches, labNews, chipRevenue, capex, digest],
   );
 }
