@@ -18,6 +18,7 @@ import {
   useDigest,
   useEarthquakes,
   useEmbassyAlerts,
+  useSanctions,
   useGpsHighCells,
   useGpsInterference,
   useMilitaryFlights,
@@ -70,7 +71,17 @@ import {
 import { feedCounts, feedsStale, sortFeeds, type FeedState } from '../data/indicators';
 import { LINK_WINDOW_HOURS, linkNews } from '../data/news-link';
 import { FEED_LABEL, escalationLevel, scoreHotspots } from '../data/escalation';
-import { CHOKEPOINT_TRANSIT_SHARE, EMBASSY_WINDOW_HOURS, TAIWAN_MIN, TAIWAN_RATIO, chokepointFeeds, embassyAlertFeeds, taiwanStraitFeeds } from '../data/geo-watch';
+import {
+  CHOKEPOINT_TRANSIT_SHARE,
+  EMBASSY_WINDOW_HOURS,
+  SANCTIONS_WINDOW_HOURS,
+  TAIWAN_MIN,
+  TAIWAN_RATIO,
+  chokepointFeeds,
+  embassyAlertFeeds,
+  newSanctionsFeeds,
+  taiwanStraitFeeds,
+} from '../data/geo-watch';
 import {
   CORROBORATION_RULE,
   CORROBORATION_VIEW,
@@ -712,6 +723,7 @@ function GeoIndicators({ tiles, escalation, escalationSource, onOpen }: { tiles:
   const chokepoints = useChokepoints();
   const strait = useCrossStraitActivity();
   const embassy = useEmbassyAlerts();
+  const sanctions = useSanctions();
   const feeds = useMemo(() => {
     const now = Date.now();
     const news = digest.status === 'ready' ? digestItems(digest.data) : [];
@@ -723,10 +735,11 @@ function GeoIndicators({ tiles, escalation, escalationSource, onOpen }: { tiles:
       ...chokepointFeeds(chokepoints, news, now),
       ...taiwanStraitFeeds(strait, news, now),
       ...embassyAlertFeeds(embassy, INTEL_HOTSPOTS, news, now),
+      ...newSanctionsFeeds(sanctions, news, now),
       ...regionEscalationFeeds({ regions: ESCALATION_REGIONS, tiles, source: escalationSource, missing: escalation[0]?.missing, history: levelHistory, news, now }),
       AIRSPACE_FEED,
     ]);
-  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy, tiles, escalation, escalationSource, levelHistory]);
+  }, [conflict, digest, flights, sea, gpsCells, chokepoints, strait, embassy, sanctions, tiles, escalation, escalationSource, levelHistory]);
   const counts = feedCounts(feeds);
   const { groups, rest } = useMemo(() => groupFeedsByRegion(feeds, tiles), [feeds, tiles]);
   const rules = [
@@ -738,6 +751,7 @@ function GeoIndicators({ tiles, escalation, escalationSource, onOpen }: { tiles:
     `Taiwan Strait: PLA aircraft or PLAN ships at ${TAIWAN_RATIO}× their 30-day median or more (at least ${TAIWAN_MIN.plaAircraftSorties} aircraft or ${TAIWAN_MIN.planShips} ships), Taiwan MND.`,
     `Embassy alerts: a US embassy alert in the last ${EMBASSY_WINDOW_HOURS} h for a curated hotspot's country (the watchlist stand-in).`,
     `Region escalation: ${REGION_ESCALATION_RULE}`,
+    `New sanctions: a new OFAC designation (SDN or Consolidated list) for a country, first seen on the seeder's latest run or dated in the last ${SANCTIONS_WINDOW_HOURS} h; linked news must name the country and sanctions.`,
     'Linked news: digest stories naming the country, place or sea area, 24 h before to 1 h after.',
     'Fired indicators are grouped by region (a country in the region, else its map area), the region with the highest live hotspot score first, newest first inside; the rest are under Other.',
   ].join(' ');

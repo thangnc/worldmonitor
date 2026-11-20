@@ -7,6 +7,7 @@
 import { HOTSPOT_COUNTRY_MAP } from '@wm/shared/hotspot-country-map';
 import type { ChokepointInfo, GetChokepointStatusResponse } from '@wm/contracts/generated/client/worldmonitor/supply_chain/v1/service_client';
 import type { SecurityAdvisoryItem } from '@wm/contracts/generated/client/worldmonitor/intelligence/v1/service_client';
+import type { ListSanctionsPressureResponse, SanctionsEntry } from '@wm/contracts/generated/client/worldmonitor/sanctions/v1/service_client';
 import type { CrossStraitActivitySnapshot, TaiwanMndActivityObservation } from '@wm/client/types/cross-strait-activity';
 import { countryName } from './conflict';
 import { feeds, hotspotPlace, hotspotSubject, type Place } from './geo-layers';
@@ -322,4 +323,99 @@ export function embassyAlertFeeds(source: ResourceState<EmbassyAlerts>, hotspots
     ? `embassy feeds cover ${covered.join(', ')} of the hotspot countries`
     : 'no embassy feed covers a hotspot country';
   return feeds(base, embassyAlertIndicators(source.data, hotspots, news, now), `Live · no alert in ${EMBASSY_WINDOW_HOURS} h · ${coverage}`);
+}
+
+// ---- New OFAC sanctions (#118) ----------------------------------------------
+
+/** A designation counts as new for this long after its date. */
+export const SANCTIONS_WINDOW_HOURS = 24;
+/** seed-sanctions-pressure runs every 6 h. */
+export const SANCTIONS_CADENCE_MIN = 360;
+/** The feed carries this many entries, newest first (the seeder's DEFAULT_RECENT_LIMIT). */
+export const SANCTIONS_ENTRY_LIMIT = 60;
+const OFAC_LISTS = new Set(['SDN', 'CONSOLIDATED']);
+const SANCTIONS_WORDS = /\b(sanction(s|ed|ing)?|OFAC|designat(ed|es|ion|ions)|blacklist(ed)?|asset freeze)\b/i;
+
+const msOf = (v: string | undefined) => {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : Date.parse(v ?? '') || 0;
+};
+
+export interface CountryDesignations {
+  code: string;
+  name: string;
+  entries: SanctionsEntry[];
+  /** Programmes, most entries first. */
+  programs: string[];
+  at: number;
+}
+
+/**
+ * New OFAC designations (SDN and Consolidated lists) by country: an entry the
+ * seeder saw for the first time on its latest run, or whose newest date is in
+ * the last 24 h. An entry listing several countries counts for each.
+ */
+export function newOfacDesignations(data: ListSanctionsPressureResponse, now: number): CountryDesignations[] {
+  const fetchedAt = msOf(data.fetchedAt) || now;
+  const byCountry = new Map<string, CountryDesignations>();
+  for (const e of data.entries) {
+    if (!e.sourceLists.some((l) => OFAC_LISTS.has(l))) continue;
+    const effective = msOf(e.effectiveAt);
+    const recent = effective > 0 && effective <= now + HOUR_MS && now - effective <= SANCTIONS_WINDOW_HOURS * HOUR_MS;
+    if (!e.isNew && !recent) continue;
+    const at = Math.min(now, e.isNew ? fetchedAt : effective);
+    e.countryCodes.forEach((raw, i) => {
+      const code = raw.toUpperCase();
+      if (!/^[A-Z]{2}$/.test(code)) return;
+      const group = byCountry.get(code) ?? { code, name: e.countryNames[i] || countryName(code), entries: [], programs: [], at: 0 };
+      group.entries.push(e);
+      group.at = Math.max(group.at, at);
+      byCountry.set(code, group);
+    });
+  }
+  for (const g of byCountry.values()) {
+    const counts = new Map<string, number>();
+    for (const e of g.entries) for (const p of e.programs) counts.set(p, (counts.get(p) ?? 0) + 1);
+    g.programs = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([p]) => p);
+  }
+  return [...byCountry.values()].sort((a, b) => b.entries.length - a.entries.length || b.at - a.at);
+}
+
+const listMore = (items: readonly string[], shown: number) =>
+  items.length > shown ? `${items.slice(0, shown).join(', ')} +${items.length - shown} more` : items.join(', ');
+
+export function newSanctionsIndicators(data: ListSanctionsPressureResponse, news: readonly LiteItem[], now: number): Indicator[] {
+  const fetchedAt = msOf(data.fetchedAt) || undefined;
+  // The feed carries the newest entries only; a batch larger than that is cut short.
+  const truncated = data.entries.length >= SANCTIONS_ENTRY_LIMIT && data.entries.every((e) => e.isNew);
+  return newOfacDesignations(data, now).map((g) => {
+    const n = g.entries.length;
+    const links = linkNews({ countries: [{ code: g.code, name: g.name }] }, news, g.at, LINK_WINDOW_HOURS.geo);
+    // A story about the country links only when it is about sanctions.
+    const stories = links.stories.filter((st) => SANCTIONS_WORDS.test(`${st.item.title} ${st.item.snippet ?? ''}`));
+    return {
+      id: `sanctions:${g.code}`,
+      domain: 'geo',
+      name: `New sanctions · ${g.name}`,
+      value: `${n}${truncated ? '+' : ''} designation${n === 1 ? '' : 's'}`,
+      change: g.programs.length ? listMore(g.programs, 3) : undefined,
+      rule: `new OFAC listing ≤ ${SANCTIONS_WINDOW_HOURS} h`,
+      detail: [listMore(g.entries.map((e) => e.name), 3), truncated ? `the feed carries the ${SANCTIONS_ENTRY_LIMIT} newest entries` : null].filter(Boolean).join(' · '),
+      trust: { level: 'official', source: 'US Treasury OFAC (SDN, Consolidated)' },
+      at: g.at,
+      updatedAt: fetchedAt,
+      links: { ...links, stories },
+      place: { countries: [g.code] },
+    } satisfies Indicator;
+  });
+}
+
+export function newSanctionsFeeds(source: ResourceState<ListSanctionsPressureResponse>, news: readonly LiteItem[], now: number): FeedState[] {
+  const base = feedState({
+    id: 'sanctions', name: 'New sanctions · OFAC', source, seeder: 'seed-sanctions-pressure',
+    cadenceMin: SANCTIONS_CADENCE_MIN, dataAt: source.data ? msOf(source.data.fetchedAt) || null : null, fired: null, now,
+  });
+  if (base.kind !== 'quiet' || !source.data) return [base];
+  const listed = source.data.sdnCount + source.data.consolidatedCount;
+  return feeds(base, newSanctionsIndicators(source.data, news, now), `Live · no new OFAC designation in ${SANCTIONS_WINDOW_HOURS} h · ${listed.toLocaleString('en-US')} listed`);
 }
