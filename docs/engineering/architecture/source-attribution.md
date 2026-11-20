@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **849 active source hosts** representing **829 active providers** (**365 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **850 active source hosts** representing **830 active providers** (**366 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -281,7 +281,7 @@ This generated inventory covers **849 active source hosts** representing **829 a
 | ertflix.ascdn.broadpeak.io (ertflix.ascdn.broadpeak.io) | Excluded / candidate — No current fetch observed |
 | es.euronews.com (es.euronews.com) | feed — packages/shared/news-catalog.json |
 | eu-startups.com (eu-startups.com) | feed — packages/shared/news-catalog.json |
-| eur-lex.europa.eu (eur-lex.europa.eu) | structured — scripts/seed-ai-regulation.mjs |
+| eur-lex.europa.eu (eur-lex.europa.eu) | structured — apps/web/src/lite/data/geo-watch.ts, scripts/seed-ai-regulation.mjs |
 | euractiv.com (euractiv.com) | Excluded / candidate — No current fetch observed |
 | eurasianet.org (eurasianet.org) | feed — packages/shared/news-catalog.json |
 | euromaidanpress.com (euromaidanpress.com) | feed — packages/shared/news-catalog.json |
@@ -780,6 +780,7 @@ This generated inventory covers **849 active source hosts** representing **829 a
 | web.archive.org (web.archive.org) | structured — scripts/seed-fatf-listing.mjs |
 | web.cbr.ru (web.cbr.ru) | structured — scripts/seed-cbr-rates.mjs |
 | webcams.windy.com (webcams.windy.com) | structured — packages/shared/pinned-webcams.ts |
+| webgate.ec.europa.eu (webgate.ec.europa.eu) | structured — scripts/seed-eu-sanctions.mjs |
 | websummit.com (websummit.com) | Excluded / candidate — No current fetch observed |
 | Welt (www.welt.de) | feed — packages/shared/news-catalog.json |
 | whitehouse.gov (whitehouse.gov) | Excluded / candidate — No current fetch observed |

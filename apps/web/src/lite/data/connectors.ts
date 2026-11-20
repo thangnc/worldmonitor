@@ -227,6 +227,12 @@ export const CONNECTORS: readonly Connector[] = [
     usedBy: ['New restricted parties indicator'],
   },
   {
+    id: 'eu-sanctions', name: 'EU financial sanctions list · European Commission', domain: 'geo', kind: 'Official list (EU)', method: 'API',
+    producer: 'seed-eu-sanctions', healthKeys: ['euSanctions'], maxStaleMin: 720,
+    hosts: [{ host: 'webgate.ec.europa.eu', licence: 'terms-review' }],
+    usedBy: ['New sanctions · EU indicator'],
+  },
+  {
     id: 'travel-advisories', name: 'Travel advisories · US State Department and UK FCDO', domain: 'geo', kind: 'Official notices', method: 'API',
     producer: 'seed-travel-advisories', healthKeys: ['travelLevels'], maxStaleMin: 360,
     hosts: [{ host: 'travel.state.gov', licence: 'terms-review' }, { host: 'www.gov.uk', licence: 'terms-review' }],

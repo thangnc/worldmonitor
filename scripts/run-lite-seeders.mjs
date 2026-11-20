@@ -95,6 +95,7 @@ export const LITE_SEED_SECTIONS = [
   { label: 'Supply-Chain-Trade', script: 'seed-supply-chain-trade.mjs', seedMetaKey: 'supply_chain:shipping', intervalMs: 6 * HOUR, timeoutMs: 300_000 },
   { label: 'SEC-8K-Stream', script: 'seed-sec-8k-stream.mjs', seedMetaKey: 'intelligence:sec-8k-stream', intervalMs: 30 * MIN, timeoutMs: 120_000 },
   { label: 'Sanctions-Pressure', script: 'seed-sanctions-pressure.mjs', seedMetaKey: 'sanctions:pressure', intervalMs: 6 * HOUR, timeoutMs: 300_000 },
+  { label: 'EU-Sanctions', script: 'seed-eu-sanctions.mjs', seedMetaKey: 'sanctions:eu-additions', intervalMs: 6 * HOUR, timeoutMs: 300_000 },
 
   // Technology & AI
   { label: 'Internet-Outages', script: 'seed-internet-outages.mjs', seedMetaKey: 'infra:outages', intervalMs: 15 * MIN, timeoutMs: 120_000 },

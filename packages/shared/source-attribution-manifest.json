@@ -3940,6 +3940,9 @@
       "status": "terms-review",
       "references": [
         {
+          "path": "apps/web/src/lite/data/geo-watch.ts"
+        },
+        {
           "path": "scripts/seed-ai-regulation.mjs"
         }
       ]
@@ -10369,6 +10372,20 @@
       "references": [
         {
           "path": "packages/shared/pinned-webcams.ts"
+        }
+      ]
+    },
+    {
+      "host": "webgate.ec.europa.eu",
+      "provider": "webgate.ec.europa.eu",
+      "kind": "structured",
+      "observed": true,
+      "license": "Provider terms for this upstream API/dataset; verify before redistribution",
+      "attribution": "Credit webgate.ec.europa.eu and link to the original upstream API/dataset.",
+      "status": "terms-review",
+      "references": [
+        {
+          "path": "scripts/seed-eu-sanctions.mjs"
         }
       ]
     },
