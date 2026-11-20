@@ -27,6 +27,7 @@ import {
   decodeThreatHistory,
   kevSubject,
   kevWeekCounts,
+  watchedVendor,
   techFeeds,
   threatBaseline,
   type ExploitedVulnerability,
@@ -1027,7 +1028,7 @@ describe('Technology & AI indicator rules', () => {
     ({ id, name, status: s, description, url: '', checkedAt: AT - 5 * 60_000, latencyMs: 100 });
   const services = (list: ServiceStatus[]): ListServiceStatusesResponse => ({ statuses: list });
   const kevItem = (id: string, addedAt: string, extra: Partial<ExploitedVulnerability> = {}): ExploitedVulnerability => ({
-    id, addedAt, dueAt: '2026-11-27', name: 'Ivanti Connect Secure Authentication Bypass Vulnerability', vendorProduct: '',
+    id, addedAt, dueAt: '2026-11-27', name: 'Ivanti Connect Secure Authentication Bypass Vulnerability', vendorProduct: '', vendor: '', product: '',
     cvssScore: 9.8, cvssSeverity: 'CRITICAL', description: 'Auth bypass.', ...extra,
   });
   const kev = (items: ExploitedVulnerability[]): RecentKev => ({ fetchedAt: AT - 3 * H, days: 30, items, attribution: '' });
@@ -1104,6 +1105,32 @@ describe('Technology & AI indicator rules', () => {
     assert.equal(fired.indicator.dataDate, 'added 7 Nov');
     assert.match(fired.indicator.detail ?? '', /\+1 more this week/);
     assert.deepEqual(kevWeekCounts([kevItem('a', '2026-11-08'), kevItem('b', '2026-11-02'), kevItem('c', '2026-11-01'), kevItem('d', '2026-10-25')], AT), { thisWeek: 2, lastWeek: 1 });
+  });
+
+  it('ranks a KEV addition from a starter-watchlist vendor first, using KEV\'s own vendor before NVD\'s CPE (#119)', () => {
+    const unwatched = kevItem('CVE-2026-20', '2026-11-08', { name: 'Acme Widget Overflow', vendor: 'Acme', product: 'Widget' });
+    const ivanti = kevItem('CVE-2026-21', '2026-11-07', { vendor: 'Ivanti', product: 'Connect Secure' });
+    const msByCpe = kevItem('CVE-2026-22', '2026-11-06', { name: 'Exchange RCE', vendorProduct: 'microsoft:exchange_server' });
+    assert.equal(watchedVendor(unwatched), null);
+    assert.equal(watchedVendor(ivanti)?.name, 'Ivanti');
+    assert.equal(watchedVendor(msByCpe)?.name, 'Microsoft');
+    assert.equal(watchedVendor({ vendor: '', vendorProduct: 'palo_alto_networks:pan-os' })?.name, 'Palo Alto Networks');
+    assert.equal(watchedVendor({ vendor: 'Ivanti', vendorProduct: '' }, [{ name: 'Acme', aliases: ['acme'] }]), null);
+    const fired = find(feeds({ kev: [unwatched, ivanti, msByCpe] }), 'kev-new');
+    assert.equal(fired?.kind, 'fired');
+    if (fired?.kind !== 'fired') return;
+    // The newer Acme addition is not on the list, so the Ivanti one leads.
+    assert.equal(fired.indicator.name, 'Exploited vulnerability · CVE-2026-21');
+    assert.equal(fired.indicator.rule, 'KEV add · watchlist vendor');
+    assert.match(fired.indicator.detail ?? '', /^Ivanti is on the starter vendor watchlist \(until the owner's list exists\) · /);
+    assert.match(fired.indicator.detail ?? '', /\+2 more this week, 1 more from watchlist vendors$/);
+    // No watchlist vendor: the newest addition, with KEV's vendor and product when CISA's name is empty.
+    const plain = find(feeds({ kev: [kevItem('CVE-2026-23', '2026-11-08', { name: '', vendor: 'Acme', product: 'Widget' })] }), 'kev-new');
+    assert.equal(plain?.kind === 'fired' && plain.indicator.rule, 'KEV add');
+    assert.match(plain?.kind === 'fired' ? plain.indicator.detail ?? '' : '', /^Acme Widget · /);
+    // KEV's vendor and product also drive the linked news.
+    assert.deepEqual(kevSubject(kevItem('CVE-2026-24', '2026-11-07', { name: '', vendor: 'Fortinet', product: 'FortiOS' })).drivers, ['CVE-2026-24', 'fortinet', 'fortios']);
+    assert.deepEqual(decodeRecentKev({ fetchedAt: 3, items: [{ id: 'CVE-2026-0001', addedAt: '2026-11-01', vendor: 'Ivanti', product: 7 }] })?.items.map((i) => [i.vendor, i.product]), [['Ivanti', '']]);
   });
 
   it('links a KEV entry by its id and the vendor and product in CISA\'s name when NVD has no product yet', () => {

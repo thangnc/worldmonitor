@@ -6,6 +6,7 @@
  */
 import type { InternetOutage, ListInternetOutagesResponse, ListServiceStatusesResponse, ServiceStatus } from '@wm/contracts/generated/client/worldmonitor/infrastructure/v1/service_client';
 import { resolveCountryCode } from '@wm/shared/country-code-resolve';
+import { STARTER_VENDOR_WATCHLIST, type WatchedVendor } from '@wm/client/config/vendor-watchlist';
 import { feedState, sortFeeds, type FeedState, type Indicator } from './indicators';
 import { LINK_WINDOW_HOURS, linkNews, type LinkSubject } from './news-link';
 import type { ResourceState } from './store';
@@ -38,6 +39,9 @@ export interface ExploitedVulnerability {
   name: string;
   /** First NVD "vendor:product", empty until NVD analyses the CVE. */
   vendorProduct: string;
+  /** CISA KEV's own vendorProject and product, set from the day the CVE is added (#119); empty when the catalog was unavailable. */
+  vendor: string;
+  product: string;
   cvssScore: number;
   cvssSeverity: string;
   description: string;
@@ -87,6 +91,7 @@ export function decodeRecentKev(value: unknown): RecentKev | null {
     if (!isRecord(i) || !/^CVE-\d{4}-\d{4,}$/.test(str(i.id)) || !DATE_RE.test(str(i.addedAt))) continue;
     items.push({
       id: str(i.id), addedAt: str(i.addedAt), dueAt: str(i.dueAt), name: str(i.name), vendorProduct: str(i.vendorProduct),
+      vendor: str(i.vendor), product: str(i.product),
       cvssScore: typeof i.cvssScore === 'number' && Number.isFinite(i.cvssScore) ? i.cvssScore : 0,
       cvssSeverity: str(i.cvssSeverity), description: str(i.description),
     });
@@ -124,7 +129,7 @@ export const WATCHED_PROVIDERS: Readonly<Record<string, readonly string[]>> = {
 export const TECH_RULES =
   `An internet outage ongoing or detected in the last ${OUTAGE_RECENT_HOURS} h; ` +
   'a watched cloud or AI provider reporting a partial or major outage; ' +
-  `a CVE added to CISA KEV in the last ${KEV_NEW_DAYS} days; ` +
+  `a CVE added to CISA KEV in the last ${KEV_NEW_DAYS} days, a vendor on the starter watchlist ranked first; ` +
   `attack-infrastructure indicators at ${SPIKE_RATIO}× their ${SPIKE_BASELINE_DAYS}-day average or more. ` +
   'Linked news: tech digest stories from 12 h before to 1 h after (date-only feeds: from 12 h before the day).';
 
@@ -256,9 +261,18 @@ export function isNewKev(item: ExploitedVulnerability, now: number): boolean {
 /** Words of CISA's name that are not the vulnerability type ("SonicWall SonicOS SSLVPN Use of …" → SonicWall, SonicOS). */
 const KEV_NAME_STOP = /^(use|improper|missing|incorrect|unrestricted|path|server-side|cross-site|deserialization|command|code|os|sql|authentication|out-of-bounds|heap-based|stack-based|buffer|integer|race|privilege|remote|arbitrary|insecure|hard-coded|exposure|information|unspecified|multiple)$/i;
 
+/**
+ * The watchlist vendor a KEV addition names: KEV's own vendor first, else
+ * NVD's CPE vendor ("palo_alto_networks"). Null when it names none.
+ */
+export function watchedVendor(item: Pick<ExploitedVulnerability, 'vendor' | 'vendorProduct'>, watchlist: readonly WatchedVendor[] = STARTER_VENDOR_WATCHLIST): WatchedVendor | null {
+  const names = [item.vendor, item.vendorProduct.split(':')[0] ?? ''].map((v) => v.replace(/_/g, ' ').trim().toLowerCase()).filter(Boolean);
+  return watchlist.find((w) => names.some((n) => w.aliases.includes(n) || n === w.name.toLowerCase())) ?? null;
+}
+
 export function kevSubject(item: ExploitedVulnerability): LinkSubject {
   const [vendor = '', product = ''] = item.vendorProduct.split(':');
-  const fromCpe = [vendor, product].map((w) => w.replace(/_/g, ' ').trim());
+  const fromCpe = [vendor, product, item.vendor, item.product].map((w) => w.replace(/_/g, ' ').trim());
   const nameWords: string[] = [];
   for (const word of item.name.split(/\s+/)) {
     if (KEV_NAME_STOP.test(word) || nameWords.length >= 2) break;
@@ -282,8 +296,12 @@ export function kevWeekCounts(items: readonly ExploitedVulnerability[], now: num
 
 function kevFeed(state: ResourceState<RecentKev>, news: readonly LiteItem[], now: number): FeedState {
   const data = state.status === 'ready' ? state.data : null;
+  // Additions of the last days, a watchlist vendor first, then newest first (the list's order).
   const fresh = data ? data.items.filter((i) => isNewKev(i, now)) : [];
-  const newest = fresh[0];
+  const watched = fresh.filter((i) => watchedVendor(i));
+  const ranked = [...watched, ...fresh.filter((i) => !watchedVendor(i))];
+  const newest = ranked[0];
+  const vendorOf = newest ? watchedVendor(newest) : null;
   let fired: Indicator | null = null;
   if (newest) {
     // A date-only feed: the link window ends with the added day and starts 12 h before it.
@@ -292,12 +310,13 @@ function kevFeed(state: ResourceState<RecentKev>, news: readonly LiteItem[], now
     const score = newest.cvssScore > 0 ? `${newest.cvssScore.toFixed(1)} CVSS` : 'no CVSS';
     fired = {
       id: 'kev-new', domain: 'tech', name: `Exploited vulnerability · ${newest.id}`,
-      value: score, change: newest.cvssSeverity ? newest.cvssSeverity.toLowerCase() : undefined, rule: 'KEV add',
+      value: score, change: newest.cvssSeverity ? newest.cvssSeverity.toLowerCase() : undefined, rule: vendorOf ? 'KEV add · watchlist vendor' : 'KEV add',
       detail: [
-        newest.name || newest.vendorProduct || newest.description.slice(0, 120),
+        vendorOf ? `${vendorOf.name} is on the starter vendor watchlist (until the owner's list exists)` : null,
+        newest.name || [newest.vendor, newest.product].filter(Boolean).join(' ') || newest.vendorProduct || newest.description.slice(0, 120),
         `added ${dayLabel(newest.addedAt)}`,
         newest.dueAt ? `due ${dayLabel(newest.dueAt)}` : null,
-        fresh.length > 1 ? `+${fresh.length - 1} more this week` : null,
+        fresh.length > 1 ? `+${fresh.length - 1} more this week${watched.length > (vendorOf ? 1 : 0) ? `, ${watched.length - (vendorOf ? 1 : 0)} more from watchlist vendors` : ''}` : null,
       ].filter(Boolean).join(' · '),
       trust: { level: 'official', source: 'CISA KEV catalog' }, at, dataDate: `added ${dayLabel(newest.addedAt)}`,
       updatedAt: data?.fetchedAt || undefined,

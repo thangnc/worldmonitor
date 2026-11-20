@@ -14,7 +14,7 @@ manifest is stale. Do not edit the table by hand.
 ## Observed Source Inventory
 
 {/* BEGIN GENERATED SOURCE ATTRIBUTION */}
-This generated inventory covers **845 active source hosts** representing **825 active providers** (**360 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
+This generated inventory covers **845 active source hosts** representing **825 active providers** (**361 structured/API**, **468 feed**, and **30 operational-status** hosts). It is derived from source declarations in `scripts/`, `packages/server/`, `api/`, `apps/web/src/`, and `packages/client/`. Each row shows the configured provider identity and where the source is referenced. Syndication transports such as FeedBurner and Google News remain listed as hosts and are not counted as publishers.
 
 | Provider | Observed surface |
 | --- | --- |
@@ -575,7 +575,7 @@ This generated inventory covers **845 active source hosts** representing **825 a
 | railway.instatus.com (railway.instatus.com) | operational-status — packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts |
 | rakuten-guardian-1-ie.samsung.wurl.tv (rakuten-guardian-1-ie.samsung.wurl.tv) | Excluded / candidate — No current fetch observed |
 | ransomware.live (ransomware.live) | feed — packages/shared/news-catalog.json |
-| raw.githubusercontent.com (raw.githubusercontent.com) | structured — scripts/ais-relay.cjs, scripts/build-plane-alert-watchlist.mjs, scripts/fetch-country-boundary-overrides.mjs, scripts/generate-airline-codes.mjs, +4 more |
+| raw.githubusercontent.com (raw.githubusercontent.com) | structured — scripts/ais-relay.cjs, scripts/build-plane-alert-watchlist.mjs, scripts/fetch-country-boundary-overrides.mjs, scripts/generate-airline-codes.mjs, +5 more |
 | reasonstobecheerful.world (reasonstobecheerful.world) | feed — packages/shared/news-catalog.json |
 | reddit.com (reddit.com) | structured — scripts/ais-relay.cjs |
 | registry.modelcontextprotocol.io (registry.modelcontextprotocol.io) | Excluded / candidate — No current fetch observed |
@@ -839,7 +839,7 @@ This generated inventory covers **845 active source hosts** representing **825 a
 | www.chinamoney.com.cn (www.chinamoney.com.cn) | structured — scripts/china-macro/calendar.mjs |
 | www.chosun.com (www.chosun.com) | feed — packages/shared/news-catalog.json |
 | www.cidrap.umn.edu (www.cidrap.umn.edu) | structured — scripts/seed-disease-outbreaks.mjs |
-| www.cisa.gov (www.cisa.gov) | feed — packages/shared/news-catalog.json |
+| www.cisa.gov (www.cisa.gov) | feed+structured — packages/shared/news-catalog.json, scripts/seed-cve-reference.mjs |
 | www.clarin.com (www.clarin.com) | feed — packages/shared/news-catalog.json |
 | www.climatecentral.org (www.climatecentral.org) | structured — scripts/seed-climate-news.mjs |
 | www.cloudflarestatus.com (www.cloudflarestatus.com) | operational-status — packages/server/worldmonitor/infrastructure/v1/list-service-statuses.ts |
