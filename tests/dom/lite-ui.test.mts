@@ -7,6 +7,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { h, render } from 'preact';
 import { act } from 'preact/test-utils';
+import type { FeedState } from '../../apps/web/src/lite/data/indicators';
 
 // MapLibre needs WebGL, which happy-dom lacks. This double covers only what
 // apps/web/src/lite/map/LiteMap.tsx calls, and places a marker by appending its element.
@@ -436,8 +437,13 @@ describe('Lite indicator card', () => {
       expect(compact.textContent).toContain('$0.9940');
       expect(compact.textContent).toContain('MARKET DATA');
       expect(compact.textContent).toContain('1 linked');
-      // Fired cards come first; a failed source is a row that names its seeder.
-      expect(panel().querySelector('[data-testid="indicator-feed"]')?.firstElementChild).toBe(compact);
+      // Topics run general to specific (#184): central banks first, crypto last, even when only crypto fired.
+      const sections = [...panel().querySelectorAll('[data-feed-section]')].map((s) => s.getAttribute('data-feed-section'));
+      expect(sections[0]).toBe('central-banks');
+      expect(sections[sections.length - 1]).toBe('crypto');
+      expect(compact.closest('[data-feed-section]')?.getAttribute('data-feed-section')).toBe('crypto');
+      // The depeg and the supply feed share the Stablecoins card; a failed source is a row that names its seeder.
+      expect(compact.closest('[data-family]')?.getAttribute('data-family')).toBe('stablecoins');
       expect(panel().querySelector('[data-feed="btc-funding"]')?.textContent).toContain('seed-hyperliquid-flow');
 
       await act(() => compact.click());
@@ -1289,24 +1295,34 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
       // Germany is not a curated hotspot country.
       expect(panel().textContent).not.toContain('Embassy alert · Germany');
 
-      // Fired cards sit under their region (#116): Hormuz by its point, Taiwan and Ukraine by country.
-      const groupOf = (sel: string) => panel().querySelector(sel)?.closest('[data-feed-group]')?.getAttribute('data-feed-group');
-      expect(groupOf('[data-indicator="chokepoint:hormuz_strait"]')).toBe('gulf-iran');
-      expect(groupOf('[data-indicator="taiwan"]')).toBe('taiwan-strait');
-      expect(groupOf('[data-indicator^="embassy:kyiv:"]')).toBe('eastern-europe');
-      // A new OFAC designation (#118) fires under its country's region.
+      // Fired cards sit under their topic (#184) and name their region: Hormuz by its point, Taiwan and Ukraine by country.
+      const sectionOf = (sel: string) => panel().querySelector(sel)?.closest('[data-feed-section]')?.getAttribute('data-feed-section');
+      const placeOf = (sel: string) => panel().querySelector(`${sel} [data-testid="indicator-place"]`)?.textContent;
+      expect(sectionOf('[data-indicator="chokepoint:hormuz_strait"]')).toBe('shipping');
+      expect(placeOf('[data-indicator="chokepoint:hormuz_strait"]')).toBe('Gulf / Iran');
+      expect(sectionOf('[data-indicator="taiwan"]')).toBe('military');
+      expect(placeOf('[data-indicator="taiwan"]')).toBe('Taiwan Strait');
+      expect(sectionOf('[data-indicator^="embassy:kyiv:"]')).toBe('political');
+      expect(placeOf('[data-indicator^="embassy:kyiv:"]')).toBe('Eastern Europe');
+      // A new OFAC designation (#118) fires in the New sanctions card, naming its country's region.
       await vi.waitFor(async () => {
         await flush();
         expect(panel().querySelector('[data-indicator="sanctions:IR"]')).not.toBeNull();
       }, { timeout: 10_000, interval: 50 });
       expect(panel().querySelector('[data-indicator="sanctions:IR"]')?.textContent).toContain('New sanctions · Iran');
       expect(panel().querySelector('[data-indicator="sanctions:IR"]')?.textContent).toContain('OFFICIAL');
-      expect(groupOf('[data-indicator="sanctions:IR"]')).toBe('gulf-iran');
-      expect(panel().querySelector('[data-feed-group="taiwan-strait"] h3')?.textContent).toContain('Taiwan Strait');
-      // Quiet, stale and unavailable rows stay one block after the groups.
-      expect(panel().querySelector('[data-feed-group] [data-feed]')).toBeNull();
+      expect(placeOf('[data-indicator="sanctions:IR"]')).toBe('Gulf / Iran');
+      const sanctionsCard = panel().querySelector('[data-indicator="sanctions:IR"]')?.closest('[data-family]') as HTMLElement;
+      expect(sanctionsCard.getAttribute('data-family')).toBe('sanctions');
+      // The EU and UK lists sit in the same card as state lines that say what was checked.
+      expect(sanctionsCard.querySelector('[data-feed="eu-sanctions"]')).not.toBeNull();
+      expect(sanctionsCard.querySelector('[data-feed="uk-sanctions"]')).not.toBeNull();
+      expect(panel().querySelector('[data-feed-section="military"] h3')?.textContent).toContain('Military');
+      // Topics run general to specific; a quiet or unavailable feed stays in its topic.
+      expect([...panel().querySelectorAll('[data-feed-section]')].map((s) => s.getAttribute('data-feed-section'))).toEqual(['conflict', 'military', 'political', 'sanctions', 'shipping']);
+      expect(sectionOf('[data-feed="airspace"]')).toBe('military');
       expect(panel().querySelector('[data-feed="airspace"]')?.getAttribute('data-feed-state')).toBe('unavailable');
-      expect(panel().querySelector('[data-testid="indicator-counts"]')?.textContent).toContain('by region');
+      expect(panel().querySelector('[data-testid="indicator-counts"]')?.textContent).toContain('by topic');
       // The region-escalation feed (#117) is listed even before a browser reading exists.
       expect(panel().querySelector('[data-feed="region-escalation"], [data-indicator^="region:"]')).not.toBeNull();
 
@@ -1350,5 +1366,65 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
     } finally {
       vi.mocked(boot.getHydratedData).mockImplementation(() => undefined);
     }
+  });
+});
+
+describe('Lite indicator family card (#184)', () => {
+  it('holds repeats of one rule in one card: short names, one rule, each line expands to its own full card', async () => {
+    const { IndicatorFeed } = await import('../../apps/web/src/lite/components/indicator');
+    const { arrangeFeeds } = await import('../../apps/web/src/lite/data/indicators');
+    const at = Date.UTC(2026, 10, 22, 1, 17);
+    const price = (slug: string, name: string, change: string, stories: number) => {
+      const id = `ai-models:price:lab/${slug}`;
+      const links = {
+        stories: Array.from({ length: stories }, (_, i) => ({
+          item: { source: 'The Register', title: `${name} gets cheaper ${i}`, link: `https://example.com/${slug}/${i}`, publishedAt: at - 3_600_000, isAlert: false, locationName: '', importanceScore: 50, corroborationCount: 1, snippet: '', tickers: [], credibilityScore: 60, category: 'ai' },
+          reason: { kind: 'entity' as const, label: name },
+          offsetMs: -3_600_000,
+        })),
+        searched: 120,
+        windowHours: 48,
+      };
+      return { kind: 'fired' as const, id, name: `AI price change · ${name}`, indicator: { id, domain: 'tech' as const, name: `AI price change · ${name}`, value: change, rule: 'price change ≥ 20% on a watched lab\'s model', trust: { level: 'reported' as const, source: 'OpenRouter listing' }, at, links } };
+    };
+    const feeds: FeedState[] = [
+      price('gemma', 'Gemma 3 4B', 'output −50%', 1),
+      price('qwen', 'Qwen3.5-27B', 'output +67%', 0),
+      { kind: 'quiet' as const, id: 'sanctions', name: 'New sanctions · OFAC', detail: 'Live · no new OFAC designation in 24 h' },
+      { kind: 'unavailable' as const, id: 'uk-sanctions', name: 'New sanctions · UK', detail: 'Source unavailable · seed-uk-sanctions' },
+    ];
+    const opened: string[] = [];
+    // Geopolitics and Technology feeds side by side only to render both families in one pass.
+    const sections = [...arrangeFeeds(feeds.slice(0, 2), 'tech'), ...arrangeFeeds(feeds.slice(2), 'geo')];
+    await act(() => render(h(IndicatorFeed, { sections, now: at + 3_600_000, onOpen: (f: { id: string }) => opened.push(f.id) }), root));
+
+    const card = root.querySelector('[data-family="ai-prices"]') as HTMLElement;
+    expect(card.querySelector('header')?.textContent).toContain('AI price changes');
+    expect(card.querySelector('[data-testid="family-count"]')?.textContent).toBe('2 fired');
+    // The shared rule is stated once; each line drops the shared "AI price change ·" head but keeps its label and news badge.
+    expect(card.querySelector('[data-testid="family-rule"]')?.textContent).toBe('rule price change ≥ 20% on a watched lab\'s model');
+    const lines = [...card.querySelectorAll('button[data-indicator]')];
+    expect(lines.map((l) => l.querySelector('.truncate')?.textContent)).toEqual(['Gemma 3 4B', 'Qwen3.5-27B']);
+    expect(lines[0]?.textContent).toContain('REPORTED');
+    expect(lines[0]?.textContent).toContain('1 linked');
+    expect(lines[1]?.textContent).toContain('No linked news found');
+    expect(lines[0]?.textContent).not.toContain('rule ');
+
+    // A click opens that line's full card in place, with its linked news; the other line stays compact.
+    await act(() => (lines[0] as HTMLButtonElement).click());
+    const full = card.querySelector('article[data-indicator="ai-models:price:lab/gemma"]') as HTMLElement;
+    expect(full.querySelector('[data-testid="linked-news"]')?.textContent).toContain('Gemma 3 4B gets cheaper 0');
+    expect(card.querySelector('button[data-indicator="ai-models:price:lab/qwen"]')).not.toBeNull();
+    expect(opened).toEqual(['ai-models:price:lab/gemma']);
+    await act(() => { full.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+    expect(card.querySelector('article[data-indicator]')).toBeNull();
+
+    // Two sanctions lists with nothing fired share one card of state lines, each saying what was checked.
+    const sanctions = root.querySelector('[data-family="sanctions"]') as HTMLElement;
+    expect(sanctions.querySelector('[data-testid="family-count"]')?.textContent).toBe('1 quiet · 1 unavailable');
+    expect(sanctions.querySelector('[data-feed="sanctions"]')?.textContent).toContain('OFAC');
+    expect(sanctions.querySelector('[data-feed="sanctions"]')?.textContent).toContain('no new OFAC designation');
+    expect(sanctions.querySelector('[data-feed="uk-sanctions"]')?.getAttribute('data-feed-state')).toBe('unavailable');
+    expect(root.querySelector('[data-feed-section="sanctions"] h3')?.textContent).toBe('Sanctions and trade controls');
   });
 });

@@ -29,7 +29,7 @@ import {
 } from '../data/hooks';
 import { useTechFeeds } from '../data/domain-feeds';
 import { MINUS } from '../format';
-import { feedCounts, type FeedState } from '../data/indicators';
+import { TOPIC_NOTE, arrangeFeeds, feedCounts, type FeedState } from '../data/indicators';
 import {
   DATACENTER_MIN_CHIPS,
   attackHexes,
@@ -529,14 +529,15 @@ function ResearchRadar() {
 function Indicators({ onOpen }: { onOpen: (feed: FeedState) => void }) {
   const feeds = useTechFeeds();
   const counts = feedCounts(feeds);
+  const sections = useMemo(() => arrangeFeeds(feeds, 'tech'), [feeds]);
   return (
     <Panel
       title="Indicators"
-      sub={[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`].filter(Boolean).join(' · ')}
-      right={<><HealthDots feeds={feeds} /><DerivedTag how={`${TECH_RULES} Nothing is delivered yet.`} /></>}
+      sub={[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`, 'by topic'].filter(Boolean).join(' · ')}
+      right={<><HealthDots feeds={feeds} /><DerivedTag how={`${TECH_RULES} ${TOPIC_NOTE} Nothing is delivered yet.`} /></>}
       testId="tech-indicators"
     >
-      <IndicatorFeed feeds={feeds} now={Date.now()} onOpen={onOpen} />
+      <IndicatorFeed sections={sections} now={Date.now()} onOpen={onOpen} />
     </Panel>
   );
 }

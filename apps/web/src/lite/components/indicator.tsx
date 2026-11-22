@@ -1,16 +1,16 @@
 /**
  * The indicator card from the owner's design system (spec: Early indicators ›
  * Screen design): a full form for detail views, a compact form for feeds, and
- * one-line rows for quiet, stale, unavailable and loading feeds. Every screen
- * renders its indicators through these components.
+ * one-line rows for quiet, stale, unavailable and loading feeds, and a family
+ * card that holds several feeds of one type (#184). Every screen renders its
+ * indicators through these components.
  */
 import { ChartLine, CircleCheck, Landmark, Newspaper, Radio, Receipt, Ruler, SearchX, Sparkles, type LucideIcon } from 'lucide-preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Domain } from '../data/briefing';
-import { TRUST_LABEL, TRUST_MEANING, updatedLabel, type FeedState, type Indicator, type Trust } from '../data/indicators';
+import { TRUST_LABEL, TRUST_MEANING, updatedLabel, type FeedFamilyGroup, type FeedSection, type FeedState, type Indicator, type Trust } from '../data/indicators';
 import { offsetLabel, type NewsLinks } from '../data/news-link';
-import type { FeedGroup } from '../data/regions';
-import { Dot, TEXT, cx } from './ui';
+import { cx } from './ui';
 
 const DOMAIN_FULL: Readonly<Record<Domain, string>> = { geo: 'GEOPOLITICS', fin: 'FINANCE', tech: 'TECH & AI' };
 const DOMAIN_SHORT: Readonly<Record<Domain, string>> = { geo: 'GEO', fin: 'FIN', tech: 'AI' };
@@ -178,7 +178,7 @@ export function IndicatorCard({ indicator, now, onCollapse }: { indicator: Indic
 }
 
 /** Compact form, for feeds. A click expands it in place to the full form. */
-export function IndicatorCardCompact({ indicator, onExpand }: { indicator: Indicator; onExpand?: () => void }) {
+export function IndicatorCardCompact({ indicator, onExpand, place }: { indicator: Indicator; onExpand?: () => void; place?: string | null }) {
   const linked = indicator.links.stories.length > 0;
   const time = indicator.dataDate ?? hhmm(indicator.at);
   return (
@@ -197,6 +197,7 @@ export function IndicatorCardCompact({ indicator, onExpand }: { indicator: Indic
       <span class="flex w-full items-center gap-2">
         <DomainChip domain={indicator.domain} compact />
         <span class="min-w-0 flex-1 truncate text-[12.5px] font-medium text-ink">{indicator.name}</span>
+        {place ? <span class="shrink-0 truncate text-[10.5px] text-dim" data-testid="indicator-place">{place}</span> : null}
         <span class="font-mono text-[10.5px] text-dim">{time}</span>
       </span>
       <span class="flex w-full flex-wrap items-end gap-x-2 gap-y-1">
@@ -207,17 +208,7 @@ export function IndicatorCardCompact({ indicator, onExpand }: { indicator: Indic
       {indicator.detail ? <span class="w-full text-[11.5px] leading-4 text-muted" data-testid="indicator-detail">{indicator.detail}</span> : null}
       <span class="flex w-full items-center gap-2">
         <TrustChip trust={indicator.trust} compact />
-        {linked ? (
-          <span class="ml-auto flex shrink-0 items-center gap-[5px] rounded-[4px] bg-bg px-[7px] py-[2px]">
-            <Newspaper size={11} class="text-muted" aria-hidden="true" />
-            <span class="text-[10.5px] text-muted">{indicator.links.stories.length} linked</span>
-          </span>
-        ) : (
-          <span class="ml-auto flex shrink-0 items-center gap-[5px] rounded-[4px] border border-nolink/40 bg-nolink/[0.12] px-[7px] py-[2px]">
-            <SearchX size={11} class="text-nolink" aria-hidden="true" />
-            <span class="text-[10.5px] font-semibold text-nolink">No linked news found</span>
-          </span>
-        )}
+        <LinkBadge links={indicator.links} />
       </span>
     </button>
   );
@@ -268,35 +259,163 @@ export function HealthDots({ feeds }: { feeds: readonly FeedState[] }) {
   );
 }
 
+/** The badge for a fired feed's news: how many stories link, or that none was found. */
+function LinkBadge({ links }: { links: NewsLinks }) {
+  return links.stories.length > 0 ? (
+    <span class="ml-auto flex shrink-0 items-center gap-[5px] rounded-[4px] bg-bg px-[7px] py-[2px]">
+      <Newspaper size={11} class="text-muted" aria-hidden="true" />
+      <span class="text-[10.5px] text-muted">{links.stories.length} linked</span>
+    </span>
+  ) : (
+    <span class="ml-auto flex shrink-0 items-center gap-[5px] rounded-[4px] border border-nolink/40 bg-nolink/[0.12] px-[7px] py-[2px]">
+      <SearchX size={11} class="text-nolink" aria-hidden="true" />
+      <span class="text-[10.5px] font-semibold text-nolink">No linked news found</span>
+    </span>
+  );
+}
+
+const KIND_LABEL: Readonly<Record<FeedState['kind'], string>> = { fired: 'fired', quiet: 'quiet', stale: 'stale', unavailable: 'unavailable', loading: 'loading' };
+
+/** "2 quiet · 1 unavailable" for a family with nothing fired. */
+function stateSummary(feeds: readonly FeedState[]): string {
+  const counts = new Map<FeedState['kind'], number>();
+  for (const f of feeds) counts.set(f.kind, (counts.get(f.kind) ?? 0) + 1);
+  return [...counts].map(([kind, n]) => `${n} ${KIND_LABEL[kind]}`).join(' · ');
+}
+
 /**
- * A feed list: fired feeds as compact cards that expand in place, the rest as
- * state rows. `onOpen` lets a screen focus the feed's map marker. With
- * `groups`, fired feeds show under a heading per group (Geopolitics: one per
- * region) and `feeds` holds the rest, shown after them as one block.
+ * Names for a list of members inside a family card: the part after " · " when
+ * two or more share the same head ("New sanctions · EU" reads "EU"), else the
+ * full name ("Fed balance sheet · H.4.1" beside "Fed reverse repo · NY Fed").
+ * Fired lines and state lines are named apart, so a quiet row of another
+ * source does not keep the fired lines long.
  */
-export function IndicatorFeed({ feeds, groups, now, onOpen }: { feeds: readonly FeedState[]; groups?: readonly FeedGroup[]; now: number; onOpen?: (feed: FeedState) => void }) {
+function memberNamer(names: readonly string[]): (name: string) => string {
+  const heads = new Set(names.map((n) => (n.includes(' · ') ? n.split(' · ')[0] : null)));
+  const shared = names.length > 1 && heads.size === 1 && !heads.has(null);
+  return (name) => (shared ? name.slice(name.indexOf(' · ') + 3) : name);
+}
+
+/**
+ * One card for a family of feeds (#184): the family's fired feeds as lines
+ * that expand in place to the full card, then one state line per feed with
+ * nothing fired, so a quiet list still says what was checked.
+ */
+export function IndicatorFamilyCard({ group, now, open, onToggle, placeLabel }: {
+  group: FeedFamilyGroup;
+  now: number;
+  open: string | null;
+  onToggle: (feed: FeedState | null) => void;
+  placeLabel?: (feed: FeedState) => string | null;
+}) {
+  const fired = group.feeds.filter((f): f is Extract<FeedState, { kind: 'fired' }> => f.kind === 'fired');
+  const rest = group.feeds.filter((f): f is Exclude<FeedState, { kind: 'fired' }> => f.kind !== 'fired');
+  // A fired line reads its indicator's name ("Stablecoin depeg · USDe"), a state line its feed's.
+  const firedName = memberNamer(fired.map((f) => f.indicator.name));
+  const restName = memberNamer(rest.map((f) => f.name));
+  const newest = fired[0]?.indicator;
+  // One rule for every fired line (nine price changes) is stated once, under the header.
+  const sharedRule = fired.length > 1 && fired.every((f) => f.indicator.rule === fired[0]!.indicator.rule) ? fired[0]!.indicator.rule : null;
+  return (
+    <section
+      class={cx('flex flex-col gap-[6px] rounded-[8px] border px-[12px] py-[10px]', fired.length ? 'border-line bg-surface' : 'border-line bg-bg')}
+      data-family={group.family}
+      aria-label={`${group.label}: ${fired.length ? `${fired.length} fired` : stateSummary(rest)}`}
+    >
+      <header class="flex items-center gap-2">
+        {newest ? <DomainChip domain={newest.domain} compact /> : null}
+        <h4 class={cx('min-w-0 flex-1 truncate text-[12.5px] font-semibold', fired.length ? 'text-ink' : 'text-muted')}>{group.label}</h4>
+        <span class="shrink-0 font-mono text-[10px] text-dim" data-testid="family-count">{fired.length ? `${fired.length} fired` : stateSummary(rest)}</span>
+        {newest ? <span class="font-mono text-[10.5px] text-dim">{newest.dataDate ?? hhmm(newest.at)}</span> : null}
+      </header>
+      {sharedRule ? <span class="font-mono text-[10px] leading-[15px] text-dim" data-testid="family-rule">rule {sharedRule}</span> : null}
+      {fired.map((f) => {
+        if (open === f.id) return <IndicatorCard key={f.id} indicator={f.indicator} now={now} onCollapse={() => onToggle(null)} />;
+        const linked = f.indicator.links.stories.length > 0;
+        const place = placeLabel?.(f);
+        return (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => onToggle(f)}
+            aria-expanded="false"
+            class={cx(
+              'relative flex w-full flex-col gap-[5px] overflow-hidden rounded-[6px] border px-[10px] py-[8px] text-left',
+              linked ? 'border-line bg-surface hover:border-track' : 'border-nolink/35 bg-nolink/[0.05] hover:border-nolink/60',
+            )}
+            data-indicator={f.id}
+            data-linked={linked ? 'true' : 'false'}
+          >
+            {linked ? null : <span class="absolute inset-y-0 left-0 w-[3px] bg-nolink" aria-hidden="true" />}
+            <span class="flex w-full items-center gap-2">
+              <span class="min-w-0 flex-1 truncate text-[12px] font-medium text-ink">{firedName(f.indicator.name)}</span>
+              {place ? <span class="shrink-0 truncate text-[10.5px] text-dim" data-testid="indicator-place">{place}</span> : null}
+              <span class="font-mono text-[10.5px] text-dim">{f.indicator.dataDate ?? hhmm(f.indicator.at)}</span>
+            </span>
+            <span class="flex w-full flex-wrap items-end gap-x-2 gap-y-1">
+              <span class="whitespace-nowrap font-mono text-[13px] font-medium text-ink">{f.indicator.value}</span>
+              {f.indicator.change ? <span class="whitespace-nowrap font-mono text-[11px] font-semibold text-ink">{f.indicator.change}</span> : null}
+              {sharedRule ? null : <span class="ml-auto whitespace-nowrap font-mono text-[10px] leading-[15px] text-dim">rule {f.indicator.rule}</span>}
+            </span>
+            {f.indicator.detail ? <span class="w-full text-[11px] leading-4 text-muted" data-testid="indicator-detail">{f.indicator.detail}</span> : null}
+            <span class="flex w-full items-center gap-2">
+              <TrustChip trust={f.indicator.trust} compact />
+              <LinkBadge links={f.indicator.links} />
+            </span>
+          </button>
+        );
+      })}
+      {rest.map((f) => (
+        <div key={f.id} class="flex items-center gap-[8px] px-[2px] py-[2px]" data-feed={f.id} data-feed-state={f.kind}>
+          <span class={cx('h-2 w-2 shrink-0 rounded-full', STATE_DOT[f.kind])} aria-hidden="true" />
+          <span class="flex min-w-0 flex-1 flex-col gap-px">
+            <span class="text-[11.5px] font-medium text-muted">{restName(f.name)}</span>
+            <span class="text-[10.5px] text-dim">{f.detail}</span>
+          </span>
+          <span class={cx('font-mono text-[9px] font-semibold tracking-[0.6px]', STATE_BADGE[f.kind])}>{f.kind.toUpperCase()}</span>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+/**
+ * A panel's feeds by topic (#184): one heading per topic section, general to
+ * specific, and one card per family. A family of one feed shows as a compact
+ * card or a state row; a larger family as an IndicatorFamilyCard. Fired
+ * feeds expand in place; `onOpen` lets a screen focus the feed's map marker,
+ * and `placeLabel` names where a fired feed happened (Geopolitics: its region).
+ */
+export function IndicatorFeed({ sections, now, onOpen, placeLabel }: {
+  sections: readonly FeedSection[];
+  now: number;
+  onOpen?: (feed: FeedState) => void;
+  placeLabel?: (feed: FeedState) => string | null;
+}) {
   const [open, setOpen] = useState<string | null>(null);
-  const row = (f: FeedState) => {
+  const toggle = (f: FeedState | null) => {
+    setOpen(f?.id ?? null);
+    if (f) onOpen?.(f);
+  };
+  const single = (f: FeedState) => {
     if (f.kind !== 'fired') return <FeedStateRow key={f.id} feed={f} />;
     return open === f.id
-      ? <IndicatorCard key={f.id} indicator={f.indicator} now={now} onCollapse={() => setOpen(null)} />
-      : <IndicatorCardCompact key={f.id} indicator={f.indicator} onExpand={() => { setOpen(f.id); onOpen?.(f); }} />;
+      ? <IndicatorCard key={f.id} indicator={f.indicator} now={now} onCollapse={() => toggle(null)} />
+      : <IndicatorCardCompact key={f.id} indicator={f.indicator} place={placeLabel?.(f)} onExpand={() => toggle(f)} />;
   };
   return (
-    <div class="flex flex-col gap-[10px]" data-testid="indicator-feed">
-      {groups?.map((g) => (
-        <section key={g.id} class="flex flex-col gap-[8px]" data-feed-group={g.id} aria-label={`${g.name}: ${g.feeds.length} fired`}>
+    <div class="flex flex-col gap-[14px]" data-testid="indicator-feed">
+      {sections.map((section) => (
+        <section key={section.id} class="flex flex-col gap-[8px]" data-feed-section={section.id} aria-label={`${section.name}: ${section.firedCount} fired`}>
           <h3 class="flex items-center gap-[6px] pt-[2px] text-[11px] font-semibold text-muted">
-            {g.level ? <Dot tone={g.level.tone} /> : null}
-            <span class="truncate">{g.name}</span>
-            {g.level ? <span class={cx('font-normal', TEXT[g.level.tone])}>{g.level.label}</span> : null}
-            <span class="ml-auto font-mono text-[10px] font-normal text-dim">{g.feeds.length} fired</span>
+            <span class="truncate">{section.name}</span>
+            {section.firedCount ? <span class="ml-auto font-mono text-[10px] font-normal text-dim">{section.firedCount} fired</span> : null}
           </h3>
-          {g.feeds.map(row)}
+          {section.families.map((group) => (group.feeds.length === 1
+            ? single(group.feeds[0]!)
+            : <IndicatorFamilyCard key={group.family} group={group} now={now} open={open} onToggle={toggle} placeLabel={placeLabel} />))}
         </section>
       ))}
-      {groups?.length && feeds.length ? <div class="mt-[2px] border-t border-line" aria-hidden="true" /> : null}
-      {feeds.map(row)}
     </div>
   );
 }

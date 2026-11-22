@@ -27,7 +27,7 @@ import {
 } from '../data/hooks';
 import { useFinanceFeeds } from '../data/domain-feeds';
 import { FINANCE_RULES, } from '../data/finance-indicators';
-import { feedCounts, type FeedState } from '../data/indicators';
+import { TOPIC_NOTE, arrangeFeeds, feedCounts, type FeedState } from '../data/indicators';
 import { MACRO_RULES, YIELD_MOVE_BP, bondMoves, cbBankOf, cbDecisionForEvent, macroValue, spreadBp, treasuryWindow, watchlistEarnings, type CbDecision } from '../data/finance-macro-indicators';
 import {
   FINANCIAL_CENTRE_POINTS,
@@ -369,16 +369,17 @@ function MarketEvents({ state, events }: { state: ReturnType<typeof useDigest>; 
 
 function Indicators({ feeds, onOpen }: { feeds: readonly FeedState[]; onOpen: (feed: FeedState) => void }) {
   const counts = feedCounts(feeds);
+  const sections = useMemo(() => arrangeFeeds(feeds, 'fin'), [feeds]);
   return (
     <Panel
       title="Indicators"
-      right={<><HealthDots feeds={feeds} /><DerivedTag how={`${FINANCE_RULES} ${MACRO_RULES} Nothing is delivered yet.`} /></>}
+      right={<><HealthDots feeds={feeds} /><DerivedTag how={`${FINANCE_RULES} ${MACRO_RULES} ${TOPIC_NOTE} Nothing is delivered yet.`} /></>}
       testId="risk-alerts"
     >
       <p class="-mt-1 text-[11.5px] text-dim" data-testid="indicator-counts">
-        {[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`, 'newest first'].filter(Boolean).join(' · ')}
+        {[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`, 'by topic'].filter(Boolean).join(' · ')}
       </p>
-      <IndicatorFeed feeds={feeds} now={Date.now()} onOpen={onOpen} />
+      <IndicatorFeed sections={sections} now={Date.now()} onOpen={onOpen} />
       <p class="text-[11px] leading-4 text-dim">Crypto has no place on the map: ETF flows, pegs and perps stay here as cards with their linked news.</p>
     </Panel>
   );

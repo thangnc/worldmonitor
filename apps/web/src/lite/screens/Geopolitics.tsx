@@ -39,7 +39,7 @@ import {
   seaIncidentState,
 } from '../data/geo-layers';
 import { shippingLanes } from '../data/markets-map';
-import { ESCALATION_REGIONS, groupFeedsByRegion, leadCountry } from '../data/regions';
+import { ESCALATION_REGIONS, leadCountry, regionOfPlace } from '../data/regions';
 import {
   REGION_ESCALATION_RULE,
 } from '../data/region-escalation';
@@ -52,7 +52,7 @@ import {
   countryShading,
   type RegionTile,
 } from '../data/conflict';
-import { feedCounts, feedsStale, type FeedState } from '../data/indicators';
+import { TOPIC_NOTE, arrangeFeeds, feedCounts, feedsStale, type FeedState } from '../data/indicators';
 import { LINK_WINDOW_HOURS, linkNews } from '../data/news-link';
 import { FEED_LABEL, escalationLevel, } from '../data/escalation';
 import {
@@ -635,11 +635,14 @@ function RegionStrip({ tiles, region, area, onSelect }: { tiles: RegionTile[]; r
   );
 }
 
+/** A fired Geopolitics feed's region, shown on its card; null outside every named region. */
+const geoPlaceLabel = (feed: FeedState) => (feed.kind === 'fired' ? regionOfPlace(feed.indicator.place)?.name ?? null : null);
+
 /** The screen's indicator panel (spec: Early indicators › Catalogue, geopolitics rows). A card opens its marker on the map. */
 function GeoIndicators({ tiles, escalation, escalationSource, onOpen }: { tiles: readonly RegionTile[]; escalation: Escalation; escalationSource: ResourceState<unknown>; onOpen: (feed: FeedState) => void }) {
   const feeds = useGeoFeeds({ escalation, tiles, source: escalationSource });
   const counts = feedCounts(feeds);
-  const { groups, rest } = useMemo(() => groupFeedsByRegion(feeds, tiles), [feeds, tiles]);
+  const sections = useMemo(() => arrangeFeeds(feeds, 'geo'), [feeds]);
   const rules = [
     `Reported violence: ${VIOLENCE_RULE}, per country, GDELT material-conflict articles.`,
     `Military aircraft: ${AIRCRAFT_MIN} or more airborne within ${AIRCRAFT_RADIUS_KM} km of a curated hotspot.`,
@@ -654,15 +657,15 @@ function GeoIndicators({ tiles, escalation, escalationSource, onOpen }: { tiles:
     `Travel advisories: for a hotspot country, a US State Department level that rises (or a country new to the register at Level 3 or 4), or UK FCDO advice that adds a warning against all or all but essential travel, first seen in the last ${TRAVEL_WINDOW_HOURS} h.`,
     `New sanctions: a new OFAC designation (SDN or Consolidated list) for a country, first seen on the seeder's latest run or dated in the last ${SANCTIONS_WINDOW_HOURS} h; linked news must name the country and sanctions.`,
     'Linked news: digest stories naming the country, place or sea area, 24 h before to 1 h after.',
-    'Fired indicators are grouped by region (a country in the region, else its map area), the region with the highest live hotspot score first, newest first inside; the rest are under Other.',
+    `${TOPIC_NOTE} Each fired card names its region (a country in the region, else its map area).`,
   ].join(' ');
   return (
     <Panel title="Indicators" right={<><HealthDots feeds={feeds} /><DerivedTag how={rules} /></>} testId="geo-indicators">
       {/* The counts sit under the title, as on Finance: beside it they wrap in the narrow column. */}
       <p class="-mt-1 text-[11.5px] text-dim" data-testid="indicator-counts">
-        {[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`, groups.length ? 'by region' : 'newest first'].filter(Boolean).join(' · ')}
+        {[`${counts.fired} fired`, counts.quiet && `${counts.quiet} quiet`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`, 'by topic'].filter(Boolean).join(' · ')}
       </p>
-      <IndicatorFeed feeds={rest} groups={groups} now={Date.now()} onOpen={onOpen} />
+      <IndicatorFeed sections={sections} now={Date.now()} onOpen={onOpen} placeLabel={geoPlaceLabel} />
     </Panel>
   );
 }
