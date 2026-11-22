@@ -203,6 +203,10 @@ describe('Lite UI shell', () => {
     expect(soon).not.toContain('Sources');
     // Phase 1a removed the dashboard, so the sidebar offers no way back to it.
     expect(root.querySelector('[data-testid="open-full-dashboard"]')).toBeNull();
+    // #182: the Briefing has no fired-indicators block; it opens on the hourly brief.
+    expect(root.querySelector('[data-testid="fired-indicators"]')).toBeNull();
+    expect(root.textContent).not.toContain('Fired indicators');
+    expect(root.querySelector('[data-testid="hourly-brief"]')?.parentElement?.firstElementChild?.getAttribute('data-testid')).toBe('hourly-brief');
 
     // The brief: lead, one line per story with its domain and its citation link.
     expect(root.querySelector('[data-testid="brief-lead"]')?.textContent).toContain('Red Sea shipping risk');
@@ -384,72 +388,6 @@ describe('Lite UI shell', () => {
     expect(root.querySelector('[data-testid="model-tracker"] [data-source-state]')?.textContent).toContain('OpenRouter model list (seed-ai-models)');
     expect(root.querySelector('[data-testid="model-tracker"] [data-sample-row]')).toBeNull();
     expect(root.querySelector('[data-lite-screen] [data-sample="true"]')).toBeNull();
-  });
-});
-
-describe('Lite Briefing: fired indicators (#121)', () => {
-  it('collects every domain\'s fired indicators and filters them by Daily check and No linked news', async () => {
-    const base = fetch;
-    const now = Date.now();
-    const ymd = (t: number) => new Date(t).toISOString().slice(0, 10);
-    const depegDigest = {
-      ...DIGEST,
-      categories: {
-        ...DIGEST.categories,
-        crypto: { items: [{ source: 'CoinDesk', title: 'Ethena USDe slips below its peg as redemptions rise', link: 'https://example.com/usde', publishedAt: now - 2 * 3_600_000, isAlert: false, locationName: '', importanceScore: 55, corroborationCount: 2, snippet: '', tickers: [], credibilityScore: 60 }] },
-      },
-    };
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input instanceof Request ? input.url : input);
-      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
-      if (url.includes('/api/news/v1/list-feed-digest')) return json(depegDigest);
-      if (url.includes('/api/market/v1/list-stablecoin-markets')) {
-        return json({ timestamp: new Date(now - 5 * 60_000).toISOString(), summary: { depeggedCount: 1 },
-          stablecoins: [{ id: 'ethena-usde', symbol: 'usde', name: 'Ethena USDe', price: 0.994, deviation: 0.6, pegStatus: 'SLIGHT DEPEG' }] });
-      }
-      return base(input, init);
-    }));
-    const boot = await import('@wm/client/services/bootstrap');
-    vi.mocked(boot.getHydratedData).mockImplementation((key: string) => (key === 'chokepoints' ? {
-      fetchedAt: new Date(now - 5 * 60_000).toISOString(), upstreamUnavailable: false,
-      chokepoints: [{ id: 'hormuz_strait', name: 'Strait of Hormuz', lat: 26.6, lon: 56.3, status: 'yellow', disruptionScore: 40, activeWarnings: 0,
-        transitSummary: { officialLatestDate: ymd(now - 4 * 86_400_000), officialLatestTotal: 20, officialAvg7d: 60, baselineAvgDaily: 100, baselineFrom: '2024-11-01', baselineTo: '2025-11-01' } }],
-    } : undefined));
-    try {
-      history.replaceState(null, '', '/lite');
-      const { App } = await import('../../apps/web/src/lite/App');
-      await act(() => render(h(App, null), root));
-      const block = () => root.querySelector('[data-testid="fired-indicators"]') as HTMLElement;
-      const ids = () => [...block().querySelectorAll('[data-indicator]')].map((e) => e.getAttribute('data-indicator'));
-      await vi.waitFor(async () => {
-        await flush();
-        expect(ids()).toEqual(expect.arrayContaining(['stablecoin-depeg', 'chokepoint:hormuz_strait']));
-      }, { timeout: 10_000, interval: 50 });
-      const pick = async (label: string) => {
-        const button = [...block().querySelectorAll('button')].find((b) => b.textContent === label) as HTMLButtonElement;
-        await act(() => button.click());
-        await flush();
-        return button;
-      };
-      // Daily check: the chokepoint (daily) stays, the depeg (crypto health, weekly) goes.
-      await pick('Daily check');
-      expect(ids()).toContain('chokepoint:hormuz_strait');
-      expect(ids()).not.toContain('stablecoin-depeg');
-      // No linked news: the depeg has a linked story, the chokepoint none.
-      await pick('No linked news');
-      expect(ids()).toContain('chokepoint:hormuz_strait');
-      expect(ids()).not.toContain('stablecoin-depeg');
-      await pick('All');
-      expect(ids()).toEqual(expect.arrayContaining(['stablecoin-depeg', 'chokepoint:hormuz_strait']));
-      // Watchlist waits for the owner's watchlist.
-      const watch = [...block().querySelectorAll('button')].find((b) => b.textContent === 'Watchlist') as HTMLButtonElement;
-      expect(watch.disabled).toBe(true);
-      expect(block().textContent).toMatch(/\d+ check daily/);
-      expect(block().querySelector('[aria-label="Feed health"]')).not.toBeNull();
-    } finally {
-      vi.stubGlobal('fetch', base);
-      vi.mocked(boot.getHydratedData).mockImplementation(() => undefined);
-    }
   });
 });
 

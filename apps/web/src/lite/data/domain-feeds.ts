@@ -1,6 +1,6 @@
 /**
- * Each domain's indicator feeds as hooks, shared by its screen and by the
- * Briefing's fired-indicators block (spec: Screen design, Briefing; #121).
+ * Each domain's indicator feeds as hooks, one per domain screen. The Briefing
+ * reads none of them since #182; it only keeps the region-level readings.
  * The rules live in the *-indicators modules; these hooks only load their
  * sources and call them.
  */
@@ -122,11 +122,11 @@ export function useEscalation(): { escalation: Escalation; tiles: RegionTile[]; 
 }
 
 /**
- * Every Geopolitics feed, sorted: fired newest first, then quiet, stale and
- * unavailable. Keeps this browser's region-level readings (#117) up to date.
+ * This browser's region-level readings (#117): read once, then one reading
+ * added per strip update. The Briefing runs it too, so the history keeps
+ * building on the home screen and not only while Geopolitics is open.
  */
-export function useGeoFeeds({ escalation, tiles, source: escalationSource }: { escalation: Escalation; tiles: readonly RegionTile[]; source: ResourceState<unknown> }): FeedState[] {
-  // Region levels seen in this browser (#117): read once, then one reading added per strip update.
+export function useRegionLevelHistory({ escalation, tiles, source: escalationSource }: { escalation: Escalation; tiles: readonly RegionTile[]; source: ResourceState<unknown> }): RegionHistory {
   const [levelHistory, setLevelHistory] = useState<RegionHistory>(() => decodeRegionHistory(safeStorageGet(REGION_HISTORY_KEY)));
   useEffect(() => {
     if (escalationSource.status !== 'ready') return;
@@ -136,6 +136,16 @@ export function useGeoFeeds({ escalation, tiles, source: escalationSource }: { e
     safeStorageSet(REGION_HISTORY_KEY, JSON.stringify(next));
     setLevelHistory(next);
   }, [tiles, escalation, escalationSource]);
+  return levelHistory;
+}
+
+/**
+ * Every Geopolitics feed, sorted: fired newest first, then quiet, stale and
+ * unavailable. Keeps this browser's region-level readings (#117) up to date.
+ */
+export function useGeoFeeds(region: { escalation: Escalation; tiles: readonly RegionTile[]; source: ResourceState<unknown> }): FeedState[] {
+  const { escalation, tiles, source: escalationSource } = region;
+  const levelHistory = useRegionLevelHistory(region);
   const conflict = useConflictCounts();
   const digest = useDigest('full');
   const flights = useMilitaryFlights();

@@ -51,9 +51,7 @@ import {
   sourceCount,
   TECH_CATEGORIES,
 } from '../data/transforms';
-import { HealthDots, IndicatorFeed } from '../components/indicator';
-import { useEscalation, useFinanceFeeds, useGeoFeeds, useTechFeeds } from '../data/domain-feeds';
-import { feedCounts, feedTier, sortFeeds, type FeedState } from '../data/indicators';
+import { useEscalation, useRegionLevelHistory } from '../data/domain-feeds';
 import { navigate } from '../router';
 import { MINUS, price, signed } from '../format';
 
@@ -96,6 +94,8 @@ export function Briefing() {
   const [domain, setDomain] = useState<DomainFilter>('all');
   const [search, setSearch] = useState('');
   const events = usePriorityEvents();
+  // Keep this browser's region-level readings (#117) building on the home screen.
+  useRegionLevelHistory(useEscalation());
   const now = Date.now();
   const dayAgo = now - 86_400_000;
   const recent = [...events.ranked, ...events.below].filter((e) => firstSeen(e) >= dayAgo);
@@ -121,7 +121,6 @@ export function Briefing() {
       />
       <div class="flex flex-col gap-6 px-4 py-6 wide:flex-row wide:px-7">
         <div class="flex min-w-0 flex-1 flex-col gap-5">
-          <FiredIndicators domain={domain} />
           <HourlyBrief domain={domain} />
           <PriorityEvents domain={domain} search={search} />
         </div>
@@ -133,67 +132,6 @@ export function Briefing() {
         </div>
       </div>
     </>
-  );
-}
-
-// ---- Fired indicators ----------------------------------------------------------
-
-type FiredFilter = 'all' | 'daily' | 'watchlist' | 'nolink';
-const FIRED_FILTERS: ReadonlyArray<{ value: FiredFilter; label: ComponentChildren; disabled?: boolean; title?: string }> = [
-  { value: 'all', label: 'All' },
-  { value: 'daily', label: 'Daily check', title: 'Only the indicators tagged check daily (spec: Decision tiers)' },
-  { value: 'watchlist', label: 'Watchlist', disabled: true, title: 'Soon: needs the owner\'s watchlist (open decision 1)' },
-  { value: 'nolink', label: 'No linked news', title: 'Fired indicators with no story reported around the move' },
-];
-
-const FIRED_EMPTY: Readonly<Record<FiredFilter, string>> = {
-  all: 'No indicator fired.',
-  daily: 'No check-daily indicator fired.',
-  watchlist: 'No watchlist yet.',
-  nolink: 'Every fired indicator has linked news.',
-};
-
-/**
- * The cross-domain fired-indicators block (spec: Screen design, Briefing;
- * build step 5, #121): every domain's fired indicators, newest first, with a
- * feed-health strip and the Daily check filter for a short morning pass.
- */
-function FiredIndicators({ domain }: { domain: DomainFilter }) {
-  const [filter, setFilter] = useState<FiredFilter>('all');
-  const escalation = useEscalation();
-  const geo = useGeoFeeds(escalation);
-  const fin = useFinanceFeeds();
-  const tech = useTechFeeds();
-  const scoped = useMemo(() => {
-    const byDomain: ReadonlyArray<[Domain, readonly FeedState[]]> = [['geo', geo], ['fin', fin], ['tech', tech]];
-    return sortFeeds(byDomain.filter(([d]) => domain === 'all' || d === domain).flatMap(([, feeds]) => feeds));
-  }, [geo, fin, tech, domain]);
-  const fired = scoped.filter((f) => f.kind === 'fired');
-  const shown = fired.filter((f) =>
-    filter === 'daily' ? feedTier(f.id) === 'daily'
-      : filter === 'nolink' ? f.kind === 'fired' && f.indicator.links.stories.length === 0
-        : true);
-  const counts = feedCounts(scoped);
-  const daily = fired.filter((f) => feedTier(f.id) === 'daily').length;
-  return (
-    <Card
-      title="Fired indicators"
-      sub={[`${counts.fired} fired`, `${daily} check daily`, counts.stale && `${counts.stale} stale`, counts.unavailable && `${counts.unavailable} unavailable`].filter(Boolean).join(' · ')}
-      right={<DerivedTag how="Each domain's indicator rules (Geopolitics, Finance, Technology screens). Daily check: the indicators the spec tags check daily (Decision tiers); analyst inputs such as military aircraft, GPS interference and attack infrastructure carry no tier. Newest first." />}
-      testId="fired-indicators"
-    >
-      <div class="flex flex-col gap-3 px-5 pb-5">
-        <HealthDots feeds={scoped} />
-        <SegmentedControl label="Fired indicators filter" options={FIRED_FILTERS} value={filter} onChange={setFilter} />
-        {shown.length ? (
-          <IndicatorFeed feeds={shown} now={Date.now()} />
-        ) : (
-          <p class="text-[12px] text-dim" data-testid="fired-empty">
-            {counts.loading && !fired.length ? 'Loading indicators…' : FIRED_EMPTY[filter]}
-          </p>
-        )}
-      </div>
-    </Card>
   );
 }
 
