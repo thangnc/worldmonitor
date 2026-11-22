@@ -7,6 +7,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { h, render } from 'preact';
 import { act } from 'preact/test-utils';
+import type { FeedState } from '../../apps/web/src/lite/data/indicators';
 
 // MapLibre needs WebGL, which happy-dom lacks. This double covers only what
 // apps/web/src/lite/map/LiteMap.tsx calls, and places a marker by appending its element.
@@ -439,7 +440,7 @@ describe('Lite indicator card', () => {
       // Topics run general to specific (#184): central banks first, crypto last, even when only crypto fired.
       const sections = [...panel().querySelectorAll('[data-feed-section]')].map((s) => s.getAttribute('data-feed-section'));
       expect(sections[0]).toBe('central-banks');
-      expect(sections.at(-1)).toBe('crypto');
+      expect(sections[sections.length - 1]).toBe('crypto');
       expect(compact.closest('[data-feed-section]')?.getAttribute('data-feed-section')).toBe('crypto');
       // The depeg and the supply feed share the Stablecoins card; a failed source is a row that names its seeder.
       expect(compact.closest('[data-family]')?.getAttribute('data-family')).toBe('stablecoins');
@@ -1377,7 +1378,7 @@ describe('Lite indicator family card (#184)', () => {
       const id = `ai-models:price:lab/${slug}`;
       const links = {
         stories: Array.from({ length: stories }, (_, i) => ({
-          item: { source: 'The Register', title: `${name} gets cheaper ${i}`, link: `https://example.com/${slug}/${i}`, publishedAt: at - 3_600_000, isAlert: false, locationName: '', importanceScore: 50, corroborationCount: 1, snippet: '', tickers: [], credibilityScore: 60 },
+          item: { source: 'The Register', title: `${name} gets cheaper ${i}`, link: `https://example.com/${slug}/${i}`, publishedAt: at - 3_600_000, isAlert: false, locationName: '', importanceScore: 50, corroborationCount: 1, snippet: '', tickers: [], credibilityScore: 60, category: 'ai' },
           reason: { kind: 'entity' as const, label: name },
           offsetMs: -3_600_000,
         })),
@@ -1386,7 +1387,7 @@ describe('Lite indicator family card (#184)', () => {
       };
       return { kind: 'fired' as const, id, name: `AI price change · ${name}`, indicator: { id, domain: 'tech' as const, name: `AI price change · ${name}`, value: change, rule: 'price change ≥ 20% on a watched lab\'s model', trust: { level: 'reported' as const, source: 'OpenRouter listing' }, at, links } };
     };
-    const feeds = [
+    const feeds: FeedState[] = [
       price('gemma', 'Gemma 3 4B', 'output −50%', 1),
       price('qwen', 'Qwen3.5-27B', 'output +67%', 0),
       { kind: 'quiet' as const, id: 'sanctions', name: 'New sanctions · OFAC', detail: 'Live · no new OFAC designation in 24 h' },
