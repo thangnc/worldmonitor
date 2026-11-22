@@ -442,8 +442,8 @@ describe('Lite indicator card', () => {
       expect(sections[0]).toBe('central-banks');
       expect(sections[sections.length - 1]).toBe('crypto');
       expect(compact.closest('[data-feed-section]')?.getAttribute('data-feed-section')).toBe('crypto');
-      // The depeg and the supply feed share the Stablecoins card; a failed source is a row that names its seeder.
-      expect(compact.closest('[data-family]')?.getAttribute('data-family')).toBe('stablecoins');
+      // A fired feed is its own card, never nested in a family box; a failed source is a row that names its seeder.
+      expect(compact.closest('[data-family]')).toBeNull();
       expect(panel().querySelector('[data-feed="btc-funding"]')?.textContent).toContain('seed-hyperliquid-flow');
 
       await act(() => compact.click());
@@ -1312,11 +1312,12 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
       expect(panel().querySelector('[data-indicator="sanctions:IR"]')?.textContent).toContain('New sanctions · Iran');
       expect(panel().querySelector('[data-indicator="sanctions:IR"]')?.textContent).toContain('OFFICIAL');
       expect(placeOf('[data-indicator="sanctions:IR"]')).toBe('Gulf / Iran');
-      const sanctionsCard = panel().querySelector('[data-indicator="sanctions:IR"]')?.closest('[data-family]') as HTMLElement;
-      expect(sanctionsCard.getAttribute('data-family')).toBe('sanctions');
-      // The EU and UK lists sit in the same card as state lines that say what was checked.
-      expect(sanctionsCard.querySelector('[data-feed="eu-sanctions"]')).not.toBeNull();
-      expect(sanctionsCard.querySelector('[data-feed="uk-sanctions"]')).not.toBeNull();
+      // The fired designation is its own card; the EU and UK lists, with nothing fired, share one box of state lines.
+      expect(panel().querySelector('[data-indicator="sanctions:IR"]')?.closest('[data-family]')).toBeNull();
+      const sanctionsLists = panel().querySelector('[data-family="sanctions"]') as HTMLElement;
+      expect(sanctionsLists.querySelector('[data-feed="eu-sanctions"]')).not.toBeNull();
+      expect(sanctionsLists.querySelector('[data-feed="uk-sanctions"]')).not.toBeNull();
+      expect(sanctionsLists.querySelector('[data-indicator]')).toBeNull();
       expect(panel().querySelector('[data-feed-section="military"] h3')?.textContent).toContain('Military');
       // Topics run general to specific; a quiet or unavailable feed stays in its topic.
       expect([...panel().querySelectorAll('[data-feed-section]')].map((s) => s.getAttribute('data-feed-section'))).toEqual(['conflict', 'military', 'political', 'sanctions', 'shipping']);
@@ -1369,8 +1370,8 @@ describe('Lite Geopolitics: chokepoint transits, Taiwan Strait and embassy alert
   });
 });
 
-describe('Lite indicator family card (#184)', () => {
-  it('holds repeats of one rule in one card: short names, one rule, each line expands to its own full card', async () => {
+describe('Lite indicator families (#184)', () => {
+  it('shows each fired repeat of one rule as its own card, and the quiet feeds of a family in one box', async () => {
     const { IndicatorFeed } = await import('../../apps/web/src/lite/components/indicator');
     const { arrangeFeeds } = await import('../../apps/web/src/lite/data/indicators');
     const at = Date.UTC(2026, 10, 22, 1, 17);
@@ -1398,28 +1399,32 @@ describe('Lite indicator family card (#184)', () => {
     const sections = [...arrangeFeeds(feeds.slice(0, 2), 'tech'), ...arrangeFeeds(feeds.slice(2), 'geo')];
     await act(() => render(h(IndicatorFeed, { sections, now: at + 3_600_000, onOpen: (f: { id: string }) => opened.push(f.id) }), root));
 
-    const card = root.querySelector('[data-family="ai-prices"]') as HTMLElement;
-    expect(card.querySelector('header')?.textContent).toContain('AI price changes');
-    expect(card.querySelector('[data-testid="family-count"]')?.textContent).toBe('2 fired');
-    // The shared rule is stated once; each line drops the shared "AI price change ·" head but keeps its label and news badge.
-    expect(card.querySelector('[data-testid="family-rule"]')?.textContent).toBe('rule price change ≥ 20% on a watched lab\'s model');
-    const lines = [...card.querySelectorAll('button[data-indicator]')];
-    expect(lines.map((l) => l.querySelector('.truncate')?.textContent)).toEqual(['Gemma 3 4B', 'Qwen3.5-27B']);
-    expect(lines[0]?.textContent).toContain('REPORTED');
-    expect(lines[0]?.textContent).toContain('1 linked');
-    expect(lines[1]?.textContent).toContain('No linked news found');
-    expect(lines[0]?.textContent).not.toContain('rule ');
+    // One event per box (owner's decision 2026-11-22): no family box around fired feeds.
+    expect(root.querySelector('[data-family="ai-prices"]')).toBeNull();
+    const cards = [...root.querySelectorAll('button[data-indicator]')] as HTMLButtonElement[];
+    expect(cards.map((c) => c.getAttribute('data-indicator'))).toEqual(['ai-models:price:lab/gemma', 'ai-models:price:lab/qwen']);
+    for (const c of cards) expect(c.closest('[data-family]')).toBeNull();
+    expect(cards[0]?.parentElement).toBe(cards[1]?.parentElement);
+    // Each card keeps its full name, its own rule, its evidence label and its news badge.
+    expect(cards[0]?.textContent).toContain('AI price change · Gemma 3 4B');
+    expect(cards[1]?.textContent).toContain('AI price change · Qwen3.5-27B');
+    expect(cards[0]?.textContent).toContain('rule price change ≥ 20% on a watched lab\'s model');
+    expect(cards[1]?.textContent).toContain('rule price change ≥ 20% on a watched lab\'s model');
+    expect(cards[0]?.textContent).toContain('REPORTED');
+    expect(cards[0]?.textContent).toContain('1 linked');
+    expect(cards[1]?.textContent).toContain('No linked news found');
+    expect(root.querySelector('[data-testid="family-rule"]')).toBeNull();
 
-    // A click opens that line's full card in place, with its linked news; the other line stays compact.
-    await act(() => (lines[0] as HTMLButtonElement).click());
-    const full = card.querySelector('article[data-indicator="ai-models:price:lab/gemma"]') as HTMLElement;
+    // A click opens that card in place, with its linked news; the other card stays compact.
+    await act(() => cards[0]!.click());
+    const full = root.querySelector('article[data-indicator="ai-models:price:lab/gemma"]') as HTMLElement;
     expect(full.querySelector('[data-testid="linked-news"]')?.textContent).toContain('Gemma 3 4B gets cheaper 0');
-    expect(card.querySelector('button[data-indicator="ai-models:price:lab/qwen"]')).not.toBeNull();
+    expect(root.querySelector('button[data-indicator="ai-models:price:lab/qwen"]')).not.toBeNull();
     expect(opened).toEqual(['ai-models:price:lab/gemma']);
     await act(() => { full.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
-    expect(card.querySelector('article[data-indicator]')).toBeNull();
+    expect(root.querySelector('article[data-indicator]')).toBeNull();
 
-    // Two sanctions lists with nothing fired share one card of state lines, each saying what was checked.
+    // Two sanctions lists with nothing fired share one box of state lines, each saying what was checked.
     const sanctions = root.querySelector('[data-family="sanctions"]') as HTMLElement;
     expect(sanctions.querySelector('[data-testid="family-count"]')?.textContent).toBe('1 quiet · 1 unavailable');
     expect(sanctions.querySelector('[data-feed="sanctions"]')?.textContent).toContain('OFAC');
