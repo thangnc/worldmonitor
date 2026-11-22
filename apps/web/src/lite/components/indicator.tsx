@@ -1,8 +1,8 @@
 /**
  * The indicator card from the owner's design system (spec: Early indicators ›
  * Screen design): a full form for detail views, a compact form for feeds, and
- * one-line rows for quiet, stale, unavailable and loading feeds, and a family
- * card that holds several feeds of one type (#184). Every screen renders its
+ * one-line rows for quiet, stale, unavailable and loading feeds, and one box
+ * for the quiet feeds of a family (#184). A fired feed is always its own card. Every screen renders its
  * indicators through these components.
  */
 import { ChartLine, CircleCheck, Landmark, Newspaper, Radio, Receipt, Ruler, SearchX, Sparkles, type LucideIcon } from 'lucide-preact';
@@ -284,11 +284,9 @@ function stateSummary(feeds: readonly FeedState[]): string {
 }
 
 /**
- * Names for a list of members inside a family card: the part after " · " when
+ * Names for the state lines inside a family list: the part after " · " when
  * two or more share the same head ("New sanctions · EU" reads "EU"), else the
  * full name ("Fed balance sheet · H.4.1" beside "Fed reverse repo · NY Fed").
- * Fired lines and state lines are named apart, so a quiet row of another
- * source does not keep the fired lines long.
  */
 function memberNamer(names: readonly string[]): (name: string) => string {
   const heads = new Set(names.map((n) => (n.includes(' · ') ? n.split(' · ')[0] : null)));
@@ -297,79 +295,24 @@ function memberNamer(names: readonly string[]): (name: string) => string {
 }
 
 /**
- * One card for a family of feeds (#184): the family's fired feeds as lines
- * that expand in place to the full card, then one state line per feed with
- * nothing fired, so a quiet list still says what was checked.
+ * One box for the feeds of a family with nothing fired: a state line per feed,
+ * so a quiet family still says what was checked without a box per feed. Fired
+ * feeds never sit in it: each is its own card (owner's decision 2026-11-22).
  */
-export function IndicatorFamilyCard({ group, now, open, onToggle, placeLabel }: {
-  group: FeedFamilyGroup;
-  now: number;
-  open: string | null;
-  onToggle: (feed: FeedState | null) => void;
-  placeLabel?: (feed: FeedState) => string | null;
-}) {
-  const fired = group.feeds.filter((f): f is Extract<FeedState, { kind: 'fired' }> => f.kind === 'fired');
-  const rest = group.feeds.filter((f): f is Exclude<FeedState, { kind: 'fired' }> => f.kind !== 'fired');
-  // A fired line reads its indicator's name ("Stablecoin depeg · USDe"), a state line its feed's.
-  const firedName = memberNamer(fired.map((f) => f.indicator.name));
-  const restName = memberNamer(rest.map((f) => f.name));
-  const newest = fired[0]?.indicator;
-  // One rule for every fired line (nine price changes) is stated once, under the header.
-  const sharedRule = fired.length > 1 && fired.every((f) => f.indicator.rule === fired[0]!.indicator.rule) ? fired[0]!.indicator.rule : null;
+export function FeedStateGroup({ family, label, feeds }: { family: string; label: string; feeds: readonly Exclude<FeedState, { kind: 'fired' }>[] }) {
+  const name = memberNamer(feeds.map((f) => f.name));
+  const summary = stateSummary(feeds);
   return (
-    <section
-      class={cx('flex flex-col gap-[6px] rounded-[8px] border px-[12px] py-[10px]', fired.length ? 'border-line bg-surface' : 'border-line bg-bg')}
-      data-family={group.family}
-      aria-label={`${group.label}: ${fired.length ? `${fired.length} fired` : stateSummary(rest)}`}
-    >
+    <section class="flex flex-col gap-[6px] rounded-[8px] border border-line bg-bg px-[12px] py-[10px]" data-family={family} aria-label={`${label}: ${summary}`}>
       <header class="flex items-center gap-2">
-        {newest ? <DomainChip domain={newest.domain} compact /> : null}
-        <h4 class={cx('min-w-0 flex-1 truncate text-[12.5px] font-semibold', fired.length ? 'text-ink' : 'text-muted')}>{group.label}</h4>
-        <span class="shrink-0 font-mono text-[10px] text-dim" data-testid="family-count">{fired.length ? `${fired.length} fired` : stateSummary(rest)}</span>
-        {newest ? <span class="font-mono text-[10.5px] text-dim">{newest.dataDate ?? hhmm(newest.at)}</span> : null}
+        <h4 class="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-muted">{label}</h4>
+        <span class="shrink-0 font-mono text-[10px] text-dim" data-testid="family-count">{summary}</span>
       </header>
-      {sharedRule ? <span class="font-mono text-[10px] leading-[15px] text-dim" data-testid="family-rule">rule {sharedRule}</span> : null}
-      {fired.map((f) => {
-        if (open === f.id) return <IndicatorCard key={f.id} indicator={f.indicator} now={now} onCollapse={() => onToggle(null)} />;
-        const linked = f.indicator.links.stories.length > 0;
-        const place = placeLabel?.(f);
-        return (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => onToggle(f)}
-            aria-expanded="false"
-            class={cx(
-              'relative flex w-full flex-col gap-[5px] overflow-hidden rounded-[6px] border px-[10px] py-[8px] text-left',
-              linked ? 'border-line bg-surface hover:border-track' : 'border-nolink/35 bg-nolink/[0.05] hover:border-nolink/60',
-            )}
-            data-indicator={f.id}
-            data-linked={linked ? 'true' : 'false'}
-          >
-            {linked ? null : <span class="absolute inset-y-0 left-0 w-[3px] bg-nolink" aria-hidden="true" />}
-            <span class="flex w-full items-center gap-2">
-              <span class="min-w-0 flex-1 truncate text-[12px] font-medium text-ink">{firedName(f.indicator.name)}</span>
-              {place ? <span class="shrink-0 truncate text-[10.5px] text-dim" data-testid="indicator-place">{place}</span> : null}
-              <span class="font-mono text-[10.5px] text-dim">{f.indicator.dataDate ?? hhmm(f.indicator.at)}</span>
-            </span>
-            <span class="flex w-full flex-wrap items-end gap-x-2 gap-y-1">
-              <span class="whitespace-nowrap font-mono text-[13px] font-medium text-ink">{f.indicator.value}</span>
-              {f.indicator.change ? <span class="whitespace-nowrap font-mono text-[11px] font-semibold text-ink">{f.indicator.change}</span> : null}
-              {sharedRule ? null : <span class="ml-auto whitespace-nowrap font-mono text-[10px] leading-[15px] text-dim">rule {f.indicator.rule}</span>}
-            </span>
-            {f.indicator.detail ? <span class="w-full text-[11px] leading-4 text-muted" data-testid="indicator-detail">{f.indicator.detail}</span> : null}
-            <span class="flex w-full items-center gap-2">
-              <TrustChip trust={f.indicator.trust} compact />
-              <LinkBadge links={f.indicator.links} />
-            </span>
-          </button>
-        );
-      })}
-      {rest.map((f) => (
+      {feeds.map((f) => (
         <div key={f.id} class="flex items-center gap-[8px] px-[2px] py-[2px]" data-feed={f.id} data-feed-state={f.kind}>
           <span class={cx('h-2 w-2 shrink-0 rounded-full', STATE_DOT[f.kind])} aria-hidden="true" />
           <span class="flex min-w-0 flex-1 flex-col gap-px">
-            <span class="text-[11.5px] font-medium text-muted">{restName(f.name)}</span>
+            <span class="text-[11.5px] font-medium text-muted">{name(f.name)}</span>
             <span class="text-[10.5px] text-dim">{f.detail}</span>
           </span>
           <span class={cx('font-mono text-[9px] font-semibold tracking-[0.6px]', STATE_BADGE[f.kind])}>{f.kind.toUpperCase()}</span>
@@ -381,10 +324,12 @@ export function IndicatorFamilyCard({ group, now, open, onToggle, placeLabel }: 
 
 /**
  * A panel's feeds by topic (#184): one heading per topic section, general to
- * specific, and one card per family. A family of one feed shows as a compact
- * card or a state row; a larger family as an IndicatorFamilyCard. Fired
- * feeds expand in place; `onOpen` lets a screen focus the feed's map marker,
- * and `placeLabel` names where a fired feed happened (Geopolitics: its region).
+ * specific, families kept together. Each fired feed is its own compact card,
+ * one event per box (owner's decision 2026-11-22: no fired lines nested in a
+ * family card). A family's feeds with nothing fired follow as one state row,
+ * or as one FeedStateGroup when there are two or more. Fired cards expand in
+ * place; `onOpen` lets a screen focus the feed's map marker, and `placeLabel`
+ * names where a fired feed happened (Geopolitics: its region).
  */
 export function IndicatorFeed({ sections, now, onOpen, placeLabel }: {
   sections: readonly FeedSection[];
@@ -397,11 +342,17 @@ export function IndicatorFeed({ sections, now, onOpen, placeLabel }: {
     setOpen(f?.id ?? null);
     if (f) onOpen?.(f);
   };
-  const single = (f: FeedState) => {
-    if (f.kind !== 'fired') return <FeedStateRow key={f.id} feed={f} />;
-    return open === f.id
-      ? <IndicatorCard key={f.id} indicator={f.indicator} now={now} onCollapse={() => toggle(null)} />
-      : <IndicatorCardCompact key={f.id} indicator={f.indicator} place={placeLabel?.(f)} onExpand={() => toggle(f)} />;
+  const card = (f: Extract<FeedState, { kind: 'fired' }>) => (open === f.id
+    ? <IndicatorCard key={f.id} indicator={f.indicator} now={now} onCollapse={() => toggle(null)} />
+    : <IndicatorCardCompact key={f.id} indicator={f.indicator} place={placeLabel?.(f)} onExpand={() => toggle(f)} />);
+  const family = (group: FeedFamilyGroup) => {
+    const fired = group.feeds.filter((f): f is Extract<FeedState, { kind: 'fired' }> => f.kind === 'fired');
+    const rest = group.feeds.filter((f): f is Exclude<FeedState, { kind: 'fired' }> => f.kind !== 'fired');
+    return [
+      ...fired.map(card),
+      rest.length === 1 ? <FeedStateRow key={rest[0]!.id} feed={rest[0]!} /> : null,
+      rest.length > 1 ? <FeedStateGroup key={`${group.family}:state`} family={group.family} label={group.label} feeds={rest} /> : null,
+    ];
   };
   return (
     <div class="flex flex-col gap-[14px]" data-testid="indicator-feed">
@@ -411,9 +362,7 @@ export function IndicatorFeed({ sections, now, onOpen, placeLabel }: {
             <span class="truncate">{section.name}</span>
             {section.firedCount ? <span class="ml-auto font-mono text-[10px] font-normal text-dim">{section.firedCount} fired</span> : null}
           </h3>
-          {section.families.map((group) => (group.feeds.length === 1
-            ? single(group.feeds[0]!)
-            : <IndicatorFamilyCard key={group.family} group={group} now={now} open={open} onToggle={toggle} placeLabel={placeLabel} />))}
+          {section.families.flatMap(family)}
         </section>
       ))}
     </div>
