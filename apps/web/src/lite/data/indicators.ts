@@ -55,6 +55,201 @@ export function feedTier(id: string): DecisionTier | null {
   return TIER_BY_FEED[id] ?? TIER_BY_FEED[id.split(':')[0] ?? ''] ?? null;
 }
 
+/**
+ * Indicator topics and families (owner's decision, 2026-11-22; #184). Each
+ * domain's Indicators panel shows topic sections from general to specific
+ * (policy and macro before a single sector such as crypto), and one card per
+ * family: repeats of one rule (nine price changes, one alert per embassy)
+ * and feeds that answer the same question (the OFAC, EU and UK sanctions
+ * lists) share it. A feed matches its family by its id's longest prefix
+ * ("ai-models:price:google/x" reads as "ai-models:price").
+ */
+interface FamilyDef {
+  family: string;
+  label: string;
+  prefixes: readonly string[];
+}
+interface TopicDef {
+  id: string;
+  name: string;
+  families: readonly FamilyDef[];
+}
+
+export const INDICATOR_TOPICS: Readonly<Record<Domain, readonly TopicDef[]>> = {
+  geo: [
+    { id: 'conflict', name: 'Escalation and conflict', families: [
+      { family: 'region-escalation', label: 'Region escalation', prefixes: ['region', 'region-escalation'] },
+      { family: 'violence', label: 'Violence spikes', prefixes: ['violence'] },
+    ] },
+    { id: 'military', name: 'Military', families: [
+      { family: 'aircraft', label: 'Military aircraft', prefixes: ['aircraft'] },
+      { family: 'sea', label: 'Incidents at sea', prefixes: ['sea'] },
+      { family: 'gps', label: 'GPS interference', prefixes: ['gps', 'gps-region'] },
+      { family: 'taiwan', label: 'Taiwan Strait', prefixes: ['taiwan'] },
+      { family: 'airspace', label: 'Airspace closures', prefixes: ['airspace'] },
+    ] },
+    { id: 'political', name: 'Political and travel', families: [
+      { family: 'elections', label: 'Elections', prefixes: ['elections'] },
+      { family: 'embassy', label: 'Embassy alerts', prefixes: ['embassy'] },
+      { family: 'travel-advisory', label: 'Travel advisories', prefixes: ['travel-advisory'] },
+    ] },
+    { id: 'sanctions', name: 'Sanctions and trade controls', families: [
+      { family: 'sanctions', label: 'New sanctions', prefixes: ['sanctions', 'eu-sanctions', 'uk-sanctions'] },
+      { family: 'export-controls', label: 'Export controls', prefixes: ['export-controls', 'restricted-parties'] },
+    ] },
+    { id: 'shipping', name: 'Shipping', families: [
+      { family: 'chokepoints', label: 'Chokepoint transits', prefixes: ['chokepoint', 'chokepoints'] },
+    ] },
+  ],
+  fin: [
+    { id: 'central-banks', name: 'Central banks and liquidity', families: [
+      { family: 'fed-odds', label: 'Fed decision odds', prefixes: ['fed-odds'] },
+      { family: 'cb-decision', label: 'Central bank decisions', prefixes: ['cb-decision'] },
+      { family: 'fed-liquidity', label: 'Fed liquidity', prefixes: ['fed-balance-sheet', 'reverse-repo'] },
+    ] },
+    { id: 'macro', name: 'Macro data', families: [
+      { family: 'macro-print', label: 'Macro prints', prefixes: ['macro-print'] },
+    ] },
+    { id: 'rates', name: 'Rates and credit', families: [
+      { family: 'bond-yields', label: 'Bond yields', prefixes: ['treasury', 'other-bonds'] },
+      { family: 'credit-spreads', label: 'Credit spreads', prefixes: ['credit-spreads'] },
+    ] },
+    { id: 'risk', name: 'Market risk', families: [
+      { family: 'vix', label: 'Volatility', prefixes: ['vix'] },
+      { family: 'dollar-index', label: 'Dollar index', prefixes: ['dollar-index'] },
+      { family: 'fear-greed', label: 'Sentiment', prefixes: ['fear-greed'] },
+    ] },
+    { id: 'commodities', name: 'Commodities and trade', families: [
+      { family: 'oil-inventories', label: 'US crude stocks', prefixes: ['oil-inventories'] },
+      { family: 'freight', label: 'Freight', prefixes: ['freight-scfi', 'freight-bdi'] },
+    ] },
+    { id: 'companies', name: 'Companies', families: [
+      { family: 'sec-8k', label: 'Company filings', prefixes: ['sec-8k'] },
+    ] },
+    { id: 'crypto', name: 'Crypto', families: [
+      { family: 'btc-move', label: 'BTC price move', prefixes: ['btc-move'] },
+      { family: 'etf-flows', label: 'Bitcoin ETF flows', prefixes: ['etf-flows'] },
+      { family: 'perps', label: 'Perps', prefixes: ['btc-funding', 'perp-positioning'] },
+      { family: 'stablecoins', label: 'Stablecoins', prefixes: ['stablecoin-depeg', 'stablecoin-supply'] },
+    ] },
+  ],
+  tech: [
+    { id: 'ai-policy', name: 'AI policy', families: [
+      { family: 'ai-regulation', label: 'AI and data rules', prefixes: ['ai-regulation'] },
+    ] },
+    { id: 'infrastructure', name: 'Infrastructure', families: [
+      { family: 'internet-outage', label: 'Internet outages', prefixes: ['internet-outage'] },
+      { family: 'service-outage', label: 'Cloud and AI services', prefixes: ['service-outage'] },
+    ] },
+    { id: 'security', name: 'Security', families: [
+      { family: 'kev-new', label: 'Exploited vulnerabilities', prefixes: ['kev-new'] },
+      { family: 'security-incidents', label: 'Security incidents', prefixes: ['cyber-8k', 'breach'] },
+      { family: 'attack-spike', label: 'Attack infrastructure', prefixes: ['attack-spike'] },
+    ] },
+    { id: 'ai-investment', name: 'AI investment and supply', families: [
+      { family: 'hyperscaler-capex', label: 'Hyperscaler capital spending', prefixes: ['hyperscaler-capex'] },
+      { family: 'chip-revenue', label: 'TSMC monthly revenue', prefixes: ['chip-revenue'] },
+      { family: 'ai-funding', label: 'AI funding', prefixes: ['ai-funding'] },
+    ] },
+    { id: 'ai-models', name: 'AI labs and models', families: [
+      { family: 'lab-news', label: 'Lab announcements', prefixes: ['lab-news'] },
+      // The quiet "ai-models" row reports new models (its line names the latest release).
+      { family: 'new-models', label: 'New AI models', prefixes: ['ai-models', 'ai-models:new', 'open-models'] },
+      { family: 'ai-prices', label: 'AI price changes', prefixes: ['ai-models:price'] },
+    ] },
+  ],
+};
+
+/** The panels' how-it-works line for the order and the shared cards. */
+export const TOPIC_NOTE = 'Indicators are shown by topic, general to specific (policy and macro before a single sector such as crypto); fired first inside a topic, newest first. Feeds of one type (repeats of a rule, or lists that answer the same question, such as the OFAC, EU and UK sanctions) share one card.';
+
+export interface FeedFamily {
+  family: string;
+  label: string;
+  topic: string;
+  /** Position in the catalogue: topic order, then family order. */
+  order: number;
+}
+
+const FAMILY_BY_PREFIX: ReadonlyMap<string, FeedFamily> = (() => {
+  const map = new Map<string, FeedFamily>();
+  let order = 0;
+  for (const topics of Object.values(INDICATOR_TOPICS)) {
+    for (const topic of topics) {
+      for (const f of topic.families) {
+        for (const prefix of f.prefixes) map.set(prefix, { family: f.family, label: f.label, topic: topic.id, order });
+        order += 1;
+      }
+    }
+  }
+  return map;
+})();
+
+/** A feed's family by the longest prefix of its id; null for an id no topic lists. */
+export function feedFamily(id: string): FeedFamily | null {
+  const parts = id.split(':');
+  for (let n = Math.min(parts.length, 3); n > 0; n -= 1) {
+    const hit = FAMILY_BY_PREFIX.get(parts.slice(0, n).join(':'));
+    if (hit) return hit;
+  }
+  return null;
+}
+
+export interface FeedFamilyGroup {
+  family: string;
+  label: string;
+  feeds: FeedState[];
+}
+
+export interface FeedSection {
+  /** A topic id, or `other`. */
+  id: string;
+  name: string;
+  firedCount: number;
+  families: FeedFamilyGroup[];
+}
+
+const newestFired = (g: FeedFamilyGroup) => Math.max(...g.feeds.map((f) => (f.kind === 'fired' ? f.indicator.at : Number.NEGATIVE_INFINITY)));
+
+/**
+ * A domain's feeds as its Indicators panel shows them: topic sections in
+ * catalogue order (general to specific), only those with a feed; inside a
+ * section, families with a fired feed first (newest first), then the rest in
+ * catalogue order; inside a family, fired newest first, then quiet, stale and
+ * unavailable. A feed no topic lists goes to a last "Other" section, grouped
+ * by its id's first part, so a new rule is never dropped.
+ */
+export function arrangeFeeds(feeds: readonly FeedState[], domain: Domain): FeedSection[] {
+  const topics = INDICATOR_TOPICS[domain];
+  const groups = new Map<string, { topic: string; order: number; group: FeedFamilyGroup }>();
+  for (const feed of feeds) {
+    const fam = feedFamily(feed.id);
+    const key = fam ? fam.family : `other:${feed.id.split(':')[0]}`;
+    const entry = groups.get(key) ?? {
+      topic: fam && topics.some((t) => t.id === fam.topic) ? fam.topic : 'other',
+      order: fam?.order ?? Number.MAX_SAFE_INTEGER,
+      group: { family: key, label: fam?.label ?? (feed.name.split(' · ')[0] ?? feed.name), feeds: [] },
+    };
+    entry.group.feeds.push(feed);
+    groups.set(key, entry);
+  }
+  const sectionDefs = [...topics.map((t) => ({ id: t.id, name: t.name })), { id: 'other', name: 'Other' }];
+  return sectionDefs.flatMap(({ id, name }) => {
+    const entries = [...groups.values()].filter((e) => e.topic === id);
+    if (!entries.length) return [];
+    for (const e of entries) e.group.feeds = sortFeeds(e.group.feeds);
+    const fired = (e: (typeof entries)[number]) => e.group.feeds.some((f) => f.kind === 'fired');
+    entries.sort((a, b) => {
+      if (fired(a) !== fired(b)) return fired(a) ? -1 : 1;
+      if (fired(a)) return newestFired(b.group) - newestFired(a.group) || a.order - b.order;
+      return a.order - b.order;
+    });
+    const families = entries.map((e) => e.group);
+    const firedCount = families.reduce((n, g) => n + g.feeds.filter((f) => f.kind === 'fired').length, 0);
+    return [{ id, name, firedCount, families }];
+  });
+}
+
 export interface IndicatorPlace {
   countries?: readonly string[];
   lat?: number;

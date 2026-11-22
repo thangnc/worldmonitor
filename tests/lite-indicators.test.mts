@@ -2,6 +2,7 @@
 // rules (spec: docs/engineering/architecture/lite.md › Early indicators).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import type { NewsItem } from '../packages/contracts/generated/client/worldmonitor/news/v1/service_client.ts';
 import type {
   CryptoQuote,
@@ -11,7 +12,7 @@ import type {
   ListStablecoinMarketsResponse,
 } from '../packages/contracts/generated/client/worldmonitor/market/v1/service_client.ts';
 import { DRIVERS, LINK_WINDOW_HOURS, MAX_LINKED_STORIES, linkNews, matchReason, offsetLabel } from '../apps/web/src/lite/data/news-link.ts';
-import { STALE_FACTOR, feedCounts, feedState, feedTier, sortFeeds, type FeedState, type Indicator } from '../apps/web/src/lite/data/indicators.ts';
+import { INDICATOR_TOPICS, STALE_FACTOR, arrangeFeeds, feedCounts, feedFamily, feedState, feedTier, sortFeeds, type FeedState, type Indicator } from '../apps/web/src/lite/data/indicators.ts';
 import { centreCard, chokepointPins, featureIso2, newSanctionCountries, pinIdForFeed, sanctionFills, shippingLanes, signalCard, signalPins } from '../apps/web/src/lite/data/markets-map.ts';
 import { buildPriceBoard } from '../apps/web/src/lite/data/prices.ts';
 import { CENTRAL_BANKS } from '../packages/client/config/finance-geo.ts';
@@ -67,7 +68,7 @@ import {
   type ThreatHistory,
 } from '../apps/web/src/lite/data/tech-indicators.ts';
 import type { LiteItem } from '../apps/web/src/lite/data/transforms.ts';
-import { ESCALATION_REGIONS, groupFeedsByRegion, regionOfPlace } from '../apps/web/src/lite/data/regions.ts';
+import { ESCALATION_REGIONS, regionOfPlace } from '../apps/web/src/lite/data/regions.ts';
 import {
   REGION_FIRE_RANK,
   REGION_LEVELS,
@@ -1617,12 +1618,13 @@ describe('Geopolitics watch feeds: chokepoint transits, Taiwan Strait, embassy a
   });
 });
 
-describe('Geopolitics indicator panel grouped by region (#116)', () => {
-  const fired = (id: string, at: number, place?: Indicator['place']): FeedState => ({
+describe('Indicator panels by topic, one card per family (#184)', () => {
+  const fired = (id: string, at: number, domain: Indicator['domain'] = 'fin', place?: Indicator['place']): FeedState => ({
     kind: 'fired', id, name: id,
-    indicator: { id, domain: 'geo', name: id, value: '1', rule: 'r', trust: { level: 'reported', source: 's' }, at, links: { stories: [], searched: 0, windowHours: 24 }, place },
+    indicator: { id, domain, name: id, value: '1', rule: 'r', trust: { level: 'reported', source: 's' }, at, links: { stories: [], searched: 0, windowHours: 24 }, place },
   });
-  const tile = (id: string, score: number | null, level = 'Elevated', tone: 'elev' | 'crit' = 'elev') => ({ id, name: id, level, tone, lead: score == null ? null : { name: 'x', score } });
+  const quiet = (id: string): FeedState => ({ kind: 'quiet', id, name: id, detail: 'Live' });
+  const layout = (sections: ReturnType<typeof arrangeFeeds>) => sections.map((s) => [s.id, s.families.map((f) => [f.family, f.feeds.map((x) => x.id)])]);
 
   it('places by country first, else by the smallest region view holding the point, else nowhere', () => {
     assert.equal(regionOfPlace({ countries: ['UA'] })?.id, 'eastern-europe');
@@ -1638,38 +1640,82 @@ describe('Geopolitics indicator panel grouped by region (#116)', () => {
     assert.equal(regionOfPlace(undefined), null);
   });
 
-  it('orders regions by live level, newest first inside, Other last, and keeps the rest as one block', () => {
-    const quiet: FeedState = { kind: 'quiet', id: 'sea', name: 'sea', detail: 'Live' };
-    const down: FeedState = { kind: 'unavailable', id: 'airspace', name: 'airspace', detail: 'x' };
-    const feeds = [
-      quiet,
-      fired('violence:UA', AT - 3 * H, { countries: ['UA'] }),
-      fired('gps-region:europe', AT - H),
-      fired('aircraft:kyiv', AT - H, { countries: ['UA'], lat: 50.45, lon: 30.5 }),
-      fired('chokepoint:hormuz', AT - 2 * H, { lat: 26.6, lon: 56.3 }),
-      fired('taiwan', AT, { countries: ['TW'] }),
-      down,
-    ];
-    const tiles = [tile('red-sea', 4), tile('eastern-europe', 3.5), tile('gulf-iran', 4.4, 'Critical', 'crit'), tile('taiwan-strait', null)];
-    const { groups, rest } = groupFeedsByRegion(feeds, tiles);
-    assert.deepEqual(groups.map((g) => [g.id, g.feeds.map((f) => f.id)]), [
-      ['gulf-iran', ['chokepoint:hormuz']],
-      ['eastern-europe', ['aircraft:kyiv', 'violence:UA']],
-      ['taiwan-strait', ['taiwan']],
-      ['other', ['gps-region:europe']],
-    ]);
-    assert.deepEqual(groups[0]!.level, { label: 'Critical', tone: 'crit' });
-    // An unscored region shows no level; "Other" never does.
-    assert.equal(groups[2]!.level, undefined);
-    assert.equal(groups[3]!.name, 'Other');
-    assert.deepEqual(rest.map((f) => f.id), ['sea', 'airspace']);
-
-    // Equal scores keep the strip's order; nothing fired means no groups.
-    const tied = groupFeedsByRegion([fired('taiwan', AT, { countries: ['TW'] }), fired('violence:YE', AT, { countries: ['YE'] })], []);
-    assert.deepEqual(tied.groups.map((g) => g.id), ['red-sea', 'taiwan-strait']);
-    assert.deepEqual(groupFeedsByRegion([quiet, down], tiles).groups, []);
+  it('gives every feed id the rule modules emit a family in its own domain', () => {
+    const files = ['conflict', 'geo-layers', 'geo-watch', 'region-escalation', 'domain-feeds', 'finance-indicators', 'finance-macro-indicators', 'tech-indicators'];
+    const ids = new Set<string>();
+    for (const f of files) {
+      const src = readFileSync(new URL(`../apps/web/src/lite/data/${f}.ts`, import.meta.url), 'utf8');
+      for (const m of src.matchAll(/\bid(?::|\s*=)\s*['`]([a-z0-9-]+)(?::(price|new))?/g)) ids.add(m[2] ? `${m[1]}:${m[2]}` : m[1]!);
+    }
+    assert.ok(ids.size >= 50, `found ${ids.size} ids`);
+    const missing = [...ids].filter((id) => !feedFamily(id));
+    assert.deepEqual(missing, []);
+    // Each prefix belongs to exactly one family.
+    const prefixes = Object.values(INDICATOR_TOPICS).flat().flatMap((t) => t.families.flatMap((f) => f.prefixes));
+    assert.equal(new Set(prefixes).size, prefixes.length);
   });
 
+  it('matches the longest id prefix', () => {
+    assert.equal(feedFamily('ai-models:price:google/gemma-3-4b-it')?.family, 'ai-prices');
+    assert.equal(feedFamily('ai-models:new:openai')?.family, 'new-models');
+    assert.equal(feedFamily('ai-models')?.family, 'new-models');
+    assert.equal(feedFamily('embassy:mexico:https://mx.usembassy.gov/alert/')?.family, 'embassy');
+    assert.equal(feedFamily('uk-sanctions:RU')?.family, 'sanctions');
+    assert.equal(feedFamily('stablecoin-supply:USDS')?.family, 'stablecoins');
+    assert.equal(feedFamily('nothing-like-this'), null);
+  });
+
+  it('orders Finance general to specific: central banks before crypto even when only crypto fired', () => {
+    const sections = arrangeFeeds([
+      fired('btc-move', AT), fired('stablecoin-supply:USDS', AT - H), fired('stablecoin-depeg', AT - 2 * H),
+      quiet('perp-positioning'), quiet('btc-funding'), quiet('fed-odds'), quiet('macro-print'), quiet('reverse-repo'), quiet('fed-balance-sheet'), quiet('cb-decision'),
+    ], 'fin');
+    assert.deepEqual(layout(sections), [
+      ['central-banks', [['fed-odds', ['fed-odds']], ['cb-decision', ['cb-decision']], ['fed-liquidity', ['reverse-repo', 'fed-balance-sheet']]]],
+      ['macro', [['macro-print', ['macro-print']]]],
+      ['crypto', [['btc-move', ['btc-move']], ['stablecoins', ['stablecoin-supply:USDS', 'stablecoin-depeg']], ['perps', ['perp-positioning', 'btc-funding']]]],
+    ]);
+    assert.deepEqual(sections.map((s) => s.firedCount), [0, 0, 3]);
+    assert.equal(sections[2]!.name, 'Crypto');
+  });
+
+  it('puts fired families first inside a topic, newest first, and fired members first inside a family', () => {
+    const sections = arrangeFeeds([quiet('treasury'), quiet('credit-spreads'), fired('other-bonds', AT - H), quiet('vix'), quiet('dollar-index'), fired('fear-greed', AT)], 'fin');
+    assert.deepEqual(layout(sections), [
+      ['rates', [['bond-yields', ['other-bonds', 'treasury']], ['credit-spreads', ['credit-spreads']]]],
+      ['risk', [['fear-greed', ['fear-greed']], ['vix', ['vix']], ['dollar-index', ['dollar-index']]]],
+    ]);
+  });
+
+  it('merges repeats of one rule and the OFAC, EU and UK sanctions lists into one family', () => {
+    const prices = Array.from({ length: 9 }, (_, i) => fired(`ai-models:price:lab/model-${i}`, AT - i * H, 'tech'));
+    const tech = arrangeFeeds([...prices, fired('lab-news:google', AT - H, 'tech'), fired('lab-news:openai', AT, 'tech'), quiet('open-models'), fired('ai-models:new:qwen', AT, 'tech')], 'tech');
+    assert.deepEqual(tech.map((s) => s.id), ['ai-models']);
+    const families = tech[0]!.families;
+    assert.equal(families.find((f) => f.family === 'ai-prices')?.feeds.length, 9);
+    assert.deepEqual(families.find((f) => f.family === 'lab-news')?.feeds.map((f) => f.id), ['lab-news:openai', 'lab-news:google']);
+    assert.deepEqual(families.find((f) => f.family === 'new-models')?.feeds.map((f) => f.id), ['ai-models:new:qwen', 'open-models']);
+    assert.equal(tech[0]!.firedCount, 12);
+
+    const geo = arrangeFeeds([quiet('sanctions'), fired('eu-sanctions:RU', AT, 'geo', { countries: ['RU'] }), quiet('uk-sanctions'), quiet('elections'), quiet('restricted-parties'), quiet('export-controls'), quiet('region-escalation')], 'geo');
+    assert.deepEqual(layout(geo), [
+      ['conflict', [['region-escalation', ['region-escalation']]]],
+      ['political', [['elections', ['elections']]]],
+      ['sanctions', [['sanctions', ['eu-sanctions:RU', 'sanctions', 'uk-sanctions']], ['export-controls', ['restricted-parties', 'export-controls']]]],
+    ]);
+    assert.equal(geo[2]!.families[0]!.label, 'New sanctions');
+  });
+
+  it('keeps a feed no topic lists in a last Other section, grouped by its id', () => {
+    const sections = arrangeFeeds([quiet('vix'), fired('new-rule:a', AT), fired('new-rule:b', AT - H), quiet('fed-odds')], 'fin');
+    assert.deepEqual(layout(sections), [
+      ['central-banks', [['fed-odds', ['fed-odds']]]],
+      ['risk', [['vix', ['vix']]]],
+      ['other', [['other:new-rule', ['new-rule:a', 'new-rule:b']]]],
+    ]);
+    assert.equal(sections[2]!.name, 'Other');
+    assert.deepEqual(arrangeFeeds([], 'geo'), []);
+  });
 });
 
 describe('Region escalation (#117)', () => {
