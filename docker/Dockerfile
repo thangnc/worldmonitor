@@ -40,7 +40,7 @@ RUN test -s dist/lite.html
 
 
 # Stage 2: Serve the built assets from nginx.
-FROM nginx:alpine@sha256:72ba65eb42c10344912a84ff42408db7d34f2feb642204570ab8fc5ffd29f1d3 AS runtime
+FROM nginx:alpine@sha256:7fc0fb4af7bf006aeb31aea88069976060f8f0a0a86b667126742cc17f4e31ae AS runtime
 
 WORKDIR /usr/share/nginx/html
 
